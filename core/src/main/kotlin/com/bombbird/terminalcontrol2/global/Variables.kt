@@ -10,4 +10,7 @@ object Variables {
     /** The UI size used in menu screens (must be fully visible), calculated taking into account the screen aspect ratio */
     var UI_WIDTH = 0f
     var UI_HEIGHT = 0f
+
+    /** Index of background image used in menu screens */
+    var BG_INDEX = 0
 }

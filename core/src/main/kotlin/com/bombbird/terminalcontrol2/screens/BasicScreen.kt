@@ -21,7 +21,8 @@ abstract class BasicScreen(game: TerminalControl2): KtxScreen {
     val stage = safeStage(game.batch)
     lateinit var container: KContainer<Actor>
 
-    init {
+    /** Sets [Gdx.input]'s inputProcessors to [stage] of this screen */
+    override fun show() {
         Gdx.input.inputProcessor = stage
     }
 

@@ -1,6 +1,8 @@
-# TerminalControl2
+# Terminal Control 2
+Version 2 of my realistic ATC simulation game [Terminal Control](https://github.com/Bombbird2001/Terminal-Control). This version is still in early stages of development.
 
-A [libGDX](https://libgdx.com/) project generated with [gdx-liftoff](https://github.com/tommyettinger/gdx-liftoff).
+## gdx-litoff
+This [libGDX](https://libgdx.com/) project was generated with [gdx-liftoff](https://github.com/tommyettinger/gdx-liftoff).
 
 This project was generated with a Kotlin project template that includes Kotlin application launchers and [KTX](https://libktx.github.io/) utilities.
 

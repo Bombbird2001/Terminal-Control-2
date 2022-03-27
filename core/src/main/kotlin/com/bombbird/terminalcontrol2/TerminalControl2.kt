@@ -2,7 +2,10 @@ package com.bombbird.terminalcontrol2
 
 import com.badlogic.gdx.graphics.Texture
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
+import com.badlogic.gdx.math.MathUtils
+import com.bombbird.terminalcontrol2.global.Variables
 import com.bombbird.terminalcontrol2.screens.MainMenu
+import com.bombbird.terminalcontrol2.screens.NewGame
 import kotlinx.coroutines.launch
 import ktx.app.KtxGame
 import ktx.app.KtxScreen
@@ -22,7 +25,6 @@ class TerminalControl2 : KtxGame<KtxScreen>() {
      * */
     override fun create() {
         KtxAsync.initiate()
-
         KtxAsync.launch {
             assetStorage.apply {
                 // Loading assets, the coroutine will suspend until each asset is loaded
@@ -35,8 +37,11 @@ class TerminalControl2 : KtxGame<KtxScreen>() {
             batch = SpriteBatch()
 
             addScreen(MainMenu(this@TerminalControl2))
+            addScreen(NewGame(this@TerminalControl2))
             setScreen<MainMenu>()
         }
+
+        Variables.BG_INDEX = MathUtils.random(1, 8)
     }
 
     /** Overrides [KtxGame.dispose] to also dispose of [batch] and [assetStorage] */
