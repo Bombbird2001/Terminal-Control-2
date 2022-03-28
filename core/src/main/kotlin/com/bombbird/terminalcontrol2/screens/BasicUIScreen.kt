@@ -2,8 +2,8 @@ package com.bombbird.terminalcontrol2.screens
 
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.GL20
+import com.badlogic.gdx.graphics.Texture
 import com.badlogic.gdx.scenes.scene2d.Actor
-import com.bombbird.terminalcontrol2.TerminalControl2
 import com.bombbird.terminalcontrol2.global.Constants
 import com.bombbird.terminalcontrol2.global.Variables
 import com.bombbird.terminalcontrol2.graphics.ScreenSize
@@ -12,14 +12,26 @@ import ktx.app.KtxScreen
 import ktx.app.clearScreen
 import ktx.assets.disposeSafely
 import ktx.scene2d.*
+import kotlin.math.max
 
 /** A basic screen extending [KtxScreen], implementing some lower level functionalities
  *
  * Should not be instantiated on its own, but rather extended from in other screen classes to implement their full functionality
  * */
-abstract class BasicScreen(game: TerminalControl2): KtxScreen {
-    val stage = safeStage(game.batch)
+abstract class BasicUIScreen: KtxScreen {
+    val stage = safeStage(Constants.GAME.batch)
     lateinit var container: KContainer<Actor>
+
+    init {
+        stage.actors {
+            // Background image
+            if (Variables.BG_INDEX > 0) image(Constants.GAME.assetStorage.get<Texture>("Images/${Variables.BG_INDEX}.png")) {
+                scaleBy(max(Constants.WORLD_WIDTH / width, Constants.WORLD_HEIGHT / height) - 1)
+                x = Constants.WORLD_WIDTH / 2 - width * scaleX / 2
+                y = Constants.WORLD_HEIGHT / 2 - height * scaleY / 2
+            }
+        }
+    }
 
     /** Sets [Gdx.input]'s inputProcessors to [stage] of this screen */
     override fun show() {
@@ -46,9 +58,7 @@ abstract class BasicScreen(game: TerminalControl2): KtxScreen {
      * */
     override fun resize(width: Int, height: Int) {
         ScreenSize.updateScreenSizeParameters(width, height)
-        stage.viewport.apply {
-            update(width, height)
-        }
+        stage.viewport.update(width, height)
         stage.batch.projectionMatrix = stage.camera.combined
         container.apply {
             setSize(Variables.UI_WIDTH, Variables.UI_HEIGHT)

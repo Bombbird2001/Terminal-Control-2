@@ -1,26 +1,20 @@
 package com.bombbird.terminalcontrol2.screens
 
-import com.badlogic.gdx.graphics.Texture
+import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.scenes.scene2d.Actor
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener
 import com.badlogic.gdx.utils.Align
-import com.bombbird.terminalcontrol2.TerminalControl2
 import com.bombbird.terminalcontrol2.global.Constants
 import com.bombbird.terminalcontrol2.global.Variables
 import ktx.scene2d.*
-import kotlin.math.max
 
-class NewGame(game: TerminalControl2): BasicScreen(game) {
-    var currSelectedAirport: String? = null
+/** New game screen which extends [BasicUIScreen] */
+class NewGame: BasicUIScreen() {
+    var currSelectedAirport: KTextButton? = null
+    lateinit var start: KTextButton
 
     init {
         stage.actors {
-            // Background image
-            if (Variables.BG_INDEX > 0) image(game.assetStorage.get<Texture>("Images/${Variables.BG_INDEX}.png")) {
-                scaleBy(max(Constants.WORLD_WIDTH / width, Constants.WORLD_HEIGHT / height) - 1)
-                x = Constants.WORLD_WIDTH / 2 - width * scaleX / 2
-                y = Constants.WORLD_HEIGHT / 2 - height * scaleY / 2
-            }
             // UI Container
             container = container {
                 fill()
@@ -36,11 +30,12 @@ class NewGame(game: TerminalControl2): BasicScreen(game) {
                                     textButton(icao,"NewGameAirport").cell(width = 200f, height = 100f).apply {
                                         addListener(object: ChangeListener() {
                                             override fun changed(event: ChangeEvent?, actor: Actor?) {
-                                                val newArpt = this@apply.text.toString()
-                                                if (currSelectedAirport != newArpt) {
-                                                    currSelectedAirport = newArpt
+                                                if (currSelectedAirport != this@apply) {
+                                                    currSelectedAirport?.isChecked = false
+                                                    currSelectedAirport = this@apply
                                                     //TODO Update placeholder text
-                                                }
+                                                } else currSelectedAirport = null
+                                                if (this@NewGame::start.isInitialized) start.isVisible = currSelectedAirport != null
                                                 event?.handle()
                                             }
                                         })
@@ -54,13 +49,25 @@ class NewGame(game: TerminalControl2): BasicScreen(game) {
                             // debugAll()
                             label("Placeholder", "NewGameAirportInfo").cell(width = 500f, expandY = true, preferredHeight = 400f).setAlignment(Align.top)
                             row().padTop(10f)
-                            textButton("Start", "NewGameStart").cell(width = 400f, height = 75f)
+                            start = textButton("Start", "NewGameStart").cell(width = 400f, height = 75f).apply {
+                                isVisible = false
+                                addListener(object: ChangeListener() {
+                                    override fun changed(event: ChangeEvent?, actor: Actor?) {
+                                        if (currSelectedAirport == null) Gdx.app.log("NewGame", "Start button pressed when airport selected is null")
+                                            else {
+                                            //TODO Call loading function
+                                            Constants.GAME.setScreen<GameLoading>()
+                                        }
+                                        event?.handle()
+                                    }
+                                })
+                            }
                         }.cell(expandY = true).align(Align.top)
                     }.cell(expandY = true, padTop = 50f)
                     row().padTop(100f)
                     textButton("Back", "Menu").cell(width = Constants.BIG_BUTTON_WIDTH, height = Constants.BIG_BUTTON_HEIGHT, padBottom = Constants.BOTTOM_BUTTON_MARGIN, expandY = true, align = Align.bottom).addListener(object: ChangeListener() {
                         override fun changed(event: ChangeEvent?, actor: Actor?) {
-                            game.setScreen<MainMenu>()
+                            Constants.GAME.setScreen<MainMenu>()
                         }
                     })
                 }

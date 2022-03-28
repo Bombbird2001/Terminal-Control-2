@@ -8,6 +8,7 @@ dependencies {
 	api "com.github.crykn:kryonet:$kryoNetVersion"
 	api "io.github.libktx:ktx-actors:$ktxVersion"
 	api "io.github.libktx:ktx-app:$ktxVersion"
+	api "io.github.libktx:ktx-ashley:$ktxVersion"
 	api "io.github.libktx:ktx-assets-async:$ktxVersion"
 	api "io.github.libktx:ktx-assets:$ktxVersion"
 	api "io.github.libktx:ktx-async:$ktxVersion"

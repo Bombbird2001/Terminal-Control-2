@@ -3,7 +3,9 @@ package com.bombbird.terminalcontrol2
 import com.badlogic.gdx.graphics.Texture
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.math.MathUtils
+import com.bombbird.terminalcontrol2.global.Constants
 import com.bombbird.terminalcontrol2.global.Variables
+import com.bombbird.terminalcontrol2.screens.GameLoading
 import com.bombbird.terminalcontrol2.screens.MainMenu
 import com.bombbird.terminalcontrol2.screens.NewGame
 import kotlinx.coroutines.launch
@@ -33,11 +35,13 @@ class TerminalControl2 : KtxGame<KtxScreen>() {
                 load<Texture>("Images/MainMenuIcon.png")
             }
             // Assets are loaded
+            Constants.GAME = this@TerminalControl2
 
             batch = SpriteBatch()
 
-            addScreen(MainMenu(this@TerminalControl2))
-            addScreen(NewGame(this@TerminalControl2))
+            addScreen(MainMenu())
+            addScreen(NewGame())
+            addScreen(GameLoading())
             setScreen<MainMenu>()
         }
 
