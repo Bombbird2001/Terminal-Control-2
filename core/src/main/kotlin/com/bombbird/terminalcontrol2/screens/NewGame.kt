@@ -21,13 +21,13 @@ class NewGame: BasicUIScreen() {
                 setSize(Variables.UI_WIDTH, Variables.UI_HEIGHT)
                 table {
                     //debugAll()
-                    label("Choose airport:", "MenuHeader").cell(align = Align.center, padTop = 50f).setAlignment(Align.center)
+                    label("Choose airport:", "MenuHeader").cell(align = Align.center, padTop = 65f).setAlignment(Align.center)
                     row()
                     table {
                         scrollPane("NewGame") {
                             table {
                                 for (icao in Constants.AVAIL_AIRPORTS) {
-                                    textButton(icao,"NewGameAirport").cell(width = 200f, height = 100f).apply {
+                                    textButton(icao,"NewGameAirport").cell(width = 300f, height = 150f).apply {
                                         addListener(object: ChangeListener() {
                                             override fun changed(event: ChangeEvent?, actor: Actor?) {
                                                 if (currSelectedAirport != this@apply) {
@@ -44,12 +44,12 @@ class NewGame: BasicUIScreen() {
                                 }
                             }
                             setOverscroll(false, false)
-                        }.cell(align = Align.top, width = 200f)
+                        }.cell(align = Align.top, width = 300f)
                         table {
                             // debugAll()
-                            label("Placeholder", "NewGameAirportInfo").cell(width = 500f, expandY = true, preferredHeight = 400f).setAlignment(Align.top)
+                            label("Placeholder", "NewGameAirportInfo").cell(width = 800f, expandY = true, preferredHeight = 550f).setAlignment(Align.top)
                             row().padTop(10f)
-                            start = textButton("Start", "NewGameStart").cell(width = 400f, height = 75f).apply {
+                            start = textButton("Start", "NewGameStart").cell(width = 400f, height = 100f).apply {
                                 isVisible = false
                                 addListener(object: ChangeListener() {
                                     override fun changed(event: ChangeEvent?, actor: Actor?) {
@@ -63,7 +63,7 @@ class NewGame: BasicUIScreen() {
                                 })
                             }
                         }.cell(expandY = true).align(Align.top)
-                    }.cell(expandY = true, padTop = 50f)
+                    }.cell(expandY = true, padTop = 65f)
                     row().padTop(100f)
                     textButton("Back", "Menu").cell(width = Constants.BIG_BUTTON_WIDTH, height = Constants.BIG_BUTTON_HEIGHT, padBottom = Constants.BOTTOM_BUTTON_MARGIN, expandY = true, align = Align.bottom).addListener(object: ChangeListener() {
                         override fun changed(event: ChangeEvent?, actor: Actor?) {

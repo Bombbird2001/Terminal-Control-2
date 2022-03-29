@@ -1,5 +1,7 @@
 package com.bombbird.terminalcontrol2
 
+import com.badlogic.ashley.core.Engine
+import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.Texture
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.math.MathUtils
@@ -19,6 +21,7 @@ import ktx.scene2d.*
 /** Main game class, extending the [KtxGame] class */
 class TerminalControl2 : KtxGame<KtxScreen>() {
     lateinit var batch: SpriteBatch
+    lateinit var engine: Engine
     val assetStorage = AssetStorage()
 
     /** Overrides [KtxGame.create] to also initiate [KtxAsync], and load assets using [AssetStorage]
@@ -38,6 +41,7 @@ class TerminalControl2 : KtxGame<KtxScreen>() {
             Constants.GAME = this@TerminalControl2
 
             batch = SpriteBatch()
+            engine = Engine()
 
             addScreen(MainMenu())
             addScreen(NewGame())
@@ -46,6 +50,7 @@ class TerminalControl2 : KtxGame<KtxScreen>() {
         }
 
         Variables.BG_INDEX = MathUtils.random(1, 8)
+        println(Gdx.graphics.height)
     }
 
     /** Overrides [KtxGame.dispose] to also dispose of [batch] and [assetStorage] */

@@ -19,8 +19,10 @@ import com.bombbird.terminalcontrol2.utilities.safeStage
 import ktx.app.KtxScreen
 import ktx.app.clearScreen
 import ktx.assets.disposeSafely
+import ktx.graphics.moveTo
 import ktx.math.ImmutableVector2
 import ktx.scene2d.actors
+import kotlin.math.min
 
 class RadarScreen: KtxScreen, GestureListener, InputProcessor {
     private val radarDisplayStage = safeStage(Constants.GAME.batch)
@@ -46,8 +48,10 @@ class RadarScreen: KtxScreen, GestureListener, InputProcessor {
         (radarDisplayStage.camera as OrthographicCamera).apply {
             zoom = MathTools.nmToPx(Constants.DEFAULT_ZOOM_NM) / Variables.UI_HEIGHT
             targetZoom = zoom
-            targetCenter = Vector2(position.x, position.y)
+            // Default camera position is set at (0, 0)
+            targetCenter = Vector2()
             panRate = ImmutableVector2(0f, 0f)
+            moveTo(targetCenter)
         }
     }
 
@@ -63,13 +67,12 @@ class RadarScreen: KtxScreen, GestureListener, InputProcessor {
     }
 
     private fun initiateCameraAnimation(targetScreenX: Float, targetScreenY: Float) {
-        println("Initiate")
         (radarDisplayStage.camera as OrthographicCamera).apply {
             val worldCoord = unproject(Vector3(targetScreenX, targetScreenY, 0f))
             targetCenter.x = worldCoord.x
             targetCenter.y = worldCoord.y
-            targetZoom = if (zoom > (MathTools.nmToPx(65) / Variables.UI_HEIGHT)) MathTools.nmToPx(30) / Variables.UI_HEIGHT
-            else MathTools.nmToPx(100) / Variables.UI_HEIGHT
+            targetZoom = if (zoom > (MathTools.nmToPx(Constants.ZOOM_THRESHOLD_NM) / Variables.UI_HEIGHT)) MathTools.nmToPx(Constants.DEFAULT_ZOOM_IN_NM) / Variables.UI_HEIGHT
+            else MathTools.nmToPx(Constants.DEFAULT_ZOOM_NM) / Variables.UI_HEIGHT
             zoomRate = (targetZoom - zoom) / Constants.CAM_ANIM_TIME
             panRate = ImmutableVector2((targetCenter.x - position.x), (targetCenter.y - position.y)).times(1 / Constants.CAM_ANIM_TIME)
             cameraAnimating = true
@@ -80,8 +83,9 @@ class RadarScreen: KtxScreen, GestureListener, InputProcessor {
         if (!cameraAnimating) return
         (radarDisplayStage.camera as OrthographicCamera).apply {
             if ((zoomRate < 0 && zoom > targetZoom) || (zoomRate > 0 && zoom < targetZoom)) {
-                zoom += zoomRate * delta
-                val actlPanRate = panRate.times(delta)
+                val neededDelta = min((targetZoom - zoom) / zoomRate, delta)
+                zoom += zoomRate * neededDelta
+                val actlPanRate = panRate.times(neededDelta)
                 translate(actlPanRate.x, actlPanRate.y)
                 clampUpdateCamera()
             } else cameraAnimating = false
@@ -104,10 +108,11 @@ class RadarScreen: KtxScreen, GestureListener, InputProcessor {
 
         runCameraAnimations(delta)
         // TODO Run engine update code here
+        Constants.ENGINE.update(delta)
 
         shapeRenderer.begin(ShapeRenderer.ShapeType.Line)
-        shapeRenderer.circle(720f, 405f, 1000f)
-        shapeRenderer.circle(720f, 405f, 100f)
+        shapeRenderer.circle(0f, 0f, 1250f)
+        shapeRenderer.circle(0f, 0f, 125f)
         shapeRenderer.end()
 
         Constants.GAME.batch.projectionMatrix = radarDisplayStage.camera.combined

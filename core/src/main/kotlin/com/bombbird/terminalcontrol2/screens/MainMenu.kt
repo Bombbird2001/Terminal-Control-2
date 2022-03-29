@@ -21,16 +21,16 @@ class MainMenu: BasicUIScreen() {
                     // debugAll()
                     val iconTexture = Constants.GAME.assetStorage.get<Texture>("Images/MainMenuIcon.png")
                     iconTexture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear)
-                    image(iconTexture).cell(width = 270f, height = 89f, expandY = true, align = Align.top, padTop = 80f)
-                    row().padTop(50f)
+                    image(iconTexture).cell(width = 360f, height = 119f, expandY = true, align = Align.top, padTop = 105f)
+                    row().padTop(65f)
                     textButton("New Game", "Menu").cell(width = Constants.BIG_BUTTON_WIDTH, height = Constants.BIG_BUTTON_HEIGHT).addListener(object: ChangeListener() {
                         override fun changed(event: ChangeEvent?, actor: Actor?) {
                             Constants.GAME.setScreen<NewGame>()
                         }
                     })
-                    row().padTop(20f)
-                    textButton("Load Game", "Menu").cell(width = 450f, height = 100f)
-                    row().padTop(100f)
+                    row().padTop(25f)
+                    textButton("Load Game", "Menu").cell(width = Constants.BIG_BUTTON_WIDTH, height = Constants.BIG_BUTTON_HEIGHT)
+                    row().padTop(130f)
                     textButton("Quit", "Menu").cell(width = Constants.BIG_BUTTON_WIDTH, height = Constants.BIG_BUTTON_HEIGHT, padBottom = Constants.BOTTOM_BUTTON_MARGIN).addListener(object: ChangeListener() {
                         override fun changed(event: ChangeEvent?, actor: Actor?) {
                             Constants.GAME.dispose()

@@ -21,12 +21,16 @@ class GameLoading: BasicUIScreen() {
                     // debugAll()
                     label("Loading game...", "LoadingGame").cell(padBottom = 20f)
                     row()
-                    pBar = progressBar(style = "LoadingGame").cell(width = 350f).apply {
+                    pBar = progressBar(style = "LoadingGame").cell(width = 450f).apply {
                         addListener(object: ChangeListener() {
                             override fun changed(event: ChangeEvent?, actor: Actor?) {
                                 if (this@apply.percent >= 1) {
-                                    Constants.GAME.addScreen(RadarScreen())
-                                    Constants.GAME.setScreen<RadarScreen>()
+                                    Timer.schedule(object: Timer.Task() {
+                                        override fun run() {
+                                            Constants.GAME.addScreen(RadarScreen())
+                                            Constants.GAME.setScreen<RadarScreen>()
+                                        }
+                                    }, 0.35f)
                                 }
                             }
                         })
