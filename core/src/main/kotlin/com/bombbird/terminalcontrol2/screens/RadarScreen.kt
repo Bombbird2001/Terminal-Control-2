@@ -11,9 +11,11 @@ import com.badlogic.gdx.input.GestureDetector.GestureListener
 import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.math.Vector3
+import com.bombbird.terminalcontrol2.entities.Airport
 import com.bombbird.terminalcontrol2.global.Constants
 import com.bombbird.terminalcontrol2.global.Variables
 import com.bombbird.terminalcontrol2.graphics.ScreenSize
+import com.bombbird.terminalcontrol2.systems.RenderingSystem
 import com.bombbird.terminalcontrol2.utilities.MathTools
 import com.bombbird.terminalcontrol2.utilities.safeStage
 import ktx.app.KtxScreen
@@ -24,6 +26,14 @@ import ktx.math.ImmutableVector2
 import ktx.scene2d.actors
 import kotlin.math.min
 
+/** Main class for the display of the in-game radar screen
+ *
+ * Contains the stage for the actors required in the radar screen
+ *
+ * Also contains the stage for drawing the UI overlay
+ *
+ * Implements [GestureListener] and [InputProcessor] to handle input/gesture events to it
+ * */
 class RadarScreen: KtxScreen, GestureListener, InputProcessor {
     private val radarDisplayStage = safeStage(Constants.GAME.batch)
     private val uiStage = safeStage(Constants.GAME.batch)
@@ -44,7 +54,7 @@ class RadarScreen: KtxScreen, GestureListener, InputProcessor {
         uiStage.actors {
             // uiContainer = container {  }
         }
-        // Default zoom is set so that a full 100nm by 100nm square is visible (2000px x 2000px)
+        // Default zoom is set so that a full 100nm by 100nm square is visible (2500px x 2500px)
         (radarDisplayStage.camera as OrthographicCamera).apply {
             zoom = MathTools.nmToPx(Constants.DEFAULT_ZOOM_NM) / Variables.UI_HEIGHT
             targetZoom = zoom
@@ -53,6 +63,15 @@ class RadarScreen: KtxScreen, GestureListener, InputProcessor {
             panRate = ImmutableVector2(0f, 0f)
             moveTo(targetCenter)
         }
+
+        Constants.ENGINE.addSystem(RenderingSystem(shapeRenderer, radarDisplayStage))
+
+        // Add dummy airport, runways
+        val arpt = Airport("TCTP", "Haoyuan", 0f, 0f, 108f)
+        arpt.addRunway("05L", -15f, 5f, 49.08f, 3660)
+        arpt.addRunway("05R", 10f, -10f, 49.07f, 3800)
+
+        // Add dummy aircraft
     }
 
     /** Ensures [radarDisplayStage]'s camera parameters are within limits, then updates the camera (and [shapeRenderer]) */
@@ -66,6 +85,7 @@ class RadarScreen: KtxScreen, GestureListener, InputProcessor {
         }
     }
 
+    /** Initiates animation of [radarDisplayStage]'s camera to the new position, as well as a new zoom depending on current zoom value */
     private fun initiateCameraAnimation(targetScreenX: Float, targetScreenY: Float) {
         (radarDisplayStage.camera as OrthographicCamera).apply {
             val worldCoord = unproject(Vector3(targetScreenX, targetScreenY, 0f))
@@ -79,6 +99,7 @@ class RadarScreen: KtxScreen, GestureListener, InputProcessor {
         }
     }
 
+    /** Shifts [radarDisplayStage]'s camera by an amount depending on the time passed since last frame, and the zoom, pan rate calculated in [initiateCameraAnimation] */
     private fun runCameraAnimations(delta: Float) {
         if (!cameraAnimating) return
         (radarDisplayStage.camera as OrthographicCamera).apply {
@@ -107,13 +128,7 @@ class RadarScreen: KtxScreen, GestureListener, InputProcessor {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT or GL20.GL_DEPTH_BUFFER_BIT or if (Gdx.graphics.bufferFormat.coverageSampling) GL20.GL_COVERAGE_BUFFER_BIT_NV else 0)
 
         runCameraAnimations(delta)
-        // TODO Run engine update code here
         Constants.ENGINE.update(delta)
-
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Line)
-        shapeRenderer.circle(0f, 0f, 1250f)
-        shapeRenderer.circle(0f, 0f, 125f)
-        shapeRenderer.end()
 
         Constants.GAME.batch.projectionMatrix = radarDisplayStage.camera.combined
         // TODO Draw radar display

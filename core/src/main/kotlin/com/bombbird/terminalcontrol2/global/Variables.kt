@@ -13,4 +13,7 @@ object Variables {
 
     /** Index of background image used in menu screens */
     var BG_INDEX = 0
+
+    /** Magnetic heading deviation in the current game - positive for Westward deviation and negative for Eastward deviation */
+    var MAG_HDG_DEV = 0f
 }

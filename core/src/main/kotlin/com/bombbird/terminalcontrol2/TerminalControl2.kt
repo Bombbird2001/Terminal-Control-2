@@ -1,7 +1,6 @@
 package com.bombbird.terminalcontrol2
 
 import com.badlogic.ashley.core.Engine
-import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.Texture
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.math.MathUtils
@@ -50,7 +49,6 @@ class TerminalControl2 : KtxGame<KtxScreen>() {
         }
 
         Variables.BG_INDEX = MathUtils.random(1, 8)
-        println(Gdx.graphics.height)
     }
 
     /** Overrides [KtxGame.dispose] to also dispose of [batch] and [assetStorage] */

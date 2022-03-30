@@ -1,18 +1,55 @@
 package com.bombbird.terminalcontrol2.utilities
 
-import com.bombbird.terminalcontrol2.global.Constants
-
 /** Game specific math tools for use */
 object MathTools {
+    /** Unit conversions */
+    const val NM_TO_PX = 25f
+    const val NM_TO_FT = 6076.12f
+    const val NM_TO_M = 1852f
+
     fun nmToPx(nm: Int): Float {
-        return nm * Constants.NM_TO_PX
+        return nm * NM_TO_PX
     }
 
     fun nmToPx(nm: Float): Float {
-        return nm * Constants.NM_TO_PX
+        return nm * NM_TO_PX
     }
 
     fun pxToNm(px: Int): Float {
-        return px / Constants.NM_TO_PX
+        return px / NM_TO_PX
+    }
+
+    fun ftToPx(ft: Int): Float {
+        return nmToPx(ft / NM_TO_FT)
+    }
+
+    fun ftToPx(ft: Float): Float {
+        return nmToPx(ft / NM_TO_FT)
+    }
+
+    fun pxToFt(px: Int): Float {
+        return pxToNm(px) * NM_TO_FT
+    }
+
+    fun mToPx(m: Int): Float {
+        return nmToPx(m / NM_TO_M)
+    }
+
+    fun mToPx(m: Float): Float {
+        return nmToPx(m / NM_TO_M)
+    }
+
+    fun pxToM(px: Int): Float {
+        return pxToNm(px) * NM_TO_M
+    }
+
+    /** Converts the in-game world degrees to the degree used by the rendering systems
+     *
+     * Input heading: 360 is up, 90 is right, 180 is down and 270 is left
+     *
+     * Output degrees: 90 is up, 0 is right, -90 is down and -180 is left
+     * */
+    fun worldDegToRenderDeg(worldDeg: Float): Float {
+        return 90 - worldDeg
     }
 }

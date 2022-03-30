@@ -16,9 +16,6 @@ object Constants {
     const val BIG_BUTTON_HEIGHT = 130f
     const val BOTTOM_BUTTON_MARGIN = 90f
 
-    /** Unit conversions */
-    const val NM_TO_PX = 25f
-
     /** radarScreen defaults */
     const val DEFAULT_ZOOM_NM = 100
     const val MIN_ZOOM_NM = 10
@@ -26,11 +23,13 @@ object Constants {
     const val DEFAULT_ZOOM_IN_NM = 30
     const val ZOOM_THRESHOLD_NM = 65
     const val CAM_ANIM_TIME = 0.3f
+    const val RWY_WIDTH_PX_ZOOM_1 = 5f
+    const val RWY_WIDTH_CHANGE_PX_PER_ZOOM = 3f
 
     /** List of available airports (can be modified, but don't) */
     val AVAIL_AIRPORTS = GdxArray<String>(arrayOf("TCTP", "TCWS", "TCTT", "TCBB", "TCHH", "TCBD", "TCMD", "TCPG"))
 
-    /** The current game instance (can be modified, but don't) */
+    /** The current game instance, engine (can be modified, but don't) */
     lateinit var GAME: TerminalControl2
     val ENGINE: Engine
         get() = GAME.engine
