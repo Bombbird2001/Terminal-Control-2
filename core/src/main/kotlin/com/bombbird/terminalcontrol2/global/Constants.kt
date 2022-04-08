@@ -25,6 +25,8 @@ object Constants {
     const val CAM_ANIM_TIME = 0.3f
     const val RWY_WIDTH_PX_ZOOM_1 = 5f
     const val RWY_WIDTH_CHANGE_PX_PER_ZOOM = 3f
+    const val AIRCRAFT_BLIP_LENGTH_PX_ZOOM_1 = 20f
+    const val AIRCRAFT_BLIP_LENGTH_CHANGE_PX_PER_ZOOM = 4f
 
     /** List of available airports (can be modified, but don't) */
     val AVAIL_AIRPORTS = GdxArray<String>(arrayOf("TCTP", "TCWS", "TCTT", "TCBB", "TCHH", "TCBD", "TCMD", "TCPG"))

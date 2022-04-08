@@ -26,11 +26,14 @@ class Airport(icao: String, arptName: String, posX: Float, posY: Float, elevatio
     }
 
     /** Creates a runway entity with the required components, and adds it to airport component's runway map */
-    fun addRunway(name: String, posX: Float, posY: Float, trueHdg: Float, runwayLengthM: Int) {
+    fun addRunway(name: String, posX: Float, posY: Float, trueHdg: Float, runwayLengthM: Int, elevation: Float) {
         entity[AirportInfo.mapper]!!.rwys.rwyMap[name] = Constants.ENGINE.entity {
             with<Position> {
                 x = posX
                 y = posY
+            }
+            with<Altitude> {
+                altitude = elevation
             }
             with<Direction> {
                 dirUnitVector = Vector2(Vector2.Y).rotateDeg(-trueHdg)

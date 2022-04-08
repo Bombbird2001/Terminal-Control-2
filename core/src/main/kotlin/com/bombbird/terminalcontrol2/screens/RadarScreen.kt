@@ -12,6 +12,7 @@ import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.math.Vector3
 import com.bombbird.terminalcontrol2.entities.Airport
+import com.bombbird.terminalcontrol2.entities.DepartureAircraft
 import com.bombbird.terminalcontrol2.global.Constants
 import com.bombbird.terminalcontrol2.global.Variables
 import com.bombbird.terminalcontrol2.graphics.ScreenSize
@@ -68,10 +69,11 @@ class RadarScreen: KtxScreen, GestureListener, InputProcessor {
 
         // Add dummy airport, runways
         val arpt = Airport("TCTP", "Haoyuan", 0f, 0f, 108f)
-        arpt.addRunway("05L", -15f, 5f, 49.08f, 3660)
-        arpt.addRunway("05R", 10f, -10f, 49.07f, 3800)
+        arpt.addRunway("05L", -15f, 5f, 49.08f, 3660, 108f)
+        arpt.addRunway("05R", 10f, -10f, 49.07f, 3800, 108f)
 
         // Add dummy aircraft
+        val acft = DepartureAircraft("SHIBA1", 10f, -10f, 108f)
     }
 
     /** Ensures [radarDisplayStage]'s camera parameters are within limits, then updates the camera (and [shapeRenderer]) */
@@ -130,10 +132,9 @@ class RadarScreen: KtxScreen, GestureListener, InputProcessor {
         runCameraAnimations(delta)
         Constants.ENGINE.update(delta)
 
-        Constants.GAME.batch.projectionMatrix = radarDisplayStage.camera.combined
         // TODO Draw radar display
 
-        Constants.GAME.batch.projectionMatrix = uiStage.camera.combined
+        // Constants.GAME.batch.projectionMatrix = uiStage.camera.combined
         // TODO Draw UI
     }
 

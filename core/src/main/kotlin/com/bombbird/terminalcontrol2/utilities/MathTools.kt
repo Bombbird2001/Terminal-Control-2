@@ -3,9 +3,9 @@ package com.bombbird.terminalcontrol2.utilities
 /** Game specific math tools for use */
 object MathTools {
     /** Unit conversions */
-    const val NM_TO_PX = 25f
-    const val NM_TO_FT = 6076.12f
-    const val NM_TO_M = 1852f
+    private const val NM_TO_PX = 25f
+    private const val NM_TO_FT = 6076.12f
+    private const val NM_TO_M = 1852f
 
     fun nmToPx(nm: Int): Float {
         return nm * NM_TO_PX
