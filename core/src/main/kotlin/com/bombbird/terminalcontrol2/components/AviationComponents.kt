@@ -17,6 +17,11 @@ class RunwayInfo(var rwyName: String = ""): Component {
     companion object: Mapper<RunwayInfo>()
 }
 
+/** Component for tagging airport METAR information */
+class MetarInfo(var realLifeIcao: String = "", var rawMetar: String = "", windHeading: Int = 360, windSpeedKts: Int = 0, windGustKts: Int = 0, visibility: Int = 10000, ceilingAGL: Int = 32000, windshear: String = ""): Component {
+    companion object: Mapper<MetarInfo>()
+}
+
 /** Component for tagging sector related information */
 class SectorInfo(var sectorId: Int = 0, var frequency: String = "121.5"): Component {
     companion object: Mapper<SectorInfo>()
@@ -28,10 +33,12 @@ class WaypointInfo(var wptName: String = "-----"): Component {
 }
 
 /** Component for tagging sector control information
- * sectorId = -1 means tower control
- * sectorId = -2 means ACC control
+ *
+ * [sectorId] = -1 means tower control
+ *
+ * [sectorId] = -2 means ACC control
  * */
-class Controllable(var sector: Int = 0): Component {
+class Controllable(var sectorId: Int = 0): Component {
     companion object: Mapper<Controllable>()
 }
 

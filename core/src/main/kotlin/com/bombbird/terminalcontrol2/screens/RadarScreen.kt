@@ -10,12 +10,12 @@ import com.badlogic.gdx.input.GestureDetector
 import com.badlogic.gdx.input.GestureDetector.GestureListener
 import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.math.Vector2
-import com.badlogic.gdx.math.Vector3
 import com.bombbird.terminalcontrol2.entities.Airport
-import com.bombbird.terminalcontrol2.entities.DepartureAircraft
+import com.bombbird.terminalcontrol2.entities.Aircraft
 import com.bombbird.terminalcontrol2.global.Constants
 import com.bombbird.terminalcontrol2.global.Variables
 import com.bombbird.terminalcontrol2.graphics.ScreenSize
+import com.bombbird.terminalcontrol2.graphics.UIPane
 import com.bombbird.terminalcontrol2.systems.RenderingSystem
 import com.bombbird.terminalcontrol2.utilities.MathTools
 import com.bombbird.terminalcontrol2.utilities.safeStage
@@ -24,7 +24,6 @@ import ktx.app.clearScreen
 import ktx.assets.disposeSafely
 import ktx.graphics.moveTo
 import ktx.math.ImmutableVector2
-import ktx.scene2d.actors
 import kotlin.math.min
 
 /** Main class for the display of the in-game radar screen
@@ -38,7 +37,7 @@ import kotlin.math.min
 class RadarScreen: KtxScreen, GestureListener, InputProcessor {
     private val radarDisplayStage = safeStage(Constants.GAME.batch)
     private val uiStage = safeStage(Constants.GAME.batch)
-    // var uiContainer: KContainer<Actor>
+    private val uiPane = UIPane(uiStage)
     private val shapeRenderer = ShapeRenderer()
 
     private val gestureDetector = GestureDetector(40f, 0.2f, 1.1f, 0.15f, this)
@@ -51,10 +50,10 @@ class RadarScreen: KtxScreen, GestureListener, InputProcessor {
     private var targetCenter: Vector2
     private var panRate: ImmutableVector2
 
+    // Selected aircraft:
+    var selectedAircraft: Aircraft? = null
+
     init {
-        uiStage.actors {
-            // uiContainer = container {  }
-        }
         // Default zoom is set so that a full 100nm by 100nm square is visible (2500px x 2500px)
         (radarDisplayStage.camera as OrthographicCamera).apply {
             zoom = MathTools.nmToPx(Constants.DEFAULT_ZOOM_NM) / Variables.UI_HEIGHT
@@ -62,24 +61,30 @@ class RadarScreen: KtxScreen, GestureListener, InputProcessor {
             // Default camera position is set at (0, 0)
             targetCenter = Vector2()
             panRate = ImmutableVector2(0f, 0f)
-            moveTo(targetCenter)
+            moveTo(targetCenter, uiPane.getRadarCameraOffsetForZoom(zoom))
         }
+        uiStage.camera.moveTo(Vector2())
 
-        Constants.ENGINE.addSystem(RenderingSystem(shapeRenderer, radarDisplayStage))
+        Constants.ENGINE.addSystem(RenderingSystem(shapeRenderer, radarDisplayStage, uiStage))
 
         // Add dummy airport, runways
         val arpt = Airport("TCTP", "Haoyuan", 0f, 0f, 108f)
-        arpt.addRunway("05L", -15f, 5f, 49.08f, 3660, 108f)
-        arpt.addRunway("05R", 10f, -10f, 49.07f, 3800, 108f)
+        arpt.addRunway("05L", -15f, 5f, 49.08f, 3660, 108f, -1)
+        arpt.addRunway("05R", 10f, -10f, 49.07f, 3800, 108f, 1)
 
         // Add dummy aircraft
-        val acft = DepartureAircraft("SHIBA1", 10f, -10f, 108f)
+        Aircraft("SHIBA1", 10f, -10f, 108f).apply {
+            setDeparture()
+        }
     }
 
     /** Ensures [radarDisplayStage]'s camera parameters are within limits, then updates the camera (and [shapeRenderer]) */
-    private fun clampUpdateCamera() {
+    private fun clampUpdateCamera(deltaZoom: Float) {
         (radarDisplayStage.camera as OrthographicCamera).apply {
+            val oldZoom = zoom
+            zoom += deltaZoom
             zoom = MathUtils.clamp(zoom, MathTools.nmToPx(Constants.MIN_ZOOM_NM) / Variables.UI_HEIGHT, MathTools.nmToPx(Constants.MAX_ZOOM_NM) / Variables.UI_HEIGHT)
+            translate(uiPane.getRadarCameraOffsetForZoom(zoom - oldZoom), 0f)
             update()
 
             // shapeRenderer will follow radarDisplayCamera
@@ -90,11 +95,11 @@ class RadarScreen: KtxScreen, GestureListener, InputProcessor {
     /** Initiates animation of [radarDisplayStage]'s camera to the new position, as well as a new zoom depending on current zoom value */
     private fun initiateCameraAnimation(targetScreenX: Float, targetScreenY: Float) {
         (radarDisplayStage.camera as OrthographicCamera).apply {
-            val worldCoord = unproject(Vector3(targetScreenX, targetScreenY, 0f))
-            targetCenter.x = worldCoord.x
-            targetCenter.y = worldCoord.y
             targetZoom = if (zoom > (MathTools.nmToPx(Constants.ZOOM_THRESHOLD_NM) / Variables.UI_HEIGHT)) MathTools.nmToPx(Constants.DEFAULT_ZOOM_IN_NM) / Variables.UI_HEIGHT
             else MathTools.nmToPx(Constants.DEFAULT_ZOOM_NM) / Variables.UI_HEIGHT
+            val worldCoord = unprojectFromRadarCamera(targetScreenX, targetScreenY)
+            targetCenter.x = worldCoord.x + uiPane.getRadarCameraOffsetForZoom(targetZoom)
+            targetCenter.y = worldCoord.y
             zoomRate = (targetZoom - zoom) / Constants.CAM_ANIM_TIME
             panRate = ImmutableVector2((targetCenter.x - position.x), (targetCenter.y - position.y)).times(1 / Constants.CAM_ANIM_TIME)
             cameraAnimating = true
@@ -110,8 +115,16 @@ class RadarScreen: KtxScreen, GestureListener, InputProcessor {
                 zoom += zoomRate * neededDelta
                 val actlPanRate = panRate.times(neededDelta)
                 translate(actlPanRate.x, actlPanRate.y)
-                clampUpdateCamera()
+                clampUpdateCamera(0f)
             } else cameraAnimating = false
+        }
+    }
+
+    /** Helper function for unprojecting from screen coordinates to camera world coordinates, as unfortunately Camera's unproject function is not accurate in this case */
+    private fun unprojectFromRadarCamera(screenX: Float, screenY: Float): Vector2 {
+        (radarDisplayStage.camera as OrthographicCamera).apply {
+            val scaleFactor = Variables.UI_HEIGHT / Variables.HEIGHT // 1px in screen distance = ?px in world distance (at zoom = 1)
+            return Vector2((screenX - Variables.WIDTH / 2) * zoom * scaleFactor + position.x, (Variables.HEIGHT / 2 - screenY) * zoom * scaleFactor + position.y)
         }
     }
 
@@ -155,11 +168,10 @@ class RadarScreen: KtxScreen, GestureListener, InputProcessor {
     override fun resize(width: Int, height: Int) {
         ScreenSize.updateScreenSizeParameters(width, height)
         radarDisplayStage.viewport.update(width, height)
-        uiStage.viewport.update(width, height)
-//        uiContainer.apply {
-//            setSize(Variables.UI_WIDTH, Variables.UI_HEIGHT)
-//            setPosition(Constants.WORLD_WIDTH / 2 - Variables.UI_WIDTH / 2, Constants.WORLD_HEIGHT / 2 - Variables.UI_HEIGHT / 2)
-//        } TODO move uiContainer to separate UI class and call its resize function from here
+
+        // Resize the UI pane
+        uiPane.resize(width, height)
+
         // shapeRenderer will follow radarDisplayCamera
         shapeRenderer.projectionMatrix = radarDisplayStage.camera.combined
     }
@@ -191,7 +203,7 @@ class RadarScreen: KtxScreen, GestureListener, InputProcessor {
         (radarDisplayStage.camera as OrthographicCamera).apply {
             translate(-deltaX * zoom * Variables.UI_WIDTH / Variables.WIDTH, deltaY * zoom * Variables.UI_HEIGHT / Variables.HEIGHT)
         }
-        clampUpdateCamera()
+        clampUpdateCamera(0f)
         return true
     }
 
@@ -258,8 +270,9 @@ class RadarScreen: KtxScreen, GestureListener, InputProcessor {
 
     /** Implements [InputProcessor.scrolled], changes camera zoom on scroll (desktop) */
     override fun scrolled(amountX: Float, amountY: Float): Boolean {
-        (radarDisplayStage.camera as OrthographicCamera).zoom += amountY * 0.05f
-        clampUpdateCamera()
+        (radarDisplayStage.camera as OrthographicCamera).apply {
+            clampUpdateCamera(amountY * 0.06f)
+        }
         return true
     }
 }

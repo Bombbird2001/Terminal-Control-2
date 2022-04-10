@@ -33,3 +33,8 @@ class Acceleration(var dSpeed: Float = 0f, var dVertSpd: Float = 0f, var dAngula
 class RadarData(val position: Position = Position(), val direction: Direction = Direction(), val speed: Speed = Speed(), val altitude: Altitude = Altitude()): Component {
     companion object: Mapper<RadarData>()
 }
+
+/** Component for tagging entities that get affected by wind velocity */
+class AffectedByWind: Component {
+    companion object: Mapper<AffectedByWind>()
+}
