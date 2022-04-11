@@ -35,4 +35,9 @@ object Constants {
     lateinit var GAME: TerminalControl2
     val ENGINE: Engine
         get() = GAME.engine
+
+    /** Server target refresh rates (in Hz) */
+    const val SERVER_UPDATE_RATE = 60 // Server game loop
+    const val SERVER_TO_CLIENT_UPDATE_RATE_FAST = 20 // Frequently updated data such as aircraft position, navigation, etc.
+    const val SERVER_TO_CLIENT_UPDATE_RATE_SLOW = 0.1f // Not so frequently updated data such as thunderstorm cells
 }

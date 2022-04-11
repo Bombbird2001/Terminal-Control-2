@@ -6,6 +6,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.math.MathUtils
 import com.bombbird.terminalcontrol2.global.Constants
 import com.bombbird.terminalcontrol2.global.Variables
+import com.bombbird.terminalcontrol2.networking.GameServer
 import com.bombbird.terminalcontrol2.screens.GameLoading
 import com.bombbird.terminalcontrol2.screens.MainMenu
 import com.bombbird.terminalcontrol2.screens.NewGame
@@ -22,6 +23,7 @@ class TerminalControl2 : KtxGame<KtxScreen>() {
     lateinit var batch: SpriteBatch
     lateinit var engine: Engine
     val assetStorage = AssetStorage()
+    var gameServer: GameServer? = null
 
     /** Overrides [KtxGame.create] to also initiate [KtxAsync], and load assets using [AssetStorage]
      *

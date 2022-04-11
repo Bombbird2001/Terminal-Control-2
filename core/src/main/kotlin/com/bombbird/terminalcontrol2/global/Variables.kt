@@ -14,6 +14,10 @@ object Variables {
     /** Index of background image used in menu screens */
     var BG_INDEX = 0
 
+    /** Server, client TCP/UDP ports */
+    var TCP_PORT = 57773
+    var UDP_PORT = 57779
+
     /** Magnetic heading deviation in the current game - positive for Westward deviation and negative for Eastward deviation */
     var MAG_HDG_DEV = 0f
 }

@@ -16,9 +16,13 @@ import com.bombbird.terminalcontrol2.global.Constants
 import com.bombbird.terminalcontrol2.global.Variables
 import com.bombbird.terminalcontrol2.graphics.ScreenSize
 import com.bombbird.terminalcontrol2.graphics.UIPane
+import com.bombbird.terminalcontrol2.networking.GameServer
 import com.bombbird.terminalcontrol2.systems.RenderingSystem
 import com.bombbird.terminalcontrol2.utilities.MathTools
 import com.bombbird.terminalcontrol2.utilities.safeStage
+import com.esotericsoftware.kryonet.Client
+import com.esotericsoftware.kryonet.Connection
+import com.esotericsoftware.kryonet.Listener
 import ktx.app.KtxScreen
 import ktx.app.clearScreen
 import ktx.assets.disposeSafely
@@ -34,7 +38,7 @@ import kotlin.math.min
  *
  * Implements [GestureListener] and [InputProcessor] to handle input/gesture events to it
  * */
-class RadarScreen: KtxScreen, GestureListener, InputProcessor {
+class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProcessor {
     private val radarDisplayStage = safeStage(Constants.GAME.batch)
     private val uiStage = safeStage(Constants.GAME.batch)
     private val uiPane = UIPane(uiStage)
@@ -53,7 +57,23 @@ class RadarScreen: KtxScreen, GestureListener, InputProcessor {
     // Selected aircraft:
     var selectedAircraft: Aircraft? = null
 
+    // Networking client
+    val client = Client()
+
     init {
+        if (true) Constants.GAME.gameServer = GameServer().apply { initiateServer() } // True if single-player or host of multiplayer, false otherwise
+
+        client.start()
+        client.connect(3000, connectionHost, Variables.TCP_PORT, Variables.UDP_PORT)
+        client.addListener(object: Listener {
+            override fun received(connection: Connection?, `object`: Any?) {
+                // TODO Handle data receipts
+            }
+        })
+        client.kryo.apply {
+            // TODO Register all classes to be transmitted
+        }
+
         // Default zoom is set so that a full 100nm by 100nm square is visible (2500px x 2500px)
         (radarDisplayStage.camera as OrthographicCamera).apply {
             zoom = MathTools.nmToPx(Constants.DEFAULT_ZOOM_NM) / Variables.UI_HEIGHT
@@ -144,11 +164,6 @@ class RadarScreen: KtxScreen, GestureListener, InputProcessor {
 
         runCameraAnimations(delta)
         Constants.ENGINE.update(delta)
-
-        // TODO Draw radar display
-
-        // Constants.GAME.batch.projectionMatrix = uiStage.camera.combined
-        // TODO Draw UI
     }
 
     /** Clears and disposes of [radarDisplayStage], [uiStage] and [shapeRenderer] */
@@ -159,6 +174,9 @@ class RadarScreen: KtxScreen, GestureListener, InputProcessor {
         radarDisplayStage.disposeSafely()
         uiStage.disposeSafely()
         shapeRenderer.disposeSafely()
+
+        client.stop()
+        Constants.GAME.gameServer?.stopServer()
     }
 
     /** Updates various global [Constants] and [Variables] upon a screen resize, to ensure UI will fit to the new screen size

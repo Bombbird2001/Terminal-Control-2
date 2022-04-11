@@ -27,7 +27,7 @@ class GameLoading: BasicUIScreen() {
                                 if (this@apply.percent >= 1) {
                                     Timer.schedule(object: Timer.Task() {
                                         override fun run() {
-                                            Constants.GAME.addScreen(RadarScreen())
+                                            Constants.GAME.addScreen(RadarScreen("127.0.0.1"))
                                             Constants.GAME.setScreen<RadarScreen>()
                                         }
                                     }, 0.35f)
