@@ -31,10 +31,14 @@ object Constants {
     /** List of available airports (can be modified, but don't) */
     val AVAIL_AIRPORTS = GdxArray<String>(arrayOf("TCTP", "TCWS", "TCTT", "TCBB", "TCHH", "TCBD", "TCMD", "TCPG"))
 
-    /** The current game instance, engine (can be modified, but don't) */
+    /** The current game instance (can be modified, but don't), client engine, and server engine (if [TerminalControl2.gameServer] exists, else throws a [RuntimeException] when accessed) */
     lateinit var GAME: TerminalControl2
-    val ENGINE: Engine
+    val CLIENT_ENGINE: Engine
         get() = GAME.engine
+    val SERVER_ENGINE: Engine
+        get() {
+            return GAME.gameServer?.engine ?: throw RuntimeException("Attempted to access a non-existent gameServer's engine")
+        }
 
     /** Server target refresh rates (in Hz) */
     const val SERVER_UPDATE_RATE = 60 // Server game loop

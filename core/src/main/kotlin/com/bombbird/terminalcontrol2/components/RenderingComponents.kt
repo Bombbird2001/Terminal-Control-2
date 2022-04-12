@@ -31,16 +31,20 @@ class GenericLabel(var xOffset: Float = 0f, var yOffset: Float = 0f): Component 
 
 /** Component for additional label positioning info to a runway
  *
- * [positionToRunway] = 0 means before the runway threshold
+ * [positionToRunway] = 0 -> before the runway threshold
  *
- * [positionToRunway] = 1 means to the right of the runway threshold
+ * [positionToRunway] = 1 -> to the right of the runway threshold
  *
- * [positionToRunway] = -1 means to the left of the runway threshold
+ * [positionToRunway] = -1 -> to the left of the runway threshold
  * */
 class RunwayLabel(var positionToRunway: Int = 0): Component {
     var dirUnitVector = ImmutableVector2(0f, 0f)
     var dirSet = false
-    companion object: Mapper<RunwayLabel>()
+    companion object: Mapper<RunwayLabel>() {
+        val BEFORE = 0
+        val RIGHT = 1
+        val LEFT = -1
+    }
 }
 
 /** Component for tagging drawables that should remain the same size regardless of zoom level */

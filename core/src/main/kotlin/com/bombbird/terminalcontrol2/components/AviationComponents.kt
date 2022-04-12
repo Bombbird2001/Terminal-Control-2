@@ -5,13 +5,13 @@ import com.bombbird.terminalcontrol2.entities.Airport
 import ktx.ashley.Mapper
 
 /** Component for tagging airport related information */
-class AirportInfo(var icaoCode: String = "", var name: String = "", val rwys: RunwayChildren = RunwayChildren()): Component {
+class AirportInfo(var arptId: Int = 0, var icaoCode: String = "", var name: String = "", val rwys: RunwayChildren = RunwayChildren()): Component {
     // TODO Add other airport related components
     companion object: Mapper<AirportInfo>()
 }
 
 /** Component for tagging runway related information */
-class RunwayInfo(var rwyName: String = ""): Component {
+class RunwayInfo(var rwyId: Int = 0, var rwyName: String = "", var lengthM: Int = 4000): Component {
     lateinit var airport: Airport
     // TODO Add other runway related components
     companion object: Mapper<RunwayInfo>()
@@ -22,9 +22,16 @@ class MetarInfo(var realLifeIcao: String = "", var rawMetar: String = "", windHe
     companion object: Mapper<MetarInfo>()
 }
 
-/** Component for tagging sector related information */
-class SectorInfo(var sectorId: Int = 0, var frequency: String = "121.5"): Component {
-    companion object: Mapper<SectorInfo>()
+/** Component for tagging sector related information
+ * [sectorId] = -1 -> tower control
+ *
+ * [sectorId] = -2 -> ACC control
+ * */
+class SectorInfo(var sectorId: Int = 0, var controllerName: String = "ChangeYourNameLol", var frequency: String = "121.5"): Component {
+    companion object: Mapper<SectorInfo>() {
+        val TOWER = -1
+        val CENTRE = -2
+    }
 }
 
 /** Component for tagging waypoint related information */
@@ -32,12 +39,7 @@ class WaypointInfo(var wptName: String = "-----"): Component {
     companion object: Mapper<WaypointInfo>()
 }
 
-/** Component for tagging sector control information
- *
- * [sectorId] = -1 means tower control
- *
- * [sectorId] = -2 means ACC control
- * */
+/** Component for tagging sector control information */
 class Controllable(var sectorId: Int = 0): Component {
     companion object: Mapper<Controllable>()
 }
@@ -45,21 +47,32 @@ class Controllable(var sectorId: Int = 0): Component {
 /** Component for tagging aircraft specific information
  * Includes performance determining data - minimum approach speed, rotation speed, engine thrust (at sea level)
  * */
-class AircraftInfo(var icaoCallsign: String = "XYZ123", icaoType: String = "B77W", wakeCat: Char = 'H', recat: Char = 'B', appSpd: Int = 130, vR: Int = 150, weightTons: Float = 209f, thrustKNMax: Int = 1026): Component {
+class AircraftInfo(var icaoCallsign: String = "XYZ123", var icaoType: String = "B77W", var appSpd: Int = 130, var vR: Int = 150, var weightTons: Float = 209f): Component {
+    val wakeCat: Char
+        get() = 'H'
+    val recat: Char
+        get() = 'B'
+    val thrustKNMax: Int
+        get() = 1026
+    // TODO Map aircraft type to its above 3 parameters
     // TODO I love physics
-    companion object: Mapper<AirportInfo>()
+    companion object: Mapper<AircraftInfo>()
 }
 
-class Arrival(): Component {
-    companion object: Mapper<Arrival>()
-}
-
-class Departure(): Component {
-    companion object: Mapper<Departure>()
-}
-
-class EnRoute(): Component {
-    companion object: Mapper<EnRoute>()
+/** Component for tagging aircraft flight type
+ *
+ * [type] = 0 -> Arrival
+ *
+ * [type] = 1 -> Departure
+ *
+ * [type] = 2 -> En-route
+ * */
+class FlightType(var type: Int = 0): Component {
+    companion object: Mapper<FlightType>() {
+        val ARRIVAL = 0
+        val DEPARTURE = 1
+        val EN_ROUTE = 2
+    }
 }
 
 class Emergency(): Component {

@@ -4,15 +4,16 @@ import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
+import com.bombbird.terminalcontrol2.entities.Airport.Runway.SerialisedRunway
 import com.bombbird.terminalcontrol2.global.Constants
 import com.bombbird.terminalcontrol2.utilities.MathTools
 import ktx.ashley.entity
 import ktx.ashley.get
 import ktx.ashley.with
 
-/** Airport class that creates an entity with the required components on instantiation */
-class Airport(icao: String, arptName: String, posX: Float, posY: Float, elevation: Float) {
-    val entity = Constants.ENGINE.entity {
+/** Airport class that creates an airport entity with the required components on instantiation */
+class Airport(id: Int, icao: String, arptName: String, posX: Float, posY: Float, elevation: Float) {
+    val entity = Constants.SERVER_ENGINE.entity {
         with<Position> {
             x = posX
             y = posY
@@ -21,14 +22,54 @@ class Airport(icao: String, arptName: String, posX: Float, posY: Float, elevatio
             altitude = elevation
         }
         with<AirportInfo> {
+            arptId = id
             icaoCode = icao
             name = arptName
         }
+        with<RunwayChildren>()
     }
 
-    /** Creates a runway entity with the required components, and adds it to airport component's runway map */
-    fun addRunway(name: String, posX: Float, posY: Float, trueHdg: Float, runwayLengthM: Int, elevation: Float, labelPos: Int) {
-        entity[AirportInfo.mapper]!!.rwys.rwyMap[name] = Constants.ENGINE.entity {
+    companion object {
+        /** De-serialises a [SerialisedAirport] and creates a new [Airport] object from it */
+        fun fromSerialisedObject(serialisedAirport: SerialisedAirport): Airport {
+            return Airport(
+                serialisedAirport.arptId, serialisedAirport.icaoCode, serialisedAirport.name,
+                serialisedAirport.x, serialisedAirport.y,
+                serialisedAirport.altitude
+            ).also { arpt ->
+                arpt.entity.apply {
+                    get(RunwayChildren.mapper)!!.apply {
+                        rwyMap = HashMap(serialisedAirport.rwys.mapValues { Runway.fromSerialisedObject(arpt, it.value) })
+                    }
+                }
+            }
+        }
+    }
+
+    class SerialisedAirport(val x: Float = 0f, val y: Float = 0f,
+                            val altitude: Float = 0f,
+                            val arptId: Int = -1, val icaoCode: String = "", val name: String = "",
+                            val rwys: Map<Int, SerialisedRunway> = LinkedHashMap())
+
+    /** Gets a [SerialisedAirport] from current state */
+    fun getSerialisableObject(): SerialisedAirport {
+        entity.apply {
+            val position = get(Position.mapper)!!
+            val altitude = get(Altitude.mapper)!!
+            val arptInfo = get(AirportInfo.mapper)!!
+            val rwys = get(RunwayChildren.mapper)!!
+            return SerialisedAirport(
+                position.x, position.y,
+                altitude.altitude,
+                arptInfo.arptId, arptInfo.icaoCode, arptInfo.name,
+                rwys.rwyMap.mapValues { it.value.getSerialisableObject() }
+            )
+        }
+    }
+
+    /** Runway class that creates a runway entity with the required components on instantiation */
+    class Runway(parentAirport: Airport, id: Int, name: String, posX: Float, posY: Float, trueHdg: Float, runwayLengthM: Int, elevation: Float, labelPos: Int) {
+        val entity = Constants.SERVER_ENGINE.entity {
             with<Position> {
                 x = posX
                 y = posY
@@ -43,26 +84,72 @@ class Airport(icao: String, arptName: String, posX: Float, posY: Float, elevatio
                 width = MathTools.mToPx(runwayLengthM)
             }
             with<RunwayInfo> {
+                rwyId = id
                 rwyName = name
-                airport = this@Airport
+                lengthM = runwayLengthM
+                airport = parentAirport
             }
             with<SRColor> {
                 color = Color.WHITE
             }
             with<GenericLabel> {
-                xOffset = 10f
-                yOffset = -10f
                 updateStyle("Runway")
                 updateText(name)
             }
             with<RunwayLabel> {
-                if (labelPos in -1..1) positionToRunway = labelPos
+                if (labelPos in RunwayLabel.LEFT..RunwayLabel.RIGHT) positionToRunway = labelPos
                 else {
                     positionToRunway = 0
                     Gdx.app.log("Runway", "Invalid labelPos $labelPos set, using default value 0")
                 }
             }
             with<ConstantZoomSize>()
+        }
+
+        companion object {
+            /** De-serialises a [SerialisedRunway] and creates a new [Runway] object from it */
+            fun fromSerialisedObject(parentAirport: Airport, serialisedRunway: SerialisedRunway): Runway {
+                return Runway(
+                    parentAirport, serialisedRunway.rwyId, serialisedRunway.rwyName,
+                    serialisedRunway.x, serialisedRunway.y,
+                    serialisedRunway.trueHdg,
+                    serialisedRunway.lengthM,
+                    serialisedRunway.altitude,
+                    serialisedRunway.rwyLabelPos
+                )
+            }
+        }
+
+        class SerialisedRunway(val x: Float = 0f, val y: Float = 0f,
+                               val altitude: Float = 0f,
+                               val trueHdg: Float = 0f,
+                               val rwyId: Int = -1, val rwyName: String = "", val lengthM: Int = 0,
+                               val rwyLabelPos: Int = 0)
+
+        /** Gets a [SerialisedRunway] from current state */
+        fun getSerialisableObject(): SerialisedRunway {
+            entity.apply {
+                val position = get(Position.mapper)!!
+                val altitude = get(Altitude.mapper)!!
+                val direction = get(Direction.mapper)!!
+                val rwyInfo = get(RunwayInfo.mapper)!!
+                val rwyLabel = get(RunwayLabel.mapper)!!
+                return SerialisedRunway(
+                    position.x, position.y,
+                    altitude.altitude,
+                    MathTools.convertWorldAndRenderDeg(direction.dirUnitVector.angleDeg()),
+                    rwyInfo.rwyId, rwyInfo.rwyName, rwyInfo.lengthM,
+                    rwyLabel.positionToRunway
+                )
+            }
+        }
+    }
+
+    /** Creates a runway entity with the required components, and adds it to airport component's runway map */
+    fun addRunway(id: Int, name: String, posX: Float, posY: Float, trueHdg: Float, runwayLengthM: Int, elevation: Float, labelPos: Int) {
+        Runway(this, id, name, posX, posY, trueHdg, runwayLengthM, elevation, labelPos).also { rwy ->
+            entity[AirportInfo.mapper]!!.rwys.rwyMap[id] = rwy
+            entity[RunwayChildren.mapper]!!.rwyMap[id] = rwy
         }
     }
 }

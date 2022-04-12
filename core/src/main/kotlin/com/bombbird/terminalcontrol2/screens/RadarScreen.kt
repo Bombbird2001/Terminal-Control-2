@@ -10,13 +10,16 @@ import com.badlogic.gdx.input.GestureDetector
 import com.badlogic.gdx.input.GestureDetector.GestureListener
 import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.math.Vector2
-import com.bombbird.terminalcontrol2.entities.Airport
+import com.bombbird.terminalcontrol2.components.RunwayChildren
 import com.bombbird.terminalcontrol2.entities.Aircraft
+import com.bombbird.terminalcontrol2.entities.Airport
+import com.bombbird.terminalcontrol2.entities.Sector
 import com.bombbird.terminalcontrol2.global.Constants
 import com.bombbird.terminalcontrol2.global.Variables
 import com.bombbird.terminalcontrol2.graphics.ScreenSize
 import com.bombbird.terminalcontrol2.graphics.UIPane
 import com.bombbird.terminalcontrol2.networking.GameServer
+import com.bombbird.terminalcontrol2.networking.SerialisationRegistering
 import com.bombbird.terminalcontrol2.systems.RenderingSystem
 import com.bombbird.terminalcontrol2.utilities.MathTools
 import com.bombbird.terminalcontrol2.utilities.safeStage
@@ -25,9 +28,11 @@ import com.esotericsoftware.kryonet.Connection
 import com.esotericsoftware.kryonet.Listener
 import ktx.app.KtxScreen
 import ktx.app.clearScreen
+import ktx.ashley.get
 import ktx.assets.disposeSafely
 import ktx.graphics.moveTo
 import ktx.math.ImmutableVector2
+import kotlin.concurrent.thread
 import kotlin.math.min
 
 /** Main class for the display of the in-game radar screen
@@ -63,16 +68,29 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
     init {
         if (true) Constants.GAME.gameServer = GameServer().apply { initiateServer() } // True if single-player or host of multiplayer, false otherwise
 
+        SerialisationRegistering.registerAll(client.kryo)
         client.start()
         client.connect(3000, connectionHost, Variables.TCP_PORT, Variables.UDP_PORT)
         client.addListener(object: Listener {
             override fun received(connection: Connection?, `object`: Any?) {
                 // TODO Handle data receipts
+                println("Received: $`object`")
+                (`object` as? SerialisationRegistering.InitialLoadData)?.apply {
+                    sectors.forEach {
+                        Constants.CLIENT_ENGINE.addEntity(Sector.fromSerialisedObject(it).entity)
+                    }
+                    aircraft.forEach {
+                        Constants.CLIENT_ENGINE.addEntity(Aircraft.fromSerialisedObject(it).entity)
+                    }
+                    airports.forEach {
+                        Airport.fromSerialisedObject(it).entity.apply {
+                            Constants.CLIENT_ENGINE.addEntity(this)
+                            get(RunwayChildren.mapper)!!.rwyMap.values.forEach { rwy -> Constants.CLIENT_ENGINE.addEntity(rwy.entity) }
+                        }
+                    }
+                }
             }
         })
-        client.kryo.apply {
-            // TODO Register all classes to be transmitted
-        }
 
         // Default zoom is set so that a full 100nm by 100nm square is visible (2500px x 2500px)
         (radarDisplayStage.camera as OrthographicCamera).apply {
@@ -85,17 +103,7 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
         }
         uiStage.camera.moveTo(Vector2())
 
-        Constants.ENGINE.addSystem(RenderingSystem(shapeRenderer, radarDisplayStage, uiStage))
-
-        // Add dummy airport, runways
-        val arpt = Airport("TCTP", "Haoyuan", 0f, 0f, 108f)
-        arpt.addRunway("05L", -15f, 5f, 49.08f, 3660, 108f, -1)
-        arpt.addRunway("05R", 10f, -10f, 49.07f, 3800, 108f, 1)
-
-        // Add dummy aircraft
-        Aircraft("SHIBA1", 10f, -10f, 108f).apply {
-            setDeparture()
-        }
+        Constants.CLIENT_ENGINE.addSystem(RenderingSystem(shapeRenderer, radarDisplayStage, uiStage))
     }
 
     /** Ensures [radarDisplayStage]'s camera parameters are within limits, then updates the camera (and [shapeRenderer]) */
@@ -163,10 +171,10 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT or GL20.GL_DEPTH_BUFFER_BIT or if (Gdx.graphics.bufferFormat.coverageSampling) GL20.GL_COVERAGE_BUFFER_BIT_NV else 0)
 
         runCameraAnimations(delta)
-        Constants.ENGINE.update(delta)
+        Constants.CLIENT_ENGINE.update(delta)
     }
 
-    /** Clears and disposes of [radarDisplayStage], [uiStage] and [shapeRenderer] */
+    /** Clears and disposes of [radarDisplayStage], [uiStage], [shapeRenderer], stops the [client] and [GameServer] if present */
     override fun dispose() {
         radarDisplayStage.clear()
         uiStage.clear()
@@ -175,8 +183,10 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
         uiStage.disposeSafely()
         shapeRenderer.disposeSafely()
 
-        client.stop()
-        Constants.GAME.gameServer?.stopServer()
+        thread {
+            client.stop()
+            Constants.GAME.gameServer?.stopServer()
+        }
     }
 
     /** Updates various global [Constants] and [Variables] upon a screen resize, to ensure UI will fit to the new screen size

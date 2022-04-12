@@ -27,19 +27,28 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
         // shapeRenderer.circle(-15f, 5f, 5f)
         // shapeRenderer.circle(10f, -10f, 5f)
 
-        // Sector test
-        shapeRenderer.polygon(floatArrayOf(461f, 983f, 967f, 969f, 1150f, 803f, 1326f, 509f, 1438f, 39f, 1360f, -551f, 1145f, -728f,
-            955f, -861f, 671f, -992f, 365f, -1018f, -86f, -871f, -316f, -1071f, -620f, -1867f, -1856f, -1536f, -1109f, -421f, 461f, 983f))
+        // Render polygons
+        val polygonFamily = allOf(GPolygon::class, SRColor::class).get()
+        for (polygon in Constants.CLIENT_ENGINE.getEntitiesFor(polygonFamily)) {
+            polygon?.apply {
+                val poly = get(GPolygon.mapper) ?: return@apply
+                val srColor = get(SRColor.mapper) ?: return@apply
+                shapeRenderer.color = srColor.color
+                shapeRenderer.polygon(poly.vertices)
+            }
+        }
 
         // Render runways
-        val runwayFamily = allOf(RunwayInfo::class).get()
+        val runwayFamily = allOf(RunwayInfo::class, SRColor::class).get()
         val rwyWidthPx = Constants.RWY_WIDTH_PX_ZOOM_1 + (camZoom - 1) * Constants.RWY_WIDTH_CHANGE_PX_PER_ZOOM
-        for (rwy in Constants.ENGINE.getEntitiesFor(runwayFamily)) {
+        for (rwy in Constants.CLIENT_ENGINE.getEntitiesFor(runwayFamily)) {
             rwy?.apply {
                 val pos = get(Position.mapper) ?: return@apply
                 val rect = get(GRect.mapper) ?: return@apply
                 val deg = get(Direction.mapper) ?: return@apply
+                val srColor = get(SRColor.mapper) ?: return@apply
                 rect.height = rwyWidthPx
+                shapeRenderer.color = srColor.color
                 shapeRenderer.rect(pos.x, pos.y - rect.height / 2, 0f, rect.height / 2, rect.width, rect.height, 1f, 1f, deg.dirUnitVector.angleDeg())
             }
         }
@@ -48,9 +57,9 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
         Constants.GAME.batch.projectionMatrix = stage.camera.combined
         Constants.GAME.batch.begin()
         // Render aircraft
-        val aircraftFamily = allOf(AircraftInfo::class).allOf(Position::class).allOf(RSSprite::class).get()
+        val aircraftFamily = allOf(AircraftInfo::class, Position::class, RSSprite::class).get()
         val blipSize = if (camZoom <= 1) Constants.AIRCRAFT_BLIP_LENGTH_PX_ZOOM_1 * camZoom else Constants.AIRCRAFT_BLIP_LENGTH_PX_ZOOM_1 + (camZoom - 1) * Constants.AIRCRAFT_BLIP_LENGTH_CHANGE_PX_PER_ZOOM
-        for (acft in Constants.ENGINE.getEntitiesFor(aircraftFamily)) {
+        for (acft in Constants.CLIENT_ENGINE.getEntitiesFor(aircraftFamily)) {
             acft?.apply {
                 val rsSprite = get(RSSprite.mapper) ?: return@apply
                 val pos = get(Position.mapper) ?: return@apply
@@ -59,8 +68,8 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
         }
 
         // Update runway labels rendering sizes
-        val rwyLabelFamily = allOf(GenericLabel::class).allOf(RunwayInfo::class).allOf(RunwayLabel::class).get()
-        for (rwy in Constants.ENGINE.getEntitiesFor(rwyLabelFamily)) {
+        val rwyLabelFamily = allOf(GenericLabel::class, RunwayInfo::class, RunwayLabel::class).get()
+        for (rwy in Constants.CLIENT_ENGINE.getEntitiesFor(rwyLabelFamily)) {
             rwy?.apply {
                 val labelInfo = get(GenericLabel.mapper) ?: return@apply
                 val rwyLabel = get(RunwayLabel.mapper) ?: return@apply
@@ -96,7 +105,7 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
         Constants.GAME.batch.projectionMatrix = uiStage.camera.combined
         // Render generic constant size labels
         val constSizeLabelFamily = allOf(GenericLabel::class).allOf(Position::class).allOf(ConstantZoomSize::class).get()
-        for (label in Constants.ENGINE.getEntitiesFor(constSizeLabelFamily)) {
+        for (label in Constants.CLIENT_ENGINE.getEntitiesFor(constSizeLabelFamily)) {
             label.apply {
                 val labelInfo = get(GenericLabel.mapper) ?: return@apply
                 val pos = get(Position.mapper) ?: return@apply

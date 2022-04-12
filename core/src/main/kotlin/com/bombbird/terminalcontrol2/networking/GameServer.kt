@@ -1,11 +1,17 @@
 package com.bombbird.terminalcontrol2.networking
 
-import com.badlogic.ashley.core.Entity
+import com.badlogic.ashley.core.Engine
+import com.bombbird.terminalcontrol2.components.FlightType
+import com.bombbird.terminalcontrol2.components.RunwayLabel
+import com.bombbird.terminalcontrol2.entities.Aircraft
+import com.bombbird.terminalcontrol2.entities.Airport
+import com.bombbird.terminalcontrol2.entities.Sector
 import com.bombbird.terminalcontrol2.global.Constants
 import com.bombbird.terminalcontrol2.global.Variables
 import com.esotericsoftware.kryonet.Connection
 import com.esotericsoftware.kryonet.Listener
 import com.esotericsoftware.kryonet.Server
+import com.esotericsoftware.minlog.Log
 import ktx.collections.GdxArray
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.thread
@@ -20,19 +26,39 @@ class GameServer {
     }
 
     private val loopRunning = AtomicBoolean(false)
-    val server = Server()
+    private val server = Server()
+    val engine = Engine()
 
-    val sectors = GdxArray<Entity>()
-    val aircraft = HashMap<String, Entity>()
-    val airports = HashMap<String, Entity>()
+    val sectors = GdxArray<Sector>()
+    val aircraft = HashMap<String, Aircraft>()
+    val airports = HashMap<String, Airport>()
 
     // var timeCounter = 0f
     // var frames = 0
-    var startTime = -1L
+    private var startTime = -1L
+
+    /** Initialises game world */
+    private fun loadGame() {
+        // Add dummy airport, runways
+        airports["TCTP"] = Airport(0, "TCTP", "Haoyuan", 0f, 0f, 108f).apply {
+            addRunway(0, "05L", -15f, 5f, 49.08f, 3660, 108f, RunwayLabel.LEFT)
+            addRunway(1, "05R", 10f, -10f, 49.07f, 3800, 108f, RunwayLabel.RIGHT)
+        }
+
+        // Add dummy aircraft
+        aircraft["SHIBA1"] = Aircraft("SHIBA1", 10f, -10f, 108f, FlightType.DEPARTURE)
+
+        // Add default 1 player sector
+        sectors.add(
+            Sector(0, "Bombbird", "125.1", floatArrayOf(461f, 983f, 967f, 969f, 1150f, 803f, 1326f, 509f, 1438f, 39f, 1360f, -551f, 1145f, -728f,
+                955f, -861f, 671f, -992f, 365f, -1018f, -86f, -871f, -316f, -1071f, -620f, -1867f, -1856f, -1536f, -1109f, -421f, 461f, 983f))
+        )
+    }
 
     /** Starts the game loop */
     fun initiateServer() {
         thread {
+            loadGame()
             startNetworkingServer()
             startTime = -1L
             loopRunning.set(true)
@@ -48,16 +74,21 @@ class GameServer {
 
     /** Initiates the KryoNet server for networking */
     private fun startNetworkingServer() {
-        server.start()
+        Log.set(Log.LEVEL_DEBUG)
+        SerialisationRegistering.registerAll(server.kryo)
         server.bind(Variables.TCP_PORT, Variables.UDP_PORT)
+        server.start()
         server.addListener(object: Listener {
             override fun received(connection: Connection?, `object`: Any?) {
                 // TODO Handle receive requests
             }
+
+            override fun connected(connection: Connection?) {
+                // TODO Handle connections - send initial data and broadcast message if needed
+                connection?.sendTCP("This is a test message")
+                println(connection?.sendTCP(SerialisationRegistering.InitialLoadData(sectors.map { it.getSerialisableObject() }.toTypedArray(), aircraft.values.map { it.getSerialisableObject() }.toTypedArray(), airports.values.map { it.getSerialisableObject() }.toTypedArray())))
+            }
         })
-        server.kryo.apply {
-            // TODO Register all classes to be transmitted
-        }
     }
 
     /** Closes server and stops its thread */
@@ -82,14 +113,14 @@ class GameServer {
                 val currFastSlot = (currMs - startTime) / (SERVER_TO_CLIENT_UPDATE_INTERVAL_FAST).toLong()
                 if (currFastSlot > fastUpdateSlot) {
                     // Send fast UDP update if this update is after the time slot for the next fast UDP update
-                    sendFastUDP()
+                    sendFastUDPToAll()
                     fastUpdateSlot = currFastSlot
                 }
 
                 val currSlowSlot = (currMs - startTime) / (SERVER_TO_CLIENT_UPDATE_INTERVAL_SLOW).toLong()
                 if (currSlowSlot > slowUpdateSlot) {
                     // Send slow UDP update if this update is after the time slot for the next slow UDP update
-                    sendSlowUDP()
+                    sendSlowUDPToAll()
                     slowUpdateSlot = currSlowSlot
                 }
             }
@@ -115,7 +146,7 @@ class GameServer {
      *
      * (List not exhaustive)
      * */
-    private fun sendFastUDP() {
+    private fun sendFastUDPToAll() {
         // TODO send data
         // println("Fast UDP sent, time passed since program start: ${(System.currentTimeMillis() - startTime) / 1000f}s")
     }
@@ -126,22 +157,24 @@ class GameServer {
      *
      * (List not exhaustive)
      * */
-    private fun sendSlowUDP() {
+    private fun sendSlowUDPToAll() {
         // TODO send data
         // println("Slow UDP sent, time passed since program start: ${(System.currentTimeMillis() - startTime) / 1000f}s")
     }
 
-    /** Send event-updated data
+    /** Send non-frequent, event-updated and/or important data
      *
      * METAR updates
      *
-     * Aircraft deletion
+     * Aircraft creation, deletion
      *
-     * Thunderstorm deletion
+     * Thunderstorm creation, deletion
+     *
+     * Initial data load on client connection (sectors, airports, runway, etc.)
      *
      * (List not exhaustive)
      */
-    private fun sendTCP() {
-
+    private fun sendTCPToAll() {
+        // TODO send data
     }
 }

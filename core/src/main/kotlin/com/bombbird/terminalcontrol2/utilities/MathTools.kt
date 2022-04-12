@@ -43,13 +43,13 @@ object MathTools {
         return pxToNm(px) * NM_TO_M
     }
 
-    /** Converts the in-game world degrees to the degree used by the rendering systems
+    /** Converts between in-game world degrees and degree used by the rendering systems
      *
-     * Input heading: 360 is up, 90 is right, 180 is down and 270 is left
+     * World heading: 360 is up, 90 is right, 180 is down and 270 is left
      *
-     * Output degrees: 90 is up, 0 is right, -90 is down and -180 is left
+     * Render degrees: 90 is up, 0 is right, -90 is down and -180 is left
      * */
-    fun worldDegToRenderDeg(worldDeg: Float): Float {
-        return 90 - worldDeg
+    fun convertWorldAndRenderDeg(origDeg: Float): Float {
+        return 90 - origDeg
     }
 }
