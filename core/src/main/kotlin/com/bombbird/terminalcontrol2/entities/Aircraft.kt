@@ -69,11 +69,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
                         vertSpdFpm = serialisedAircraft.vertSpdFpm
                         angularSpdDps = serialisedAircraft.angularSpdDps
                     }
-                    addComponent<Acceleration>(Constants.CLIENT_ENGINE) {
-                        dSpeed = serialisedAircraft.dSpeed
-                        dVertSpd = serialisedAircraft.dVertSpd
-                        dAngularSpd = serialisedAircraft.dAngularSpd
-                    }
+                    addComponent<Acceleration>(Constants.CLIENT_ENGINE)
                     addComponent<RadarData>(Constants.CLIENT_ENGINE) {
                         position.x = serialisedAircraft.rX
                         position.y = serialisedAircraft.rY
@@ -88,13 +84,70 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
         }
     }
 
-    /** An easily serialisable representation of [Aircraft] */
+    /** Object that contains select [Aircraft] data to be sent over UDP, serialised by Kryo */
+    class SerialisedAircraftUDP(val x: Float = 0f, val y: Float = 0f,
+                                val altitude: Float = 0f,
+                                val icaoCallsign: String = "",
+                                val direction: Vector2 = Vector2(),
+                                val speedKts: Float = 0f, val vertSpdFpm: Float = 0f, val angularSpdDps: Float = 0f,
+                                val rX: Float = 0f, val rY: Float = 0f, val rAlt: Float = 0f, val rDir: Vector2 = Vector2(), val rSpd: Float = 0f, val rVertSpd: Float = 0f, val rAngularSpd: Float = 0f, )
+
+    /** Gets a [SerialisedAircraftUDP] from current state */
+    fun getSerialisableObjectUDP(): SerialisedAircraftUDP {
+        entity.apply {
+            val position = get(Position.mapper)!!
+            val altitude = get(Altitude.mapper)!!
+            val acInfo = get(AircraftInfo.mapper)!!
+            val direction = get(Direction.mapper)!!
+            val speed = get(Speed.mapper)!!
+            val rData = get(RadarData.mapper)!!
+            return SerialisedAircraftUDP(
+                position.x, position.y,
+                altitude.altitude,
+                acInfo.icaoCallsign,
+                direction.dirUnitVector,
+                speed.speedKts, speed.vertSpdFpm, speed.angularSpdDps,
+                rData.position.x, rData.position.y, rData.altitude.altitude, rData.direction.dirUnitVector, rData.speed.speedKts, rData.speed.vertSpdFpm, rData.speed.angularSpdDps,
+            )
+        }
+    }
+
+    /** Updates the data of this aircraft with new UDP data from [SerialisedAircraftUDP] */
+    fun updateFromUDPData(data: SerialisedAircraftUDP) {
+        entity.apply {
+            get(Position.mapper)?.apply {
+                x = data.x
+                y = data.y
+            }
+            get(Altitude.mapper)?.apply {
+                altitude = data.altitude
+            }
+            get(Direction.mapper)?.apply {
+                dirUnitVector = data.direction
+            }
+            get(Speed.mapper)?.apply {
+                speedKts = data.speedKts
+                vertSpdFpm = data.vertSpdFpm
+                angularSpdDps = data.angularSpdDps
+            }
+            get(RadarData.mapper)?.apply {
+                position.x = data.rX
+                position.y = data.rY
+                altitude.altitude = data.rAlt
+                direction.dirUnitVector = data.rDir
+                speed.speedKts = data.rSpd
+                speed.vertSpdFpm = data.rVertSpd
+                speed.angularSpdDps = data.rAngularSpd
+            }
+        }
+    }
+
+    /** Object that contains select [Aircraft] data to be sent over TCP, serialised by Kryo */
     class SerialisedAircraft(val x: Float = 0f, val y: Float = 0f,
                              val altitude: Float = 0f,
                              val icaoCallsign: String = "", val icaoType: String = "", val appSpd: Int = 0, val vR: Int = 0, val weightTons: Float = 0f,
                              val direction: Vector2 = Vector2(),
                              val speedKts: Float = 0f, val vertSpdFpm: Float = 0f, val angularSpdDps: Float = 0f,
-                             val dSpeed: Float = 0f, val dVertSpd: Float = 0f, val dAngularSpd: Float = 0f,
                              val rX: Float = 0f, val rY: Float = 0f, val rAlt: Float = 0f, val rDir: Vector2 = Vector2(), val rSpd: Float = 0f, val rVertSpd: Float = 0f, val rAngularSpd: Float = 0f,
                              val flightType: Int = 0)
 
@@ -106,7 +159,6 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
             val acInfo = get(AircraftInfo.mapper)!!
             val direction = get(Direction.mapper)!!
             val speed = get(Speed.mapper)!!
-            val acceleration = get(Acceleration.mapper)!!
             val rData = get(RadarData.mapper)!!
             val flightType = get(FlightType.mapper)!!
             return SerialisedAircraft(
@@ -115,7 +167,6 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
                 acInfo.icaoCallsign, acInfo.icaoType, acInfo.appSpd, acInfo.vR, acInfo.weightTons,
                 direction.dirUnitVector,
                 speed.speedKts, speed.vertSpdFpm, speed.angularSpdDps,
-                acceleration.dSpeed, acceleration.dVertSpd, acceleration.dAngularSpd,
                 rData.position.x, rData.position.y, rData.altitude.altitude, rData.direction.dirUnitVector, rData.speed.speedKts, rData.speed.vertSpdFpm, rData.speed.angularSpdDps,
                 flightType.type
             )

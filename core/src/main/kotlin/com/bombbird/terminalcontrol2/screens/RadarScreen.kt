@@ -10,7 +10,7 @@ import com.badlogic.gdx.input.GestureDetector
 import com.badlogic.gdx.input.GestureDetector.GestureListener
 import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.math.Vector2
-import com.bombbird.terminalcontrol2.components.RunwayChildren
+import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.Aircraft
 import com.bombbird.terminalcontrol2.entities.Airport
 import com.bombbird.terminalcontrol2.entities.Sector
@@ -20,6 +20,7 @@ import com.bombbird.terminalcontrol2.graphics.ScreenSize
 import com.bombbird.terminalcontrol2.graphics.UIPane
 import com.bombbird.terminalcontrol2.networking.GameServer
 import com.bombbird.terminalcontrol2.networking.SerialisationRegistering
+import com.bombbird.terminalcontrol2.systems.PhysicsSystem
 import com.bombbird.terminalcontrol2.systems.RenderingSystem
 import com.bombbird.terminalcontrol2.utilities.MathTools
 import com.bombbird.terminalcontrol2.utilities.safeStage
@@ -59,6 +60,9 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
     private var targetCenter: Vector2
     private var panRate: ImmutableVector2
 
+    // Aircraft hashmap for access during UDP updates
+    val aircraft = HashMap<String, Aircraft>()
+
     // Selected aircraft:
     var selectedAircraft: Aircraft? = null
 
@@ -75,17 +79,26 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
             override fun received(connection: Connection?, `object`: Any?) {
                 // TODO Handle data receipts
                 println("Received: $`object`")
-                (`object` as? SerialisationRegistering.InitialLoadData)?.apply {
-                    sectors.forEach {
-                        Constants.CLIENT_ENGINE.addEntity(Sector.fromSerialisedObject(it).entity)
-                    }
-                    aircraft.forEach {
-                        Constants.CLIENT_ENGINE.addEntity(Aircraft.fromSerialisedObject(it).entity)
-                    }
-                    airports.forEach {
-                        Airport.fromSerialisedObject(it).entity.apply {
-                            Constants.CLIENT_ENGINE.addEntity(this)
-                            get(RunwayChildren.mapper)!!.rwyMap.values.forEach { rwy -> Constants.CLIENT_ENGINE.addEntity(rwy.entity) }
+                Gdx.app.postRunnable {
+                    (`object` as? SerialisationRegistering.FastUDPData)?.apply {
+                        aircraft.forEach {
+                            this@RadarScreen.aircraft[it.icaoCallsign]?.apply { updateFromUDPData(it) }
+                        }
+                    } ?: (`object` as? SerialisationRegistering.InitialLoadData)?.apply {
+                        sectors.forEach {
+                            Constants.CLIENT_ENGINE.addEntity(Sector.fromSerialisedObject(it).entity)
+                        }
+                        aircraft.forEach {
+                            Aircraft.fromSerialisedObject(it).apply {
+                                Constants.CLIENT_ENGINE.addEntity(entity)
+                                this@RadarScreen.aircraft[entity[AircraftInfo.mapper]!!.icaoCallsign] = this
+                            }
+                        }
+                        airports.forEach {
+                            Airport.fromSerialisedObject(it).entity.apply {
+                                Constants.CLIENT_ENGINE.addEntity(this)
+                                get(RunwayChildren.mapper)!!.rwyMap.values.forEach { rwy -> Constants.CLIENT_ENGINE.addEntity(rwy.entity) }
+                            }
                         }
                     }
                 }
@@ -104,6 +117,7 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
         uiStage.camera.moveTo(Vector2())
 
         Constants.CLIENT_ENGINE.addSystem(RenderingSystem(shapeRenderer, radarDisplayStage, uiStage))
+        Constants.CLIENT_ENGINE.addSystem(PhysicsSystem())
     }
 
     /** Ensures [radarDisplayStage]'s camera parameters are within limits, then updates the camera (and [shapeRenderer]) */

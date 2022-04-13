@@ -46,6 +46,7 @@ class Airport(id: Int, icao: String, arptName: String, posX: Float, posY: Float,
         }
     }
 
+    /** Object that contains [Airport] data to be serialised by Kryo */
     class SerialisedAirport(val x: Float = 0f, val y: Float = 0f,
                             val altitude: Float = 0f,
                             val arptId: Int = -1, val icaoCode: String = "", val name: String = "",
@@ -120,6 +121,7 @@ class Airport(id: Int, icao: String, arptName: String, posX: Float, posY: Float,
             }
         }
 
+        /** Object that contains [Runway] data to be serialised by Kryo */
         class SerialisedRunway(val x: Float = 0f, val y: Float = 0f,
                                val altitude: Float = 0f,
                                val trueHdg: Float = 0f,

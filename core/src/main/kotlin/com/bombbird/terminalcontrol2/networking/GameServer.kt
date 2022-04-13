@@ -1,6 +1,8 @@
 package com.bombbird.terminalcontrol2.networking
 
 import com.badlogic.ashley.core.Engine
+import com.bombbird.terminalcontrol2.components.Acceleration
+import com.bombbird.terminalcontrol2.components.Direction
 import com.bombbird.terminalcontrol2.components.FlightType
 import com.bombbird.terminalcontrol2.components.RunwayLabel
 import com.bombbird.terminalcontrol2.entities.Aircraft
@@ -8,10 +10,12 @@ import com.bombbird.terminalcontrol2.entities.Airport
 import com.bombbird.terminalcontrol2.entities.Sector
 import com.bombbird.terminalcontrol2.global.Constants
 import com.bombbird.terminalcontrol2.global.Variables
+import com.bombbird.terminalcontrol2.systems.PhysicsSystem
 import com.esotericsoftware.kryonet.Connection
 import com.esotericsoftware.kryonet.Listener
 import com.esotericsoftware.kryonet.Server
 import com.esotericsoftware.minlog.Log
+import ktx.ashley.get
 import ktx.collections.GdxArray
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.thread
@@ -46,13 +50,18 @@ class GameServer {
         }
 
         // Add dummy aircraft
-        aircraft["SHIBA1"] = Aircraft("SHIBA1", 10f, -10f, 108f, FlightType.DEPARTURE)
+        aircraft["SHIBA2"] = Aircraft("SHIBA2", 10f, -10f, 108f, FlightType.DEPARTURE).apply {
+            entity[Acceleration.mapper]?.dSpeed = 1.5f // Dummy acceleration
+            entity[Direction.mapper]?.dirUnitVector?.rotateDeg(-49.07f) // Runway 05R heading
+        }
 
         // Add default 1 player sector
         sectors.add(
             Sector(0, "Bombbird", "125.1", floatArrayOf(461f, 983f, 967f, 969f, 1150f, 803f, 1326f, 509f, 1438f, 39f, 1360f, -551f, 1145f, -728f,
                 955f, -861f, 671f, -992f, 365f, -1018f, -86f, -871f, -316f, -1071f, -620f, -1867f, -1856f, -1536f, -1109f, -421f, 461f, 983f))
         )
+
+        Constants.SERVER_ENGINE.addSystem(PhysicsSystem())
     }
 
     /** Starts the game loop */
@@ -135,10 +144,10 @@ class GameServer {
         // frames++
         // println("Delta: $delta Average frame time: ${timeCounter / frames} Average FPS: ${frames / timeCounter}")
 
-        // TODO Game logic update
+        Constants.SERVER_ENGINE.update(delta)
     }
 
-    /** Send frequently updated data
+    /** Send frequently updated data approximately [Constants.SERVER_TO_CLIENT_UPDATE_RATE_FAST] times a second
      *
      * Aircraft position
      *
@@ -149,9 +158,10 @@ class GameServer {
     private fun sendFastUDPToAll() {
         // TODO send data
         // println("Fast UDP sent, time passed since program start: ${(System.currentTimeMillis() - startTime) / 1000f}s")
+        server.sendToAllUDP(SerialisationRegistering.FastUDPData(aircraft.values.map { it.getSerialisableObjectUDP() }.toTypedArray()))
     }
 
-    /** Send not so frequently updated data
+    /** Send not so frequently updated data approximately [Constants.SERVER_TO_CLIENT_UPDATE_RATE_SLOW] times a second
      *
      * Thunderstorm cells
      *

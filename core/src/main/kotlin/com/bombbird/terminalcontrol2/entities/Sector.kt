@@ -35,7 +35,7 @@ class Sector(id: Int, ctrlName: String, freq: String, sectorBoundary: FloatArray
         }
     }
 
-    /** Object that contains data to be serialised by Kryo */
+    /** Object that contains [Sector] data to be serialised by Kryo */
     class SerialisedSector(val sectorId: Int = -3, val controllerName: String = "", val frequency: String = "",
                            val vertices: FloatArray = floatArrayOf()
     )

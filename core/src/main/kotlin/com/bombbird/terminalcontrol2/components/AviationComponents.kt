@@ -2,6 +2,7 @@ package com.bombbird.terminalcontrol2.components
 
 import com.badlogic.ashley.core.Component
 import com.bombbird.terminalcontrol2.entities.Airport
+import com.bombbird.terminalcontrol2.utilities.AircraftTypeData
 import ktx.ashley.Mapper
 
 /** Component for tagging airport related information */
@@ -45,16 +46,22 @@ class Controllable(var sectorId: Int = 0): Component {
 }
 
 /** Component for tagging aircraft specific information
- * Includes performance determining data - minimum approach speed, rotation speed, engine thrust (at sea level)
+ * Includes performance determining data - minimum approach speed, rotation speed, weight, others in [aircraftPerf]
  * */
-class AircraftInfo(var icaoCallsign: String = "XYZ123", var icaoType: String = "B77W", var appSpd: Int = 130, var vR: Int = 150, var weightTons: Float = 209f): Component {
+class AircraftInfo(var icaoCallsign: String = "SHIBA1", var icaoType: String = "B77W", var appSpd: Int = 130, var vR: Int = 150, var weightTons: Float = 209f): Component {
+    val aircraftPerf = AircraftTypeData.getAircraftPerf(icaoType)
     val wakeCat: Char
-        get() = 'H'
+        get() = aircraftPerf.wakeCat
     val recat: Char
-        get() = 'B'
-    val thrustKNMax: Int
-        get() = 1026
-    // TODO Map aircraft type to its above 3 parameters
+        get() = aircraftPerf.recat
+    val thrustKnISA: Int
+        get() = aircraftPerf.thrustKnISA
+    val propPowerISA: Int
+        get() = aircraftPerf.propPowerISA
+    val minCdTimesRefArea: Int
+        get() = aircraftPerf.minCdTimesRefArea
+    val maxCdTimesRefArea: Int
+        get() = aircraftPerf.maxCdTimesRefArea
     // TODO I love physics
     companion object: Mapper<AircraftInfo>()
 }
