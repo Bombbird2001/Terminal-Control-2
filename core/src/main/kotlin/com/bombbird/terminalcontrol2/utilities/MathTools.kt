@@ -62,8 +62,14 @@ object MathTools {
         return pxToNm(mToPx(m))
     }
 
+    /** Convert from metres to feet */
     fun mToFt(m: Float): Float {
         return pxToFt(mToPx(m))
+    }
+
+    /** Convert from feet to metres */
+    fun ftToM(ft: Float): Float {
+        return ft / mToFt(1.0f)
     }
 
     /** Convert from knots to pixels per second */
