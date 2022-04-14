@@ -10,7 +10,7 @@ import ktx.ashley.get
 import ktx.ashley.with
 
 /** Sector class that creates a sector entity with the required components on instantiation */
-class Sector(id: Int, ctrlName: String, freq: String, sectorBoundary: FloatArray) {
+class Sector(id: Byte, ctrlName: String, freq: String, sectorBoundary: ShortArray) {
     val entity = Constants.SERVER_ENGINE.entity {
         with<SectorInfo> {
             sectorId = id
@@ -18,7 +18,7 @@ class Sector(id: Int, ctrlName: String, freq: String, sectorBoundary: FloatArray
             frequency = freq
         }
         with<GPolygon> {
-            vertices = sectorBoundary
+            vertices = sectorBoundary.map { it.toFloat() }.toFloatArray()
         }
         with<SRColor> {
             color = Color.GRAY
@@ -36,8 +36,8 @@ class Sector(id: Int, ctrlName: String, freq: String, sectorBoundary: FloatArray
     }
 
     /** Object that contains [Sector] data to be serialised by Kryo */
-    class SerialisedSector(val sectorId: Int = -3, val controllerName: String = "", val frequency: String = "",
-                           val vertices: FloatArray = floatArrayOf()
+    class SerialisedSector(val sectorId: Byte = -3, val controllerName: String = "", val frequency: String = "",
+                           val vertices: ShortArray = shortArrayOf()
     )
 
     /** Gets a [SerialisedSector] from current state */
@@ -47,7 +47,7 @@ class Sector(id: Int, ctrlName: String, freq: String, sectorBoundary: FloatArray
             val polygon = get(GPolygon.mapper)!!
             return SerialisedSector(
                 sectorInfo.sectorId, sectorInfo.controllerName, sectorInfo.frequency,
-                polygon.vertices
+                polygon.vertices.map { it.toInt().toShort() }.toShortArray()
             )
         }
     }

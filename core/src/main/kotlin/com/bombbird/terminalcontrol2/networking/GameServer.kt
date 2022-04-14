@@ -10,6 +10,7 @@ import com.bombbird.terminalcontrol2.entities.Airport
 import com.bombbird.terminalcontrol2.entities.Sector
 import com.bombbird.terminalcontrol2.global.Constants
 import com.bombbird.terminalcontrol2.global.Variables
+import com.bombbird.terminalcontrol2.systems.LowFreqUpdate
 import com.bombbird.terminalcontrol2.systems.PhysicsSystem
 import com.esotericsoftware.kryonet.Connection
 import com.esotericsoftware.kryonet.Listener
@@ -25,6 +26,7 @@ import kotlin.math.roundToLong
 class GameServer {
     companion object {
         const val UPDATE_INTERVAL = 1000.0 / Constants.SERVER_UPDATE_RATE
+        const val UPDATE_INTERVAL_LOW_FREQ = 1000.0 / Constants.SERVER_UPDATE_RATE_LOW_FREQ
         const val SERVER_TO_CLIENT_UPDATE_INTERVAL_FAST = 1000.0 / Constants.SERVER_TO_CLIENT_UPDATE_RATE_FAST
         const val SERVER_TO_CLIENT_UPDATE_INTERVAL_SLOW = 1000.0 / Constants.SERVER_TO_CLIENT_UPDATE_RATE_SLOW
     }
@@ -57,8 +59,9 @@ class GameServer {
 
         // Add default 1 player sector
         sectors.add(
-            Sector(0, "Bombbird", "125.1", floatArrayOf(461f, 983f, 967f, 969f, 1150f, 803f, 1326f, 509f, 1438f, 39f, 1360f, -551f, 1145f, -728f,
-                955f, -861f, 671f, -992f, 365f, -1018f, -86f, -871f, -316f, -1071f, -620f, -1867f, -1856f, -1536f, -1109f, -421f, 461f, 983f))
+            Sector(0, "Bombbird", "125.1", intArrayOf(461, 983, 967, 969, 1150, 803, 1326, 509, 1438, 39, 1360, -551, 1145, -728,
+                955, -861, 671, -992, 365, -1018, -86, -871, -316, -1071, -620, -1867, -1856, -1536, -1109, -421, 461, 983).map { it.toShort() }.toShortArray()
+            )
         )
 
         Constants.SERVER_ENGINE.addSystem(PhysicsSystem())
@@ -79,6 +82,8 @@ class GameServer {
     /** Stops the game loop and exits server */
     fun stopServer() {
         loopRunning.set(false)
+        engine.removeAllEntities()
+        engine.removeAllSystems()
     }
 
     /** Initiates the KryoNet server for networking */
@@ -95,7 +100,7 @@ class GameServer {
             override fun connected(connection: Connection?) {
                 // TODO Handle connections - send initial data and broadcast message if needed
                 connection?.sendTCP("This is a test message")
-                println(connection?.sendTCP(SerialisationRegistering.InitialLoadData(sectors.map { it.getSerialisableObject() }.toTypedArray(), aircraft.values.map { it.getSerialisableObject() }.toTypedArray(), airports.values.map { it.getSerialisableObject() }.toTypedArray())))
+                connection?.sendTCP(SerialisationRegistering.InitialLoadData(sectors.map { it.getSerialisableObject() }.toTypedArray(), aircraft.values.map { it.getSerialisableObject() }.toTypedArray(), airports.values.map { it.getSerialisableObject() }.toTypedArray()))
             }
         })
     }
@@ -108,6 +113,7 @@ class GameServer {
     /** Main game loop */
     private fun gameLoop() {
         var prevMs = -1L
+        var lowFreqUpdateSlot = -1L
         var fastUpdateSlot = -1L
         var slowUpdateSlot = -1L
         while (loopRunning.get()) {
@@ -118,6 +124,12 @@ class GameServer {
             } else {
                 // Update client with seconds passed since last frame
                 update((currMs - prevMs) / 1000f)
+                val currLowFreqSlot = (currMs - startTime) / (UPDATE_INTERVAL_LOW_FREQ).toLong()
+                if (currLowFreqSlot > lowFreqUpdateSlot) {
+                    // Do low frequency update if this update is after the time slot for the next low frequency update
+                    lowFreqUpdate()
+                    lowFreqUpdateSlot = currLowFreqSlot
+                }
 
                 val currFastSlot = (currMs - startTime) / (SERVER_TO_CLIENT_UPDATE_INTERVAL_FAST).toLong()
                 if (currFastSlot > fastUpdateSlot) {
@@ -145,6 +157,12 @@ class GameServer {
         // println("Delta: $delta Average frame time: ${timeCounter / frames} Average FPS: ${frames / timeCounter}")
 
         Constants.SERVER_ENGINE.update(delta)
+    }
+
+    /** Update function that runs at a lower frequency, [Constants.SERVER_UPDATE_RATE_LOW_FREQ] times a second */
+    private fun lowFreqUpdate() {
+        val systems = engine.systems
+        for (i in 0 until systems.size()) (systems[i] as? LowFreqUpdate)?.lowFreqUpdate()
     }
 
     /** Send frequently updated data approximately [Constants.SERVER_TO_CLIENT_UPDATE_RATE_FAST] times a second

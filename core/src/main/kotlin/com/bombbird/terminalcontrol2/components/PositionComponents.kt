@@ -57,6 +57,18 @@ class RadarData(val position: Position = Position(), val direction: Direction = 
     companion object: Mapper<RadarData>()
 }
 
+/** Component for indicated air speed
+ *
+ * Note: [Speed.speedKts] stores true airspeed
+ *
+ * [ias] is calculated by some complicated equation which I will not put here (see PhysicsSystem for the actual implementation);
+ * technically the appropriate term to use for the purpose of this game is CAS (calibrated air speed), but we will assume
+ * the difference between [ias] and CAS is negligible and use them interchangeably
+ * */
+class IndicatedAirSpeed(val ias: Float = 0f): Component {
+    companion object: Mapper<IndicatedAirSpeed>()
+}
+
 /** Component for tagging entities that get affected by wind velocity */
 class AffectedByWind: Component {
     companion object: Mapper<AffectedByWind>()

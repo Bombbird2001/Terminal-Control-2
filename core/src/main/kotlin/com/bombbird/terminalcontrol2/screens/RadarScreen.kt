@@ -78,7 +78,6 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
         client.addListener(object: Listener {
             override fun received(connection: Connection?, `object`: Any?) {
                 // TODO Handle data receipts
-                println("Received: $`object`")
                 Gdx.app.postRunnable {
                     (`object` as? SerialisationRegistering.FastUDPData)?.apply {
                         aircraft.forEach {
@@ -196,6 +195,9 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
         radarDisplayStage.disposeSafely()
         uiStage.disposeSafely()
         shapeRenderer.disposeSafely()
+
+        Constants.CLIENT_ENGINE.removeAllEntities()
+        Constants.CLIENT_ENGINE.removeAllSystems()
 
         thread {
             client.stop()

@@ -17,7 +17,7 @@ object SerialisationRegistering {
             // Classes to register for generic serialisation
             register(Vector2::class.java)
             register(LinkedHashMap::class.java)
-            register(FloatArray::class.java)
+            register(ShortArray::class.java)
 
             // Initial load classes
             register(InitialLoadData::class.java)

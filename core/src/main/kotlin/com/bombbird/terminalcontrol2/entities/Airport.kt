@@ -12,7 +12,7 @@ import ktx.ashley.get
 import ktx.ashley.with
 
 /** Airport class that creates an airport entity with the required components on instantiation */
-class Airport(id: Int, icao: String, arptName: String, posX: Float, posY: Float, elevation: Float) {
+class Airport(id: Byte, icao: String, arptName: String, posX: Float, posY: Float, elevation: Float) {
     val entity = Constants.SERVER_ENGINE.entity {
         with<Position> {
             x = posX
@@ -49,8 +49,8 @@ class Airport(id: Int, icao: String, arptName: String, posX: Float, posY: Float,
     /** Object that contains [Airport] data to be serialised by Kryo */
     class SerialisedAirport(val x: Float = 0f, val y: Float = 0f,
                             val altitude: Float = 0f,
-                            val arptId: Int = -1, val icaoCode: String = "", val name: String = "",
-                            val rwys: Map<Int, SerialisedRunway> = LinkedHashMap())
+                            val arptId: Byte = -1, val icaoCode: String = "", val name: String = "",
+                            val rwys: Map<Byte, SerialisedRunway> = LinkedHashMap())
 
     /** Gets a [SerialisedAirport] from current state */
     fun getSerialisableObject(): SerialisedAirport {
@@ -69,7 +69,7 @@ class Airport(id: Int, icao: String, arptName: String, posX: Float, posY: Float,
     }
 
     /** Runway class that creates a runway entity with the required components on instantiation */
-    class Runway(parentAirport: Airport, id: Int, name: String, posX: Float, posY: Float, trueHdg: Float, runwayLengthM: Int, elevation: Float, labelPos: Int) {
+    class Runway(parentAirport: Airport, id: Byte, name: String, posX: Float, posY: Float, trueHdg: Float, runwayLengthM: Int, elevation: Float, labelPos: Int) {
         val entity = Constants.SERVER_ENGINE.entity {
             with<Position> {
                 x = posX
@@ -125,7 +125,7 @@ class Airport(id: Int, icao: String, arptName: String, posX: Float, posY: Float,
         class SerialisedRunway(val x: Float = 0f, val y: Float = 0f,
                                val altitude: Float = 0f,
                                val trueHdg: Float = 0f,
-                               val rwyId: Int = -1, val rwyName: String = "", val lengthM: Int = 0,
+                               val rwyId: Byte = -1, val rwyName: String = "", val lengthM: Int = 0,
                                val rwyLabelPos: Int = 0)
 
         /** Gets a [SerialisedRunway] from current state */
@@ -148,7 +148,7 @@ class Airport(id: Int, icao: String, arptName: String, posX: Float, posY: Float,
     }
 
     /** Creates a runway entity with the required components, and adds it to airport component's runway map */
-    fun addRunway(id: Int, name: String, posX: Float, posY: Float, trueHdg: Float, runwayLengthM: Int, elevation: Float, labelPos: Int) {
+    fun addRunway(id: Byte, name: String, posX: Float, posY: Float, trueHdg: Float, runwayLengthM: Int, elevation: Float, labelPos: Int) {
         Runway(this, id, name, posX, posY, trueHdg, runwayLengthM, elevation, labelPos).also { rwy ->
             entity[AirportInfo.mapper]!!.rwys.rwyMap[id] = rwy
             entity[RunwayChildren.mapper]!!.rwyMap[id] = rwy
