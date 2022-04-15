@@ -26,7 +26,7 @@ import kotlin.math.roundToLong
 class GameServer {
     companion object {
         const val UPDATE_INTERVAL = 1000.0 / Constants.SERVER_UPDATE_RATE
-        const val UPDATE_INTERVAL_LOW_FREQ = 1000.0 / Constants.SERVER_UPDATE_RATE_LOW_FREQ
+        const val UPDATE_INTERVAL_LOW_FREQ = 1000.0 / Constants.UPDATE_RATE_LOW_FREQ
         const val SERVER_TO_CLIENT_UPDATE_INTERVAL_FAST = 1000.0 / Constants.SERVER_TO_CLIENT_UPDATE_RATE_FAST
         const val SERVER_TO_CLIENT_UPDATE_INTERVAL_SLOW = 1000.0 / Constants.SERVER_TO_CLIENT_UPDATE_RATE_SLOW
     }
@@ -159,7 +159,7 @@ class GameServer {
         Constants.SERVER_ENGINE.update(delta)
     }
 
-    /** Update function that runs at a lower frequency, [Constants.SERVER_UPDATE_RATE_LOW_FREQ] times a second */
+    /** Update function that runs at a lower frequency, [Constants.UPDATE_RATE_LOW_FREQ] times a second */
     private fun lowFreqUpdate() {
         val systems = engine.systems
         for (i in 0 until systems.size()) (systems[i] as? LowFreqUpdate)?.lowFreqUpdate()

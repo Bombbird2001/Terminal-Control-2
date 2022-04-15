@@ -31,7 +31,7 @@ object PhysicsTools {
     }
 
     /** Calculates the density of air, in kilograms per metre^3, given the [pressurePa] and [temperatureK] */
-    fun calculateDensityWithConditions(pressurePa: Float, temperatureK: Float): Float {
+    fun calculateAirDensity(pressurePa: Float, temperatureK: Float): Float {
         return pressurePa / AIR_GAS_CONSTANT_JPKGPK / temperatureK
     }
 
@@ -39,15 +39,15 @@ object PhysicsTools {
      *
      * [tasKt] must be provided for turboprop/propeller aircraft in order for the max propeller thrust to be calculated
      * */
-    fun calculateMaxThrustAtConditions(aircraftPerfData: AircraftTypeData.AircraftPerfData, altitudeFt: Float, tasKt: Float?): Float {
+    fun calculateMaxThrust(aircraftPerfData: AircraftTypeData.AircraftPerfData, altitudeFt: Float, tasKt: Float?): Float {
         val temp = calculateTempAtAlt(altitudeFt)
         val pressure = calculatePressureAtAlt(altitudeFt)
         val jetThrust = aircraftPerfData.thrustKnSLISA?.let { thrustKnSLISA ->
-            calculateMaxJetThrustAtConditions(thrustKnSLISA, pressure, temp)
+            calculateMaxJetThrust(thrustKnSLISA, pressure, temp)
         } ?: 0f
         val propPowerKwSLISA = aircraftPerfData.propPowerKwSLISA
         val propArea = aircraftPerfData.propArea
-        val propThrust = if (propPowerKwSLISA != null && propArea != null && tasKt != null) calculateMaxPropThrustAtConditions(propPowerKwSLISA, propArea, tasKt, pressure, temp)
+        val propThrust = if (propPowerKwSLISA != null && propArea != null && tasKt != null) calculateMaxPropThrust(propPowerKwSLISA, propArea, tasKt, pressure, temp)
         else 0f
         return jetThrust + propThrust
     }
@@ -55,37 +55,37 @@ object PhysicsTools {
     /** Calculates the maximum jet engine thrust, in newtons, at the specified [pressure] and [temperature],
      * given the max thrust at sea level in ISA conditions ([thrustKnSLISA])
      * */
-    fun calculateMaxJetThrustAtConditions(thrustKnSLISA: Short, pressure: Float, temperature: Float): Float {
+    fun calculateMaxJetThrust(thrustKnSLISA: Short, pressure: Float, temperature: Float): Float {
         return thrustKnSLISA * 1000f * pressure / AIR_PRESSURE_PA_SL_ISA * sqrt(TEMPERATURE_K_SL_ISA / temperature)
     }
 
     /** Calculates the maximum propeller thrust, in newtons, at the specified [tasKt], [pressure] and [temperature],
      * given the max power at sea level in ISA conditions ([propPowerKwSLISA])
      * */
-    fun calculateMaxPropThrustAtConditions(propPowerKwSLISA: Short, propArea: Float, tasKt: Float, pressure: Float, temperature: Float): Float {
-        val density = calculateDensityWithConditions(pressure, temperature)
+    fun calculateMaxPropThrust(propPowerKwSLISA: Short, propArea: Float, tasKt: Float, pressure: Float, temperature: Float): Float {
+        val density = calculateAirDensity(pressure, temperature)
         val tasMps = MathTools.ktToMps(tasKt)
         return sqrt(2 * propArea * density * tasMps * (2 * propArea * density * tasMps * tasMps * tasMps + propPowerKwSLISA * 1000)) - 2 * propArea * density * tasMps * tasMps
     }
 
     /** Calculates the maximum drag, in newtons, of the aircraft given its [AircraftTypeData.AircraftPerfData],
      * at the specified [altitude] and [tasKt] */
-    fun calculateMaxDragAtConditions(aircraftPerfData: AircraftTypeData.AircraftPerfData, altitude: Float, tasKt: Float): Float {
-        return calculateDragAtConditions(aircraftPerfData.maxCdTimesRefArea, calculateDensityWithConditions(
+    fun calculateMaxDrag(aircraftPerfData: AircraftTypeData.AircraftPerfData, altitude: Float, tasKt: Float): Float {
+        return calculateDrag(aircraftPerfData.maxCdTimesRefArea, calculateAirDensity(
             calculatePressureAtAlt(altitude), calculateTempAtAlt(altitude)
         ), tasKt)
     }
 
     /** Calculates the minimum drag, in newtons, of the aircraft given its [AircraftTypeData.AircraftPerfData],
      * at the specified [altitude] and [tasKt] */
-    fun calculateMinDragAtConditions(aircraftPerfData: AircraftTypeData.AircraftPerfData, altitude: Float, tasKt: Float): Float {
-        return calculateDragAtConditions(aircraftPerfData.minCdTimesRefArea, calculateDensityWithConditions(
+    fun calculateMinDrag(aircraftPerfData: AircraftTypeData.AircraftPerfData, altitude: Float, tasKt: Float): Float {
+        return calculateDrag(aircraftPerfData.minCdTimesRefArea, calculateAirDensity(
             calculatePressureAtAlt(altitude), calculateTempAtAlt(altitude)
         ), tasKt)
     }
 
     /** Calculates the drag, in newtons, at the specified [density] and [tasKt] */
-    fun calculateDragAtConditions(cdTimesRefArea: Float, density: Float, tasKt: Float): Float {
+    fun calculateDrag(cdTimesRefArea: Float, density: Float, tasKt: Float): Float {
         val tasMps = MathTools.ktToMps(tasKt)
         return cdTimesRefArea * density * tasMps * tasMps / 2
     }
@@ -93,11 +93,24 @@ object PhysicsTools {
     /** Calculates the IAS, in knots (more correctly the CAS, but we'll assume corrections between IAS and CAS are negligible),
      * from [tasKt] at [altitudeFt]
      * */
-    fun calculateIASFromTASAtConditions(altitudeFt: Float, tasKt: Float): Float {
+    fun calculateIASFromTAS(altitudeFt: Float, tasKt: Float): Float {
         val pressurePa = calculatePressureAtAlt(altitudeFt)
         val tasMps = MathTools.ktToMps(tasKt)
         val tempK = calculateTempAtAlt(altitudeFt)
         val impactPressurePa = pressurePa * ((1 + 0.2f * tasMps * tasMps / AIR_SPECIFIC_HEATS_RATIO / AIR_GAS_CONSTANT_JPKGPK / tempK).pow(3.5f) - 1)
         return MathTools.mpsToKt(SOUND_SPEED_MPS_SL_ISA * sqrt(5 * (impactPressurePa / AIR_PRESSURE_PA_SL_ISA + 1).pow(2f / 7) - 5))
+    }
+
+    /** Calculates the TAS, in knots, from [iasKt] (more correctly the CAS, but we'll assume corrections between IAS
+     * and CAS are negligible) at [altitudeFt]
+     * */
+    fun calculateTASFromIAS(altitudeFt: Float, iasKt: Float): Float {
+        val pressurePa = calculatePressureAtAlt(altitudeFt)
+        val iasMps = MathTools.ktToMps(iasKt)
+        val tempK = calculateTempAtAlt(altitudeFt)
+        // Splitting up expressions to save my sanity
+        val expr1 = (1 + iasMps * iasMps / 5 / SOUND_SPEED_MPS_SL_ISA / SOUND_SPEED_MPS_SL_ISA).pow(3.5f) - 1
+        val expr2 = (1 + AIR_PRESSURE_PA_SL_ISA / pressurePa * expr1).pow(2f / 7) - 1
+        return sqrt(expr2 * 5 * AIR_SPECIFIC_HEATS_RATIO * AIR_GAS_CONSTANT_JPKGPK * tempK)
     }
 }

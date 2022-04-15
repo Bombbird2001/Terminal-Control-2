@@ -65,7 +65,7 @@ class RadarData(val position: Position = Position(), val direction: Direction = 
  * technically the appropriate term to use for the purpose of this game is CAS (calibrated air speed), but we will assume
  * the difference between [ias] and CAS is negligible and use them interchangeably
  * */
-class IndicatedAirSpeed(val ias: Float = 0f): Component {
+class IndicatedAirSpeed(var ias: Float = 0f): Component {
     companion object: Mapper<IndicatedAirSpeed>()
 }
 

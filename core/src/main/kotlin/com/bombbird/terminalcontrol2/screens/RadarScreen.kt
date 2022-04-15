@@ -20,6 +20,7 @@ import com.bombbird.terminalcontrol2.graphics.ScreenSize
 import com.bombbird.terminalcontrol2.graphics.UIPane
 import com.bombbird.terminalcontrol2.networking.GameServer
 import com.bombbird.terminalcontrol2.networking.SerialisationRegistering
+import com.bombbird.terminalcontrol2.systems.LowFreqUpdate
 import com.bombbird.terminalcontrol2.systems.PhysicsSystem
 import com.bombbird.terminalcontrol2.systems.RenderingSystem
 import com.bombbird.terminalcontrol2.utilities.MathTools
@@ -68,6 +69,9 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
 
     // Networking client
     val client = Client()
+
+    // Slow update timer
+    var slowUpdateTimer = 1f
 
     init {
         if (true) Constants.GAME.gameServer = GameServer().apply { initiateServer() } // True if single-player or host of multiplayer, false otherwise
@@ -185,6 +189,13 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
 
         runCameraAnimations(delta)
         Constants.CLIENT_ENGINE.update(delta)
+
+        slowUpdateTimer += delta
+        if (slowUpdateTimer > 1f / Constants.UPDATE_RATE_LOW_FREQ) {
+            val systems = Constants.CLIENT_ENGINE.systems
+            for (i in 0 until systems.size()) (systems[i] as? LowFreqUpdate)?.lowFreqUpdate()
+            slowUpdateTimer -= 1f
+        }
     }
 
     /** Clears and disposes of [radarDisplayStage], [uiStage], [shapeRenderer], stops the [client] and [GameServer] if present */

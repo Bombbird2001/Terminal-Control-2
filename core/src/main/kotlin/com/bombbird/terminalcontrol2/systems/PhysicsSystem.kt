@@ -1,12 +1,10 @@
 package com.bombbird.terminalcontrol2.systems
 
 import com.badlogic.ashley.core.EntitySystem
-import com.bombbird.terminalcontrol2.components.Acceleration
-import com.bombbird.terminalcontrol2.components.Direction
-import com.bombbird.terminalcontrol2.components.Position
-import com.bombbird.terminalcontrol2.components.Speed
+import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.Constants
 import com.bombbird.terminalcontrol2.utilities.MathTools
+import com.bombbird.terminalcontrol2.utilities.PhysicsTools
 import ktx.ashley.allOf
 import ktx.ashley.get
 import ktx.math.times
@@ -57,5 +55,15 @@ class PhysicsSystem: EntitySystem(), LowFreqUpdate {
      * */
     override fun lowFreqUpdate() {
         println("Low freq updated")
+        val tasToIasFamily = allOf(Speed::class, IndicatedAirSpeed::class, Altitude::class).get()
+        val tasToIas = Constants.SERVER_ENGINE.getEntitiesFor(tasToIasFamily)
+        for (i in 0 until tasToIas.size()) {
+            tasToIas[i]?.apply {
+                val spd = get(Speed.mapper) ?: return@apply
+                val ias = get(IndicatedAirSpeed.mapper) ?: return@apply
+                val alt = get(Altitude.mapper) ?: return@apply
+                ias.ias = PhysicsTools.calculateIASFromTAS(alt.altitude, spd.speedKts)
+            }
+        }
     }
 }
