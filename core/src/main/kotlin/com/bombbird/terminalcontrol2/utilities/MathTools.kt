@@ -82,8 +82,13 @@ object MathTools {
     }
 
     /** Convert from metres per second to knots */
-    fun mpsToKt(ms: Float): Float {
-        return mToNm(ms * 3600)
+    fun mpsToKt(mps: Float): Float {
+        return mToNm(mps * 3600)
+    }
+
+    /** Convert from knots to metres per second */
+    fun ktToMps(kt: Float): Float {
+        return kt / mpsToKt(1f)
     }
 
     /** Convert from metres per second to feet per minute */

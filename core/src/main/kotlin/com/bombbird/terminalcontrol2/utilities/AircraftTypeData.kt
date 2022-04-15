@@ -20,17 +20,19 @@ object AircraftTypeData {
      *
      * [recat]: ICAO recat wake category: F, E, D, C, B, A
      *
-     * [thrustKnSLISA]: For turboprop/jet planes only: Max total thrust produced by the jet engines at sea level under ISA conditions
+     * [thrustKnSLISA]: For turboprop/jet planes only: Max total thrust, in kilo-newtons, produced by the jet engines at sea level under ISA conditions
      *
-     * [propPowerSLISA]: For turboprop/propeller planes only: Max total power produced by the propeller engines at sea level under ISA conditions
+     * [propPowerKwSLISA]: For turboprop/propeller planes only: Max total power, in kilowatts, produced by the propeller engines at sea level under ISA conditions
      *
      * [propArea]: For turboprop/propeller planes only: Total propeller blade area
      *
-     * [minCdTimesRefArea]: The lowest possible value of the product of the drag coefficient and reference area in the drag equation
+     * [minCdTimesRefArea]: The lowest possible value of the product of the drag coefficient and reference area in the
+     * drag equation; will be used for most calculations
      *
-     * [maxCdTimesRefArea]: The highest possible value of the product of the drag coefficient and reference area in the drag equation
+     * [maxCdTimesRefArea]: The highest possible value of the product of the drag coefficient and reference area in the
+     * drag equation; used only when expediting descent or on approach
      * */
     class AircraftPerfData(val wakeCat: Char = 'H', val recat: Char = 'B',
-                           val thrustKnSLISA: Short? = 240, val propPowerSLISA: Short? = null, val propArea: Float? = null,
-                           val minCdTimesRefArea: Int = 0, val maxCdTimesRefArea: Int = 0)
+                           val thrustKnSLISA: Short? = 240, val propPowerKwSLISA: Short? = null, val propArea: Float? = null,
+                           val minCdTimesRefArea: Float = 0.01f, val maxCdTimesRefArea: Float = 0.1f)
 }

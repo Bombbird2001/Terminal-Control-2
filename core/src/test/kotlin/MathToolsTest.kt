@@ -7,12 +7,13 @@ object MathToolsTest {
     @Test
     @DisplayName("Unit conversions")
     fun checkUnitConversion() {
-        // Delta will be set at 1x10^(-decimal place of 5th significant figure)
-        assertEquals(0.0005399568f, MathTools.mToNm(1.0f), 0.00000001f)
-        assertEquals(3.280840f, MathTools.mToFt(1.0f), 0.0001f)
-        assertEquals(0.3048f, MathTools.ftToM(1.0f), 0.00001f)
-        assertEquals(1.943844f, MathTools.mpsToKt(1.0f), 0.0001f)
-        assertEquals(196.8504f, MathTools.mpsToFpm(1.0f), 0.01f)
+        // Delta set at 5th significant figure
+        assertEquals(0.0005399568f, MathTools.mToNm(1f), 0.00000001f)
+        assertEquals(3.280840f, MathTools.mToFt(1f), 0.0001f)
+        assertEquals(0.3048f, MathTools.ftToM(1f), 0.00001f)
+        assertEquals(1.943844f, MathTools.mpsToKt(1f), 0.0001f)
+        assertEquals(0.514444f, MathTools.ktToMps(1f), 0.00001f)
+        assertEquals(196.8504f, MathTools.mpsToFpm(1f), 0.01f)
     }
 
     @Test
