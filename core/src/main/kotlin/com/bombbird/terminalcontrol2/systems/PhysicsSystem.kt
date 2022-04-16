@@ -54,7 +54,6 @@ class PhysicsSystem: EntitySystem(), LowFreqUpdate {
      * Values that require constant updating or relies on deltaTime should be put in the main [update] function
      * */
     override fun lowFreqUpdate() {
-        println("Low freq updated")
         val tasToIasFamily = allOf(Speed::class, IndicatedAirSpeed::class, Altitude::class).get()
         val tasToIas = Constants.SERVER_ENGINE.getEntitiesFor(tasToIasFamily)
         for (i in 0 until tasToIas.size()) {

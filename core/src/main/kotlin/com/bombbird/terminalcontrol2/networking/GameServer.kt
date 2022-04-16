@@ -17,7 +17,6 @@ import com.bombbird.terminalcontrol2.utilities.MetarTools
 import com.esotericsoftware.kryonet.Connection
 import com.esotericsoftware.kryonet.Listener
 import com.esotericsoftware.kryonet.Server
-import com.esotericsoftware.minlog.Log
 import ktx.ashley.get
 import ktx.collections.GdxArray
 import java.util.concurrent.atomic.AtomicBoolean
@@ -79,7 +78,7 @@ class GameServer {
 
         Constants.SERVER_ENGINE.addSystem(PhysicsSystem())
 
-        MetarTools.requestAllMetar(airports)
+        MetarTools.requestAllMetar()
     }
 
     /** Starts the game loop */
@@ -103,7 +102,7 @@ class GameServer {
 
     /** Initiates the KryoNet server for networking */
     private fun startNetworkingServer() {
-        Log.set(Log.LEVEL_DEBUG)
+        // Log.set(Log.LEVEL_DEBUG)
         SerialisationRegistering.registerAll(server.kryo)
         server.bind(Variables.TCP_PORT, Variables.UDP_PORT)
         server.start()
