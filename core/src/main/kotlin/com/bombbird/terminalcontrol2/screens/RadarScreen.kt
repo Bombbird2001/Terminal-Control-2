@@ -14,6 +14,7 @@ import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.Aircraft
 import com.bombbird.terminalcontrol2.entities.Airport
 import com.bombbird.terminalcontrol2.entities.Sector
+import com.bombbird.terminalcontrol2.entities.Waypoint
 import com.bombbird.terminalcontrol2.global.Constants
 import com.bombbird.terminalcontrol2.global.Variables
 import com.bombbird.terminalcontrol2.graphics.ScreenSize
@@ -89,19 +90,18 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
                         }
                     } ?: (`object` as? SerialisationRegistering.InitialLoadData)?.apply {
                         sectors.forEach {
-                            Constants.CLIENT_ENGINE.addEntity(Sector.fromSerialisedObject(it).entity)
+                            Sector.fromSerialisedObject(it)
                         }
                         aircraft.forEach {
                             Aircraft.fromSerialisedObject(it).apply {
-                                Constants.CLIENT_ENGINE.addEntity(entity)
                                 this@RadarScreen.aircraft[entity[AircraftInfo.mapper]!!.icaoCallsign] = this
                             }
                         }
                         airports.forEach {
-                            Airport.fromSerialisedObject(it).entity.apply {
-                                Constants.CLIENT_ENGINE.addEntity(this)
-                                get(RunwayChildren.mapper)!!.rwyMap.values.forEach { rwy -> Constants.CLIENT_ENGINE.addEntity(rwy.entity) }
-                            }
+                            Airport.fromSerialisedObject(it)
+                        }
+                        waypoints.forEach {
+                            Waypoint.fromSerialisedObject(it)
                         }
                     }
                 }

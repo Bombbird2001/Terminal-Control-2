@@ -12,7 +12,7 @@ class AirportInfo(var arptId: Byte = 0, var icaoCode: String = "", var name: Str
 }
 
 /** Component for tagging runway related information */
-class RunwayInfo(var rwyId: Byte = 0, var rwyName: String = "", var lengthM: Int = 4000): Component {
+class RunwayInfo(var rwyId: Byte = 0, var rwyName: String = "", var lengthM: Short = 4000): Component {
     lateinit var airport: Airport
     // TODO Add other runway related components
     companion object: Mapper<RunwayInfo>()
@@ -50,7 +50,6 @@ class Controllable(var sectorId: Byte = 0): Component {
  * */
 class AircraftInfo(var icaoCallsign: String = "SHIBA1", var icaoType: String = "B77W", var appSpd: Short = 130, var vR: Short = 150, var weightTons: Float = 209f): Component {
     val aircraftPerf = AircraftTypeData.getAircraftPerf(icaoType)
-    // TODO I love physics
     companion object: Mapper<AircraftInfo>()
 }
 

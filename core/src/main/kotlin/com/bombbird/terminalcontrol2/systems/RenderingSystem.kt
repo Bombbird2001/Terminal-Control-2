@@ -7,7 +7,9 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import com.badlogic.gdx.scenes.scene2d.Stage
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.Constants
+import com.bombbird.terminalcontrol2.utilities.MathTools.byte
 import ktx.ashley.allOf
+import ktx.ashley.exclude
 import ktx.ashley.get
 import ktx.math.ImmutableVector2
 import kotlin.math.sqrt
@@ -36,6 +38,19 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
                 val srColor = get(SRColor.mapper) ?: return@apply
                 shapeRenderer.color = srColor.color
                 shapeRenderer.polygon(poly.vertices)
+            }
+        }
+
+        // Render circles
+        val circleFamily = allOf(Position::class, GCircle::class, SRColor::class).get()
+        val circles = Constants.CLIENT_ENGINE.getEntitiesFor(circleFamily)
+        for (i in 0 until circles.size()) {
+            circles[i]?.apply {
+                val pos = get(Position.mapper) ?: return@apply
+                val circle = get(GCircle.mapper) ?: return@apply
+                val srColor = get(SRColor.mapper) ?: return@apply
+                shapeRenderer.color = srColor.color
+                shapeRenderer.circle(pos.x, pos.y, circle.radius)
             }
         }
 
@@ -70,7 +85,7 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
             }
         }
 
-        // Update runway labels rendering sizes
+        // Update runway labels rendering size, position
         val rwyLabelFamily = allOf(GenericLabel::class, RunwayInfo::class, RunwayLabel::class).get()
         val rwyLabels = Constants.CLIENT_ENGINE.getEntitiesFor(rwyLabelFamily)
         for (i in 0 until rwyLabels.size()) {
@@ -80,20 +95,20 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
                 val direction = get(Direction.mapper) ?: return@apply
                 labelInfo.label.apply {
                     rwyLabel.apply {
-                        val spacingFromCentre = sqrt(prefWidth * prefWidth + prefHeight * prefHeight) / 2 + 3 / camZoom + if (positionToRunway == 0) 0f else rwyWidthPx / 2
+                        val spacingFromCentre = sqrt(prefWidth * prefWidth + prefHeight * prefHeight) / 2 + 3 / camZoom + if (positionToRunway == 0.byte) 0f else rwyWidthPx / 2
                         if (!dirSet) {
                             dirUnitVector = ImmutableVector2(direction.dirUnitVector.x, direction.dirUnitVector.y)
                             when (positionToRunway) {
-                                1 -> {
+                                1.byte -> {
                                     dirUnitVector = dirUnitVector.withRotation90(-1)
                                 }
-                                -1 -> {
+                                (-1).byte -> {
                                     dirUnitVector = dirUnitVector.withRotation90(1)
                                 }
                                 else -> {
                                     dirUnitVector = dirUnitVector.withRotation90(0)
                                     dirUnitVector = dirUnitVector.withRotation90(0)
-                                    if (positionToRunway != 0) Gdx.app.log("Render runway label", "Invalid positionToRunway $positionToRunway set, using default value 0")
+                                    if (positionToRunway != 0.byte) Gdx.app.log("Render runway label", "Invalid positionToRunway $positionToRunway set, using default value 0")
                                 }
                             }
                             dirSet = true
@@ -106,9 +121,23 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
             }
         }
 
+        // Render generic labels (non-constant size)
+        val labelFamily = allOf(GenericLabel::class, Position::class).exclude(ConstantZoomSize::class).get()
+        val labels = Constants.CLIENT_ENGINE.getEntitiesFor(labelFamily)
+        for (i in 0 until labels.size()) {
+            labels[i]?.apply {
+                val labelInfo = get(GenericLabel.mapper) ?: return@apply
+                val pos = get(Position.mapper) ?: return@apply
+                labelInfo.label.apply {
+                    setPosition(pos.x + labelInfo.xOffset, pos.y + labelInfo.yOffset)
+                    draw(Constants.GAME.batch, 1f)
+                }
+            }
+        }
+
         Constants.GAME.batch.projectionMatrix = uiStage.camera.combined
         // Render generic constant size labels
-        val constSizeLabelFamily = allOf(GenericLabel::class).allOf(Position::class).allOf(ConstantZoomSize::class).get()
+        val constSizeLabelFamily = allOf(GenericLabel::class, Position::class, ConstantZoomSize::class).get()
         val constLabels = Constants.CLIENT_ENGINE.getEntitiesFor(constSizeLabelFamily)
         for (i in 0 until constLabels.size()) {
             constLabels[i].apply {

@@ -37,13 +37,13 @@ class GenericLabel(var xOffset: Float = 0f, var yOffset: Float = 0f): Component 
  *
  * [positionToRunway] = -1 -> to the left of the runway threshold
  * */
-class RunwayLabel(var positionToRunway: Int = 0): Component {
+class RunwayLabel(var positionToRunway: Byte = 0): Component {
     var dirUnitVector = ImmutableVector2(0f, 0f)
     var dirSet = false
     companion object: Mapper<RunwayLabel>() {
-        val BEFORE = 0
-        val RIGHT = 1
-        val LEFT = -1
+        val BEFORE: Byte = 0
+        val RIGHT: Byte = 1
+        val LEFT: Byte = -1
     }
 }
 
@@ -55,4 +55,11 @@ class ConstantZoomSize: Component {
 /** Component for shapeRenderer rendering colour */
 class SRColor(var color: Color = Color()): Component {
     companion object: Mapper<SRColor>()
+}
+
+/** Component for tagging labels that do not need to be shown
+ * (by default, all [GenericLabel]s are rendered)
+ * */
+class HideLabel: Component {
+    companion object: Mapper<HideLabel>()
 }

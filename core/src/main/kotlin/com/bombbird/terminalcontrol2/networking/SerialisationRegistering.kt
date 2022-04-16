@@ -6,6 +6,7 @@ import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.Aircraft
 import com.bombbird.terminalcontrol2.entities.Airport
 import com.bombbird.terminalcontrol2.entities.Sector
+import com.bombbird.terminalcontrol2.entities.Waypoint
 import com.esotericsoftware.kryo.Kryo
 
 /** Object that handles the registering of classes to be serialised and sent over the network using Kryonet */
@@ -28,6 +29,8 @@ object SerialisationRegistering {
             register(Airport.SerialisedAirport::class.java)
             register(Array<Airport.SerialisedAirport>::class.java)
             register(Airport.Runway.SerialisedRunway::class.java)
+            register(Array<Waypoint.SerialisedWaypoint>::class.java)
+            register(Waypoint.SerialisedWaypoint::class.java)
 
             // Fast update UDP classes
             register(FastUDPData::class.java)
@@ -40,7 +43,9 @@ object SerialisationRegistering {
     /** Class representing the data sent on initial connection, loading of the game on a client */
     class InitialLoadData(var sectors: Array<Sector.SerialisedSector> = arrayOf(),
                           var aircraft: Array<Aircraft.SerialisedAircraft> = arrayOf(),
-                          var airports: Array<Airport.SerialisedAirport> = arrayOf())
+                          var airports: Array<Airport.SerialisedAirport> = arrayOf(),
+                          var waypoints: Array<Waypoint.SerialisedWaypoint> = arrayOf()
+    )
 
     /** Class representing data sent on fast UDP updates (i.e. 20 times per second) */
     class FastUDPData(var aircraft: Array<Aircraft.SerialisedAircraftUDP> = arrayOf())

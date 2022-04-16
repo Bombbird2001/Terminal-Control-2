@@ -8,10 +8,12 @@ import com.bombbird.terminalcontrol2.components.RunwayLabel
 import com.bombbird.terminalcontrol2.entities.Aircraft
 import com.bombbird.terminalcontrol2.entities.Airport
 import com.bombbird.terminalcontrol2.entities.Sector
+import com.bombbird.terminalcontrol2.entities.Waypoint
 import com.bombbird.terminalcontrol2.global.Constants
 import com.bombbird.terminalcontrol2.global.Variables
 import com.bombbird.terminalcontrol2.systems.LowFreqUpdate
 import com.bombbird.terminalcontrol2.systems.PhysicsSystem
+import com.bombbird.terminalcontrol2.utilities.MetarTools
 import com.esotericsoftware.kryonet.Connection
 import com.esotericsoftware.kryonet.Listener
 import com.esotericsoftware.kryonet.Server
@@ -32,12 +34,15 @@ class GameServer {
     }
 
     private val loopRunning = AtomicBoolean(false)
+    val gameRunning: Boolean
+        get() = loopRunning.get()
     private val server = Server()
     val engine = Engine()
 
     val sectors = GdxArray<Sector>()
     val aircraft = HashMap<String, Aircraft>()
     val airports = HashMap<String, Airport>()
+    val waypoints = HashMap<String, Waypoint>()
 
     // var timeCounter = 0f
     // var frames = 0
@@ -46,25 +51,35 @@ class GameServer {
     /** Initialises game world */
     private fun loadGame() {
         // Add dummy airport, runways
-        airports["TCTP"] = Airport(0, "TCTP", "Haoyuan", 0f, 0f, 108f).apply {
+        airports["TCTP"] = Airport(0, "TCTP", "Haoyuan", 0f, 0f, 108f, false).apply {
             addRunway(0, "05L", -15f, 5f, 49.08f, 3660, 108f, RunwayLabel.LEFT)
             addRunway(1, "05R", 10f, -10f, 49.07f, 3800, 108f, RunwayLabel.RIGHT)
+            setMetarRealLifeIcao("RCTP")
+        }
+        airports["TCSS"] = Airport(1, "TCSS", "Rongshan", 200f, 50f, 18f, false).apply {
+            addRunway(0, "10", 190f, 48f, 92.22f, 2605, 18f, RunwayLabel.BEFORE)
+            setMetarRealLifeIcao("RCSS")
         }
 
         // Add dummy aircraft
-        aircraft["SHIBA2"] = Aircraft("SHIBA2", 10f, -10f, 108f, FlightType.DEPARTURE).apply {
+        aircraft["SHIBA2"] = Aircraft("SHIBA2", 10f, -10f, 108f, FlightType.DEPARTURE, false).apply {
             entity[Acceleration.mapper]?.dSpeed = 1.5f // Dummy acceleration
             entity[Direction.mapper]?.dirUnitVector?.rotateDeg(-49.07f) // Runway 05R heading
         }
 
+        // Add dummy waypoints
+        waypoints["JAMMY"] = Waypoint("JAMMY", -200, -200, false)
+
         // Add default 1 player sector
         sectors.add(
             Sector(0, "Bombbird", "125.1", intArrayOf(461, 983, 967, 969, 1150, 803, 1326, 509, 1438, 39, 1360, -551, 1145, -728,
-                955, -861, 671, -992, 365, -1018, -86, -871, -316, -1071, -620, -1867, -1856, -1536, -1109, -421, 461, 983).map { it.toShort() }.toShortArray()
+                955, -861, 671, -992, 365, -1018, -86, -871, -316, -1071, -620, -1867, -1856, -1536, -1109, -421, 461, 983).map { it.toShort() }.toShortArray(), false
             )
         )
 
         Constants.SERVER_ENGINE.addSystem(PhysicsSystem())
+
+        MetarTools.requestAllMetar(airports)
     }
 
     /** Starts the game loop */
@@ -100,7 +115,12 @@ class GameServer {
             override fun connected(connection: Connection?) {
                 // TODO Handle connections - send initial data and broadcast message if needed
                 connection?.sendTCP("This is a test message")
-                connection?.sendTCP(SerialisationRegistering.InitialLoadData(sectors.map { it.getSerialisableObject() }.toTypedArray(), aircraft.values.map { it.getSerialisableObject() }.toTypedArray(), airports.values.map { it.getSerialisableObject() }.toTypedArray()))
+                connection?.sendTCP(SerialisationRegistering.InitialLoadData(
+                    sectors.map { it.getSerialisableObject() }.toTypedArray(),
+                    aircraft.values.map { it.getSerialisableObject() }.toTypedArray(),
+                    airports.values.map { it.getSerialisableObject() }.toTypedArray(),
+                    waypoints.values.map { it.getSerialisableObject() }.toTypedArray()
+                ))
             }
         })
     }
@@ -156,7 +176,8 @@ class GameServer {
         // frames++
         // println("Delta: $delta Average frame time: ${timeCounter / frames} Average FPS: ${frames / timeCounter}")
 
-        Constants.SERVER_ENGINE.update(delta)
+        engine.update(delta)
+        // println(engine.entities.size())
     }
 
     /** Update function that runs at a lower frequency, [Constants.UPDATE_RATE_LOW_FREQ] times a second */

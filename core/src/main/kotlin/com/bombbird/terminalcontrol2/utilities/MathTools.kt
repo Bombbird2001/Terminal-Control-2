@@ -2,6 +2,10 @@ package com.bombbird.terminalcontrol2.utilities
 
 /** Game specific math tools for use */
 object MathTools {
+    /** Convenience [Int] to [Byte] getter */
+    inline val Int.byte
+        get() = this.toByte()
+
     /** Unit conversions */
     const val NM_TO_PX = 25f
     private const val NM_TO_FT = 6076.12f

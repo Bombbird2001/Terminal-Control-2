@@ -10,8 +10,8 @@ import ktx.ashley.with
 import ktx.scene2d.Scene2DSkin
 
 /** Aircraft class that creates an aircraft entity with the required components on instantiation */
-class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightType: Byte) {
-    val entity = Constants.SERVER_ENGINE.entity {
+class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightType: Byte, onClient: Boolean = true) {
+    val entity = (if (onClient) Constants.CLIENT_ENGINE else Constants.SERVER_ENGINE).entity {
         with<Position> {
             x = posX
             y = posY
