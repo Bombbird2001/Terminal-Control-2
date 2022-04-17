@@ -19,7 +19,7 @@ class RunwayInfo(var rwyId: Byte = 0, var rwyName: String = "", var lengthM: Sho
 }
 
 /** Component for tagging airport METAR information */
-class MetarInfo(var realLifeIcao: String = "", var rawMetar: String = "", windHeading: Short = 360, windSpeedKts: Short = 0, windGustKts: Short = 0, visibility: Short = 10000, ceilingAGL: Short = 32000, windshear: String = ""): Component {
+class MetarInfo(var realLifeIcao: String = "", var letterCode: Char? = null, var rawMetar: String? = null, var windHeadingDeg: Short = 360, var windSpeedKt: Short = 0, var windGustKt: Short = 0, var visibilityM: Short = 10000, var ceilingHundredFtAGL: Short? = null, var windshear: String = ""): Component {
     companion object: Mapper<MetarInfo>()
 }
 

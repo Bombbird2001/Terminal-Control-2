@@ -10,6 +10,7 @@ import com.bombbird.terminalcontrol2.networking.GameServer
 import com.bombbird.terminalcontrol2.screens.GameLoading
 import com.bombbird.terminalcontrol2.screens.MainMenu
 import com.bombbird.terminalcontrol2.screens.NewGame
+import com.bombbird.terminalcontrol2.screens.RadarScreen
 import kotlinx.coroutines.launch
 import ktx.app.KtxGame
 import ktx.app.KtxScreen
@@ -24,6 +25,7 @@ class TerminalControl2 : KtxGame<KtxScreen>() {
     lateinit var engine: Engine
     val assetStorage = AssetStorage()
     var gameServer: GameServer? = null
+    var gameClientScreen: RadarScreen? = null
 
     /** Overrides [KtxGame.create] to also initiate [KtxAsync], and load assets using [AssetStorage]
      *

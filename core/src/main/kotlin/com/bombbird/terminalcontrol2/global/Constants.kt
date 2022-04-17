@@ -2,6 +2,7 @@ package com.bombbird.terminalcontrol2.global
 
 import com.badlogic.ashley.core.Engine
 import com.bombbird.terminalcontrol2.TerminalControl2
+import com.bombbird.terminalcontrol2.screens.RadarScreen
 import ktx.collections.GdxArray
 
 /** Global constants for use, cannot/should not be modified */
@@ -39,6 +40,8 @@ object Constants {
         get() {
             return GAME.gameServer?.engine ?: throw RuntimeException("Attempted to access a non-existent gameServer's engine")
         }
+    val CLIENT_SCREEN: RadarScreen?
+        get() = GAME.gameClientScreen
 
     /** Server target refresh rates (in Hz) */
     const val UPDATE_RATE_LOW_FREQ = 1 // Low frequency update rate

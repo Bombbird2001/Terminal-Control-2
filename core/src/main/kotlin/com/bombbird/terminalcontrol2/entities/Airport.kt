@@ -39,10 +39,11 @@ class Airport(id: Byte, icao: String, arptName: String, posX: Float, posY: Float
                 serialisedAirport.altitude
             ).also { arpt ->
                 arpt.entity.apply {
-                    get(RunwayChildren.mapper)!!.apply {
+                    get(RunwayChildren.mapper)?.apply {
                         rwyMap = HashMap(serialisedAirport.rwys.mapValues { Runway.fromSerialisedObject(arpt, it.value) })
                     }
                 }
+                arpt.updateFromSerialisedMetar(serialisedAirport.metar)
             }
         }
     }
@@ -51,7 +52,9 @@ class Airport(id: Byte, icao: String, arptName: String, posX: Float, posY: Float
     class SerialisedAirport(val x: Float = 0f, val y: Float = 0f,
                             val altitude: Float = 0f,
                             val arptId: Byte = -1, val icaoCode: String = "", val name: String = "",
-                            val rwys: Map<Byte, SerialisedRunway> = LinkedHashMap())
+                            val rwys: Map<Byte, SerialisedRunway> = LinkedHashMap(),
+                            val metar: SerialisedMetar = SerialisedMetar()
+    )
 
     /** Gets a [SerialisedAirport] from current state */
     fun getSerialisableObject(): SerialisedAirport {
@@ -64,8 +67,38 @@ class Airport(id: Byte, icao: String, arptName: String, posX: Float, posY: Float
                 position.x, position.y,
                 altitude.altitude,
                 arptInfo.arptId, arptInfo.icaoCode, arptInfo.name,
-                rwys.rwyMap.mapValues { it.value.getSerialisableObject() }
+                rwys.rwyMap.mapValues { it.value.getSerialisableObject() },
+                getSerialisedMetar()
             )
+        }
+    }
+
+    /** Object that contains METAR data to be serialised by Kryo */
+    class SerialisedMetar(val icaoCode: String = "", val realLifeIcao: String = "",
+                          val letterCode: Char? = null, val rawMetar: String? = null,
+                          val windHeadingDeg: Short = 360, val windSpeedKt: Short = 0, val windGustKt: Short = 0,
+                          val visibilityM: Short = 10000, val ceilingFtAGL: Short? = null, val windshear: String = "")
+
+    /** Gets a [SerialisedMetar] from current METAR state */
+    fun getSerialisedMetar(): SerialisedMetar {
+        val arptCode = entity[AirportInfo.mapper]?.icaoCode ?: return SerialisedMetar()
+        return entity[MetarInfo.mapper]?.let {
+            SerialisedMetar(arptCode, it.realLifeIcao, it.letterCode, it.rawMetar, it.windHeadingDeg, it.windSpeedKt, it.windGustKt, it.visibilityM, it.ceilingHundredFtAGL, it.windshear)
+        } ?: SerialisedMetar()
+    }
+
+    /** De-serialses a [SerialisedMetar] and updates this airport's [MetarInfo] from it */
+    fun updateFromSerialisedMetar(serialisedMetar: SerialisedMetar) {
+        entity[MetarInfo.mapper]?.apply {
+            realLifeIcao = serialisedMetar.realLifeIcao
+            letterCode = serialisedMetar.letterCode
+            rawMetar = serialisedMetar.rawMetar
+            windHeadingDeg = serialisedMetar.windHeadingDeg
+            windSpeedKt = serialisedMetar.windSpeedKt
+            windGustKt = serialisedMetar.windGustKt
+            visibilityM = serialisedMetar.visibilityM
+            ceilingHundredFtAGL = serialisedMetar.ceilingFtAGL
+            windshear = serialisedMetar.windshear
         }
     }
 

@@ -1,10 +1,7 @@
 package com.bombbird.terminalcontrol2.networking
 
 import com.badlogic.ashley.core.Engine
-import com.bombbird.terminalcontrol2.components.Acceleration
-import com.bombbird.terminalcontrol2.components.Direction
-import com.bombbird.terminalcontrol2.components.FlightType
-import com.bombbird.terminalcontrol2.components.RunwayLabel
+import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.Aircraft
 import com.bombbird.terminalcontrol2.entities.Airport
 import com.bombbird.terminalcontrol2.entities.Sector
@@ -210,6 +207,11 @@ class GameServer {
         // println("Slow UDP sent, time passed since program start: ${(System.currentTimeMillis() - startTime) / 1000f}s")
     }
 
+    /** Send non-frequent METAR updates */
+    fun sendMetarTCPToAll() {
+        server.sendToAllTCP(SerialisationRegistering.MetarData(airports.values.map { it.getSerialisedMetar() }.toTypedArray()))
+    }
+
     /** Send non-frequent, event-updated and/or important data
      *
      * METAR updates
@@ -217,8 +219,6 @@ class GameServer {
      * Aircraft creation, deletion
      *
      * Thunderstorm creation, deletion
-     *
-     * Initial data load on client connection (sectors, airports, runway, etc.)
      *
      * (List not exhaustive)
      */

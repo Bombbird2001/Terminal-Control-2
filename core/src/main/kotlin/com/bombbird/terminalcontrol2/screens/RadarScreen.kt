@@ -62,6 +62,9 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
     private var targetCenter: Vector2
     private var panRate: ImmutableVector2
 
+    // Aircraft hashmap for access during TCP updates
+    val airport = HashMap<String, Airport>()
+
     // Aircraft hashmap for access during UDP updates
     val aircraft = HashMap<String, Aircraft>()
 
@@ -98,11 +101,19 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
                             }
                         }
                         airports.forEach {
-                            Airport.fromSerialisedObject(it)
+                            Airport.fromSerialisedObject(it).apply {
+                                this@RadarScreen.airport[entity[AirportInfo.mapper]!!.icaoCode] = this
+                            }
                         }
                         waypoints.forEach {
                             Waypoint.fromSerialisedObject(it)
                         }
+                        uiPane.updateMetarInformation()
+                    } ?: (`object` as? SerialisationRegistering.MetarData)?.apply {
+                        metars.forEach {
+                            airport[it.icaoCode]?.updateFromSerialisedMetar(it)
+                        }
+                        uiPane.updateMetarInformation()
                     }
                 }
             }
@@ -196,6 +207,8 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
             for (i in 0 until systems.size()) (systems[i] as? LowFreqUpdate)?.lowFreqUpdate()
             slowUpdateTimer -= 1f
         }
+
+        uiStage.act(delta)
     }
 
     /** Clears and disposes of [radarDisplayStage], [uiStage], [shapeRenderer], stops the [client] and [GameServer] if present */

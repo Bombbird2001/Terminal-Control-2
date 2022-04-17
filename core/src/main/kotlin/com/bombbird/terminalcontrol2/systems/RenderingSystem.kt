@@ -20,6 +20,7 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
         val camZoom = (stage.camera as OrthographicCamera).zoom
         val camX = stage.camera.position.x
         val camY = stage.camera.position.y
+        // println(camZoom)
 
         shapeRenderer.begin(ShapeRenderer.ShapeType.Line)
         // Estimation circles
@@ -72,6 +73,7 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
         shapeRenderer.end()
 
         Constants.GAME.batch.projectionMatrix = stage.camera.combined
+        // println("stage: ${stage.camera.combined}")
         Constants.GAME.batch.begin()
         // Render aircraft
         val aircraftFamily = allOf(AircraftInfo::class, Position::class, RSSprite::class).get()
@@ -136,6 +138,7 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
         }
 
         Constants.GAME.batch.projectionMatrix = uiStage.camera.combined
+        // println("uiStage: ${uiStage.camera.combined}")
         // Render generic constant size labels
         val constSizeLabelFamily = allOf(GenericLabel::class, Position::class, ConstantZoomSize::class).get()
         val constLabels = Constants.CLIENT_ENGINE.getEntitiesFor(constSizeLabelFamily)

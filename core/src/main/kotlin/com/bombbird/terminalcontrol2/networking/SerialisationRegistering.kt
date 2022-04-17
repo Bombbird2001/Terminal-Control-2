@@ -32,6 +32,11 @@ object SerialisationRegistering {
             register(Array<Waypoint.SerialisedWaypoint>::class.java)
             register(Waypoint.SerialisedWaypoint::class.java)
 
+            // METAR classes
+            register(MetarData::class.java)
+            register(Airport.SerialisedMetar::class.java)
+            register(Array<Airport.SerialisedMetar>::class.java)
+
             // Fast update UDP classes
             register(FastUDPData::class.java)
             register(Aircraft.SerialisedAircraftUDP::class.java)
@@ -41,11 +46,15 @@ object SerialisationRegistering {
     }
 
     /** Class representing the data sent on initial connection, loading of the game on a client */
-    class InitialLoadData(var sectors: Array<Sector.SerialisedSector> = arrayOf(),
-                          var aircraft: Array<Aircraft.SerialisedAircraft> = arrayOf(),
-                          var airports: Array<Airport.SerialisedAirport> = arrayOf(),
-                          var waypoints: Array<Waypoint.SerialisedWaypoint> = arrayOf()
+    class InitialLoadData(
+        var sectors: Array<Sector.SerialisedSector> = arrayOf(),
+        var aircraft: Array<Aircraft.SerialisedAircraft> = arrayOf(),
+        var airports: Array<Airport.SerialisedAirport> = arrayOf(),
+        var waypoints: Array<Waypoint.SerialisedWaypoint> = arrayOf()
     )
+
+    /** Class representing the data to be sent during METAR updates */
+    class MetarData(var metars: Array<Airport.SerialisedMetar> = arrayOf())
 
     /** Class representing data sent on fast UDP updates (i.e. 20 times per second) */
     class FastUDPData(var aircraft: Array<Aircraft.SerialisedAircraftUDP> = arrayOf())

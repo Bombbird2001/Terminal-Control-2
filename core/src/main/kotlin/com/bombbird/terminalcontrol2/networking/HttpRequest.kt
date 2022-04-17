@@ -46,9 +46,8 @@ object HttpRequest {
                         return
                     }
 
-                    println(responseText)
                     // METAR JSON has been received
-                    // TODO Update METAR component for airports
+                    MetarTools.updateAirportMetar(responseText)
                 }
             }
         })
