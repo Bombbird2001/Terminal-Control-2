@@ -9,7 +9,6 @@ import com.bombbird.terminalcontrol2.global.Variables
 import com.bombbird.terminalcontrol2.graphics.ScreenSize
 import com.bombbird.terminalcontrol2.utilities.safeStage
 import ktx.app.KtxScreen
-import ktx.app.clearScreen
 import ktx.assets.disposeSafely
 import ktx.scene2d.*
 import kotlin.math.max
@@ -40,7 +39,7 @@ abstract class BasicUIScreen: KtxScreen {
 
     /** Updates [stage] and draws it every render */
     override fun render(delta: Float) {
-        clearScreen(red = 0.7f, green = 0.7f, blue = 0.7f)
+        Gdx.gl.glClearColor(0.7f, 0.7f, 0.7f, 1f)
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT or GL20.GL_DEPTH_BUFFER_BIT or if (Gdx.graphics.bufferFormat.coverageSampling) GL20.GL_COVERAGE_BUFFER_BIT_NV else 0)
         stage.act(delta)
         stage.draw()

@@ -78,41 +78,41 @@ class UIPane(private val uiStage: Stage) {
         Constants.CLIENT_SCREEN?.let {
             var padTop = false
             for (airport in it.airport.values) {
-                val arptInfo = airport.entity[AirportInfo.mapper] ?: continue
+                val airportInfo = airport.entity[AirportInfo.mapper] ?: continue
                 val metarInfo = airport.entity[MetarInfo.mapper] ?: continue
                 val text =
                     """
-                    ${arptInfo.icaoCode} - ${metarInfo.letterCode}
+                    ${airportInfo.icaoCode} - ${metarInfo.letterCode}
                     DEP - ???, ???     ARR - ???, ???
                     ${metarInfo.rawMetar ?: "Loading METAR..."}
                     """.trimIndent()
                 val expandedText = """
-                    ${arptInfo.icaoCode} - ${metarInfo.letterCode}
+                    ${airportInfo.icaoCode} - ${metarInfo.letterCode}
                     DEP - ???, ???     ARR - ???, ???
                     ${metarInfo.rawMetar ?: "Loading METAR..."}
                     Winds: ${metarInfo.windHeadingDeg}@${metarInfo.windSpeedKt}kt ${if (metarInfo.windGustKt > 0) "gusting to ${metarInfo.windGustKt}kt" else ""}
                     Visibility: ${if (metarInfo.visibilityM == 9999.toShort()) 10000 else metarInfo.visibilityM}m
                     Ceiling: ${metarInfo.ceilingHundredFtAGL?.let { ceiling -> "${ceiling * 100} feet" } ?: "None"}
                     """.trimIndent() + if (metarInfo.windshear.isNotEmpty()) "\nWindshear: ${metarInfo.windshear}" else ""
-                val linkedButton = metarPane.textButton(if (metarExpandSet.contains(arptInfo.icaoCode)) expandedText else text, "Metar").apply {
+                val linkedButton = metarPane.textButton(if (metarExpandSet.contains(airportInfo.icaoCode)) expandedText else text, "Metar").apply {
                     label.setAlignment(Align.left)
                     label.wrap = true
                     cell(growX = true, padLeft = 20f, padRight = 10f, padTop = if (padTop) 30f else 0f, align = Align.left)
                 }
-                metarPane.textButton(if (metarExpandSet.contains(arptInfo.icaoCode)) "-" else "+", "MetarExpand").apply {
+                metarPane.textButton(if (metarExpandSet.contains(airportInfo.icaoCode)) "-" else "+", "MetarExpand").apply {
                     cell(height = 50f, width = 50f, padLeft = 10f, padRight = 20f, padTop = if (padTop) 30f else 0f, align = Align.topRight)
                     addListener(object: ChangeListener() {
                         override fun changed(event: ChangeEvent?, actor: Actor?) {
-                            if (metarExpandSet.contains(arptInfo.icaoCode)) {
+                            if (metarExpandSet.contains(airportInfo.icaoCode)) {
                                 // Expanded, hide it
                                 this@apply.label.setText("+")
                                 linkedButton.label.setText(text)
-                                metarExpandSet.remove(arptInfo.icaoCode)
+                                metarExpandSet.remove(airportInfo.icaoCode)
                             } else {
                                 // Hidden, expand it
                                 this@apply.label.setText("-")
                                 linkedButton.label.setText(expandedText)
-                                metarExpandSet.add(arptInfo.icaoCode)
+                                metarExpandSet.add(airportInfo.icaoCode)
                             }
                         }
                     })

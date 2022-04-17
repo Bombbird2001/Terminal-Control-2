@@ -73,7 +73,7 @@ class GameServer {
             )
         )
 
-        Constants.SERVER_ENGINE.addSystem(PhysicsSystem())
+        engine.addSystem(PhysicsSystem())
 
         MetarTools.requestAllMetar()
     }

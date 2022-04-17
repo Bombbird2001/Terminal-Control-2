@@ -59,10 +59,10 @@ class Airport(id: Byte, icao: String, arptName: String, posX: Float, posY: Float
     /** Gets a [SerialisedAirport] from current state */
     fun getSerialisableObject(): SerialisedAirport {
         entity.apply {
-            val position = get(Position.mapper)!!
-            val altitude = get(Altitude.mapper)!!
-            val arptInfo = get(AirportInfo.mapper)!!
-            val rwys = get(RunwayChildren.mapper)!!
+            val position = get(Position.mapper) ?: return SerialisedAirport()
+            val altitude = get(Altitude.mapper) ?: return SerialisedAirport()
+            val arptInfo = get(AirportInfo.mapper) ?: return SerialisedAirport()
+            val rwys = get(RunwayChildren.mapper) ?: return SerialisedAirport()
             return SerialisedAirport(
                 position.x, position.y,
                 altitude.altitude,
@@ -165,11 +165,11 @@ class Airport(id: Byte, icao: String, arptName: String, posX: Float, posY: Float
         /** Gets a [SerialisedRunway] from current state */
         fun getSerialisableObject(): SerialisedRunway {
             entity.apply {
-                val position = get(Position.mapper)!!
-                val altitude = get(Altitude.mapper)!!
-                val direction = get(Direction.mapper)!!
-                val rwyInfo = get(RunwayInfo.mapper)!!
-                val rwyLabel = get(RunwayLabel.mapper)!!
+                val position = get(Position.mapper) ?: return SerialisedRunway()
+                val altitude = get(Altitude.mapper) ?: return SerialisedRunway()
+                val direction = get(Direction.mapper) ?: return SerialisedRunway()
+                val rwyInfo = get(RunwayInfo.mapper) ?: return SerialisedRunway()
+                val rwyLabel = get(RunwayLabel.mapper) ?: return SerialisedRunway()
                 return SerialisedRunway(
                     position.x, position.y,
                     altitude.altitude,
@@ -184,13 +184,13 @@ class Airport(id: Byte, icao: String, arptName: String, posX: Float, posY: Float
     /** Creates a runway entity with the required components, and adds it to airport component's runway map */
     fun addRunway(id: Byte, name: String, posX: Float, posY: Float, trueHdg: Float, runwayLengthM: Short, elevation: Float, labelPos: Byte) {
         Runway(this, id, name, posX, posY, trueHdg, runwayLengthM, elevation, labelPos, false).also { rwy ->
-            entity[AirportInfo.mapper]!!.rwys.rwyMap[id] = rwy
-            entity[RunwayChildren.mapper]!!.rwyMap[id] = rwy
+            entity[AirportInfo.mapper]?.rwys?.rwyMap?.set(id, rwy)
+            entity[RunwayChildren.mapper]?.rwyMap?.set(id, rwy)
         }
     }
 
     /** Sets [MetarInfo.realLifeIcao] for the airport, only needed for the game server */
     fun setMetarRealLifeIcao(realLifeIcao: String) {
-        entity[MetarInfo.mapper]!!.realLifeIcao = realLifeIcao
+        entity[MetarInfo.mapper]?.realLifeIcao = realLifeIcao
     }
 }

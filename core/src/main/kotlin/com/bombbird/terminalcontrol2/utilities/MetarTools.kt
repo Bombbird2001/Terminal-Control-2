@@ -31,12 +31,11 @@ object MetarTools {
     /** Requests METAR for all airports in the current gameServer instance */
     fun requestAllMetar() {
         val metarRequest = MetarRequest(Secrets.GET_METAR_PW, ArrayList<MetarRequest.MetarMapper>().apply {
-            for (airport in Constants.GAME.gameServer?.airports?.values ?: return) add(
-                MetarRequest.MetarMapper(
-                    airport.entity[MetarInfo.mapper]!!.realLifeIcao,
-                    airport.entity[AirportInfo.mapper]!!.icaoCode
-                )
-            )
+            for (airport in Constants.GAME.gameServer?.airports?.values ?: return) {
+                val realIcao = airport.entity[MetarInfo.mapper]?.realLifeIcao ?: continue
+                val icao = airport.entity[AirportInfo.mapper]?.icaoCode ?: continue
+                add(MetarRequest.MetarMapper(realIcao, icao))
+            }
         })
         HttpRequest.sendMetarRequest(Moshi.Builder().build().adapter(MetarRequest::class.java).toJson(metarRequest), true)
     }

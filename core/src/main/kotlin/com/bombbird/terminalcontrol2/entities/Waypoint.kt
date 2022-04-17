@@ -49,8 +49,8 @@ class Waypoint(name: String, posX: Short, posY: Short, onClient: Boolean = true)
     /** Gets a [SerialisedWaypoint] from current state */
     fun getSerialisableObject(): SerialisedWaypoint {
         entity.apply {
-            val wptInfo = get(WaypointInfo.mapper)!!
-            val pos = get(Position.mapper)!!
+            val wptInfo = get(WaypointInfo.mapper) ?: return SerialisedWaypoint()
+            val pos = get(Position.mapper) ?: return SerialisedWaypoint()
             return SerialisedWaypoint(
                 wptInfo.wptName,
                 pos.x.toInt().toShort(), pos.y.toInt().toShort()

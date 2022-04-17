@@ -30,7 +30,6 @@ import com.esotericsoftware.kryonet.Client
 import com.esotericsoftware.kryonet.Connection
 import com.esotericsoftware.kryonet.Listener
 import ktx.app.KtxScreen
-import ktx.app.clearScreen
 import ktx.ashley.get
 import ktx.assets.disposeSafely
 import ktx.graphics.moveTo
@@ -97,12 +96,16 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
                         }
                         aircraft.forEach {
                             Aircraft.fromSerialisedObject(it).apply {
-                                this@RadarScreen.aircraft[entity[AircraftInfo.mapper]!!.icaoCallsign] = this
+                                entity[AircraftInfo.mapper]?.icaoCallsign?.let { callsign ->
+                                    this@RadarScreen.aircraft[callsign] = this
+                                }
                             }
                         }
                         airports.forEach {
                             Airport.fromSerialisedObject(it).apply {
-                                this@RadarScreen.airport[entity[AirportInfo.mapper]!!.icaoCode] = this
+                                entity[AirportInfo.mapper]?.icaoCode?.let { icao ->
+                                    this@RadarScreen.airport[icao] = this
+                                }
                             }
                         }
                         waypoints.forEach {
@@ -195,8 +198,10 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
 
     /** Main rendering function, updates engine, draws using [shapeRenderer] followed by [radarDisplayStage] and finally [uiStage], every loop */
     override fun render(delta: Float) {
-        clearScreen(red = 0f, green = 0f, blue = 0f)
+        Gdx.gl.glClearColor(0f, 0f, 0f, 1f)
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT or GL20.GL_DEPTH_BUFFER_BIT or if (Gdx.graphics.bufferFormat.coverageSampling) GL20.GL_COVERAGE_BUFFER_BIT_NV else 0)
+
+        println(1 / delta)
 
         runCameraAnimations(delta)
         Constants.CLIENT_ENGINE.update(delta)

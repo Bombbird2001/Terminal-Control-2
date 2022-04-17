@@ -43,8 +43,8 @@ class Sector(id: Byte, ctrlName: String, freq: String, sectorBoundary: ShortArra
     /** Gets a [SerialisedSector] from current state */
     fun getSerialisableObject(): SerialisedSector {
         entity.apply {
-            val sectorInfo = get(SectorInfo.mapper)!!
-            val polygon = get(GPolygon.mapper)!!
+            val sectorInfo = get(SectorInfo.mapper) ?: return SerialisedSector()
+            val polygon = get(GPolygon.mapper) ?: return SerialisedSector()
             return SerialisedSector(
                 sectorInfo.sectorId, sectorInfo.controllerName, sectorInfo.frequency,
                 polygon.vertices.map { it.toInt().toShort() }.toShortArray()

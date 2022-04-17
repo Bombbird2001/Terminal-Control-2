@@ -51,21 +51,21 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
                 serialisedAircraft.flightType
             ).apply {
                 entity.apply {
-                    get(Direction.mapper)!!.apply {
+                    get(Direction.mapper)?.apply {
                         dirUnitVector = Vector2(serialisedAircraft.directionX, serialisedAircraft.directionY)
                     }
-                    get(AircraftInfo.mapper)!!.apply {
+                    get(AircraftInfo.mapper)?.apply {
                         icaoType = serialisedAircraft.icaoType
                         appSpd = serialisedAircraft.appSpd
                         vR = serialisedAircraft.vR
                         weightTons = serialisedAircraft.weightTons
                     }
-                    get(Speed.mapper)!!.apply {
+                    get(Speed.mapper)?.apply {
                         speedKts = serialisedAircraft.speedKts
                         vertSpdFpm = serialisedAircraft.vertSpdFpm
                         angularSpdDps = serialisedAircraft.angularSpdDps
                     }
-                    get(RadarData.mapper)!!.apply {
+                    get(RadarData.mapper)?.apply {
                         position.x = serialisedAircraft.rX.toFloat()
                         position.y = serialisedAircraft.rY.toFloat()
                         altitude.altitude = serialisedAircraft.rAlt
@@ -93,12 +93,12 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
     /** Gets a [SerialisedAircraftUDP] from current state */
     fun getSerialisableObjectUDP(): SerialisedAircraftUDP {
         entity.apply {
-            val position = get(Position.mapper)!!
-            val altitude = get(Altitude.mapper)!!
-            val acInfo = get(AircraftInfo.mapper)!!
-            val direction = get(Direction.mapper)!!
-            val speed = get(Speed.mapper)!!
-            val rData = get(RadarData.mapper)!!
+            val position = get(Position.mapper) ?: return SerialisedAircraftUDP()
+            val altitude = get(Altitude.mapper) ?: return SerialisedAircraftUDP()
+            val acInfo = get(AircraftInfo.mapper) ?: return SerialisedAircraftUDP()
+            val direction = get(Direction.mapper) ?: return SerialisedAircraftUDP()
+            val speed = get(Speed.mapper) ?: return SerialisedAircraftUDP()
+            val rData = get(RadarData.mapper) ?: return SerialisedAircraftUDP()
             return SerialisedAircraftUDP(
                 position.x, position.y,
                 altitude.altitude,
@@ -157,13 +157,13 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
     /** Gets a [SerialisedAircraft] from current state */
     fun getSerialisableObject(): SerialisedAircraft {
         entity.apply {
-            val position = get(Position.mapper)!!
-            val altitude = get(Altitude.mapper)!!
-            val acInfo = get(AircraftInfo.mapper)!!
-            val direction = get(Direction.mapper)!!
-            val speed = get(Speed.mapper)!!
-            val rData = get(RadarData.mapper)!!
-            val flightType = get(FlightType.mapper)!!
+            val position = get(Position.mapper) ?: return SerialisedAircraft()
+            val altitude = get(Altitude.mapper) ?: return SerialisedAircraft()
+            val acInfo = get(AircraftInfo.mapper) ?: return SerialisedAircraft()
+            val direction = get(Direction.mapper) ?: return SerialisedAircraft()
+            val speed = get(Speed.mapper) ?: return SerialisedAircraft()
+            val rData = get(RadarData.mapper) ?: return SerialisedAircraft()
+            val flightType = get(FlightType.mapper) ?: return SerialisedAircraft()
             return SerialisedAircraft(
                 position.x, position.y,
                 altitude.altitude,
