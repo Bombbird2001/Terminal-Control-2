@@ -48,7 +48,7 @@ class Controllable(var sectorId: Byte = 0): Component {
 /** Component for tagging aircraft specific information
  * Includes performance determining data - minimum approach speed, rotation speed, weight, others in [aircraftPerf]
  * */
-class AircraftInfo(var icaoCallsign: String = "SHIBA1", var icaoType: String = "B77W", var appSpd: Short = 130, var vR: Short = 150, var weightTons: Float = 209f): Component {
+class AircraftInfo(var icaoCallsign: String = "SHIBA1", var icaoType: String = "B77W"): Component {
     val aircraftPerf = AircraftTypeData.getAircraftPerf(icaoType)
     companion object: Mapper<AircraftInfo>()
 }

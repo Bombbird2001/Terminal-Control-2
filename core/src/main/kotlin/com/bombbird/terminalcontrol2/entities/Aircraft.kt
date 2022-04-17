@@ -56,9 +56,9 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
                     }
                     get(AircraftInfo.mapper)?.apply {
                         icaoType = serialisedAircraft.icaoType
-                        appSpd = serialisedAircraft.appSpd
-                        vR = serialisedAircraft.vR
-                        weightTons = serialisedAircraft.weightTons
+                        aircraftPerf.appSpd = serialisedAircraft.appSpd
+                        aircraftPerf.vR = serialisedAircraft.vR
+                        aircraftPerf.weightKg = serialisedAircraft.weightKg
                     }
                     get(Speed.mapper)?.apply {
                         speedKts = serialisedAircraft.speedKts
@@ -148,7 +148,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
      * */
     class SerialisedAircraft(val x: Float = 0f, val y: Float = 0f,
                              val altitude: Float = 0f,
-                             val icaoCallsign: String = "", val icaoType: String = "", val appSpd: Short = 0, val vR: Short = 0, val weightTons: Float = 0f,
+                             val icaoCallsign: String = "", val icaoType: String = "", val appSpd: Short = 0, val vR: Short = 0, val weightKg: Int = 0,
                              val directionX: Float = 0f, val directionY: Float = 0f,
                              val speedKts: Float = 0f, val vertSpdFpm: Float = 0f, val angularSpdDps: Float = 0f,
                              val rX: Short = 0, val rY: Short = 0, val rAlt: Float = 0f, val rDirX: Short = 0, val rDirY: Short = 0, val rSpd: Short = 0, val rVertSpd: Short = 0, val rAngularSpd: Short = 0,
@@ -167,7 +167,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
             return SerialisedAircraft(
                 position.x, position.y,
                 altitude.altitude,
-                acInfo.icaoCallsign, acInfo.icaoType, acInfo.appSpd, acInfo.vR, acInfo.weightTons,
+                acInfo.icaoCallsign, acInfo.icaoType, acInfo.aircraftPerf.appSpd, acInfo.aircraftPerf.vR, acInfo.aircraftPerf.weightKg,
                 direction.dirUnitVector.x, direction.dirUnitVector.y,
                 speed.speedKts, speed.vertSpdFpm, speed.angularSpdDps,
                 rData.position.x.toInt().toShort(), rData.position.y.toInt().toShort(), rData.altitude.altitude,

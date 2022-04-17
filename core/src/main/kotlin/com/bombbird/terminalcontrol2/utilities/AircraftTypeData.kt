@@ -16,23 +16,35 @@ object AircraftTypeData {
 
     /** Aircraft performance data class
      *
-     * [wakeCat]: ICAO wake turbulence category: L, M, H, J
+     * [wakeCategory]: ICAO wake turbulence category: L, M, H, J
      *
      * [recat]: ICAO recat wake category: F, E, D, C, B, A
      *
-     * [thrustKnSLISA]: For turboprop/jet planes only: Max total thrust, in kilo-newtons, produced by the jet engines at sea level under ISA conditions
+     * [thrustNSLISA]: For turboprop/jet planes only: Max total thrust, in newtons, produced by the jet engines at sea level under ISA conditions
      *
-     * [propPowerKwSLISA]: For turboprop/propeller planes only: Max total power, in kilowatts, produced by the propeller engines at sea level under ISA conditions
+     * [propPowerWSLISA]: For turboprop/propeller planes only: Max total power, in watts, produced by the propeller engines at sea level under ISA conditions
      *
      * [propArea]: For turboprop/propeller planes only: Total propeller blade area
      *
      * [minCdTimesRefArea]: The lowest possible value of the product of the drag coefficient and reference area in the
      * drag equation; will be used for most calculations
      *
-     * [maxCdTimesRefArea]: The highest possible value of the product of the drag coefficient and reference area in the
+     * [maxCdTimesRefArea]: The highest possible value of the product of the drag coefficient and reference area, in metres^2, in the
      * drag equation; used only when expediting descent or on approach
      * */
-    class AircraftPerfData(val wakeCat: Char = 'H', val recat: Char = 'B',
-                           val thrustKnSLISA: Short? = 240, val propPowerKwSLISA: Short? = null, val propArea: Float? = null,
-                           val minCdTimesRefArea: Float = 0.01f, val maxCdTimesRefArea: Float = 0.1f)
+    data class AircraftPerfData(val wakeCategory: Char = 'H', val recat: Char = 'B',
+                           val thrustNSLISA: Int? = 1026000, val propPowerWSLISA: Int? = null, val propArea: Float? = null,
+                           val minCdTimesRefArea: Float = 6.552f, val maxCdTimesRefArea: Float = 87.36f) {
+
+        var appSpd: Short
+        var vR: Short
+        var weightKg: Int
+
+        init {
+            // TODO random generation of load factor
+            appSpd = 149
+            vR = 160
+            weightKg = 259600
+        }
+    }
 }
