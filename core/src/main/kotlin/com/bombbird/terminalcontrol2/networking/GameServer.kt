@@ -11,6 +11,7 @@ import com.bombbird.terminalcontrol2.global.Variables
 import com.bombbird.terminalcontrol2.systems.LowFreqUpdate
 import com.bombbird.terminalcontrol2.systems.PhysicsSystem
 import com.bombbird.terminalcontrol2.utilities.MetarTools
+import com.bombbird.terminalcontrol2.utilities.PhysicsTools
 import com.esotericsoftware.kryonet.Connection
 import com.esotericsoftware.kryonet.Listener
 import com.esotericsoftware.kryonet.Server
@@ -59,8 +60,8 @@ class GameServer {
 
         // Add dummy aircraft
         aircraft["SHIBA2"] = Aircraft("SHIBA2", 10f, -10f, 108f, FlightType.DEPARTURE, false).apply {
-            entity[Acceleration.mapper]?.dSpeed = 1.5f // Dummy acceleration
             entity[Direction.mapper]?.dirUnitVector?.rotateDeg(-49.07f) // Runway 05R heading
+            entity.add(TakeoffRoll(PhysicsTools.calculateRequiredAcceleration(0, entity[AircraftInfo.mapper]?.aircraftPerf?.vR ?: 0, 3800 * 0.75f)))
         }
 
         // Add dummy waypoints

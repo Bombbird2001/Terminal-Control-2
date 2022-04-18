@@ -8,7 +8,7 @@ import ktx.ashley.Mapper
  *
  * Units for [x] and [y] are px
  * */
-class Position(var x: Float = 0f, var y: Float = 0f): Component {
+data class Position(var x: Float = 0f, var y: Float = 0f): Component {
     companion object: Mapper<Position>()
 }
 
@@ -16,7 +16,7 @@ class Position(var x: Float = 0f, var y: Float = 0f): Component {
  *
  * [dirUnitVector] is rotated with respect to the screen, with positive [Vector2.x] towards the right and positive [Vector2.y] towards the top
  * */
-class Direction(var dirUnitVector: Vector2 = Vector2()): Component {
+data class Direction(var dirUnitVector: Vector2 = Vector2()): Component {
     companion object: Mapper<Direction>()
 }
 
@@ -28,7 +28,7 @@ class Direction(var dirUnitVector: Vector2 = Vector2()): Component {
  *
  * Unit for [angularSpdDps] is degrees per second, positive means direction is turning clockwise
  * */
-class Speed(var speedKts: Float = 0f, var vertSpdFpm: Float = 0f, var angularSpdDps: Float = 0f): Component {
+data class Speed(var speedKts: Float = 0f, var vertSpdFpm: Float = 0f, var angularSpdDps: Float = 0f): Component {
     companion object: Mapper<Speed>()
 }
 
@@ -36,7 +36,7 @@ class Speed(var speedKts: Float = 0f, var vertSpdFpm: Float = 0f, var angularSpd
  *
  * Unit for [altitude] is feet
  * */
-class Altitude(var altitude: Float = 0f): Component {
+data class Altitude(var altitude: Float = 0f): Component {
     companion object: Mapper<Altitude>()
 }
 
@@ -48,12 +48,12 @@ class Altitude(var altitude: Float = 0f): Component {
  *
  * Unit for [dAngularSpd] is degrees per second^2
  * */
-class Acceleration(var dSpeed: Float = 0f, var dVertSpd: Float = 0f, var dAngularSpd: Float = 0f): Component {
+data class Acceleration(var dSpeed: Float = 0f, var dVertSpd: Float = 0f, var dAngularSpd: Float = 0f): Component {
     companion object: Mapper<Acceleration>()
 }
 
 /** Component for radar returns (delayed reporting of [Position], [Direction], [Speed] and [Altitude]) */
-class RadarData(val position: Position = Position(), val direction: Direction = Direction(), val speed: Speed = Speed(), val altitude: Altitude = Altitude()): Component {
+data class RadarData(val position: Position = Position(), val direction: Direction = Direction(), val speed: Speed = Speed(), val altitude: Altitude = Altitude()): Component {
     companion object: Mapper<RadarData>()
 }
 
@@ -65,14 +65,19 @@ class RadarData(val position: Position = Position(), val direction: Direction = 
  * technically the appropriate term to use for the purpose of this game is CAS (calibrated air speed), but we will assume
  * the difference between [ias] and CAS is negligible and use them interchangeably
  * */
-class IndicatedAirSpeed(var ias: Float = 0f): Component {
+data class IndicatedAirSpeed(var ias: Float = 0f): Component {
     companion object: Mapper<IndicatedAirSpeed>()
 }
 
 /** Component for tagging entities that get affected by wind velocity
  *
- * Add component once the entity is no longer on the ground, and remove component after entity is no longer on the ground
+ * To prevent on-ground entities from being affected by wind, add the [OnGround] component to the entity
  * */
 class AffectedByWind: Component {
     companion object: Mapper<AffectedByWind>()
+}
+
+/** Component for tagging on ground entities (will not be affected by wind even if tagged with it) */
+class OnGround: Component {
+    companion object: Mapper<OnGround>()
 }

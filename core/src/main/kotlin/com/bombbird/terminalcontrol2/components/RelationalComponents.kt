@@ -5,6 +5,6 @@ import com.bombbird.terminalcontrol2.entities.Airport
 import ktx.ashley.Mapper
 
 /** Component to keep track of an airport's runways (for O(1) access) */
-class RunwayChildren(var rwyMap: HashMap<Byte, Airport.Runway> = HashMap()): Component {
+data class RunwayChildren(var rwyMap: HashMap<Byte, Airport.Runway> = HashMap()): Component {
     companion object: Mapper<RunwayChildren>()
 }

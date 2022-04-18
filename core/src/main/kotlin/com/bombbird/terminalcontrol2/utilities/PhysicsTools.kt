@@ -114,7 +114,7 @@ object PhysicsTools {
         return sqrt(expr2 * 5 * AIR_SPECIFIC_HEATS_RATIO * AIR_GAS_CONSTANT_JPKGPK * tempK)
     }
 
-    /** Calculates the maximum achievable acceleration of an aircraft given its [aircraftPerfData], [altitudeFt], [tasKt]
+    /** Calculates the maximum achievable acceleration, in metres per second^2, of an aircraft given its [aircraftPerfData], [altitudeFt], [tasKt]
      * and whether it is on approach or expediting ([approachExpedite])
      * */
     fun calculateMaxAcceleration(aircraftPerfData: AircraftTypeData.AircraftPerfData, altitudeFt: Float, tasKt: Float, approachExpedite: Boolean): Float {
@@ -123,7 +123,7 @@ object PhysicsTools {
         return calculateAcceleration(thrust, drag, aircraftPerfData.weightKg)
     }
 
-    /** Calculates the minimum achievable acceleration (i.e. maximum deceleration) of an aircraft given its [aircraftPerfData], [altitudeFt], [tasKt]
+    /** Calculates the minimum achievable acceleration (i.e. maximum deceleration), in metres per second^2, of an aircraft given its [aircraftPerfData], [altitudeFt], [tasKt]
      * and whether it is on approach or expediting ([approachExpedite])
      * */
     fun calculateMinAcceleration(aircraftPerfData: AircraftTypeData.AircraftPerfData, altitudeFt: Float, tasKt: Float, approachExpedite: Boolean): Float {
@@ -132,8 +132,17 @@ object PhysicsTools {
         return calculateAcceleration(thrust, drag, aircraftPerfData.weightKg)
     }
 
-    /** Calculates the acceleration of an aircraft given the [thrustN], [dragN] and [massKg] */
+    /** Calculates the acceleration, in metres per second^2, of an aircraft given the [thrustN], [dragN] and [massKg] */
     fun calculateAcceleration(thrustN: Float, dragN: Float, massKg: Int): Float {
         return (thrustN - dragN) / massKg
+    }
+
+    /** Calculates required acceleration, in metres per second^2, of an aircraft to accelerate from [initialSpdKt]
+     * to [targetSpdKt] within [distanceM], assuming constant acceleration
+     * */
+    fun calculateRequiredAcceleration(initialSpdKt: Short, targetSpdKt: Short, distanceM: Float): Float {
+        val targetMps = MathTools.ktToMps(targetSpdKt.toInt())
+        val initialMps = MathTools.ktToMps(initialSpdKt.toInt())
+        return (targetMps * targetMps - initialMps * initialMps) / 2 / distanceM
     }
 }

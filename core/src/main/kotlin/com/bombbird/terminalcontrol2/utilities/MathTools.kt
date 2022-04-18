@@ -91,6 +91,10 @@ object MathTools {
     }
 
     /** Convert from knots to metres per second */
+    fun ktToMps(kt: Int): Float {
+        return ktToMps(kt.toFloat())
+    }
+
     fun ktToMps(kt: Float): Float {
         return kt / mpsToKt(1f)
     }

@@ -10,16 +10,16 @@ class GPolygon(var vertices: FloatArray = FloatArray(0)): Component {
 }
 
 /** Component for circles */
-class GCircle(var radius: Float = 0f): Component {
+data class GCircle(var radius: Float = 0f): Component {
     companion object: Mapper<GCircle>()
 }
 
 /** Component for lines */
-class GLine(var vector2: Vector2 = Vector2()): Component {
+data class GLine(var vector2: Vector2 = Vector2()): Component {
     companion object: Mapper<GLine>()
 }
 
 /** Component for rectangles */
-class GRect(var width: Float = 0f, var height: Float = 0f): Component {
+data class GRect(var width: Float = 0f, var height: Float = 0f): Component {
     companion object: Mapper<GRect>()
 }

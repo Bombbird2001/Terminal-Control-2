@@ -11,7 +11,7 @@ import ktx.math.ImmutableVector2
 import ktx.scene2d.Scene2DSkin
 
 /** Component for rendering a sprite/drawable on radarScreen */
-class RSSprite(var drawable: Drawable = BaseDrawable(), var width: Float = 0f, var height: Float = 0f): Component {
+data class RSSprite(var drawable: Drawable = BaseDrawable(), var width: Float = 0f, var height: Float = 0f): Component {
     companion object: Mapper<RSSprite>()
 }
 
@@ -37,7 +37,7 @@ class GenericLabel(var xOffset: Float = 0f, var yOffset: Float = 0f): Component 
  *
  * [positionToRunway] = -1 -> to the left of the runway threshold
  * */
-class RunwayLabel(var positionToRunway: Byte = 0): Component {
+data class RunwayLabel(var positionToRunway: Byte = 0): Component {
     var dirUnitVector = ImmutableVector2(0f, 0f)
     var dirSet = false
     companion object: Mapper<RunwayLabel>() {
@@ -53,7 +53,7 @@ class ConstantZoomSize: Component {
 }
 
 /** Component for shapeRenderer rendering colour */
-class SRColor(var color: Color = Color()): Component {
+data class SRColor(var color: Color = Color()): Component {
     companion object: Mapper<SRColor>()
 }
 

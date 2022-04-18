@@ -106,5 +106,8 @@ object PhysicsToolsTest {
         assertEquals(3.8028f, PhysicsTools.calculateAcceleration(260000f, 1866.9f, 67880), 0.0001f)
         assertEquals(3.9261f, PhysicsTools.calculateMaxAcceleration(AircraftTypeData.AircraftPerfData(), 0f, 80f, false), 0.0001f)
         assertEquals(-0.67396f, PhysicsTools.calculateMinAcceleration(AircraftTypeData.AircraftPerfData(), 0f, 140f, true), 0.00001f)
+        assertEquals(0.44109f, PhysicsTools.calculateRequiredAcceleration(0, 100, 3000f), 0.00001f)
+        assertEquals(1.1292f, PhysicsTools.calculateRequiredAcceleration(0, 160, 3000f), 0.0001f)
+        assertEquals(2.0238f, PhysicsTools.calculateRequiredAcceleration(80, 180, 1700f), 0.0001f)
     }
 }

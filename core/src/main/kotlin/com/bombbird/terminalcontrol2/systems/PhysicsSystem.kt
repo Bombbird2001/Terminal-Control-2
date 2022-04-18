@@ -8,6 +8,7 @@ import com.bombbird.terminalcontrol2.utilities.PhysicsTools
 import ktx.ashley.allOf
 import ktx.ashley.get
 import ktx.math.times
+import kotlin.math.min
 
 /** Main physics update system, which handles physics aspects such as positioning, velocity, acceleration, etc.
  *
@@ -46,6 +47,18 @@ class PhysicsSystem: EntitySystem(), LowFreqUpdate {
                 spd.angularSpdDps += acc.dAngularSpd * deltaTime
             }
         }
+
+        // Set acceleration for takeoff
+        val takeoffAccFamily = allOf(Acceleration::class, AircraftInfo::class, TakeoffRoll::class).get()
+        val takeoffAcc = Constants.SERVER_ENGINE.getEntitiesFor(takeoffAccFamily)
+        for (i in 0 until takeoffAcc.size()) {
+            takeoffAcc[i]?.apply {
+                val acc = get(Acceleration.mapper) ?: return@apply
+                val aircraftInfo = get(AircraftInfo.mapper) ?: return@apply
+                val takeoffRoll = get(TakeoffRoll.mapper) ?: return@apply
+                acc.dSpeed = min(takeoffRoll.targetAccMps2, aircraftInfo.maxAcc)
+            }
+        }
     }
 
     /** Secondary update system, for operations that can be updated at a lower frequency and do not rely on deltaTime
@@ -54,6 +67,7 @@ class PhysicsSystem: EntitySystem(), LowFreqUpdate {
      * Values that require constant updating or relies on deltaTime should be put in the main [update] function
      * */
     override fun lowFreqUpdate() {
+        // Calculate the IAS of the aircraft
         val tasToIasFamily = allOf(Speed::class, IndicatedAirSpeed::class, Altitude::class).get()
         val tasToIas = Constants.SERVER_ENGINE.getEntitiesFor(tasToIasFamily)
         for (i in 0 until tasToIas.size()) {
@@ -62,6 +76,19 @@ class PhysicsSystem: EntitySystem(), LowFreqUpdate {
                 val ias = get(IndicatedAirSpeed.mapper) ?: return@apply
                 val alt = get(Altitude.mapper) ?: return@apply
                 ias.ias = PhysicsTools.calculateIASFromTAS(alt.altitude, spd.speedKts)
+            }
+        }
+
+        // Calculate the min, max acceleration of the aircraft
+        val accLimitFamily = allOf(Speed::class, Altitude::class, AircraftInfo::class).get()
+        val accLimit = Constants.SERVER_ENGINE.getEntitiesFor(accLimitFamily)
+        for (i in 0 until accLimit.size()) {
+            accLimit[i]?.apply {
+                val spd = get(Speed.mapper) ?: return@apply
+                val alt = get(Altitude.mapper) ?: return@apply
+                val aircraftInfo = get(AircraftInfo.mapper) ?: return@apply
+                aircraftInfo.maxAcc = PhysicsTools.calculateMaxAcceleration(aircraftInfo.aircraftPerf, alt.altitude, spd.speedKts, false)
+                aircraftInfo.minAcc = PhysicsTools.calculateMinAcceleration(aircraftInfo.aircraftPerf, alt.altitude, spd.speedKts, false)
             }
         }
     }

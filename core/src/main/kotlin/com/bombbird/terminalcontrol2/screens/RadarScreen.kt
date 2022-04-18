@@ -81,7 +81,7 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
 
         SerialisationRegistering.registerAll(client.kryo)
         client.start()
-        client.connect(3000, connectionHost, Variables.TCP_PORT, Variables.UDP_PORT)
+        client.connect(5000, connectionHost, Variables.TCP_PORT, Variables.UDP_PORT)
         client.addListener(object: Listener {
             override fun received(connection: Connection?, `object`: Any?) {
                 // TODO Handle data receipts
@@ -200,8 +200,6 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
     override fun render(delta: Float) {
         Gdx.gl.glClearColor(0f, 0f, 0f, 1f)
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT or GL20.GL_DEPTH_BUFFER_BIT or if (Gdx.graphics.bufferFormat.coverageSampling) GL20.GL_COVERAGE_BUFFER_BIT_NV else 0)
-
-        println(1 / delta)
 
         runCameraAnimations(delta)
         Constants.CLIENT_ENGINE.update(delta)
