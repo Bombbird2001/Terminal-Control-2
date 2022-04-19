@@ -1,6 +1,7 @@
 package com.bombbird.terminalcontrol2.networking
 
 import com.badlogic.ashley.core.Engine
+import com.badlogic.gdx.math.MathUtils
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.Aircraft
 import com.bombbird.terminalcontrol2.entities.Airport
@@ -8,6 +9,7 @@ import com.bombbird.terminalcontrol2.entities.Sector
 import com.bombbird.terminalcontrol2.entities.Waypoint
 import com.bombbird.terminalcontrol2.global.Constants
 import com.bombbird.terminalcontrol2.global.Variables
+import com.bombbird.terminalcontrol2.systems.AISystem
 import com.bombbird.terminalcontrol2.systems.LowFreqUpdate
 import com.bombbird.terminalcontrol2.systems.PhysicsSystem
 import com.bombbird.terminalcontrol2.utilities.MetarTools
@@ -61,7 +63,7 @@ class GameServer {
         // Add dummy aircraft
         aircraft["SHIBA2"] = Aircraft("SHIBA2", 10f, -10f, 108f, FlightType.DEPARTURE, false).apply {
             entity[Direction.mapper]?.dirUnitVector?.rotateDeg(-49.07f) // Runway 05R heading
-            entity.add(TakeoffRoll(PhysicsTools.calculateRequiredAcceleration(0, entity[AircraftInfo.mapper]?.aircraftPerf?.vR ?: 0, 3800 * 0.75f)))
+            entity.add(TakeoffRoll(PhysicsTools.calculateRequiredAcceleration(0, entity[AircraftInfo.mapper]?.aircraftPerf?.vR ?: 0, (3800 - 1000) * MathUtils.random(0.75f, 1f))))
         }
 
         // Add dummy waypoints
@@ -75,6 +77,7 @@ class GameServer {
         )
 
         engine.addSystem(PhysicsSystem())
+        engine.addSystem(AISystem())
 
         MetarTools.requestAllMetar()
     }

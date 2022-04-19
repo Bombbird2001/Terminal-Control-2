@@ -34,7 +34,7 @@ object AircraftTypeData {
      * */
     data class AircraftPerfData(val wakeCategory: Char = 'H', val recat: Char = 'B',
                            val thrustNSLISA: Int? = 1026000, val propPowerWSLISA: Int? = null, val propArea: Float? = null,
-                           val minCdTimesRefArea: Float = 6.552f, val maxCdTimesRefArea: Float = 87.36f) {
+                           val minCdTimesRefArea: Float = 10.92f, val maxCdTimesRefArea: Float = 87.36f) {
 
         var appSpd: Short
         var vR: Short

@@ -111,7 +111,7 @@ object PhysicsTools {
         // Splitting up expressions to save my sanity
         val expr1 = (1 + iasMps * iasMps / 5 / SOUND_SPEED_MPS_SL_ISA / SOUND_SPEED_MPS_SL_ISA).pow(3.5f) - 1
         val expr2 = (1 + AIR_PRESSURE_PA_SL_ISA / pressurePa * expr1).pow(2f / 7) - 1
-        return sqrt(expr2 * 5 * AIR_SPECIFIC_HEATS_RATIO * AIR_GAS_CONSTANT_JPKGPK * tempK)
+        return MathTools.mpsToKt(sqrt(expr2 * 5 * AIR_SPECIFIC_HEATS_RATIO * AIR_GAS_CONSTANT_JPKGPK * tempK))
     }
 
     /** Calculates the maximum achievable acceleration, in metres per second^2, of an aircraft given its [aircraftPerfData], [altitudeFt], [tasKt]
@@ -127,7 +127,7 @@ object PhysicsTools {
      * and whether it is on approach or expediting ([approachExpedite])
      * */
     fun calculateMinAcceleration(aircraftPerfData: AircraftTypeData.AircraftPerfData, altitudeFt: Float, tasKt: Float, approachExpedite: Boolean): Float {
-        val thrust = calculateMaxThrust(aircraftPerfData, altitudeFt, tasKt) * 0.1f // Assume idle power/thrust is 10% of max thrust
+        val thrust = calculateMaxThrust(aircraftPerfData, altitudeFt, tasKt) * 0.05f // Assume idle power/thrust is 5% of max thrust
         val drag = if (approachExpedite) calculateMaxDrag(aircraftPerfData, altitudeFt, tasKt) else calculateMinDrag(aircraftPerfData, altitudeFt, tasKt)
         return calculateAcceleration(thrust, drag, aircraftPerfData.weightKg)
     }
@@ -144,5 +144,25 @@ object PhysicsTools {
         val targetMps = MathTools.ktToMps(targetSpdKt.toInt())
         val initialMps = MathTools.ktToMps(initialSpdKt.toInt())
         return (targetMps * targetMps - initialMps * initialMps) / 2 / distanceM
+    }
+
+    /** Calculates the maximum achievable vertical speed, in feet per minute, given the [aircraftPerfData], [altitudeFt], [tasKt] and [accMps2] of the plane */
+    fun calculateMaxVerticalSpd(aircraftPerfData: AircraftTypeData.AircraftPerfData, altitudeFt: Float, tasKt: Float, accMps2: Float, approachExpedite: Boolean): Float {
+        val thrustN = calculateMaxThrust(aircraftPerfData, altitudeFt, tasKt)
+        val dragN = if (approachExpedite) calculateMaxDrag(aircraftPerfData, altitudeFt, tasKt) else calculateMinDrag(aircraftPerfData, altitudeFt, tasKt)
+        return calculateVerticalSpd(thrustN - dragN, tasKt, accMps2, aircraftPerfData.weightKg)
+    }
+
+    /** Calculates the minimum achievable vertical speed (i.e. maximum descent rate), in feet per minute, given the
+     * [aircraftPerfData], [altitudeFt], [tasKt] and [accMps2] of the plane and whether it is on approach or expediting ([approachExpedite]) */
+    fun calculateMinVerticalSpd(aircraftPerfData: AircraftTypeData.AircraftPerfData, altitudeFt: Float, tasKt: Float, accMps2: Float, approachExpedite: Boolean): Float {
+        val thrustN = calculateMaxThrust(aircraftPerfData, altitudeFt, tasKt) * 0.05f
+        val dragN = if (approachExpedite) calculateMaxDrag(aircraftPerfData, altitudeFt, tasKt) else calculateMinDrag(aircraftPerfData, altitudeFt, tasKt)
+        return calculateVerticalSpd(thrustN - dragN, tasKt, accMps2, aircraftPerfData.weightKg)
+    }
+
+    /** Calculates the achievable vertical speed, in feet per minute, given the [netForceN], [tasKt], [accMps2] and [massKg] of the plane */
+    fun calculateVerticalSpd(netForceN: Float, tasKt: Float, accMps2: Float, massKg: Int): Float {
+        return MathTools.mpsToFpm((netForceN - massKg * accMps2) * MathTools.ktToMps(tasKt) / massKg / GRAVITY_ACCELERATION_MPS2)
     }
 }

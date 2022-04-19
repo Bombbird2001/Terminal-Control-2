@@ -77,7 +77,7 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
     var slowUpdateTimer = 1f
 
     init {
-        if (true) Constants.GAME.gameServer = GameServer().apply { initiateServer() } // True if single-player or host of multiplayer, false otherwise
+        if (true) Constants.GAME.gameServer = GameServer().apply { initiateServer() } // TODO True if single-player or host of multiplayer, false otherwise
 
         SerialisationRegistering.registerAll(client.kryo)
         client.start()

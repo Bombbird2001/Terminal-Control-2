@@ -91,10 +91,10 @@ object PhysicsToolsTest {
         assertEquals(299.996f, PhysicsTools.calculateIASFromTAS(0f, 300f), 0.01f)
         assertEquals(123.56f, PhysicsTools.calculateIASFromTAS(30000f, 200f), 0.01f)
         assertEquals(309.948f, PhysicsTools.calculateIASFromTAS(30000f, 480f), 0.01f)
-        assertEquals(41.156f, PhysicsTools.calculateTASFromIAS(0f, 80f), 0.001f)
-        assertEquals(154.335f, PhysicsTools.calculateTASFromIAS(0f, 300f), 0.01f)
-        assertEquals(164.07f, PhysicsTools.calculateTASFromIAS(30000f, 200f), 0.01f)
-        assertEquals(362.691f, PhysicsTools.calculateTASFromIAS(30000f, 480f), 0.01f)
+        assertEquals(80f, PhysicsTools.calculateTASFromIAS(0f, 80f), 0.001f)
+        assertEquals(300f, PhysicsTools.calculateTASFromIAS(0f, 300f), 0.01f)
+        assertEquals(318.93f, PhysicsTools.calculateTASFromIAS(30000f, 200f), 0.01f)
+        assertEquals(705.01f, PhysicsTools.calculateTASFromIAS(30000f, 480f), 0.01f)
     }
 
     @Test
@@ -104,10 +104,24 @@ object PhysicsToolsTest {
         assertEquals(0.7f, PhysicsTools.calculateAcceleration(17000f, 10000f, 10000), 0.00001f)
         assertEquals(3.9504f, PhysicsTools.calculateAcceleration(294600f, 4048.4f, 73550), 0.0001f)
         assertEquals(3.8028f, PhysicsTools.calculateAcceleration(260000f, 1866.9f, 67880), 0.0001f)
-        assertEquals(3.9261f, PhysicsTools.calculateMaxAcceleration(AircraftTypeData.AircraftPerfData(), 0f, 80f, false), 0.0001f)
-        assertEquals(-0.67396f, PhysicsTools.calculateMinAcceleration(AircraftTypeData.AircraftPerfData(), 0f, 140f, true), 0.00001f)
+        assertEquals(3.9086f, PhysicsTools.calculateMaxAcceleration(AircraftTypeData.AircraftPerfData(), 0f, 80f, false), 0.0001f)
+        assertEquals(-0.87157f, PhysicsTools.calculateMinAcceleration(AircraftTypeData.AircraftPerfData(), 0f, 140f, true), 0.00001f)
         assertEquals(0.44109f, PhysicsTools.calculateRequiredAcceleration(0, 100, 3000f), 0.00001f)
         assertEquals(1.1292f, PhysicsTools.calculateRequiredAcceleration(0, 160, 3000f), 0.0001f)
         assertEquals(2.0238f, PhysicsTools.calculateRequiredAcceleration(80, 180, 1700f), 0.0001f)
+    }
+
+    @Test
+    @DisplayName("Vertical speed calculations")
+    fun checkVerticalSpeedCalculations() {
+        // Delta set at 5th significant figure
+        assertEquals(5621.7f, PhysicsTools.calculateVerticalSpd(286000f, 140f, 0f, 73550), 0.1f)
+        assertEquals(3453.1f, PhysicsTools.calculateVerticalSpd(286000f, 140f, 1.5f, 73550), 0.1f)
+        assertEquals(5367.1f, PhysicsTools.calculateVerticalSpd(252000f, 140f, 0f, 67880), 0.1f)
+        assertEquals(3198.5f, PhysicsTools.calculateVerticalSpd(252000f, 140f, 1.5f, 67880), 0.1f)
+        assertEquals(6764.9f, PhysicsTools.calculateMaxVerticalSpd(AircraftTypeData.AircraftPerfData(), 0f, 175f, 0f, false), 0.1f)
+        assertEquals(3692.7f, PhysicsTools.calculateMaxVerticalSpd(AircraftTypeData.AircraftPerfData(), 0f, 175f, 1.7f, false), 0.1f)
+        assertEquals(-683.012f, PhysicsTools.calculateMinVerticalSpd(AircraftTypeData.AircraftPerfData(), 9000f, 273.24f, 0f, false), 0.01f)
+        assertEquals(-6620.9f, PhysicsTools.calculateMinVerticalSpd(AircraftTypeData.AircraftPerfData(), 9000f, 301.31415f, -1.5f, true), 0.1f)
     }
 }

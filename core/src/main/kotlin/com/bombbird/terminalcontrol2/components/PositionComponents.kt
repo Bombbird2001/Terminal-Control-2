@@ -42,13 +42,13 @@ data class Altitude(var altitude: Float = 0f): Component {
 
 /** Component for lateral, vertical and angular acceleration
  *
- * Unit for [dSpeed] is metres per second^2
+ * Unit for [dSpeedMps2] is metres per second^2
  *
- * Unit for [dVertSpd] is metres per second^2
+ * Unit for [dVertSpdMps2] is metres per second^2
  *
- * Unit for [dAngularSpd] is degrees per second^2
+ * Unit for [dAngularSpdDps2] is degrees per second^2
  * */
-data class Acceleration(var dSpeed: Float = 0f, var dVertSpd: Float = 0f, var dAngularSpd: Float = 0f): Component {
+data class Acceleration(var dSpeedMps2: Float = 0f, var dVertSpdMps2: Float = 0f, var dAngularSpdDps2: Float = 0f): Component {
     companion object: Mapper<Acceleration>()
 }
 
