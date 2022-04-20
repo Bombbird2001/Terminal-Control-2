@@ -1,3 +1,4 @@
+import com.bombbird.terminalcontrol2.components.CommandTarget
 import com.bombbird.terminalcontrol2.utilities.MathTools
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.DisplayName
@@ -14,6 +15,7 @@ object MathToolsTest {
         assertEquals(1.943844f, MathTools.mpsToKt(1f), 0.0001f)
         assertEquals(0.514444f, MathTools.ktToMps(1f), 0.00001f)
         assertEquals(196.8504f, MathTools.mpsToFpm(1f), 0.01f)
+        assertEquals(10.16f, MathTools.fpmToMps(2000f), 0.001f)
     }
 
     @Test
@@ -33,5 +35,16 @@ object MathToolsTest {
         assertEquals(1852 / MathTools.NM_TO_PX, MathTools.pxToM(1))
         assertEquals(MathTools.NM_TO_PX / 3600, MathTools.ktToPxps(1))
         assertEquals(MathTools.NM_TO_PX / 3600, MathTools.ktToPxps(1.0f))
+    }
+
+    @Test
+    @DisplayName("Heading calculations")
+    fun checkHeadingCalculations() {
+        assertEquals(50f, MathTools.findDeltaHeading(360f, 50f, CommandTarget.DEFAULT))
+        assertEquals(50f, MathTools.findDeltaHeading(360f, 50f, CommandTarget.RIGHT))
+        assertEquals(-310f, MathTools.findDeltaHeading(360f, 50f, CommandTarget.LEFT))
+        assertEquals(120f, MathTools.findDeltaHeading(-30f, 450f, CommandTarget.DEFAULT))
+        assertEquals(120f, MathTools.findDeltaHeading(-30f, 450f, CommandTarget.RIGHT))
+        assertEquals(-240f, MathTools.findDeltaHeading(-30f, 450f, CommandTarget.LEFT))
     }
 }

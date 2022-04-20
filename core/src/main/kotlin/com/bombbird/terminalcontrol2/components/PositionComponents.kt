@@ -12,11 +12,11 @@ data class Position(var x: Float = 0f, var y: Float = 0f): Component {
     companion object: Mapper<Position>()
 }
 
-/** Component for direction
+/** Component for direction (uses track - already takes into account magnetic heading deviation)
  *
- * [dirUnitVector] is rotated with respect to the screen, with positive [Vector2.x] towards the right and positive [Vector2.y] towards the top
+ * [trackUnitVector] is rotated with respect to the screen, with positive [Vector2.x] towards the right and positive [Vector2.y] towards the top
  * */
-data class Direction(var dirUnitVector: Vector2 = Vector2()): Component {
+data class Direction(var trackUnitVector: Vector2 = Vector2()): Component {
     companion object: Mapper<Direction>()
 }
 
@@ -34,9 +34,9 @@ data class Speed(var speedKts: Float = 0f, var vertSpdFpm: Float = 0f, var angul
 
 /** Component for altitude
  *
- * Unit for [altitude] is feet
+ * Unit for [altitudeFt] is feet
  * */
-data class Altitude(var altitude: Float = 0f): Component {
+data class Altitude(var altitudeFt: Float = 0f): Component {
     companion object: Mapper<Altitude>()
 }
 
@@ -61,11 +61,11 @@ data class RadarData(val position: Position = Position(), val direction: Directi
  *
  * Note: [Speed.speedKts] stores true airspeed
  *
- * [ias] is calculated by some complicated equation which I will not put here (see PhysicsTools for the actual implementation);
+ * [iasKt] is calculated by some complicated equation which I will not put here (see PhysicsTools for the actual implementation);
  * technically the appropriate term to use for the purpose of this game is CAS (calibrated air speed), but we will assume
- * the difference between [ias] and CAS is negligible and use them interchangeably
+ * the difference between [iasKt] and CAS is negligible and use them interchangeably
  * */
-data class IndicatedAirSpeed(var ias: Float = 0f): Component {
+data class IndicatedAirSpeed(var iasKt: Float = 0f): Component {
     companion object: Mapper<IndicatedAirSpeed>()
 }
 

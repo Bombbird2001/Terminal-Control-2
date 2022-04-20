@@ -19,7 +19,7 @@ class Airport(id: Byte, icao: String, arptName: String, posX: Float, posY: Float
             y = posY
         }
         with<Altitude> {
-            altitude = elevation
+            altitudeFt = elevation
         }
         with<AirportInfo> {
             arptId = id
@@ -65,7 +65,7 @@ class Airport(id: Byte, icao: String, arptName: String, posX: Float, posY: Float
             val rwys = get(RunwayChildren.mapper) ?: return SerialisedAirport()
             return SerialisedAirport(
                 position.x, position.y,
-                altitude.altitude,
+                altitude.altitudeFt,
                 arptInfo.arptId, arptInfo.icaoCode, arptInfo.name,
                 rwys.rwyMap.mapValues { it.value.getSerialisableObject() },
                 getSerialisedMetar()
@@ -110,10 +110,10 @@ class Airport(id: Byte, icao: String, arptName: String, posX: Float, posY: Float
                 y = posY
             }
             with<Altitude> {
-                altitude = elevation
+                altitudeFt = elevation
             }
             with<Direction> {
-                dirUnitVector = Vector2(Vector2.Y).rotateDeg(-trueHdg)
+                trackUnitVector = Vector2(Vector2.Y).rotateDeg(-trueHdg)
             }
             with<GRect> {
                 width = MathTools.mToPx(runwayLengthM.toInt())
@@ -172,8 +172,8 @@ class Airport(id: Byte, icao: String, arptName: String, posX: Float, posY: Float
                 val rwyLabel = get(RunwayLabel.mapper) ?: return SerialisedRunway()
                 return SerialisedRunway(
                     position.x, position.y,
-                    altitude.altitude,
-                    MathTools.convertWorldAndRenderDeg(direction.dirUnitVector.angleDeg()),
+                    altitude.altitudeFt,
+                    MathTools.convertWorldAndRenderDeg(direction.trackUnitVector.angleDeg()),
                     rwyInfo.rwyId, rwyInfo.rwyName, rwyInfo.lengthM,
                     rwyLabel.positionToRunway
                 )

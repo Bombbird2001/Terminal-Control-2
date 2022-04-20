@@ -67,7 +67,7 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
                 val srColor = get(SRColor.mapper) ?: return@apply
                 rect.height = rwyWidthPx
                 shapeRenderer.color = srColor.color
-                shapeRenderer.rect(pos.x, pos.y - rect.height / 2, 0f, rect.height / 2, rect.width, rect.height, 1f, 1f, deg.dirUnitVector.angleDeg())
+                shapeRenderer.rect(pos.x, pos.y - rect.height / 2, 0f, rect.height / 2, rect.width, rect.height, 1f, 1f, deg.trackUnitVector.angleDeg())
             }
         }
         shapeRenderer.end()
@@ -99,7 +99,7 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
                     rwyLabel.apply {
                         val spacingFromCentre = sqrt(prefWidth * prefWidth + prefHeight * prefHeight) / 2 + 3 / camZoom + if (positionToRunway == 0.byte) 0f else rwyWidthPx / 2
                         if (!dirSet) {
-                            dirUnitVector = ImmutableVector2(direction.dirUnitVector.x, direction.dirUnitVector.y)
+                            dirUnitVector = ImmutableVector2(direction.trackUnitVector.x, direction.trackUnitVector.y)
                             when (positionToRunway) {
                                 1.byte -> {
                                     dirUnitVector = dirUnitVector.withRotation90(-1)

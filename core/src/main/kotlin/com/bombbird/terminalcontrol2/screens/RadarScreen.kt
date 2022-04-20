@@ -22,7 +22,7 @@ import com.bombbird.terminalcontrol2.graphics.UIPane
 import com.bombbird.terminalcontrol2.networking.GameServer
 import com.bombbird.terminalcontrol2.networking.SerialisationRegistering
 import com.bombbird.terminalcontrol2.systems.LowFreqUpdate
-import com.bombbird.terminalcontrol2.systems.PhysicsSystem
+import com.bombbird.terminalcontrol2.systems.PhysicsSystemClient
 import com.bombbird.terminalcontrol2.systems.RenderingSystem
 import com.bombbird.terminalcontrol2.utilities.MathTools
 import com.bombbird.terminalcontrol2.utilities.safeStage
@@ -134,7 +134,7 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
         uiStage.camera.moveTo(Vector2())
 
         Constants.CLIENT_ENGINE.addSystem(RenderingSystem(shapeRenderer, radarDisplayStage, uiStage))
-        Constants.CLIENT_ENGINE.addSystem(PhysicsSystem())
+        Constants.CLIENT_ENGINE.addSystem(PhysicsSystemClient())
     }
 
     /** Ensures [radarDisplayStage]'s camera parameters are within limits, then updates the camera (and [shapeRenderer]) */

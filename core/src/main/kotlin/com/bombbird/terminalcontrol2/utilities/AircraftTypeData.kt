@@ -10,7 +10,7 @@ object AircraftTypeData {
     fun getAircraftPerf(icaoType: String): AircraftPerfData {
         return aircraftPerfMap[icaoType] ?: run {
             Gdx.app.log("AircraftTypeData", "No performance data found for $icaoType, returning default data")
-            return AircraftPerfData()
+            return AircraftPerfData(minCdTimesRefArea = 14.4144f, maxCdTimesRefArea = 74.256f)
         }
     }
 

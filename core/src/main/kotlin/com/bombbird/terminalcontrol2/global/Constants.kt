@@ -3,6 +3,7 @@ package com.bombbird.terminalcontrol2.global
 import com.badlogic.ashley.core.Engine
 import com.bombbird.terminalcontrol2.TerminalControl2
 import com.bombbird.terminalcontrol2.screens.RadarScreen
+import com.bombbird.terminalcontrol2.utilities.PhysicsTools
 import ktx.collections.GdxArray
 
 /** Global constants for use, cannot/should not be modified */
@@ -28,6 +29,16 @@ object Constants {
     const val RWY_WIDTH_CHANGE_PX_PER_ZOOM = 3f
     const val AIRCRAFT_BLIP_LENGTH_PX_ZOOM_1 = 20f
     const val AIRCRAFT_BLIP_LENGTH_CHANGE_PX_PER_ZOOM = 4f
+
+    /** Physics */
+    const val MAX_VERT_ACC = 0.25f * PhysicsTools.GRAVITY_ACCELERATION_MPS2
+    const val MIN_VERT_ACC = -0.25f * PhysicsTools.GRAVITY_ACCELERATION_MPS2
+    const val MAX_LOW_SPD_ANGULAR_SPD = 3f
+    const val MAX_HIGH_SPD_ANGULAR_SPD = 1.5f
+    const val MAX_ANGULAR_ACC = 0.3f
+    const val MAX_JERK = 2f
+    const val MAX_VS = 4000f
+    const val MAX_ACC = 3.2f
 
     /** List of available airports (can be modified, but don't) */
     val AVAIL_AIRPORTS = GdxArray<String>(arrayOf("TCTP", "TCWS", "TCTT", "TCBB", "TCHH", "TCBD", "TCMD", "TCPG"))

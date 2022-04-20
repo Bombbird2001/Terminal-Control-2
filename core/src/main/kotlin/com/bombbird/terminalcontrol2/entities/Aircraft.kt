@@ -17,13 +17,13 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
             y = posY
         }
         with<Altitude> {
-            altitude = alt
+            altitudeFt = alt
         }
         with<AircraftInfo> {
             icaoCallsign = callsign
         }
         with<Direction> {
-            dirUnitVector = Vector2(Vector2.Y)
+            trackUnitVector = Vector2(Vector2.Y)
         }
         with<Speed>()
         with<IndicatedAirSpeed>()
@@ -38,6 +38,8 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
         with<RSSprite> {
             drawable = TextureRegionDrawable(Scene2DSkin.defaultSkin.getRegion("aircraftDeparture"))
         }
+        with<CommandTarget>()
+        with<TakeoffRoll>()
         // TODO Add controllable component
     }
 
@@ -52,7 +54,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
             ).apply {
                 entity.apply {
                     get(Direction.mapper)?.apply {
-                        dirUnitVector = Vector2(serialisedAircraft.directionX, serialisedAircraft.directionY)
+                        trackUnitVector = Vector2(serialisedAircraft.directionX, serialisedAircraft.directionY)
                     }
                     get(AircraftInfo.mapper)?.apply {
                         icaoType = serialisedAircraft.icaoType
@@ -68,8 +70,8 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
                     get(RadarData.mapper)?.apply {
                         position.x = serialisedAircraft.rX.toFloat()
                         position.y = serialisedAircraft.rY.toFloat()
-                        altitude.altitude = serialisedAircraft.rAlt
-                        direction.dirUnitVector = Vector2(serialisedAircraft.rDirX / 30000f, serialisedAircraft.rDirY / 30000f)
+                        altitude.altitudeFt = serialisedAircraft.rAlt
+                        direction.trackUnitVector = Vector2(serialisedAircraft.rDirX / 30000f, serialisedAircraft.rDirY / 30000f)
                         speed.speedKts = serialisedAircraft.rSpd.toFloat()
                         speed.vertSpdFpm = serialisedAircraft.rVertSpd.toFloat()
                         speed.angularSpdDps = serialisedAircraft.rAngularSpd / 100f
@@ -101,12 +103,12 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
             val rData = get(RadarData.mapper) ?: return SerialisedAircraftUDP()
             return SerialisedAircraftUDP(
                 position.x, position.y,
-                altitude.altitude,
+                altitude.altitudeFt,
                 acInfo.icaoCallsign,
-                direction.dirUnitVector.x, direction.dirUnitVector.y,
+                direction.trackUnitVector.x, direction.trackUnitVector.y,
                 speed.speedKts, speed.vertSpdFpm, speed.angularSpdDps,
-                rData.position.x.toInt().toShort(), rData.position.y.toInt().toShort(), rData.altitude.altitude,
-                (rData.direction.dirUnitVector.x * 30000).toInt().toShort(), (rData.direction.dirUnitVector.y * 30000).toInt().toShort(),
+                rData.position.x.toInt().toShort(), rData.position.y.toInt().toShort(), rData.altitude.altitudeFt,
+                (rData.direction.trackUnitVector.x * 30000).toInt().toShort(), (rData.direction.trackUnitVector.y * 30000).toInt().toShort(),
                 rData.speed.speedKts.toInt().toShort(), rData.speed.vertSpdFpm.toInt().toShort(), (rData.speed.angularSpdDps * 100).toInt().toShort()
             )
         }
@@ -120,10 +122,10 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
                 y = data.y
             }
             get(Altitude.mapper)?.apply {
-                altitude = data.altitude
+                altitudeFt = data.altitude
             }
             get(Direction.mapper)?.apply {
-                dirUnitVector = Vector2(data.directionX, data.directionY)
+                trackUnitVector = Vector2(data.directionX, data.directionY)
             }
             get(Speed.mapper)?.apply {
                 speedKts = data.speedKts
@@ -133,8 +135,8 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
             get(RadarData.mapper)?.apply {
                 position.x = data.rX.toFloat()
                 position.y = data.rY.toFloat()
-                altitude.altitude = data.rAlt
-                direction.dirUnitVector = Vector2(data.rDirX / 30000f, data.rDirY / 30000f)
+                altitude.altitudeFt = data.rAlt
+                direction.trackUnitVector = Vector2(data.rDirX / 30000f, data.rDirY / 30000f)
                 speed.speedKts = data.rSpd.toFloat()
                 speed.vertSpdFpm = data.rVertSpd.toFloat()
                 speed.angularSpdDps = data.rAngularSpd / 100f
@@ -166,12 +168,12 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
             val flightType = get(FlightType.mapper) ?: return SerialisedAircraft()
             return SerialisedAircraft(
                 position.x, position.y,
-                altitude.altitude,
+                altitude.altitudeFt,
                 acInfo.icaoCallsign, acInfo.icaoType, acInfo.aircraftPerf.appSpd, acInfo.aircraftPerf.vR, acInfo.aircraftPerf.weightKg,
-                direction.dirUnitVector.x, direction.dirUnitVector.y,
+                direction.trackUnitVector.x, direction.trackUnitVector.y,
                 speed.speedKts, speed.vertSpdFpm, speed.angularSpdDps,
-                rData.position.x.toInt().toShort(), rData.position.y.toInt().toShort(), rData.altitude.altitude,
-                (rData.direction.dirUnitVector.x * 30000).toInt().toShort(), (rData.direction.dirUnitVector.y * 30000).toInt().toShort(),
+                rData.position.x.toInt().toShort(), rData.position.y.toInt().toShort(), rData.altitude.altitudeFt,
+                (rData.direction.trackUnitVector.x * 30000).toInt().toShort(), (rData.direction.trackUnitVector.y * 30000).toInt().toShort(),
                 rData.speed.speedKts.toInt().toShort(), rData.speed.vertSpdFpm.toInt().toShort(), (rData.speed.angularSpdDps * 100).toInt().toShort(),
                 flightType.type
             )

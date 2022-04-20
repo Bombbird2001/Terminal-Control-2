@@ -7,15 +7,15 @@ import ktx.ashley.Mapper
  *
  * Aircraft will accelerate at a constant rate [targetAccMps2], rotate at vR
  * */
-data class TakeoffRoll(var targetAccMps2: Float): Component {
+data class TakeoffRoll(var targetAccMps2: Float = 2f): Component {
     companion object: Mapper<TakeoffRoll>()
 }
 
 /** Component for tagging initial takeoff climb mode
  *
- * Aircraft will maintain vR + (15 to 20) and climb at max allowed rate till [accelFtAGL], where it will accelerate
+ * Aircraft will maintain vR + (15 to 20) and climb at max allowed rate till [accelAltFt], where it will accelerate
  * */
-data class TakeoffClimb(var accelFtAGL: Float): Component {
+data class TakeoffClimb(var accelAltFt: Float = 1500f): Component {
     companion object: Mapper<TakeoffClimb>()
 }
 
@@ -31,6 +31,8 @@ class Landing: Component {
  *
  * [targetHdgDeg] is the heading the plane will turn to and maintain
  *
+ * [turnDir] is the direction to turn ([DEFAULT] will turn in the quickest direction)
+ *
  * [targetAltFt] is the altitude the plane will climb/descend to and maintain
  *
  * [targetIasKt] is the indicated airspeed the plane will speed up/slow down to and maintain
@@ -38,16 +40,11 @@ class Landing: Component {
  * These basic parameters can be automatically altered by more advanced modes, such as Direct (to waypoint), Hold (at waypoint),
  * Climb via SID/Descend via STAR (to altitude), and SID/STAR speed restrictions in order to achieve the required behaviour
  * */
-data class CommandTarget(var targetHdgDeg: Float, var targetAltFt: Float, var targetIasKt: Short): Component {
-    companion object: Mapper<CommandTarget>()
+data class CommandTarget(var targetHdgDeg: Float = 360f, var turnDir: Byte = DEFAULT, var targetAltFt: Float = 0f, var targetIasKt: Short = 0): Component {
+    companion object: Mapper<CommandTarget>() {
+        val DEFAULT: Byte = 0
+        val LEFT: Byte = -1
+        val RIGHT: Byte = 1
+    }
 }
 
-/** Component for tagging aircraft that must turn right */
-class TurnRight: Component {
-    companion object: Mapper<TurnRight>()
-}
-
-/** Component for tagging aircraft that must turn left */
-class TurnLeft: Component {
-    companion object: Mapper<TurnLeft>()
-}

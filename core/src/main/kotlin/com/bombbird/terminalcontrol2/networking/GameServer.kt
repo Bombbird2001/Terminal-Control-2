@@ -62,7 +62,7 @@ class GameServer {
 
         // Add dummy aircraft
         aircraft["SHIBA2"] = Aircraft("SHIBA2", 10f, -10f, 108f, FlightType.DEPARTURE, false).apply {
-            entity[Direction.mapper]?.dirUnitVector?.rotateDeg(-49.07f) // Runway 05R heading
+            entity[Direction.mapper]?.trackUnitVector?.rotateDeg(-49.07f) // Runway 05R heading
             entity.add(TakeoffRoll(PhysicsTools.calculateRequiredAcceleration(0, entity[AircraftInfo.mapper]?.aircraftPerf?.vR ?: 0, (3800 - 1000) * MathUtils.random(0.75f, 1f))))
         }
 
@@ -143,6 +143,7 @@ class GameServer {
                 startTime = currMs
             } else {
                 // Update client with seconds passed since last frame
+                // println("Time diff: ${currMs - prevMs}")
                 update((currMs - prevMs) / 1000f)
                 val currLowFreqSlot = (currMs - startTime) / (UPDATE_INTERVAL_LOW_FREQ).toLong()
                 if (currLowFreqSlot > lowFreqUpdateSlot) {
@@ -166,7 +167,18 @@ class GameServer {
                 }
             }
             prevMs = currMs
-            Thread.sleep((UPDATE_INTERVAL - (currMs - startTime) % UPDATE_INTERVAL).roundToLong())
+            // println("$UPDATE_INTERVAL $currMs $startTime")
+            val currFrame = (currMs - startTime) * Constants.SERVER_UPDATE_RATE / 1000
+            val nextFrameTime = (UPDATE_INTERVAL - (currMs - startTime) % UPDATE_INTERVAL)
+
+            // For cases where rounding errors result in a nextFrameTime of almost 0 - take the time needed to 2 frames later instead
+            if (nextFrameTime < 0.1 * UPDATE_INTERVAL) {
+                var newTime = (currFrame + 2) * 1000 / Constants.SERVER_UPDATE_RATE + startTime - currMs
+                if (newTime > 24) newTime -= 1000 / Constants.SERVER_UPDATE_RATE
+                Thread.sleep(newTime)
+            } else Thread.sleep(nextFrameTime.roundToLong())
+
+            // Thread.sleep(nextFrameTime.roundToLong())
         }
     }
 
@@ -175,6 +187,7 @@ class GameServer {
         // timeCounter += delta
         // frames++
         // println("Delta: $delta Average frame time: ${timeCounter / frames} Average FPS: ${frames / timeCounter}")
+        // println(1 / delta)
 
         engine.update(delta)
         // println(engine.entities.size())

@@ -104,6 +104,10 @@ object MathTools {
         return mToFt(ms * 60)
     }
 
+    /** Convert from feet per minute to metres per second */
+    fun fpmToMps(fpm: Float): Float {
+        return fpm / mpsToFpm(1f)
+    }
 
     /** Converts between in-game world degrees and degree used by the rendering systems
      *
@@ -113,5 +117,27 @@ object MathTools {
      * */
     fun convertWorldAndRenderDeg(origDeg: Float): Float {
         return 90 - origDeg
+    }
+
+    /** Calculates the effective heading difference (i.e. how much the aircraft needs to turn through) given [initHdg], [targetHdg] and [turnDir] */
+    fun findDeltaHeading(initHdg: Float, targetHdg: Float, turnDir: Byte): Float {
+        var diff = targetHdg - initHdg
+        when (turnDir) {
+            0.toByte() -> {
+                diff %= 360
+                if (diff > 180) diff -= 360
+                else if (diff <= -180) diff += 360
+            }
+            (-1).toByte() -> {
+                diff %= 360
+                if (diff > 0) diff -= 360
+            }
+            1.toByte() -> {
+                diff %= 360
+                if (diff < 0) diff += 360
+            }
+        }
+
+        return diff
     }
 }
