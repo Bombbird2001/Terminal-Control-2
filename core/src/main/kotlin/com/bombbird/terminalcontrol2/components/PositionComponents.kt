@@ -73,7 +73,7 @@ data class IndicatedAirSpeed(var iasKt: Float = 0f): Component {
  *
  * To prevent on-ground entities from being affected by wind, add the [OnGround] component to the entity
  * */
-class AffectedByWind: Component {
+class AffectedByWind(var windVector: Vector2 = Vector2()): Component {
     companion object: Mapper<AffectedByWind>()
 }
 

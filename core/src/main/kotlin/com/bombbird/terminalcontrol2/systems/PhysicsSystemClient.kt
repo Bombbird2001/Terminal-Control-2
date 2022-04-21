@@ -3,6 +3,7 @@ package com.bombbird.terminalcontrol2.systems
 import com.badlogic.ashley.core.EntitySystem
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.utilities.MathTools
+import com.bombbird.terminalcontrol2.utilities.MetarTools
 import com.bombbird.terminalcontrol2.utilities.PhysicsTools
 import ktx.ashley.allOf
 import ktx.ashley.exclude
@@ -33,7 +34,17 @@ class PhysicsSystemClient: EntitySystem(), LowFreqUpdate {
             }
         }
 
-        // TODO Position affected by wind
+        // Position affected by wind
+        val windAffectedFamily = allOf(AffectedByWind::class, Position::class).get()
+        val windAffected = engine.getEntitiesFor(windAffectedFamily)
+        for (i in 0 until windAffected.size()) {
+            windAffected[i]?.apply {
+                val pos = get(Position.mapper) ?: return@apply
+                val wind = get(AffectedByWind.mapper) ?: return@apply
+                pos.x += wind.windVector.x * deltaTime
+                pos.y += wind.windVector.y * deltaTime
+            }
+        }
     }
 
     /** Secondary update system, for operations that can be updated at a lower frequency and do not rely on deltaTime
@@ -51,6 +62,17 @@ class PhysicsSystemClient: EntitySystem(), LowFreqUpdate {
                 val ias = get(IndicatedAirSpeed.mapper) ?: return@apply
                 val alt = get(Altitude.mapper) ?: return@apply
                 ias.iasKt = PhysicsTools.calculateIASFromTAS(alt.altitudeFt, spd.speedKts)
+            }
+        }
+
+        // Update the wind vector (to that of the METAR of the nearest airport)
+        val affectedByWindFamily = allOf(Position::class, AffectedByWind::class).get()
+        val affectedByWind = engine.getEntitiesFor(affectedByWindFamily)
+        for (i in 0 until affectedByWind.size()) {
+            affectedByWind[i]?.apply {
+                val pos = get(Position.mapper) ?: return@apply
+                val wind = get(AffectedByWind.mapper) ?: return@apply
+                wind.windVector = MetarTools.getClosestAirportWindVector(pos.x, pos.y)
             }
         }
     }

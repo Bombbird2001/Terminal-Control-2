@@ -6,6 +6,7 @@ import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.Constants
 import com.bombbird.terminalcontrol2.global.Variables
 import com.bombbird.terminalcontrol2.utilities.MathTools
+import com.bombbird.terminalcontrol2.utilities.MetarTools
 import com.bombbird.terminalcontrol2.utilities.PhysicsTools
 import ktx.ashley.*
 import ktx.math.times
@@ -34,7 +35,18 @@ class PhysicsSystem: EntitySystem(), LowFreqUpdate {
                 pos.y += velVector.y
                 dir.trackUnitVector.rotateDeg(-spd.angularSpdDps * deltaTime)
                 alt.altitudeFt += spd.vertSpdFpm / 60 * deltaTime
-                // if (spd.vertSpdFpm > 0) println(spd.vertSpdFpm / 60 * deltaTime)
+            }
+        }
+
+        // Position affected by wind
+        val windAffectedFamily = allOf(AffectedByWind::class, Position::class).get()
+        val windAffected = engine.getEntitiesFor(windAffectedFamily)
+        for (i in 0 until windAffected.size()) {
+            windAffected[i]?.apply {
+                val pos = get(Position.mapper) ?: return@apply
+                val wind = get(AffectedByWind.mapper) ?: return@apply
+                pos.x += wind.windVector.x * deltaTime
+                pos.y += wind.windVector.y * deltaTime
             }
         }
 
@@ -97,7 +109,7 @@ class PhysicsSystem: EntitySystem(), LowFreqUpdate {
                 val cmd = get(CommandTarget.mapper) ?: return@apply
 
                 // Calculate the change in heading required
-                val deltaHeading = MathTools.findDeltaHeading(MathTools.convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg() + Variables.MAG_HDG_DEV), cmd.targetHdgDeg, cmd.turnDir)
+                val deltaHeading = MathTools.findDeltaHeading(MathTools.convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()), cmd.targetHdgDeg - Variables.MAG_HDG_DEV, cmd.turnDir)
 
                 // Reach target heading within 5 seconds, capped by turn rate limit
                 var targetAngSpd = deltaHeading / 5
@@ -109,8 +121,6 @@ class PhysicsSystem: EntitySystem(), LowFreqUpdate {
                 acc.dAngularSpdDps2 = MathUtils.clamp(targetAngAcc, -Constants.MAX_ANGULAR_ACC, Constants.MAX_ANGULAR_ACC) // Clamp to min, max angular acceleration
             }
         }
-
-        // TODO Position affected by wind
     }
 
     /** Secondary update system, for operations that can be updated at a lower frequency and do not rely on deltaTime
@@ -156,6 +166,17 @@ class PhysicsSystem: EntitySystem(), LowFreqUpdate {
                 println("Max acc: ${aircraftInfo.maxAcc}m/s2")
                 println("Min VS: ${aircraftInfo.minVs}ft/min")
                 println("Max VS: ${aircraftInfo.maxVs}ft/min")
+            }
+        }
+
+        // Update the wind vector (to that of the METAR of the nearest airport)
+        val affectedByWindFamily = allOf(Position::class, AffectedByWind::class).get()
+        val affectedByWind = engine.getEntitiesFor(affectedByWindFamily)
+        for (i in 0 until affectedByWind.size()) {
+            affectedByWind[i]?.apply {
+                val pos = get(Position.mapper) ?: return@apply
+                val wind = get(AffectedByWind.mapper) ?: return@apply
+                wind.windVector = MetarTools.getClosestAirportWindVector(pos.x, pos.y)
             }
         }
     }

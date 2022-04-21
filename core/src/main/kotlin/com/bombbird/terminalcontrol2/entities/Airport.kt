@@ -7,6 +7,7 @@ import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.Airport.Runway.SerialisedRunway
 import com.bombbird.terminalcontrol2.global.Constants
 import com.bombbird.terminalcontrol2.utilities.MathTools
+import com.bombbird.terminalcontrol2.utilities.MetarTools
 import ktx.ashley.entity
 import ktx.ashley.get
 import ktx.ashley.with
@@ -87,7 +88,7 @@ class Airport(id: Byte, icao: String, arptName: String, posX: Float, posY: Float
         } ?: SerialisedMetar()
     }
 
-    /** De-serialses a [SerialisedMetar] and updates this airport's [MetarInfo] from it */
+    /** De-serialises a [SerialisedMetar] and updates this airport's [MetarInfo] from it */
     fun updateFromSerialisedMetar(serialisedMetar: SerialisedMetar) {
         entity[MetarInfo.mapper]?.apply {
             realLifeIcao = serialisedMetar.realLifeIcao
@@ -99,6 +100,7 @@ class Airport(id: Byte, icao: String, arptName: String, posX: Float, posY: Float
             visibilityM = serialisedMetar.visibilityM
             ceilingHundredFtAGL = serialisedMetar.ceilingFtAGL
             windshear = serialisedMetar.windshear
+            MetarTools.updateWindVector(windVector, windHeadingDeg, windSpeedKt)
         }
     }
 

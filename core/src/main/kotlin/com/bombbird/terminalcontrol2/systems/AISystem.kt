@@ -36,7 +36,7 @@ class AISystem: EntitySystem() {
                         accelAltFt = alt.altitudeFt + MathUtils.random(1500, 2000)
                     }
                     addComponent<AffectedByWind>(Constants.SERVER_ENGINE)
-                    cmdTarget.targetHdgDeg = 360f
+                    cmdTarget.targetHdgDeg = 90f
                     cmdTarget.targetAltFt = 10000f
                     cmdTarget.targetIasKt = (aircraftInfo.aircraftPerf.vR + MathUtils.random(15, 20)).toShort()
                     return@apply
