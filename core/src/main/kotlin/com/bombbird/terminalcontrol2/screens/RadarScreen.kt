@@ -35,6 +35,7 @@ import ktx.ashley.get
 import ktx.assets.disposeSafely
 import ktx.graphics.moveTo
 import ktx.math.ImmutableVector2
+import java.io.IOException
 import kotlin.concurrent.thread
 import kotlin.math.min
 
@@ -79,10 +80,18 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
 
     init {
         if (true) Constants.GAME.gameServer = GameServer().apply { initiateServer() } // TODO True if single-player or host of multiplayer, false otherwise
-
         SerialisationRegistering.registerAll(client.kryo)
         client.start()
-        client.connect(5000, connectionHost, Variables.TCP_PORT, Variables.UDP_PORT)
+        while (true) {
+            try {
+                client.connect(5000, connectionHost, Variables.TCP_PORT, Variables.UDP_PORT)
+                break
+            } catch (_: IOException) {
+                // Workaround for strange behaviour on some devices where the 5000ms timeout is ignored,
+                // an IOException is thrown instantly as server has not started up
+                Thread.sleep(1000)
+            }
+        }
         client.addListener(object: Listener {
             override fun received(connection: Connection?, `object`: Any?) {
                 // TODO Handle data receipts

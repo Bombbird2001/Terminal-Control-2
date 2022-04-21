@@ -13,6 +13,9 @@ object HttpRequest {
     private val JSON_MEDIA_TYPE: MediaType = "application/json; charset=utf-8".toMediaType()
     private val client = OkHttpClient()
 
+    /** Sends a HTTP request to the METAR server, with the [reqString] query and [retry] which denotes whether the program
+     * should try another request in case of failure
+     * */
     fun sendMetarRequest(reqString: String, retry: Boolean) {
         val request = Request.Builder()
             .url(Secrets.GET_METAR_URL)
@@ -21,7 +24,9 @@ object HttpRequest {
         client.newCall(request).enqueue(object: Callback {
             override fun onFailure(call: Call, e: IOException) {
                 Gdx.app.log("HttpRequest", "Request failed")
-                MetarTools.requestAllMetar()
+                if (Constants.GAME.gameServer?.gameRunning == true) return
+                if (retry) sendMetarRequest(reqString, false)
+                else MetarTools.generateRandomWeather() // Generate offline weather
             }
 
             override fun onResponse(call: Call, response: Response) {

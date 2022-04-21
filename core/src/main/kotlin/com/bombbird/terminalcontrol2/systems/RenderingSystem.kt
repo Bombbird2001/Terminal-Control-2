@@ -152,8 +152,7 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
             }
         }
 
-        Constants.GAME.batch.projectionMatrix = stage.camera.combined
-        // Render aircraft datatags TODO constant size labels
+        // Render aircraft datatags
         val tbFamily = allOf(AircraftInfo::class, GenericTextButton::class, RadarData::class).get()
         val textButtons = engine.getEntitiesFor(tbFamily)
         for (i in 0 until textButtons.size()) {
@@ -161,7 +160,7 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
                 val tb = get(GenericTextButton.mapper) ?: return@apply
                 val radarData = get(RadarData.mapper) ?: return@apply
                 tb.textButton.apply {
-                    setPosition(radarData.position.x + tb.xOffset, radarData.position.y + tb.yOffset)
+                    setPosition((radarData.position.x - camX) / camZoom + tb.xOffset, (radarData.position.y - camY) / camZoom + tb.yOffset)
                     draw(Constants.GAME.batch, 1f)
                 }
             }
