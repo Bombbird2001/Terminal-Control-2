@@ -30,6 +30,7 @@ class GameServer {
         const val UPDATE_INTERVAL_LOW_FREQ = 1000.0 / Constants.UPDATE_RATE_LOW_FREQ
         const val SERVER_TO_CLIENT_UPDATE_INTERVAL_FAST = 1000.0 / Constants.SERVER_TO_CLIENT_UPDATE_RATE_FAST
         const val SERVER_TO_CLIENT_UPDATE_INTERVAL_SLOW = 1000.0 / Constants.SERVER_TO_CLIENT_UPDATE_RATE_SLOW
+        const val SERVER_METAR_UPDATE_INTERVAL = Constants.SERVER_METAR_UPDATE_INTERVAL_MINS * 60 * 1000
     }
 
     private val loopRunning = AtomicBoolean(false)
@@ -136,6 +137,7 @@ class GameServer {
         var lowFreqUpdateSlot = -1L
         var fastUpdateSlot = -1L
         var slowUpdateSlot = -1L
+        var metarUpdateTime = 0
         while (loopRunning.get()) {
             val currMs = System.currentTimeMillis()
             if (startTime == -1L) {
@@ -164,6 +166,13 @@ class GameServer {
                     // Send slow UDP update if this update is after the time slot for the next slow UDP update
                     sendSlowUDPToAll()
                     slowUpdateSlot = currSlowSlot
+                }
+
+                // Check if METAR update required, update timer
+                metarUpdateTime += (currMs - prevMs).toInt()
+                if (metarUpdateTime > SERVER_METAR_UPDATE_INTERVAL) {
+                    MetarTools.requestAllMetar()
+                    metarUpdateTime -= SERVER_METAR_UPDATE_INTERVAL
                 }
             }
             prevMs = currMs

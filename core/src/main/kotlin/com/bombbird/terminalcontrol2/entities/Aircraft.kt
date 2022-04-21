@@ -28,18 +28,26 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
         with<Speed>()
         with<IndicatedAirSpeed>()
         with<Acceleration>()
-        with<RadarData> {
-            position.x = posX
-            position.y = posY
-        }
         with<FlightType> {
             type = flightType
         }
-        with<RSSprite> {
-            drawable = TextureRegionDrawable(Scene2DSkin.defaultSkin.getRegion("aircraftDeparture"))
-        }
         with<CommandTarget>()
         with<TakeoffRoll>()
+        // if (onClient) {
+            with<RadarData> {
+                position.x = posX
+                position.y = posY
+            }
+            with<GenericTextButton> {
+                updateStyle("DatatagGreen")
+                updateText("Test label")
+                xOffset = -textButton.width / 2
+                yOffset = 10f
+            }
+            with<RSSprite> {
+                drawable = TextureRegionDrawable(Scene2DSkin.defaultSkin.getRegion("aircraftDeparture"))
+            }
+        // }
         // TODO Add controllable component
     }
 
@@ -89,8 +97,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
                                 val altitude: Float = 0f,
                                 val icaoCallsign: String = "",
                                 val directionX: Float = 0f, val directionY: Float = 0f,
-                                val speedKts: Float = 0f, val vertSpdFpm: Float = 0f, val angularSpdDps: Float = 0f,
-                                val rX: Short = 0, val rY: Short = 0, val rAlt: Float = 0f, val rDirX: Short = 0, val rDirY: Short = 0, val rSpd: Short = 0, val rVertSpd: Short = 0, val rAngularSpd: Short = 0)
+                                val speedKts: Float = 0f, val vertSpdFpm: Float = 0f, val angularSpdDps: Float = 0f)
 
     /** Gets a [SerialisedAircraftUDP] from current state */
     fun getSerialisableObjectUDP(): SerialisedAircraftUDP {
@@ -100,16 +107,12 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
             val acInfo = get(AircraftInfo.mapper) ?: return SerialisedAircraftUDP()
             val direction = get(Direction.mapper) ?: return SerialisedAircraftUDP()
             val speed = get(Speed.mapper) ?: return SerialisedAircraftUDP()
-            val rData = get(RadarData.mapper) ?: return SerialisedAircraftUDP()
             return SerialisedAircraftUDP(
                 position.x, position.y,
                 altitude.altitudeFt,
                 acInfo.icaoCallsign,
                 direction.trackUnitVector.x, direction.trackUnitVector.y,
-                speed.speedKts, speed.vertSpdFpm, speed.angularSpdDps,
-                rData.position.x.toInt().toShort(), rData.position.y.toInt().toShort(), rData.altitude.altitudeFt,
-                (rData.direction.trackUnitVector.x * 30000).toInt().toShort(), (rData.direction.trackUnitVector.y * 30000).toInt().toShort(),
-                rData.speed.speedKts.toInt().toShort(), rData.speed.vertSpdFpm.toInt().toShort(), (rData.speed.angularSpdDps * 100).toInt().toShort()
+                speed.speedKts, speed.vertSpdFpm, speed.angularSpdDps
             )
         }
     }
@@ -131,15 +134,6 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
                 speedKts = data.speedKts
                 vertSpdFpm = data.vertSpdFpm
                 angularSpdDps = data.angularSpdDps
-            }
-            get(RadarData.mapper)?.apply {
-                position.x = data.rX.toFloat()
-                position.y = data.rY.toFloat()
-                altitude.altitudeFt = data.rAlt
-                direction.trackUnitVector = Vector2(data.rDirX / 30000f, data.rDirY / 30000f)
-                speed.speedKts = data.rSpd.toFloat()
-                speed.vertSpdFpm = data.rVertSpd.toFloat()
-                speed.angularSpdDps = data.rAngularSpd / 100f
             }
         }
     }

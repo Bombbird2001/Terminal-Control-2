@@ -32,7 +32,7 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
 
         // Render polygons
         val polygonFamily = allOf(GPolygon::class, SRColor::class).get()
-        val polygons = Constants.CLIENT_ENGINE.getEntitiesFor(polygonFamily)
+        val polygons = engine.getEntitiesFor(polygonFamily)
         for (i in 0 until polygons.size()) {
             polygons[i]?.apply {
                 val poly = get(GPolygon.mapper) ?: return@apply
@@ -44,7 +44,7 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
 
         // Render circles
         val circleFamily = allOf(Position::class, GCircle::class, SRColor::class).get()
-        val circles = Constants.CLIENT_ENGINE.getEntitiesFor(circleFamily)
+        val circles = engine.getEntitiesFor(circleFamily)
         for (i in 0 until circles.size()) {
             circles[i]?.apply {
                 val pos = get(Position.mapper) ?: return@apply
@@ -58,7 +58,7 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
         // Render runways
         val runwayFamily = allOf(RunwayInfo::class, SRColor::class).get()
         val rwyWidthPx = Constants.RWY_WIDTH_PX_ZOOM_1 + (camZoom - 1) * Constants.RWY_WIDTH_CHANGE_PX_PER_ZOOM
-        val rwys = Constants.CLIENT_ENGINE.getEntitiesFor(runwayFamily)
+        val rwys = engine.getEntitiesFor(runwayFamily)
         for (i in 0 until rwys.size()) {
             rwys[i]?.apply {
                 val pos = get(Position.mapper) ?: return@apply
@@ -76,20 +76,20 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
         // println("stage: ${stage.camera.combined}")
         Constants.GAME.batch.begin()
         // Render aircraft
-        val aircraftFamily = allOf(AircraftInfo::class, Position::class, RSSprite::class).get()
+        val aircraftFamily = allOf(AircraftInfo::class, RadarData::class, RSSprite::class).get()
         val blipSize = if (camZoom <= 1) Constants.AIRCRAFT_BLIP_LENGTH_PX_ZOOM_1 * camZoom else Constants.AIRCRAFT_BLIP_LENGTH_PX_ZOOM_1 + (camZoom - 1) * Constants.AIRCRAFT_BLIP_LENGTH_CHANGE_PX_PER_ZOOM
-        val allAircraft = Constants.CLIENT_ENGINE.getEntitiesFor(aircraftFamily)
+        val allAircraft = engine.getEntitiesFor(aircraftFamily)
         for (i in 0 until allAircraft.size()) {
             allAircraft[i]?.apply {
                 val rsSprite = get(RSSprite.mapper) ?: return@apply
-                val pos = get(Position.mapper) ?: return@apply
-                rsSprite.drawable.draw(Constants.GAME.batch, pos.x - blipSize / 2, pos.y - blipSize / 2, blipSize, blipSize)
+                val radarData = get(RadarData.mapper) ?: return@apply
+                rsSprite.drawable.draw(Constants.GAME.batch, radarData.position.x - blipSize / 2, radarData.position.y - blipSize / 2, blipSize, blipSize)
             }
         }
 
         // Update runway labels rendering size, position
         val rwyLabelFamily = allOf(GenericLabel::class, RunwayInfo::class, RunwayLabel::class).get()
-        val rwyLabels = Constants.CLIENT_ENGINE.getEntitiesFor(rwyLabelFamily)
+        val rwyLabels = engine.getEntitiesFor(rwyLabelFamily)
         for (i in 0 until rwyLabels.size()) {
             rwyLabels[i]?.apply {
                 val labelInfo = get(GenericLabel.mapper) ?: return@apply
@@ -125,7 +125,7 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
 
         // Render generic labels (non-constant size)
         val labelFamily = allOf(GenericLabel::class, Position::class).exclude(ConstantZoomSize::class).get()
-        val labels = Constants.CLIENT_ENGINE.getEntitiesFor(labelFamily)
+        val labels = engine.getEntitiesFor(labelFamily)
         for (i in 0 until labels.size()) {
             labels[i]?.apply {
                 val labelInfo = get(GenericLabel.mapper) ?: return@apply
@@ -138,16 +138,30 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
         }
 
         Constants.GAME.batch.projectionMatrix = uiStage.camera.combined
-        // println("uiStage: ${uiStage.camera.combined}")
         // Render generic constant size labels
         val constSizeLabelFamily = allOf(GenericLabel::class, Position::class, ConstantZoomSize::class).get()
-        val constLabels = Constants.CLIENT_ENGINE.getEntitiesFor(constSizeLabelFamily)
+        val constLabels = engine.getEntitiesFor(constSizeLabelFamily)
         for (i in 0 until constLabels.size()) {
             constLabels[i].apply {
                 val labelInfo = get(GenericLabel.mapper) ?: return@apply
                 val pos = get(Position.mapper) ?: return@apply
                 labelInfo.label.apply {
                     setPosition((pos.x - camX) / camZoom + labelInfo.xOffset, (pos.y - camY) / camZoom + labelInfo.yOffset)
+                    draw(Constants.GAME.batch, 1f)
+                }
+            }
+        }
+
+        Constants.GAME.batch.projectionMatrix = stage.camera.combined
+        // Render aircraft datatags TODO constant size labels
+        val tbFamily = allOf(AircraftInfo::class, GenericTextButton::class, RadarData::class).get()
+        val textButtons = engine.getEntitiesFor(tbFamily)
+        for (i in 0 until textButtons.size()) {
+            textButtons[i]?.apply {
+                val tb = get(GenericTextButton.mapper) ?: return@apply
+                val radarData = get(RadarData.mapper) ?: return@apply
+                tb.textButton.apply {
+                    setPosition(radarData.position.x + tb.xOffset, radarData.position.y + tb.yOffset)
                     draw(Constants.GAME.batch, 1f)
                 }
             }

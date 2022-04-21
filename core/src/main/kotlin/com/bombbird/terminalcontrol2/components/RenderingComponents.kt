@@ -4,8 +4,11 @@ import com.badlogic.ashley.core.Component
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.scenes.scene2d.ui.Label
 import com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle
+import com.badlogic.gdx.scenes.scene2d.ui.TextButton
+import com.badlogic.gdx.scenes.scene2d.ui.TextButton.TextButtonStyle
 import com.badlogic.gdx.scenes.scene2d.utils.BaseDrawable
 import com.badlogic.gdx.scenes.scene2d.utils.Drawable
+import com.badlogic.gdx.utils.Align
 import ktx.ashley.Mapper
 import ktx.math.ImmutableVector2
 import ktx.scene2d.Scene2DSkin
@@ -62,4 +65,22 @@ data class SRColor(var color: Color = Color()): Component {
  * */
 class HideLabel: Component {
     companion object: Mapper<HideLabel>()
+}
+
+/** Component for rendering a generic textButton with position offsets on radarScreen, functions included to update text/style of underlying textButton */
+class GenericTextButton(var xOffset: Float = 0f, var yOffset: Float = 0f): Component {
+    val textButton: TextButton = TextButton("", Scene2DSkin.defaultSkin).apply {
+        align(Align.center)
+    }
+    companion object: Mapper<GenericTextButton>()
+
+    fun updateText(newText: String) {
+        textButton.setText(newText)
+        textButton.label.pack()
+        textButton.setSize(textButton.label.width + 16, textButton.label.height + 14)
+    }
+
+    fun updateStyle(newStyle: String) {
+        textButton.style = Scene2DSkin.defaultSkin.get(newStyle, TextButtonStyle::class.java)
+    }
 }

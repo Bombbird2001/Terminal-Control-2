@@ -59,4 +59,5 @@ object Constants {
     const val SERVER_UPDATE_RATE = 60 // Server game loop
     const val SERVER_TO_CLIENT_UPDATE_RATE_FAST = 20 // Frequently updated data such as aircraft position, navigation, etc.
     const val SERVER_TO_CLIENT_UPDATE_RATE_SLOW = 0.1f // Not so frequently updated data such as thunderstorm cells
+    const val SERVER_METAR_UPDATE_INTERVAL_MINS = 5 // Check for METAR update every 5 minutes
 }

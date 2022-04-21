@@ -157,15 +157,15 @@ class PhysicsSystem: EntitySystem(), LowFreqUpdate {
                 aircraftInfo.maxVs = PhysicsTools.calculateMaxVerticalSpd(aircraftInfo.aircraftPerf, alt.altitudeFt, spd.speedKts, acc.dSpeedMps2, false)
                 aircraftInfo.minVs = PhysicsTools.calculateMinVerticalSpd(aircraftInfo.aircraftPerf, alt.altitudeFt, spd.speedKts, acc.dSpeedMps2, false)
 
-                println("Altitude: ${alt.altitudeFt}ft")
-                println("VS: ${spd.vertSpdFpm}fpm")
-                println("IAS: ${PhysicsTools.calculateIASFromTAS(alt.altitudeFt, spd.speedKts)}kts")
-                println("TAS: ${spd.speedKts}kts")
-                println("Acc: ${acc.dSpeedMps2}")
-                println("Min acc: ${aircraftInfo.minAcc}m/s2")
-                println("Max acc: ${aircraftInfo.maxAcc}m/s2")
-                println("Min VS: ${aircraftInfo.minVs}ft/min")
-                println("Max VS: ${aircraftInfo.maxVs}ft/min")
+//                println("Altitude: ${alt.altitudeFt}ft")
+//                println("VS: ${spd.vertSpdFpm}fpm")
+//                println("IAS: ${PhysicsTools.calculateIASFromTAS(alt.altitudeFt, spd.speedKts)}kts")
+//                println("TAS: ${spd.speedKts}kts")
+//                println("Acc: ${acc.dSpeedMps2}")
+//                println("Min acc: ${aircraftInfo.minAcc}m/s2")
+//                println("Max acc: ${aircraftInfo.maxAcc}m/s2")
+//                println("Min VS: ${aircraftInfo.minVs}ft/min")
+//                println("Max VS: ${aircraftInfo.maxVs}ft/min")
             }
         }
 

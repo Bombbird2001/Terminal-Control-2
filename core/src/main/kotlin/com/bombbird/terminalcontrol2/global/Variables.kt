@@ -20,4 +20,7 @@ object Variables {
 
     /** Magnetic heading deviation in the current game - positive for Westward deviation and negative for Eastward deviation */
     var MAG_HDG_DEV = 0f
+
+    /** Radar refresh rate */
+    var RADAR_REFRESH_INTERVAL_S = 0.5f
 }
