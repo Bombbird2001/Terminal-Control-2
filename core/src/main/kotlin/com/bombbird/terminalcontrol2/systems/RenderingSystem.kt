@@ -109,7 +109,7 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
         Constants.GAME.batch.projectionMatrix = stage.camera.combined
         // println("stage: ${stage.camera.combined}")
         Constants.GAME.batch.begin()
-        // Render aircraft
+        // Render aircraft blip
         val aircraftFamily = allOf(AircraftInfo::class, RadarData::class, RSSprite::class).get()
         val blipSize = if (camZoom <= 1) Constants.AIRCRAFT_BLIP_LENGTH_PX_ZOOM_1 * camZoom else Constants.AIRCRAFT_BLIP_LENGTH_PX_ZOOM_1 + (camZoom - 1) * Constants.AIRCRAFT_BLIP_LENGTH_CHANGE_PX_PER_ZOOM
         val allAircraft = engine.getEntitiesFor(aircraftFamily)

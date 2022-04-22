@@ -90,10 +90,12 @@ object PhysicsToolsTest {
         assertEquals(79.999f, PhysicsTools.calculateIASFromTAS(0f, 80f), 0.001f)
         assertEquals(299.996f, PhysicsTools.calculateIASFromTAS(0f, 300f), 0.01f)
         assertEquals(123.56f, PhysicsTools.calculateIASFromTAS(30000f, 200f), 0.01f)
+        assertEquals(-123.56f, PhysicsTools.calculateIASFromTAS(30000f, -200f), 0.01f)
         assertEquals(309.948f, PhysicsTools.calculateIASFromTAS(30000f, 480f), 0.01f)
         assertEquals(80f, PhysicsTools.calculateTASFromIAS(0f, 80f), 0.001f)
         assertEquals(300f, PhysicsTools.calculateTASFromIAS(0f, 300f), 0.01f)
         assertEquals(318.93f, PhysicsTools.calculateTASFromIAS(30000f, 200f), 0.01f)
+        assertEquals(-318.93f, PhysicsTools.calculateTASFromIAS(30000f, -200f), 0.01f)
         assertEquals(705.01f, PhysicsTools.calculateTASFromIAS(30000f, 480f), 0.01f)
     }
 

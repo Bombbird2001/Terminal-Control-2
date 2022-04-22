@@ -4,6 +4,7 @@ import com.badlogic.ashley.core.EntitySystem
 import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.Variables
+import com.bombbird.terminalcontrol2.ui.DatatagTools
 import ktx.ashley.allOf
 import ktx.ashley.get
 
@@ -13,7 +14,7 @@ class DataSystem: EntitySystem() {
 
     /** Main update function */
     override fun update(deltaTime: Float) {
-        // Timer for updating radar returns
+        // Timer for updating radar returns and datatags
         radarDataTimer += deltaTime
         if (radarDataTimer > Variables.RADAR_REFRESH_INTERVAL_S) {
             val radarDataUpdateFamily = allOf(Position::class, Direction::class, Speed::class, Altitude::class, RadarData::class).get()
@@ -32,6 +33,18 @@ class DataSystem: EntitySystem() {
                     radarData.speed.vertSpdFpm = spd.vertSpdFpm
                     radarData.speed.angularSpdDps = spd.angularSpdDps
                     radarData.altitude.altitudeFt = alt.altitudeFt
+                }
+            }
+
+            val datatagUpdateFamily = allOf(AircraftInfo::class, RadarData::class, CommandTarget::class, Datatag::class).get()
+            val datatagUpdates = engine.getEntitiesFor(datatagUpdateFamily)
+            for (i in 0 until datatagUpdates.size()) {
+                datatagUpdates[i]?.apply {
+                    val aircraftInfo = get(AircraftInfo.mapper) ?: return@apply
+                    val radarData = get(RadarData.mapper) ?: return@apply
+                    val cmdTarget = get(CommandTarget.mapper) ?: return@apply
+                    val datatag = get(Datatag.mapper) ?: return@apply
+                    DatatagTools.updateText(datatag, DatatagTools.getNewLabelText(aircraftInfo, radarData, cmdTarget, get(AffectedByWind.mapper)))
                 }
             }
             radarDataTimer -= Variables.RADAR_REFRESH_INTERVAL_S

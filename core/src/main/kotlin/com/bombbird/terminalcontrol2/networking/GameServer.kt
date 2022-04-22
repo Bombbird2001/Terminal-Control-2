@@ -12,6 +12,7 @@ import com.bombbird.terminalcontrol2.global.Variables
 import com.bombbird.terminalcontrol2.systems.AISystem
 import com.bombbird.terminalcontrol2.systems.LowFreqUpdate
 import com.bombbird.terminalcontrol2.systems.PhysicsSystem
+import com.bombbird.terminalcontrol2.utilities.MathTools
 import com.bombbird.terminalcontrol2.utilities.MetarTools
 import com.bombbird.terminalcontrol2.utilities.PhysicsTools
 import com.esotericsoftware.kryonet.Connection
@@ -64,7 +65,17 @@ class GameServer {
         // Add dummy aircraft
         aircraft["SHIBA2"] = Aircraft("SHIBA2", 10f, -10f, 108f, FlightType.DEPARTURE, false).apply {
             entity[Direction.mapper]?.trackUnitVector?.rotateDeg(-49.07f) // Runway 05R heading
-            entity.add(TakeoffRoll(PhysicsTools.calculateRequiredAcceleration(0, entity[AircraftInfo.mapper]?.aircraftPerf?.vR ?: 0, (3800 - 1000) * MathUtils.random(0.75f, 1f))))
+            // Calculate headwind component for takeoff
+            val headwind = entity[Altitude.mapper]?.let{ alt -> entity[Direction.mapper]?.let { dir -> entity[Position.mapper]?.let { pos ->
+                val wind = MetarTools.getClosestAirportWindVector(pos.x, pos.y)
+                PhysicsTools.calculateIASFromTAS(alt.altitudeFt, MathTools.pxpsToKt(wind.dot(dir.trackUnitVector)))
+            }}} ?: 0f
+            entity.add(TakeoffRoll(PhysicsTools.calculateRequiredAcceleration(0, ((entity[AircraftInfo.mapper]?.aircraftPerf?.vR ?: 0) + headwind).toInt().toShort(), (3800 - 1000) * MathUtils.random(0.75f, 1f))))
+            entity[CommandTarget.mapper]?.apply {
+                targetAltFt = 4000f
+                targetIasKt = ((entity[AircraftInfo.mapper]?.aircraftPerf?.vR ?: 160) + MathUtils.random(15, 20)).toShort()
+                targetHdgDeg = 49f
+            }
         }
 
         // Add dummy waypoints

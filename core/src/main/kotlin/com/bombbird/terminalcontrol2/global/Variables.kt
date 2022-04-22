@@ -23,4 +23,7 @@ object Variables {
 
     /** Radar refresh rate */
     var RADAR_REFRESH_INTERVAL_S = 0.5f
+
+    /** Datatag style to use */
+    var DATATAG_STYLE_ID = 0
 }

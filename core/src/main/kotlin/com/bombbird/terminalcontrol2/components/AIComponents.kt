@@ -23,8 +23,8 @@ data class TakeoffClimb(var accelAltFt: Float = 1500f): Component {
  *
  * Aircraft will decelerate at a constant rate till ~45 knots, then decelerate at a reduced rate, then de-spawn at 30 knots
  * */
-class Landing: Component {
-    companion object: Mapper<Landing>()
+class LandingRoll: Component {
+    companion object: Mapper<LandingRoll>()
 }
 
 /** Component for tagging the basic AI control modes of the aircraft

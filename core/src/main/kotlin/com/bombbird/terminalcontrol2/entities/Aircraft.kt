@@ -9,6 +9,7 @@ import ktx.ashley.entity
 import ktx.ashley.get
 import ktx.ashley.with
 import ktx.scene2d.Scene2DSkin
+import kotlin.math.round
 
 /** Aircraft class that creates an aircraft entity with the required components on instantiation */
 class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightType: Byte, onClient: Boolean = true) {
@@ -34,6 +35,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
         }
         with<CommandTarget>()
         with<TakeoffRoll>()
+        with<AffectedByWind>()
         if (true || onClient) {
             with<RadarData> {
                 position.x = posX
@@ -99,7 +101,8 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
                                 val altitude: Float = 0f,
                                 val icaoCallsign: String = "",
                                 val directionX: Float = 0f, val directionY: Float = 0f,
-                                val speedKts: Float = 0f, val vertSpdFpm: Float = 0f, val angularSpdDps: Float = 0f)
+                                val speedKts: Float = 0f, val vertSpdFpm: Float = 0f, val angularSpdDps: Float = 0f,
+                                val targetAltFt: Short = 0, val targetIasKt: Short = 0)
 
     /** Gets a [SerialisedAircraftUDP] from current state */
     fun getSerialisableObjectUDP(): SerialisedAircraftUDP {
@@ -109,12 +112,14 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
             val acInfo = get(AircraftInfo.mapper) ?: return SerialisedAircraftUDP()
             val direction = get(Direction.mapper) ?: return SerialisedAircraftUDP()
             val speed = get(Speed.mapper) ?: return SerialisedAircraftUDP()
+            val cmdTarget = get(CommandTarget.mapper) ?: return SerialisedAircraftUDP()
             return SerialisedAircraftUDP(
                 position.x, position.y,
                 altitude.altitudeFt,
                 acInfo.icaoCallsign,
                 direction.trackUnitVector.x, direction.trackUnitVector.y,
-                speed.speedKts, speed.vertSpdFpm, speed.angularSpdDps
+                speed.speedKts, speed.vertSpdFpm, speed.angularSpdDps,
+                round(cmdTarget.targetAltFt / 100).toInt().toShort(), cmdTarget.targetIasKt
             )
         }
     }
@@ -136,6 +141,10 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
                 speedKts = data.speedKts
                 vertSpdFpm = data.vertSpdFpm
                 angularSpdDps = data.angularSpdDps
+            }
+            get(CommandTarget.mapper)?.apply {
+                targetAltFt = data.targetAltFt * 100f
+                targetIasKt = data.targetIasKt
             }
         }
     }

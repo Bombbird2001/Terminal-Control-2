@@ -4,6 +4,7 @@ import com.badlogic.ashley.core.EntitySystem
 import com.badlogic.gdx.math.MathUtils
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.Constants
+import com.bombbird.terminalcontrol2.utilities.MathTools
 import com.bombbird.terminalcontrol2.utilities.PhysicsTools
 import ktx.ashley.addComponent
 import ktx.ashley.allOf
@@ -19,7 +20,7 @@ class AISystem: EntitySystem() {
     /** Main update function */
     override fun update(deltaTime: Float) {
         // Set acceleration for takeoff
-        val takeoffAccFamily = allOf(Acceleration::class, AircraftInfo::class, TakeoffRoll::class, Speed::class, CommandTarget::class).get()
+        val takeoffAccFamily = allOf(Acceleration::class, AircraftInfo::class, TakeoffRoll::class, Speed::class, Direction::class, AffectedByWind::class).get()
         val takeoffAcc = engine.getEntitiesFor(takeoffAccFamily)
         for (i in 0 until takeoffAcc.size()) {
             takeoffAcc[i]?.apply {
@@ -27,18 +28,15 @@ class AISystem: EntitySystem() {
                 val alt = get(Altitude.mapper) ?: return@apply
                 val aircraftInfo = get(AircraftInfo.mapper) ?: return@apply
                 val ias = get(IndicatedAirSpeed.mapper) ?: return@apply
-                val cmdTarget = get(CommandTarget.mapper) ?: return@apply
+                val dir = get(Direction.mapper) ?: return@apply
+                val wind = get(AffectedByWind.mapper) ?: return@apply
                 ias.iasKt = PhysicsTools.calculateIASFromTAS(alt.altitudeFt, spd.speedKts)
-                if (ias.iasKt >= aircraftInfo.aircraftPerf.vR) {
+                if (ias.iasKt >= aircraftInfo.aircraftPerf.vR + PhysicsTools.calculateIASFromTAS(alt.altitudeFt, MathTools.pxpsToKt(wind.windVector.dot(dir.trackUnitVector)))) {
                     // Transition to takeoff climb mode
                     remove<TakeoffRoll>()
                     addComponent<TakeoffClimb>(Constants.SERVER_ENGINE) {
                         accelAltFt = alt.altitudeFt + MathUtils.random(1500, 2000)
                     }
-                    addComponent<AffectedByWind>(Constants.SERVER_ENGINE)
-                    cmdTarget.targetHdgDeg = 90f
-                    cmdTarget.targetAltFt = 10000f
-                    cmdTarget.targetIasKt = (aircraftInfo.aircraftPerf.vR + MathUtils.random(15, 20)).toShort()
                     return@apply
                 }
                 val acc = get(Acceleration.mapper) ?: return@apply
@@ -58,6 +56,8 @@ class AISystem: EntitySystem() {
                 if (alt.altitudeFt > tkOff.accelAltFt) {
                     // Climbed past acceleration altitude, set new target IAS and remove takeoff climb component
                     cmd.targetIasKt = 250
+                    cmd.targetHdgDeg = 92f
+                    cmd.targetAltFt = 10000f
                     remove<TakeoffClimb>()
                 }
             }

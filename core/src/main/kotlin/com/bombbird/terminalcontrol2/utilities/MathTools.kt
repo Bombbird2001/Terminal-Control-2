@@ -89,6 +89,11 @@ object MathTools {
         return nmToPx(kt / 3600)
     }
 
+    /** Convert from pixels per second to knots */
+    fun pxpsToKt(pxps: Float): Float {
+        return pxps / ktToPxps(1)
+    }
+
     /** Convert from metres per second to knots */
     fun mpsToKt(mps: Float): Float {
         return mToNm(mps * 3600)

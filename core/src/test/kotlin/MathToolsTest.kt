@@ -35,6 +35,7 @@ object MathToolsTest {
         assertEquals(1852 / MathTools.NM_TO_PX, MathTools.pxToM(1))
         assertEquals(MathTools.NM_TO_PX / 3600, MathTools.ktToPxps(1))
         assertEquals(MathTools.NM_TO_PX / 3600, MathTools.ktToPxps(1.0f))
+        assertEquals(3600 / MathTools.NM_TO_PX, MathTools.pxpsToKt(1.0f))
     }
 
     @Test

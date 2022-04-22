@@ -98,7 +98,7 @@ object PhysicsTools {
         val tasMps = MathTools.ktToMps(tasKt)
         val tempK = calculateTempAtAlt(altitudeFt)
         val impactPressurePa = pressurePa * ((1 + 0.2f * tasMps * tasMps / AIR_SPECIFIC_HEATS_RATIO / AIR_GAS_CONSTANT_JPKGPK / tempK).pow(3.5f) - 1)
-        return MathTools.mpsToKt(SOUND_SPEED_MPS_SL_ISA * sqrt(5 * (impactPressurePa / AIR_PRESSURE_PA_SL_ISA + 1).pow(2f / 7) - 5))
+        return MathTools.mpsToKt(SOUND_SPEED_MPS_SL_ISA * sqrt(5 * (impactPressurePa / AIR_PRESSURE_PA_SL_ISA + 1).pow(2f / 7) - 5)) * (if (tasKt < 0) -1 else 1)
     }
 
     /** Calculates the TAS, in knots, from [iasKt] (more correctly the CAS, but we'll assume corrections between IAS
@@ -111,7 +111,7 @@ object PhysicsTools {
         // Splitting up expressions to save my sanity
         val expr1 = (1 + iasMps * iasMps / 5 / SOUND_SPEED_MPS_SL_ISA / SOUND_SPEED_MPS_SL_ISA).pow(3.5f) - 1
         val expr2 = (1 + AIR_PRESSURE_PA_SL_ISA / pressurePa * expr1).pow(2f / 7) - 1
-        return MathTools.mpsToKt(sqrt(expr2 * 5 * AIR_SPECIFIC_HEATS_RATIO * AIR_GAS_CONSTANT_JPKGPK * tempK))
+        return MathTools.mpsToKt(sqrt(expr2 * 5 * AIR_SPECIFIC_HEATS_RATIO * AIR_GAS_CONSTANT_JPKGPK * tempK)) * (if (iasKt < 0) -1 else 1)
     }
 
     /** Calculates the maximum achievable acceleration, in metres per second^2, of an aircraft given its [aircraftPerfData], [altitudeFt], [tasKt]

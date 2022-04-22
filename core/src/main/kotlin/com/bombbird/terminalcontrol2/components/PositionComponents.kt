@@ -72,6 +72,8 @@ data class IndicatedAirSpeed(var iasKt: Float = 0f): Component {
 /** Component for tagging entities that get affected by wind velocity
  *
  * To prevent on-ground entities from being affected by wind, add the [OnGround] component to the entity
+ *
+ * Entities tagged with [TakeoffRoll] or [LandingRoll] will also not be affected by wind even if this component is tagged
  * */
 class AffectedByWind(var windVector: Vector2 = Vector2()): Component {
     companion object: Mapper<AffectedByWind>()

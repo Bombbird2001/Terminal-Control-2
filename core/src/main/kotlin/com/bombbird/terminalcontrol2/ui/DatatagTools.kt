@@ -1,15 +1,35 @@
 package com.bombbird.terminalcontrol2.ui
 
+import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.scenes.scene2d.InputEvent
 import com.badlogic.gdx.scenes.scene2d.ui.ImageButton
 import com.badlogic.gdx.scenes.scene2d.utils.DragListener
-import com.bombbird.terminalcontrol2.components.Datatag
+import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.Constants
+import com.bombbird.terminalcontrol2.utilities.MathTools
+import ktx.math.plus
+import ktx.math.times
 import ktx.scene2d.Scene2DSkin
+import kotlin.math.round
 
 /** Helper object for dealing with [Datatag] matters */
 object DatatagTools {
     const val LABEL_PADDING = 7
+
+    // Datatag value keys
+    const val CALLSIGN = "Callsign"
+    const val CALLSIGN_RECAT = "Callsign + Wake"
+    const val ICAO_TYPE = "Aircraft type"
+    const val ICAO_TYPE_WAKE = "Aircraft type + Wake"
+    const val ALTITUDE_FULL = "Full altitude info"
+    const val ALTITUDE = "Current altitude"
+    const val CLEARED_ALT = "Cleared altitude"
+    const val HEADING = "Heading"
+    const val LAT_CLEARED = "Cleared waypoint/heading"
+    const val SIDSTARAPP_CLEARED = "Cleared SID/STAR/Approach"
+    const val GROUND_SPEED = "Ground speed"
+    const val CLEARED_IAS = "Cleared speed"
+    const val AIRPORT = "Airport"
 
     /** Updates the text for the labels of the [datatag], and sets the new sizes accordingly */
     fun updateText(datatag: Datatag, newText: Array<String>) {
@@ -66,5 +86,24 @@ object DatatagTools {
                 }
             })
         }
+    }
+
+    /** Gets a new array of strings for the label text, based on the player's datatag format */
+    fun getNewLabelText(aircraftInfo: AircraftInfo, radarData: RadarData, cmdTarget: CommandTarget, affectedByWind: AffectedByWind?): Array<String> {
+        val labelText = arrayOf("", "", "", "")
+        // Temporary label format TODO change based on datatag format in use
+        val callsign = aircraftInfo.icaoCallsign
+        val acInfo = "${aircraftInfo.icaoType}/${aircraftInfo.aircraftPerf.wakeCategory}/${aircraftInfo.aircraftPerf.recat}"
+        val alt = round(radarData.altitude.altitudeFt / 100).toInt()
+        val vs = if (radarData.speed.vertSpdFpm > 100) '^' else if (radarData.speed.vertSpdFpm < -100) 'v' else '='
+        val cmdAlt = round(cmdTarget.targetAltFt / 100).toInt()
+        val clearedAlt = "=> Cleared alt"
+        val groundSpd = round((radarData.direction.trackUnitVector.times(radarData.speed.speedKts) + (affectedByWind?.windVector?.times(MathTools.pxpsToKt(1f)) ?: Vector2())).len()).toInt()
+        labelText[0] = "$callsign $acInfo"
+        labelText[1] = "$alt $vs $cmdAlt $clearedAlt"
+        labelText[2] = "Cleared SID/STAR/APP"
+        labelText[3] = "$groundSpd ${cmdTarget.targetIasKt}"
+
+        return labelText
     }
 }

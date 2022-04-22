@@ -39,7 +39,7 @@ class PhysicsSystem: EntitySystem(), LowFreqUpdate {
         }
 
         // Position affected by wind
-        val windAffectedFamily = allOf(AffectedByWind::class, Position::class).get()
+        val windAffectedFamily = allOf(AffectedByWind::class, Position::class).exclude(TakeoffRoll::class, LandingRoll::class).get()
         val windAffected = engine.getEntitiesFor(windAffectedFamily)
         for (i in 0 until windAffected.size()) {
             windAffected[i]?.apply {
