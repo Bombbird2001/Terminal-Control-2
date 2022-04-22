@@ -10,6 +10,7 @@ import com.badlogic.gdx.input.GestureDetector
 import com.badlogic.gdx.input.GestureDetector.GestureListener
 import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.math.Vector2
+import com.badlogic.gdx.scenes.scene2d.Actor
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.Aircraft
 import com.bombbird.terminalcontrol2.entities.Airport
@@ -54,7 +55,7 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
     private val shapeRenderer = ShapeRenderer()
 
     private val gestureDetector = GestureDetector(40f, 0.2f, 1.1f, 0.15f, this)
-    private val inputMultiplexer = InputMultiplexer()
+    val inputMultiplexer = InputMultiplexer()
 
     // Camera animation parameters
     private var cameraAnimating = false
@@ -148,6 +149,11 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
         Constants.CLIENT_ENGINE.addSystem(DataSystem())
     }
 
+    /** Adds an [Actor] to [uiStage] */
+    fun addToUIStage(actor: Actor) {
+        uiStage.addActor(actor)
+    }
+
     /** Ensures [radarDisplayStage]'s camera parameters are within limits, then updates the camera (and [shapeRenderer]) */
     private fun clampUpdateCamera(deltaZoom: Float) {
         (radarDisplayStage.camera as OrthographicCamera).apply {
@@ -221,8 +227,6 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
             for (i in 0 until systems.size()) (systems[i] as? LowFreqUpdate)?.lowFreqUpdate()
             slowUpdateTimer -= 1f
         }
-
-        uiStage.act(delta)
     }
 
     /** Clears and disposes of [radarDisplayStage], [uiStage], [shapeRenderer], stops the [client] and [GameServer] if present */

@@ -2,7 +2,6 @@ package com.bombbird.terminalcontrol2.ui
 
 import com.badlogic.gdx.scenes.scene2d.Actor
 import com.badlogic.gdx.scenes.scene2d.Stage
-import com.badlogic.gdx.scenes.scene2d.ui.TextButton.TextButtonStyle
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener
 import com.badlogic.gdx.utils.Align
 import com.bombbird.terminalcontrol2.components.AirportInfo
@@ -31,6 +30,7 @@ class UIPane(private val uiStage: Stage) {
                 // debugAll()
                 setSize(paneWidth, Variables.UI_HEIGHT)
                 setPosition(-Variables.UI_WIDTH / 2, -Variables.UI_HEIGHT / 2)
+                zIndex = 1
             }
             infoPane = container {
                 fill()
@@ -47,6 +47,7 @@ class UIPane(private val uiStage: Stage) {
                     align(Align.top)
                 }
                 setPosition(-Variables.UI_WIDTH / 2, -Variables.UI_HEIGHT / 2)
+                zIndex = 1
             }
         }
     }

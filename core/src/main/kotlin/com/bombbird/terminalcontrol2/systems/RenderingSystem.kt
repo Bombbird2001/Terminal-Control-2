@@ -7,7 +7,11 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import com.badlogic.gdx.scenes.scene2d.Stage
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.Constants
+import com.bombbird.terminalcontrol2.ui.DatatagTools
 import com.bombbird.terminalcontrol2.utilities.MathTools.byte
+import com.bombbird.terminalcontrol2.utilities.MathTools.getRequiredTrack
+import com.bombbird.terminalcontrol2.utilities.MathTools.pointsAtBorder
+import com.bombbird.terminalcontrol2.utilities.MathTools.withinRange
 import ktx.ashley.allOf
 import ktx.ashley.exclude
 import ktx.ashley.get
@@ -22,6 +26,7 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
         val camY = stage.camera.position.y
         // println(camZoom)
 
+        shapeRenderer.projectionMatrix = stage.camera.combined
         shapeRenderer.begin(ShapeRenderer.ShapeType.Line)
         // Estimation circles
         shapeRenderer.circle(0f, 0f, 1250f)
@@ -70,6 +75,35 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
                 shapeRenderer.rect(pos.x, pos.y - rect.height / 2, 0f, rect.height / 2, rect.width, rect.height, 1f, 1f, deg.trackUnitVector.angleDeg())
             }
         }
+
+
+        shapeRenderer.projectionMatrix = uiStage.camera.combined
+        // Render datatag to aircraft icon line
+        val datatagLineFamily = allOf(Datatag::class, RadarData::class).get()
+        val datatagLines = engine.getEntitiesFor(datatagLineFamily)
+        for (i in 0 until datatagLines.size()) {
+            datatagLines[i]?.apply {
+                val datatag = get(Datatag.mapper) ?: return@apply
+                val radarData = get(RadarData.mapper) ?: return@apply
+                val radarX = (radarData.position.x - camX) / camZoom
+                val radarY = (radarData.position.y - camY) / camZoom
+                val leftX = datatag.imgButton.x
+                val width = datatag.imgButton.width
+                val bottomY = datatag.imgButton.y
+                val height = datatag.imgButton.height
+                // Don't need to draw if aircraft blip is inside box
+                val offset = 10 // Don't draw if icon center within 10px of datatag border
+                if (withinRange(radarX, leftX - offset, leftX + width + offset) && withinRange(radarY, bottomY - offset, bottomY + height + offset)) return@apply
+                var startX = leftX + width / 2
+                var startY = bottomY + height / 2
+                val degree = getRequiredTrack(startX, startY, radarX, radarY)
+                val results = pointsAtBorder(floatArrayOf(leftX, leftX + width), floatArrayOf(bottomY, bottomY + height), startX, startY, degree)
+                startX = results[0]
+                startY = results[1]
+                shapeRenderer.line(startX, startY, radarX, radarY)
+            }
+        }
+
         shapeRenderer.end()
 
         Constants.GAME.batch.projectionMatrix = stage.camera.combined
@@ -153,22 +187,34 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
         }
 
         // Render aircraft datatags
-        val tbFamily = allOf(AircraftInfo::class, GenericTextButton::class, RadarData::class).get()
-        val textButtons = engine.getEntitiesFor(tbFamily)
-        for (i in 0 until textButtons.size()) {
-            textButtons[i]?.apply {
-                val tb = get(GenericTextButton.mapper) ?: return@apply
+        val datatagFamily = allOf(Datatag::class, RadarData::class).get()
+        val datatags = engine.getEntitiesFor(datatagFamily)
+        for (i in 0 until datatags.size()) {
+            datatags[i]?.apply {
+                val datatag = get(Datatag.mapper) ?: return@apply
                 val radarData = get(RadarData.mapper) ?: return@apply
-                tb.textButton.apply {
-                    setPosition((radarData.position.x - camX) / camZoom + tb.xOffset, (radarData.position.y - camY) / camZoom + tb.yOffset)
+                val leftX = (radarData.position.x - camX) / camZoom + datatag.xOffset
+                val bottomY = (radarData.position.y - camY) / camZoom + datatag.yOffset
+                datatag.imgButton.apply {
+                    setPosition(leftX, bottomY)
                     draw(Constants.GAME.batch, 1f)
+                }
+                datatag.clickSpot.setPosition(leftX, bottomY)
+                var labelY = bottomY + DatatagTools.LABEL_PADDING
+                for (j in datatag.labelArray.size - 1 downTo 0) {
+                    datatag.labelArray[j].let { label ->
+                        if (label.text.isNullOrEmpty()) return@let
+                        label.setPosition(leftX + DatatagTools.LABEL_PADDING, labelY)
+                        label.draw(Constants.GAME.batch, 1f)
+                        labelY += (label.height + datatag.lineSpacing)
+                    }
                 }
             }
         }
-
         Constants.GAME.batch.end()
 
         // Draw UI pane the last, above all the other elements
+        uiStage.act(deltaTime)
         uiStage.draw()
     }
 }

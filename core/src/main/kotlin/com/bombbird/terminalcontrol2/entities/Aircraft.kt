@@ -4,6 +4,7 @@ import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.Constants
+import com.bombbird.terminalcontrol2.ui.DatatagTools
 import ktx.ashley.entity
 import ktx.ashley.get
 import ktx.ashley.with
@@ -33,21 +34,22 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
         }
         with<CommandTarget>()
         with<TakeoffRoll>()
-        // if (onClient) {
+        if (true || onClient) {
             with<RadarData> {
                 position.x = posX
                 position.y = posY
             }
-            with<GenericTextButton> {
-                updateStyle("DatatagGreen")
-                updateText("Test label")
-                xOffset = -textButton.width / 2
-                yOffset = 10f
+            with<Datatag> {
+                DatatagTools.updateStyle(this, "DatatagGreen")
+                DatatagTools.updateText(this, arrayOf("Test line 1", "Test line 2", "", "Test line 3"))
+                DatatagTools.addDragListener(this)
+                xOffset = -imgButton.width / 2
+                yOffset = 13f
             }
             with<RSSprite> {
                 drawable = TextureRegionDrawable(Scene2DSkin.defaultSkin.getRegion("aircraftDeparture"))
             }
-        // }
+        }
         // TODO Add controllable component
     }
 

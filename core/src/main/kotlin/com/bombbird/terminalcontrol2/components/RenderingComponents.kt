@@ -2,13 +2,11 @@ package com.bombbird.terminalcontrol2.components
 
 import com.badlogic.ashley.core.Component
 import com.badlogic.gdx.graphics.Color
+import com.badlogic.gdx.scenes.scene2d.ui.ImageButton
 import com.badlogic.gdx.scenes.scene2d.ui.Label
 import com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle
-import com.badlogic.gdx.scenes.scene2d.ui.TextButton
-import com.badlogic.gdx.scenes.scene2d.ui.TextButton.TextButtonStyle
 import com.badlogic.gdx.scenes.scene2d.utils.BaseDrawable
 import com.badlogic.gdx.scenes.scene2d.utils.Drawable
-import com.badlogic.gdx.utils.Align
 import ktx.ashley.Mapper
 import ktx.math.ImmutableVector2
 import ktx.scene2d.Scene2DSkin
@@ -67,20 +65,17 @@ class HideLabel: Component {
     companion object: Mapper<HideLabel>()
 }
 
-/** Component for rendering a generic textButton with position offsets on radarScreen, functions included to update text/style of underlying textButton */
-class GenericTextButton(var xOffset: Float = 0f, var yOffset: Float = 0f): Component {
-    val textButton: TextButton = TextButton("", Scene2DSkin.defaultSkin).apply {
-        align(Align.center)
-    }
-    companion object: Mapper<GenericTextButton>()
-
-    fun updateText(newText: String) {
-        textButton.setText(newText)
-        textButton.label.pack()
-        textButton.setSize(textButton.label.width + 16, textButton.label.height + 14)
-    }
-
-    fun updateStyle(newStyle: String) {
-        textButton.style = Scene2DSkin.defaultSkin.get(newStyle, TextButtonStyle::class.java)
-    }
+/** Component for rendering a datatag with position offsets on radarScreen
+ *
+ * Use functions in DatatagTools to update text/style/spacing of underlying imageButton and label
+ *
+ * This component will have [ConstantZoomSize] properties applied to it
+ * */
+class Datatag(var xOffset: Float = 0f, var yOffset: Float = 0f, var minimised: Boolean = false, var lineSpacing: Short = 0): Component {
+    var dragging = false
+    val imgButton: ImageButton = ImageButton(Scene2DSkin.defaultSkin, "DatatagGreenNoBG")
+    val clickSpot: ImageButton = ImageButton(Scene2DSkin.defaultSkin, "DatatagNoBG")
+    val labelArray: Array<Label> = arrayOf(Label("", Scene2DSkin.defaultSkin, "Datatag"), Label("", Scene2DSkin.defaultSkin, "Datatag"),
+                                           Label("", Scene2DSkin.defaultSkin, "Datatag"), Label("", Scene2DSkin.defaultSkin, "Datatag"))
+    companion object: Mapper<Datatag>()
 }

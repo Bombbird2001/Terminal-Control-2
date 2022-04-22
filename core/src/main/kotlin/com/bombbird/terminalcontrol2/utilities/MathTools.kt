@@ -1,5 +1,9 @@
 package com.bombbird.terminalcontrol2.utilities
 
+import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.sin
+
 /** Game specific math tools for use */
 object MathTools {
     /** Convenience [Int] to [Byte] getter */
@@ -139,5 +143,49 @@ object MathTools {
         }
 
         return diff
+    }
+
+    /** Calculates the shortest distance required to reach the border supplied with a given track  */
+    fun distanceFromBorder(xBorder: FloatArray, yBorder: FloatArray, x: Float, y: Float, direction: Float): Float {
+        val cos = cos(Math.toRadians(90 - direction.toDouble())).toFloat()
+        val xDistRight = (xBorder[1] - x) / cos
+        val xDistLeft = (xBorder[0] - x) / cos
+        val sin = sin(Math.toRadians(90 - direction.toDouble())).toFloat()
+        val yDistUp = (yBorder[1] - y) / sin
+        val yDistDown = (yBorder[0] - y) / sin
+        val xDist = if (xDistRight > 0) xDistRight else xDistLeft
+        val yDist = if (yDistUp > 0) yDistUp else yDistDown
+        return xDist.coerceAtMost(yDist)
+    }
+
+    /** Calculates the point where the line from a point at a specified track meets a rectangle's border  */
+    fun pointsAtBorder(xBorder: FloatArray, yBorder: FloatArray, x: Float, y: Float, direction: Float): FloatArray {
+        val dist = distanceFromBorder(xBorder, yBorder, x, y, direction)
+        return floatArrayOf(x + dist * cos(Math.toRadians(90 - direction.toDouble())).toFloat(), y + dist * sin(Math.toRadians(90 - direction.toDouble())).toFloat())
+    }
+
+    /** Checks whether integer is within range of 2 integers  */
+    fun withinRange(no: Int, min: Int, max: Int): Boolean {
+        return no in min..max
+    }
+
+    /** Checks whether float is within range of 2 floats  */
+    fun withinRange(no: Float, min: Float, max: Float): Boolean {
+        return no > min && no < max
+    }
+
+    /** Calculates the required track to achieve a displacement of deltaX, deltaY  */
+    fun getRequiredTrack(deltaX: Float, deltaY: Float): Float {
+        return 90 - Math.toDegrees(atan2(deltaY.toDouble(), deltaX.toDouble())).toFloat()
+    }
+
+    /** Calculates the required track to go from initial point with x, y to destination point with destX, destY  */
+    fun getRequiredTrack(x: Float, y: Float, destX: Float, destY: Float): Float {
+        return getRequiredTrack(destX - x, destY - y)
+    }
+
+    /** Calculates the required track to go from initial point with x, y to destination point with destX, destY  */
+    fun getRequiredTrack(x: Int, y: Int, destX: Int, destY: Int): Float {
+        return getRequiredTrack((destX - x).toFloat(), (destY - y).toFloat())
     }
 }
