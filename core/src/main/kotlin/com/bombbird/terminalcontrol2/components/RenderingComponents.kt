@@ -71,11 +71,12 @@ class HideLabel: Component {
  *
  * This component will have [ConstantZoomSize] properties applied to it
  * */
-class Datatag(var xOffset: Float = 0f, var yOffset: Float = 0f, var minimised: Boolean = false, var lineSpacing: Short = 0): Component {
+class Datatag(var xOffset: Float = 0f, var yOffset: Float = 0f, var minimised: Boolean = false, var lineSpacing: Short = 4): Component {
     var dragging = false
     val imgButton: ImageButton = ImageButton(Scene2DSkin.defaultSkin, "DatatagGreenNoBG")
     val clickSpot: ImageButton = ImageButton(Scene2DSkin.defaultSkin, "DatatagNoBG")
     val labelArray: Array<Label> = arrayOf(Label("", Scene2DSkin.defaultSkin, "Datatag"), Label("", Scene2DSkin.defaultSkin, "Datatag"),
                                            Label("", Scene2DSkin.defaultSkin, "Datatag"), Label("", Scene2DSkin.defaultSkin, "Datatag"))
+    var smallLabelFont = false
     companion object: Mapper<Datatag>()
 }

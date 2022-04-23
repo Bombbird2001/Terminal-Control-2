@@ -3,10 +3,7 @@ package com.bombbird.terminalcontrol2.networking
 import com.badlogic.ashley.core.Engine
 import com.badlogic.gdx.math.MathUtils
 import com.bombbird.terminalcontrol2.components.*
-import com.bombbird.terminalcontrol2.entities.Aircraft
-import com.bombbird.terminalcontrol2.entities.Airport
-import com.bombbird.terminalcontrol2.entities.Sector
-import com.bombbird.terminalcontrol2.entities.Waypoint
+import com.bombbird.terminalcontrol2.entities.*
 import com.bombbird.terminalcontrol2.global.Constants
 import com.bombbird.terminalcontrol2.global.Variables
 import com.bombbird.terminalcontrol2.systems.AISystem
@@ -44,6 +41,7 @@ class GameServer {
     val aircraft = HashMap<String, Aircraft>()
     val airports = HashMap<String, Airport>()
     val waypoints = HashMap<String, Waypoint>()
+    val minAltSectors = GdxArray<MinAltSector>()
 
     // var timeCounter = 0f
     // var frames = 0
@@ -83,9 +81,15 @@ class GameServer {
 
         // Add default 1 player sector
         sectors.add(
-            Sector(0, "Bombbird", "125.1", intArrayOf(461, 983, 967, 969, 1150, 803, 1326, 509, 1438, 39, 1360, -551, 1145, -728,
-                955, -861, 671, -992, 365, -1018, -86, -871, -316, -1071, -620, -1867, -1856, -1536, -1109, -421, 461, 983).map { it.toShort() }.toShortArray(), false
+            Sector(0, "Bombbird", "125.1", shortArrayOf(461, 983, 967, 969, 1150, 803, 1326, 509, 1438, 39, 1360, -551, 1145, -728,
+                955, -861, 671, -992, 365, -1018, -86, -871, -316, -1071, -620, -1867, -1856, -1536, -1109, -421, 461, 983), false
             )
+        )
+
+        // Add default min alt sector
+        minAltSectors.add(
+            MinAltSector(15000, shortArrayOf(-284, -1225, -324, -1080, -90, -883, 370, -1028, 370, -1253, -216, -1293), restr = false),
+            MinAltSector(20000, null, -216, -883, MathTools.nmToPx(2.7f), true)
         )
 
         engine.addSystem(PhysicsSystem())
@@ -131,7 +135,8 @@ class GameServer {
                     sectors.map { it.getSerialisableObject() }.toTypedArray(),
                     aircraft.values.map { it.getSerialisableObject() }.toTypedArray(),
                     airports.values.map { it.getSerialisableObject() }.toTypedArray(),
-                    waypoints.values.map { it.getSerialisableObject() }.toTypedArray()
+                    waypoints.values.map { it.getSerialisableObject() }.toTypedArray(),
+                    minAltSectors.map { it.getSerialisableObject() }.toTypedArray()
                 ))
             }
         })

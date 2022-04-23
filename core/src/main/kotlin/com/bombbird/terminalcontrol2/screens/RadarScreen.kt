@@ -12,10 +12,7 @@ import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.scenes.scene2d.Actor
 import com.bombbird.terminalcontrol2.components.*
-import com.bombbird.terminalcontrol2.entities.Aircraft
-import com.bombbird.terminalcontrol2.entities.Airport
-import com.bombbird.terminalcontrol2.entities.Sector
-import com.bombbird.terminalcontrol2.entities.Waypoint
+import com.bombbird.terminalcontrol2.entities.*
 import com.bombbird.terminalcontrol2.global.Constants
 import com.bombbird.terminalcontrol2.global.Variables
 import com.bombbird.terminalcontrol2.graphics.ScreenSize
@@ -121,6 +118,9 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
                         }
                         waypoints.forEach {
                             Waypoint.fromSerialisedObject(it)
+                        }
+                        minAltSectors.forEach {
+                            MinAltSector.fromSerialisedObject(it)
                         }
                         uiPane.updateMetarInformation()
                     } ?: (`object` as? SerialisationRegistering.MetarData)?.apply {

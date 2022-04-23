@@ -3,6 +3,7 @@ package com.bombbird.terminalcontrol2.ui
 import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.scenes.scene2d.InputEvent
 import com.badlogic.gdx.scenes.scene2d.ui.ImageButton
+import com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle
 import com.badlogic.gdx.scenes.scene2d.utils.DragListener
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.Constants
@@ -39,7 +40,7 @@ object DatatagTools {
                 pack()
             }
         }
-        updateImgButtonSize(datatag)
+        updateDatatagSize(datatag)
     }
 
     /** Updates the style for the background [Datatag.imgButton] */
@@ -47,14 +48,24 @@ object DatatagTools {
         datatag.imgButton.style = Scene2DSkin.defaultSkin.get(newStyle, ImageButton.ImageButtonStyle::class.java)
     }
 
+    /** Updates the label style to use smaller fonts when radar is zoomed out */
+    fun updateLabelSize(datatag: Datatag, smaller: Boolean) {
+        datatag.labelArray.forEach {  label ->
+            label.style = Scene2DSkin.defaultSkin.get(if (smaller) "DatatagSmall" else "Datatag", LabelStyle::class.java)
+            label.pack()
+        }
+        updateDatatagSize(datatag)
+        datatag.smallLabelFont = smaller
+    }
+
     /** Updates the spacing, in px, between each line label */
     fun updateLineSpacing(datatag: Datatag, newSpacing: Short) {
         datatag.lineSpacing = newSpacing
-        updateImgButtonSize(datatag)
+        updateDatatagSize(datatag)
     }
 
-    /** Re-calculates and updates the size of the background [Datatag.imgButton] */
-    private fun updateImgButtonSize(datatag: Datatag) {
+    /** Re-calculates and updates the size of the background [Datatag.imgButton] and [Datatag.clickSpot] */
+    private fun updateDatatagSize(datatag: Datatag) {
         var maxWidth = 0f
         var height = 0f
         var firstLabel = true

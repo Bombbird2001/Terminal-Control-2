@@ -37,6 +37,14 @@ data class SectorInfo(var sectorId: Byte = 0, var controllerName: String = "Chan
     }
 }
 
+/** Component for tagging MVA/Restricted area related information
+ *
+ * Additional tagging of [GPolygon] or [GCircle] is required for boundary information
+ * */
+data class MinAltSectorInfo(var minAltFt: Int? = null, var restricted: Boolean = false): Component {
+    companion object: Mapper<MinAltSectorInfo>()
+}
+
 /** Component for tagging waypoint related information */
 data class WaypointInfo(var wptName: String = "-----"): Component {
     companion object: Mapper<WaypointInfo>()

@@ -3,10 +3,7 @@ package com.bombbird.terminalcontrol2.networking
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
-import com.bombbird.terminalcontrol2.entities.Aircraft
-import com.bombbird.terminalcontrol2.entities.Airport
-import com.bombbird.terminalcontrol2.entities.Sector
-import com.bombbird.terminalcontrol2.entities.Waypoint
+import com.bombbird.terminalcontrol2.entities.*
 import com.esotericsoftware.kryo.Kryo
 
 /** Object that handles the registering of classes to be serialised and sent over the network using Kryonet */
@@ -31,6 +28,8 @@ object SerialisationRegistering {
             register(Airport.Runway.SerialisedRunway::class.java)
             register(Array<Waypoint.SerialisedWaypoint>::class.java)
             register(Waypoint.SerialisedWaypoint::class.java)
+            register(Array<MinAltSector.SerialisedMinAltSector>::class.java)
+            register(MinAltSector.SerialisedMinAltSector::class.java)
 
             // METAR classes
             register(MetarData::class.java)
@@ -50,7 +49,8 @@ object SerialisationRegistering {
         var sectors: Array<Sector.SerialisedSector> = arrayOf(),
         var aircraft: Array<Aircraft.SerialisedAircraft> = arrayOf(),
         var airports: Array<Airport.SerialisedAirport> = arrayOf(),
-        var waypoints: Array<Waypoint.SerialisedWaypoint> = arrayOf()
+        var waypoints: Array<Waypoint.SerialisedWaypoint> = arrayOf(),
+        val minAltSectors: Array<MinAltSector.SerialisedMinAltSector> = arrayOf()
     )
 
     /** Class representing the data to be sent during METAR updates */

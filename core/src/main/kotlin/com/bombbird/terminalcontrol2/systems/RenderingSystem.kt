@@ -193,6 +193,8 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
             datatags[i]?.apply {
                 val datatag = get(Datatag.mapper) ?: return@apply
                 val radarData = get(RadarData.mapper) ?: return@apply
+                if (!datatag.smallLabelFont && camZoom > Constants.DATATAG_ZOOM_THRESHOLD) DatatagTools.updateLabelSize(datatag, true)
+                else if (datatag.smallLabelFont && camZoom <= Constants.DATATAG_ZOOM_THRESHOLD) DatatagTools.updateLabelSize(datatag, false)
                 val leftX = (radarData.position.x - camX) / camZoom + datatag.xOffset
                 val bottomY = (radarData.position.y - camY) / camZoom + datatag.yOffset
                 datatag.imgButton.apply {
