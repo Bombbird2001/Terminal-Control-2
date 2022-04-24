@@ -47,6 +47,7 @@ import kotlin.math.min
  * */
 class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProcessor {
     private val radarDisplayStage = safeStage(Constants.GAME.batch)
+    private val constZoomStage = safeStage(Constants.GAME.batch)
     private val uiStage = safeStage(Constants.GAME.batch)
     private val uiPane = UIPane(uiStage)
     private val shapeRenderer = ShapeRenderer()
@@ -142,16 +143,16 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
             panRate = ImmutableVector2(0f, 0f)
             moveTo(targetCenter, uiPane.getRadarCameraOffsetForZoom(zoom))
         }
-        uiStage.camera.moveTo(Vector2())
+        constZoomStage.camera.moveTo(Vector2())
 
-        Constants.CLIENT_ENGINE.addSystem(RenderingSystem(shapeRenderer, radarDisplayStage, uiStage))
+        Constants.CLIENT_ENGINE.addSystem(RenderingSystem(shapeRenderer, radarDisplayStage, constZoomStage, uiStage))
         Constants.CLIENT_ENGINE.addSystem(PhysicsSystemClient())
         Constants.CLIENT_ENGINE.addSystem(DataSystem())
     }
 
-    /** Adds an [Actor] to [uiStage] */
-    fun addToUIStage(actor: Actor) {
-        uiStage.addActor(actor)
+    /** Adds an [Actor] to [constZoomStage] */
+    fun addToConstZoomStage(actor: Actor) {
+        constZoomStage.addActor(actor)
     }
 
     /** Ensures [radarDisplayStage]'s camera parameters are within limits, then updates the camera (and [shapeRenderer]) */
@@ -204,16 +205,17 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
         }
     }
 
-    /** Sets [Gdx.input]'s inputProcessors to [inputMultiplexer], which consists of [uiStage], [radarDisplayStage], [gestureDetector] and this [RadarScreen] */
+    /** Sets [Gdx.input]'s inputProcessors to [inputMultiplexer], which consists of [uiStage], [constZoomStage], [radarDisplayStage], [gestureDetector] and this [RadarScreen] */
     override fun show() {
         inputMultiplexer.addProcessor(uiStage)
+        inputMultiplexer.addProcessor(constZoomStage)
         inputMultiplexer.addProcessor(radarDisplayStage)
         inputMultiplexer.addProcessor(gestureDetector)
         inputMultiplexer.addProcessor(this)
         Gdx.input.inputProcessor = inputMultiplexer
     }
 
-    /** Main rendering function, updates engine, draws using [shapeRenderer] followed by [radarDisplayStage] and finally [uiStage], every loop */
+    /** Main rendering function, updates engine which draws using [RenderingSystem] every loop */
     override fun render(delta: Float) {
         Gdx.gl.glClearColor(0f, 0f, 0f, 1f)
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT or GL20.GL_DEPTH_BUFFER_BIT or if (Gdx.graphics.bufferFormat.coverageSampling) GL20.GL_COVERAGE_BUFFER_BIT_NV else 0)
@@ -229,12 +231,14 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
         }
     }
 
-    /** Clears and disposes of [radarDisplayStage], [uiStage], [shapeRenderer], stops the [client] and [GameServer] if present */
+    /** Clears and disposes of [radarDisplayStage], [constZoomStage], [uiStage], [shapeRenderer], stops the [client] and [GameServer] if present */
     override fun dispose() {
         radarDisplayStage.clear()
+        constZoomStage.clear()
         uiStage.clear()
 
         radarDisplayStage.disposeSafely()
+        constZoomStage.disposeSafely()
         uiStage.disposeSafely()
         shapeRenderer.disposeSafely()
 
@@ -249,11 +253,12 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
 
     /** Updates various global [Constants] and [Variables] upon a screen resize, to ensure UI will fit to the new screen size
      *
-     * Updates the viewport and camera's projectionMatrix of [radarDisplayStage], [uiStage] and [shapeRenderer]
+     * Updates the viewport and camera's projectionMatrix of [radarDisplayStage], [constZoomStage], [uiStage] and [shapeRenderer]
      * */
     override fun resize(width: Int, height: Int) {
         ScreenSize.updateScreenSizeParameters(width, height)
         radarDisplayStage.viewport.update(width, height)
+        constZoomStage.viewport.update(width, height)
 
         // Resize the UI pane
         uiPane.resize(width, height)

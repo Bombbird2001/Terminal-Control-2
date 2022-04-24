@@ -1,5 +1,6 @@
 package com.bombbird.terminalcontrol2.ui
 
+import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.scenes.scene2d.Actor
 import com.badlogic.gdx.scenes.scene2d.Stage
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener
@@ -9,6 +10,8 @@ import com.bombbird.terminalcontrol2.components.MetarInfo
 import com.bombbird.terminalcontrol2.global.Constants
 import com.bombbird.terminalcontrol2.global.Variables
 import ktx.ashley.get
+import ktx.collections.toGdxArray
+import ktx.graphics.moveTo
 import ktx.scene2d.*
 import kotlin.math.max
 
@@ -18,11 +21,15 @@ class UIPane(private val uiStage: Stage) {
     val paneWidth: Float
         get() = max(Variables.UI_WIDTH * 0.28f, 400f)
 
-    // Information pane elements
-    var infoPane: KContainer<Actor>
+    // Main pane (when no aircraft selected)
+    var mainInfoPane: KContainer<Actor>
     var metarScroll: KScrollPane
     var metarPane: KTableWidget
     var metarExpandSet = HashSet<String>()
+
+    // Control pane (when aircraft is selected)
+    var controlPane: KContainer<Actor>
+    var lateralContainer: KContainer<Actor>
 
     init {
         uiStage.actors {
@@ -31,39 +38,103 @@ class UIPane(private val uiStage: Stage) {
                 setSize(paneWidth, Variables.UI_HEIGHT)
                 setPosition(-Variables.UI_WIDTH / 2, -Variables.UI_HEIGHT / 2)
             }
-            infoPane = container {
+            mainInfoPane = container {
+                // debugAll()
                 fill()
                 setSize(paneWidth, Variables.UI_HEIGHT)
                 table {
+                    // debugAll()
                     metarScroll = scrollPane("MetarPane") {
+                        // debugAll()
                         metarPane = table {
-                            debugAll()
                             align(Align.top)
                         }
                         setOverscroll(false, false)
-                    }.cell(growX = true, padTop = 20f, align = Align.topLeft, height = Variables.UI_HEIGHT * 0.4f)
-                }.apply {
+                    }.cell(padTop = 20f, align = Align.top, preferredWidth = paneWidth, preferredHeight = Variables.UI_HEIGHT * 0.4f, growX = true)
                     align(Align.top)
                 }
+                isVisible = false
                 setPosition(-Variables.UI_WIDTH / 2, -Variables.UI_HEIGHT / 2)
             }
+            controlPane = container {
+                fill()
+                setSize(paneWidth, Variables.UI_HEIGHT)
+                debugAll()
+                table {
+                    table {
+                        // First row of mode buttons - Route, Hold, Vectors
+                        textButton("Route", "ControlPaneSelected").cell(grow = true, preferredWidth = paneWidth / 3)
+                        textButton("Hold", "ControlPaneSelected").cell(grow = true, preferredWidth = paneWidth / 3)
+                        textButton("Vectors", "ControlPaneSelected").cell(grow = true, preferredWidth = paneWidth / 3)
+                    }.cell(preferredWidth = paneWidth, height = Variables.UI_HEIGHT * 0.125f, growX = true, align = Align.top)
+                    row()
+                    table {
+                        // Second row of selectBoxes - Approach, Transition
+                        selectBox<String>("ControlPane").apply {
+                            items = arrayOf("Approach", "ILS05L", "ILS05R").toGdxArray()
+                            list.setAlignment(Align.center)
+                            setAlignment(Align.center)
+                        }.cell(grow = true, preferredWidth = paneWidth / 2)
+                        selectBox<String>("ControlPane").apply {
+                            items = arrayOf("Via vectors", "Via JAMMY", "Via FETUS", "Via MARCH").toGdxArray()
+                            list.setAlignment(Align.center)
+                            setAlignment(Align.center)
+                        }.cell(grow = true, preferredWidth = paneWidth / 2)
+                    }.cell(preferredWidth = paneWidth, height = Variables.UI_HEIGHT * 0.125f, growX = true)
+                    row()
+                    table {
+                        // Third row of selectBoxes, button - Altitude, Expedite, Speed
+                        selectBox<Int>("ControlPane").apply {
+                            items = (2000..20000 step 1000).toGdxArray()
+                            list.setAlignment(Align.center)
+                            setAlignment(Align.center)
+                        }.cell(grow = true, preferredWidth = paneWidth * 0.37f)
+                        textButton("Expedite", "ControlPaneSelected").cell(grow = true, preferredWidth = paneWidth * 0.26f)
+                        selectBox<Int>("ControlPane").apply {
+                            items = (150 .. 250 step 10).toGdxArray()
+                            list.setAlignment(Align.center)
+                            setAlignment(Align.center)
+                        }.cell(grow = true, preferredWidth = paneWidth * 0.37f)
+                    }.cell(preferredWidth = paneWidth, height = Variables.UI_HEIGHT * 0.125f, growX = true)
+                    row()
+                    lateralContainer = container {  }.cell(grow = true, preferredWidth = paneWidth) // TODO specific lateral mode control UI - route, vectors, hold
+                    row()
+                    table {
+                        // Last row of buttons - Undo all, Acknowledge/Handover, Transmit
+                        textButton("Undo all", "ControlPaneButton").cell(grow = true, preferredWidth = paneWidth / 3)
+                        textButton("Handover\n-\nAcknowledge", "ControlPaneButton").cell(grow = true, preferredWidth = paneWidth / 3)
+                        textButton("Transmit", "ControlPaneButton").cell(grow = true, preferredWidth = paneWidth / 3)
+                    }.cell(preferredWidth = paneWidth, height = Variables.UI_HEIGHT * 0.125f, growX = true, align = Align.bottom)
+                    align(Align.top)
+                }
+                isVisible = true
+                setPosition(-Variables.UI_WIDTH / 2, -Variables.UI_HEIGHT / 2)
+            }
+        }
+        uiStage.camera.apply {
+            moveTo(Vector2(Variables.UI_WIDTH / 2, Variables.UI_HEIGHT / 2))
+            update()
         }
     }
 
     /** Resize the pane and containers */
     fun resize(width: Int, height: Int) {
-        uiStage.viewport.update(width, height)
-        metarScroll.apply {
-            setHeight(Variables.UI_HEIGHT * 0.4f)
-            invalidateHierarchy()
-        }
-        infoPane.apply {
-            setSize(paneWidth, Variables.UI_HEIGHT)
-            setPosition(-Variables.UI_WIDTH / 2, -Variables.UI_HEIGHT / 2)
+        uiStage.viewport.update(width, height, true)
+        uiStage.camera.apply {
+            moveTo(Vector2(Variables.UI_WIDTH / 2, Variables.UI_HEIGHT / 2))
+            update()
         }
         paneImage.apply {
             setSize(paneWidth, Variables.UI_HEIGHT)
-            setPosition(-Variables.UI_WIDTH / 2, -Variables.UI_HEIGHT / 2)
+            setPosition(0f, 0f)
+        }
+        mainInfoPane.apply {
+            setSize(paneWidth, Variables.UI_HEIGHT)
+            setPosition(0f, 0f)
+        }
+        controlPane.apply {
+            setSize(paneWidth, Variables.UI_HEIGHT)
+            setPosition(0f, 0f)
         }
     }
 

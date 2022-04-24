@@ -86,7 +86,7 @@ object DatatagTools {
     /** Adds a dragListener to the background [Datatag.clickSpot] */
     fun addDragListener(datatag: Datatag) {
         datatag.clickSpot.apply {
-            Constants.GAME.gameClientScreen?.addToUIStage(this) // Add to uiStage in order for drag gesture to be detected by inputMultiplexer
+            Constants.GAME.gameClientScreen?.addToConstZoomStage(this) // Add to uiStage in order for drag gesture to be detected by inputMultiplexer
             zIndex = 0
             addListener(object: DragListener() {
                 override fun drag(event: InputEvent?, x: Float, y: Float, pointer: Int) {

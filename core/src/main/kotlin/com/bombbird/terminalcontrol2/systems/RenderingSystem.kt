@@ -19,7 +19,7 @@ import ktx.math.ImmutableVector2
 import kotlin.math.sqrt
 
 /** Main rendering system, which renders to [Constants.GAME]'s spriteBatch or radarScreen's [shapeRenderer] */
-class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stage: Stage, private val uiStage: Stage): EntitySystem() {
+class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stage: Stage, private val constZoomStage: Stage, private val uiStage: Stage): EntitySystem() {
     override fun update(deltaTime: Float) {
         val camZoom = (stage.camera as OrthographicCamera).zoom
         val camX = stage.camera.position.x
@@ -77,7 +77,7 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
         }
 
 
-        shapeRenderer.projectionMatrix = uiStage.camera.combined
+        shapeRenderer.projectionMatrix = constZoomStage.camera.combined
         // Render datatag to aircraft icon line
         val datatagLineFamily = allOf(Datatag::class, RadarData::class).get()
         val datatagLines = engine.getEntitiesFor(datatagLineFamily)
@@ -171,7 +171,7 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
             }
         }
 
-        Constants.GAME.batch.projectionMatrix = uiStage.camera.combined
+        Constants.GAME.batch.projectionMatrix = constZoomStage.camera.combined
         // Render generic constant size labels
         val constSizeLabelFamily = allOf(GenericLabel::class, Position::class, ConstantZoomSize::class).get()
         val constLabels = engine.getEntitiesFor(constSizeLabelFamily)
@@ -214,6 +214,9 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
             }
         }
         Constants.GAME.batch.end()
+
+        constZoomStage.act(deltaTime)
+        constZoomStage.draw()
 
         // Draw UI pane the last, above all the other elements
         uiStage.act(deltaTime)
