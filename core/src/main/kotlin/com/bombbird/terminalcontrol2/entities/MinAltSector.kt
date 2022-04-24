@@ -10,6 +10,7 @@ import ktx.ashley.get
 import ktx.ashley.with
 import kotlin.math.round
 
+/** Sector class that creates a sector entity with the required components for implementing an MVA or restricted area */
 class MinAltSector(minAlt: Int?, polygonBoundary: ShortArray?, circleX: Short = 0, circleY: Short = 0, radiusBoundary: Float = 0f, restr: Boolean, onClient: Boolean = true) {
     val entity = (if (onClient) Constants.CLIENT_ENGINE else Constants.SERVER_ENGINE).entity {
         with<MinAltSectorInfo> {

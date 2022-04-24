@@ -36,7 +36,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
         with<CommandTarget>()
         with<TakeoffRoll>()
         with<AffectedByWind>()
-        if (true || onClient) {
+        if (onClient) {
             with<RadarData> {
                 position.x = posX
                 position.y = posY
@@ -80,13 +80,13 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
                         angularSpdDps = serialisedAircraft.angularSpdDps
                     }
                     get(RadarData.mapper)?.apply {
-                        position.x = serialisedAircraft.rX.toFloat()
-                        position.y = serialisedAircraft.rY.toFloat()
-                        altitude.altitudeFt = serialisedAircraft.rAlt
-                        direction.trackUnitVector = Vector2(serialisedAircraft.rDirX / 30000f, serialisedAircraft.rDirY / 30000f)
-                        speed.speedKts = serialisedAircraft.rSpd.toFloat()
-                        speed.vertSpdFpm = serialisedAircraft.rVertSpd.toFloat()
-                        speed.angularSpdDps = serialisedAircraft.rAngularSpd / 100f
+                        position.x = serialisedAircraft.x
+                        position.y = serialisedAircraft.y
+                        altitude.altitudeFt = serialisedAircraft.altitude
+                        direction.trackUnitVector = Vector2(serialisedAircraft.directionX, serialisedAircraft.directionY)
+                        speed.speedKts = serialisedAircraft.speedKts
+                        speed.vertSpdFpm = serialisedAircraft.vertSpdFpm
+                        speed.angularSpdDps = serialisedAircraft.angularSpdDps
                     }
                 }
             }
@@ -158,7 +158,6 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
                              val icaoCallsign: String = "", val icaoType: String = "", val appSpd: Short = 0, val vR: Short = 0, val weightKg: Int = 0,
                              val directionX: Float = 0f, val directionY: Float = 0f,
                              val speedKts: Float = 0f, val vertSpdFpm: Float = 0f, val angularSpdDps: Float = 0f,
-                             val rX: Short = 0, val rY: Short = 0, val rAlt: Float = 0f, val rDirX: Short = 0, val rDirY: Short = 0, val rSpd: Short = 0, val rVertSpd: Short = 0, val rAngularSpd: Short = 0,
                              val flightType: Byte = 0)
 
     /** Gets a [SerialisedAircraft] from current state */
@@ -169,7 +168,6 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
             val acInfo = get(AircraftInfo.mapper) ?: return SerialisedAircraft()
             val direction = get(Direction.mapper) ?: return SerialisedAircraft()
             val speed = get(Speed.mapper) ?: return SerialisedAircraft()
-            val rData = get(RadarData.mapper) ?: return SerialisedAircraft()
             val flightType = get(FlightType.mapper) ?: return SerialisedAircraft()
             return SerialisedAircraft(
                 position.x, position.y,
@@ -177,9 +175,6 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
                 acInfo.icaoCallsign, acInfo.icaoType, acInfo.aircraftPerf.appSpd, acInfo.aircraftPerf.vR, acInfo.aircraftPerf.weightKg,
                 direction.trackUnitVector.x, direction.trackUnitVector.y,
                 speed.speedKts, speed.vertSpdFpm, speed.angularSpdDps,
-                rData.position.x.toInt().toShort(), rData.position.y.toInt().toShort(), rData.altitude.altitudeFt,
-                (rData.direction.trackUnitVector.x * 30000).toInt().toShort(), (rData.direction.trackUnitVector.y * 30000).toInt().toShort(),
-                rData.speed.speedKts.toInt().toShort(), rData.speed.vertSpdFpm.toInt().toShort(), (rData.speed.angularSpdDps * 100).toInt().toShort(),
                 flightType.type
             )
         }

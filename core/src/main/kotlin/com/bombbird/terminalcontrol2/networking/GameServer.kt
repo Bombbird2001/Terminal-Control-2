@@ -86,7 +86,7 @@ class GameServer {
             )
         )
 
-        // Add default min alt sector
+        // Add dummy min alt sectors
         minAltSectors.add(
             MinAltSector(15000, shortArrayOf(-284, -1225, -324, -1080, -90, -883, 370, -1028, 370, -1253, -216, -1293), restr = false),
             MinAltSector(20000, null, -216, -883, MathTools.nmToPx(2.7f), true)

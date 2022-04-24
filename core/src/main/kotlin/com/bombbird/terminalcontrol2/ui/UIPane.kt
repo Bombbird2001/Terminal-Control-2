@@ -30,7 +30,6 @@ class UIPane(private val uiStage: Stage) {
                 // debugAll()
                 setSize(paneWidth, Variables.UI_HEIGHT)
                 setPosition(-Variables.UI_WIDTH / 2, -Variables.UI_HEIGHT / 2)
-                zIndex = 1
             }
             infoPane = container {
                 fill()
@@ -47,7 +46,6 @@ class UIPane(private val uiStage: Stage) {
                     align(Align.top)
                 }
                 setPosition(-Variables.UI_WIDTH / 2, -Variables.UI_HEIGHT / 2)
-                zIndex = 1
             }
         }
     }
