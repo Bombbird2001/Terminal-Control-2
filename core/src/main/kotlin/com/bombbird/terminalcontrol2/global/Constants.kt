@@ -36,7 +36,7 @@ object Constants {
     const val MAX_LOW_SPD_ANGULAR_SPD = 3f
     const val MAX_HIGH_SPD_ANGULAR_SPD = 1.5f
     const val MAX_ANGULAR_ACC = 0.3f
-    const val MAX_JERK = 2f
+    const val MAX_JERK = 1.2f
     const val MAX_VS = 4000f
     const val MAX_ACC = 3.2f
 

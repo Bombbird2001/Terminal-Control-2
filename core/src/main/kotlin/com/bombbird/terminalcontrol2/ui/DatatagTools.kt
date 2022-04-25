@@ -106,7 +106,7 @@ object DatatagTools {
         val callsign = aircraftInfo.icaoCallsign
         val acInfo = "${aircraftInfo.icaoType}/${aircraftInfo.aircraftPerf.wakeCategory}/${aircraftInfo.aircraftPerf.recat}"
         val alt = round(radarData.altitude.altitudeFt / 100).toInt()
-        val vs = if (radarData.speed.vertSpdFpm > 100) '^' else if (radarData.speed.vertSpdFpm < -100) 'v' else '='
+        val vs = if (radarData.speed.vertSpdFpm > 150) '^' else if (radarData.speed.vertSpdFpm < -150) 'v' else '='
         val cmdAlt = round(cmdTarget.targetAltFt / 100).toInt()
         val clearedAlt = "=> Cleared alt"
         val groundSpd = round((radarData.direction.trackUnitVector.times(radarData.speed.speedKts) + (affectedByWind?.windVector?.times(MathTools.pxpsToKt(1f)) ?: Vector2())).len()).toInt()

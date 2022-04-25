@@ -22,14 +22,23 @@ class UIPane(private val uiStage: Stage) {
         get() = max(Variables.UI_WIDTH * 0.28f, 400f)
 
     // Main pane (when no aircraft selected)
-    var mainInfoPane: KContainer<Actor>
-    var metarScroll: KScrollPane
-    var metarPane: KTableWidget
-    var metarExpandSet = HashSet<String>()
+    val mainInfoPane: KContainer<Actor>
+    val metarScroll: KScrollPane
+    val metarPane: KTableWidget
+    val metarExpandSet = HashSet<String>()
 
     // Control pane (when aircraft is selected)
-    var controlPane: KContainer<Actor>
-    var lateralContainer: KContainer<Actor>
+    val controlPane: KContainer<Actor>
+    val lateralContainer: KContainer<Actor>
+
+    val routeSubsectionTable: KTableWidget
+    val routeTable: KTableWidget
+
+    val holdTable: KTableWidget
+    val vectorTable: KTableWidget
+
+    // Route editing pane
+    // val routeEditPane: KContainer<Actor>
 
     init {
         uiStage.actors {
@@ -59,7 +68,7 @@ class UIPane(private val uiStage: Stage) {
             controlPane = container {
                 fill()
                 setSize(paneWidth, Variables.UI_HEIGHT)
-                debugAll()
+                // debugAll()
                 table {
                     table {
                         // First row of mode buttons - Route, Hold, Vectors
@@ -97,7 +106,7 @@ class UIPane(private val uiStage: Stage) {
                         }.cell(grow = true, preferredWidth = paneWidth * 0.37f)
                     }.cell(preferredWidth = paneWidth, height = Variables.UI_HEIGHT * 0.125f, growX = true)
                     row()
-                    lateralContainer = container {  }.cell(grow = true, preferredWidth = paneWidth) // TODO specific lateral mode control UI - route, vectors, hold
+                    lateralContainer = container {  }.cell(grow = true, preferredWidth = paneWidth)
                     row()
                     table {
                         // Last row of buttons - Undo all, Acknowledge/Handover, Transmit
@@ -110,6 +119,35 @@ class UIPane(private val uiStage: Stage) {
                 isVisible = true
                 setPosition(-Variables.UI_WIDTH / 2, -Variables.UI_HEIGHT / 2)
             }
+            // TODO specific lateral mode control UI - route, vectors, hold
+            routeSubsectionTable = table {
+                // debugAll()
+                scrollPane("ControlPaneRoute") {
+                    routeTable = table {
+                        // debugAll()
+                        textButton("=>", "ControlPaneRouteDirect").cell(growX = true, preferredWidth = 0.2f * paneWidth, preferredHeight = 0.1f * Variables.UI_HEIGHT)
+                        label("WPT01", "ControlPaneRoute").apply { setAlignment(Align.center) }.cell(growX = true, preferredWidth = 0.2f * paneWidth)
+                        label("9000\n5000", "ControlPaneRoute").apply { setAlignment(Align.center) }.cell(growX = true, preferredWidth = 0.2f * paneWidth)
+                        label("250kts", "ControlPaneRoute").apply { setAlignment(Align.center) }.cell(growX = true, preferredWidth = 0.2f * paneWidth)
+                        row()
+                        textButton("=>", "ControlPaneRouteDirect").cell(growX = true, preferredWidth = 0.2f * paneWidth, preferredHeight = 0.1f * Variables.UI_HEIGHT)
+                        label("WPT02", "ControlPaneRoute").apply { setAlignment(Align.center) }.cell(growX = true, preferredWidth = 0.2f * paneWidth)
+                        label("3000", "ControlPaneRoute").apply { setAlignment(Align.center) }.cell(growX = true, preferredWidth = 0.2f * paneWidth)
+                        label("230kts", "ControlPaneRoute").apply { setAlignment(Align.center) }.cell(growX = true, preferredWidth = 0.2f * paneWidth)
+                        align(Align.top)
+                    }
+                    setOverscroll(false, false)
+                }.cell(preferredWidth = 0.81f * paneWidth, preferredHeight = 0.6f * Variables.UI_HEIGHT, grow = true, padTop = 20f, align = Align.top)
+                table {
+                    textButton("Edit\nroute", "ControlPaneButton").cell(growX = true, height = Variables.UI_HEIGHT * 0.1f)
+                    row()
+                    textButton("CDA", "ControlPaneSelected").cell(growX = true, height = Variables.UI_HEIGHT * 0.1f)
+                }.cell(preferredWidth = 0.19f * paneWidth, padTop = 20f, align = Align.top)
+                isVisible = true
+            }
+            holdTable = table { isVisible = false }
+            vectorTable = table { isVisible = false }
+            lateralContainer.actor = routeSubsectionTable
         }
         uiStage.camera.apply {
             moveTo(Vector2(Variables.UI_WIDTH / 2, Variables.UI_HEIGHT / 2))
