@@ -127,26 +127,86 @@ class UIPane(private val uiStage: Stage) {
                         // debugAll()
                         textButton("=>", "ControlPaneRouteDirect").cell(growX = true, preferredWidth = 0.2f * paneWidth, preferredHeight = 0.1f * Variables.UI_HEIGHT)
                         label("WPT01", "ControlPaneRoute").apply { setAlignment(Align.center) }.cell(growX = true, preferredWidth = 0.2f * paneWidth)
-                        label("9000\n5000", "ControlPaneRoute").apply { setAlignment(Align.center) }.cell(growX = true, preferredWidth = 0.2f * paneWidth)
+                        label("9000\n5000", "ControlPaneBothAltRestr").apply { setAlignment(Align.center) }.cell(expandX = true, padLeft = 10f, padRight = 10f)
                         label("250kts", "ControlPaneRoute").apply { setAlignment(Align.center) }.cell(growX = true, preferredWidth = 0.2f * paneWidth)
                         row()
                         textButton("=>", "ControlPaneRouteDirect").cell(growX = true, preferredWidth = 0.2f * paneWidth, preferredHeight = 0.1f * Variables.UI_HEIGHT)
                         label("WPT02", "ControlPaneRoute").apply { setAlignment(Align.center) }.cell(growX = true, preferredWidth = 0.2f * paneWidth)
-                        label("3000", "ControlPaneRoute").apply { setAlignment(Align.center) }.cell(growX = true, preferredWidth = 0.2f * paneWidth)
+                        label("3000", "ControlPaneBottomAltRestr").apply { setAlignment(Align.center) }.cell(expandX = true, padLeft = 10f, padRight = 10f)
                         label("230kts", "ControlPaneRoute").apply { setAlignment(Align.center) }.cell(growX = true, preferredWidth = 0.2f * paneWidth)
                         align(Align.top)
                     }
                     setOverscroll(false, false)
                 }.cell(preferredWidth = 0.81f * paneWidth, preferredHeight = 0.6f * Variables.UI_HEIGHT, grow = true, padTop = 20f, align = Align.top)
                 table {
-                    textButton("Edit\nroute", "ControlPaneButton").cell(growX = true, height = Variables.UI_HEIGHT * 0.1f)
+                    textButton("Edit\nroute", "ControlPaneButton").cell(growX = true, height = Variables.UI_HEIGHT * 0.15f)
                     row()
-                    textButton("CDA", "ControlPaneSelected").cell(growX = true, height = Variables.UI_HEIGHT * 0.1f)
+                    textButton("CDA", "ControlPaneSelected").cell(growX = true, height = Variables.UI_HEIGHT * 0.15f)
                 }.cell(preferredWidth = 0.19f * paneWidth, padTop = 20f, align = Align.top)
-                isVisible = true
             }
-            holdTable = table { isVisible = false }
-            vectorTable = table { isVisible = false }
+            holdTable = table {
+                // debugAll()
+                table {
+                    selectBox<String>("ControlPane") {
+                        items = arrayOf("Present position", "JAMMY", "MARCH").toGdxArray()
+                        setAlignment(Align.center)
+                        list.setAlignment(Align.center)
+                    }.cell(grow = true, preferredWidth = 0.4f * paneWidth, padRight = 10f)
+                    textButton("As\n Published", "ControlPaneSelected").cell(grow = true, preferredWidth = 0.3f * paneWidth - 10f, padRight = 10f)
+                    textButton("Custom", "ControlPaneSelected").cell(grow = true, preferredWidth = 0.3f * paneWidth - 10f)
+                }.cell(preferredWidth = paneWidth, growX = true, height = Variables.UI_HEIGHT * 0.1f, padTop = 20f)
+                row()
+                table {
+                    // debugAll()
+                    label("Legs:", "ControlPaneRoute").apply { setAlignment(Align.center) }.cell(grow = true, height = Variables.UI_HEIGHT * 0.1f, padRight = 10f, preferredWidth = 0.15f * paneWidth, align = Align.center)
+                    textButton("-", "ControlPaneHold").cell(grow = true, preferredWidth = 0.15f * paneWidth)
+                    label("5 nm", "ControlPaneHoldDist").apply { setAlignment(Align.center) }.cell(grow = true, preferredWidth = 0.15f * paneWidth, align = Align.center)
+                    textButton("+", "ControlPaneHold").cell(grow = true, padRight = 30f, preferredWidth = 0.15f * paneWidth)
+                    textButton("Left", "ControlPaneSelected").cell(grow = true, preferredWidth = 0.2f * paneWidth - 20f)
+                    textButton("Right", "ControlPaneSelected").cell(grow = true, preferredWidth = 0.2f * paneWidth - 20f)
+                }.cell(preferredWidth = paneWidth, growX = true, height = Variables.UI_HEIGHT * 0.1f, padTop = 20f)
+                row()
+                table {
+                    label("Inbound\nheading:", "ControlPaneRoute").apply { setAlignment(Align.center) }.cell(grow = true, preferredWidth = 0.22f * paneWidth, padRight = 10f)
+                    table {
+                        textButton("-20", "ControlPaneHdgDark").cell(grow = true, preferredHeight = 0.2f * Variables.UI_HEIGHT - 40f)
+                        row()
+                        textButton("-5", "ControlPaneHdgLight").cell(grow = true, preferredHeight = 0.2f * Variables.UI_HEIGHT - 40f)
+                    }.cell(grow = true, preferredWidth = 0.275f * paneWidth)
+                    label("360", "ControlPaneHdg").apply { setAlignment(Align.center) }.cell(grow = true, preferredWidth = 0.23f * paneWidth - 10f)
+                    table {
+                        textButton("+20", "ControlPaneHdgDark").cell(grow = true, preferredHeight = 0.2f * Variables.UI_HEIGHT - 40f)
+                        row()
+                        textButton("+5", "ControlPaneHdgLight").cell(grow = true, preferredHeight = 0.2f * Variables.UI_HEIGHT - 40f)
+                    }.cell(grow = true, preferredWidth = 0.275f * paneWidth)
+                }.cell(preferredWidth = paneWidth, preferredHeight = 0.4f * Variables.UI_HEIGHT - 80f, growX = true, padTop = 20f, padBottom = 20f)
+                isVisible = false
+            }
+            vectorTable = table {
+                table {
+                    textButton("Left", "ControlPaneHdgLight").cell(grow = true, preferredWidth = 0.5f * paneWidth - 10f)
+                    textButton("Right", "ControlPaneHdgLight").cell(grow = true, preferredWidth = 0.5f * paneWidth - 10f)
+                }.cell(padTop = 20f, height = 0.1f * Variables.UI_HEIGHT, padLeft = 10f, padRight = 10f)
+                row()
+                table {
+                    table {
+                        textButton("-90", "ControlPaneHdgDark").cell(grow = true, preferredHeight = (0.5f * Variables.UI_HEIGHT - 40f) / 3)
+                        row()
+                        textButton("-10", "ControlPaneHdgDark").cell(grow = true, preferredHeight = (0.5f * Variables.UI_HEIGHT - 40f) / 3)
+                        row()
+                        textButton("-5", "ControlPaneHdgDark").cell(grow = true, preferredHeight = (0.5f * Variables.UI_HEIGHT - 40f) / 3)
+                    }.cell(grow = true, preferredWidth = 0.4f * paneWidth, padLeft = 10f)
+                    label("360", "ControlPaneHdg").apply { setAlignment(Align.center) }.cell(grow = true, preferredWidth = 0.3f * paneWidth - 20f)
+                    table {
+                        textButton("+90", "ControlPaneHdgDark").cell(grow = true, preferredHeight = (0.5f * Variables.UI_HEIGHT - 40f) / 3)
+                        row()
+                        textButton("+10", "ControlPaneHdgDark").cell(grow = true, preferredHeight = (0.5f * Variables.UI_HEIGHT - 40f) / 3)
+                        row()
+                        textButton("+5", "ControlPaneHdgDark").cell(grow = true, preferredHeight = (0.5f * Variables.UI_HEIGHT - 40f) / 3)
+                    }.cell(grow = true, preferredWidth = 0.4f * paneWidth, padRight = 10f)
+                }.cell(preferredWidth = paneWidth, preferredHeight = 0.5f * Variables.UI_HEIGHT - 40f, padBottom = 20f)
+                isVisible = false
+            }
             lateralContainer.actor = routeSubsectionTable
         }
         uiStage.camera.apply {
