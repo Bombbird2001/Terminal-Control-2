@@ -72,7 +72,7 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
     var selectedAircraft: Aircraft? = null
 
     // Networking client
-    val client = Client()
+    val client = Client(Constants.WRITE_BUFFER_SIZE, Constants.READ_BUFFER_SIZE)
 
     // Slow update timer
     var slowUpdateTimer = 1f

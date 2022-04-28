@@ -4,6 +4,7 @@ import com.badlogic.ashley.core.Engine
 import com.badlogic.gdx.math.MathUtils
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.*
+import com.bombbird.terminalcontrol2.files.GameLoader
 import com.bombbird.terminalcontrol2.global.Constants
 import com.bombbird.terminalcontrol2.global.Variables
 import com.bombbird.terminalcontrol2.systems.AISystem
@@ -49,48 +50,25 @@ class GameServer {
 
     /** Initialises game world */
     private fun loadGame() {
-        // Add dummy airport, runways
-        airports["TCTP"] = Airport(0, "TCTP", "Haoyuan", 0f, 0f, 108f, false).apply {
-            addRunway(0, "05L", -15f, 5f, 49.08f, 3660, 108f, RunwayLabel.LEFT)
-            addRunway(1, "05R", 10f, -10f, 49.07f, 3800, 108f, RunwayLabel.RIGHT)
-            setMetarRealLifeIcao("RCTP")
-        }
-        airports["TCSS"] = Airport(1, "TCSS", "Rongshan", 200f, 50f, 18f, false).apply {
-            addRunway(0, "10", 190f, 48f, 92.22f, 2605, 18f, RunwayLabel.BEFORE)
-            setMetarRealLifeIcao("RCSS")
-        }
+        GameLoader.loadWorldData("TCTP", this)
 
         // Add dummy aircraft
-        aircraft["SHIBA2"] = Aircraft("SHIBA2", 10f, -10f, 108f, FlightType.DEPARTURE, false).apply {
-            entity[Direction.mapper]?.trackUnitVector?.rotateDeg(-49.07f) // Runway 05R heading
+        val rwy = airports["TCTP"]?.entity?.get(RunwayChildren.mapper)?.rwyMap?.get(0)
+        val rwyPos = rwy?.entity?.get(Position.mapper)
+        aircraft["SHIBA2"] = Aircraft("SHIBA2", rwyPos?.x ?: 10f, rwyPos?.y ?: -10f, rwy?.entity?.get(Altitude.mapper)?.altitudeFt ?: 108f, FlightType.DEPARTURE, false).apply {
+            entity[Direction.mapper]?.trackUnitVector?.rotateDeg((rwy?.entity?.get(Direction.mapper)?.trackUnitVector?.angleDeg() ?: 40.93f) - 90) // Runway 05R heading
             // Calculate headwind component for takeoff
             val headwind = entity[Altitude.mapper]?.let{ alt -> entity[Direction.mapper]?.let { dir -> entity[Position.mapper]?.let { pos ->
                 val wind = MetarTools.getClosestAirportWindVector(pos.x, pos.y)
                 PhysicsTools.calculateIASFromTAS(alt.altitudeFt, MathTools.pxpsToKt(wind.dot(dir.trackUnitVector)))
             }}} ?: 0f
-            entity.add(TakeoffRoll(PhysicsTools.calculateRequiredAcceleration(0, ((entity[AircraftInfo.mapper]?.aircraftPerf?.vR ?: 0) + headwind).toInt().toShort(), (3800 - 1000) * MathUtils.random(0.75f, 1f))))
+            entity.add(TakeoffRoll(PhysicsTools.calculateRequiredAcceleration(0, ((entity[AircraftInfo.mapper]?.aircraftPerf?.vR ?: 0) + headwind).toInt().toShort(), ((rwy?.entity?.get(RunwayInfo.mapper)?.lengthM ?: 3800) - 1000) * MathUtils.random(0.75f, 1f))))
             entity[CommandTarget.mapper]?.apply {
                 targetAltFt = 4000f
                 targetIasKt = ((entity[AircraftInfo.mapper]?.aircraftPerf?.vR ?: 160) + MathUtils.random(15, 20)).toShort()
                 targetHdgDeg = 49f
             }
         }
-
-        // Add dummy waypoints
-        waypoints["JAMMY"] = Waypoint("JAMMY", -200, -200, false)
-
-        // Add default 1 player sector
-        sectors.add(
-            Sector(0, "Bombbird", "125.1", shortArrayOf(461, 983, 967, 969, 1150, 803, 1326, 509, 1438, 39, 1360, -551, 1145, -728,
-                955, -861, 671, -992, 365, -1018, -86, -871, -316, -1071, -620, -1867, -1856, -1536, -1109, -421, 461, 983), false
-            )
-        )
-
-        // Add dummy min alt sectors
-        minAltSectors.add(
-            MinAltSector(15000, shortArrayOf(-284, -1225, -324, -1080, -90, -883, 370, -1028, 370, -1253, -216, -1293), restr = false),
-            MinAltSector(20000, null, -216, -883, MathTools.nmToPx(2.7f), true)
-        )
 
         engine.addSystem(PhysicsSystem())
         engine.addSystem(AISystem())

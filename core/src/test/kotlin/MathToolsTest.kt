@@ -41,11 +41,11 @@ object MathToolsTest {
     @Test
     @DisplayName("Heading calculations")
     fun checkHeadingCalculations() {
-        assertEquals(50f, MathTools.findDeltaHeading(360f, 50f, CommandTarget.DEFAULT))
-        assertEquals(50f, MathTools.findDeltaHeading(360f, 50f, CommandTarget.RIGHT))
-        assertEquals(-310f, MathTools.findDeltaHeading(360f, 50f, CommandTarget.LEFT))
-        assertEquals(120f, MathTools.findDeltaHeading(-30f, 450f, CommandTarget.DEFAULT))
-        assertEquals(120f, MathTools.findDeltaHeading(-30f, 450f, CommandTarget.RIGHT))
-        assertEquals(-240f, MathTools.findDeltaHeading(-30f, 450f, CommandTarget.LEFT))
+        assertEquals(50f, MathTools.findDeltaHeading(360f, 50f, CommandTarget.TURN_DEFAULT))
+        assertEquals(50f, MathTools.findDeltaHeading(360f, 50f, CommandTarget.TURN_RIGHT))
+        assertEquals(-310f, MathTools.findDeltaHeading(360f, 50f, CommandTarget.TURN_LEFT))
+        assertEquals(120f, MathTools.findDeltaHeading(-30f, 450f, CommandTarget.TURN_DEFAULT))
+        assertEquals(120f, MathTools.findDeltaHeading(-30f, 450f, CommandTarget.TURN_RIGHT))
+        assertEquals(-240f, MathTools.findDeltaHeading(-30f, 450f, CommandTarget.TURN_LEFT))
     }
 }

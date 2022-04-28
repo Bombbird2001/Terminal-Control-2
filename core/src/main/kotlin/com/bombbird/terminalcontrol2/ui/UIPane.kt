@@ -15,7 +15,10 @@ import ktx.graphics.moveTo
 import ktx.scene2d.*
 import kotlin.math.max
 
-/** The main UI panel display that will integrate the main information pane, and the lateral, altitude and speed panes for controlling of aircraft */
+/** The main UI panel display that will integrate the main information pane, and the lateral, altitude and speed panes for controlling of aircraft
+ *
+ * The overall UI layout is generated on initialisation, and the exact content can be modified by accessing and modifying the relevant UI components stored as variables
+ * */
 class UIPane(private val uiStage: Stage) {
     var paneImage: KImageButton
     val paneWidth: Float
@@ -38,14 +41,14 @@ class UIPane(private val uiStage: Stage) {
     val vectorTable: KTableWidget
 
     // Route editing pane
-    // val routeEditPane: KContainer<Actor>
+    val routeEditPane: KContainer<Actor>
+    val routeEditTable: KTableWidget
 
     init {
         uiStage.actors {
             paneImage = imageButton("UIPane") {
                 // debugAll()
                 setSize(paneWidth, Variables.UI_HEIGHT)
-                setPosition(-Variables.UI_WIDTH / 2, -Variables.UI_HEIGHT / 2)
             }
             mainInfoPane = container {
                 // debugAll()
@@ -63,7 +66,6 @@ class UIPane(private val uiStage: Stage) {
                     align(Align.top)
                 }
                 isVisible = false
-                setPosition(-Variables.UI_WIDTH / 2, -Variables.UI_HEIGHT / 2)
             }
             controlPane = container {
                 fill()
@@ -116,10 +118,8 @@ class UIPane(private val uiStage: Stage) {
                     }.cell(preferredWidth = paneWidth, height = Variables.UI_HEIGHT * 0.125f, growX = true, align = Align.bottom)
                     align(Align.top)
                 }
-                isVisible = true
-                setPosition(-Variables.UI_WIDTH / 2, -Variables.UI_HEIGHT / 2)
+                isVisible = false
             }
-            // TODO specific lateral mode control UI - route, vectors, hold
             routeSubsectionTable = table {
                 // debugAll()
                 scrollPane("ControlPaneRoute") {
@@ -208,6 +208,46 @@ class UIPane(private val uiStage: Stage) {
                 isVisible = false
             }
             lateralContainer.actor = routeSubsectionTable
+            routeEditPane = container {
+                fill()
+                setSize(paneWidth, Variables.UI_HEIGHT)
+                // debugAll()
+                table {
+                    table {
+                        textButton("Cancel all\nAlt restr.", "ControlPaneButton").cell(grow = true, preferredWidth = 0.3f * paneWidth)
+                        textButton("Cancel all\nSpd restr.", "ControlPaneButton").cell(grow = true, preferredWidth = 0.3f * paneWidth)
+                        selectBox<String>("ControlPane") {
+                            items = arrayOf("Change STAR", "TNN1B", "TONGA1A", "TONGA1B").toGdxArray()
+                            setAlignment(Align.center)
+                            list.setAlignment(Align.center)
+                        }.cell(grow = true, preferredWidth = 0.4f * paneWidth)
+                    }.cell(growX = true, height = 0.1f * Variables.UI_HEIGHT)
+                    row()
+                    scrollPane("ControlPaneRoute") {
+                        routeEditTable = table {
+                            // debugAll()
+                            label("WPT01", "ControlPaneRoute").apply { setAlignment(Align.center) }.cell(growX = true, height = 0.125f * Variables.UI_HEIGHT, padLeft = 10f, padRight = 10f)
+                            textButton("9000B\n5000A", "ControlPaneRestr").cell(growX = true, preferredWidth = 0.25f * paneWidth, height = 0.125f * Variables.UI_HEIGHT)
+                            textButton("250kts", "ControlPaneRestr").cell(growX = true, preferredWidth = 0.25f * paneWidth, height = 0.125f * Variables.UI_HEIGHT)
+                            textButton("SKIP", "ControlPaneSelected").cell(growX = true, preferredWidth = 0.25f * paneWidth, height = 0.125f * Variables.UI_HEIGHT)
+                            row()
+                            label("WPT02", "ControlPaneRoute").apply { setAlignment(Align.center) }.cell(growX = true, height = 0.125f * Variables.UI_HEIGHT, padLeft = 10f, padRight = 10f)
+                            textButton("3000A", "ControlPaneRestr").cell(growX = true, preferredWidth = 0.25f * paneWidth, height = 0.125f * Variables.UI_HEIGHT)
+                            textButton("230kts", "ControlPaneRestr").cell(growX = true, preferredWidth = 0.25f * paneWidth, height = 0.125f * Variables.UI_HEIGHT)
+                            textButton("SKIP", "ControlPaneSelected").cell(growX = true, preferredWidth = 0.25f * paneWidth, height = 0.125f * Variables.UI_HEIGHT)
+                            align(Align.top)
+                        }
+                        setOverscroll(false, false)
+                    }.cell(preferredWidth = paneWidth, preferredHeight = 0.8f * Variables.UI_HEIGHT - 40f, grow = true, padTop = 20f, padBottom = 20f, align = Align.top)
+                    row()
+                    table {
+                        textButton("Undo", "ControlPaneButton").cell(grow = true, preferredWidth = 0.5f * paneWidth)
+                        textButton("Confirm", "ControlPaneButton").cell(grow = true, preferredWidth = 0.5f * paneWidth)
+                    }.cell(growX = true, height = 0.1f * Variables.UI_HEIGHT)
+                }
+                isVisible = true
+                setSize(paneWidth, Variables.UI_HEIGHT)
+            }
         }
         uiStage.camera.apply {
             moveTo(Vector2(Variables.UI_WIDTH / 2, Variables.UI_HEIGHT / 2))
@@ -231,6 +271,10 @@ class UIPane(private val uiStage: Stage) {
             setPosition(0f, 0f)
         }
         controlPane.apply {
+            setSize(paneWidth, Variables.UI_HEIGHT)
+            setPosition(0f, 0f)
+        }
+        routeEditPane.apply {
             setSize(paneWidth, Variables.UI_HEIGHT)
             setPosition(0f, 0f)
         }

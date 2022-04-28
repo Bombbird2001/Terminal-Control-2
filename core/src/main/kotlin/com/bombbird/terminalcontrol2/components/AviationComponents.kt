@@ -7,7 +7,7 @@ import com.bombbird.terminalcontrol2.utilities.AircraftTypeData
 import ktx.ashley.Mapper
 
 /** Component for tagging airport related information */
-data class AirportInfo(var arptId: Byte = 0, var icaoCode: String = "", var name: String = "", val rwys: RunwayChildren = RunwayChildren()): Component {
+data class AirportInfo(var arptId: Byte = 0, var icaoCode: String = "", var name: String = "", var tfcRatio: Byte = 1): Component {
     // TODO Add other airport related components
     companion object: Mapper<AirportInfo>()
 }
@@ -30,7 +30,7 @@ data class MetarInfo(var realLifeIcao: String = "", var letterCode: Char? = null
  *
  * [sectorId] = -2 -> ACC control
  * */
-data class SectorInfo(var sectorId: Byte = 0, var controllerName: String = "ChangeYourNameLol", var frequency: String = "121.5"): Component {
+data class SectorInfo(var sectorId: Byte = 0, var controllerName: String = "ChangeYourNameLol", var frequency: String = "121.5", var sectorCallsign: String = "Approach"): Component {
     companion object: Mapper<SectorInfo>() {
         val TOWER = -1
         val CENTRE = -2
@@ -46,7 +46,7 @@ data class MinAltSectorInfo(var minAltFt: Int? = null, var restricted: Boolean =
 }
 
 /** Component for tagging waypoint related information */
-data class WaypointInfo(var wptName: String = "-----"): Component {
+data class WaypointInfo(var wptId: Short = 0, var wptName: String = "-----"): Component {
     companion object: Mapper<WaypointInfo>()
 }
 

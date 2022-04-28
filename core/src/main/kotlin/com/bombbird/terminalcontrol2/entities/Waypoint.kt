@@ -8,9 +8,10 @@ import ktx.ashley.get
 import ktx.ashley.with
 
 /** Waypoint class that creates a waypoint entity with the required components on instantiation */
-class Waypoint(name: String, posX: Short, posY: Short, onClient: Boolean = true) {
+class Waypoint(id: Short, name: String, posX: Short, posY: Short, onClient: Boolean = true) {
     val entity = (if (onClient) Constants.CLIENT_ENGINE else Constants.SERVER_ENGINE).entity {
         with<WaypointInfo> {
+            wptId = id
             wptName = name
         }
         with<Position> {
@@ -35,14 +36,14 @@ class Waypoint(name: String, posX: Short, posY: Short, onClient: Boolean = true)
         /** De-serialises a [SerialisedWaypoint] and creates a new [Waypoint] object from it */
         fun fromSerialisedObject(serialisedWpt: SerialisedWaypoint): Waypoint {
             return Waypoint(
-                serialisedWpt.name,
+                serialisedWpt.id, serialisedWpt.name,
                 serialisedWpt.posX, serialisedWpt.posY
             )
         }
     }
 
     /** Object that contains [Waypoint] data to be serialised by Kryo */
-    class SerialisedWaypoint(val name: String = "",
+    class SerialisedWaypoint(val id: Short = 0, val name: String = "",
                              val posX: Short = 0, val posY: Short = 0
     )
 
@@ -52,7 +53,7 @@ class Waypoint(name: String, posX: Short, posY: Short, onClient: Boolean = true)
             val wptInfo = get(WaypointInfo.mapper) ?: return SerialisedWaypoint()
             val pos = get(Position.mapper) ?: return SerialisedWaypoint()
             return SerialisedWaypoint(
-                wptInfo.wptName,
+                wptInfo.wptId, wptInfo.wptName,
                 pos.x.toInt().toShort(), pos.y.toInt().toShort()
             )
         }

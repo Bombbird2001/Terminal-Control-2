@@ -21,6 +21,17 @@ object Variables {
     /** Magnetic heading deviation in the current game - positive for Westward deviation and negative for Eastward deviation */
     var MAG_HDG_DEV = 0f
 
+    /** Minimum, maximum altitude that can be cleared */
+    var MIN_ALT = 2000
+    var MAX_ALT = 20000
+
+    /** Radar separation required under normal circumstances */
+    var MIN_SEP = 3f
+
+    /** Transition altitude, level */
+    var TRANS_ALT = 18000
+    var TRANS_LVL = 180
+
     /** Radar refresh rate */
     var RADAR_REFRESH_INTERVAL_S = 0.5f
 

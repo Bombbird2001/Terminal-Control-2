@@ -31,7 +31,7 @@ class LandingRoll: Component {
  *
  * [targetHdgDeg] is the heading the plane will turn to and maintain
  *
- * [turnDir] is the direction to turn ([DEFAULT] will turn in the quickest direction)
+ * [turnDir] is the direction to turn ([TURN_DEFAULT] will turn in the quickest direction)
  *
  * [targetAltFt] is the altitude the plane will climb/descend to and maintain
  *
@@ -40,11 +40,11 @@ class LandingRoll: Component {
  * These basic parameters can be automatically altered by more advanced modes, such as Direct (to waypoint), Hold (at waypoint),
  * Climb via SID/Descend via STAR (to altitude), and SID/STAR speed restrictions in order to achieve the required behaviour
  * */
-data class CommandTarget(var targetHdgDeg: Float = 360f, var turnDir: Byte = DEFAULT, var targetAltFt: Float = 0f, var targetIasKt: Short = 0): Component {
+data class CommandTarget(var targetHdgDeg: Float = 360f, var turnDir: Byte = TURN_DEFAULT, var targetAltFt: Float = 0f, var targetIasKt: Short = 0): Component {
     companion object: Mapper<CommandTarget>() {
-        val DEFAULT: Byte = 0
-        val LEFT: Byte = -1
-        val RIGHT: Byte = 1
+        val TURN_DEFAULT: Byte = 0
+        val TURN_LEFT: Byte = -1
+        val TURN_RIGHT: Byte = 1
     }
 }
 

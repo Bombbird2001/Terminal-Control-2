@@ -36,7 +36,7 @@ object Constants {
     const val MAX_LOW_SPD_ANGULAR_SPD = 3f
     const val MAX_HIGH_SPD_ANGULAR_SPD = 1.5f
     const val MAX_ANGULAR_ACC = 0.3f
-    const val MAX_JERK = 1.2f
+    const val MAX_JERK = 1f
     const val MAX_VS = 4000f
     const val MAX_ACC = 3.2f
 
@@ -60,6 +60,10 @@ object Constants {
     const val SERVER_TO_CLIENT_UPDATE_RATE_FAST = 20 // Frequently updated data such as aircraft position, navigation, etc.
     const val SERVER_TO_CLIENT_UPDATE_RATE_SLOW = 0.1f // Not so frequently updated data such as thunderstorm cells
     const val SERVER_METAR_UPDATE_INTERVAL_MINS = 5 // Check for METAR update every 5 minutes
+
+    /** Client buffer sizes */
+    const val WRITE_BUFFER_SIZE = 4096
+    const val READ_BUFFER_SIZE = 4096
 
     /** Zoom threshold to switch between small and large datatag fonts */
     const val DATATAG_ZOOM_THRESHOLD = 1.4f
