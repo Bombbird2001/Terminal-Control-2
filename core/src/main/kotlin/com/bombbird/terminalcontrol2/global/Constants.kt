@@ -68,7 +68,7 @@ object Constants {
 
     /** Client buffer sizes */
     const val WRITE_BUFFER_SIZE = 4096
-    const val READ_BUFFER_SIZE = 4096
+    const val READ_BUFFER_SIZE = 8192
 
     /** Default Gdx collections initial sizes */
     const val AIRPORT_SIZE = 6

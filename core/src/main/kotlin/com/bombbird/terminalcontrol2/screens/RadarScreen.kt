@@ -125,24 +125,24 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
                                 entity[AirportInfo.mapper]?.arptId?.let { id ->
                                     this@RadarScreen.airport.put(id, this)
                                 }
-                                entity[SIDChildren.mapper]?.sidMap?.apply {
-                                    for (obj in this) {
-                                        val entry = obj.value
-                                        println("${entry.name} ${entry.pronunciation} ${entry.timeRestriction}")
-                                        println(entry.rwyInitialClimbs)
-                                        println(entry.rwyLegs)
-                                        println(entry.routeLegs)
-                                        println(entry.outboundLegs)
-                                    }
-                                }
-                                entity[STARChildren.mapper]?.starMap?.apply {
-                                    for (obj in this) {
-                                        val entry = obj.value
-                                        println("${entry.name} ${entry.pronunciation} ${entry.timeRestriction}")
-                                        println(entry.routeLegs)
-                                        println(entry.rwyLegs)
-                                    }
-                                }
+//                                entity[SIDChildren.mapper]?.sidMap?.apply {
+//                                    for (obj in this) {
+//                                        val entry = obj.value
+//                                        println("${entry.name} ${entry.pronunciation} ${entry.timeRestriction}")
+//                                        println(entry.rwyInitialClimbs)
+//                                        println(entry.rwyLegs)
+//                                        println(entry.routeLegs)
+//                                        println(entry.outboundLegs)
+//                                    }
+//                                }
+//                                entity[STARChildren.mapper]?.starMap?.apply {
+//                                    for (obj in this) {
+//                                        val entry = obj.value
+//                                        println("${entry.name} ${entry.pronunciation} ${entry.timeRestriction}")
+//                                        println(entry.routeLegs)
+//                                        println(entry.rwyLegs)
+//                                    }
+//                                }
                             }
                         }
                         waypoints.forEach {
