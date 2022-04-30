@@ -3,7 +3,6 @@ package com.bombbird.terminalcontrol2.systems
 import com.badlogic.ashley.core.EntitySystem
 import com.badlogic.gdx.math.MathUtils
 import com.bombbird.terminalcontrol2.components.*
-import com.bombbird.terminalcontrol2.global.Constants
 import com.bombbird.terminalcontrol2.utilities.MathTools
 import com.bombbird.terminalcontrol2.utilities.PhysicsTools
 import ktx.ashley.addComponent
@@ -34,7 +33,7 @@ class AISystem: EntitySystem() {
                 if (ias.iasKt >= aircraftInfo.aircraftPerf.vR + PhysicsTools.calculateIASFromTAS(alt.altitudeFt, MathTools.pxpsToKt(wind.windVector.dot(dir.trackUnitVector)))) {
                     // Transition to takeoff climb mode
                     remove<TakeoffRoll>()
-                    addComponent<TakeoffClimb>(Constants.SERVER_ENGINE) {
+                    addComponent<TakeoffClimb>(engine) {
                         accelAltFt = alt.altitudeFt + MathUtils.random(1500, 2000)
                     }
                     return@apply

@@ -6,6 +6,7 @@ import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.Airport.Runway.SerialisedRunway
 import com.bombbird.terminalcontrol2.global.Constants
+import com.bombbird.terminalcontrol2.navigation.SidStar
 import com.bombbird.terminalcontrol2.utilities.MathTools
 import com.bombbird.terminalcontrol2.utilities.MetarTools
 import ktx.ashley.entity
@@ -14,7 +15,7 @@ import ktx.ashley.with
 
 /** Airport class that creates an airport entity with the required components on instantiation */
 class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX: Float, posY: Float, elevation: Short, onClient: Boolean = true) {
-    val entity = (if (onClient) Constants.CLIENT_ENGINE else Constants.SERVER_ENGINE).entity {
+    val entity = Constants.getEngine(onClient).entity {
         with<Position> {
             x = posX
             y = posY
@@ -29,6 +30,8 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
             tfcRatio = trafficRatio
         }
         with<RunwayChildren>()
+        with<SIDChildren>()
+        with<STARChildren>()
         with<MetarInfo>()
     }
 
@@ -42,7 +45,22 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
             ).also { arpt ->
                 arpt.entity.apply {
                     get(RunwayChildren.mapper)?.apply {
-                        rwyMap = HashMap(serialisedAirport.rwys.mapValues { Runway.fromSerialisedObject(arpt, it.value) })
+                        rwyMap.clear()
+                        for (sRwy in serialisedAirport.rwys) {
+                            rwyMap.put(sRwy.rwyId, Runway.fromSerialisedObject(arpt, sRwy))
+                        }
+                    }
+                    get(SIDChildren.mapper)?.apply {
+                        sidMap.clear()
+                        for (sSid in serialisedAirport.sids) {
+                            sidMap.put(sSid.name, SidStar.SID.fromSerialisedObject(sSid))
+                        }
+                    }
+                    get(STARChildren.mapper)?.apply {
+                        starMap.clear()
+                        for (sStar in serialisedAirport.stars) {
+                            starMap.put(sStar.name, SidStar.STAR.fromSerialisedObject(sStar))
+                        }
                     }
                 }
                 arpt.updateFromSerialisedMetar(serialisedAirport.metar)
@@ -54,9 +72,11 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
     class SerialisedAirport(val x: Float = 0f, val y: Float = 0f,
                             val altitude: Short = 0,
                             val arptId: Byte = -1, val icaoCode: String = "", val name: String = "", val tfcRatio: Byte = 0,
-                            val rwys: Map<Byte, SerialisedRunway> = LinkedHashMap(),
+                            val rwys: Array<SerialisedRunway> = arrayOf(),
+                            val sids: Array<SidStar.SID.SerialisedSID> = arrayOf(),
+                            val stars: Array<SidStar.STAR.SerialisedSTAR> = arrayOf(),
                             val metar: SerialisedMetar = SerialisedMetar()
-    )
+    ) // TODO Also send over SID, STAR, approach arrays
 
     /** Gets a [SerialisedAirport] from current state */
     fun getSerialisableObject(): SerialisedAirport {
@@ -65,27 +85,31 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
             val altitude = get(Altitude.mapper) ?: return SerialisedAirport()
             val arptInfo = get(AirportInfo.mapper) ?: return SerialisedAirport()
             val rwys = get(RunwayChildren.mapper) ?: return SerialisedAirport()
+            val sids = get(SIDChildren.mapper) ?: return SerialisedAirport()
+            val stars = get(STARChildren.mapper) ?: return SerialisedAirport()
             return SerialisedAirport(
                 position.x, position.y,
                 altitude.altitudeFt.toInt().toShort(),
                 arptInfo.arptId, arptInfo.icaoCode, arptInfo.name, arptInfo.tfcRatio,
-                rwys.rwyMap.mapValues { it.value.getSerialisableObject() },
+                rwys.rwyMap.map { it.value.getSerialisableObject() }.toTypedArray(),
+                sids.sidMap.map { it.value.getSerialisedObject() }.toTypedArray(),
+                stars.starMap.map { it.value.getSerialisedObject() }.toTypedArray(),
                 getSerialisedMetar()
             )
         }
     }
 
     /** Object that contains METAR data to be serialised by Kryo */
-    class SerialisedMetar(val icaoCode: String = "", val realLifeIcao: String = "",
+    class SerialisedMetar(val arptId: Byte = 0, val realLifeIcao: String = "",
                           val letterCode: Char? = null, val rawMetar: String? = null,
                           val windHeadingDeg: Short = 360, val windSpeedKt: Short = 0, val windGustKt: Short = 0,
                           val visibilityM: Short = 10000, val ceilingFtAGL: Short? = null, val windshear: String = "")
 
     /** Gets a [SerialisedMetar] from current METAR state */
     fun getSerialisedMetar(): SerialisedMetar {
-        val arptCode = entity[AirportInfo.mapper]?.icaoCode ?: return SerialisedMetar()
+        val arptId = entity[AirportInfo.mapper]?.arptId ?: return SerialisedMetar()
         return entity[MetarInfo.mapper]?.let {
-            SerialisedMetar(arptCode, it.realLifeIcao, it.letterCode, it.rawMetar, it.windHeadingDeg, it.windSpeedKt, it.windGustKt, it.visibilityM, it.ceilingHundredFtAGL, it.windshear)
+            SerialisedMetar(arptId, it.realLifeIcao, it.letterCode, it.rawMetar, it.windHeadingDeg, it.windSpeedKt, it.windGustKt, it.visibilityM, it.ceilingHundredFtAGL, it.windshear)
         } ?: SerialisedMetar()
     }
 
@@ -107,7 +131,7 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
 
     /** Runway class that creates a runway entity with the required components on instantiation */
     class Runway(parentAirport: Airport, id: Byte, name: String, posX: Float, posY: Float, trueHdg: Float, runwayLengthM: Short, elevation: Short, labelPos: Byte, onClient: Boolean = true) {
-        val entity = (if (onClient) Constants.CLIENT_ENGINE else Constants.SERVER_ENGINE).entity {
+        val entity = Constants.getEngine(onClient).entity {
             with<Position> {
                 x = posX
                 y = posY
@@ -187,7 +211,7 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
     /** Creates a runway entity with the required components, and adds it to airport component's runway map */
     fun addRunway(id: Byte, name: String, posX: Float, posY: Float, trueHdg: Float, runwayLengthM: Short, elevation: Short, labelPos: Byte) {
         Runway(this, id, name, posX, posY, trueHdg, runwayLengthM, elevation, labelPos, false).also { rwy ->
-            entity[RunwayChildren.mapper]?.rwyMap?.set(id, rwy)
+            entity[RunwayChildren.mapper]?.rwyMap?.put(id, rwy)
         }
     }
 

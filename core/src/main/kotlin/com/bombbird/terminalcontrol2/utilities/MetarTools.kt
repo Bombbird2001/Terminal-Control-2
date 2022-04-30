@@ -27,16 +27,16 @@ object MetarTools {
         @JsonClass(generateAdapter = true)
         data class MetarMapper(
             val realIcaoCode: String,
-            val icaoCode: String
+            val arptId: Byte
         )
     }
 
     /** Requests METAR for all airports in the current gameServer instance */
     fun requestAllMetar() {
         val metarRequest = MetarRequest(Secrets.GET_METAR_PW, ArrayList<MetarRequest.MetarMapper>().apply {
-            for (airport in Constants.GAME.gameServer?.airports?.values ?: return) {
+            for (airport in Constants.GAME.gameServer?.airports?.values() ?: return) {
                 val realIcao = airport.entity[MetarInfo.mapper]?.realLifeIcao ?: continue
-                val icao = airport.entity[AirportInfo.mapper]?.icaoCode ?: continue
+                val icao = airport.entity[AirportInfo.mapper]?.arptId ?: continue
                 add(MetarRequest.MetarMapper(realIcao, icao))
             }
         })
@@ -58,8 +58,8 @@ object MetarTools {
 
     /** Updates the in-game airports' METAR with the supplied [metarJson] string */
     fun updateAirportMetar(metarJson: String) {
-        val type = Types.newParameterizedType(Map::class.java, String::class.java, MetarResponse::class.java)
-        Moshi.Builder().build().adapter<Map<String, MetarResponse>>(type).fromJson(metarJson)?.apply {
+        val type = Types.newParameterizedType(Map::class.java, Byte::class.javaObjectType, MetarResponse::class.java)
+        Moshi.Builder().build().adapter<Map<Byte, MetarResponse>>(type).fromJson(metarJson)?.apply {
             for (entry in entries) {
                 entry.value.let {
                 Constants.GAME.gameServer?.airports?.get(entry.key)?.entity?.get(MetarInfo.mapper)?.apply {
@@ -103,7 +103,7 @@ object MetarTools {
     fun getClosestAirportWindVector(x: Float, y: Float): Vector2 {
         var closest = -1f
         var vectorToUse = Vector2()
-        Constants.GAME.gameServer?.airports?.values?.apply {
+        Constants.GAME.gameServer?.airports?.values()?.apply {
             for (airport in this) {
                 airport.entity.let {
                     val pos = it[Position.mapper] ?: return@let

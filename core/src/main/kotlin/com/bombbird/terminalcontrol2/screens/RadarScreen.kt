@@ -31,6 +31,7 @@ import com.esotericsoftware.kryonet.Listener
 import ktx.app.KtxScreen
 import ktx.ashley.get
 import ktx.assets.disposeSafely
+import ktx.collections.GdxArrayMap
 import ktx.graphics.moveTo
 import ktx.math.ImmutableVector2
 import java.io.IOException
@@ -46,6 +47,7 @@ import kotlin.math.min
  * Implements [GestureListener] and [InputProcessor] to handle input/gesture events to it
  * */
 class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProcessor {
+    private val clientEngine = Constants.getEngine(true)
     private val radarDisplayStage = safeStage(Constants.GAME.batch)
     private val constZoomStage = safeStage(Constants.GAME.batch)
     private val uiStage = safeStage(Constants.GAME.batch)
@@ -62,11 +64,16 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
     private var targetCenter: Vector2
     private var panRate: ImmutableVector2
 
-    // Aircraft hashmap for access during TCP updates
-    val airport = HashMap<String, Airport>()
+    // Airport map for access during TCP updates; see GameServer for more details
+    val airport = GdxArrayMap<Byte, Airport>(Constants.AIRPORT_SIZE)
+    val updatedAirportMapping = GdxArrayMap<String, Byte>(Constants.AIRPORT_SIZE)
 
-    // Aircraft hashmap for access during UDP updates
-    val aircraft = HashMap<String, Aircraft>()
+    // Waypoint map for access; see GameServer for more details
+    val waypoints = HashMap<Short, Waypoint>()
+    val updatedWaypointMapping = HashMap<String, Short>()
+
+    // Aircraft map for access during UDP updates
+    val aircraft = GdxArrayMap<String, Aircraft>(Constants.AIRCRAFT_SIZE)
 
     // Selected aircraft:
     var selectedAircraft: Aircraft? = null
@@ -106,19 +113,41 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
                         aircraft.forEach {
                             Aircraft.fromSerialisedObject(it).apply {
                                 entity[AircraftInfo.mapper]?.icaoCallsign?.let { callsign ->
-                                    this@RadarScreen.aircraft[callsign] = this
+                                    this@RadarScreen.aircraft.put(callsign, this)
                                 }
                             }
                         }
                         airports.forEach {
                             Airport.fromSerialisedObject(it).apply {
-                                entity[AirportInfo.mapper]?.icaoCode?.let { icao ->
-                                    this@RadarScreen.airport[icao] = this
+                                entity[AirportInfo.mapper]?.arptId?.let { id ->
+                                    this@RadarScreen.airport.put(id, this)
+                                }
+                                entity[SIDChildren.mapper]?.sidMap?.apply {
+                                    for (obj in this) {
+                                        val entry = obj.value
+                                        println("${entry.name} ${entry.pronunciation} ${entry.timeRestriction}")
+                                        println(entry.rwyInitialClimbs)
+                                        println(entry.rwyLegs)
+                                        println(entry.routeLegs)
+                                        println(entry.outboundLegs)
+                                    }
+                                }
+                                entity[STARChildren.mapper]?.starMap?.apply {
+                                    for (obj in this) {
+                                        val entry = obj.value
+                                        println("${entry.name} ${entry.pronunciation} ${entry.timeRestriction}")
+                                        println(entry.routeLegs)
+                                        println(entry.rwyLegs)
+                                    }
                                 }
                             }
                         }
                         waypoints.forEach {
-                            Waypoint.fromSerialisedObject(it)
+                            Waypoint.fromSerialisedObject(it).apply {
+                                entity[WaypointInfo.mapper]?.wptId?.let { id ->
+                                    this@RadarScreen.waypoints[id] = this
+                                }
+                            }
                         }
                         minAltSectors.forEach {
                             MinAltSector.fromSerialisedObject(it)
@@ -126,7 +155,7 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
                         uiPane.updateMetarInformation()
                     } ?: (`object` as? SerialisationRegistering.MetarData)?.apply {
                         metars.forEach {
-                            airport[it.icaoCode]?.updateFromSerialisedMetar(it)
+                            airport[it.arptId]?.updateFromSerialisedMetar(it)
                         }
                         uiPane.updateMetarInformation()
                     }
@@ -145,9 +174,9 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
         }
         constZoomStage.camera.moveTo(Vector2())
 
-        Constants.CLIENT_ENGINE.addSystem(RenderingSystem(shapeRenderer, radarDisplayStage, constZoomStage, uiStage))
-        Constants.CLIENT_ENGINE.addSystem(PhysicsSystemClient())
-        Constants.CLIENT_ENGINE.addSystem(DataSystem())
+        clientEngine.addSystem(RenderingSystem(shapeRenderer, radarDisplayStage, constZoomStage, uiStage))
+        clientEngine.addSystem(PhysicsSystemClient())
+        clientEngine.addSystem(DataSystem())
     }
 
     /** Adds an [Actor] to [constZoomStage] */
@@ -221,11 +250,11 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT or GL20.GL_DEPTH_BUFFER_BIT or if (Gdx.graphics.bufferFormat.coverageSampling) GL20.GL_COVERAGE_BUFFER_BIT_NV else 0)
 
         runCameraAnimations(delta)
-        Constants.CLIENT_ENGINE.update(delta)
+        clientEngine.update(delta)
 
         slowUpdateTimer += delta
         if (slowUpdateTimer > 1f / Constants.UPDATE_RATE_LOW_FREQ) {
-            val systems = Constants.CLIENT_ENGINE.systems
+            val systems = clientEngine.systems
             for (i in 0 until systems.size()) (systems[i] as? LowFreqUpdate)?.lowFreqUpdate()
             slowUpdateTimer -= 1f
         }
@@ -242,8 +271,8 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
         uiStage.disposeSafely()
         shapeRenderer.disposeSafely()
 
-        Constants.CLIENT_ENGINE.removeAllEntities()
-        Constants.CLIENT_ENGINE.removeAllSystems()
+        clientEngine.removeAllEntities()
+        clientEngine.removeAllSystems()
 
         thread {
             client.stop()

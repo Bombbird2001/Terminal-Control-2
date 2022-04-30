@@ -4,6 +4,8 @@ import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.*
+import com.bombbird.terminalcontrol2.navigation.Route
+import com.bombbird.terminalcontrol2.navigation.SidStar
 import com.esotericsoftware.kryo.Kryo
 
 /** Object that handles the registering of classes to be serialised and sent over the network using Kryonet */
@@ -14,7 +16,6 @@ object SerialisationRegistering {
         kryo?.apply {
             // Classes to register for generic serialisation
             register(Vector2::class.java)
-            register(LinkedHashMap::class.java)
             register(ShortArray::class.java)
 
             // Initial load classes
@@ -26,10 +27,28 @@ object SerialisationRegistering {
             register(Airport.SerialisedAirport::class.java)
             register(Array<Airport.SerialisedAirport>::class.java)
             register(Airport.Runway.SerialisedRunway::class.java)
+            register(Array<Airport.Runway.SerialisedRunway>::class.java)
             register(Array<Waypoint.SerialisedWaypoint>::class.java)
             register(Waypoint.SerialisedWaypoint::class.java)
             register(Array<MinAltSector.SerialisedMinAltSector>::class.java)
             register(MinAltSector.SerialisedMinAltSector::class.java)
+            register(Array<Route.Leg>::class.java)
+            register(Route.Leg::class.java)
+            register(Route.InitClimbLeg::class.java)
+            register(Route.VectorLeg::class.java)
+            register(Route.WaypointLeg::class.java)
+            register(Route.DiscontinuityLeg::class.java)
+            register(Route.HoldLeg::class.java)
+            register(Array<Route.SerialisedRoute>::class.java)
+            register(Route.SerialisedRoute::class.java)
+            register(Array<SidStar.SID.SerialisedRwyInitClimb>::class.java)
+            register(SidStar.SID.SerialisedRwyInitClimb::class.java)
+            register(Array<SidStar.SerialisedRwyLegs>::class.java)
+            register(SidStar.SerialisedRwyLegs::class.java)
+            register(Array<SidStar.SID.SerialisedSID>::class.java)
+            register(SidStar.SID.SerialisedSID::class.java)
+            register(Array<SidStar.STAR.SerialisedSTAR>::class.java)
+            register(SidStar.STAR.SerialisedSTAR::class.java)
 
             // METAR classes
             register(MetarData::class.java)

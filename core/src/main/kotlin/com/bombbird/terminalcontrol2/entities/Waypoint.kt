@@ -9,7 +9,7 @@ import ktx.ashley.with
 
 /** Waypoint class that creates a waypoint entity with the required components on instantiation */
 class Waypoint(id: Short, name: String, posX: Short, posY: Short, onClient: Boolean = true) {
-    val entity = (if (onClient) Constants.CLIENT_ENGINE else Constants.SERVER_ENGINE).entity {
+    val entity = Constants.getEngine(onClient).entity {
         with<WaypointInfo> {
             wptId = id
             wptName = name

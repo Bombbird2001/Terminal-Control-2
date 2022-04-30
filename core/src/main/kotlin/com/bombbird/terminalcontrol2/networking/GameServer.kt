@@ -18,6 +18,7 @@ import com.esotericsoftware.kryonet.Listener
 import com.esotericsoftware.kryonet.Server
 import ktx.ashley.get
 import ktx.collections.GdxArray
+import ktx.collections.GdxArrayMap
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.thread
 import kotlin.math.roundToLong
@@ -38,11 +39,29 @@ class GameServer {
     private val server = Server()
     val engine = Engine()
 
-    val sectors = GdxArray<Sector>()
-    val aircraft = HashMap<String, Aircraft>()
-    val airports = HashMap<String, Airport>()
-    val waypoints = HashMap<String, Waypoint>()
+    val sectors = GdxArray<Sector>(Constants.SECTOR_SIZE)
+    val aircraft = GdxArrayMap<String, Aircraft>(Constants.AIRCRAFT_SIZE)
     val minAltSectors = GdxArray<MinAltSector>()
+
+    /** Maps [AirportInfo.arptId] (instead of [AirportInfo.icaoCode]) to the airport for backwards compatibility (in case of airport ICAO code reassignments;
+     * Old airport is still available as a separate entity even with the same ICAO code as the new airport)
+     * */
+    val airports = GdxArrayMap<Byte, Airport>(Constants.AIRPORT_SIZE)
+
+    /** Maps [AirportInfo.icaoCode] to the most updated [AirportInfo.arptId];
+     * The new airport with the ICAO code will be chosen instead of the old one after an ICAO code reassignment
+     * */
+    val updatedAirportMapping = GdxArrayMap<String, Byte>(Constants.AIRPORT_SIZE)
+
+    /** Maps [WaypointInfo.wptId] (instead of [WaypointInfo.wptName]) to the waypoint for backwards compatibility (in case waypoint position is moved;
+     * old waypoint is still available as a separate entity even with the same name as the new waypoint)
+     * */
+    val waypoints = HashMap<Short, Waypoint>()
+
+    /** Maps [WaypointInfo.wptName] to the most updated [WaypointInfo.wptId]
+     * The new waypoint with the name will be chosen instead of the old one after the waypoint has "shifted"
+     * */
+    val updatedWaypointMapping = HashMap<String, Short>()
 
     // var timeCounter = 0f
     // var frames = 0
@@ -53,9 +72,9 @@ class GameServer {
         GameLoader.loadWorldData("TCTP", this)
 
         // Add dummy aircraft
-        val rwy = airports["TCTP"]?.entity?.get(RunwayChildren.mapper)?.rwyMap?.get(0)
+        val rwy = airports[0]?.entity?.get(RunwayChildren.mapper)?.rwyMap?.get(0)
         val rwyPos = rwy?.entity?.get(Position.mapper)
-        aircraft["SHIBA2"] = Aircraft("SHIBA2", rwyPos?.x ?: 10f, rwyPos?.y ?: -10f, rwy?.entity?.get(Altitude.mapper)?.altitudeFt ?: 108f, FlightType.DEPARTURE, false).apply {
+        aircraft.put("SHIBA2", Aircraft("SHIBA2", rwyPos?.x ?: 10f, rwyPos?.y ?: -10f, rwy?.entity?.get(Altitude.mapper)?.altitudeFt ?: 108f, FlightType.DEPARTURE, false).apply {
             entity[Direction.mapper]?.trackUnitVector?.rotateDeg((rwy?.entity?.get(Direction.mapper)?.trackUnitVector?.angleDeg() ?: 40.93f) - 90) // Runway 05R heading
             // Calculate headwind component for takeoff
             val headwind = entity[Altitude.mapper]?.let{ alt -> entity[Direction.mapper]?.let { dir -> entity[Position.mapper]?.let { pos ->
@@ -68,7 +87,7 @@ class GameServer {
                 targetIasKt = ((entity[AircraftInfo.mapper]?.aircraftPerf?.vR ?: 160) + MathUtils.random(15, 20)).toShort()
                 targetHdgDeg = 49f
             }
-        }
+        })
 
         engine.addSystem(PhysicsSystem())
         engine.addSystem(AISystem())
@@ -111,8 +130,8 @@ class GameServer {
                 connection?.sendTCP("This is a test message")
                 connection?.sendTCP(SerialisationRegistering.InitialLoadData(
                     sectors.map { it.getSerialisableObject() }.toTypedArray(),
-                    aircraft.values.map { it.getSerialisableObject() }.toTypedArray(),
-                    airports.values.map { it.getSerialisableObject() }.toTypedArray(),
+                    aircraft.values().map { it.getSerialisableObject() }.toTypedArray(),
+                    airports.values().map { it.getSerialisableObject() }.toTypedArray(),
                     waypoints.values.map { it.getSerialisableObject() }.toTypedArray(),
                     minAltSectors.map { it.getSerialisableObject() }.toTypedArray()
                 ))
@@ -213,7 +232,7 @@ class GameServer {
     private fun sendFastUDPToAll() {
         // TODO send data
         // println("Fast UDP sent, time passed since program start: ${(System.currentTimeMillis() - startTime) / 1000f}s")
-        server.sendToAllUDP(SerialisationRegistering.FastUDPData(aircraft.values.map { it.getSerialisableObjectUDP() }.toTypedArray()))
+        server.sendToAllUDP(SerialisationRegistering.FastUDPData(aircraft.values().map { it.getSerialisableObjectUDP() }.toTypedArray()))
     }
 
     /** Send not so frequently updated data approximately [Constants.SERVER_TO_CLIENT_UPDATE_RATE_SLOW] times a second
@@ -229,7 +248,7 @@ class GameServer {
 
     /** Send non-frequent METAR updates */
     fun sendMetarTCPToAll() {
-        server.sendToAllTCP(SerialisationRegistering.MetarData(airports.values.map { it.getSerialisedMetar() }.toTypedArray()))
+        server.sendToAllTCP(SerialisationRegistering.MetarData(airports.values().map { it.getSerialisedMetar() }.toTypedArray()))
     }
 
     /** Send non-frequent, event-updated and/or important data

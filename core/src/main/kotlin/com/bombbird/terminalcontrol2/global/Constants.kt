@@ -45,14 +45,19 @@ object Constants {
 
     /** The current game instance (can be modified, but don't), client engine, and server engine (if [TerminalControl2.gameServer] exists, else throws a [RuntimeException] when accessed) */
     lateinit var GAME: TerminalControl2
-    val CLIENT_ENGINE: Engine
+    private val CLIENT_ENGINE: Engine
         get() = GAME.engine
-    val SERVER_ENGINE: Engine
+    private val SERVER_ENGINE: Engine
         get() {
             return GAME.gameServer?.engine ?: throw RuntimeException("Attempted to access a non-existent gameServer's engine")
         }
     val CLIENT_SCREEN: RadarScreen?
         get() = GAME.gameClientScreen
+
+    /** Returns the appropriate engine given [onClient] */
+    fun getEngine(onClient: Boolean): Engine {
+        return if (onClient) CLIENT_ENGINE else SERVER_ENGINE
+    }
 
     /** Server target refresh rates (in Hz) */
     const val UPDATE_RATE_LOW_FREQ = 1 // Low frequency update rate
@@ -64,6 +69,11 @@ object Constants {
     /** Client buffer sizes */
     const val WRITE_BUFFER_SIZE = 4096
     const val READ_BUFFER_SIZE = 4096
+
+    /** Default Gdx collections initial sizes */
+    const val AIRPORT_SIZE = 6
+    const val AIRCRAFT_SIZE = 35
+    const val SECTOR_SIZE = 5
 
     /** Zoom threshold to switch between small and large datatag fonts */
     const val DATATAG_ZOOM_THRESHOLD = 1.4f

@@ -11,7 +11,7 @@ import ktx.ashley.with
 
 /** Sector class that creates a sector entity with the required components on instantiation */
 class Sector(id: Byte, ctrlName: String, freq: String, callsign: String, sectorBoundary: ShortArray, onClient: Boolean = true) {
-    val entity = (if (onClient) Constants.CLIENT_ENGINE else Constants.SERVER_ENGINE).entity {
+    val entity = Constants.getEngine(onClient).entity {
         with<SectorInfo> {
             sectorId = id
             controllerName = ctrlName
