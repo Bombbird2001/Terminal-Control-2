@@ -2,6 +2,7 @@ package com.bombbird.terminalcontrol2.systems
 
 import com.badlogic.ashley.core.EntitySystem
 import com.badlogic.gdx.Gdx
+import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.OrthographicCamera
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import com.badlogic.gdx.scenes.scene2d.Stage
@@ -109,6 +110,7 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
         Constants.GAME.batch.projectionMatrix = stage.camera.combined
         // println("stage: ${stage.camera.combined}")
         Constants.GAME.batch.begin()
+        Constants.GAME.batch.packedColor = Color.WHITE_FLOAT_BITS // Prevent fading out behaviour during selectBox animations due to tint being changed
         // Render aircraft blip
         val aircraftFamily = allOf(AircraftInfo::class, RadarData::class, RSSprite::class).get()
         val blipSize = if (camZoom <= 1) Constants.AIRCRAFT_BLIP_LENGTH_PX_ZOOM_1 * camZoom else Constants.AIRCRAFT_BLIP_LENGTH_PX_ZOOM_1 + (camZoom - 1) * Constants.AIRCRAFT_BLIP_LENGTH_CHANGE_PX_PER_ZOOM

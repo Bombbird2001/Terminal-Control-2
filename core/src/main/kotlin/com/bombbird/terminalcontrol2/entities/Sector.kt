@@ -22,7 +22,7 @@ class Sector(id: Byte, ctrlName: String, freq: String, callsign: String, sectorB
             vertices = sectorBoundary.map { it.toFloat() }.toFloatArray()
         }
         with<SRColor> {
-            color = Color.GRAY
+            color = Color.WHITE
         }
     }
 

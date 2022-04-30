@@ -7,6 +7,7 @@ import com.bombbird.terminalcontrol2.components.SIDChildren
 import com.bombbird.terminalcontrol2.components.STARChildren
 import com.bombbird.terminalcontrol2.entities.Airport
 import com.bombbird.terminalcontrol2.entities.MinAltSector
+import com.bombbird.terminalcontrol2.entities.Sector
 import com.bombbird.terminalcontrol2.entities.Waypoint
 import com.bombbird.terminalcontrol2.global.Variables
 import com.bombbird.terminalcontrol2.navigation.Route
@@ -26,6 +27,7 @@ object GameLoader {
             var currAirport: Airport? = null
             var currSid: SidStar.SID? = null
             var currStar: SidStar.STAR? = null
+            var currSectorCount = 0
             for (line in this) {
                 val lineArray = line.split(" ")
                 when (lineArray[0]) {
@@ -42,19 +44,26 @@ object GameLoader {
                     "ROUTE" -> if (currSid != null) parseSIDSTARRoute(lineArray, currSid) else if (currStar != null) parseSIDSTARRoute(lineArray, currStar)
                     "OUTBOUND" -> if (currSid != null) parseSIDSTARinOutboundRoute(lineArray, currSid)
                     "INBOUND" -> if (currStar != null) parseSIDSTARinOutboundRoute(lineArray, currStar)
+                    "/$currSectorCount" -> currSectorCount = 0
                     "/$parseMode" -> parseMode = ""
-                    else -> when (parseMode) {
-                        "WAYPOINTS" -> parseWaypoint(lineArray, gameServer)
-                        "MIN_ALT_SECTORS" -> parseMinAltSector(lineArray, gameServer)
-                        "RWYS" -> parseRunway(lineArray, currAirport ?: continue)
-                        "" -> when (lineArray[0]) {
-                            "MIN_ALT" -> Variables.MIN_ALT = lineArray[1].toInt()
-                            "MAX_ALT" -> Variables.MAX_ALT = lineArray[1].toInt()
-                            "TRANS_ALT" -> Variables.TRANS_ALT = lineArray[1].toInt()
-                            "TRANS_LVL" -> Variables.TRANS_LVL = lineArray[1].toInt()
-                            "MIN_SEP" -> Variables.MIN_SEP = lineArray[1].toFloat()
-                            "MAG_HDG_DEV" -> Variables.MAG_HDG_DEV = lineArray[1].toFloat()
-                            else -> parseMode = lineArray[0]
+                    else -> {
+                        when (parseMode) {
+                            "WAYPOINTS" -> parseWaypoint(lineArray, gameServer)
+                            "MIN_ALT_SECTORS" -> parseMinAltSector(lineArray, gameServer)
+                            "RWYS" -> parseRunway(lineArray, currAirport ?: continue)
+                            "SECTORS" -> {
+                                if (currSectorCount == 0) currSectorCount = lineArray[0].toInt()
+                                else parseSector(lineArray, gameServer)
+                            }
+                            "" -> when (lineArray[0]) {
+                                "MIN_ALT" -> Variables.MIN_ALT = lineArray[1].toInt()
+                                "MAX_ALT" -> Variables.MAX_ALT = lineArray[1].toInt()
+                                "TRANS_ALT" -> Variables.TRANS_ALT = lineArray[1].toInt()
+                                "TRANS_LVL" -> Variables.TRANS_LVL = lineArray[1].toInt()
+                                "MIN_SEP" -> Variables.MIN_SEP = lineArray[1].toFloat()
+                                "MAG_HDG_DEV" -> Variables.MAG_HDG_DEV = lineArray[1].toFloat()
+                                else -> parseMode = lineArray[0]
+                            }
                         }
                     }
                 }
@@ -64,13 +73,27 @@ object GameLoader {
 
     /** Parse the given [data] into a [Waypoint], and adds it to [GameServer.waypoints] */
     private fun parseWaypoint(data: List<String>, gameServer: GameServer) {
-        val id: Short = data[0].toShort()
+        val id = data[0].toShort()
         val wptName = data[1]
         val pos = data[2].split(",")
         val posX = MathTools.nmToPx(pos[0].toFloat()).toInt().toShort()
         val posY = MathTools.nmToPx(pos[1].toFloat()).toInt().toShort()
         gameServer.waypoints[id] = Waypoint(id, wptName, posX, posY, false)
         gameServer.updatedWaypointMapping[wptName] = id
+    }
+
+    /** Parse th given [data] into a [Sector], and adds it to [GameServer.sectors] */
+    private fun parseSector(data: List<String>, gameServer: GameServer) {
+        val id = data[0].toByte()
+        val freq = data[1]
+        val callsign = data[2]
+        val polygon = ArrayList<Short>()
+        for (i in 3 until data.size) {
+            val pos = data[i].split(",")
+            polygon.add(MathTools.nmToPx(pos[0].toFloat()).toInt().toShort())
+            polygon.add(MathTools.nmToPx(pos[1].toFloat()).toInt().toShort())
+        }
+        gameServer.sectors.add(Sector(id, "", freq, callsign, polygon.toShortArray(), onClient = false))
     }
 
     /** Parse the given [data] into a [MinAltSector], and adds it to [GameServer.minAltSectors] */

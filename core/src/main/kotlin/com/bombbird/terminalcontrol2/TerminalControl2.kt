@@ -19,8 +19,11 @@ import ktx.assets.disposeSafely
 import ktx.async.KtxAsync
 import ktx.scene2d.*
 
-/** Main game class, extending the [KtxGame] class */
-class TerminalControl2 : KtxGame<KtxScreen>() {
+/** Main game class, extending the [KtxGame] class
+ *
+ * [clearScreen] is set to false as it will be handled by the individual screens
+ * */
+class TerminalControl2 : KtxGame<KtxScreen>(clearScreen = false) {
     lateinit var batch: SpriteBatch
     lateinit var engine: Engine
     val assetStorage = AssetStorage()
