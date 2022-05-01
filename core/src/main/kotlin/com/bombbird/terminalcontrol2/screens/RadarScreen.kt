@@ -9,7 +9,6 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import com.badlogic.gdx.input.GestureDetector
 import com.badlogic.gdx.input.GestureDetector.GestureListener
 import com.badlogic.gdx.math.MathUtils
-import com.badlogic.gdx.math.Polygon
 import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.scenes.scene2d.Actor
 import com.bombbird.terminalcontrol2.components.*
@@ -30,11 +29,9 @@ import com.esotericsoftware.kryonet.Client
 import com.esotericsoftware.kryonet.Connection
 import com.esotericsoftware.kryonet.Listener
 import ktx.app.KtxScreen
-import ktx.ashley.allOf
 import ktx.ashley.get
 import ktx.assets.disposeSafely
 import ktx.collections.GdxArrayMap
-import ktx.collections.toGdxArray
 import ktx.graphics.moveTo
 import ktx.math.ImmutableVector2
 import java.io.IOException
@@ -154,6 +151,9 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
                         }
                         minAltSectors.forEach {
                             MinAltSector.fromSerialisedObject(it)
+                        }
+                        shoreline.forEach {
+                            Shoreline.fromSerialisedObject(it)
                         }
                         uiPane.updateMetarInformation()
                     } ?: (`object` as? SerialisationRegistering.MetarData)?.apply {
@@ -308,12 +308,26 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
     override fun tap(x: Float, y: Float, count: Int, button: Int): Boolean {
         // TODO Unselect aircraft, double tap zoom/animate
         if (count == 2 && !cameraAnimating) initiateCameraAnimation(x, y)
-        unprojectFromRadarCamera(x, y).apply { println("${MathTools.pxToNm(this.x)} ${MathTools.pxToNm(this.y)}") }
-        for (mva in clientEngine.getEntitiesFor(allOf(MinAltSectorInfo::class).get())) {
-            mva[GPolygon.mapper]?.vertices?.apply {
-                if (Polygon(this).contains(unprojectFromRadarCamera(x, y))) println("${mva[MinAltSectorInfo.mapper]?.minAltFt} ${this.map { MathTools.pxToNm(it) }.toGdxArray()}")
-            }
-        }
+//        unprojectFromRadarCamera(x, y).apply { println("${MathTools.pxToNm(this.x)} ${MathTools.pxToNm(this.y)}") }
+//        for (mva in clientEngine.getEntitiesFor(allOf(MinAltSectorInfo::class).get())) {
+//            mva[GPolygon.mapper]?.vertices?.apply {
+//                if (Polygon(this).contains(unprojectFromRadarCamera(x, y))) {
+//                    println("${mva[MinAltSectorInfo.mapper]?.minAltFt} ${this.map { MathTools.pxToNm(it) }.toGdxArray()}")
+//                    mva[SRColor.mapper]?.apply {
+//                        color = if (color == Color.GRAY) {
+//                            mva.add(RenderLast())
+//                            Color.ORANGE
+//                        } else {
+//                            mva.remove(RenderLast::class.java)
+//                            Color.GRAY
+//                        }
+//                    }
+//                    mva[GenericLabel.mapper]?.apply {
+//                        updateStyle(if (label.style.fontColor == Color.ORANGE) "MinAltSector" else "MinAltSectorRestr")
+//                    }
+//                }
+//            }
+//        }
         return true
     }
 

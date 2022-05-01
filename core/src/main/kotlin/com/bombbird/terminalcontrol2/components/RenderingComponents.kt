@@ -58,6 +58,14 @@ data class SRColor(var color: Color = Color()): Component {
     companion object: Mapper<SRColor>()
 }
 
+/** Component for tagging entities that should be rendered the last (when compared to entities of the same family -
+ * this does not ensure the entity is literally rendered above every single other entity; behaviour for the required
+ * family must also be implemented in RenderingSystem)
+ * */
+class RenderLast: Component {
+    companion object: Mapper<RenderLast>()
+}
+
 /** Component for tagging labels that do not need to be shown
  * (by default, all [GenericLabel]s are rendered)
  * */

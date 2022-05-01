@@ -5,10 +5,7 @@ import com.bombbird.terminalcontrol2.components.CommandTarget
 import com.bombbird.terminalcontrol2.components.RunwayLabel
 import com.bombbird.terminalcontrol2.components.SIDChildren
 import com.bombbird.terminalcontrol2.components.STARChildren
-import com.bombbird.terminalcontrol2.entities.Airport
-import com.bombbird.terminalcontrol2.entities.MinAltSector
-import com.bombbird.terminalcontrol2.entities.Sector
-import com.bombbird.terminalcontrol2.entities.Waypoint
+import com.bombbird.terminalcontrol2.entities.*
 import com.bombbird.terminalcontrol2.global.Variables
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.navigation.SidStar
@@ -21,6 +18,7 @@ import ktx.collections.isNotEmpty
 
 /** Helper object that deals with loading of game data files */
 object GameLoader {
+    /** Loads the "[mainName].arpt" file located in the Airports subfolder in the assets */
     fun loadWorldData(mainName: String, gameServer: GameServer) {
         "Airports/$mainName.arpt".toInternalFile().readString().split("\\r?\\n".toRegex()).toTypedArray().apply {
             var parseMode = ""
@@ -29,40 +27,41 @@ object GameLoader {
             var currStar: SidStar.STAR? = null
             var currSectorCount = 0
             for (line in this) {
-                val lineArray = line.split(" ")
-                when (lineArray[0]) {
-                    "AIRPORT" -> currAirport = parseAirport(lineArray, gameServer)
+                val lineData = line.split(" ")
+                when (lineData[0]) {
+                    "AIRPORT" -> currAirport = parseAirport(lineData, gameServer)
                     "/AIRPORT" -> {
                         currAirport = null
                         currSid = null
                     }
-                    "SID" -> currSid = parseSID(lineArray, currAirport ?: continue)
+                    "SID" -> currSid = parseSID(lineData, currAirport ?: continue)
                     "/SID" -> currSid = null
-                    "STAR" -> currStar = parseSTAR(lineArray, currAirport ?: continue)
+                    "STAR" -> currStar = parseSTAR(lineData, currAirport ?: continue)
                     "/STAR" -> currStar = null
-                    "RWY" -> if (currSid != null) parseSIDRwyRoute(lineArray, currSid) else if (currStar != null) parseSTARRwyRoute(lineArray, currStar)
-                    "ROUTE" -> if (currSid != null) parseSIDSTARRoute(lineArray, currSid) else if (currStar != null) parseSIDSTARRoute(lineArray, currStar)
-                    "OUTBOUND" -> if (currSid != null) parseSIDSTARinOutboundRoute(lineArray, currSid)
-                    "INBOUND" -> if (currStar != null) parseSIDSTARinOutboundRoute(lineArray, currStar)
+                    "RWY" -> if (currSid != null) parseSIDRwyRoute(lineData, currSid) else if (currStar != null) parseSTARRwyRoute(lineData, currStar)
+                    "ROUTE" -> if (currSid != null) parseSIDSTARRoute(lineData, currSid) else if (currStar != null) parseSIDSTARRoute(lineData, currStar)
+                    "OUTBOUND" -> if (currSid != null) parseSIDSTARinOutboundRoute(lineData, currSid)
+                    "INBOUND" -> if (currStar != null) parseSIDSTARinOutboundRoute(lineData, currStar)
                     "/$currSectorCount" -> currSectorCount = 0
                     "/$parseMode" -> parseMode = ""
                     else -> {
                         when (parseMode) {
-                            "WAYPOINTS" -> parseWaypoint(lineArray, gameServer)
-                            "MIN_ALT_SECTORS" -> parseMinAltSector(lineArray, gameServer)
-                            "RWYS" -> parseRunway(lineArray, currAirport ?: continue)
+                            "WAYPOINTS" -> parseWaypoint(lineData, gameServer)
+                            "MIN_ALT_SECTORS" -> parseMinAltSector(lineData, gameServer)
+                            "SHORELINE" -> parseShoreline(lineData, gameServer)
+                            "RWYS" -> parseRunway(lineData, currAirport ?: continue)
                             "SECTORS" -> {
-                                if (currSectorCount == 0) currSectorCount = lineArray[0].toInt()
-                                else parseSector(lineArray, gameServer)
+                                if (currSectorCount == 0) currSectorCount = lineData[0].toInt()
+                                else parseSector(lineData, gameServer)
                             }
-                            "" -> when (lineArray[0]) {
-                                "MIN_ALT" -> Variables.MIN_ALT = lineArray[1].toInt()
-                                "MAX_ALT" -> Variables.MAX_ALT = lineArray[1].toInt()
-                                "TRANS_ALT" -> Variables.TRANS_ALT = lineArray[1].toInt()
-                                "TRANS_LVL" -> Variables.TRANS_LVL = lineArray[1].toInt()
-                                "MIN_SEP" -> Variables.MIN_SEP = lineArray[1].toFloat()
-                                "MAG_HDG_DEV" -> Variables.MAG_HDG_DEV = lineArray[1].toFloat()
-                                else -> parseMode = lineArray[0]
+                            "" -> when (lineData[0]) {
+                                "MIN_ALT" -> Variables.MIN_ALT = lineData[1].toInt()
+                                "MAX_ALT" -> Variables.MAX_ALT = lineData[1].toInt()
+                                "TRANS_ALT" -> Variables.TRANS_ALT = lineData[1].toInt()
+                                "TRANS_LVL" -> Variables.TRANS_LVL = lineData[1].toInt()
+                                "MIN_SEP" -> Variables.MIN_SEP = lineData[1].toFloat()
+                                "MAG_HDG_DEV" -> Variables.MAG_HDG_DEV = lineData[1].toFloat()
+                                else -> parseMode = lineData[0]
                             }
                         }
                     }
@@ -107,22 +106,40 @@ object GameLoader {
         when (type) {
             "POLYGON" -> {
                 val polygon = ArrayList<Short>()
+                var labelX: Short? = null
+                var labelY: Short? = null
                 for (i in 3 until data.size) {
                     val pos = data[i].split(",")
+                    if (pos[0] == "LABEL") {
+                        labelX = MathTools.nmToPx(pos[1].toFloat()).toInt().toShort()
+                        labelY = MathTools.nmToPx(pos[2].toFloat()).toInt().toShort()
+                        continue
+                    }
                     polygon.add(MathTools.nmToPx(pos[0].toFloat()).toInt().toShort())
                     polygon.add(MathTools.nmToPx(pos[1].toFloat()).toInt().toShort())
                 }
-                gameServer.minAltSectors.add(MinAltSector(minAlt, polygon.toShortArray(), restr = enforced, onClient = false))
+                gameServer.minAltSectors.add(MinAltSector(minAlt, polygon.toShortArray(), labelX = labelX, labelY = labelY, restr = enforced, onClient = false))
             }
             "CIRCLE" -> {
                 val pos = data[3].split(",")
                 val posX = MathTools.nmToPx(pos[0].toFloat()).toInt().toShort()
                 val posY = MathTools.nmToPx(pos[1].toFloat()).toInt().toShort()
                 val radius = MathTools.nmToPx(data[4].toFloat())
-                gameServer.minAltSectors.add(MinAltSector(minAlt, null, posX, posY, radius, enforced, false))
+                gameServer.minAltSectors.add(MinAltSector(minAlt, null, posX, posY, radius, null, null, enforced, false))
             }
             else -> Gdx.app.log("GameLoader", "Unknown minAltSector type $type")
         }
+    }
+
+    /** Parse the given [data] into a [Shoreline], and adds it to [GameServer.shoreline] */
+    private fun parseShoreline(data: List<String>, gameServer: GameServer) {
+        val polygon = ArrayList<Short>()
+        for (coord in data) {
+            val pos = coord.split(",")
+            polygon.add(MathTools.nmToPx(pos[0].toFloat()).toInt().toShort())
+            polygon.add(MathTools.nmToPx(pos[1].toFloat()).toInt().toShort())
+        }
+        gameServer.shoreline.add(Shoreline(polygon.toShortArray()))
     }
 
     /** Parse the given [data] into an [Airport], and adds it to [GameServer.airports]

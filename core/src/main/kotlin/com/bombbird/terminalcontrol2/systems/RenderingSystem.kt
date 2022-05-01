@@ -36,11 +36,39 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
         // shapeRenderer.circle(-15f, 5f, 5f)
         // shapeRenderer.circle(10f, -10f, 5f)
 
+        // Render lineArrays
+        val lineArrayFamily = allOf(GLineArray::class, SRColor::class).get()
+        val lineArrays = engine.getEntitiesFor(lineArrayFamily)
+        for (i in 0 until lineArrays.size()) {
+            lineArrays[i]?.apply {
+                val lineArray = get(GLineArray.mapper) ?: return@apply
+                val srColor = get(SRColor.mapper) ?: return@apply
+                shapeRenderer.color = srColor.color
+                lineArray.vertices.let {
+                    for (j in 0 until it.size - 3 step 2) {
+                        shapeRenderer.line(it[j], it[j + 1], it[j + 2], it[j + 3])
+                    }
+                }
+            }
+        }
+
         // Render polygons
-        val polygonFamily = allOf(GPolygon::class, SRColor::class).get()
+        val polygonFamily = allOf(GPolygon::class, SRColor::class).exclude(RenderLast::class).get()
         val polygons = engine.getEntitiesFor(polygonFamily)
         for (i in 0 until polygons.size()) {
             polygons[i]?.apply {
+                val poly = get(GPolygon.mapper) ?: return@apply
+                val srColor = get(SRColor.mapper) ?: return@apply
+                shapeRenderer.color = srColor.color
+                shapeRenderer.polygon(poly.vertices)
+            }
+        }
+
+        // Render polygons with RenderLast
+        val polygonLastFamily = allOf(GPolygon::class, SRColor::class, RenderLast::class).get()
+        val polygonsLast = engine.getEntitiesFor(polygonLastFamily)
+        for (i in 0 until polygonsLast.size()) {
+            polygonsLast[i]?.apply {
                 val poly = get(GPolygon.mapper) ?: return@apply
                 val srColor = get(SRColor.mapper) ?: return@apply
                 shapeRenderer.color = srColor.color

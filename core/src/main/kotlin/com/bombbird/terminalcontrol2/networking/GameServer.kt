@@ -42,6 +42,7 @@ class GameServer {
     val sectors = GdxArray<Sector>(Constants.SECTOR_SIZE)
     val aircraft = GdxArrayMap<String, Aircraft>(Constants.AIRCRAFT_SIZE)
     val minAltSectors = GdxArray<MinAltSector>()
+    val shoreline = GdxArray<Shoreline>()
 
     /** Maps [AirportInfo.arptId] (instead of [AirportInfo.icaoCode]) to the airport for backwards compatibility (in case of airport ICAO code reassignments;
      * Old airport is still available as a separate entity even with the same ICAO code as the new airport)
@@ -133,7 +134,8 @@ class GameServer {
                     aircraft.values().map { it.getSerialisableObject() }.toTypedArray(),
                     airports.values().map { it.getSerialisableObject() }.toTypedArray(),
                     waypoints.values.map { it.getSerialisableObject() }.toTypedArray(),
-                    minAltSectors.map { it.getSerialisableObject() }.toTypedArray()
+                    minAltSectors.map { it.getSerialisableObject() }.toTypedArray(),
+                    shoreline.map { it.getSerialisableObject() }.toTypedArray()
                 ))
             }
         })

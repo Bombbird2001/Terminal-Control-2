@@ -12,6 +12,15 @@ data class Position(var x: Float = 0f, var y: Float = 0f): Component {
     companion object: Mapper<Position>()
 }
 
+/** Component for mapping an additional user defined position for whatever needs
+ *
+ * Note that this component is likely not used for any game logic or rendering - it is solely to carry additional
+ * positional data to be retrieved for other purposes
+ * */
+data class CustomPosition(var x: Float = 0f, var y: Float = 0f): Component {
+    companion object: Mapper<CustomPosition>()
+}
+
 /** Component for direction (uses track - already takes into account magnetic heading deviation)
  *
  * [trackUnitVector] is rotated with respect to the screen, with positive [Vector2.x] towards the right and positive [Vector2.y] towards the top
