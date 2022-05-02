@@ -38,7 +38,8 @@ object Constants {
     const val MAX_ANGULAR_ACC = 0.3f
     const val MAX_JERK = 1f
     const val MAX_VS = 4000f
-    const val MAX_ACC = 3.2f
+    const val MAX_VS_EXPEDITE = 6000f
+    const val MAX_ACC = 3f
 
     /** List of available airports (can be modified, but don't) */
     val AVAIL_AIRPORTS = GdxArray<String>(arrayOf("TCTP", "TCWS", "TCTT", "TCBB", "TCHH", "TCBD", "TCMD", "TCPG"))

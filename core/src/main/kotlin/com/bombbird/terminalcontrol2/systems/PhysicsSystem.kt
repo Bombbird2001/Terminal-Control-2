@@ -77,7 +77,8 @@ class PhysicsSystem: EntitySystem(), LowFreqUpdate {
                 // Reach target altitude within 10 seconds, capped by aircraft performance constraints
                 var targetVS = (cmd.targetAltFt - alt.altitudeFt) / 10 * 60
                 targetVS = MathUtils.clamp(targetVS, aircraftInfo.minVs, aircraftInfo.maxVs) // Clamp to min, max VS (from aircraft performance)
-                targetVS = MathUtils.clamp(targetVS, -Constants.MAX_VS, Constants.MAX_VS) // Clamp to ensure no crazy rate of climb/descent
+                val maxVsToUse = if (cmd.expedite) Constants.MAX_VS_EXPEDITE else Constants.MAX_VS
+                targetVS = MathUtils.clamp(targetVS, -maxVsToUse, maxVsToUse) // Clamp to ensure no crazy rate of climb/descent
 
                 // Reach target vertical speed within 3 seconds, but is capped between -0.25G and 0.25G
                 val targetVAcc = (targetVS - spd.vertSpdFpm) / 3

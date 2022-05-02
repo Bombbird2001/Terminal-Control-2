@@ -35,12 +35,14 @@ class LandingRoll: Component {
  *
  * [targetAltFt] is the altitude the plane will climb/descend to and maintain
  *
+ * [expedite] is whether the aircraft should allow targeting of increased maximum vertical speed
+ *
  * [targetIasKt] is the indicated airspeed the plane will speed up/slow down to and maintain
  *
  * These basic parameters can be automatically altered by more advanced modes, such as Direct (to waypoint), Hold (at waypoint),
  * Climb via SID/Descend via STAR (to altitude), and SID/STAR speed restrictions in order to achieve the required behaviour
  * */
-data class CommandTarget(var targetHdgDeg: Float = 360f, var turnDir: Byte = TURN_DEFAULT, var targetAltFt: Float = 0f, var targetIasKt: Short = 0): Component {
+data class CommandTarget(var targetHdgDeg: Float = 360f, var turnDir: Byte = TURN_DEFAULT, var targetAltFt: Float = 0f, var expedite: Boolean = false, var targetIasKt: Short = 0): Component {
     companion object: Mapper<CommandTarget>() {
         val TURN_DEFAULT: Byte = 0
         val TURN_LEFT: Byte = -1

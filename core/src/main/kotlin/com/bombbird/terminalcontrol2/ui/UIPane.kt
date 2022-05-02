@@ -65,7 +65,7 @@ class UIPane(private val uiStage: Stage) {
                     }.cell(padTop = 20f, align = Align.top, preferredWidth = paneWidth, preferredHeight = Variables.UI_HEIGHT * 0.4f, growX = true)
                     align(Align.top)
                 }
-                isVisible = false
+                isVisible = true
             }
             controlPane = container {
                 fill()
@@ -139,7 +139,11 @@ class UIPane(private val uiStage: Stage) {
                     setOverscroll(false, false)
                 }.cell(preferredWidth = 0.81f * paneWidth, preferredHeight = 0.6f * Variables.UI_HEIGHT, grow = true, padTop = 20f, align = Align.top)
                 table {
-                    textButton("Edit\nroute", "ControlPaneButton").cell(growX = true, height = Variables.UI_HEIGHT * 0.15f)
+                    textButton("Edit\nroute", "ControlPaneButton").cell(growX = true, height = Variables.UI_HEIGHT * 0.15f).addListener(object: ChangeListener() {
+                        override fun changed(event: ChangeEvent?, actor: Actor?) {
+                            setToEditRoutePane()
+                        }
+                    })
                     row()
                     textButton("CDA", "ControlPaneSelected").cell(growX = true, height = Variables.UI_HEIGHT * 0.15f)
                 }.cell(preferredWidth = 0.19f * paneWidth, padTop = 20f, align = Align.top)
@@ -242,10 +246,14 @@ class UIPane(private val uiStage: Stage) {
                     row()
                     table {
                         textButton("Undo", "ControlPaneButton").cell(grow = true, preferredWidth = 0.5f * paneWidth)
-                        textButton("Confirm", "ControlPaneButton").cell(grow = true, preferredWidth = 0.5f * paneWidth)
+                        textButton("Confirm", "ControlPaneButton").cell(grow = true, preferredWidth = 0.5f * paneWidth).addListener(object: ChangeListener() {
+                            override fun changed(event: ChangeEvent?, actor: Actor?) {
+                                setToControlPane()
+                            }
+                        })
                     }.cell(growX = true, height = 0.1f * Variables.UI_HEIGHT)
                 }
-                isVisible = true
+                isVisible = false
                 setSize(paneWidth, Variables.UI_HEIGHT)
             }
         }
@@ -335,5 +343,30 @@ class UIPane(private val uiStage: Stage) {
             }
         }
         metarPane.padBottom(20f)
+    }
+
+    fun setSelectedAircraft() {
+        // TODO update with actual aircraft information
+        controlPane.isVisible = true
+        routeEditPane.isVisible = false
+        mainInfoPane.isVisible = false
+    }
+
+    fun deselectAircraft() {
+        controlPane.isVisible = false
+        routeEditPane.isVisible = false
+        mainInfoPane.isVisible = true
+    }
+
+    /** Helper function to set the UI pane to show [routeEditPane] from [controlPane] */
+    fun setToEditRoutePane() {
+        routeEditPane.isVisible = true
+        controlPane.isVisible = false
+    }
+
+    /** Helper function to set the UI pane to show [controlPane] from [routeEditPane] */
+    fun setToControlPane() {
+        routeEditPane.isVisible = false
+        controlPane.isVisible = true
     }
 }

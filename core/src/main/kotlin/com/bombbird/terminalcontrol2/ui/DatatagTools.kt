@@ -1,9 +1,11 @@
 package com.bombbird.terminalcontrol2.ui
 
 import com.badlogic.gdx.math.Vector2
+import com.badlogic.gdx.scenes.scene2d.Actor
 import com.badlogic.gdx.scenes.scene2d.InputEvent
 import com.badlogic.gdx.scenes.scene2d.ui.ImageButton
 import com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle
+import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener
 import com.badlogic.gdx.scenes.scene2d.utils.DragListener
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.Constants
@@ -83,8 +85,8 @@ object DatatagTools {
         datatag.clickSpot.setSize(maxWidth + LABEL_PADDING * 2, height + LABEL_PADDING * 2)
     }
 
-    /** Adds a dragListener to the background [Datatag.clickSpot] */
-    fun addDragListener(datatag: Datatag) {
+    /** Adds a dragListener and changeListener to the background [Datatag.clickSpot] */
+    fun addInputListeners(datatag: Datatag) {
         datatag.clickSpot.apply {
             Constants.GAME.gameClientScreen?.addToConstZoomStage(this) // Add to uiStage in order for drag gesture to be detected by inputMultiplexer
             zIndex = 0
@@ -94,6 +96,15 @@ object DatatagTools {
                     datatag.yOffset += (y - this@apply.height / 2)
                     datatag.dragging = true
                     event?.handle()
+                }
+            })
+            addListener(object: ChangeListener() {
+                override fun changed(event: ChangeEvent?, actor: Actor?) {
+                    if (datatag.dragging) {
+                        datatag.dragging = false
+                        return
+                    }
+                    Constants.CLIENT_SCREEN?.setSelectedAircraft()
                 }
             })
         }

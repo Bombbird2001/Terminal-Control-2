@@ -187,6 +187,12 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
         constZoomStage.addActor(actor)
     }
 
+    /** Instructs [uiPane] to display the control pane for the supplied aircraft */
+    fun setSelectedAircraft() {
+        // TODO Pass actual aircraft information
+        uiPane.setSelectedAircraft()
+    }
+
     /** Ensures [radarDisplayStage]'s camera parameters are within limits, then updates the camera (and [shapeRenderer]) */
     private fun clampUpdateCamera(deltaZoom: Float) {
         (radarDisplayStage.camera as OrthographicCamera).apply {
@@ -308,6 +314,7 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
     override fun tap(x: Float, y: Float, count: Int, button: Int): Boolean {
         // TODO Unselect aircraft, double tap zoom/animate
         if (count == 2 && !cameraAnimating) initiateCameraAnimation(x, y)
+        uiPane.deselectAircraft()
 //        unprojectFromRadarCamera(x, y).apply { println("${MathTools.pxToNm(this.x)} ${MathTools.pxToNm(this.y)}") }
 //        for (mva in clientEngine.getEntitiesFor(allOf(MinAltSectorInfo::class).get())) {
 //            mva[GPolygon.mapper]?.vertices?.apply {
