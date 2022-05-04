@@ -2,8 +2,8 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 android {
-	buildToolsVersion "33.0.0-rc2"
-	compileSdkVersion 31
+	buildToolsVersion "33.0.0-rc3"
+	compileSdkVersion 32
 	sourceSets {
 		main {
 			manifest.srcFile 'AndroidManifest.xml'
@@ -33,7 +33,7 @@ android {
 	defaultConfig {
 		applicationId 'com.bombbird.terminalcontrol2'
 		minSdkVersion 21
-		targetSdkVersion 31
+		targetSdkVersion 32
 		versionCode 1
 		versionName "1.0"
 		multiDexEnabled true

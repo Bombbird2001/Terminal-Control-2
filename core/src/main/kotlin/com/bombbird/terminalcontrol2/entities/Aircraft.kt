@@ -9,7 +9,7 @@ import ktx.ashley.entity
 import ktx.ashley.get
 import ktx.ashley.with
 import ktx.scene2d.Scene2DSkin
-import kotlin.math.round
+import kotlin.math.roundToInt
 
 /** Aircraft class that creates an aircraft entity with the required components on instantiation */
 class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightType: Byte, onClient: Boolean = true) {
@@ -119,7 +119,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
                 acInfo.icaoCallsign,
                 direction.trackUnitVector.x, direction.trackUnitVector.y,
                 speed.speedKts, speed.vertSpdFpm, speed.angularSpdDps,
-                round(cmdTarget.targetAltFt / 100).toInt().toShort(), cmdTarget.targetIasKt
+                (cmdTarget.targetAltFt / 100).roundToInt().toShort(), cmdTarget.targetIasKt
             )
         }
     }

@@ -122,24 +122,9 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
                                 entity[AirportInfo.mapper]?.arptId?.let { id ->
                                     this@RadarScreen.airport.put(id, this)
                                 }
-//                                entity[SIDChildren.mapper]?.sidMap?.apply {
-//                                    for (obj in this) {
-//                                        val entry = obj.value
-//                                        println("${entry.name} ${entry.pronunciation} ${entry.timeRestriction}")
-//                                        println(entry.rwyInitialClimbs)
-//                                        println(entry.rwyLegs)
-//                                        println(entry.routeLegs)
-//                                        println(entry.outboundLegs)
-//                                    }
-//                                }
-//                                entity[STARChildren.mapper]?.starMap?.apply {
-//                                    for (obj in this) {
-//                                        val entry = obj.value
-//                                        println("${entry.name} ${entry.pronunciation} ${entry.timeRestriction}")
-//                                        println(entry.routeLegs)
-//                                        println(entry.rwyLegs)
-//                                    }
-//                                }
+                                // Debug.printAirportSIDs(entity)
+                                // Debug.printAirportSTARs(entity)
+                                // Debug.printAirportApproaches(entity)
                             }
                         }
                         waypoints.forEach {
@@ -236,7 +221,7 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
     }
 
     /** Helper function for unprojecting from screen coordinates to camera world coordinates, as unfortunately Camera's unproject function is not accurate in this case */
-    private fun unprojectFromRadarCamera(screenX: Float, screenY: Float): Vector2 {
+    private var unprojectFromRadarCamera = fun (screenX: Float, screenY: Float): Vector2 {
         (radarDisplayStage.camera as OrthographicCamera).apply {
             val scaleFactor = Variables.UI_HEIGHT / Variables.HEIGHT // 1px in screen distance = ?px in world distance (at zoom = 1)
             return Vector2((screenX - Variables.WIDTH / 2) * zoom * scaleFactor + position.x, (Variables.HEIGHT / 2 - screenY) * zoom * scaleFactor + position.y)
@@ -315,26 +300,7 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
         // TODO Unselect aircraft, double tap zoom/animate
         if (count == 2 && !cameraAnimating) initiateCameraAnimation(x, y)
         uiPane.deselectAircraft()
-//        unprojectFromRadarCamera(x, y).apply { println("${MathTools.pxToNm(this.x)} ${MathTools.pxToNm(this.y)}") }
-//        for (mva in clientEngine.getEntitiesFor(allOf(MinAltSectorInfo::class).get())) {
-//            mva[GPolygon.mapper]?.vertices?.apply {
-//                if (Polygon(this).contains(unprojectFromRadarCamera(x, y))) {
-//                    println("${mva[MinAltSectorInfo.mapper]?.minAltFt} ${this.map { MathTools.pxToNm(it) }.toGdxArray()}")
-//                    mva[SRColor.mapper]?.apply {
-//                        color = if (color == Color.GRAY) {
-//                            mva.add(RenderLast())
-//                            Color.ORANGE
-//                        } else {
-//                            mva.remove(RenderLast::class.java)
-//                            Color.GRAY
-//                        }
-//                    }
-//                    mva[GenericLabel.mapper]?.apply {
-//                        updateStyle(if (label.style.fontColor == Color.ORANGE) "MinAltSector" else "MinAltSectorRestr")
-//                    }
-//                }
-//            }
-//        }
+        // Debug.toggleMinAltSectorsOnClick(x, y, unprojectFromRadarCamera, clientEngine)
         return true
     }
 

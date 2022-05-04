@@ -13,7 +13,7 @@ import com.bombbird.terminalcontrol2.utilities.MathTools
 import ktx.math.plus
 import ktx.math.times
 import ktx.scene2d.Scene2DSkin
-import kotlin.math.round
+import kotlin.math.roundToInt
 
 /** Helper object for dealing with [Datatag] matters */
 object DatatagTools {
@@ -116,11 +116,11 @@ object DatatagTools {
         // Temporary label format TODO change based on datatag format in use
         val callsign = aircraftInfo.icaoCallsign
         val acInfo = "${aircraftInfo.icaoType}/${aircraftInfo.aircraftPerf.wakeCategory}/${aircraftInfo.aircraftPerf.recat}"
-        val alt = round(radarData.altitude.altitudeFt / 100).toInt()
+        val alt = (radarData.altitude.altitudeFt / 100).roundToInt()
         val vs = if (radarData.speed.vertSpdFpm > 150) '^' else if (radarData.speed.vertSpdFpm < -150) 'v' else '='
-        val cmdAlt = round(cmdTarget.targetAltFt / 100).toInt()
+        val cmdAlt = (cmdTarget.targetAltFt / 100).roundToInt()
         val clearedAlt = "=> Cleared alt"
-        val groundSpd = round((radarData.direction.trackUnitVector.times(radarData.speed.speedKts) + (affectedByWind?.windVector?.times(MathTools.pxpsToKt(1f)) ?: Vector2())).len()).toInt()
+        val groundSpd = (radarData.direction.trackUnitVector.times(radarData.speed.speedKts) + (affectedByWind?.windVector?.times(MathTools.pxpsToKt(1f)) ?: Vector2())).len().roundToInt()
         labelText[0] = "$callsign $acInfo"
         labelText[1] = "$alt $vs $cmdAlt $clearedAlt"
         labelText[2] = "Cleared SID/STAR/APP"

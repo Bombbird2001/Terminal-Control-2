@@ -64,6 +64,7 @@ class Route() {
                       val flyOver: Boolean = false, val turnDir: Byte = CommandTarget.TURN_DEFAULT,
                       phase: Byte = NORMAL
     ): Leg(phase) {
+        /** Secondary constructor using the name of a waypoint instead of its ID - use only when loading from internal game files */
         constructor(wptName: String, maxAltFt: Int?, minAltFt: Int?, maxSpdKt: Short?,
                     legActive: Boolean, altRestrActive: Boolean, spdRestrActive: Boolean,
                     flyOver: Boolean = false, turnDir: Byte = CommandTarget.TURN_DEFAULT,
@@ -127,6 +128,12 @@ class Route() {
 
         // No-arg constructor for Kryo serialisation
         constructor(): this(0, null, null, null, 360, 5)
+
+        /** Secondary constructor using the name of a waypoint instead of its ID - use only when loading from internal game files */
+        constructor(wptName: String, maxAltFt: Int?, minAltFt: Int?, maxSpdKt: Short?, inboundHdg: Short, legDist: Byte,
+                    phase: Byte = NORMAL): this(Constants.GAME.gameServer?.let {
+            it.waypoints[it.updatedWaypointMapping[wptName]]?.entity?.get(WaypointInfo.mapper)?.wptId ?: -1
+        } ?: throw RuntimeException("gameServer is non-existent when creating route in GameLoader context"), maxAltFt, minAltFt, maxSpdKt, inboundHdg, legDist, phase)
 
         /** Debug string representation */
         override fun toString(): String {

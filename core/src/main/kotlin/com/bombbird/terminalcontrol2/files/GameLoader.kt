@@ -1,12 +1,10 @@
 package com.bombbird.terminalcontrol2.files
 
 import com.badlogic.gdx.Gdx
-import com.bombbird.terminalcontrol2.components.CommandTarget
-import com.bombbird.terminalcontrol2.components.RunwayLabel
-import com.bombbird.terminalcontrol2.components.SIDChildren
-import com.bombbird.terminalcontrol2.components.STARChildren
+import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.*
 import com.bombbird.terminalcontrol2.global.Variables
+import com.bombbird.terminalcontrol2.navigation.Approach
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.navigation.SidStar
 import com.bombbird.terminalcontrol2.navigation.UsabilityFilter
@@ -26,6 +24,7 @@ object GameLoader {
             var currSid: SidStar.SID? = null
             var currStar: SidStar.STAR? = null
             var currSectorCount = 0
+            var currApp: Approach? = null
             for (line in this) {
                 val lineData = line.split(" ")
                 when (lineData[0]) {
@@ -39,9 +38,17 @@ object GameLoader {
                     "STAR" -> currStar = parseSTAR(lineData, currAirport ?: continue)
                     "/STAR" -> currStar = null
                     "RWY" -> if (currSid != null) parseSIDRwyRoute(lineData, currSid) else if (currStar != null) parseSTARRwyRoute(lineData, currStar)
-                    "ROUTE" -> if (currSid != null) parseSIDSTARRoute(lineData, currSid) else if (currStar != null) parseSIDSTARRoute(lineData, currStar)
+                    "ROUTE" -> {
+                        if (currSid != null) parseSIDSTARRoute(lineData, currSid)
+                        else if (currStar != null) parseSIDSTARRoute(lineData, currStar)
+                        else if (currApp != null) parseApproachRoute(lineData, currApp)
+                    }
                     "OUTBOUND" -> if (currSid != null) parseSIDSTARinOutboundRoute(lineData, currSid)
                     "INBOUND" -> if (currStar != null) parseSIDSTARinOutboundRoute(lineData, currStar)
+                    "APCH" -> currApp = parseApproach(lineData, currAirport ?: continue)
+                    "/APCH" -> currApp = null
+                    "TRANSITION" -> if (currApp != null) parseApproachTransition(lineData, currApp)
+                    "MISSED" -> if (currApp != null) parseApproachMissed(lineData, currApp)
                     "/$currSectorCount" -> currSectorCount = 0
                     "/$parseMode" -> parseMode = ""
                     else -> {
@@ -184,6 +191,86 @@ object GameLoader {
             }
         }
         airport.addRunway(id, name, posX, posY, trueHdg, rwyLengthM, elevation, labelPos)
+        airport.setRunwayMapping(name, id)
+    }
+
+    /** Parse the given [data] into an [Approach], and adds it to the supplied [airport]'s [ApproachChildren] component
+     *
+     * Returns the constructed [Approach] or null if an invalid runway is specified
+     * */
+    private fun parseApproach(data: List<String>, airport: Airport): Approach? {
+        val name = data[2].replace("-", " ")
+        val dayNight = when (data[3]) {
+            "DAY_NIGHT" -> UsabilityFilter.DAY_AND_NIGHT
+            "DAY_ONLY" -> UsabilityFilter.DAY_ONLY
+            "NIGHT_ONLY" -> UsabilityFilter.NIGHT_ONLY
+            else -> {
+                Gdx.app.log("GameLoader", "Unknown dayNight for SID $name: ${data[2]}")
+                UsabilityFilter.DAY_AND_NIGHT
+            }
+        }
+        val rwyId = airport.entity[RunwayChildren.mapper]?.updatedRwyMapping?.get(data[4]) ?: run {
+            Gdx.app.log("GameLoader", "Runway ${data[4]} not found for approach $name")
+            return null
+        }
+        val heading = data[5].toShort()
+        val pos = data[6].split(",")
+        val posX = MathTools.nmToPx(pos[0].toFloat())
+        val posY = MathTools.nmToPx(pos[1].toFloat())
+        val decisionAltitude = data[7].toShort()
+        val rvr = data[8].toShort()
+        val app = when (data[1]) {
+            "ILS-GS" -> {
+                val locDist = data[9].toByte()
+                val glideAngle = data[10].toFloat()
+                val gsOffset = data[11].toFloat()
+                val maxInterceptAlt = data[12].toShort()
+                val towerCallsign = data[13].replace("-", " ")
+                val towerFreq = data[14]
+                Approach.IlsGS(name, rwyId, towerCallsign, towerFreq, heading, posX, posY, locDist, glideAngle, gsOffset, maxInterceptAlt, decisionAltitude, rvr, dayNight)
+            }
+            "ILS-LOC-OFFSET" -> {
+                val locDist = data[9].toByte()
+                val towerCallsign = data[10].replace("-", " ")
+                val towerFreq = data[11]
+                val lineUpDist = data[12].toFloat()
+                val steps = ArrayList<Pair<Float, Short>>()
+                for (i in 13 until data.size) {
+                    val step = data[i].split("@")
+                    steps.add(Pair(step[1].toFloat(), step[0].toShort()))
+                }
+                Approach.IlsLOCOffset(name, rwyId, towerCallsign, towerFreq, heading, posX, posY, locDist, decisionAltitude, rvr, lineUpDist, steps.toTypedArray(), dayNight)
+            }
+            else -> {
+                Gdx.app.log("GameLoader", "Unknown approach type ${data[1]} for $name")
+                null
+            }
+        }
+        app?.apply {
+            airport.entity[ApproachChildren.mapper]?.approachMap?.put(name, this)
+        }
+        return app
+    }
+
+    /** Parse the given [data] into the route legs data, and adds it to the supplied [approach]'s [Approach.routeLegs] */
+    private fun parseApproachRoute(data: List<String>, approach: Approach) {
+        if (approach.routeLegs.legs.isNotEmpty()) {
+            Gdx.app.log("GameLoader", "Multiple routes for approach: ${approach.entity[ApproachInfo.mapper]?.approachName}")
+        }
+        approach.routeLegs.extendRoute(parseLegs(data.subList(1, data.size), Route.Leg.APP))
+    }
+
+    /** Parse the given [data] into approach transition legs data, and adds it to the supplied [approach]'s [Approach.transitions] */
+    private fun parseApproachTransition(data: List<String>, approach: Approach) {
+        approach.transitions.add(Pair(data[1], parseLegs(data.subList(2, data.size), Route.Leg.APP_TRANS)))
+    }
+
+    /** Parse the given [data] into missed approach procedure legs data, and adds it to the supplied [approach]'s [Approach.missedLegs] */
+    private fun parseApproachMissed(data: List<String>, approach: Approach) {
+        if (approach.missedLegs.legs.isNotEmpty()) {
+            Gdx.app.log("GameLoader", "Multiple missed approach procedures for approach: ${approach.entity[ApproachInfo.mapper]?.approachName}")
+        }
+        approach.missedLegs.extendRoute(parseLegs(data.subList(1, data.size), Route.Leg.APP))
     }
 
     /** Parse the given [data] into a [SidStar.SID], and adds it to the supplied [airport]'s [SIDChildren] component
@@ -321,8 +408,11 @@ object GameLoader {
                 } ?: CommandTarget.TURN_DEFAULT
                 return Route.WaypointLeg(wptName, maxAlt, minAlt, maxSpd, legActive = true, altRestrActive = true, spdRestrActive = true, flyOver, turnDir, flightPhase)
             }
+            "HOLD" -> {
+                return Route.HoldLeg(wptRegex.find(data)?.groupValues?.get(1) ?: return null, null, null, null, 360, 5)
+            }
             else -> {
-                if (legType.isNotEmpty()) Gdx.app.log("GameLoader", "Unknown leg type $legType")
+                if (legType.isNotEmpty()) Gdx.app.log("GameLoader", "Unknown leg type: $legType")
                 return null
             }
         }

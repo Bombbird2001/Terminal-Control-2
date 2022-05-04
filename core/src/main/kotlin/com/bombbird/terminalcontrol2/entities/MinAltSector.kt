@@ -8,7 +8,7 @@ import com.bombbird.terminalcontrol2.global.Constants
 import ktx.ashley.entity
 import ktx.ashley.get
 import ktx.ashley.with
-import kotlin.math.round
+import kotlin.math.roundToInt
 
 /** Sector class that creates a sector entity with the required components for implementing an MVA or restricted area */
 class MinAltSector(minAlt: Int?, polygonBoundary: ShortArray?, circleX: Short = 0, circleY: Short = 0, radiusBoundary: Float = 0f, labelX: Short? = null, labelY: Short? = null, restr: Boolean, onClient: Boolean = true) {
@@ -49,7 +49,7 @@ class MinAltSector(minAlt: Int?, polygonBoundary: ShortArray?, circleX: Short = 
         }
         if (onClient) with<GenericLabel> {
             updateStyle(if (restr) "MinAltSectorRestr" else "MinAltSector")
-            updateText(if (minAlt == null) "UNL" else round(minAlt / 100f).toInt().toString())
+            updateText(if (minAlt == null) "UNL" else (minAlt / 100f).roundToInt().toString())
             xOffset = (labelX?.toFloat() ?: 0f) -label.prefWidth / 2
             yOffset = labelY?.toFloat() ?: 0f
         }

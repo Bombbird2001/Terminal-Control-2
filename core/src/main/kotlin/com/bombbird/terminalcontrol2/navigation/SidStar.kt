@@ -17,9 +17,9 @@ import ktx.collections.GdxArrayMap
  *
  * This class is abstract and is extended by [SID] and [STAR]
  * */
-open class SidStar(val name: String,
-              override val timeRestriction: Byte,
-              override val pronunciation: String): UsabilityFilter, Pronounceable {
+abstract class SidStar(val name: String,
+                       override val timeRestriction: Byte,
+                       override val pronunciation: String): UsabilityFilter, Pronounceable {
     val routeLegs = Route()
     val rwyLegs = GdxArrayMap<String, Route>(6)
     protected val inOutboundLegs = GdxArray<Route>(10)

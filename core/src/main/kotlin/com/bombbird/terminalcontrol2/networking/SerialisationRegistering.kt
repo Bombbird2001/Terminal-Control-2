@@ -4,6 +4,7 @@ import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.*
+import com.bombbird.terminalcontrol2.navigation.Approach
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.navigation.SidStar
 import com.esotericsoftware.kryo.Kryo
@@ -20,20 +21,24 @@ object SerialisationRegistering {
 
             // Initial load classes
             register(InitialLoadData::class.java)
-            register(Sector.SerialisedSector::class.java)
             register(Array<Sector.SerialisedSector>::class.java)
-            register(Aircraft.SerialisedAircraft::class.java)
+            register(Sector.SerialisedSector::class.java)
             register(Array<Aircraft.SerialisedAircraft>::class.java)
-            register(Airport.SerialisedAirport::class.java)
+            register(Aircraft.SerialisedAircraft::class.java)
             register(Array<Airport.SerialisedAirport>::class.java)
-            register(Airport.Runway.SerialisedRunway::class.java)
+            register(Airport.SerialisedAirport::class.java)
             register(Array<Airport.Runway.SerialisedRunway>::class.java)
+            register(Airport.Runway.SerialisedRunway::class.java)
+            register(Array<Airport.SerialisedRunwayMapping>::class.java)
+            register(Airport.SerialisedRunwayMapping::class.java)
             register(Array<Waypoint.SerialisedWaypoint>::class.java)
             register(Waypoint.SerialisedWaypoint::class.java)
             register(Array<MinAltSector.SerialisedMinAltSector>::class.java)
             register(MinAltSector.SerialisedMinAltSector::class.java)
             register(Array<Shoreline.SerialisedShoreline>::class.java)
             register(Shoreline.SerialisedShoreline::class.java)
+
+            // Route classes
             register(Array<Route.Leg>::class.java)
             register(Route.Leg::class.java)
             register(Route.InitClimbLeg::class.java)
@@ -43,6 +48,8 @@ object SerialisationRegistering {
             register(Route.HoldLeg::class.java)
             register(Array<Route.SerialisedRoute>::class.java)
             register(Route.SerialisedRoute::class.java)
+
+            // SID, STAR classes
             register(Array<SidStar.SID.SerialisedRwyInitClimb>::class.java)
             register(SidStar.SID.SerialisedRwyInitClimb::class.java)
             register(Array<SidStar.SerialisedRwyLegs>::class.java)
@@ -51,6 +58,15 @@ object SerialisationRegistering {
             register(SidStar.SID.SerialisedSID::class.java)
             register(Array<SidStar.STAR.SerialisedSTAR>::class.java)
             register(SidStar.STAR.SerialisedSTAR::class.java)
+
+            // Approach classes
+            register(Array<Approach.SerialisedApproach>::class.java)
+            register(Array<Approach.SerialisedTransition>::class.java)
+            register(Approach.SerialisedTransition::class.java)
+            register(Array<Approach.SerialisedStep>::class.java)
+            register(Approach.SerialisedStep::class.java)
+            register(Approach.IlsGS.SerialisedIlsGS::class.java)
+            register(Approach.IlsLOCOffset.SerialisedIlsLOCOffset::class.java)
 
             // METAR classes
             register(MetarData::class.java)

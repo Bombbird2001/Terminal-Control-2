@@ -84,6 +84,41 @@ data class FlightType(var type: Byte = 0): Component {
     }
 }
 
+/** Component for tagging basic approach information */
+data class ApproachInfo(var approachName: String = "", var rwyId: Byte = 0, var towerName: String = "", var frequency: String = ""): Component {
+    companion object: Mapper<ApproachInfo>()
+}
+
+/** Component for tagging localiser information */
+data class Localiser(var maxDistNm: Byte = 0): Component {
+    companion object: Mapper<Localiser>()
+}
+
+/** Component for tagging glide slope information */
+data class GlideSlope(var glideAngle: Float = 0f, var offsetNm: Float = 0f, var maxInterceptAlt: Short = 0): Component {
+    companion object: Mapper<GlideSlope>()
+}
+
+/** Component for tagging step down approach information */
+class StepDown(var altAtDist: Array<Pair<Float, Short>> = arrayOf()): Component {
+    companion object: Mapper<StepDown>()
+}
+
+/** Component for tagging approach minimums information */
+data class Minimums(var baroAltFt: Short = 0, var rvrM: Short = 0): Component {
+    companion object: Mapper<Minimums>()
+}
+
+/** Component for tagging offset approach information */
+data class Offset(var lineUpDistNm: Float = 0f): Component {
+    companion object: Mapper<Offset>()
+}
+
+/** Component for tagging visual approach */
+class Visual: Component {
+    companion object: Mapper<Visual>()
+}
+
 class Emergency: Component {
 
 }
