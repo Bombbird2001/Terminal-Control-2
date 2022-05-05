@@ -74,7 +74,7 @@ object MetarTools {
                         visibilityM = it.visibilityM ?: 10000
                         ceilingHundredFtAGL = it.ceilingFtAGL
                         windshear = it.windshear ?: ""
-                        updateWindVector(windVector, windHeadingDeg, windSpeedKt)
+                        updateWindVector(windVectorPx, windHeadingDeg, windSpeedKt)
                     }
                 }
             }
@@ -112,7 +112,7 @@ object MetarTools {
                     val deltaY = pos.y - y
                     val radiusSq = deltaX * deltaX + deltaY * deltaY
                     if (closest < 0 || radiusSq < closest) {
-                        vectorToUse = metar.windVector
+                        vectorToUse = metar.windVectorPx
                         closest = radiusSq
                     }
                 }

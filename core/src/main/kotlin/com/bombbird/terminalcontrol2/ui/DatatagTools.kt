@@ -9,7 +9,9 @@ import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener
 import com.badlogic.gdx.scenes.scene2d.utils.DragListener
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.Constants
+import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.utilities.MathTools
+import ktx.ashley.get
 import ktx.math.plus
 import ktx.math.times
 import ktx.scene2d.Scene2DSkin
@@ -111,7 +113,7 @@ object DatatagTools {
     }
 
     /** Gets a new array of strings for the label text, based on the player's datatag format */
-    fun getNewLabelText(aircraftInfo: AircraftInfo, radarData: RadarData, cmdTarget: CommandTarget, affectedByWind: AffectedByWind?): Array<String> {
+    fun getNewLabelText(aircraftInfo: AircraftInfo, radarData: RadarData, cmdTarget: CommandTarget, cmdRoute: CommandRoute?, affectedByWind: AffectedByWind?): Array<String> {
         val labelText = arrayOf("", "", "", "")
         // Temporary label format TODO change based on datatag format in use
         val callsign = aircraftInfo.icaoCallsign
@@ -119,11 +121,16 @@ object DatatagTools {
         val alt = (radarData.altitude.altitudeFt / 100).roundToInt()
         val vs = if (radarData.speed.vertSpdFpm > 150) '^' else if (radarData.speed.vertSpdFpm < -150) 'v' else '='
         val cmdAlt = (cmdTarget.targetAltFt / 100).roundToInt()
+        val cmdHdg = cmdTarget.targetHdgDeg.roundToInt()
         val clearedAlt = "=> Cleared alt"
-        val groundSpd = (radarData.direction.trackUnitVector.times(radarData.speed.speedKts) + (affectedByWind?.windVector?.times(MathTools.pxpsToKt(1f)) ?: Vector2())).len().roundToInt()
+        val groundSpd = (radarData.direction.trackUnitVector.times(radarData.speed.speedKts) + (affectedByWind?.windVectorPx?.times(MathTools.pxpsToKt(1f)) ?: Vector2())).len().roundToInt()
+        val directWpt = cmdRoute?.route?.legs?.let {
+            if (it.size == 0) null else Constants.CLIENT_SCREEN?.waypoints?.get((it[0] as? Route.WaypointLeg)?.wptId)
+        }?.entity?.get(WaypointInfo.mapper)?.wptName ?: ""
+        val sidStar = cmdRoute?.primaryName ?: ""
         labelText[0] = "$callsign $acInfo"
         labelText[1] = "$alt $vs $cmdAlt $clearedAlt"
-        labelText[2] = "Cleared SID/STAR/APP"
+        labelText[2] = "$cmdHdg $directWpt $sidStar"
         labelText[3] = "$groundSpd ${cmdTarget.targetIasKt}"
 
         return labelText

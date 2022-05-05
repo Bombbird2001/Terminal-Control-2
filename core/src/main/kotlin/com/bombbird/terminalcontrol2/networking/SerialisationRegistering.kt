@@ -20,7 +20,12 @@ object SerialisationRegistering {
             register(ShortArray::class.java)
 
             // Initial load classes
-            register(InitialLoadData::class.java)
+            register(InitialSectorData::class.java)
+            register(InitialAircraftData::class.java)
+            register(AirportData::class.java)
+            register(WaypointData::class.java)
+            register(MinAltData::class.java)
+            register(ShorelineData::class.java)
             register(Array<Sector.SerialisedSector>::class.java)
             register(Sector.SerialisedSector::class.java)
             register(Array<Aircraft.SerialisedAircraft>::class.java)
@@ -81,15 +86,23 @@ object SerialisationRegistering {
         } ?: Gdx.app.log("SerialisationRegistering", "Null kryo passed, unable to register classes")
     }
 
-    /** Class representing the data sent on initial connection, loading of the game on a client */
-    class InitialLoadData(
-        var sectors: Array<Sector.SerialisedSector> = arrayOf(),
-        var aircraft: Array<Aircraft.SerialisedAircraft> = arrayOf(),
-        var airports: Array<Airport.SerialisedAirport> = arrayOf(),
-        var waypoints: Array<Waypoint.SerialisedWaypoint> = arrayOf(),
-        val minAltSectors: Array<MinAltSector.SerialisedMinAltSector> = arrayOf(),
-        val shoreline: Array<Shoreline.SerialisedShoreline> = arrayOf()
-    )
+    /** Class representing sector data sent on initial connection, loading of the game on a client */
+    class InitialSectorData(var sectors: Array<Sector.SerialisedSector> = arrayOf())
+
+    /** Class representing aircraft data sent on initial connection, loading of the game on a client */
+    class InitialAircraftData(var aircraft: Array<Aircraft.SerialisedAircraft> = arrayOf())
+
+    /** Class representing airport data sent on initial connection, loading of the game on a client */
+    class AirportData(var airports: Array<Airport.SerialisedAirport> = arrayOf())
+
+    /** Class representing waypoint data sent on initial connection, loading of the game on a client */
+    class WaypointData(var waypoints: Array<Waypoint.SerialisedWaypoint> = arrayOf())
+
+    /** Class representing minimum altitude sector data sent on initial connection, loading of the game on a client */
+    class MinAltData(val minAltSectors: Array<MinAltSector.SerialisedMinAltSector> = arrayOf())
+
+    /** Class representing shoreline data sent on initial connection, loading of the game on a client */
+    class ShorelineData(val shoreline: Array<Shoreline.SerialisedShoreline> = arrayOf())
 
     /** Class representing the data to be sent during METAR updates */
     class MetarData(var metars: Array<Airport.SerialisedMetar> = arrayOf())

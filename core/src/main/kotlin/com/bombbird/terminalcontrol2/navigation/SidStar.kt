@@ -1,5 +1,6 @@
 package com.bombbird.terminalcontrol2.navigation
 
+import com.badlogic.gdx.Gdx
 import com.bombbird.terminalcontrol2.utilities.Pronounceable
 import ktx.collections.GdxArray
 import ktx.collections.GdxArrayMap
@@ -81,6 +82,17 @@ abstract class SidStar(val name: String,
         val rwyInitialClimbs = GdxArrayMap<String, Int>(6)
         val outboundLegs: GdxArray<Route>
             get() = inOutboundLegs
+
+        /** Gets a random SID route, made up of the [rwyLegs] segment, the [routeLegs] segment, and a [outboundLegs] segment */
+        fun getRandomSIDRouteForRunway(rwyName: String): Route {
+            return rwyLegs[rwyName]?.apply {
+                extendRoute(routeLegs)
+                extendRoute(outboundLegs.random())
+            } ?: run {
+                Gdx.app.log("SID", "Runway $rwyName not available for SID $name")
+                return Route()
+            }
+        }
 
         /** Object that contains [SID] data to be serialised by Kryo */
         class SerialisedSID(name: String = "",

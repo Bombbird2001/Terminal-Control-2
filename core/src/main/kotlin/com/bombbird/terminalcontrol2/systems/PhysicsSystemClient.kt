@@ -41,8 +41,8 @@ class PhysicsSystemClient: EntitySystem(), LowFreqUpdate {
             windAffected[i]?.apply {
                 val pos = get(Position.mapper) ?: return@apply
                 val wind = get(AffectedByWind.mapper) ?: return@apply
-                pos.x += wind.windVector.x * deltaTime
-                pos.y += wind.windVector.y * deltaTime
+                pos.x += wind.windVectorPx.x * deltaTime
+                pos.y += wind.windVectorPx.y * deltaTime
             }
         }
     }
@@ -72,7 +72,7 @@ class PhysicsSystemClient: EntitySystem(), LowFreqUpdate {
             affectedByWind[i]?.apply {
                 val pos = get(Position.mapper) ?: return@apply
                 val wind = get(AffectedByWind.mapper) ?: return@apply
-                wind.windVector = MetarTools.getClosestAirportWindVector(pos.x, pos.y)
+                wind.windVectorPx = MetarTools.getClosestAirportWindVector(pos.x, pos.y)
             }
         }
     }

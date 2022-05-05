@@ -44,7 +44,7 @@ class DataSystem: EntitySystem() {
                     val radarData = get(RadarData.mapper) ?: return@apply
                     val cmdTarget = get(CommandTarget.mapper) ?: return@apply
                     val datatag = get(Datatag.mapper) ?: return@apply
-                    DatatagTools.updateText(datatag, DatatagTools.getNewLabelText(aircraftInfo, radarData, cmdTarget, get(AffectedByWind.mapper)))
+                    DatatagTools.updateText(datatag, DatatagTools.getNewLabelText(aircraftInfo, radarData, cmdTarget, get(CommandRoute.mapper), get(AffectedByWind.mapper)))
                 }
             }
             radarDataTimer -= Variables.RADAR_REFRESH_INTERVAL_S

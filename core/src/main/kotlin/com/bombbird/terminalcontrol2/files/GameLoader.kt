@@ -270,7 +270,7 @@ object GameLoader {
         if (approach.missedLegs.legs.isNotEmpty()) {
             Gdx.app.log("GameLoader", "Multiple missed approach procedures for approach: ${approach.entity[ApproachInfo.mapper]?.approachName}")
         }
-        approach.missedLegs.extendRoute(parseLegs(data.subList(1, data.size), Route.Leg.APP))
+        approach.missedLegs.extendRoute(parseLegs(data.subList(1, data.size), Route.Leg.MISSED_APP))
     }
 
     /** Parse the given [data] into a [SidStar.SID], and adds it to the supplied [airport]'s [SIDChildren] component
@@ -352,7 +352,7 @@ object GameLoader {
         for (part in data) {
             when (part) {
                 "INITCLIMB", "HDNG", "WYPT", "HOLD" -> {
-                    parseLeg(legType, dataStream, flightPhase)?.apply { legArray.addLeg(this) }
+                    parseLeg(legType, dataStream, flightPhase)?.apply { legArray.legs.add(this) }
                     legType = part
                     dataStream = ""
                 }
@@ -364,7 +364,7 @@ object GameLoader {
                 }
             }
         }
-        parseLeg(legType, dataStream, flightPhase)?.apply { legArray.addLeg(this) }
+        parseLeg(legType, dataStream, flightPhase)?.apply { legArray.legs.add(this) }
 
         return legArray
     }
@@ -409,7 +409,7 @@ object GameLoader {
                 return Route.WaypointLeg(wptName, maxAlt, minAlt, maxSpd, legActive = true, altRestrActive = true, spdRestrActive = true, flyOver, turnDir, flightPhase)
             }
             "HOLD" -> {
-                return Route.HoldLeg(wptRegex.find(data)?.groupValues?.get(1) ?: return null, null, null, null, 360, 5)
+                return Route.HoldLeg(wptRegex.find(data)?.groupValues?.get(1) ?: return null, null, null, null, 360, 5, CommandTarget.TURN_RIGHT)
             }
             else -> {
                 if (legType.isNotEmpty()) Gdx.app.log("GameLoader", "Unknown leg type: $legType")

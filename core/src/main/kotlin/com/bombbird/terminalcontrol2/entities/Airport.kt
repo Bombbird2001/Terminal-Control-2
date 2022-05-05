@@ -142,7 +142,7 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
             visibilityM = serialisedMetar.visibilityM
             ceilingHundredFtAGL = serialisedMetar.ceilingFtAGL
             windshear = serialisedMetar.windshear
-            MetarTools.updateWindVector(windVector, windHeadingDeg, windSpeedKt)
+            MetarTools.updateWindVector(windVectorPx, windHeadingDeg, windSpeedKt)
         }
     }
 

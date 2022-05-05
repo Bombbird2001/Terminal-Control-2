@@ -21,7 +21,7 @@ data class RunwayInfo(var rwyId: Byte = 0, var rwyName: String = "", var lengthM
 
 /** Component for tagging airport METAR information */
 data class MetarInfo(var realLifeIcao: String = "", var letterCode: Char? = null, var rawMetar: String? = null, var windHeadingDeg: Short = 360, var windSpeedKt: Short = 0, var windGustKt: Short = 0, var visibilityM: Short = 10000, var ceilingHundredFtAGL: Short? = null, var windshear: String = ""): Component {
-    val windVector = Vector2()
+    val windVectorPx = Vector2()
     companion object: Mapper<MetarInfo>()
 }
 

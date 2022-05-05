@@ -11,6 +11,7 @@ import com.bombbird.terminalcontrol2.utilities.MathTools
 import com.bombbird.terminalcontrol2.utilities.Pronounceable
 import ktx.ashley.entity
 import ktx.ashley.get
+import ktx.ashley.plusAssign
 import ktx.ashley.with
 import ktx.collections.GdxArray
 import kotlin.math.roundToInt
@@ -138,11 +139,11 @@ abstract class Approach(name: String, runwayId: Byte, tower: String, towerFreq: 
                 timeRestriction: Byte): Approach(name, runwayId, tower, towerFreq, timeRestriction = timeRestriction) {
         init {
             entity.apply {
-                add(Position(posX, posY))
-                add(Direction(Vector2(Vector2.Y).rotateDeg(180 - (heading - Variables.MAG_HDG_DEV))))
-                add(Localiser(locDistNm))
-                add(GlideSlope(gsAngle, gsOffsetNm, gsMaxAlt))
-                add(Minimums(decisionAlt, rvr))
+                this += Position(posX, posY)
+                this += Direction(Vector2(Vector2.Y).rotateDeg(180 - (heading - Variables.MAG_HDG_DEV)))
+                this += Localiser(locDistNm)
+                this += GlideSlope(gsAngle, gsOffsetNm, gsMaxAlt)
+                this += Minimums(decisionAlt, rvr)
             }
         }
 
@@ -187,12 +188,12 @@ abstract class Approach(name: String, runwayId: Byte, tower: String, towerFreq: 
                        timeRestriction: Byte): Approach(name, runwayId, tower, towerFreq, timeRestriction = timeRestriction) {
         init {
             entity.apply {
-                add(Position(posX, posY))
-                add(Direction(Vector2(Vector2.Y).rotateDeg(180 - (heading - Variables.MAG_HDG_DEV))))
-                add(Localiser(locDistNm))
-                add(Minimums(decisionAlt, rvr))
-                add(Offset(centerlineInterceptDist))
-                add(StepDown(steps))
+                this += Position(posX, posY)
+                this += Direction(Vector2(Vector2.Y).rotateDeg(180 - (heading - Variables.MAG_HDG_DEV)))
+                this += Localiser(locDistNm)
+                this += Minimums(decisionAlt, rvr)
+                this += Offset(centerlineInterceptDist)
+                this += StepDown(steps)
             }
         }
 

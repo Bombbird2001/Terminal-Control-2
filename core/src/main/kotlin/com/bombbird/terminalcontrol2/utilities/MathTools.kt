@@ -1,8 +1,8 @@
 package com.bombbird.terminalcontrol2.utilities
 
-import kotlin.math.atan2
-import kotlin.math.cos
-import kotlin.math.sin
+import com.badlogic.gdx.math.MathUtils
+import com.bombbird.terminalcontrol2.components.CommandTarget
+import kotlin.math.*
 
 /** Game specific math tools for use */
 object MathTools {
@@ -128,20 +128,25 @@ object MathTools {
         return 90 - origDeg
     }
 
+    /** Modulates the heading such that 0 < [hdg] <= 360 */
+    fun modulateHeading(hdg: Float): Float {
+        return hdg - floor((hdg - 0.0001f) / 360) * 360
+    }
+
     /** Calculates the effective heading difference (i.e. how much the aircraft needs to turn through) given [initHdg], [targetHdg] and [turnDir] */
     fun findDeltaHeading(initHdg: Float, targetHdg: Float, turnDir: Byte): Float {
         var diff = targetHdg - initHdg
         when (turnDir) {
-            0.toByte() -> {
+            CommandTarget.TURN_DEFAULT -> {
                 diff %= 360
                 if (diff > 180) diff -= 360
                 else if (diff <= -180) diff += 360
             }
-            (-1).toByte() -> {
+            CommandTarget.TURN_LEFT -> {
                 diff %= 360
                 if (diff > 0) diff -= 360
             }
-            1.toByte() -> {
+            CommandTarget.TURN_RIGHT -> {
                 diff %= 360
                 if (diff < 0) diff += 360
             }
@@ -192,5 +197,16 @@ object MathTools {
     /** Calculates the required track to go from initial point with x, y to destination point with destX, destY  */
     fun getRequiredTrack(x: Int, y: Int, destX: Int, destY: Int): Float {
         return getRequiredTrack((destX - x).toFloat(), (destY - y).toFloat())
+    }
+
+    /** Calculates the distance, in px, prior to reaching a point required to turn through a heading of [deltaHeading], given the
+     * [turnRateDps] and [groundSpeedPxps] of the aircraft
+     *
+     * A positive and negative value of [deltaHeading] with the same magnitude should return the same result
+     * */
+    fun findTurnDistance(deltaHeading: Float, turnRateDps: Float, groundSpeedPxps: Float): Float {
+        val radius = groundSpeedPxps / (MathUtils.degreesToRadians * turnRateDps)
+        val halfTheta = (180 - abs(deltaHeading)) / 2f
+        return max((radius / tan(Math.toRadians(halfTheta.toDouble()))).toFloat() + 8, 3f)
     }
 }

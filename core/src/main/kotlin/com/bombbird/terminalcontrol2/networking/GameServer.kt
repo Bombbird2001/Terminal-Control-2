@@ -7,6 +7,7 @@ import com.bombbird.terminalcontrol2.entities.*
 import com.bombbird.terminalcontrol2.files.GameLoader
 import com.bombbird.terminalcontrol2.global.Constants
 import com.bombbird.terminalcontrol2.global.Variables
+import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.systems.AISystem
 import com.bombbird.terminalcontrol2.systems.LowFreqUpdate
 import com.bombbird.terminalcontrol2.systems.PhysicsSystem
@@ -17,6 +18,7 @@ import com.esotericsoftware.kryonet.Connection
 import com.esotericsoftware.kryonet.Listener
 import com.esotericsoftware.kryonet.Server
 import ktx.ashley.get
+import ktx.ashley.plusAssign
 import ktx.collections.GdxArray
 import ktx.collections.GdxArrayMap
 import java.util.concurrent.atomic.AtomicBoolean
@@ -76,18 +78,19 @@ class GameServer {
         val rwy = airports[0]?.entity?.get(RunwayChildren.mapper)?.rwyMap?.get(0)
         val rwyPos = rwy?.entity?.get(Position.mapper)
         aircraft.put("SHIBA2", Aircraft("SHIBA2", rwyPos?.x ?: 10f, rwyPos?.y ?: -10f, rwy?.entity?.get(Altitude.mapper)?.altitudeFt ?: 108f, FlightType.DEPARTURE, false).apply {
-            entity[Direction.mapper]?.trackUnitVector?.rotateDeg((rwy?.entity?.get(Direction.mapper)?.trackUnitVector?.angleDeg() ?: 40.93f) - 90) // Runway 05R heading
+            entity[Direction.mapper]?.trackUnitVector?.rotateDeg((rwy?.entity?.get(Direction.mapper)?.trackUnitVector?.angleDeg() ?: 40.92f) - 90) // Runway 05L heading
             // Calculate headwind component for takeoff
             val headwind = entity[Altitude.mapper]?.let{ alt -> entity[Direction.mapper]?.let { dir -> entity[Position.mapper]?.let { pos ->
                 val wind = MetarTools.getClosestAirportWindVector(pos.x, pos.y)
                 PhysicsTools.calculateIASFromTAS(alt.altitudeFt, MathTools.pxpsToKt(wind.dot(dir.trackUnitVector)))
             }}} ?: 0f
-            entity.add(TakeoffRoll(PhysicsTools.calculateRequiredAcceleration(0, ((entity[AircraftInfo.mapper]?.aircraftPerf?.vR ?: 0) + headwind).toInt().toShort(), ((rwy?.entity?.get(RunwayInfo.mapper)?.lengthM ?: 3800) - 1000) * MathUtils.random(0.75f, 1f))))
+            entity += TakeoffRoll(PhysicsTools.calculateRequiredAcceleration(0, ((entity[AircraftInfo.mapper]?.aircraftPerf?.vR ?: 0) + headwind).toInt().toShort(), ((rwy?.entity?.get(RunwayInfo.mapper)?.lengthM ?: 3800) - 1000) * MathUtils.random(0.75f, 1f)))
             entity[CommandTarget.mapper]?.apply {
                 targetAltFt = 4000f
                 targetIasKt = ((entity[AircraftInfo.mapper]?.aircraftPerf?.vR ?: 160) + MathUtils.random(15, 20)).toShort()
                 targetHdgDeg = 49f
             }
+            entity += CommandRoute("HICAL1C", airports[0]?.entity?.get(SIDChildren.mapper)?.sidMap?.get("HICAL1C")?.getRandomSIDRouteForRunway("05L") ?: Route(), Route())
         })
 
         engine.addSystem(PhysicsSystem())
@@ -128,15 +131,12 @@ class GameServer {
 
             override fun connected(connection: Connection?) {
                 // TODO Handle connections - send initial data and broadcast message if needed
-                connection?.sendTCP("This is a test message")
-                connection?.sendTCP(SerialisationRegistering.InitialLoadData(
-                    sectors.map { it.getSerialisableObject() }.toTypedArray(),
-                    aircraft.values().map { it.getSerialisableObject() }.toTypedArray(),
-                    airports.values().map { it.getSerialisableObject() }.toTypedArray(),
-                    waypoints.values.map { it.getSerialisableObject() }.toTypedArray(),
-                    minAltSectors.map { it.getSerialisableObject() }.toTypedArray(),
-                    shoreline.map { it.getSerialisableObject() }.toTypedArray()
-                ))
+                connection?.sendTCP(SerialisationRegistering.InitialSectorData(sectors.map { it.getSerialisableObject() }.toTypedArray()))
+                connection?.sendTCP(SerialisationRegistering.InitialAircraftData(aircraft.values().map { it.getSerialisableObject() }.toTypedArray()))
+                connection?.sendTCP(SerialisationRegistering.AirportData(airports.values().map { it.getSerialisableObject() }.toTypedArray()))
+                connection?.sendTCP(SerialisationRegistering.WaypointData(waypoints.values.map { it.getSerialisableObject() }.toTypedArray()))
+                connection?.sendTCP(SerialisationRegistering.MinAltData(minAltSectors.map { it.getSerialisableObject() }.toTypedArray()))
+                connection?.sendTCP(SerialisationRegistering.ShorelineData(shoreline.map { it.getSerialisableObject() }.toTypedArray()))
             }
         })
     }
@@ -201,8 +201,6 @@ class GameServer {
                 if (newTime > 24) newTime -= 1000 / Constants.SERVER_UPDATE_RATE
                 Thread.sleep(newTime)
             } else Thread.sleep(nextFrameTime.roundToLong())
-
-            // Thread.sleep(nextFrameTime.roundToLong())
         }
     }
 

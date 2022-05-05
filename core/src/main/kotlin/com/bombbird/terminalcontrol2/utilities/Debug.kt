@@ -9,6 +9,8 @@ import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.Variables
 import ktx.ashley.allOf
 import ktx.ashley.get
+import ktx.ashley.plusAssign
+import ktx.ashley.remove
 import ktx.collections.toGdxArray
 import kotlin.math.roundToInt
 
@@ -84,10 +86,10 @@ object Debug {
                     println("${mva[MinAltSectorInfo.mapper]?.minAltFt} ${this.map { MathTools.pxToNm(it) }.toGdxArray()}")
                     mva[SRColor.mapper]?.apply {
                         color = if (color == Color.GRAY) {
-                            mva.add(RenderLast())
+                            mva += RenderLast()
                             Color.ORANGE
                         } else {
-                            mva.remove(RenderLast::class.java)
+                            mva.remove<RenderLast>()
                             Color.GRAY
                         }
                     }

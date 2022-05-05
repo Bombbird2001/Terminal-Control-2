@@ -13,7 +13,7 @@ object HttpRequest {
     private val JSON_MEDIA_TYPE: MediaType = "application/json; charset=utf-8".toMediaType()
     private val client = OkHttpClient()
 
-    /** Sends a HTTP request to the METAR server, with the [reqString] query and [retry] which denotes whether the program
+    /** Sends an HTTP request to the METAR server, with the [reqString] query and [retry] which denotes whether the program
      * should try another request in case of failure
      * */
     fun sendMetarRequest(reqString: String, retry: Boolean) {

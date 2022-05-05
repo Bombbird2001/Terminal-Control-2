@@ -79,7 +79,7 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
     var selectedAircraft: Aircraft? = null
 
     // Networking client
-    val client = Client(Constants.WRITE_BUFFER_SIZE, Constants.READ_BUFFER_SIZE)
+    val client = Client(Constants.CLIENT_WRITE_BUFFER_SIZE, Constants.CLIENT_READ_BUFFER_SIZE)
 
     // Slow update timer
     var slowUpdateTimer = 1f
@@ -88,35 +88,25 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
         if (true) Constants.GAME.gameServer = GameServer().apply { initiateServer() } // TODO True if single-player or host of multiplayer, false otherwise
         SerialisationRegistering.registerAll(client.kryo)
         client.start()
-        while (true) {
-            try {
-                client.connect(5000, connectionHost, Variables.TCP_PORT, Variables.UDP_PORT)
-                break
-            } catch (_: IOException) {
-                // Workaround for strange behaviour on some devices where the 5000ms timeout is ignored,
-                // an IOException is thrown instantly as server has not started up
-                Thread.sleep(1000)
-            }
-        }
         client.addListener(object: Listener {
-            override fun received(connection: Connection?, `object`: Any?) {
+            override fun received(connection: Connection?, obj: Any?) {
                 // TODO Handle data receipts
                 Gdx.app.postRunnable {
-                    (`object` as? SerialisationRegistering.FastUDPData)?.apply {
+                    (obj as? String)?.apply {
+                        println(this)
+                    } ?: (obj as? SerialisationRegistering.FastUDPData)?.apply {
                         aircraft.forEach {
                             this@RadarScreen.aircraft[it.icaoCallsign]?.apply { updateFromUDPData(it) }
                         }
-                    } ?: (`object` as? SerialisationRegistering.InitialLoadData)?.apply {
-                        sectors.forEach {
-                            Sector.fromSerialisedObject(it)
-                        }
-                        aircraft.forEach {
-                            Aircraft.fromSerialisedObject(it).apply {
-                                entity[AircraftInfo.mapper]?.icaoCallsign?.let { callsign ->
-                                    this@RadarScreen.aircraft.put(callsign, this)
-                                }
+                    } ?: (obj as? SerialisationRegistering.InitialSectorData)?.sectors?.onEach {
+                        Sector.fromSerialisedObject(it)
+                    } ?: (obj as? SerialisationRegistering.InitialAircraftData)?.aircraft?.onEach {
+                        Aircraft.fromSerialisedObject(it).apply {
+                            entity[AircraftInfo.mapper]?.icaoCallsign?.let { callsign ->
+                                this@RadarScreen.aircraft.put(callsign, this)
                             }
                         }
+                    } ?: (obj as? SerialisationRegistering.AirportData)?.apply {
                         airports.forEach {
                             Airport.fromSerialisedObject(it).apply {
                                 entity[AirportInfo.mapper]?.arptId?.let { id ->
@@ -127,21 +117,18 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
                                 // Debug.printAirportApproaches(entity)
                             }
                         }
-                        waypoints.forEach {
-                            Waypoint.fromSerialisedObject(it).apply {
-                                entity[WaypointInfo.mapper]?.wptId?.let { id ->
-                                    this@RadarScreen.waypoints[id] = this
-                                }
+                        uiPane.updateMetarInformation()
+                    } ?: (obj as? SerialisationRegistering.WaypointData)?.waypoints?.onEach {
+                        Waypoint.fromSerialisedObject(it).apply {
+                            entity[WaypointInfo.mapper]?.wptId?.let { id ->
+                                this@RadarScreen.waypoints[id] = this
                             }
                         }
-                        minAltSectors.forEach {
-                            MinAltSector.fromSerialisedObject(it)
-                        }
-                        shoreline.forEach {
-                            Shoreline.fromSerialisedObject(it)
-                        }
-                        uiPane.updateMetarInformation()
-                    } ?: (`object` as? SerialisationRegistering.MetarData)?.apply {
+                    } ?: (obj as? SerialisationRegistering.MinAltData)?.minAltSectors?.onEach {
+                        MinAltSector.fromSerialisedObject(it)
+                    } ?: (obj as? SerialisationRegistering.ShorelineData)?.shoreline?.onEach {
+                        Shoreline.fromSerialisedObject(it)
+                    } ?: (obj as? SerialisationRegistering.MetarData)?.apply {
                         metars.forEach {
                             airport[it.arptId]?.updateFromSerialisedMetar(it)
                         }
@@ -150,6 +137,16 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
                 }
             }
         })
+        while (true) {
+            try {
+                client.connect(5000, connectionHost, Variables.TCP_PORT, Variables.UDP_PORT)
+                break
+            } catch (_: IOException) {
+                // Workaround for strange behaviour on some devices where the 5000ms timeout is ignored,
+                // an IOException is thrown instantly as server has not started up
+                Thread.sleep(1000)
+            }
+        }
 
         // Default zoom is set so that a full 100nm by 100nm square is visible (2500px x 2500px)
         (radarDisplayStage.camera as OrthographicCamera).apply {

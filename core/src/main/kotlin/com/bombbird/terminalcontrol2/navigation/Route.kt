@@ -1,8 +1,10 @@
 package com.bombbird.terminalcontrol2.navigation
 
 import com.bombbird.terminalcontrol2.components.CommandTarget
+import com.bombbird.terminalcontrol2.components.Position
 import com.bombbird.terminalcontrol2.components.WaypointInfo
 import com.bombbird.terminalcontrol2.global.Constants
+import com.bombbird.terminalcontrol2.utilities.MathTools
 import ktx.ashley.get
 import ktx.collections.GdxArray
 
@@ -22,14 +24,28 @@ class Route() {
         for (leg in newLegs) legs.add(leg)
     }
 
-    /** Adds a new leg to the leg array */
-    fun addLeg(leg: Leg) {
-        legs.add(leg)
-    }
-
-    /** Adds all the legs in the provided [route] to thee end of the leg array */
+    /** Adds all the legs in the provided [route] to the end of the leg array */
     fun extendRoute(route: Route) {
         legs.addAll(route.legs)
+    }
+
+    /** Returns the track and turn direction from the first to second waypoint, or null if there is no second waypoint leg */
+    fun findNextWptLegTrackAndDirection(): Pair<Float, Byte>? {
+        if (legs.size < 2) return null
+        (legs[0] as? WaypointLeg)?.let { wpt1 -> (legs[1] as? WaypointLeg)?.let { wpt2 ->
+            val w1 = Constants.GAME.gameServer?.waypoints?.get(wpt1.wptId)?.entity?.get(Position.mapper) ?: return null
+            val w2 = Constants.GAME.gameServer?.waypoints?.get(wpt2.wptId)?.entity?.get(Position.mapper) ?: return null
+            return Pair(MathTools.getRequiredTrack(w1.x, w1.y, w2.x, w2.y), wpt2.turnDir)
+        }} ?: return null
+    }
+
+    /** Gets the speed restriction active at the active leg in the current departure route
+     *
+     * Returns the max speed, or null if a speed restriction does not exist
+     * */
+    fun getMaxSpdAtCurrLegDep(): Short? {
+        for (i in 0 until legs.size) return (legs[i] as? WaypointLeg)?.maxSpdKt ?: continue
+        return null
     }
 
     /** Debug string representation */
@@ -124,16 +140,16 @@ class Route() {
      *
      * Optional declaration of [phase]
      * */
-    class HoldLeg(val wptId: Short, val maxAltFt: Int?, val minAltFt: Int?, val maxSpdKt: Short?, val inboundHdg: Short, val legDist: Byte, phase: Byte = NORMAL): Leg(phase) {
+    class HoldLeg(val wptId: Short, val maxAltFt: Int?, val minAltFt: Int?, val maxSpdKt: Short?, val inboundHdg: Short, val legDist: Byte, val turnDir: Byte, phase: Byte = NORMAL): Leg(phase) {
 
         // No-arg constructor for Kryo serialisation
-        constructor(): this(0, null, null, null, 360, 5)
+        constructor(): this(0, null, null, null, 360, 5, CommandTarget.TURN_RIGHT)
 
         /** Secondary constructor using the name of a waypoint instead of its ID - use only when loading from internal game files */
         constructor(wptName: String, maxAltFt: Int?, minAltFt: Int?, maxSpdKt: Short?, inboundHdg: Short, legDist: Byte,
-                    phase: Byte = NORMAL): this(Constants.GAME.gameServer?.let {
+                    turnDir: Byte, phase: Byte = NORMAL): this(Constants.GAME.gameServer?.let {
             it.waypoints[it.updatedWaypointMapping[wptName]]?.entity?.get(WaypointInfo.mapper)?.wptId ?: -1
-        } ?: throw RuntimeException("gameServer is non-existent when creating route in GameLoader context"), maxAltFt, minAltFt, maxSpdKt, inboundHdg, legDist, phase)
+        } ?: throw RuntimeException("gameServer is non-existent when creating route in GameLoader context"), maxAltFt, minAltFt, maxSpdKt, inboundHdg, legDist, turnDir, phase)
 
         /** Debug string representation */
         override fun toString(): String {

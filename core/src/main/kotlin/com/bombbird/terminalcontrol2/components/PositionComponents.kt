@@ -84,7 +84,7 @@ data class IndicatedAirSpeed(var iasKt: Float = 0f): Component {
  *
  * Entities tagged with [TakeoffRoll] or [LandingRoll] will also not be affected by wind even if this component is tagged
  * */
-class AffectedByWind(var windVector: Vector2 = Vector2()): Component {
+class AffectedByWind(var windVectorPx: Vector2 = Vector2()): Component {
     companion object: Mapper<AffectedByWind>()
 }
 

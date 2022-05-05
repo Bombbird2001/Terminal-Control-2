@@ -102,7 +102,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
                                 val icaoCallsign: String = "",
                                 val directionX: Float = 0f, val directionY: Float = 0f,
                                 val speedKts: Float = 0f, val vertSpdFpm: Float = 0f, val angularSpdDps: Float = 0f,
-                                val targetAltFt: Short = 0, val targetIasKt: Short = 0)
+                                val targetHdgDeg: Short = 0, val targetAltFt: Short = 0, val targetIasKt: Short = 0)
 
     /** Gets a [SerialisedAircraftUDP] from current state */
     fun getSerialisableObjectUDP(): SerialisedAircraftUDP {
@@ -119,7 +119,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
                 acInfo.icaoCallsign,
                 direction.trackUnitVector.x, direction.trackUnitVector.y,
                 speed.speedKts, speed.vertSpdFpm, speed.angularSpdDps,
-                (cmdTarget.targetAltFt / 100).roundToInt().toShort(), cmdTarget.targetIasKt
+                cmdTarget.targetHdgDeg.toInt().toShort(), (cmdTarget.targetAltFt / 100).roundToInt().toShort(), cmdTarget.targetIasKt
             )
         }
     }
@@ -143,6 +143,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
                 angularSpdDps = data.angularSpdDps
             }
             get(CommandTarget.mapper)?.apply {
+                targetHdgDeg = data.targetHdgDeg.toFloat()
                 targetAltFt = data.targetAltFt * 100f
                 targetIasKt = data.targetIasKt
             }
