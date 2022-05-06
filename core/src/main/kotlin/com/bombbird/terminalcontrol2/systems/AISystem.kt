@@ -52,7 +52,7 @@ class AISystem: EntitySystem() {
                                 is Route.VectorLeg -> CommandVector(leg.heading)
                                 is Route.InitClimbLeg -> CommandInitClimb(leg.heading, leg.minAltFt)
                                 is Route.WaypointLeg -> CommandDirect(leg.wptId, leg.maxAltFt, leg.minAltFt, leg.maxSpdKt, leg.flyOver, leg.turnDir)
-                                is Route.HoldLeg -> CommandHold(leg.wptId, leg.maxAltFt, leg.minAltFt, leg.maxSpdKt, leg.inboundHdg, leg.legDist, leg.turnDir)
+                                is Route.HoldLeg -> CommandHold(leg.wptId, leg.maxAltFt, leg.minAltFt, leg.maxSpdKtLower, leg.inboundHdg, leg.legDist, leg.turnDir)
                                 else -> {
                                     Gdx.app.log("AISystem", "${leg::class} not allowed in departure")
                                     return@let
@@ -172,7 +172,7 @@ class AISystem: EntitySystem() {
                     is Route.VectorLeg -> CommandVector(it.heading)
                     is Route.InitClimbLeg -> CommandInitClimb(it.heading, it.minAltFt)
                     is Route.WaypointLeg -> CommandDirect(it.wptId, it.maxAltFt, it.minAltFt, it.maxSpdKt, it.flyOver, it.turnDir)
-                    is Route.HoldLeg -> CommandHold(it.wptId, it.maxAltFt, it.minAltFt, it.maxSpdKt, it.inboundHdg, it.legDist, it.turnDir)
+                    is Route.HoldLeg -> CommandHold(it.wptId, it.maxAltFt, it.minAltFt, it.maxSpdKtLower, it.inboundHdg, it.legDist, it.turnDir)
                     else -> {
                         removeIndex(0)
                         return@let

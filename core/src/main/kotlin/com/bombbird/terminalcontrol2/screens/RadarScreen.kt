@@ -72,6 +72,9 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
     val waypoints = HashMap<Short, Waypoint>()
     val updatedWaypointMapping = HashMap<String, Short>()
 
+    // Published hold map for access
+    val publishedHolds = GdxArrayMap<String, PublishedHold>(Constants.PUBLISHED_HOLD_SIZE)
+
     // Aircraft map for access during UDP updates
     val aircraft = GdxArrayMap<String, Aircraft>(Constants.AIRCRAFT_SIZE)
 
@@ -122,6 +125,12 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
                         Waypoint.fromSerialisedObject(it).apply {
                             entity[WaypointInfo.mapper]?.wptId?.let { id ->
                                 this@RadarScreen.waypoints[id] = this
+                            }
+                        }
+                    } ?: (obj as? SerialisationRegistering.PublishedHoldData)?.publishedHolds?.onEach {
+                        PublishedHold.fromSerialisedObject(it).apply {
+                            waypoints[entity[PublishedHoldInfo.mapper]?.wptId]?.entity?.get(WaypointInfo.mapper)?.wptName?.let {wptName ->
+                                this@RadarScreen.publishedHolds.put(wptName, this)
                             }
                         }
                     } ?: (obj as? SerialisationRegistering.MinAltData)?.minAltSectors?.onEach {

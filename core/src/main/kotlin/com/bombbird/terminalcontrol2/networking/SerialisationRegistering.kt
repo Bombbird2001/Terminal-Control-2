@@ -24,6 +24,7 @@ object SerialisationRegistering {
             register(InitialAircraftData::class.java)
             register(AirportData::class.java)
             register(WaypointData::class.java)
+            register(PublishedHoldData::class.java)
             register(MinAltData::class.java)
             register(ShorelineData::class.java)
             register(Array<Sector.SerialisedSector>::class.java)
@@ -38,6 +39,8 @@ object SerialisationRegistering {
             register(Airport.SerialisedRunwayMapping::class.java)
             register(Array<Waypoint.SerialisedWaypoint>::class.java)
             register(Waypoint.SerialisedWaypoint::class.java)
+            register(Array<PublishedHold.SerialisedPublishedHold>::class.java)
+            register(PublishedHold.SerialisedPublishedHold::class.java)
             register(Array<MinAltSector.SerialisedMinAltSector>::class.java)
             register(MinAltSector.SerialisedMinAltSector::class.java)
             register(Array<Shoreline.SerialisedShoreline>::class.java)
@@ -97,6 +100,9 @@ object SerialisationRegistering {
 
     /** Class representing waypoint data sent on initial connection, loading of the game on a client */
     class WaypointData(var waypoints: Array<Waypoint.SerialisedWaypoint> = arrayOf())
+
+    /** Class representing published hold data sent on initial connection, loading of the game on a client */
+    class PublishedHoldData(var publishedHolds: Array<PublishedHold.SerialisedPublishedHold> = arrayOf())
 
     /** Class representing minimum altitude sector data sent on initial connection, loading of the game on a client */
     class MinAltData(val minAltSectors: Array<MinAltSector.SerialisedMinAltSector> = arrayOf())

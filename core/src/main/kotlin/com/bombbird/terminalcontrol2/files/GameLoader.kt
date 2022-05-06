@@ -54,6 +54,7 @@ object GameLoader {
                     else -> {
                         when (parseMode) {
                             "WAYPOINTS" -> parseWaypoint(lineData, gameServer)
+                            "HOLDS" -> parseHold(lineData, gameServer)
                             "MIN_ALT_SECTORS" -> parseMinAltSector(lineData, gameServer)
                             "SHORELINE" -> parseShoreline(lineData, gameServer)
                             "RWYS" -> parseRunway(lineData, currAirport ?: continue)
@@ -147,6 +148,36 @@ object GameLoader {
             polygon.add(MathTools.nmToPx(pos[1].toFloat()).toInt().toShort())
         }
         gameServer.shoreline.add(Shoreline(polygon.toShortArray()))
+    }
+
+    /** Parse the given [data] into a [PublishedHold], and adds it to [GameServer.shoreline] */
+    private fun parseHold(data: List<String>, gameServer: GameServer) {
+        val wptName = data[0]
+        val wptId = gameServer.updatedWaypointMapping[wptName] ?: run {
+            Gdx.app.log("GameLoader", "Unknown hold waypoint $wptName")
+            return
+        }
+        val inboundHdg = data[1].toShort()
+        val legDist = data[2].toByte()
+        val maxSpdLower = data[3].toShort()
+        val maxSpdHigher = data[4].toShort()
+        val dir = when (data[5]) {
+            "LEFT" -> CommandTarget.TURN_LEFT
+            "RIGHT" -> CommandTarget.TURN_RIGHT
+            else -> {
+                Gdx.app.log("GameLoader", "Unknown hold direction ${data[5]} for $wptName")
+                CommandTarget.TURN_RIGHT
+            }
+        }
+        var minAlt: Int? = null
+        var maxAlt: Int? = null
+        if (data.size >= 7) data[6].let {
+            val aboveAltRegex = "A(-?\\d+)".toRegex() // Altitude values of at least 1 digit, with "A" as a prefix
+            val belowAltRegex = "B(-?\\d+)".toRegex() // Altitude values of at least 1 digit, with "B" as a prefix
+            minAlt = aboveAltRegex.find(it)?.groupValues?.get(1)?.toInt()
+            maxAlt = belowAltRegex.find(it)?.groupValues?.get(1)?.toInt()
+        }
+        gameServer.publishedHolds.put(wptName, PublishedHold(wptId, maxAlt, minAlt, maxSpdLower, maxSpdHigher, inboundHdg, legDist, dir, false))
     }
 
     /** Parse the given [data] into an [Airport], and adds it to [GameServer.airports]
@@ -377,7 +408,7 @@ object GameLoader {
         val hdgRegex = " (\\d{1,3}) ".toRegex() // Heading values of 1 to 3 digits
         val atAltRegex = " (-?\\d+) ".toRegex() // Altitude values of at least 1 digit
         val aboveAltRegex = " A(-?\\d+) ".toRegex() // Altitude values of at least 1 digit, with "A" as a prefix
-        val belowAltRegex = " B(-?\\d+) ".toRegex()// Altitude values of at least 1 digit, with "B" as a prefix
+        val belowAltRegex = " B(-?\\d+) ".toRegex() // Altitude values of at least 1 digit, with "B" as a prefix
         val spdRegex = " S(\\d{3}) ".toRegex() // Speed values of 3 digits, with "S" as a prefix
         val wptRegex = " ([A-Z]{3}|[A-Z]{5}) ".toRegex() // Only waypoints with 3 or 5 letters allowed
         val foRegex = " FLYOVER ".toRegex() // For flyover waypoints
@@ -409,7 +440,7 @@ object GameLoader {
                 return Route.WaypointLeg(wptName, maxAlt, minAlt, maxSpd, legActive = true, altRestrActive = true, spdRestrActive = true, flyOver, turnDir, flightPhase)
             }
             "HOLD" -> {
-                return Route.HoldLeg(wptRegex.find(data)?.groupValues?.get(1) ?: return null, null, null, null, 360, 5, CommandTarget.TURN_RIGHT)
+                return Route.HoldLeg(wptRegex.find(data)?.groupValues?.get(1) ?: return null, null, null, 230, 240, 360, 5, CommandTarget.TURN_RIGHT)
             }
             else -> {
                 if (legType.isNotEmpty()) Gdx.app.log("GameLoader", "Unknown leg type: $legType")

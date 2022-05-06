@@ -75,6 +75,7 @@ object Constants {
     const val AIRPORT_SIZE = 6
     const val AIRCRAFT_SIZE = 35
     const val SECTOR_SIZE = 5
+    const val PUBLISHED_HOLD_SIZE = 30
 
     /** Zoom threshold to switch between small and large datatag fonts */
     const val DATATAG_ZOOM_THRESHOLD = 1.4f

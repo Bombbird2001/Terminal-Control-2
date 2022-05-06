@@ -50,6 +50,13 @@ data class WaypointInfo(var wptId: Short = 0, var wptName: String = "-----"): Co
     companion object: Mapper<WaypointInfo>()
 }
 
+/** Component for tagging a published hold procedure */
+data class PublishedHoldInfo(var wptId: Short = 0, var maxAltFt: Int? = null, var minAltFt: Int? = null,
+                             var maxSpdKtLower: Short = 230, var maxSpdKtHigher: Short = 240, var inboundHdgDeg: Short = 360, var legDistNm: Byte = 5,
+                             var turnDir: Byte = CommandTarget.TURN_RIGHT): Component {
+     companion object: Mapper<PublishedHoldInfo>()
+ }
+
 /** Component for tagging sector control information */
 data class Controllable(var sectorId: Byte = 0): Component {
     companion object: Mapper<Controllable>()

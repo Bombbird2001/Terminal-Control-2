@@ -140,21 +140,21 @@ class Route() {
      *
      * Optional declaration of [phase]
      * */
-    class HoldLeg(val wptId: Short, val maxAltFt: Int?, val minAltFt: Int?, val maxSpdKt: Short?, val inboundHdg: Short, val legDist: Byte, val turnDir: Byte, phase: Byte = NORMAL): Leg(phase) {
+    class HoldLeg(val wptId: Short, val maxAltFt: Int?, val minAltFt: Int?, val maxSpdKtLower: Short?, val maxSpdKtHigher: Short?, val inboundHdg: Short, val legDist: Byte, val turnDir: Byte, phase: Byte = NORMAL): Leg(phase) {
 
         // No-arg constructor for Kryo serialisation
-        constructor(): this(0, null, null, null, 360, 5, CommandTarget.TURN_RIGHT)
+        constructor(): this(0, null, null, 230, 240, 360, 5, CommandTarget.TURN_RIGHT)
 
         /** Secondary constructor using the name of a waypoint instead of its ID - use only when loading from internal game files */
-        constructor(wptName: String, maxAltFt: Int?, minAltFt: Int?, maxSpdKt: Short?, inboundHdg: Short, legDist: Byte,
+        constructor(wptName: String, maxAltFt: Int?, minAltFt: Int?, maxSpdKtLower: Short?, maxSpdKtHigher: Short?, inboundHdg: Short, legDist: Byte,
                     turnDir: Byte, phase: Byte = NORMAL): this(Constants.GAME.gameServer?.let {
             it.waypoints[it.updatedWaypointMapping[wptName]]?.entity?.get(WaypointInfo.mapper)?.wptId ?: -1
-        } ?: throw RuntimeException("gameServer is non-existent when creating route in GameLoader context"), maxAltFt, minAltFt, maxSpdKt, inboundHdg, legDist, turnDir, phase)
+        } ?: throw RuntimeException("gameServer is non-existent when creating route in GameLoader context"), maxAltFt, minAltFt, maxSpdKtLower, maxSpdKtHigher, inboundHdg, legDist, turnDir, phase)
 
         /** Debug string representation */
         override fun toString(): String {
             val wptName = Constants.GAME.gameServer?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName
-            return "$wptId $wptName HDG $inboundHdg LEG $legDist ${if (maxAltFt != null) "B$maxAltFt" else ""} ${if (minAltFt != null) "A$minAltFt" else ""} ${if (maxSpdKt != null) "S$maxSpdKt" else ""}"
+            return "$wptId $wptName HDG $inboundHdg LEG $legDist ${if (maxAltFt != null) "B$maxAltFt" else ""} ${if (minAltFt != null) "A$minAltFt" else ""} ${if (maxSpdKtLower != null) "S$maxSpdKtLower" else ""} ${if (maxSpdKtHigher != null) "S$maxSpdKtHigher" else ""}"
         }
     }
 }

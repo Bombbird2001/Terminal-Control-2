@@ -61,10 +61,16 @@ class GameServer {
      * */
     val waypoints = HashMap<Short, Waypoint>()
 
-    /** Maps [WaypointInfo.wptName] to the most updated [WaypointInfo.wptId]
+    /** Maps [WaypointInfo.wptName] to the most updated [WaypointInfo.wptId];
      * The new waypoint with the name will be chosen instead of the old one after the waypoint has "shifted"
      * */
     val updatedWaypointMapping = HashMap<String, Short>()
+
+    /** Maps [WaypointInfo.wptName] to the [PublishedHold]
+     *
+     * This map will map to the most updated published hold, since old holding legs are stored individually with the waypoint ID in the aircraft's [CommandRoute]
+     * */
+    val publishedHolds = GdxArrayMap<String, PublishedHold>(Constants.PUBLISHED_HOLD_SIZE)
 
     // var timeCounter = 0f
     // var frames = 0
@@ -135,6 +141,7 @@ class GameServer {
                 connection?.sendTCP(SerialisationRegistering.InitialAircraftData(aircraft.values().map { it.getSerialisableObject() }.toTypedArray()))
                 connection?.sendTCP(SerialisationRegistering.AirportData(airports.values().map { it.getSerialisableObject() }.toTypedArray()))
                 connection?.sendTCP(SerialisationRegistering.WaypointData(waypoints.values.map { it.getSerialisableObject() }.toTypedArray()))
+                connection?.sendTCP(SerialisationRegistering.PublishedHoldData(publishedHolds.values().map { it.getSerialisableObject() }.toTypedArray()))
                 connection?.sendTCP(SerialisationRegistering.MinAltData(minAltSectors.map { it.getSerialisableObject() }.toTypedArray()))
                 connection?.sendTCP(SerialisationRegistering.ShorelineData(shoreline.map { it.getSerialisableObject() }.toTypedArray()))
             }
