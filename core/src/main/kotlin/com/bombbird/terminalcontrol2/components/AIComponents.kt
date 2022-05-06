@@ -100,8 +100,9 @@ data class CommandDirect(var wptId: Short = 0, var maxAltFt: Int? = null, var mi
 }
 
 /** Component for tagging a holding leg an aircraft is flying */
-data class CommandHold(var wptId: Short = 0, val maxAltFt: Int? = null, val minAltFt: Int? = null, val maxSpdKt: Short? = null,
-                       val inboundHdg: Short = 360, val legDist: Byte = 5, val legDir: Byte = CommandTarget.TURN_RIGHT): Component {
+data class CommandHold(var wptId: Short = 0, var maxAltFt: Int? = null, var minAltFt: Int? = null, var maxSpdKt: Short? = null,
+                       var inboundHdg: Short = 360, var legDist: Byte = 5, var legDir: Byte = CommandTarget.TURN_RIGHT,
+                       var currentEntryProc: Byte = 0, var entryDone: Boolean = false, var oppositeTravelled: Boolean = false, var flyOutbound: Boolean = true): Component {
     companion object: Mapper<CommandHold>()
 }
 

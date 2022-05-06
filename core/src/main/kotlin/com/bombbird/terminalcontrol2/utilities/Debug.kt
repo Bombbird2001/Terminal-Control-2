@@ -51,7 +51,7 @@ object Debug {
                 val appInfo = appEntity[ApproachInfo.mapper]
                 println("${appInfo?.approachName} ${appInfo?.towerName} ${appInfo?.frequency}")
                 println((MathTools.convertWorldAndRenderDeg(appEntity[Direction.mapper]?.trackUnitVector?.angleDeg() ?: 0f) + 180 + Variables.MAG_HDG_DEV).roundToInt().toShort())
-                println(appEntity[Localiser.mapper]?.maxDistNm)
+                println(appEntity[Localizer.mapper]?.maxDistNm)
                 appEntity[GlideSlope.mapper]?.apply {
                     println("$glideAngle $offsetNm $maxInterceptAlt")
                 }

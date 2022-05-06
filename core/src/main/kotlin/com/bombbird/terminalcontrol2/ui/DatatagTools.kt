@@ -9,6 +9,7 @@ import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener
 import com.badlogic.gdx.scenes.scene2d.utils.DragListener
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.Constants
+import com.bombbird.terminalcontrol2.global.Variables
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.utilities.MathTools
 import ktx.ashley.get
@@ -121,6 +122,7 @@ object DatatagTools {
         val alt = (radarData.altitude.altitudeFt / 100).roundToInt()
         val vs = if (radarData.speed.vertSpdFpm > 150) '^' else if (radarData.speed.vertSpdFpm < -150) 'v' else '='
         val cmdAlt = (cmdTarget.targetAltFt / 100).roundToInt()
+        val hdg = (MathTools.convertWorldAndRenderDeg(radarData.direction.trackUnitVector.angleDeg()) + Variables.MAG_HDG_DEV).roundToInt()
         val cmdHdg = cmdTarget.targetHdgDeg.roundToInt()
         val clearedAlt = "=> Cleared alt"
         val groundSpd = (radarData.direction.trackUnitVector.times(radarData.speed.speedKts) + (affectedByWind?.windVectorPx?.times(MathTools.pxpsToKt(1f)) ?: Vector2())).len().roundToInt()
@@ -130,7 +132,7 @@ object DatatagTools {
         val sidStar = cmdRoute?.primaryName ?: ""
         labelText[0] = "$callsign $acInfo"
         labelText[1] = "$alt $vs $cmdAlt $clearedAlt"
-        labelText[2] = "$cmdHdg $directWpt $sidStar"
+        labelText[2] = "$hdg $cmdHdg $directWpt $sidStar"
         labelText[3] = "$groundSpd ${cmdTarget.targetIasKt}"
 
         return labelText

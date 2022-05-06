@@ -5,9 +5,11 @@ import com.badlogic.ashley.core.EntitySystem
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.math.MathUtils
 import com.bombbird.terminalcontrol2.components.*
+import com.bombbird.terminalcontrol2.global.Constants
 import com.bombbird.terminalcontrol2.global.Variables
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.utilities.MathTools
+import com.bombbird.terminalcontrol2.utilities.MathTools.byte
 import com.bombbird.terminalcontrol2.utilities.PhysicsTools
 import ktx.ashley.allOf
 import ktx.ashley.get
@@ -129,7 +131,7 @@ class AISystem: EntitySystem() {
                 val cmdDir = get(CommandDirect.mapper) ?: return@apply
                 val cmdRoute = get(CommandRoute.mapper) ?: return@apply
                 val pos = get(Position.mapper) ?: return@apply
-                val wpt = com.bombbird.terminalcontrol2.global.Constants.GAME.gameServer?.waypoints?.get(cmdDir.wptId)?.entity?.get(Position.mapper) ?: run {
+                val wpt = Constants.GAME.gameServer?.waypoints?.get(cmdDir.wptId)?.entity?.get(Position.mapper) ?: run {
                     Gdx.app.log("AISystem", "Unknown command direct waypoint with ID ${cmdDir.wptId}")
                     return@apply
                 }
@@ -137,30 +139,129 @@ class AISystem: EntitySystem() {
                 val dir = get(Direction.mapper) ?: return@apply
                 val ias = get(IndicatedAirSpeed.mapper) ?: return@apply
                 // Calculate required track from aircraft position to waypoint
-                var targetTrack = MathTools.getRequiredTrack(pos.x, pos.y, wpt.x, wpt.y).toDouble()
-                var groundSpeed = spd.speedKts // When winds are not taken into account
-                get(AffectedByWind.mapper)?.let { wind ->
-                    // Calculate angle difference required due to wind component
-                    val angle = 180.0 + MathTools.convertWorldAndRenderDeg(wind.windVectorPx.angleDeg()) - MathTools.convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg())
-                    val windSpdKts = MathTools.pxpsToKt(wind.windVectorPx.len())
-                    groundSpeed = sqrt(spd.speedKts.pow(2.0f) + windSpdKts.pow(2.0f) - 2 * spd.speedKts * windSpdKts * cos(Math.toRadians(angle))).toFloat()
-                    targetTrack -= asin(windSpdKts * sin(Math.toRadians(angle)) / groundSpeed) * MathUtils.radiansToDegrees
-                }
+                val trackAndGS = getPointTargetTrackAndGS(pos.x, pos.y, wpt.x, wpt.y, spd.speedKts, dir, get(AffectedByWind.mapper))
+                val targetTrack = trackAndGS.first
+                val groundSpeed = trackAndGS.second
                 // Set command target heading to target track + magnetic heading variation
-                cmdTarget.targetHdgDeg = MathTools.modulateHeading(targetTrack.toFloat() + Variables.MAG_HDG_DEV)
+                cmdTarget.targetHdgDeg = MathTools.modulateHeading(targetTrack + Variables.MAG_HDG_DEV)
 
                 // Calculate distance between aircraft and waypoint and check if aircraft should move to next leg
                 val deltaX = wpt.x - pos.x
                 val deltaY = wpt.y - pos.y
                 val nextWptLegTrack = cmdRoute.route.findNextWptLegTrackAndDirection()
                 val requiredDist = if (cmdDir.flyOver || nextWptLegTrack == null) 3f
-                else MathTools.findTurnDistance(MathTools.findDeltaHeading(targetTrack.toFloat(), nextWptLegTrack.first, nextWptLegTrack.second), if (ias.iasKt > 250) 1.5f else 3f, MathTools.ktToPxps(groundSpeed))
+                else MathTools.findTurnDistance(MathTools.findDeltaHeading(targetTrack, nextWptLegTrack.first, nextWptLegTrack.second), if (ias.iasKt > 250) 1.5f else 3f, MathTools.ktToPxps(groundSpeed))
                 if (requiredDist * requiredDist > deltaX * deltaX + deltaY * deltaY) {
                     remove<CommandDirect>()
                     setToNextRouteLeg(this)
                 }
             }
         }
+
+        // Update for holding leg
+        val holdFamily = allOf(CommandHold::class, CommandTarget::class, Position::class, Speed::class, Direction::class).get()
+        val hold = engine.getEntitiesFor(holdFamily)
+        for (i in 0 until hold.size()) {
+            hold[i]?.apply {
+                val cmdTarget = get(CommandTarget.mapper) ?: return@apply
+                val cmdHold = get(CommandHold.mapper) ?: return@apply
+                val pos = get(Position.mapper) ?: return@apply
+                val spd = get(Speed.mapper) ?: return@apply
+                val dir = get(Direction.mapper) ?: return@apply
+                val holdWpt = Constants.GAME.gameServer?.waypoints?.get(cmdHold.wptId)?.entity?.get(Position.mapper) ?: return@apply
+                val deltaX = holdWpt.x - pos.x
+                val deltaY = holdWpt.y - pos.y
+                val distPxFromWpt2 = deltaX * deltaX + deltaY + deltaY
+                if (cmdHold.currentEntryProc == 0.byte) {
+                    // Entry procedure has not been determined, calculate it
+                    cmdHold.currentEntryProc = getEntryProc(cmdTarget.targetHdgDeg, cmdHold.inboundHdg, cmdHold.legDir)
+                } else if (!cmdHold.entryDone) {
+                    // Entry procedure has been determined, but entry is not complete
+                        when (cmdHold.currentEntryProc) {
+                        1.byte -> {
+                            if (!cmdHold.oppositeTravelled) {
+                                // Fly opposite to inbound leg
+                                cmdTarget.targetHdgDeg = MathTools.modulateHeading(cmdHold.inboundHdg + 180f)
+                                val distToTurnPx = MathTools.nmToPx(cmdHold.legDist - 1)
+                                if (distPxFromWpt2 > distToTurnPx * distToTurnPx) cmdHold.oppositeTravelled = true // Opposite leg has been travelled
+                            } else {
+                                // Fly direct to waypoint
+                                cmdTarget.targetHdgDeg = getPointTargetTrackAndGS(pos.x, pos.y, holdWpt.x, holdWpt.y, spd.speedKts, dir, get(AffectedByWind.mapper)).first + Variables.MAG_HDG_DEV
+                                if (distPxFromWpt2 < 3 * 3) {
+                                    // Waypoint reached, entry complete, fly outbound leg
+                                    cmdHold.oppositeTravelled = false
+                                    cmdHold.entryDone = true
+                                    cmdHold.flyOutbound = true
+                                }
+                            }
+                            // Turn direction is opposite to the hold direction
+                            val reqTurnDir = (-cmdHold.legDir).toByte()
+                            // Maintain the turn direction until magnitude of deltaHeading is less than 10 degrees
+                            cmdTarget.turnDir = if (abs(MathTools.findDeltaHeading(MathTools.convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()),
+                                    cmdTarget.targetHdgDeg - Variables.MAG_HDG_DEV, reqTurnDir)) > 10) reqTurnDir
+                            else CommandTarget.TURN_DEFAULT
+                        }
+                        2.byte -> {
+                            // Fly 30 degrees off from the opposite of inbound leg, towards the outbound leg
+                            cmdTarget.targetHdgDeg = MathTools.modulateHeading(cmdHold.inboundHdg + cmdHold.legDir * 150f) // +150 degrees for right, -150 degrees for left
+                            val distToTurnPx = MathTools.nmToPx(cmdHold.legDist.toInt())
+                            if (distPxFromWpt2 > distToTurnPx * distToTurnPx) {
+                                // Entry complete, fly inbound leg
+                                cmdHold.entryDone = true
+                                cmdHold.flyOutbound = false
+                            }
+                        }
+                        3.byte -> {
+                            // Direct entry, fly outbound leg
+                            cmdHold.entryDone = true
+                            cmdHold.flyOutbound = true
+                        }
+                    }
+                } else {
+                    // Entry is complete, fly the inbound or outbound legs
+                    if (cmdHold.flyOutbound) {
+                        // Fly opposite heading of inbound leg
+                        cmdTarget.targetHdgDeg = MathTools.modulateHeading(cmdHold.inboundHdg + 180f)
+                        val distToTurnPx = MathTools.nmToPx(cmdHold.legDist.toInt())
+                        if (distPxFromWpt2 > distToTurnPx * distToTurnPx) cmdHold.flyOutbound = false // Outbound leg complete, fly inbound leg
+                    } else {
+                        // Fly an extended inbound track to the waypoint
+                        val legTrackRad = Math.toRadians(MathTools.convertWorldAndRenderDeg(cmdHold.inboundHdg.toFloat()) - Variables.MAG_HDG_DEV + 180.0)
+                        val targetDistPx = sqrt(distPxFromWpt2) - MathTools.nmToPx(0.5f)
+                        val targetX = holdWpt.x + cos(legTrackRad) * targetDistPx
+                        val targetY = holdWpt.y + sin(legTrackRad) * targetDistPx
+                        cmdTarget.targetHdgDeg = getPointTargetTrackAndGS(pos.x, pos.y, targetX.toFloat(), targetY.toFloat(), spd.speedKts, dir, get(AffectedByWind.mapper)).first + Variables.MAG_HDG_DEV
+                        if (distPxFromWpt2 < 3 * 3) cmdHold.flyOutbound = true // Waypoint reached, fly outbound leg
+                    }
+                    // Maintain the turn direction until magnitude of deltaHeading is less than 10 degrees
+                    cmdTarget.turnDir = if (abs(MathTools.findDeltaHeading(MathTools.convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()),
+                            cmdTarget.targetHdgDeg - Variables.MAG_HDG_DEV, cmdHold.legDir)) > 10) cmdHold.legDir
+                    else CommandTarget.TURN_DEFAULT
+                }
+            }
+        }
+    }
+
+    /** Returns a pair of floats, which contains the track that the plane needs to fly as well as its ground speed (accounted for [wind] if any)
+     *
+     * [x1], [y1] is the present position and [x2], [y2] is the target destination
+     *
+     * [speedKts] is the true airspeed of the aircraft
+     *
+     * [dir] is the [Direction] component of the aircraft
+     * */
+    private fun getPointTargetTrackAndGS(x1: Float, y1: Float, x2: Float, y2: Float, speedKts: Float, dir: Direction, wind: AffectedByWind?): Pair<Float, Float> {
+        var targetTrack = MathTools.getRequiredTrack(x1, y1, x2, y2).toDouble()
+        var groundSpeed = speedKts
+        if (wind != null) {
+            // Calculate angle difference required due to wind component
+            val angle = 180.0 - MathTools.convertWorldAndRenderDeg(wind.windVectorPx.angleDeg()) + MathTools.convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg())
+            val windSpdKts = MathTools.pxpsToKt(wind.windVectorPx.len())
+            groundSpeed = sqrt(speedKts.pow(2.0f) + windSpdKts.pow(2.0f) - 2 * speedKts * windSpdKts * cos(Math.toRadians(angle))).toFloat()
+            val angleOffset = asin(windSpdKts * sin(Math.toRadians(angle)) / groundSpeed) * MathUtils.radiansToDegrees
+            targetTrack -= angleOffset
+        }
+        return Pair(targetTrack.toFloat(), groundSpeed)
     }
 
     /** Removes the [entity]'s route's first leg, and adds the required component for the next leg */
@@ -179,6 +280,27 @@ class AISystem: EntitySystem() {
                     }
                 }
                 return@apply
+            }
+        }
+    }
+
+    /** Returns one of the 3 possible entry procedures for a holding pattern, with the holding pattern's [inboundHdg],
+     * [legDir] and the aircraft's [targetHeading] to the waypoint
+     * */
+    private fun getEntryProc(targetHeading: Float, inboundHdg: Short, legDir: Byte): Byte {
+        // Offset is relative to opposite of inbound heading
+        var offset = targetHeading - inboundHdg + 180
+        if (offset < -180) {
+            offset += 360f
+        } else if (offset > 180) {
+            offset -= 360f
+        }
+        return when (legDir) {
+            CommandTarget.TURN_RIGHT -> if (offset > -1 && offset < 129) 1 else if (offset < -1 && offset > -69) 2 else 3
+            CommandTarget.TURN_LEFT -> if (offset < 1 && offset > -129) 1 else if (offset > 1 && offset < 69) 2 else 3
+            else -> {
+                Gdx.app.log("AISystem", "Invalid turn direction $legDir specified for holding pattern")
+                if (offset > -1 && offset < 129) 1 else if (offset < -1 && offset > -69) 2 else 3
             }
         }
     }

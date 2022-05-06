@@ -141,7 +141,7 @@ abstract class Approach(name: String, runwayId: Byte, tower: String, towerFreq: 
             entity.apply {
                 this += Position(posX, posY)
                 this += Direction(Vector2(Vector2.Y).rotateDeg(180 - (heading - Variables.MAG_HDG_DEV)))
-                this += Localiser(locDistNm)
+                this += Localizer(locDistNm)
                 this += GlideSlope(gsAngle, gsOffsetNm, gsMaxAlt)
                 this += Minimums(decisionAlt, rvr)
             }
@@ -153,7 +153,7 @@ abstract class Approach(name: String, runwayId: Byte, tower: String, towerFreq: 
                 val appInfo = get(ApproachInfo.mapper) ?: return SerialisedIlsGS()
                 val pos = get(Position.mapper) ?: return SerialisedIlsGS()
                 val dir = get(Direction.mapper) ?: return SerialisedIlsGS()
-                val loc = get(Localiser.mapper) ?: return SerialisedIlsGS()
+                val loc = get(Localizer.mapper) ?: return SerialisedIlsGS()
                 val gs = get(GlideSlope.mapper) ?: return SerialisedIlsGS()
                 val mins = get(Minimums.mapper) ?: return SerialisedIlsGS()
                 return SerialisedIlsGS(appInfo.approachName, appInfo.rwyId, appInfo.towerName, appInfo.frequency,
@@ -190,7 +190,7 @@ abstract class Approach(name: String, runwayId: Byte, tower: String, towerFreq: 
             entity.apply {
                 this += Position(posX, posY)
                 this += Direction(Vector2(Vector2.Y).rotateDeg(180 - (heading - Variables.MAG_HDG_DEV)))
-                this += Localiser(locDistNm)
+                this += Localizer(locDistNm)
                 this += Minimums(decisionAlt, rvr)
                 this += Offset(centerlineInterceptDist)
                 this += StepDown(steps)
@@ -203,7 +203,7 @@ abstract class Approach(name: String, runwayId: Byte, tower: String, towerFreq: 
                 val appInfo = get(ApproachInfo.mapper) ?: return SerialisedIlsLOCOffset()
                 val pos = get(Position.mapper) ?: return SerialisedIlsLOCOffset()
                 val dir = get(Direction.mapper) ?: return SerialisedIlsLOCOffset()
-                val loc = get(Localiser.mapper) ?: return SerialisedIlsLOCOffset()
+                val loc = get(Localizer.mapper) ?: return SerialisedIlsLOCOffset()
                 val mins = get(Minimums.mapper) ?: return SerialisedIlsLOCOffset()
                 val offset = get(Offset.mapper) ?: return SerialisedIlsLOCOffset()
                 val steps = get(StepDown.mapper) ?: return SerialisedIlsLOCOffset()

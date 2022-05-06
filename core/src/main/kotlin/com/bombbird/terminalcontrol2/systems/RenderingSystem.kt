@@ -5,10 +5,12 @@ import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.OrthographicCamera
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer
+import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.scenes.scene2d.Stage
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.Constants
 import com.bombbird.terminalcontrol2.ui.DatatagTools
+import com.bombbird.terminalcontrol2.utilities.MathTools
 import com.bombbird.terminalcontrol2.utilities.MathTools.byte
 import com.bombbird.terminalcontrol2.utilities.MathTools.getRequiredTrack
 import com.bombbird.terminalcontrol2.utilities.MathTools.pointsAtBorder
@@ -105,6 +107,26 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
             }
         }
 
+        // Render aircraft trajectory
+        val trajectoryFamily = allOf(Position::class, Direction::class, Speed::class, AffectedByWind::class).get()
+        val trajectory = engine.getEntitiesFor(trajectoryFamily)
+        for (i in 0 until trajectory.size()) {
+            trajectory[i]?.apply {
+                val pos = get(Position.mapper) ?: return@apply
+                val dir = get(Direction.mapper) ?: return@apply
+                val spd = get(Speed.mapper) ?: return@apply
+                val wind = get(AffectedByWind.mapper) ?: return@apply
+                val spdVector = Vector2(dir.trackUnitVector).scl(MathTools.ktToPxps(spd.speedKts) * 120)
+                shapeRenderer.color = Color.WHITE
+                shapeRenderer.line(pos.x, pos.y, pos.x + spdVector.x, pos.y + spdVector.y)
+                val windVector = Vector2(wind.windVectorPx).scl(120f)
+                shapeRenderer.color = Color.CYAN
+                shapeRenderer.line(pos.x + spdVector.x, pos.y + spdVector.y, pos.x + spdVector.x + windVector.x, pos.y + spdVector.y + windVector.y)
+                shapeRenderer.color = Color.YELLOW
+                shapeRenderer.line(pos.x, pos.y, pos.x + spdVector.x + windVector.x, pos.y + spdVector.y + windVector.y)
+            }
+        }
+
 
         shapeRenderer.projectionMatrix = constZoomStage.camera.combined
         // Render datatag to aircraft icon line
@@ -129,6 +151,7 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
                 val results = pointsAtBorder(floatArrayOf(leftX, leftX + width), floatArrayOf(bottomY, bottomY + height), startX, startY, degree)
                 startX = results[0]
                 startY = results[1]
+                shapeRenderer.color = Color.WHITE
                 shapeRenderer.line(startX, startY, radarX, radarY)
             }
         }
@@ -139,17 +162,6 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
         // println("stage: ${stage.camera.combined}")
         Constants.GAME.batch.begin()
         Constants.GAME.batch.packedColor = Color.WHITE_FLOAT_BITS // Prevent fading out behaviour during selectBox animations due to tint being changed
-        // Render aircraft blip
-        val aircraftFamily = allOf(AircraftInfo::class, RadarData::class, RSSprite::class).get()
-        val blipSize = if (camZoom <= 1) Constants.AIRCRAFT_BLIP_LENGTH_PX_ZOOM_1 * camZoom else Constants.AIRCRAFT_BLIP_LENGTH_PX_ZOOM_1 + (camZoom - 1) * Constants.AIRCRAFT_BLIP_LENGTH_CHANGE_PX_PER_ZOOM
-        val allAircraft = engine.getEntitiesFor(aircraftFamily)
-        for (i in 0 until allAircraft.size()) {
-            allAircraft[i]?.apply {
-                val rsSprite = get(RSSprite.mapper) ?: return@apply
-                val radarData = get(RadarData.mapper) ?: return@apply
-                rsSprite.drawable.draw(Constants.GAME.batch, radarData.position.x - blipSize / 2, radarData.position.y - blipSize / 2, blipSize, blipSize)
-            }
-        }
 
         // Update runway labels rendering size, position
         val rwyLabelFamily = allOf(GenericLabel::class, RunwayInfo::class, RunwayLabel::class).get()
@@ -198,6 +210,18 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
                     setPosition(pos.x + labelInfo.xOffset, pos.y + labelInfo.yOffset)
                     draw(Constants.GAME.batch, 1f)
                 }
+            }
+        }
+
+        // Render aircraft blip
+        val aircraftFamily = allOf(AircraftInfo::class, RadarData::class, RSSprite::class).get()
+        val blipSize = if (camZoom <= 1) Constants.AIRCRAFT_BLIP_LENGTH_PX_ZOOM_1 * camZoom else Constants.AIRCRAFT_BLIP_LENGTH_PX_ZOOM_1 + (camZoom - 1) * Constants.AIRCRAFT_BLIP_LENGTH_CHANGE_PX_PER_ZOOM
+        val allAircraft = engine.getEntitiesFor(aircraftFamily)
+        for (i in 0 until allAircraft.size()) {
+            allAircraft[i]?.apply {
+                val rsSprite = get(RSSprite.mapper) ?: return@apply
+                val radarData = get(RadarData.mapper) ?: return@apply
+                rsSprite.drawable.draw(Constants.GAME.batch, radarData.position.x - blipSize / 2, radarData.position.y - blipSize / 2, blipSize, blipSize)
             }
         }
 

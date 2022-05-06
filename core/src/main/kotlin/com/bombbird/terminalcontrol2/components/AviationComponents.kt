@@ -32,8 +32,8 @@ data class MetarInfo(var realLifeIcao: String = "", var letterCode: Char? = null
  * */
 data class SectorInfo(var sectorId: Byte = 0, var controllerName: String = "ChangeYourNameLol", var frequency: String = "121.5", var sectorCallsign: String = "Approach"): Component {
     companion object: Mapper<SectorInfo>() {
-        val TOWER = -1
-        val CENTRE = -2
+        const val TOWER = -1
+        const val CENTRE = -2
     }
 }
 
@@ -85,9 +85,9 @@ data class AircraftInfo(var icaoCallsign: String = "SHIBA1", var icaoType: Strin
  * */
 data class FlightType(var type: Byte = 0): Component {
     companion object: Mapper<FlightType>() {
-        val ARRIVAL: Byte = 0
-        val DEPARTURE: Byte = 1
-        val EN_ROUTE: Byte = 2
+        const val ARRIVAL: Byte = 0
+        const val DEPARTURE: Byte = 1
+        const val EN_ROUTE: Byte = 2
     }
 }
 
@@ -96,9 +96,9 @@ data class ApproachInfo(var approachName: String = "", var rwyId: Byte = 0, var 
     companion object: Mapper<ApproachInfo>()
 }
 
-/** Component for tagging localiser information */
-data class Localiser(var maxDistNm: Byte = 0): Component {
-    companion object: Mapper<Localiser>()
+/** Component for tagging localizer information */
+data class Localizer(var maxDistNm: Byte = 0): Component {
+    companion object: Mapper<Localizer>()
 }
 
 /** Component for tagging glide slope information */
@@ -121,7 +121,7 @@ data class Offset(var lineUpDistNm: Float = 0f): Component {
     companion object: Mapper<Offset>()
 }
 
-/** Component for tagging visual approach */
+/** Component for tagging visual approach (one will be created for every runway with their own extended centerline and glide path of 3 degrees) */
 class Visual: Component {
     companion object: Mapper<Visual>()
 }
