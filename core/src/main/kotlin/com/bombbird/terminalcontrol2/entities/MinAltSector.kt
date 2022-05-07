@@ -25,9 +25,12 @@ class MinAltSector(minAlt: Int?, polygonBoundary: ShortArray?, circleX: Short = 
                 if (onClient && (labelX == null || labelY == null)) GeometryUtils.polygonCentroid(vertices, 0, vertices.size, polygonCentroid)
             }
             with<Position> {
-                if (labelX == null && labelY == null) {
+                if (labelX == null || labelY == null) {
                     x = polygonCentroid.x
                     y = polygonCentroid.y
+                } else {
+                    x = labelX.toFloat()
+                    y = labelY.toFloat()
                 }
             }
             if (labelX != null && labelY != null) with<CustomPosition> {
@@ -47,11 +50,14 @@ class MinAltSector(minAlt: Int?, polygonBoundary: ShortArray?, circleX: Short = 
         with<SRColor> {
             color = if (restr) Color.ORANGE else Color.GRAY
         }
-        if (onClient) with<GenericLabel> {
-            updateStyle(if (restr) "MinAltSectorRestr" else "MinAltSector")
-            updateText(if (minAlt == null) "UNL" else (minAlt / 100f).roundToInt().toString())
-            xOffset = (labelX?.toFloat() ?: 0f) -label.prefWidth / 2
-            yOffset = labelY?.toFloat() ?: 0f
+        if (onClient) {
+            with<GenericLabel> {
+                updateStyle(if (restr) "MinAltSectorRestr" else "MinAltSector")
+                updateText(if (minAlt == null) "UNL" else (minAlt / 100f).roundToInt().toString())
+                xOffset = -label.prefWidth / 2
+                yOffset = 0f
+            }
+            with<ConstantZoomSize>()
         }
     }
 

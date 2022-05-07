@@ -18,17 +18,21 @@ class Waypoint(id: Short, name: String, posX: Short, posY: Short, onClient: Bool
             x = posX.toFloat()
             y = posY.toFloat()
         }
-        with<GenericLabel> {
-            updateStyle("Waypoint")
-            updateText(name)
-            xOffset = -label.prefWidth / 2
-            yOffset = 25f
-        }
-        with<GCircle> {
-            radius = 10f
-        }
-        with<SRColor> {
-            color = Color.GRAY
+        if (onClient) {
+            with<GenericLabel> {
+                updateStyle("Waypoint")
+                updateText(name)
+                xOffset = -label.prefWidth / 2
+                yOffset = 12f
+            }
+            with<ConstantZoomSize>()
+            with<SRConstantZoomSize>()
+            with<GCircle> {
+                radius = 5f
+            }
+            with<SRColor> {
+                color = Color.GRAY
+            }
         }
     }
 

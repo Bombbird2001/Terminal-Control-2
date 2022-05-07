@@ -35,7 +35,7 @@ object Constants {
     const val MIN_VERT_ACC = -0.25f * PhysicsTools.GRAVITY_ACCELERATION_MPS2
     const val MAX_LOW_SPD_ANGULAR_SPD = 3f
     const val MAX_HIGH_SPD_ANGULAR_SPD = 1.5f
-    const val MAX_ANGULAR_ACC = 0.3f
+    const val MAX_ANGULAR_ACC = 1f
     const val MAX_JERK = 1f
     const val MAX_VS = 4000f
     const val MAX_VS_EXPEDITE = 6000f

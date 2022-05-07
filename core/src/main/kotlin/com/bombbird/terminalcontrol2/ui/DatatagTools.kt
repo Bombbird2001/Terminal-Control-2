@@ -122,7 +122,7 @@ object DatatagTools {
         val alt = (radarData.altitude.altitudeFt / 100).roundToInt()
         val vs = if (radarData.speed.vertSpdFpm > 150) '^' else if (radarData.speed.vertSpdFpm < -150) 'v' else '='
         val cmdAlt = (cmdTarget.targetAltFt / 100).roundToInt()
-        val hdg = (MathTools.convertWorldAndRenderDeg(radarData.direction.trackUnitVector.angleDeg()) + Variables.MAG_HDG_DEV).roundToInt()
+        val hdg = MathTools.modulateHeading((MathTools.convertWorldAndRenderDeg(radarData.direction.trackUnitVector.angleDeg()) + Variables.MAG_HDG_DEV).roundToInt().toFloat()).roundToInt()
         val cmdHdg = cmdTarget.targetHdgDeg.roundToInt()
         val clearedAlt = "=> Cleared alt"
         val groundSpd = (radarData.direction.trackUnitVector.times(radarData.speed.speedKts) + (affectedByWind?.windVectorPx?.times(MathTools.pxpsToKt(1f)) ?: Vector2())).len().roundToInt()

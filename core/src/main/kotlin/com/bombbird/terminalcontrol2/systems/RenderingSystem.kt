@@ -79,7 +79,7 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
         }
 
         // Render circles
-        val circleFamily = allOf(Position::class, GCircle::class, SRColor::class).get()
+        val circleFamily = allOf(Position::class, GCircle::class, SRColor::class).exclude(SRConstantZoomSize::class).get()
         val circles = engine.getEntitiesFor(circleFamily)
         for (i in 0 until circles.size()) {
             circles[i]?.apply {
@@ -107,7 +107,7 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
             }
         }
 
-        // Render aircraft trajectory
+        // Render aircraft trajectory (debug)
         val trajectoryFamily = allOf(Position::class, Direction::class, Speed::class, AffectedByWind::class).get()
         val trajectory = engine.getEntitiesFor(trajectoryFamily)
         for (i in 0 until trajectory.size()) {
@@ -153,6 +153,19 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
                 startY = results[1]
                 shapeRenderer.color = Color.WHITE
                 shapeRenderer.line(startX, startY, radarX, radarY)
+            }
+        }
+
+        // Render circles with constant zoom size
+        val constCircleFamily = allOf(Position::class, GCircle::class, SRColor::class, SRConstantZoomSize::class).get()
+        val constCircles = engine.getEntitiesFor(constCircleFamily)
+        for (i in 0 until constCircles.size()) {
+            constCircles[i]?.apply {
+                val pos = get(Position.mapper) ?: return@apply
+                val circle = get(GCircle.mapper) ?: return@apply
+                val srColor = get(SRColor.mapper) ?: return@apply
+                shapeRenderer.color = srColor.color
+                shapeRenderer.circle((pos.x - camX) / camZoom, (pos.y - camY) / camZoom, circle.radius)
             }
         }
 

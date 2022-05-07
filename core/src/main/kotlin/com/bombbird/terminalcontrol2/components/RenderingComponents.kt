@@ -53,6 +53,11 @@ class ConstantZoomSize: Component {
     companion object: Mapper<ConstantZoomSize>()
 }
 
+/** Component for tagging shapeRenderer shapes that should remain the same size regardless of zoom level */
+class SRConstantZoomSize: Component {
+    companion object: Mapper<SRConstantZoomSize>()
+}
+
 /** Component for shapeRenderer rendering colour */
 data class SRColor(var color: Color = Color()): Component {
     companion object: Mapper<SRColor>()

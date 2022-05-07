@@ -117,8 +117,8 @@ class PhysicsSystem: EntitySystem(), LowFreqUpdate {
                 val maxTurnRate = if (ias.iasKt > 250) Constants.MAX_HIGH_SPD_ANGULAR_SPD else Constants.MAX_LOW_SPD_ANGULAR_SPD
                 targetAngSpd = MathUtils.clamp(targetAngSpd, -maxTurnRate, maxTurnRate)
 
-                // Reach target angular speed within 3 seconds
-                val targetAngAcc = (targetAngSpd - spd.angularSpdDps) / 3
+                // Reach target angular speed within 1.5 seconds
+                val targetAngAcc = (targetAngSpd - spd.angularSpdDps) / 1.5f
                 acc.dAngularSpdDps2 = MathUtils.clamp(targetAngAcc, -Constants.MAX_ANGULAR_ACC, Constants.MAX_ANGULAR_ACC) // Clamp to min, max angular acceleration
             }
         }

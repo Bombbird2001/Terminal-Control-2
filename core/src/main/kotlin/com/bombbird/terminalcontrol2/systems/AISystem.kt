@@ -171,7 +171,7 @@ class AISystem: EntitySystem() {
                 val holdWpt = Constants.GAME.gameServer?.waypoints?.get(cmdHold.wptId)?.entity?.get(Position.mapper) ?: return@apply
                 val deltaX = holdWpt.x - pos.x
                 val deltaY = holdWpt.y - pos.y
-                val distPxFromWpt2 = deltaX * deltaX + deltaY + deltaY
+                val distPxFromWpt2 = deltaX * deltaX + deltaY * deltaY
                 if (cmdHold.currentEntryProc == 0.byte) {
                     // Entry procedure has not been determined, calculate it
                     cmdHold.currentEntryProc = getEntryProc(cmdTarget.targetHdgDeg, cmdHold.inboundHdg, cmdHold.legDir)
@@ -196,10 +196,7 @@ class AISystem: EntitySystem() {
                             }
                             // Turn direction is opposite to the hold direction
                             val reqTurnDir = (-cmdHold.legDir).toByte()
-                            // Maintain the turn direction until magnitude of deltaHeading is less than 10 degrees
-                            cmdTarget.turnDir = if (abs(MathTools.findDeltaHeading(MathTools.convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()),
-                                    cmdTarget.targetHdgDeg - Variables.MAG_HDG_DEV, reqTurnDir)) > 10) reqTurnDir
-                            else CommandTarget.TURN_DEFAULT
+                            cmdTarget.turnDir = getApppropriateTurnDir(cmdTarget.targetHdgDeg, MathTools.convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()), reqTurnDir)
                         }
                         2.byte -> {
                             // Fly 30 degrees off from the opposite of inbound leg, towards the outbound leg
@@ -222,21 +219,19 @@ class AISystem: EntitySystem() {
                     if (cmdHold.flyOutbound) {
                         // Fly opposite heading of inbound leg
                         cmdTarget.targetHdgDeg = MathTools.modulateHeading(cmdHold.inboundHdg + 180f)
+                        cmdTarget.turnDir = getApppropriateTurnDir(cmdTarget.targetHdgDeg, MathTools.convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()), cmdHold.legDir)
                         val distToTurnPx = MathTools.nmToPx(cmdHold.legDist.toInt())
                         if (distPxFromWpt2 > distToTurnPx * distToTurnPx) cmdHold.flyOutbound = false // Outbound leg complete, fly inbound leg
                     } else {
                         // Fly an extended inbound track to the waypoint
-                        val legTrackRad = Math.toRadians(MathTools.convertWorldAndRenderDeg(cmdHold.inboundHdg.toFloat()) - Variables.MAG_HDG_DEV + 180.0)
-                        val targetDistPx = sqrt(distPxFromWpt2) - MathTools.nmToPx(0.5f)
+                        val legTrackRad = Math.toRadians(MathTools.convertWorldAndRenderDeg(cmdHold.inboundHdg.toFloat() - Variables.MAG_HDG_DEV) + 180.0)
+                        val targetDistPx = sqrt(distPxFromWpt2) - MathTools.nmToPx(0.75f)
                         val targetX = holdWpt.x + cos(legTrackRad) * targetDistPx
                         val targetY = holdWpt.y + sin(legTrackRad) * targetDistPx
                         cmdTarget.targetHdgDeg = getPointTargetTrackAndGS(pos.x, pos.y, targetX.toFloat(), targetY.toFloat(), spd.speedKts, dir, get(AffectedByWind.mapper)).first + Variables.MAG_HDG_DEV
+                        cmdTarget.turnDir = CommandTarget.TURN_DEFAULT
                         if (distPxFromWpt2 < 3 * 3) cmdHold.flyOutbound = true // Waypoint reached, fly outbound leg
                     }
-                    // Maintain the turn direction until magnitude of deltaHeading is less than 10 degrees
-                    cmdTarget.turnDir = if (abs(MathTools.findDeltaHeading(MathTools.convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()),
-                            cmdTarget.targetHdgDeg - Variables.MAG_HDG_DEV, cmdHold.legDir)) > 10) cmdHold.legDir
-                    else CommandTarget.TURN_DEFAULT
                 }
             }
         }
@@ -303,5 +298,18 @@ class AISystem: EntitySystem() {
                 if (offset > -1 && offset < 129) 1 else if (offset < -1 && offset > -69) 2 else 3
             }
         }
+    }
+
+    /** Gets the appropriate turn direction given the [targetHeading], [currHeading] and the instructed [cmdTurnDir]
+     *
+     * This is to ensure that after the aircraft turns though the commanded turn direction, it does not perform another
+     * 360 degree loop after reaching the [targetHeading] by allowing a window of 3 degrees where the aircraft should
+     * return to the default turn direction behaviour
+     * */
+    private fun getApppropriateTurnDir(targetHeading: Float, currHeading: Float, cmdTurnDir: Byte): Byte {
+        // Maintain the turn direction until magnitude of deltaHeading is less than 3 degrees
+        return if (MathTools.withinRange(MathTools.findDeltaHeading(currHeading,
+                targetHeading - Variables.MAG_HDG_DEV, CommandTarget.TURN_DEFAULT), -3f, 3f)) CommandTarget.TURN_DEFAULT
+        else cmdTurnDir
     }
 }
