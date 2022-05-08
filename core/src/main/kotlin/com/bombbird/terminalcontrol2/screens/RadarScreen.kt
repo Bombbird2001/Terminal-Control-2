@@ -23,6 +23,7 @@ import com.bombbird.terminalcontrol2.systems.DataSystem
 import com.bombbird.terminalcontrol2.systems.LowFreqUpdate
 import com.bombbird.terminalcontrol2.systems.PhysicsSystemClient
 import com.bombbird.terminalcontrol2.systems.RenderingSystem
+import com.bombbird.terminalcontrol2.utilities.ControlStateTools
 import com.bombbird.terminalcontrol2.utilities.MathTools
 import com.bombbird.terminalcontrol2.utilities.safeStage
 import com.esotericsoftware.kryonet.Client
@@ -142,6 +143,11 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
                             airport[it.arptId]?.updateFromSerialisedMetar(it)
                         }
                         uiPane.updateMetarInformation()
+                    } ?: (obj as? SerialisationRegistering.AircraftSectorUpdateData)?.apply {
+                        aircraft[obj.callsign].entity.let {aircraft ->
+                            aircraft[Controllable.mapper]?.sectorId = obj.newSector
+                            aircraft[RSSprite.mapper]?.drawable = ControlStateTools.getAircraftIcon(aircraft[FlightType.mapper]?.type ?: return@apply, obj.newSector)
+                        }
                     }
                 }
             }

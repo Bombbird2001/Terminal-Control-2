@@ -29,8 +29,8 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
         val camY = stage.camera.position.y
         // println(camZoom)
 
-        shapeRenderer.projectionMatrix = stage.camera.combined
         shapeRenderer.begin(ShapeRenderer.ShapeType.Line)
+        shapeRenderer.projectionMatrix = stage.camera.combined
         // Estimation circles
         shapeRenderer.circle(0f, 0f, 1250f)
         shapeRenderer.circle(0f, 0f, 125f)

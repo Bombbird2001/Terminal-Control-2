@@ -26,14 +26,15 @@ data class MetarInfo(var realLifeIcao: String = "", var letterCode: Char? = null
 }
 
 /** Component for tagging sector related information
+ *
  * [sectorId] = -1 -> tower control
  *
  * [sectorId] = -2 -> ACC control
  * */
 data class SectorInfo(var sectorId: Byte = 0, var controllerName: String = "ChangeYourNameLol", var frequency: String = "121.5", var sectorCallsign: String = "Approach"): Component {
     companion object: Mapper<SectorInfo>() {
-        const val TOWER = -1
-        const val CENTRE = -2
+        const val TOWER: Byte = -1
+        const val CENTRE: Byte = -2
     }
 }
 
@@ -57,11 +58,6 @@ data class PublishedHoldInfo(var wptId: Short = 0, var maxAltFt: Int? = null, va
      companion object: Mapper<PublishedHoldInfo>()
  }
 
-/** Component for tagging sector control information */
-data class Controllable(var sectorId: Byte = 0): Component {
-    companion object: Mapper<Controllable>()
-}
-
 /** Component for tagging aircraft specific information
  *
  * Includes performance determining data - minimum approach speed, rotation speed, weight, others in [aircraftPerf]
@@ -73,22 +69,6 @@ data class AircraftInfo(var icaoCallsign: String = "SHIBA1", var icaoType: Strin
     var maxVs: Float = 0f
     var minVs: Float = 0f
     companion object: Mapper<AircraftInfo>()
-}
-
-/** Component for tagging aircraft flight type
- *
- * [type] = 0 -> Arrival
- *
- * [type] = 1 -> Departure
- *
- * [type] = 2 -> En-route
- * */
-data class FlightType(var type: Byte = 0): Component {
-    companion object: Mapper<FlightType>() {
-        const val ARRIVAL: Byte = 0
-        const val DEPARTURE: Byte = 1
-        const val EN_ROUTE: Byte = 2
-    }
 }
 
 /** Component for tagging basic approach information */

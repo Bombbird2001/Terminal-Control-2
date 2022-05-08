@@ -9,6 +9,7 @@ import com.bombbird.terminalcontrol2.global.Constants
 import com.bombbird.terminalcontrol2.global.Variables
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.systems.AISystem
+import com.bombbird.terminalcontrol2.systems.ControlStateSystem
 import com.bombbird.terminalcontrol2.systems.LowFreqUpdate
 import com.bombbird.terminalcontrol2.systems.PhysicsSystem
 import com.bombbird.terminalcontrol2.utilities.MathTools
@@ -101,6 +102,7 @@ class GameServer {
 
         engine.addSystem(PhysicsSystem())
         engine.addSystem(AISystem())
+        engine.addSystem(ControlStateSystem())
 
         MetarTools.requestAllMetar()
     }
@@ -256,6 +258,11 @@ class GameServer {
     /** Send non-frequent METAR updates */
     fun sendMetarTCPToAll() {
         server.sendToAllTCP(SerialisationRegistering.MetarData(airports.values().map { it.getSerialisedMetar() }.toTypedArray()))
+    }
+
+    /** Sends aircraft control state sector updates */
+    fun sendAircraftSectorUpdateTCPToAll(callsign: String, newSector: Byte) {
+        server.sendToAllTCP(SerialisationRegistering.AircraftSectorUpdateData(callsign, newSector))
     }
 
     /** Send non-frequent, event-updated and/or important data

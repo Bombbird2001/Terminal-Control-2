@@ -93,3 +93,8 @@ class Datatag(var xOffset: Float = 0f, var yOffset: Float = 0f, var minimised: B
     var smallLabelFont = false
     companion object: Mapper<Datatag>()
 }
+
+/** Component for tagging datatags that should display minimised information */
+class MinimisedDatatag: Component {
+    companion object: Mapper<MinimisedDatatag>()
+}

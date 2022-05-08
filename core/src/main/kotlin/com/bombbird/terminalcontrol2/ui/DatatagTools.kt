@@ -1,5 +1,7 @@
 package com.bombbird.terminalcontrol2.ui
 
+import com.badlogic.ashley.core.Entity
+import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.scenes.scene2d.Actor
 import com.badlogic.gdx.scenes.scene2d.InputEvent
@@ -49,8 +51,17 @@ object DatatagTools {
     }
 
     /** Updates the style for the background [Datatag.imgButton] */
-    fun updateStyle(datatag: Datatag, newStyle: String) {
-        datatag.imgButton.style = Scene2DSkin.defaultSkin.get(newStyle, ImageButton.ImageButtonStyle::class.java)
+    fun updateStyle(datatag: Datatag, flightType: Byte) {
+        val noBG = if (true) "NoBG" else "" // TODO change depending on datatag display setting
+        datatag.imgButton.style = Scene2DSkin.defaultSkin.get(when (flightType) {
+            FlightType.DEPARTURE -> "DatatagGreen$noBG"
+            FlightType.ARRIVAL -> "DatatagBlue$noBG"
+            FlightType.EN_ROUTE -> "DatatagGray$noBG"
+            else -> {
+                Gdx.app.log("Datatag", "Unknown flight type $flightType")
+                "DatatagNoBG"
+            }
+        }, ImageButton.ImageButtonStyle::class.java)
     }
 
     /** Updates the label style to use smaller fonts when radar is zoomed out */
@@ -113,10 +124,48 @@ object DatatagTools {
         }
     }
 
-    /** Gets a new array of strings for the label text, based on the player's datatag format */
-    fun getNewLabelText(aircraftInfo: AircraftInfo, radarData: RadarData, cmdTarget: CommandTarget, cmdRoute: CommandRoute?, affectedByWind: AffectedByWind?): Array<String> {
+    /** Gets a new array of strings for the label text, depending on the aircraft's [Controllable] state and whether it
+     * has [MinimisedDatatag]
+     * */
+    fun getNewLabelText(entity: Entity): Array<String> {
+        val minimisedDatatag = entity[MinimisedDatatag.mapper]
+        val controllable = entity[Controllable.mapper]
+        return if (minimisedDatatag != null || controllable == null || controllable.sectorId == SectorInfo.TOWER || controllable.sectorId == SectorInfo.CENTRE) getMinimisedLabelText(entity)
+        else getExpandedLabelText(entity) // TODO Additional check for whether aircraft is in your sector
+    }
+
+    /** Gets a nw array of strings for the minimised datatag, based on the player's datatag format */
+    private fun getMinimisedLabelText(entity: Entity): Array<String> {
         val labelText = arrayOf("", "", "", "")
         // Temporary label format TODO change based on datatag format in use
+        val aircraftInfo = entity[AircraftInfo.mapper] ?: return labelText
+        val radarData = entity[RadarData.mapper] ?: return labelText
+        val cmdTarget = entity[CommandTarget.mapper] ?: return labelText
+        val affectedByWind = entity[AffectedByWind.mapper]
+
+        val callsign = aircraftInfo.icaoCallsign
+        val recat = aircraftInfo.aircraftPerf.recat
+        val alt = (radarData.altitude.altitudeFt / 100).roundToInt()
+        val groundSpd = (radarData.direction.trackUnitVector.times(radarData.speed.speedKts) + (affectedByWind?.windVectorPx?.times(MathTools.pxpsToKt(1f)) ?: Vector2())).len().roundToInt()
+        val cmdAlt = (cmdTarget.targetAltFt / 100).roundToInt()
+        val icaoType = aircraftInfo.icaoType
+
+        labelText[0] = "$callsign/$recat"
+        labelText[1] = if (System.currentTimeMillis() % 4000 < 2000) "$alt $groundSpd" else "$cmdAlt $icaoType"
+
+        return labelText
+    }
+
+    /** Gets a nw array of strings for the expanded datatag, based on the player's datatag format */
+    private fun getExpandedLabelText(entity: Entity): Array<String> {
+        val labelText = arrayOf("", "", "", "")
+        // Temporary label format TODO change based on datatag format in use
+        val aircraftInfo = entity[AircraftInfo.mapper] ?: return labelText
+        val radarData = entity[RadarData.mapper] ?: return labelText
+        val cmdTarget = entity[CommandTarget.mapper] ?: return labelText
+        val cmdRoute = entity[CommandRoute.mapper]
+        val affectedByWind = entity[AffectedByWind.mapper]
+
         val callsign = aircraftInfo.icaoCallsign
         val acInfo = "${aircraftInfo.icaoType}/${aircraftInfo.aircraftPerf.wakeCategory}/${aircraftInfo.aircraftPerf.recat}"
         val alt = (radarData.altitude.altitudeFt / 100).roundToInt()
@@ -130,6 +179,7 @@ object DatatagTools {
             if (it.size == 0) null else Constants.CLIENT_SCREEN?.waypoints?.get((it[0] as? Route.WaypointLeg)?.wptId)
         }?.entity?.get(WaypointInfo.mapper)?.wptName ?: ""
         val sidStar = cmdRoute?.primaryName ?: ""
+
         labelText[0] = "$callsign $acInfo"
         labelText[1] = "$alt $vs $cmdAlt $clearedAlt"
         labelText[2] = "$hdg $cmdHdg $directWpt $sidStar"

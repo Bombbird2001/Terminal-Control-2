@@ -1,9 +1,12 @@
 package com.bombbird.terminalcontrol2.entities
 
+import com.badlogic.gdx.Gdx
+import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.Constants
+import com.bombbird.terminalcontrol2.global.Variables
 import com.bombbird.terminalcontrol2.ui.DatatagTools
 import ktx.ashley.entity
 import ktx.ashley.get
@@ -42,17 +45,45 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
                 position.y = posY
             }
             with<Datatag> {
-                DatatagTools.updateStyle(this, "DatatagGreen")
+                DatatagTools.updateStyle(this, flightType)
                 DatatagTools.updateText(this, arrayOf("Test line 1", "Test line 2", "", "Test line 3"))
                 DatatagTools.addInputListeners(this)
                 xOffset = -imgButton.width / 2
                 yOffset = 13f
             }
             with<RSSprite> {
-                drawable = TextureRegionDrawable(Scene2DSkin.defaultSkin.getRegion("aircraftDeparture"))
+                drawable = TextureRegionDrawable(Scene2DSkin.defaultSkin.getRegion(when (flightType) {
+                    FlightType.ARRIVAL, FlightType.EN_ROUTE -> "aircraftEnroute"
+                    FlightType.DEPARTURE -> "aircraftTower"
+                    else -> {
+                        Gdx.app.log("Aircraft", "Unknown flight type $flightType")
+                        "aircraftTower"
+                    }
+                }))
             }
         }
-        // TODO Add controllable component
+        with<Controllable> {
+            sectorId = when (flightType) {
+                FlightType.DEPARTURE -> SectorInfo.TOWER
+                FlightType.ARRIVAL, FlightType.EN_ROUTE -> SectorInfo.CENTRE
+                else -> {
+                    Gdx.app.log("Aircraft", "Unknown flight type $flightType")
+                    SectorInfo.CENTRE
+                }
+            }
+        }
+        if (flightType == FlightType.DEPARTURE) {
+            with<ContactFromTower> {
+                altitudeFt = (alt + MathUtils.random(600, 1700)).toInt()
+            }
+            with<ContactToCentre> {
+                altitudeFt = (Variables.MAX_ALT - MathUtils.random(500, 900))
+            }
+        } else if (flightType == FlightType.ARRIVAL) {
+            with<ContactFromCentre> {
+                altitudeFt = (Variables.MAX_ALT + MathUtils.random(-500, 800))
+            }
+        }
     }
 
     companion object {
