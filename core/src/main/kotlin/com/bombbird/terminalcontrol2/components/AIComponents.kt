@@ -61,13 +61,15 @@ data class CommandTarget(var targetHdgDeg: Float = 360f, var turnDir: Byte = TUR
  * [hiddenLegs] is an array of legs that are removed from the original route due to the use of transitions, but may be
  * added back to the route should the transition change
  * */
-data class CommandRoute(var primaryName: String = "", var route: Route = Route(), var hiddenLegs: Route = Route()): Component {
-    companion object: Mapper<CommandRoute>()
+data class ClearedRoute(var primaryName: String = "", var route: Route = Route(), var hiddenLegs: Route = Route()): Component {
+    companion object: Mapper<ClearedRoute>()
 }
 
 /** Component for tagging the vector leg an aircraft is flying
  *
  * [heading] is the heading the aircraft will fly
+ *
+ * This component does not persist; it is removed after setting the [CommandTarget] parameters
  * */
 data class CommandVector(var heading: Short = 360): Component {
     companion object: Mapper<CommandVector>()
@@ -78,6 +80,8 @@ data class CommandVector(var heading: Short = 360): Component {
  * [heading] is the heading the aircraft will fly
  *
  * [minAltFt] is the altitude above which the aircraft will move on to the next leg
+ *
+ * This component will persist until the aircraft no longer flies in initClimb mode
  * */
 data class CommandInitClimb(var heading: Short = 360, var minAltFt: Int = 0): Component {
     companion object: Mapper<CommandInitClimb>()
@@ -93,17 +97,27 @@ data class CommandInitClimb(var heading: Short = 360, var minAltFt: Int = 0): Co
  * [flyOver] denotes whether the aircraft needs to overfly the waypoint before moving to the next leg
  *
  * [turnDir] specifies whether a forced turn direction is required when turning onto this leg
+ *
+ * This component will persist until the aircraft no longer flies in waypoint mode
  * */
 data class CommandDirect(var wptId: Short = 0, var maxAltFt: Int? = null, var minAltFt: Int? = null, val maxSpdKt: Short?,
                          val flyOver: Boolean = false, val turnDir: Byte = CommandTarget.TURN_DEFAULT): Component {
     companion object: Mapper<CommandDirect>()
 }
 
-/** Component for tagging a holding leg an aircraft is flying */
+/** Component for tagging a holding leg an aircraft is flying
+ *
+ * This component will persist until the aircraft is no longer in holding mode
+ * */
 data class CommandHold(var wptId: Short = 0, var maxAltFt: Int? = null, var minAltFt: Int? = null, var maxSpdKt: Short? = null,
                        var inboundHdg: Short = 360, var legDist: Byte = 5, var legDir: Byte = CommandTarget.TURN_RIGHT,
                        var currentEntryProc: Byte = 0, var entryDone: Boolean = false, var oppositeTravelled: Boolean = false, var flyOutbound: Boolean = true): Component {
     companion object: Mapper<CommandHold>()
+}
+
+/** Component for tagging the cleared altitude */
+data class ClearedAltitude(var altitudeFt: Int = 0): Component {
+    companion object: Mapper<ClearedAltitude>()
 }
 
 /** Component for tagging an aircraft that is flying according to continuous descent approach (CDA) operations */

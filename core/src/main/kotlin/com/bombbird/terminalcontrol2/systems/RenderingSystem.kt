@@ -107,25 +107,42 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
             }
         }
 
-        // Render aircraft trajectory (debug)
-        val trajectoryFamily = allOf(Position::class, Direction::class, Speed::class, AffectedByWind::class).get()
+        // Render trajectory line for controlled aircraft
+        val trajectoryFamily = allOf(RadarData::class, Controllable::class, SRColor::class).get()
         val trajectory = engine.getEntitiesFor(trajectoryFamily)
         for (i in 0 until trajectory.size()) {
             trajectory[i]?.apply {
-                val pos = get(Position.mapper) ?: return@apply
-                val dir = get(Direction.mapper) ?: return@apply
-                val spd = get(Speed.mapper) ?: return@apply
-                val wind = get(AffectedByWind.mapper) ?: return@apply
-                val spdVector = Vector2(dir.trackUnitVector).scl(MathTools.ktToPxps(spd.speedKts) * 120)
-                shapeRenderer.color = Color.WHITE
-                shapeRenderer.line(pos.x, pos.y, pos.x + spdVector.x, pos.y + spdVector.y)
-                val windVector = Vector2(wind.windVectorPx).scl(120f)
-                shapeRenderer.color = Color.CYAN
-                shapeRenderer.line(pos.x + spdVector.x, pos.y + spdVector.y, pos.x + spdVector.x + windVector.x, pos.y + spdVector.y + windVector.y)
-                shapeRenderer.color = Color.YELLOW
-                shapeRenderer.line(pos.x, pos.y, pos.x + spdVector.x + windVector.x, pos.y + spdVector.y + windVector.y)
+                val controllable = get(Controllable.mapper) ?: return@apply
+                if (controllable.sectorId != 0.byte) return@apply // TODO check if is player's sector
+                val rData = get(RadarData.mapper) ?: return@apply
+                val srColor = get(SRColor.mapper) ?: return@apply
+                val wind = get(AffectedByWind.mapper)
+                val spdVector = Vector2(rData.direction.trackUnitVector).scl(MathTools.ktToPxps(rData.speed.speedKts) * 90) // TODO change projection time based on settings
+                val windVector = wind?.windVectorPx?.let { Vector2(it).scl(90f) }
+                shapeRenderer.color = srColor.color
+                shapeRenderer.line(rData.position.x, rData.position.y, rData.position.x + spdVector.x + (windVector?.x ?: 0f), rData.position.y + spdVector.y + (windVector?.y ?: 0f))
             }
         }
+
+        // Render aircraft trajectory (debug)
+//        val trajectoryFamily = allOf(Position::class, Direction::class, Speed::class, AffectedByWind::class).get()
+//        val trajectory = engine.getEntitiesFor(trajectoryFamily)
+//        for (i in 0 until trajectory.size()) {
+//            trajectory[i]?.apply {
+//                val pos = get(Position.mapper) ?: return@apply
+//                val dir = get(Direction.mapper) ?: return@apply
+//                val spd = get(Speed.mapper) ?: return@apply
+//                val wind = get(AffectedByWind.mapper) ?: return@apply
+//                val spdVector = Vector2(dir.trackUnitVector).scl(MathTools.ktToPxps(spd.speedKts) * 120)
+//                shapeRenderer.color = Color.WHITE
+//                shapeRenderer.line(pos.x, pos.y, pos.x + spdVector.x, pos.y + spdVector.y)
+//                val windVector = Vector2(wind.windVectorPx).scl(120f)
+//                shapeRenderer.color = Color.CYAN
+//                shapeRenderer.line(pos.x + spdVector.x, pos.y + spdVector.y, pos.x + spdVector.x + windVector.x, pos.y + spdVector.y + windVector.y)
+//                shapeRenderer.color = Color.YELLOW
+//                shapeRenderer.line(pos.x, pos.y, pos.x + spdVector.x + windVector.x, pos.y + spdVector.y + windVector.y)
+//            }
+//        }
 
 
         shapeRenderer.projectionMatrix = constZoomStage.camera.combined

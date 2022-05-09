@@ -140,18 +140,18 @@ object DatatagTools {
         // Temporary label format TODO change based on datatag format in use
         val aircraftInfo = entity[AircraftInfo.mapper] ?: return labelText
         val radarData = entity[RadarData.mapper] ?: return labelText
-        val cmdTarget = entity[CommandTarget.mapper] ?: return labelText
+        val latestClearance = entity[LatestClearance.mapper]?.clearance
         val affectedByWind = entity[AffectedByWind.mapper]
 
         val callsign = aircraftInfo.icaoCallsign
         val recat = aircraftInfo.aircraftPerf.recat
         val alt = (radarData.altitude.altitudeFt / 100).roundToInt()
         val groundSpd = (radarData.direction.trackUnitVector.times(radarData.speed.speedKts) + (affectedByWind?.windVectorPx?.times(MathTools.pxpsToKt(1f)) ?: Vector2())).len().roundToInt()
-        val cmdAlt = (cmdTarget.targetAltFt / 100).roundToInt()
+        val clearedAlt = latestClearance?.let { it.clearedAlt / 100 }?.toString() ?: ""
         val icaoType = aircraftInfo.icaoType
 
         labelText[0] = "$callsign/$recat"
-        labelText[1] = if (System.currentTimeMillis() % 4000 < 2000) "$alt $groundSpd" else "$cmdAlt $icaoType"
+        labelText[1] = if (System.currentTimeMillis() % 4000 < 2000) "$alt $groundSpd" else "$clearedAlt $icaoType"
 
         return labelText
     }
@@ -163,26 +163,26 @@ object DatatagTools {
         val aircraftInfo = entity[AircraftInfo.mapper] ?: return labelText
         val radarData = entity[RadarData.mapper] ?: return labelText
         val cmdTarget = entity[CommandTarget.mapper] ?: return labelText
-        val cmdRoute = entity[CommandRoute.mapper]
+        val latestClearance = entity[LatestClearance.mapper]?.clearance
         val affectedByWind = entity[AffectedByWind.mapper]
 
         val callsign = aircraftInfo.icaoCallsign
         val acInfo = "${aircraftInfo.icaoType}/${aircraftInfo.aircraftPerf.wakeCategory}/${aircraftInfo.aircraftPerf.recat}"
         val alt = (radarData.altitude.altitudeFt / 100).roundToInt()
         val vs = if (radarData.speed.vertSpdFpm > 150) '^' else if (radarData.speed.vertSpdFpm < -150) 'v' else '='
+        val clearedAlt = latestClearance?.clearedAlt?.let { "=> ${it / 100}" } ?: ""
         val cmdAlt = (cmdTarget.targetAltFt / 100).roundToInt()
         val hdg = MathTools.modulateHeading((MathTools.convertWorldAndRenderDeg(radarData.direction.trackUnitVector.angleDeg()) + Variables.MAG_HDG_DEV).roundToInt().toFloat()).roundToInt()
         val cmdHdg = cmdTarget.targetHdgDeg.roundToInt()
-        val clearedAlt = "=> Cleared alt"
         val groundSpd = (radarData.direction.trackUnitVector.times(radarData.speed.speedKts) + (affectedByWind?.windVectorPx?.times(MathTools.pxpsToKt(1f)) ?: Vector2())).len().roundToInt()
-        val directWpt = cmdRoute?.route?.legs?.let {
+        val clearedLateral = latestClearance?.route?.legs?.let {
             if (it.size == 0) null else Constants.CLIENT_SCREEN?.waypoints?.get((it[0] as? Route.WaypointLeg)?.wptId)
-        }?.entity?.get(WaypointInfo.mapper)?.wptName ?: ""
-        val sidStar = cmdRoute?.primaryName ?: ""
+        }?.entity?.get(WaypointInfo.mapper)?.wptName ?: latestClearance?.vectorHdg?.toString() ?: ""
+        val sidStar = latestClearance?.routePrimaryName ?: ""
 
         labelText[0] = "$callsign $acInfo"
         labelText[1] = "$alt $vs $cmdAlt $clearedAlt"
-        labelText[2] = "$hdg $cmdHdg $directWpt $sidStar"
+        labelText[2] = "$hdg $cmdHdg $clearedLateral $sidStar"
         labelText[3] = "$groundSpd ${cmdTarget.targetIasKt}"
 
         return labelText

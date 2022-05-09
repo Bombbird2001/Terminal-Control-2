@@ -88,6 +88,7 @@ object SerialisationRegistering {
 
             // Miscellaneous event triggered updated classes
             register(AircraftSectorUpdateData::class.java)
+            register(AircraftControlStateUpdateData::class.java)
 
         } ?: Gdx.app.log("SerialisationRegistering", "Null kryo passed, unable to register classes")
     }
@@ -121,4 +122,8 @@ object SerialisationRegistering {
 
     /** Class representing data sent during aircraft sector update */
     class AircraftSectorUpdateData(val callsign: String = "", val newSector: Byte = 0)
+
+    /** Class representing control state data sent when the aircraft command state is updated (either through player command, or due to leg being reached) */
+    class AircraftControlStateUpdateData(val callsign: String = "", var primaryName: String = "", var route: Route.SerialisedRoute = Route.SerialisedRoute(), var hiddenLegs: Route.SerialisedRoute = Route.SerialisedRoute(),
+                                         val vectorHdg: Short? = null, val clearedAlt: Int = 0)
 }

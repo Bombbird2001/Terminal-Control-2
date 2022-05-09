@@ -16,6 +16,8 @@ import com.bombbird.terminalcontrol2.entities.*
 import com.bombbird.terminalcontrol2.global.Constants
 import com.bombbird.terminalcontrol2.global.Variables
 import com.bombbird.terminalcontrol2.graphics.ScreenSize
+import com.bombbird.terminalcontrol2.navigation.ClearanceState
+import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.ui.UIPane
 import com.bombbird.terminalcontrol2.networking.GameServer
 import com.bombbird.terminalcontrol2.networking.SerialisationRegistering
@@ -31,6 +33,7 @@ import com.esotericsoftware.kryonet.Connection
 import com.esotericsoftware.kryonet.Listener
 import ktx.app.KtxScreen
 import ktx.ashley.get
+import ktx.ashley.plusAssign
 import ktx.assets.disposeSafely
 import ktx.collections.GdxArrayMap
 import ktx.graphics.moveTo
@@ -144,9 +147,13 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
                         }
                         uiPane.updateMetarInformation()
                     } ?: (obj as? SerialisationRegistering.AircraftSectorUpdateData)?.apply {
-                        aircraft[obj.callsign].entity.let {aircraft ->
+                        aircraft[obj.callsign]?.entity?.let { aircraft ->
                             aircraft[Controllable.mapper]?.sectorId = obj.newSector
                             aircraft[RSSprite.mapper]?.drawable = ControlStateTools.getAircraftIcon(aircraft[FlightType.mapper]?.type ?: return@apply, obj.newSector)
+                        }
+                    } ?: (obj as? SerialisationRegistering.AircraftControlStateUpdateData)?.apply {
+                        aircraft[obj.callsign]?.entity?.let { aircraft ->
+                            aircraft += LatestClearance(ClearanceState(obj.primaryName, Route.fromSerialisedObject(obj.route), Route.fromSerialisedObject(obj.hiddenLegs), obj.vectorHdg, obj.clearedAlt))
                         }
                     }
                 }
@@ -309,7 +316,6 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
 
     /** Implements [GestureListener.tap], used to unselect an aircraft, and to test for double taps for zooming */
     override fun tap(x: Float, y: Float, count: Int, button: Int): Boolean {
-        // TODO Unselect aircraft, double tap zoom/animate
         if (count == 2 && !cameraAnimating) initiateCameraAnimation(x, y)
         uiPane.deselectAircraft()
         // Debug.toggleMinAltSectorsOnClick(x, y, unprojectFromRadarCamera, clientEngine)

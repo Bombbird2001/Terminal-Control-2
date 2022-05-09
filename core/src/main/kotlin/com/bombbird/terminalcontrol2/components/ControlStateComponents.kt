@@ -1,6 +1,8 @@
 package com.bombbird.terminalcontrol2.components
 
 import com.badlogic.ashley.core.Component
+import com.badlogic.gdx.utils.Queue
+import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import ktx.ashley.Mapper
 
 /** Component for tagging sector control information */
@@ -42,4 +44,26 @@ data class ContactFromCentre(var altitudeFt: Int = 0): Component {
 /** Component for tagging the [altitudeFt] when an aircraft should switch from approach/departure to centre */
 data class ContactToCentre(var altitudeFt: Int = 0): Component {
     companion object: Mapper<ContactToCentre>()
+}
+
+/** Component for tagging the pending [ClearanceState]s an aircraft has been cleared, as well as the corresponding reaction
+ * time for each clearance
+ * */
+class PendingClearances(val clearanceArray: Queue<Pair<Float, ClearanceState>> = Queue(5)): Component {
+    companion object: Mapper<PendingClearances>()
+}
+
+/** Component for tagging the latest [ClearanceState] an aircraft has been cleared; for use on client aircraft only
+ * since clients do not need to remember the clearances sent apart from the latest one
+ * */
+class LatestClearance(val clearance: ClearanceState = ClearanceState()): Component {
+    companion object: Mapper<LatestClearance>()
+}
+
+/** Component for tagging when an aircraft's [ClearedRoute]/[ClearedAltitude]/[CommandTarget.targetIasKt] changes
+ *
+ * The system will send a TCP update to all clients informing them of the updated clearance state
+ * */
+class ClearanceChanged: Component {
+    companion object: Mapper<ClearanceChanged>()
 }

@@ -69,7 +69,7 @@ class GameServer {
 
     /** Maps [WaypointInfo.wptName] to the [PublishedHold]
      *
-     * This map will map to the most updated published hold, since old holding legs are stored individually with the waypoint ID in the aircraft's [CommandRoute]
+     * This map will map to the most updated published hold, since old holding legs are stored individually with the waypoint ID in the aircraft's [ClearedRoute]
      * */
     val publishedHolds = GdxArrayMap<String, PublishedHold>(Constants.PUBLISHED_HOLD_SIZE)
 
@@ -93,11 +93,12 @@ class GameServer {
             }}} ?: 0f
             entity += TakeoffRoll(PhysicsTools.calculateRequiredAcceleration(0, ((entity[AircraftInfo.mapper]?.aircraftPerf?.vR ?: 0) + headwind).toInt().toShort(), ((rwy?.entity?.get(RunwayInfo.mapper)?.lengthM ?: 3800) - 1000) * MathUtils.random(0.75f, 1f)))
             entity[CommandTarget.mapper]?.apply {
-                targetAltFt = 4000f
+                targetAltFt = 3000f
                 targetIasKt = ((entity[AircraftInfo.mapper]?.aircraftPerf?.vR ?: 160) + MathUtils.random(15, 20)).toShort()
-                targetHdgDeg = 49f
+                targetHdgDeg = 54f
             }
-            entity += CommandRoute("HICAL1C", airports[0]?.entity?.get(SIDChildren.mapper)?.sidMap?.get("HICAL1C")?.getRandomSIDRouteForRunway("05L") ?: Route(), Route())
+            entity += ClearedRoute("HICAL1C", airports[0]?.entity?.get(SIDChildren.mapper)?.sidMap?.get("HICAL1C")?.getRandomSIDRouteForRunway("05L") ?: Route(), Route())
+            entity += ClearedAltitude(3000)
         })
 
         engine.addSystem(PhysicsSystem())
@@ -263,6 +264,12 @@ class GameServer {
     /** Sends aircraft control state sector updates */
     fun sendAircraftSectorUpdateTCPToAll(callsign: String, newSector: Byte) {
         server.sendToAllTCP(SerialisationRegistering.AircraftSectorUpdateData(callsign, newSector))
+    }
+
+    /** Sends aircraft clearance state updates */
+    fun sendAircraftClearanceStateUpdateToAll(callsign: String, primaryName: String = "", route: Route, hiddenLegs: Route,
+                                           vectorHdg: Short?, clearedAlt: Int) {
+        server.sendToAllTCP(SerialisationRegistering.AircraftControlStateUpdateData(callsign, primaryName, route.getSerialisedObject(), hiddenLegs.getSerialisedObject(), vectorHdg, clearedAlt))
     }
 
     /** Send non-frequent, event-updated and/or important data
