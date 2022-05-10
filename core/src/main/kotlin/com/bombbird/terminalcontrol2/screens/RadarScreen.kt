@@ -27,6 +27,7 @@ import com.bombbird.terminalcontrol2.systems.PhysicsSystemClient
 import com.bombbird.terminalcontrol2.systems.RenderingSystem
 import com.bombbird.terminalcontrol2.utilities.ControlStateTools
 import com.bombbird.terminalcontrol2.utilities.MathTools
+import com.bombbird.terminalcontrol2.utilities.MathTools.byte
 import com.bombbird.terminalcontrol2.utilities.safeStage
 import com.esotericsoftware.kryonet.Client
 import com.esotericsoftware.kryonet.Connection
@@ -105,6 +106,14 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
                         aircraft.forEach {
                             this@RadarScreen.aircraft[it.icaoCallsign]?.apply { updateFromUDPData(it) }
                         }
+                    } ?: (obj as? SerialisationRegistering.InitialAirspaceData)?.apply {
+                        Variables.MAG_HDG_DEV = magHdgDev
+                        Variables.MIN_ALT = minAlt
+                        Variables.MAX_ALT = maxAlt
+                        Variables.MIN_SEP = minSep
+                        Variables.TRANS_ALT = transAlt
+                        Variables.TRANS_LVL = transLvl
+                        uiPane.updateAltSelectBoxChoices()
                     } ?: (obj as? SerialisationRegistering.InitialSectorData)?.sectors?.onEach {
                         Sector.fromSerialisedObject(it)
                     } ?: (obj as? SerialisationRegistering.InitialAircraftData)?.aircraft?.onEach {
@@ -147,9 +156,10 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
                         }
                         uiPane.updateMetarInformation()
                     } ?: (obj as? SerialisationRegistering.AircraftSectorUpdateData)?.apply {
-                        aircraft[obj.callsign]?.entity?.let { aircraft ->
-                            aircraft[Controllable.mapper]?.sectorId = obj.newSector
-                            aircraft[RSSprite.mapper]?.drawable = ControlStateTools.getAircraftIcon(aircraft[FlightType.mapper]?.type ?: return@apply, obj.newSector)
+                        aircraft[obj.callsign]?.let { aircraft ->
+                            aircraft.entity[Controllable.mapper]?.sectorId = obj.newSector
+                            aircraft.entity[RSSprite.mapper]?.drawable = ControlStateTools.getAircraftIcon(aircraft.entity[FlightType.mapper]?.type ?: return@apply, obj.newSector)
+                            if (obj.newSector == 0.byte && selectedAircraft == aircraft) setUISelectedAircraft(aircraft)
                         }
                     } ?: (obj as? SerialisationRegistering.AircraftControlStateUpdateData)?.apply {
                         aircraft[obj.callsign]?.entity?.let { aircraft ->
@@ -192,9 +202,9 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
     }
 
     /** Instructs [uiPane] to display the control pane for the supplied aircraft */
-    fun setSelectedAircraft() {
-        // TODO Pass actual aircraft information
-        uiPane.setSelectedAircraft()
+    fun setUISelectedAircraft(aircraft: Aircraft) {
+        uiPane.setSelectedAircraft(aircraft)
+        selectedAircraft = aircraft
     }
 
     /** Ensures [radarDisplayStage]'s camera parameters are within limits, then updates the camera (and [shapeRenderer]) */
@@ -318,6 +328,7 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
     override fun tap(x: Float, y: Float, count: Int, button: Int): Boolean {
         if (count == 2 && !cameraAnimating) initiateCameraAnimation(x, y)
         uiPane.deselectAircraft()
+        selectedAircraft = null
         // Debug.toggleMinAltSectorsOnClick(x, y, unprojectFromRadarCamera, clientEngine)
         return true
     }

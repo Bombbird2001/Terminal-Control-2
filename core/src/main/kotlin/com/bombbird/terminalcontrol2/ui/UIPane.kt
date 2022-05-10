@@ -2,14 +2,19 @@ package com.bombbird.terminalcontrol2.ui
 
 import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.scenes.scene2d.Actor
+import com.badlogic.gdx.scenes.scene2d.InputListener
 import com.badlogic.gdx.scenes.scene2d.Stage
+import com.badlogic.gdx.scenes.scene2d.ui.ScrollPane
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener
 import com.badlogic.gdx.utils.Align
-import com.bombbird.terminalcontrol2.components.AirportInfo
-import com.bombbird.terminalcontrol2.components.MetarInfo
+import com.bombbird.terminalcontrol2.components.*
+import com.bombbird.terminalcontrol2.entities.Aircraft
 import com.bombbird.terminalcontrol2.global.Constants
 import com.bombbird.terminalcontrol2.global.Variables
+import com.bombbird.terminalcontrol2.navigation.Route
+import com.bombbird.terminalcontrol2.utilities.MathTools.byte
 import ktx.ashley.get
+import ktx.collections.GdxArray
 import ktx.collections.toGdxArray
 import ktx.graphics.moveTo
 import ktx.scene2d.*
@@ -33,9 +38,12 @@ class UIPane(private val uiStage: Stage) {
     // Control pane (when aircraft is selected)
     val controlPane: KContainer<Actor>
     val lateralContainer: KContainer<Actor>
+    val altSelectBox: KSelectBox<String>
+    val spdSelectBox: KSelectBox<Short>
 
     val routeSubsectionTable: KTableWidget
     val routeTable: KTableWidget
+    // var routeTableSelectedDirect: Int
 
     val holdTable: KTableWidget
     val vectorTable: KTableWidget
@@ -62,6 +70,7 @@ class UIPane(private val uiStage: Stage) {
                             align(Align.top)
                         }
                         setOverscroll(false, false)
+                        removeMouseScrollListeners()
                     }.cell(padTop = 20f, align = Align.top, preferredWidth = paneWidth, preferredHeight = Variables.UI_HEIGHT * 0.4f, growX = true)
                     align(Align.top)
                 }
@@ -95,14 +104,13 @@ class UIPane(private val uiStage: Stage) {
                     row()
                     table {
                         // Third row of selectBoxes, button - Altitude, Expedite, Speed
-                        selectBox<Int>("ControlPane").apply {
-                            items = (2000..20000 step 1000).toGdxArray()
+                        altSelectBox = selectBox<String>("ControlPane").apply {
+                            items = GdxArray()
                             list.setAlignment(Align.center)
                             setAlignment(Align.center)
                         }.cell(grow = true, preferredWidth = paneWidth * 0.37f)
                         textButton("Expedite", "ControlPaneSelected").cell(grow = true, preferredWidth = paneWidth * 0.26f)
-                        selectBox<Int>("ControlPane").apply {
-                            items = (150 .. 250 step 10).toGdxArray()
+                        spdSelectBox = selectBox<Short>("ControlPane").apply {
                             list.setAlignment(Align.center)
                             setAlignment(Align.center)
                         }.cell(grow = true, preferredWidth = paneWidth * 0.37f)
@@ -125,18 +133,10 @@ class UIPane(private val uiStage: Stage) {
                 scrollPane("ControlPaneRoute") {
                     routeTable = table {
                         // debugAll()
-                        textButton("=>", "ControlPaneRouteDirect").cell(growX = true, preferredWidth = 0.2f * paneWidth, preferredHeight = 0.1f * Variables.UI_HEIGHT)
-                        label("WPT01", "ControlPaneRoute").apply { setAlignment(Align.center) }.cell(growX = true, preferredWidth = 0.2f * paneWidth)
-                        label("9000\n5000", "ControlPaneBothAltRestr").apply { setAlignment(Align.center) }.cell(expandX = true, padLeft = 10f, padRight = 10f)
-                        label("250kts", "ControlPaneRoute").apply { setAlignment(Align.center) }.cell(growX = true, preferredWidth = 0.2f * paneWidth)
-                        row()
-                        textButton("=>", "ControlPaneRouteDirect").cell(growX = true, preferredWidth = 0.2f * paneWidth, preferredHeight = 0.1f * Variables.UI_HEIGHT)
-                        label("WPT02", "ControlPaneRoute").apply { setAlignment(Align.center) }.cell(growX = true, preferredWidth = 0.2f * paneWidth)
-                        label("3000", "ControlPaneBottomAltRestr").apply { setAlignment(Align.center) }.cell(expandX = true, padLeft = 10f, padRight = 10f)
-                        label("230kts", "ControlPaneRoute").apply { setAlignment(Align.center) }.cell(growX = true, preferredWidth = 0.2f * paneWidth)
                         align(Align.top)
                     }
                     setOverscroll(false, false)
+                    removeMouseScrollListeners()
                 }.cell(preferredWidth = 0.81f * paneWidth, preferredHeight = 0.6f * Variables.UI_HEIGHT, grow = true, padTop = 20f, align = Align.top)
                 table {
                     textButton("Edit\nroute", "ControlPaneButton").cell(growX = true, height = Variables.UI_HEIGHT * 0.15f).addListener(object: ChangeListener() {
@@ -242,6 +242,7 @@ class UIPane(private val uiStage: Stage) {
                             align(Align.top)
                         }
                         setOverscroll(false, false)
+                        removeMouseScrollListeners()
                     }.cell(preferredWidth = paneWidth, preferredHeight = 0.8f * Variables.UI_HEIGHT - 40f, grow = true, padTop = 20f, padBottom = 20f, align = Align.top)
                     row()
                     table {
@@ -345,13 +346,35 @@ class UIPane(private val uiStage: Stage) {
         metarPane.padBottom(20f)
     }
 
-    fun setSelectedAircraft() {
+    /** Removes the mouse scroll input listener from the [ScrollPane] to prevent nuisance pane scrolls when scrolling the mouse */
+    private fun ScrollPane.removeMouseScrollListeners() {
+        var listenerToRemove: InputListener? = null
+        for (listener in listeners) if (listener is InputListener) {
+            listenerToRemove = listener
+            break
+        }
+        removeListener(listenerToRemove)
+    }
+
+    /** Sets the selected UI aircraft to the passed [aircraft]
+     *
+     * The pane is shown only if aircraft has the Controllable component and is in the player's sector
+     * */
+    fun setSelectedAircraft(aircraft: Aircraft) {
         // TODO update with actual aircraft information
+        aircraft.entity.apply {
+            val controllable = get(Controllable.mapper) ?: return
+            if (controllable.sectorId != 0.byte) return // TODO Check for player's sector ID
+        }
+        val latestClearance = aircraft.entity[LatestClearance.mapper]?.clearance ?: return
+        updateRouteTable(latestClearance.route)
+        updateAltSpdClearances(latestClearance.clearedAlt, latestClearance.clearedIas, 154, 247)
         controlPane.isVisible = true
         routeEditPane.isVisible = false
         mainInfoPane.isVisible = false
     }
 
+    /** Unset the selected UI aircraft */
     fun deselectAircraft() {
         controlPane.isVisible = false
         routeEditPane.isVisible = false
@@ -368,5 +391,75 @@ class UIPane(private val uiStage: Stage) {
     fun setToControlPane() {
         routeEditPane.isVisible = false
         controlPane.isVisible = true
+    }
+
+    /** Updates [altSelectBox] with the appropriate altitude choices for [Variables.MIN_ALT] and [Variables.MAX_ALT]
+     *
+     * Call after updating [Variables.MIN_ALT] and [Variables.MAX_ALT]
+     * */
+    fun updateAltSelectBoxChoices() {
+        /** Checks the [alt] according to [Variables.TRANS_ALT] and [Variables.TRANS_LVL] before adding it to the [array] */
+        fun checkAltAndAddToArray(alt: Int, array: GdxArray<String>) {
+            if (alt > Variables.TRANS_ALT && alt < Variables.TRANS_LVL * 100) return
+            if (alt <= Variables.TRANS_ALT) array.add(alt.toString())
+            else if (alt >= Variables.TRANS_LVL * 100) array.add("FL${alt / 100}")
+        }
+
+        val minAlt = if (Variables.MIN_ALT % 1000 > 0) (Variables.MIN_ALT / 1000 + 1) * 1000 else Variables.MIN_ALT
+        val maxAlt = if (Variables.MAX_ALT % 1000 > 0) (Variables.MAX_ALT / 1000) * 1000 else Variables.MAX_ALT
+        altSelectBox.items = GdxArray<String>().apply {
+            clear()
+            if (Variables.MIN_ALT % 1000 > 0) checkAltAndAddToArray(Variables.MIN_ALT, this)
+            for (alt in minAlt .. maxAlt step 1000) checkAltAndAddToArray(alt, this)
+            if (Variables.MAX_ALT % 1000 > 0) checkAltAndAddToArray(Variables.MAX_ALT, this)
+        }
+    }
+
+    /** Updates the cleared altitude, speed in the pane */
+    private fun updateAltSpdClearances(clearedAlt: Int, clearedSpd: Short, minSpd: Short, maxSpd: Short) {
+        val minSpdRounded = if (minSpd % 10 > 0) ((minSpd / 10 + 1) * 10).toShort() else minSpd
+        val maxSpdRounded = if (maxSpd % 10 > 0) ((maxSpd / 10) * 10).toShort() else maxSpd
+        spdSelectBox.items = GdxArray<Short>().apply {
+            clear()
+            if (minSpd % 10 > 0) add(minSpd)
+            for (spd in minSpdRounded .. maxSpdRounded step 10) add(spd.toShort())
+            if (maxSpd % 10 > 0) add(maxSpd)
+        }
+        altSelectBox.selected = if (clearedAlt >= Variables.TRANS_LVL * 100) "FL${clearedAlt / 100}" else clearedAlt.toString()
+        spdSelectBox.selected = clearedSpd
+    }
+
+    /** Updates the route list in [routeTable] (Route tab) */
+    private fun updateRouteTable(route: Route) {
+        routeTable.clear()
+        routeTable.apply {
+            for (i in 0 until route.legs.size) {
+                route.legs[i].let { leg ->
+                    val legDisplay = (leg as? Route.WaypointLeg)?.wptId?.let { wptId -> Constants.GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName } ?:
+                                     (leg as? Route.VectorLeg)?.heading?.let { hdg -> "HDG $hdg" } ?:
+                                     (leg as? Route.HoldLeg)?.wptId?.let { wptId -> "Hold at\n${Constants.GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName}" } ?:
+                                     (leg as? Route.DiscontinuityLeg)?.let { "Discontinuity" } ?:
+                                     (leg as? Route.InitClimbLeg)?.heading?.let { hdg -> "Climb on\nHDG $hdg" } ?: return@let
+                    val altRestrDisplay = (leg as? Route.WaypointLeg)?.let { wptLeg ->
+                        var restr = wptLeg.maxAltFt?.toString() ?: ""
+                        restr += wptLeg.minAltFt?.toString()?.let { minAlt -> "${if (restr.isNotBlank()) "\n" else ""}$minAlt" } ?: ""
+                        restr
+                    } ?: (leg as? Route.InitClimbLeg)?.minAltFt?.let { minAlt -> "$minAlt" } ?: ""
+                    val altRestrStyle = (leg as? Route.WaypointLeg)?.let { wptLeg -> when {
+                        wptLeg.minAltFt != null && wptLeg.maxAltFt != null -> "ControlPaneBothAltRestr"
+                        wptLeg.minAltFt != null -> "ControlPaneBottomAltRestr"
+                        wptLeg.maxAltFt != null -> "ControlPaneTopAltRestr"
+                        else -> "ControlPaneRoute"
+                    } + if (altRestrDisplay.isNotBlank() && !wptLeg.altRestrActive) "Cancel" else ""} ?: (leg as? Route.InitClimbLeg)?.let { "ControlPaneBottomAltRestr" } ?: "ControlPaneRoute"
+                    val spdRestr = (leg as? Route.WaypointLeg)?.maxSpdKt?.let { spd -> "${spd}kts" } ?: ""
+                    val spdRestrStyle = if ((leg as? Route.WaypointLeg)?.spdRestrActive == true) "ControlPaneRoute" else "ControlPaneSpdRestrCancel"
+                    textButton("=>", "ControlPaneRouteDirect").cell(growX = true, preferredWidth = 0.2f * paneWidth, preferredHeight = 0.1f * Variables.UI_HEIGHT)
+                    label(legDisplay, "ControlPaneRoute").apply { setAlignment(Align.center) }.cell(growX = true, preferredWidth = 0.2f * paneWidth)
+                    label(altRestrDisplay, altRestrStyle).apply { setAlignment(Align.center) }.cell(expandX = true, padLeft = 10f, padRight = 10f)
+                    label(spdRestr, spdRestrStyle).apply { setAlignment(Align.center) }.cell(growX = true, preferredWidth = 0.2f * paneWidth)
+                    row()
+                }
+            }
+        }
     }
 }

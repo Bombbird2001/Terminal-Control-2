@@ -51,7 +51,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
             with<Datatag> {
                 DatatagTools.updateStyle(this, flightType)
                 DatatagTools.updateText(this, arrayOf("Test line 1", "Test line 2", "", "Test line 3"))
-                DatatagTools.addInputListeners(this)
+                DatatagTools.addInputListeners(this, this@Aircraft)
                 xOffset = -imgButton.width / 2
                 yOffset = 13f
             }

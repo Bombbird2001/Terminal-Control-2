@@ -140,6 +140,7 @@ class GameServer {
 
             override fun connected(connection: Connection?) {
                 // TODO Handle connections - send initial data and broadcast message if needed
+                connection?.sendTCP(SerialisationRegistering.InitialAirspaceData(Variables.MAG_HDG_DEV, Variables.MIN_ALT, Variables.MAX_ALT, Variables.MIN_SEP, Variables.TRANS_ALT, Variables.TRANS_LVL))
                 connection?.sendTCP(SerialisationRegistering.InitialSectorData(sectors.map { it.getSerialisableObject() }.toTypedArray()))
                 connection?.sendTCP(SerialisationRegistering.InitialAircraftData(aircraft.values().map { it.getSerialisableObject() }.toTypedArray()))
                 connection?.sendTCP(SerialisationRegistering.AirportData(airports.values().map { it.getSerialisableObject() }.toTypedArray()))

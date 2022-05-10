@@ -16,7 +16,7 @@ import com.badlogic.ashley.core.Entity
  * Also contains utility functions for updating the actual aircraft command state
  * */
 class ClearanceState(val routePrimaryName: String = "", val route: Route = Route(), val hiddenLegs: Route = Route(),
-                     val vectorHdg: Short? = null, val clearedAlt: Int = 0, val clearedIas: Short? = 0) {
+                     val vectorHdg: Short? = null, val clearedAlt: Int = 0, val clearedIas: Short = 0) {
 
     // TODO Updates the aircraft command state to this clearance state, including sanity checks
     fun updateCommandState(entity: Entity) {

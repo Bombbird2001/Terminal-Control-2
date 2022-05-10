@@ -10,6 +10,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener
 import com.badlogic.gdx.scenes.scene2d.utils.DragListener
 import com.bombbird.terminalcontrol2.components.*
+import com.bombbird.terminalcontrol2.entities.Aircraft
 import com.bombbird.terminalcontrol2.global.Constants
 import com.bombbird.terminalcontrol2.global.Variables
 import com.bombbird.terminalcontrol2.navigation.Route
@@ -100,7 +101,7 @@ object DatatagTools {
     }
 
     /** Adds a dragListener and changeListener to the background [Datatag.clickSpot] */
-    fun addInputListeners(datatag: Datatag) {
+    fun addInputListeners(datatag: Datatag, aircraft: Aircraft) {
         datatag.clickSpot.apply {
             Constants.GAME.gameClientScreen?.addToConstZoomStage(this) // Add to uiStage in order for drag gesture to be detected by inputMultiplexer
             zIndex = 0
@@ -118,7 +119,7 @@ object DatatagTools {
                         datatag.dragging = false
                         return
                     }
-                    Constants.CLIENT_SCREEN?.setSelectedAircraft()
+                    Constants.CLIENT_SCREEN?.setUISelectedAircraft(aircraft)
                 }
             })
         }

@@ -20,6 +20,7 @@ object SerialisationRegistering {
             register(ShortArray::class.java)
 
             // Initial load classes
+            register(InitialAirspaceData::class.java)
             register(InitialSectorData::class.java)
             register(InitialAircraftData::class.java)
             register(AirportData::class.java)
@@ -93,37 +94,40 @@ object SerialisationRegistering {
         } ?: Gdx.app.log("SerialisationRegistering", "Null kryo passed, unable to register classes")
     }
 
+    /** Class representing airspace data sent on initial connection, loading of the game on a client */
+    data class InitialAirspaceData(val magHdgDev: Float = 0f, val minAlt: Int = 2000, val maxAlt: Int = 20000, val minSep: Float = 3f, val transAlt: Int = 18000, val transLvl: Int = 180)
+
     /** Class representing sector data sent on initial connection, loading of the game on a client */
-    class InitialSectorData(val sectors: Array<Sector.SerialisedSector> = arrayOf())
+    data class InitialSectorData(val sectors: Array<Sector.SerialisedSector> = arrayOf())
 
     /** Class representing aircraft data sent on initial connection, loading of the game on a client */
-    class InitialAircraftData(val aircraft: Array<Aircraft.SerialisedAircraft> = arrayOf())
+    data class InitialAircraftData(val aircraft: Array<Aircraft.SerialisedAircraft> = arrayOf())
 
     /** Class representing airport data sent on initial connection, loading of the game on a client */
-    class AirportData(val airports: Array<Airport.SerialisedAirport> = arrayOf())
+    data class AirportData(val airports: Array<Airport.SerialisedAirport> = arrayOf())
 
     /** Class representing waypoint data sent on initial connection, loading of the game on a client */
-    class WaypointData(val waypoints: Array<Waypoint.SerialisedWaypoint> = arrayOf())
+    data class WaypointData(val waypoints: Array<Waypoint.SerialisedWaypoint> = arrayOf())
 
     /** Class representing published hold data sent on initial connection, loading of the game on a client */
-    class PublishedHoldData(val publishedHolds: Array<PublishedHold.SerialisedPublishedHold> = arrayOf())
+    data class PublishedHoldData(val publishedHolds: Array<PublishedHold.SerialisedPublishedHold> = arrayOf())
 
     /** Class representing minimum altitude sector data sent on initial connection, loading of the game on a client */
-    class MinAltData(val minAltSectors: Array<MinAltSector.SerialisedMinAltSector> = arrayOf())
+    data class MinAltData(val minAltSectors: Array<MinAltSector.SerialisedMinAltSector> = arrayOf())
 
     /** Class representing shoreline data sent on initial connection, loading of the game on a client */
-    class ShorelineData(val shoreline: Array<Shoreline.SerialisedShoreline> = arrayOf())
+    data class ShorelineData(val shoreline: Array<Shoreline.SerialisedShoreline> = arrayOf())
 
     /** Class representing the data to be sent during METAR updates */
-    class MetarData(val metars: Array<Airport.SerialisedMetar> = arrayOf())
+    data class MetarData(val metars: Array<Airport.SerialisedMetar> = arrayOf())
 
     /** Class representing data sent on fast UDP updates (i.e. 20 times per second) */
-    class FastUDPData(val aircraft: Array<Aircraft.SerialisedAircraftUDP> = arrayOf())
+    data class FastUDPData(val aircraft: Array<Aircraft.SerialisedAircraftUDP> = arrayOf())
 
     /** Class representing data sent during aircraft sector update */
-    class AircraftSectorUpdateData(val callsign: String = "", val newSector: Byte = 0)
+    data class AircraftSectorUpdateData(val callsign: String = "", val newSector: Byte = 0)
 
     /** Class representing control state data sent when the aircraft command state is updated (either through player command, or due to leg being reached) */
-    class AircraftControlStateUpdateData(val callsign: String = "", var primaryName: String = "", var route: Route.SerialisedRoute = Route.SerialisedRoute(), var hiddenLegs: Route.SerialisedRoute = Route.SerialisedRoute(),
+    data class AircraftControlStateUpdateData(val callsign: String = "", var primaryName: String = "", var route: Route.SerialisedRoute = Route.SerialisedRoute(), var hiddenLegs: Route.SerialisedRoute = Route.SerialisedRoute(),
                                          val vectorHdg: Short? = null, val clearedAlt: Int = 0)
 }
