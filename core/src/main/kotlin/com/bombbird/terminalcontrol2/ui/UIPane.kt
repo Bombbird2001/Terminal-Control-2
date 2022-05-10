@@ -2,10 +2,7 @@ package com.bombbird.terminalcontrol2.ui
 
 import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.scenes.scene2d.Actor
-import com.badlogic.gdx.scenes.scene2d.InputListener
 import com.badlogic.gdx.scenes.scene2d.Stage
-import com.badlogic.gdx.scenes.scene2d.ui.ScrollPane
-import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener
 import com.badlogic.gdx.utils.Align
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.Aircraft
@@ -15,7 +12,6 @@ import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.utilities.MathTools.byte
 import ktx.ashley.get
 import ktx.collections.GdxArray
-import ktx.collections.toGdxArray
 import ktx.graphics.moveTo
 import ktx.scene2d.*
 import kotlin.math.max
@@ -25,32 +21,24 @@ import kotlin.math.max
  * The overall UI layout is generated on initialisation, and the exact content can be modified by accessing and modifying the relevant UI components stored as variables
  * */
 class UIPane(private val uiStage: Stage) {
+    companion object {
+        const val MODE_ROUTE: Byte = 0
+        const val MODE_HOLD: Byte = 1
+        const val MODE_VECTOR: Byte = 2
+    }
+
     var paneImage: KImageButton
     val paneWidth: Float
         get() = max(Variables.UI_WIDTH * 0.28f, 400f)
 
     // Main pane (when no aircraft selected)
     val mainInfoPane: KContainer<Actor>
-    val metarScroll: KScrollPane
-    val metarPane: KTableWidget
-    val metarExpandSet = HashSet<String>()
 
     // Control pane (when aircraft is selected)
     val controlPane: KContainer<Actor>
-    val lateralContainer: KContainer<Actor>
-    val altSelectBox: KSelectBox<String>
-    val spdSelectBox: KSelectBox<Short>
-
-    val routeSubsectionTable: KTableWidget
-    val routeTable: KTableWidget
-    // var routeTableSelectedDirect: Int
-
-    val holdTable: KTableWidget
-    val vectorTable: KTableWidget
 
     // Route editing pane
     val routeEditPane: KContainer<Actor>
-    val routeEditTable: KTableWidget
 
     init {
         uiStage.actors {
@@ -58,204 +46,16 @@ class UIPane(private val uiStage: Stage) {
                 // debugAll()
                 setSize(paneWidth, Variables.UI_HEIGHT)
             }
-            mainInfoPane = container {
-                // debugAll()
-                fill()
-                setSize(paneWidth, Variables.UI_HEIGHT)
-                table {
-                    // debugAll()
-                    metarScroll = scrollPane("MetarPane") {
-                        // debugAll()
-                        metarPane = table {
-                            align(Align.top)
-                        }
-                        setOverscroll(false, false)
-                        removeMouseScrollListeners()
-                    }.cell(padTop = 20f, align = Align.top, preferredWidth = paneWidth, preferredHeight = Variables.UI_HEIGHT * 0.4f, growX = true)
-                    align(Align.top)
-                }
-                isVisible = true
+            mainInfoPane = mainInfoPane(paneWidth)
+            controlPane = controlPane(paneWidth)
+            routeTable = routeTable(paneWidth) {
+                setToEditRoutePane()
             }
-            controlPane = container {
-                fill()
-                setSize(paneWidth, Variables.UI_HEIGHT)
-                // debugAll()
-                table {
-                    table {
-                        // First row of mode buttons - Route, Hold, Vectors
-                        textButton("Route", "ControlPaneSelected").cell(grow = true, preferredWidth = paneWidth / 3)
-                        textButton("Hold", "ControlPaneSelected").cell(grow = true, preferredWidth = paneWidth / 3)
-                        textButton("Vectors", "ControlPaneSelected").cell(grow = true, preferredWidth = paneWidth / 3)
-                    }.cell(preferredWidth = paneWidth, height = Variables.UI_HEIGHT * 0.125f, growX = true, align = Align.top)
-                    row()
-                    table {
-                        // Second row of selectBoxes - Approach, Transition
-                        selectBox<String>("ControlPane").apply {
-                            items = arrayOf("Approach", "ILS05L", "ILS05R").toGdxArray()
-                            list.setAlignment(Align.center)
-                            setAlignment(Align.center)
-                        }.cell(grow = true, preferredWidth = paneWidth / 2)
-                        selectBox<String>("ControlPane").apply {
-                            items = arrayOf("Via vectors", "Via JAMMY", "Via FETUS", "Via MARCH").toGdxArray()
-                            list.setAlignment(Align.center)
-                            setAlignment(Align.center)
-                        }.cell(grow = true, preferredWidth = paneWidth / 2)
-                    }.cell(preferredWidth = paneWidth, height = Variables.UI_HEIGHT * 0.125f, growX = true)
-                    row()
-                    table {
-                        // Third row of selectBoxes, button - Altitude, Expedite, Speed
-                        altSelectBox = selectBox<String>("ControlPane").apply {
-                            items = GdxArray()
-                            list.setAlignment(Align.center)
-                            setAlignment(Align.center)
-                        }.cell(grow = true, preferredWidth = paneWidth * 0.37f)
-                        textButton("Expedite", "ControlPaneSelected").cell(grow = true, preferredWidth = paneWidth * 0.26f)
-                        spdSelectBox = selectBox<Short>("ControlPane").apply {
-                            list.setAlignment(Align.center)
-                            setAlignment(Align.center)
-                        }.cell(grow = true, preferredWidth = paneWidth * 0.37f)
-                    }.cell(preferredWidth = paneWidth, height = Variables.UI_HEIGHT * 0.125f, growX = true)
-                    row()
-                    lateralContainer = container {  }.cell(grow = true, preferredWidth = paneWidth)
-                    row()
-                    table {
-                        // Last row of buttons - Undo all, Acknowledge/Handover, Transmit
-                        textButton("Undo all", "ControlPaneButton").cell(grow = true, preferredWidth = paneWidth / 3)
-                        textButton("Handover\n-\nAcknowledge", "ControlPaneButton").cell(grow = true, preferredWidth = paneWidth / 3)
-                        textButton("Transmit", "ControlPaneButton").cell(grow = true, preferredWidth = paneWidth / 3)
-                    }.cell(preferredWidth = paneWidth, height = Variables.UI_HEIGHT * 0.125f, growX = true, align = Align.bottom)
-                    align(Align.top)
-                }
-                isVisible = false
-            }
-            routeSubsectionTable = table {
-                // debugAll()
-                scrollPane("ControlPaneRoute") {
-                    routeTable = table {
-                        // debugAll()
-                        align(Align.top)
-                    }
-                    setOverscroll(false, false)
-                    removeMouseScrollListeners()
-                }.cell(preferredWidth = 0.81f * paneWidth, preferredHeight = 0.6f * Variables.UI_HEIGHT, grow = true, padTop = 20f, align = Align.top)
-                table {
-                    textButton("Edit\nroute", "ControlPaneButton").cell(growX = true, height = Variables.UI_HEIGHT * 0.15f).addListener(object: ChangeListener() {
-                        override fun changed(event: ChangeEvent?, actor: Actor?) {
-                            setToEditRoutePane()
-                        }
-                    })
-                    row()
-                    textButton("CDA", "ControlPaneSelected").cell(growX = true, height = Variables.UI_HEIGHT * 0.15f)
-                }.cell(preferredWidth = 0.19f * paneWidth, padTop = 20f, align = Align.top)
-            }
-            holdTable = table {
-                // debugAll()
-                table {
-                    selectBox<String>("ControlPane") {
-                        items = arrayOf("Present position", "JAMMY", "MARCH").toGdxArray()
-                        setAlignment(Align.center)
-                        list.setAlignment(Align.center)
-                    }.cell(grow = true, preferredWidth = 0.4f * paneWidth, padRight = 10f)
-                    textButton("As\n Published", "ControlPaneSelected").cell(grow = true, preferredWidth = 0.3f * paneWidth - 10f, padRight = 10f)
-                    textButton("Custom", "ControlPaneSelected").cell(grow = true, preferredWidth = 0.3f * paneWidth - 10f)
-                }.cell(preferredWidth = paneWidth, growX = true, height = Variables.UI_HEIGHT * 0.1f, padTop = 20f)
-                row()
-                table {
-                    // debugAll()
-                    label("Legs:", "ControlPaneRoute").apply { setAlignment(Align.center) }.cell(grow = true, height = Variables.UI_HEIGHT * 0.1f, padRight = 10f, preferredWidth = 0.15f * paneWidth, align = Align.center)
-                    textButton("-", "ControlPaneHold").cell(grow = true, preferredWidth = 0.15f * paneWidth)
-                    label("5 nm", "ControlPaneHoldDist").apply { setAlignment(Align.center) }.cell(grow = true, preferredWidth = 0.15f * paneWidth, align = Align.center)
-                    textButton("+", "ControlPaneHold").cell(grow = true, padRight = 30f, preferredWidth = 0.15f * paneWidth)
-                    textButton("Left", "ControlPaneSelected").cell(grow = true, preferredWidth = 0.2f * paneWidth - 20f)
-                    textButton("Right", "ControlPaneSelected").cell(grow = true, preferredWidth = 0.2f * paneWidth - 20f)
-                }.cell(preferredWidth = paneWidth, growX = true, height = Variables.UI_HEIGHT * 0.1f, padTop = 20f)
-                row()
-                table {
-                    label("Inbound\nheading:", "ControlPaneRoute").apply { setAlignment(Align.center) }.cell(grow = true, preferredWidth = 0.22f * paneWidth, padRight = 10f)
-                    table {
-                        textButton("-20", "ControlPaneHdgDark").cell(grow = true, preferredHeight = 0.2f * Variables.UI_HEIGHT - 40f)
-                        row()
-                        textButton("-5", "ControlPaneHdgLight").cell(grow = true, preferredHeight = 0.2f * Variables.UI_HEIGHT - 40f)
-                    }.cell(grow = true, preferredWidth = 0.275f * paneWidth)
-                    label("360", "ControlPaneHdg").apply { setAlignment(Align.center) }.cell(grow = true, preferredWidth = 0.23f * paneWidth - 10f)
-                    table {
-                        textButton("+20", "ControlPaneHdgDark").cell(grow = true, preferredHeight = 0.2f * Variables.UI_HEIGHT - 40f)
-                        row()
-                        textButton("+5", "ControlPaneHdgLight").cell(grow = true, preferredHeight = 0.2f * Variables.UI_HEIGHT - 40f)
-                    }.cell(grow = true, preferredWidth = 0.275f * paneWidth)
-                }.cell(preferredWidth = paneWidth, preferredHeight = 0.4f * Variables.UI_HEIGHT - 80f, growX = true, padTop = 20f, padBottom = 20f)
-                isVisible = false
-            }
-            vectorTable = table {
-                table {
-                    textButton("Left", "ControlPaneHdgLight").cell(grow = true, preferredWidth = 0.5f * paneWidth - 10f)
-                    textButton("Right", "ControlPaneHdgLight").cell(grow = true, preferredWidth = 0.5f * paneWidth - 10f)
-                }.cell(padTop = 20f, height = 0.1f * Variables.UI_HEIGHT, padLeft = 10f, padRight = 10f)
-                row()
-                table {
-                    table {
-                        textButton("-90", "ControlPaneHdgDark").cell(grow = true, preferredHeight = (0.5f * Variables.UI_HEIGHT - 40f) / 3)
-                        row()
-                        textButton("-10", "ControlPaneHdgDark").cell(grow = true, preferredHeight = (0.5f * Variables.UI_HEIGHT - 40f) / 3)
-                        row()
-                        textButton("-5", "ControlPaneHdgDark").cell(grow = true, preferredHeight = (0.5f * Variables.UI_HEIGHT - 40f) / 3)
-                    }.cell(grow = true, preferredWidth = 0.4f * paneWidth, padLeft = 10f)
-                    label("360", "ControlPaneHdg").apply { setAlignment(Align.center) }.cell(grow = true, preferredWidth = 0.3f * paneWidth - 20f)
-                    table {
-                        textButton("+90", "ControlPaneHdgDark").cell(grow = true, preferredHeight = (0.5f * Variables.UI_HEIGHT - 40f) / 3)
-                        row()
-                        textButton("+10", "ControlPaneHdgDark").cell(grow = true, preferredHeight = (0.5f * Variables.UI_HEIGHT - 40f) / 3)
-                        row()
-                        textButton("+5", "ControlPaneHdgDark").cell(grow = true, preferredHeight = (0.5f * Variables.UI_HEIGHT - 40f) / 3)
-                    }.cell(grow = true, preferredWidth = 0.4f * paneWidth, padRight = 10f)
-                }.cell(preferredWidth = paneWidth, preferredHeight = 0.5f * Variables.UI_HEIGHT - 40f, padBottom = 20f)
-                isVisible = false
-            }
-            lateralContainer.actor = routeSubsectionTable
-            routeEditPane = container {
-                fill()
-                setSize(paneWidth, Variables.UI_HEIGHT)
-                // debugAll()
-                table {
-                    table {
-                        textButton("Cancel all\nAlt restr.", "ControlPaneButton").cell(grow = true, preferredWidth = 0.3f * paneWidth)
-                        textButton("Cancel all\nSpd restr.", "ControlPaneButton").cell(grow = true, preferredWidth = 0.3f * paneWidth)
-                        selectBox<String>("ControlPane") {
-                            items = arrayOf("Change STAR", "TNN1B", "TONGA1A", "TONGA1B").toGdxArray()
-                            setAlignment(Align.center)
-                            list.setAlignment(Align.center)
-                        }.cell(grow = true, preferredWidth = 0.4f * paneWidth)
-                    }.cell(growX = true, height = 0.1f * Variables.UI_HEIGHT)
-                    row()
-                    scrollPane("ControlPaneRoute") {
-                        routeEditTable = table {
-                            // debugAll()
-                            label("WPT01", "ControlPaneRoute").apply { setAlignment(Align.center) }.cell(growX = true, height = 0.125f * Variables.UI_HEIGHT, padLeft = 10f, padRight = 10f)
-                            textButton("9000B\n5000A", "ControlPaneRestr").cell(growX = true, preferredWidth = 0.25f * paneWidth, height = 0.125f * Variables.UI_HEIGHT)
-                            textButton("250kts", "ControlPaneRestr").cell(growX = true, preferredWidth = 0.25f * paneWidth, height = 0.125f * Variables.UI_HEIGHT)
-                            textButton("SKIP", "ControlPaneSelected").cell(growX = true, preferredWidth = 0.25f * paneWidth, height = 0.125f * Variables.UI_HEIGHT)
-                            row()
-                            label("WPT02", "ControlPaneRoute").apply { setAlignment(Align.center) }.cell(growX = true, height = 0.125f * Variables.UI_HEIGHT, padLeft = 10f, padRight = 10f)
-                            textButton("3000A", "ControlPaneRestr").cell(growX = true, preferredWidth = 0.25f * paneWidth, height = 0.125f * Variables.UI_HEIGHT)
-                            textButton("230kts", "ControlPaneRestr").cell(growX = true, preferredWidth = 0.25f * paneWidth, height = 0.125f * Variables.UI_HEIGHT)
-                            textButton("SKIP", "ControlPaneSelected").cell(growX = true, preferredWidth = 0.25f * paneWidth, height = 0.125f * Variables.UI_HEIGHT)
-                            align(Align.top)
-                        }
-                        setOverscroll(false, false)
-                        removeMouseScrollListeners()
-                    }.cell(preferredWidth = paneWidth, preferredHeight = 0.8f * Variables.UI_HEIGHT - 40f, grow = true, padTop = 20f, padBottom = 20f, align = Align.top)
-                    row()
-                    table {
-                        textButton("Undo", "ControlPaneButton").cell(grow = true, preferredWidth = 0.5f * paneWidth)
-                        textButton("Confirm", "ControlPaneButton").cell(grow = true, preferredWidth = 0.5f * paneWidth).addListener(object: ChangeListener() {
-                            override fun changed(event: ChangeEvent?, actor: Actor?) {
-                                setToControlPane()
-                            }
-                        })
-                    }.cell(growX = true, height = 0.1f * Variables.UI_HEIGHT)
-                }
-                isVisible = false
-                setSize(paneWidth, Variables.UI_HEIGHT)
+            holdTable = holdTable(paneWidth)
+            vectorTable = vectorTable(paneWidth)
+            lateralContainer.actor = routeTable
+            routeEditPane = routeEditPane(paneWidth) {
+                setToControlPane()
             }
         }
         uiStage.camera.apply {
@@ -294,84 +94,37 @@ class UIPane(private val uiStage: Stage) {
         return -paneWidth / 2 * zoom // TODO Change depending on pane position
     }
 
-    /** Updates the METAR pane displays (for new METAR information) */
-    fun updateMetarInformation() {
-        metarPane.clear()
-        Constants.CLIENT_SCREEN?.let {
-            var padTop = false
-            for (airport in it.airport.values()) {
-                val airportInfo = airport.entity[AirportInfo.mapper] ?: continue
-                val metarInfo = airport.entity[MetarInfo.mapper] ?: continue
-                val text =
-                    """
-                    ${airportInfo.icaoCode} - ${metarInfo.letterCode}
-                    DEP - ???, ???     ARR - ???, ???
-                    ${metarInfo.rawMetar ?: "Loading METAR..."}
-                    """.trimIndent()
-                val expandedText = """
-                    ${airportInfo.icaoCode} - ${metarInfo.letterCode}
-                    DEP - ???, ???     ARR - ???, ???
-                    ${metarInfo.rawMetar ?: "Loading METAR..."}
-                    Winds: ${if (metarInfo.windSpeedKt.toInt() == 0) "Calm" else "${if (metarInfo.windHeadingDeg == 0.toShort()) "VRB" else metarInfo.windHeadingDeg}@${metarInfo.windSpeedKt}kt ${if (metarInfo.windGustKt > 0) "gusting to ${metarInfo.windGustKt}kt" else ""}"}
-                    Visibility: ${if (metarInfo.visibilityM == 9999.toShort()) 10000 else metarInfo.visibilityM}m
-                    Ceiling: ${metarInfo.ceilingHundredFtAGL?.let { ceiling -> "${ceiling * 100} feet" } ?: "None"}
-                    """.trimIndent() + if (metarInfo.windshear.isNotEmpty()) "\nWindshear: ${metarInfo.windshear}" else ""
-                val linkedButton = metarPane.textButton(if (metarExpandSet.contains(airportInfo.icaoCode)) expandedText else text, "Metar").apply {
-                    label.setAlignment(Align.left)
-                    label.wrap = true
-                    cell(growX = true, padLeft = 20f, padRight = 10f, padTop = if (padTop) 30f else 0f, align = Align.left)
-                }
-                metarPane.textButton(if (metarExpandSet.contains(airportInfo.icaoCode)) "-" else "+", "MetarExpand").apply {
-                    cell(height = 50f, width = 50f, padLeft = 10f, padRight = 20f, padTop = if (padTop) 30f else 0f, align = Align.topRight)
-                    addListener(object: ChangeListener() {
-                        override fun changed(event: ChangeEvent?, actor: Actor?) {
-                            if (metarExpandSet.contains(airportInfo.icaoCode)) {
-                                // Expanded, hide it
-                                this@apply.label.setText("+")
-                                linkedButton.label.setText(text)
-                                metarExpandSet.remove(airportInfo.icaoCode)
-                            } else {
-                                // Hidden, expand it
-                                this@apply.label.setText("-")
-                                linkedButton.label.setText(expandedText)
-                                metarExpandSet.add(airportInfo.icaoCode)
-                            }
-                        }
-                    })
-                }
-                metarPane.row()
-                padTop = true
-            }
-        }
-        metarPane.padBottom(20f)
-    }
-
-    /** Removes the mouse scroll input listener from the [ScrollPane] to prevent nuisance pane scrolls when scrolling the mouse */
-    private fun ScrollPane.removeMouseScrollListeners() {
-        var listenerToRemove: InputListener? = null
-        for (listener in listeners) if (listener is InputListener) {
-            listenerToRemove = listener
-            break
-        }
-        removeListener(listenerToRemove)
-    }
-
     /** Sets the selected UI aircraft to the passed [aircraft]
      *
      * The pane is shown only if aircraft has the Controllable component and is in the player's sector
      * */
     fun setSelectedAircraft(aircraft: Aircraft) {
-        // TODO update with actual aircraft information
         aircraft.entity.apply {
             val controllable = get(Controllable.mapper) ?: return
             if (controllable.sectorId != 0.byte) return // TODO Check for player's sector ID
         }
-        val latestClearance = aircraft.entity[LatestClearance.mapper]?.clearance ?: return
+        val latestClearance = aircraft.entity[ClearanceAct.mapper]?.clearance ?: return
         updateRouteTable(latestClearance.route)
-        updateAltSpdClearances(latestClearance.clearedAlt, latestClearance.clearedIas, 154, 247)
+        updateClearanceMode(latestClearance.route, latestClearance.vectorHdg)
+        updateAltSpdClearances(latestClearance.clearedAlt, latestClearance.clearedIas, 150, 250)
         controlPane.isVisible = true
         routeEditPane.isVisible = false
         mainInfoPane.isVisible = false
+    }
+
+    /** Updates currently selected aircraft pane navigation state to match the updated [aircraft]
+     *
+     * The pane is updated only if aircraft has the Controllable component and is in the player's sector
+     * */
+    fun updateSelectedAircraft(aircraft: Aircraft) {
+        aircraft.entity.apply {
+            val controllable = get(Controllable.mapper) ?: return
+            if (controllable.sectorId != 0.byte) return // TODO Check for player's sector ID
+        }
+        val latestClearance = aircraft.entity[ClearanceAct.mapper]?.clearance ?: return
+        updateRouteTable(latestClearance.route)
+        updateClearanceMode(latestClearance.route, latestClearance.vectorHdg)
+        updateAltSpdClearances(latestClearance.clearedAlt, latestClearance.clearedIas, 150, 250)
     }
 
     /** Unset the selected UI aircraft */
@@ -382,13 +135,13 @@ class UIPane(private val uiStage: Stage) {
     }
 
     /** Helper function to set the UI pane to show [routeEditPane] from [controlPane] */
-    fun setToEditRoutePane() {
+    private fun setToEditRoutePane() {
         routeEditPane.isVisible = true
         controlPane.isVisible = false
     }
 
     /** Helper function to set the UI pane to show [controlPane] from [routeEditPane] */
-    fun setToControlPane() {
+    private fun setToControlPane() {
         routeEditPane.isVisible = false
         controlPane.isVisible = true
     }
@@ -429,10 +182,11 @@ class UIPane(private val uiStage: Stage) {
         spdSelectBox.selected = clearedSpd
     }
 
-    /** Updates the route list in [routeTable] (Route tab) */
+    /** Updates the route list in [routeLegsTable] (Route tab) */
     private fun updateRouteTable(route: Route) {
-        routeTable.clear()
-        routeTable.apply {
+        routeLegsTable.clear()
+        routeLegsTable.apply {
+            var firstDirectSet = false
             for (i in 0 until route.legs.size) {
                 route.legs[i].let { leg ->
                     val legDisplay = (leg as? Route.WaypointLeg)?.wptId?.let { wptId -> Constants.GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName } ?:
@@ -453,7 +207,12 @@ class UIPane(private val uiStage: Stage) {
                     } + if (altRestrDisplay.isNotBlank() && !wptLeg.altRestrActive) "Cancel" else ""} ?: (leg as? Route.InitClimbLeg)?.let { "ControlPaneBottomAltRestr" } ?: "ControlPaneRoute"
                     val spdRestr = (leg as? Route.WaypointLeg)?.maxSpdKt?.let { spd -> "${spd}kts" } ?: ""
                     val spdRestrStyle = if ((leg as? Route.WaypointLeg)?.spdRestrActive == true) "ControlPaneRoute" else "ControlPaneSpdRestrCancel"
-                    textButton("=>", "ControlPaneRouteDirect").cell(growX = true, preferredWidth = 0.2f * paneWidth, preferredHeight = 0.1f * Variables.UI_HEIGHT)
+                    textButton("=>", "ControlPaneRouteDirect").cell(growX = true, preferredWidth = 0.2f * paneWidth, preferredHeight = 0.1f * Variables.UI_HEIGHT).apply {
+                        if (!firstDirectSet) {
+                            isChecked = true
+                            firstDirectSet = true
+                        }
+                    }
                     label(legDisplay, "ControlPaneRoute").apply { setAlignment(Align.center) }.cell(growX = true, preferredWidth = 0.2f * paneWidth)
                     label(altRestrDisplay, altRestrStyle).apply { setAlignment(Align.center) }.cell(expandX = true, padLeft = 10f, padRight = 10f)
                     label(spdRestr, spdRestrStyle).apply { setAlignment(Align.center) }.cell(growX = true, preferredWidth = 0.2f * paneWidth)

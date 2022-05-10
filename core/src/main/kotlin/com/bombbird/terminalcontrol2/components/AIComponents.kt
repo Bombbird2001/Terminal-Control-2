@@ -1,7 +1,6 @@
 package com.bombbird.terminalcontrol2.components
 
 import com.badlogic.ashley.core.Component
-import com.bombbird.terminalcontrol2.navigation.Route
 import ktx.ashley.Mapper
 
 /** Component for tagging takeoff rolling mode
@@ -49,20 +48,6 @@ data class CommandTarget(var targetHdgDeg: Float = 360f, var turnDir: Byte = TUR
         val TURN_LEFT: Byte = -1
         val TURN_RIGHT: Byte = 1
     }
-}
-
-/** Component for tagging the route that an aircraft has been instructed to fly
- *
- * [primaryName] is the name of the SID/STAR that the route is derived from
- *
- * [route] is the active route the aircraft is flying - the first leg in the array is the active leg which the aircraft
- * will target; components will also be tagged to the aircraft to implement the actual behaviour
- *
- * [hiddenLegs] is an array of legs that are removed from the original route due to the use of transitions, but may be
- * added back to the route should the transition change
- * */
-data class ClearedRoute(var primaryName: String = "", var route: Route = Route(), var hiddenLegs: Route = Route()): Component {
-    companion object: Mapper<ClearedRoute>()
 }
 
 /** Component for tagging the vector leg an aircraft is flying
@@ -113,11 +98,6 @@ data class CommandHold(var wptId: Short = 0, var maxAltFt: Int? = null, var minA
                        var inboundHdg: Short = 360, var legDist: Byte = 5, var legDir: Byte = CommandTarget.TURN_RIGHT,
                        var currentEntryProc: Byte = 0, var entryDone: Boolean = false, var oppositeTravelled: Boolean = false, var flyOutbound: Boolean = true): Component {
     companion object: Mapper<CommandHold>()
-}
-
-/** Component for tagging the cleared altitude */
-data class ClearedAltitude(var altitudeFt: Int = 0): Component {
-    companion object: Mapper<ClearedAltitude>()
 }
 
 /** Component for tagging an aircraft that is flying according to continuous descent approach (CDA) operations */

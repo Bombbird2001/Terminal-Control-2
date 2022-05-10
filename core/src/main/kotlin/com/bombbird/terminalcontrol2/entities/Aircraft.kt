@@ -130,9 +130,9 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
                         speed.vertSpdFpm = serialisedAircraft.vertSpdFpm
                         speed.angularSpdDps = serialisedAircraft.angularSpdDps
                     }
-                    this += LatestClearance(ClearanceState(serialisedAircraft.routePrimaryName,
+                    this += ClearanceAct(ClearanceState(serialisedAircraft.routePrimaryName,
                         Route.fromSerialisedObject(serialisedAircraft.commandRoute), Route.fromSerialisedObject(serialisedAircraft.commandHiddenLegs),
-                        serialisedAircraft.vectorHdg, serialisedAircraft.commandAlt
+                        serialisedAircraft.vectorHdg, serialisedAircraft.commandAlt, serialisedAircraft.clearedIas
                     ))
                 }
             }
@@ -207,7 +207,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
                              val speedKts: Float = 0f, val vertSpdFpm: Float = 0f, val angularSpdDps: Float = 0f,
                              val flightType: Byte = 0,
                              val routePrimaryName: String = "", val commandRoute: Route.SerialisedRoute = Route.SerialisedRoute(), val commandHiddenLegs: Route.SerialisedRoute = Route.SerialisedRoute(),
-                             val vectorHdg: Short? = null, val commandAlt: Int = 0 // Vector HDG will be null if aircraft is flying route; IAS can be excluded as it is sent in the frequent UDP updates
+                             val vectorHdg: Short? = null, val commandAlt: Int = 0, val clearedIas: Short = 0 // Vector HDG will be null if aircraft is flying route
     )
 
     /** Gets a [SerialisedAircraft] from current state */
@@ -219,9 +219,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
             val direction = get(Direction.mapper) ?: return SerialisedAircraft()
             val speed = get(Speed.mapper) ?: return SerialisedAircraft()
             val flightType = get(FlightType.mapper) ?: return SerialisedAircraft()
-            val clearedRoute = get(ClearedRoute.mapper) ?: return SerialisedAircraft()
-            val clearedAlt = get(ClearedAltitude.mapper) ?: return SerialisedAircraft()
-            val cmdTarget = get(CommandTarget.mapper) ?: return SerialisedAircraft()
+            val latestClearance = get(PendingClearances.mapper)?.clearanceArray?.last()?.second ?: get(ClearanceAct.mapper)?.clearance ?: return SerialisedAircraft()
             return SerialisedAircraft(
                 position.x, position.y,
                 altitude.altitudeFt,
@@ -229,8 +227,8 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
                 direction.trackUnitVector.x, direction.trackUnitVector.y,
                 speed.speedKts, speed.vertSpdFpm, speed.angularSpdDps,
                 flightType.type,
-                clearedRoute.primaryName, clearedRoute.route.getSerialisedObject(), clearedRoute.hiddenLegs.getSerialisedObject(),
-                if (get(CommandDirect.mapper) != null || get(CommandHold.mapper) != null) null else cmdTarget.targetHdgDeg.roundToInt().toShort(), clearedAlt.altitudeFt
+                latestClearance.routePrimaryName, latestClearance.route.getSerialisedObject(), latestClearance.hiddenLegs.getSerialisedObject(),
+                latestClearance.vectorHdg, latestClearance.clearedAlt, latestClearance.clearedIas
             )
         }
     }

@@ -25,6 +25,7 @@ import com.bombbird.terminalcontrol2.systems.DataSystem
 import com.bombbird.terminalcontrol2.systems.LowFreqUpdate
 import com.bombbird.terminalcontrol2.systems.PhysicsSystemClient
 import com.bombbird.terminalcontrol2.systems.RenderingSystem
+import com.bombbird.terminalcontrol2.ui.updateMetarInformation
 import com.bombbird.terminalcontrol2.utilities.ControlStateTools
 import com.bombbird.terminalcontrol2.utilities.MathTools
 import com.bombbird.terminalcontrol2.utilities.MathTools.byte
@@ -133,7 +134,7 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
                                 // Debug.printAirportApproaches(entity)
                             }
                         }
-                        uiPane.updateMetarInformation()
+                        updateMetarInformation()
                     } ?: (obj as? SerialisationRegistering.WaypointData)?.waypoints?.onEach {
                         Waypoint.fromSerialisedObject(it).apply {
                             entity[WaypointInfo.mapper]?.wptId?.let { id ->
@@ -154,7 +155,7 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
                         metars.forEach {
                             airport[it.arptId]?.updateFromSerialisedMetar(it)
                         }
-                        uiPane.updateMetarInformation()
+                        updateMetarInformation()
                     } ?: (obj as? SerialisationRegistering.AircraftSectorUpdateData)?.apply {
                         aircraft[obj.callsign]?.let { aircraft ->
                             aircraft.entity[Controllable.mapper]?.sectorId = obj.newSector
@@ -162,8 +163,9 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
                             if (obj.newSector == 0.byte && selectedAircraft == aircraft) setUISelectedAircraft(aircraft)
                         }
                     } ?: (obj as? SerialisationRegistering.AircraftControlStateUpdateData)?.apply {
-                        aircraft[obj.callsign]?.entity?.let { aircraft ->
-                            aircraft += LatestClearance(ClearanceState(obj.primaryName, Route.fromSerialisedObject(obj.route), Route.fromSerialisedObject(obj.hiddenLegs), obj.vectorHdg, obj.clearedAlt))
+                        aircraft[obj.callsign]?.let { aircraft ->
+                            aircraft.entity += ClearanceAct(ClearanceState(obj.primaryName, Route.fromSerialisedObject(obj.route), Route.fromSerialisedObject(obj.hiddenLegs), obj.vectorHdg, obj.clearedAlt, obj.clearedIas))
+                            if (selectedAircraft == aircraft) uiPane.updateSelectedAircraft(aircraft)
                         }
                     }
                 }

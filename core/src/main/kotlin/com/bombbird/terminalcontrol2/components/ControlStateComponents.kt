@@ -56,11 +56,11 @@ class PendingClearances(val clearanceArray: Queue<Pair<Float, ClearanceState>> =
 /** Component for tagging the latest [ClearanceState] an aircraft has been cleared; for use on client aircraft only
  * since clients do not need to remember the clearances sent apart from the latest one
  * */
-class LatestClearance(val clearance: ClearanceState = ClearanceState()): Component {
-    companion object: Mapper<LatestClearance>()
+class ClearanceAct(val clearance: ClearanceState = ClearanceState()): Component {
+    companion object: Mapper<ClearanceAct>()
 }
 
-/** Component for tagging when an aircraft's [ClearedRoute]/[ClearedAltitude]/[CommandTarget.targetIasKt] changes
+/** Component for tagging when an aircraft's latest [PendingClearances] or [CommandTarget] changes
  *
  * The system will send a TCP update to all clients informing them of the updated clearance state
  * */

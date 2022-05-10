@@ -2,11 +2,10 @@ package com.bombbird.terminalcontrol2.screens
 
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.Texture
-import com.badlogic.gdx.scenes.scene2d.Actor
-import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener
 import com.badlogic.gdx.utils.Align
 import com.bombbird.terminalcontrol2.global.Constants
 import com.bombbird.terminalcontrol2.global.Variables
+import com.bombbird.terminalcontrol2.utilities.addChangeListener
 import ktx.scene2d.*
 
 /** The main menu screen which extends [BasicUIScreen] */
@@ -23,20 +22,16 @@ class MainMenu: BasicUIScreen() {
                     iconTexture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear)
                     image(iconTexture).cell(width = 360f, height = 119f, expandY = true, align = Align.top, padTop = 105f)
                     row().padTop(65f)
-                    textButton("New Game", "Menu").cell(width = Constants.BIG_BUTTON_WIDTH, height = Constants.BIG_BUTTON_HEIGHT).addListener(object: ChangeListener() {
-                        override fun changed(event: ChangeEvent?, actor: Actor?) {
-                            Constants.GAME.setScreen<NewGame>()
-                        }
-                    })
+                    textButton("New Game", "Menu").cell(width = Constants.BIG_BUTTON_WIDTH, height = Constants.BIG_BUTTON_HEIGHT).addChangeListener { _, _ ->
+                        Constants.GAME.setScreen<NewGame>()
+                    }
                     row().padTop(25f)
                     textButton("Load Game", "Menu").cell(width = Constants.BIG_BUTTON_WIDTH, height = Constants.BIG_BUTTON_HEIGHT)
                     row().padTop(130f)
-                    textButton("Quit", "Menu").cell(width = Constants.BIG_BUTTON_WIDTH, height = Constants.BIG_BUTTON_HEIGHT, padBottom = Constants.BOTTOM_BUTTON_MARGIN).addListener(object: ChangeListener() {
-                        override fun changed(event: ChangeEvent?, actor: Actor?) {
-                            Constants.GAME.dispose()
-                            Gdx.app.exit()
-                        }
-                    })
+                    textButton("Quit", "Menu").cell(width = Constants.BIG_BUTTON_WIDTH, height = Constants.BIG_BUTTON_HEIGHT, padBottom = Constants.BOTTOM_BUTTON_MARGIN).addChangeListener { _, _ ->
+                        Constants.GAME.dispose()
+                        Gdx.app.exit()
+                    }
                 }
             }
         }

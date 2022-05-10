@@ -7,6 +7,7 @@ import com.bombbird.terminalcontrol2.entities.*
 import com.bombbird.terminalcontrol2.files.GameLoader
 import com.bombbird.terminalcontrol2.global.Constants
 import com.bombbird.terminalcontrol2.global.Variables
+import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.systems.AISystem
 import com.bombbird.terminalcontrol2.systems.ControlStateSystem
@@ -69,7 +70,7 @@ class GameServer {
 
     /** Maps [WaypointInfo.wptName] to the [PublishedHold]
      *
-     * This map will map to the most updated published hold, since old holding legs are stored individually with the waypoint ID in the aircraft's [ClearedRoute]
+     * This map will map to the most updated published hold, since old holding legs are stored individually with the waypoint ID in the aircraft's [ClearanceState.route]
      * */
     val publishedHolds = GdxArrayMap<String, PublishedHold>(Constants.PUBLISHED_HOLD_SIZE)
 
@@ -92,13 +93,14 @@ class GameServer {
                 PhysicsTools.calculateIASFromTAS(alt.altitudeFt, MathTools.pxpsToKt(wind.dot(dir.trackUnitVector)))
             }}} ?: 0f
             entity += TakeoffRoll(PhysicsTools.calculateRequiredAcceleration(0, ((entity[AircraftInfo.mapper]?.aircraftPerf?.vR ?: 0) + headwind).toInt().toShort(), ((rwy?.entity?.get(RunwayInfo.mapper)?.lengthM ?: 3800) - 1000) * MathUtils.random(0.75f, 1f)))
+            val climbOutSpeed = ((entity[AircraftInfo.mapper]?.aircraftPerf?.vR ?: 160) + MathUtils.random(15, 20)).toShort()
             entity[CommandTarget.mapper]?.apply {
                 targetAltFt = 3000f
-                targetIasKt = ((entity[AircraftInfo.mapper]?.aircraftPerf?.vR ?: 160) + MathUtils.random(15, 20)).toShort()
+                targetIasKt = climbOutSpeed
                 targetHdgDeg = 54f
             }
-            entity += ClearedRoute("HICAL1C", airports[0]?.entity?.get(SIDChildren.mapper)?.sidMap?.get("HICAL1C")?.getRandomSIDRouteForRunway("05L") ?: Route(), Route())
-            entity += ClearedAltitude(3000)
+            entity += ClearanceAct(ClearanceState("HICAL1C", airports[0]?.entity?.get(SIDChildren.mapper)?.sidMap?.get("HICAL1C")?.getRandomSIDRouteForRunway("05L") ?: Route(), Route(),
+                null, 3000, climbOutSpeed))
         })
 
         engine.addSystem(PhysicsSystem())
@@ -269,8 +271,8 @@ class GameServer {
 
     /** Sends aircraft clearance state updates */
     fun sendAircraftClearanceStateUpdateToAll(callsign: String, primaryName: String = "", route: Route, hiddenLegs: Route,
-                                           vectorHdg: Short?, clearedAlt: Int) {
-        server.sendToAllTCP(SerialisationRegistering.AircraftControlStateUpdateData(callsign, primaryName, route.getSerialisedObject(), hiddenLegs.getSerialisedObject(), vectorHdg, clearedAlt))
+                                           vectorHdg: Short?, clearedAlt: Int, clearedIas: Short) {
+        server.sendToAllTCP(SerialisationRegistering.AircraftControlStateUpdateData(callsign, primaryName, route.getSerialisedObject(), hiddenLegs.getSerialisedObject(), vectorHdg, clearedAlt, clearedIas))
     }
 
     /** Send non-frequent, event-updated and/or important data

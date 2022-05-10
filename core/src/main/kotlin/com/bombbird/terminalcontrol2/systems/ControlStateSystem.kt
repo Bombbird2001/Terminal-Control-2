@@ -6,7 +6,6 @@ import com.bombbird.terminalcontrol2.global.Constants
 import ktx.ashley.allOf
 import ktx.ashley.get
 import ktx.ashley.remove
-import kotlin.math.roundToInt
 
 /** System that is responsible for aircraft control states */
 class ControlStateSystem: EntitySystem() {
@@ -14,18 +13,15 @@ class ControlStateSystem: EntitySystem() {
     /** Main update function */
     override fun update(deltaTime: Float) {
         // Aircraft that have their clearance states changed
-        val clearanceChangedFamily = allOf(ClearanceChanged::class, AircraftInfo::class, ClearedRoute::class, ClearedAltitude::class, CommandTarget::class).get()
+        val clearanceChangedFamily = allOf(ClearanceChanged::class, AircraftInfo::class, ClearanceAct::class).get()
         val clearanceChanged = engine.getEntitiesFor(clearanceChangedFamily)
         for (i in 0 until clearanceChanged.size()) {
             clearanceChanged[i]?.apply {
                 val aircraftInfo = get(AircraftInfo.mapper) ?: return@apply
-                val clearedRoute = get(ClearedRoute.mapper) ?: return@apply
-                val clearedAlt = get(ClearedAltitude.mapper) ?: return@apply
-                val cmdTarget = get(CommandTarget.mapper) ?: return@apply
-                Constants.GAME.gameServer?.sendAircraftClearanceStateUpdateToAll(
-                    aircraftInfo.icaoCallsign, clearedRoute.primaryName, clearedRoute.route, clearedRoute.hiddenLegs,
-                    if (get(CommandDirect.mapper) != null || get(CommandHold.mapper) != null) null else cmdTarget.targetHdgDeg.roundToInt().toShort(),
-                    clearedAlt.altitudeFt)
+                // Try to get the last pending clearance; if no pending clearances exist, use the existing clearance
+                (get(PendingClearances.mapper)?.clearanceArray?.last()?.second ?: get(ClearanceAct.mapper)?.clearance ?: return@apply).apply {
+                    Constants.GAME.gameServer?.sendAircraftClearanceStateUpdateToAll(aircraftInfo.icaoCallsign, routePrimaryName, route, hiddenLegs, vectorHdg, clearedAlt, clearedIas)
+                }
                 remove<ClearanceChanged>()
             }
         }

@@ -3,11 +3,9 @@ package com.bombbird.terminalcontrol2.ui
 import com.badlogic.ashley.core.Entity
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.math.Vector2
-import com.badlogic.gdx.scenes.scene2d.Actor
 import com.badlogic.gdx.scenes.scene2d.InputEvent
 import com.badlogic.gdx.scenes.scene2d.ui.ImageButton
 import com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle
-import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener
 import com.badlogic.gdx.scenes.scene2d.utils.DragListener
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.Aircraft
@@ -15,6 +13,7 @@ import com.bombbird.terminalcontrol2.global.Constants
 import com.bombbird.terminalcontrol2.global.Variables
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.utilities.MathTools
+import com.bombbird.terminalcontrol2.utilities.addChangeListener
 import ktx.ashley.get
 import ktx.math.plus
 import ktx.math.times
@@ -113,15 +112,13 @@ object DatatagTools {
                     event?.handle()
                 }
             })
-            addListener(object: ChangeListener() {
-                override fun changed(event: ChangeEvent?, actor: Actor?) {
-                    if (datatag.dragging) {
-                        datatag.dragging = false
-                        return
-                    }
-                    Constants.CLIENT_SCREEN?.setUISelectedAircraft(aircraft)
+            addChangeListener { _, _ ->
+                if (datatag.dragging) {
+                    datatag.dragging = false
+                    return@addChangeListener
                 }
-            })
+                Constants.CLIENT_SCREEN?.setUISelectedAircraft(aircraft)
+            }
         }
     }
 
@@ -141,7 +138,7 @@ object DatatagTools {
         // Temporary label format TODO change based on datatag format in use
         val aircraftInfo = entity[AircraftInfo.mapper] ?: return labelText
         val radarData = entity[RadarData.mapper] ?: return labelText
-        val latestClearance = entity[LatestClearance.mapper]?.clearance
+        val latestClearance = entity[ClearanceAct.mapper]?.clearance
         val affectedByWind = entity[AffectedByWind.mapper]
 
         val callsign = aircraftInfo.icaoCallsign
@@ -164,7 +161,7 @@ object DatatagTools {
         val aircraftInfo = entity[AircraftInfo.mapper] ?: return labelText
         val radarData = entity[RadarData.mapper] ?: return labelText
         val cmdTarget = entity[CommandTarget.mapper] ?: return labelText
-        val latestClearance = entity[LatestClearance.mapper]?.clearance
+        val latestClearance = entity[ClearanceAct.mapper]?.clearance
         val affectedByWind = entity[AffectedByWind.mapper]
 
         val callsign = aircraftInfo.icaoCallsign

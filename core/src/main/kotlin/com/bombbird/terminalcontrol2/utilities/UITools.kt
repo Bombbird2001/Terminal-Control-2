@@ -5,7 +5,11 @@ import com.badlogic.gdx.graphics.OrthographicCamera
 import com.badlogic.gdx.graphics.g2d.Batch
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.scenes.scene2d.Actor
+import com.badlogic.gdx.scenes.scene2d.InputListener
 import com.badlogic.gdx.scenes.scene2d.Stage
+import com.badlogic.gdx.scenes.scene2d.ui.ScrollPane
+import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener
+import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener.ChangeEvent
 import com.badlogic.gdx.utils.Scaling
 import com.badlogic.gdx.utils.viewport.ScalingViewport
 import com.badlogic.gdx.utils.viewport.Viewport
@@ -47,3 +51,22 @@ private fun getDefaultViewport() = ScalingViewport(
     Constants.WORLD_HEIGHT,
     OrthographicCamera()
 )
+
+/** Removes the mouse scroll input listener from the [ScrollPane] to prevent nuisance pane scrolls when scrolling the mouse */
+fun ScrollPane.removeMouseScrollListeners() {
+    var listenerToRemove: InputListener? = null
+    for (listener in listeners) if (listener is InputListener) {
+        listenerToRemove = listener
+        break
+    }
+    removeListener(listenerToRemove)
+}
+
+/** Adds a change listener to the [Actor], running the input [function] when the listener is notified */
+inline fun Actor.addChangeListener(crossinline function: (ChangeEvent?, Actor?) -> Unit) {
+    addListener(object: ChangeListener() {
+        override fun changed(event: ChangeEvent?, actor: Actor?) {
+            function(event, actor)
+        }
+    })
+}
