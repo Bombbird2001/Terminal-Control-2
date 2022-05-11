@@ -3,7 +3,7 @@ package com.bombbird.terminalcontrol2.systems
 import com.badlogic.ashley.core.EntitySystem
 import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
-import com.bombbird.terminalcontrol2.global.Variables
+import com.bombbird.terminalcontrol2.global.RADAR_REFRESH_INTERVAL_S
 import com.bombbird.terminalcontrol2.ui.getNewDatatagLabelText
 import com.bombbird.terminalcontrol2.ui.updateDatatagText
 import ktx.ashley.allOf
@@ -17,7 +17,7 @@ class DataSystem: EntitySystem() {
     override fun update(deltaTime: Float) {
         // Timer for updating radar returns and datatags
         radarDataTimer += deltaTime
-        if (radarDataTimer > Variables.RADAR_REFRESH_INTERVAL_S) {
+        if (radarDataTimer > RADAR_REFRESH_INTERVAL_S) {
             val radarDataUpdateFamily = allOf(Position::class, Direction::class, Speed::class, Altitude::class, RadarData::class).get()
             val radarDataUpdate = engine.getEntitiesFor(radarDataUpdateFamily)
             for (i in 0 until radarDataUpdate.size()) {
@@ -45,7 +45,7 @@ class DataSystem: EntitySystem() {
                     updateDatatagText(datatag, getNewDatatagLabelText(this))
                 }
             }
-            radarDataTimer -= Variables.RADAR_REFRESH_INTERVAL_S
+            radarDataTimer -= RADAR_REFRESH_INTERVAL_S
         }
     }
 }

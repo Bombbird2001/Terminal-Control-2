@@ -2,8 +2,9 @@ package com.bombbird.terminalcontrol2.screens
 
 import com.badlogic.gdx.scenes.scene2d.ui.ProgressBar
 import com.badlogic.gdx.utils.Timer
-import com.bombbird.terminalcontrol2.global.Constants
-import com.bombbird.terminalcontrol2.global.Variables
+import com.bombbird.terminalcontrol2.global.GAME
+import com.bombbird.terminalcontrol2.global.UI_HEIGHT
+import com.bombbird.terminalcontrol2.global.UI_WIDTH
 import com.bombbird.terminalcontrol2.utilities.addChangeListener
 import ktx.scene2d.*
 
@@ -15,7 +16,7 @@ class GameLoading: BasicUIScreen() {
             // UI container
             container = container {
                 fill()
-                setSize(Variables.UI_WIDTH, Variables.UI_HEIGHT)
+                setSize(UI_WIDTH, UI_HEIGHT)
                 table {
                     // debugAll()
                     label("Loading game...", "LoadingGame").cell(padBottom = 20f)
@@ -25,9 +26,9 @@ class GameLoading: BasicUIScreen() {
                             if (this@apply.percent >= 1) {
                                 Timer.schedule(object: Timer.Task() {
                                     override fun run() {
-                                        Constants.GAME.gameClientScreen = RadarScreen("127.0.0.1").apply {
-                                            Constants.GAME.addScreen(this)
-                                            Constants.GAME.setScreen<RadarScreen>()
+                                        GAME.gameClientScreen = RadarScreen("127.0.0.1").apply {
+                                            GAME.addScreen(this)
+                                            GAME.setScreen<RadarScreen>()
                                         }
                                     }
                                 }, 0.35f)

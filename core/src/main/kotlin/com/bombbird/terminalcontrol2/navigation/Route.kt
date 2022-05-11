@@ -3,7 +3,7 @@ package com.bombbird.terminalcontrol2.navigation
 import com.bombbird.terminalcontrol2.components.CommandTarget
 import com.bombbird.terminalcontrol2.components.Position
 import com.bombbird.terminalcontrol2.components.WaypointInfo
-import com.bombbird.terminalcontrol2.global.Constants
+import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.utilities.getRequiredTrack
 import ktx.ashley.get
 import ktx.collections.GdxArray
@@ -33,8 +33,8 @@ class Route() {
     fun findNextWptLegTrackAndDirection(): Pair<Float, Byte>? {
         if (legs.size < 2) return null
         (legs[0] as? WaypointLeg)?.let { wpt1 -> (legs[1] as? WaypointLeg)?.let { wpt2 ->
-            val w1 = Constants.GAME.gameServer?.waypoints?.get(wpt1.wptId)?.entity?.get(Position.mapper) ?: return null
-            val w2 = Constants.GAME.gameServer?.waypoints?.get(wpt2.wptId)?.entity?.get(Position.mapper) ?: return null
+            val w1 = GAME.gameServer?.waypoints?.get(wpt1.wptId)?.entity?.get(Position.mapper) ?: return null
+            val w2 = GAME.gameServer?.waypoints?.get(wpt2.wptId)?.entity?.get(Position.mapper) ?: return null
             return Pair(getRequiredTrack(w1.x, w1.y, w2.x, w2.y), wpt2.turnDir)
         }} ?: return null
     }
@@ -84,7 +84,7 @@ class Route() {
         constructor(wptName: String, maxAltFt: Int?, minAltFt: Int?, maxSpdKt: Short?,
                     legActive: Boolean, altRestrActive: Boolean, spdRestrActive: Boolean,
                     flyOver: Boolean = false, turnDir: Byte = CommandTarget.TURN_DEFAULT,
-                    phase: Byte = NORMAL): this(Constants.GAME.gameServer?.let {
+                    phase: Byte = NORMAL): this(GAME.gameServer?.let {
                         it.waypoints[it.updatedWaypointMapping[wptName]]?.entity?.get(WaypointInfo.mapper)?.wptId ?: -1
                     } ?: throw RuntimeException("gameServer is non-existent when creating route in GameLoader context"),
                     maxAltFt, minAltFt, maxSpdKt, legActive, altRestrActive, spdRestrActive, flyOver, turnDir, phase)
@@ -94,7 +94,7 @@ class Route() {
 
         /** Debug string representation */
         override fun toString(): String {
-            val wptName = Constants.GAME.gameServer?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName
+            val wptName = GAME.gameServer?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName
             return "$wptId $wptName ${if (maxAltFt != null) "B$maxAltFt" else ""} ${if (minAltFt != null) "A$minAltFt" else ""} ${if (maxSpdKt != null) "S$maxSpdKt" else ""} ${if (flyOver) "FLYOVER" else ""}"
         }
     }
@@ -147,13 +147,13 @@ class Route() {
 
         /** Secondary constructor using the name of a waypoint instead of its ID - use only when loading from internal game files */
         constructor(wptName: String, maxAltFt: Int?, minAltFt: Int?, maxSpdKtLower: Short?, maxSpdKtHigher: Short?, inboundHdg: Short, legDist: Byte,
-                    turnDir: Byte, phase: Byte = NORMAL): this(Constants.GAME.gameServer?.let {
+                    turnDir: Byte, phase: Byte = NORMAL): this(GAME.gameServer?.let {
             it.waypoints[it.updatedWaypointMapping[wptName]]?.entity?.get(WaypointInfo.mapper)?.wptId ?: -1
         } ?: throw RuntimeException("gameServer is non-existent when creating route in GameLoader context"), maxAltFt, minAltFt, maxSpdKtLower, maxSpdKtHigher, inboundHdg, legDist, turnDir, phase)
 
         /** Debug string representation */
         override fun toString(): String {
-            val wptName = Constants.GAME.gameServer?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName
+            val wptName = GAME.gameServer?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName
             return "$wptId $wptName HDG $inboundHdg LEG $legDist ${if (maxAltFt != null) "B$maxAltFt" else ""} ${if (minAltFt != null) "A$minAltFt" else ""} ${if (maxSpdKtLower != null) "S$maxSpdKtLower" else ""} ${if (maxSpdKtHigher != null) "S$maxSpdKtHigher" else ""}"
         }
     }

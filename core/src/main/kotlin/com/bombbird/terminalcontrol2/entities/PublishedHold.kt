@@ -2,7 +2,7 @@ package com.bombbird.terminalcontrol2.entities
 
 import com.bombbird.terminalcontrol2.components.CommandTarget
 import com.bombbird.terminalcontrol2.components.PublishedHoldInfo
-import com.bombbird.terminalcontrol2.global.Constants
+import com.bombbird.terminalcontrol2.global.getEngine
 import ktx.ashley.entity
 import ktx.ashley.get
 import ktx.ashley.with
@@ -11,7 +11,7 @@ import ktx.ashley.with
 class PublishedHold(id: Short, maxAlt: Int?, minAlt: Int?,
                     maxSpdLower: Short, maxSpdHigher: Short, inboundHdg: Short, legDist: Byte,
                     dir: Byte, onClient: Boolean = true) {
-    val entity = Constants.getEngine(onClient).entity {
+    val entity = getEngine(onClient).entity {
         with<PublishedHoldInfo> {
             wptId = id
             maxAltFt = maxAlt

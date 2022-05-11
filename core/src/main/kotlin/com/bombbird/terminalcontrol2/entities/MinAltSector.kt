@@ -4,7 +4,7 @@ import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.math.GeometryUtils
 import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
-import com.bombbird.terminalcontrol2.global.Constants
+import com.bombbird.terminalcontrol2.global.getEngine
 import ktx.ashley.entity
 import ktx.ashley.get
 import ktx.ashley.with
@@ -12,7 +12,7 @@ import kotlin.math.roundToInt
 
 /** Sector class that creates a sector entity with the required components for implementing an MVA or restricted area */
 class MinAltSector(minAlt: Int?, polygonBoundary: ShortArray?, circleX: Short = 0, circleY: Short = 0, radiusBoundary: Float = 0f, labelX: Short? = null, labelY: Short? = null, restr: Boolean, onClient: Boolean = true) {
-    val entity = Constants.getEngine(onClient).entity {
+    val entity = getEngine(onClient).entity {
         with<MinAltSectorInfo> {
             minAltFt = minAlt
             restricted = restr

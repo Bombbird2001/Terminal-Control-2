@@ -8,7 +8,7 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.scenes.scene2d.Stage
 import com.bombbird.terminalcontrol2.components.*
-import com.bombbird.terminalcontrol2.global.Constants
+import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.ui.LABEL_PADDING
 import com.bombbird.terminalcontrol2.ui.updateDatatagLabelSize
 import com.bombbird.terminalcontrol2.utilities.*
@@ -18,7 +18,7 @@ import ktx.ashley.get
 import ktx.math.ImmutableVector2
 import kotlin.math.sqrt
 
-/** Main rendering system, which renders to [Constants.GAME]'s spriteBatch or radarScreen's [shapeRenderer] */
+/** Main rendering system, which renders to [GAME]'s spriteBatch or radarScreen's [shapeRenderer] */
 class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stage: Stage, private val constZoomStage: Stage, private val uiStage: Stage): EntitySystem() {
     override fun update(deltaTime: Float) {
         val camZoom = (stage.camera as OrthographicCamera).zoom
@@ -90,7 +90,7 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
 
         // Render runways
         val runwayFamily = allOf(RunwayInfo::class, SRColor::class).get()
-        val rwyWidthPx = Constants.RWY_WIDTH_PX_ZOOM_1 + (camZoom - 1) * Constants.RWY_WIDTH_CHANGE_PX_PER_ZOOM
+        val rwyWidthPx = RWY_WIDTH_PX_ZOOM_1 + (camZoom - 1) * RWY_WIDTH_CHANGE_PX_PER_ZOOM
         val rwys = engine.getEntitiesFor(runwayFamily)
         for (i in 0 until rwys.size()) {
             rwys[i]?.apply {
@@ -185,10 +185,10 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
 
         shapeRenderer.end()
 
-        Constants.GAME.batch.projectionMatrix = stage.camera.combined
+        GAME.batch.projectionMatrix = stage.camera.combined
         // println("stage: ${stage.camera.combined}")
-        Constants.GAME.batch.begin()
-        Constants.GAME.batch.packedColor = Color.WHITE_FLOAT_BITS // Prevent fading out behaviour during selectBox animations due to tint being changed
+        GAME.batch.begin()
+        GAME.batch.packedColor = Color.WHITE_FLOAT_BITS // Prevent fading out behaviour during selectBox animations due to tint being changed
 
         // Update runway labels rendering size, position
         val rwyLabelFamily = allOf(GenericLabel::class, RunwayInfo::class, RunwayLabel::class).get()
@@ -235,24 +235,24 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
                 val pos = get(Position.mapper) ?: return@apply
                 labelInfo.label.apply {
                     setPosition(pos.x + labelInfo.xOffset, pos.y + labelInfo.yOffset)
-                    draw(Constants.GAME.batch, 1f)
+                    draw(GAME.batch, 1f)
                 }
             }
         }
 
         // Render aircraft blip
         val aircraftFamily = allOf(AircraftInfo::class, RadarData::class, RSSprite::class).get()
-        val blipSize = if (camZoom <= 1) Constants.AIRCRAFT_BLIP_LENGTH_PX_ZOOM_1 * camZoom else Constants.AIRCRAFT_BLIP_LENGTH_PX_ZOOM_1 + (camZoom - 1) * Constants.AIRCRAFT_BLIP_LENGTH_CHANGE_PX_PER_ZOOM
+        val blipSize = if (camZoom <= 1) AIRCRAFT_BLIP_LENGTH_PX_ZOOM_1 * camZoom else AIRCRAFT_BLIP_LENGTH_PX_ZOOM_1 + (camZoom - 1) * AIRCRAFT_BLIP_LENGTH_CHANGE_PX_PER_ZOOM
         val allAircraft = engine.getEntitiesFor(aircraftFamily)
         for (i in 0 until allAircraft.size()) {
             allAircraft[i]?.apply {
                 val rsSprite = get(RSSprite.mapper) ?: return@apply
                 val radarData = get(RadarData.mapper) ?: return@apply
-                rsSprite.drawable.draw(Constants.GAME.batch, radarData.position.x - blipSize / 2, radarData.position.y - blipSize / 2, blipSize, blipSize)
+                rsSprite.drawable.draw(GAME.batch, radarData.position.x - blipSize / 2, radarData.position.y - blipSize / 2, blipSize, blipSize)
             }
         }
 
-        Constants.GAME.batch.projectionMatrix = constZoomStage.camera.combined
+        GAME.batch.projectionMatrix = constZoomStage.camera.combined
         // Render generic constant size labels
         val constSizeLabelFamily = allOf(GenericLabel::class, Position::class, ConstantZoomSize::class).get()
         val constLabels = engine.getEntitiesFor(constSizeLabelFamily)
@@ -262,7 +262,7 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
                 val pos = get(Position.mapper) ?: return@apply
                 labelInfo.label.apply {
                     setPosition((pos.x - camX) / camZoom + labelInfo.xOffset, (pos.y - camY) / camZoom + labelInfo.yOffset)
-                    draw(Constants.GAME.batch, 1f)
+                    draw(GAME.batch, 1f)
                 }
             }
         }
@@ -274,13 +274,13 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
             datatags[i]?.apply {
                 val datatag = get(Datatag.mapper) ?: return@apply
                 val radarData = get(RadarData.mapper) ?: return@apply
-                if (!datatag.smallLabelFont && camZoom > Constants.DATATAG_ZOOM_THRESHOLD) updateDatatagLabelSize(datatag, true)
-                else if (datatag.smallLabelFont && camZoom <= Constants.DATATAG_ZOOM_THRESHOLD) updateDatatagLabelSize(datatag, false)
+                if (!datatag.smallLabelFont && camZoom > DATATAG_ZOOM_THRESHOLD) updateDatatagLabelSize(datatag, true)
+                else if (datatag.smallLabelFont && camZoom <= DATATAG_ZOOM_THRESHOLD) updateDatatagLabelSize(datatag, false)
                 val leftX = (radarData.position.x - camX) / camZoom + datatag.xOffset
                 val bottomY = (radarData.position.y - camY) / camZoom + datatag.yOffset
                 datatag.imgButton.apply {
                     setPosition(leftX, bottomY)
-                    draw(Constants.GAME.batch, 1f)
+                    draw(GAME.batch, 1f)
                 }
                 datatag.clickSpot.setPosition(leftX, bottomY)
                 var labelY = bottomY + LABEL_PADDING
@@ -288,13 +288,13 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
                     datatag.labelArray[j].let { label ->
                         if (label.text.isNullOrEmpty()) return@let
                         label.setPosition(leftX + LABEL_PADDING, labelY)
-                        label.draw(Constants.GAME.batch, 1f)
+                        label.draw(GAME.batch, 1f)
                         labelY += (label.height + datatag.lineSpacing)
                     }
                 }
             }
         }
-        Constants.GAME.batch.end()
+        GAME.batch.end()
 
         constZoomStage.act(deltaTime)
         constZoomStage.draw()

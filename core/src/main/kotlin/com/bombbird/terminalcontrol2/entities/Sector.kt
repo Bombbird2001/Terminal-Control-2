@@ -4,14 +4,14 @@ import com.badlogic.gdx.graphics.Color
 import com.bombbird.terminalcontrol2.components.GPolygon
 import com.bombbird.terminalcontrol2.components.SRColor
 import com.bombbird.terminalcontrol2.components.SectorInfo
-import com.bombbird.terminalcontrol2.global.Constants
+import com.bombbird.terminalcontrol2.global.getEngine
 import ktx.ashley.entity
 import ktx.ashley.get
 import ktx.ashley.with
 
 /** Sector class that creates a sector entity with the required components on instantiation */
 class Sector(id: Byte, ctrlName: String, freq: String, callsign: String, sectorBoundary: ShortArray, onClient: Boolean = true) {
-    val entity = Constants.getEngine(onClient).entity {
+    val entity = getEngine(onClient).entity {
         with<SectorInfo> {
             sectorId = id
             controllerName = ctrlName

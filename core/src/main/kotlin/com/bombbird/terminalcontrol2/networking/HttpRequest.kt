@@ -1,7 +1,7 @@
 package com.bombbird.terminalcontrol2.networking
 
 import com.badlogic.gdx.Gdx
-import com.bombbird.terminalcontrol2.global.Constants
+import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.Secrets
 import com.bombbird.terminalcontrol2.utilities.generateRandomWeather
 import com.bombbird.terminalcontrol2.utilities.updateAirportMetar
@@ -25,7 +25,7 @@ object HttpRequest {
         client.newCall(request).enqueue(object: Callback {
             override fun onFailure(call: Call, e: IOException) {
                 Gdx.app.log("HttpRequest", "Request failed")
-                if (Constants.GAME.gameServer?.gameRunning != true) return
+                if (GAME.gameServer?.gameRunning != true) return
                 if (retry) sendMetarRequest(reqString, false)
                 else generateRandomWeather() // Generate offline weather
             }
@@ -35,7 +35,7 @@ object HttpRequest {
                     if (response.code == 503 && retry) {
                         Gdx.app.log("HttpRequest", "503 received: trying again")
                         response.close()
-                        if (Constants.GAME.gameServer?.gameRunning != true) return
+                        if (GAME.gameServer?.gameRunning != true) return
                         sendMetarRequest(reqString, false)
                     } else {
                         // Generate offline weather

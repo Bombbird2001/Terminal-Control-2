@@ -4,8 +4,8 @@ import com.badlogic.gdx.scenes.scene2d.Actor
 import com.badlogic.gdx.utils.Align
 import com.bombbird.terminalcontrol2.components.AirportInfo
 import com.bombbird.terminalcontrol2.components.MetarInfo
-import com.bombbird.terminalcontrol2.global.Constants
-import com.bombbird.terminalcontrol2.global.Variables
+import com.bombbird.terminalcontrol2.global.CLIENT_SCREEN
+import com.bombbird.terminalcontrol2.global.UI_HEIGHT
 import com.bombbird.terminalcontrol2.utilities.addChangeListener
 import com.bombbird.terminalcontrol2.utilities.removeMouseScrollListeners
 import ktx.ashley.get
@@ -20,7 +20,7 @@ fun <S> KWidget<S>.mainInfoPane(paneWidth: Float): KContainer<Actor> {
     return container {
         // debugAll()
         fill()
-        setSize(paneWidth, Variables.UI_HEIGHT)
+        setSize(paneWidth, UI_HEIGHT)
         table {
             // debugAll()
             metarScroll = scrollPane("MetarPane") {
@@ -30,7 +30,7 @@ fun <S> KWidget<S>.mainInfoPane(paneWidth: Float): KContainer<Actor> {
                 }
                 setOverscroll(false, false)
                 removeMouseScrollListeners()
-            }.cell(padTop = 20f, align = Align.top, preferredWidth = paneWidth, preferredHeight = Variables.UI_HEIGHT * 0.4f, growX = true)
+            }.cell(padTop = 20f, align = Align.top, preferredWidth = paneWidth, preferredHeight = UI_HEIGHT * 0.4f, growX = true)
             align(Align.top)
         }
         isVisible = true
@@ -40,7 +40,7 @@ fun <S> KWidget<S>.mainInfoPane(paneWidth: Float): KContainer<Actor> {
 /** Updates the METAR pane displays (for new METAR information) */
 fun updateMetarInformation() {
     metarPane.clear()
-    Constants.CLIENT_SCREEN?.let {
+    CLIENT_SCREEN?.let {
         var padTop = false
         for (airport in it.airport.values()) {
             val airportInfo = airport.entity[AirportInfo.mapper] ?: continue

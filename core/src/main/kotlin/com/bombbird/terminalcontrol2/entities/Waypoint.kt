@@ -2,14 +2,14 @@ package com.bombbird.terminalcontrol2.entities
 
 import com.badlogic.gdx.graphics.Color
 import com.bombbird.terminalcontrol2.components.*
-import com.bombbird.terminalcontrol2.global.Constants
+import com.bombbird.terminalcontrol2.global.getEngine
 import ktx.ashley.entity
 import ktx.ashley.get
 import ktx.ashley.with
 
 /** Waypoint class that creates a waypoint entity with the required components on instantiation */
 class Waypoint(id: Short, name: String, posX: Short, posY: Short, onClient: Boolean = true) {
-    val entity = Constants.getEngine(onClient).entity {
+    val entity = getEngine(onClient).entity {
         with<WaypointInfo> {
             wptId = id
             wptName = name

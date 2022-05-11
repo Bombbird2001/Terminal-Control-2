@@ -3,13 +3,13 @@ package com.bombbird.terminalcontrol2.entities
 import com.badlogic.gdx.graphics.Color
 import com.bombbird.terminalcontrol2.components.GLineArray
 import com.bombbird.terminalcontrol2.components.SRColor
-import com.bombbird.terminalcontrol2.global.Constants
+import com.bombbird.terminalcontrol2.global.getEngine
 import ktx.ashley.entity
 import ktx.ashley.get
 import ktx.ashley.with
 
 class Shoreline(lineArray: ShortArray, onClient: Boolean = true) {
-    val entity = Constants.getEngine(onClient).entity {
+    val entity = getEngine(onClient).entity {
         with<GLineArray> {
             vertices = lineArray.map { it.toFloat() }.toFloatArray()
         }

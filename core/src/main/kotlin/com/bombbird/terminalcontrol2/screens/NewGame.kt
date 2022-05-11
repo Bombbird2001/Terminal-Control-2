@@ -2,8 +2,7 @@ package com.bombbird.terminalcontrol2.screens
 
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.utils.Align
-import com.bombbird.terminalcontrol2.global.Constants
-import com.bombbird.terminalcontrol2.global.Variables
+import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.utilities.addChangeListener
 import ktx.scene2d.*
 
@@ -17,7 +16,7 @@ class NewGame: BasicUIScreen() {
             // UI Container
             container = container {
                 fill()
-                setSize(Variables.UI_WIDTH, Variables.UI_HEIGHT)
+                setSize(UI_WIDTH, UI_HEIGHT)
                 table {
                     //debugAll()
                     label("Choose airport:", "MenuHeader").cell(align = Align.center, padTop = 65f).setAlignment(Align.center)
@@ -25,7 +24,7 @@ class NewGame: BasicUIScreen() {
                     table {
                         scrollPane("NewGame") {
                             table {
-                                for (icao in Constants.AVAIL_AIRPORTS) {
+                                for (icao in AVAIL_AIRPORTS) {
                                     textButton(icao,"NewGameAirport").cell(width = 300f, height = 150f).apply {
                                         addChangeListener { event, _ ->
                                             if (currSelectedAirport != this@apply) {
@@ -52,7 +51,7 @@ class NewGame: BasicUIScreen() {
                                     if (currSelectedAirport == null) Gdx.app.log("NewGame", "Start button pressed when airport selected is null")
                                     else {
                                         //TODO Call loading function
-                                        Constants.GAME.setScreen<GameLoading>()
+                                        GAME.setScreen<GameLoading>()
                                     }
                                     event?.handle()
                                 }
@@ -60,8 +59,8 @@ class NewGame: BasicUIScreen() {
                         }.cell(expandY = true).align(Align.top)
                     }.cell(expandY = true, padTop = 65f)
                     row().padTop(100f)
-                    textButton("Back", "Menu").cell(width = Constants.BIG_BUTTON_WIDTH, height = Constants.BIG_BUTTON_HEIGHT, padBottom = Constants.BOTTOM_BUTTON_MARGIN, expandY = true, align = Align.bottom).addChangeListener { _, _ ->
-                        Constants.GAME.setScreen<MainMenu>()
+                    textButton("Back", "Menu").cell(width = BIG_BUTTON_WIDTH, height = BIG_BUTTON_HEIGHT, padBottom = BOTTOM_BUTTON_MARGIN, expandY = true, align = Align.bottom).addChangeListener { _, _ ->
+                        GAME.setScreen<MainMenu>()
                     }
                 }
             }

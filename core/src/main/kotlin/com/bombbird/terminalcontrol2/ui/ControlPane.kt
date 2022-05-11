@@ -4,7 +4,7 @@ import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.scenes.scene2d.Actor
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener
 import com.badlogic.gdx.utils.Align
-import com.bombbird.terminalcontrol2.global.Variables
+import com.bombbird.terminalcontrol2.global.UI_HEIGHT
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.utilities.addChangeListener
 import com.bombbird.terminalcontrol2.utilities.removeMouseScrollListeners
@@ -24,11 +24,15 @@ lateinit var routeLegsTable: KTableWidget
 lateinit var holdTable: KTableWidget
 lateinit var vectorTable: KTableWidget
 
+/**
+ * @param paneWidth will be used as the reference width of the UI pane when initialising the container
+ * @return a [KContainer] used to contain a table with the elements of the control pane, which has been added to the [KWidget]
+ * */
 @Scene2dDsl
 fun <S> KWidget<S>.controlPane(paneWidth: Float): KContainer<Actor> {
     return container {
         fill()
-        setSize(paneWidth, Variables.UI_HEIGHT)
+        setSize(paneWidth, UI_HEIGHT)
         // debugAll()
         table {
             table {
@@ -42,7 +46,7 @@ fun <S> KWidget<S>.controlPane(paneWidth: Float): KContainer<Actor> {
                 vectorModeButton = textButton("Vectors", "ControlPaneSelected").cell(grow = true, preferredWidth = paneWidth / 3).apply {
                     addChangeListener { _, _ -> setPaneLateralMode(UIPane.MODE_VECTOR) }
                 }
-            }.cell(preferredWidth = paneWidth, height = Variables.UI_HEIGHT * 0.125f, growX = true, align = Align.top)
+            }.cell(preferredWidth = paneWidth, height = UI_HEIGHT * 0.125f, growX = true, align = Align.top)
             row()
             table {
                 // Second row of selectBoxes - Approach, Transition
@@ -56,7 +60,7 @@ fun <S> KWidget<S>.controlPane(paneWidth: Float): KContainer<Actor> {
                     list.setAlignment(Align.center)
                     setAlignment(Align.center)
                 }.cell(grow = true, preferredWidth = paneWidth / 2)
-            }.cell(preferredWidth = paneWidth, height = Variables.UI_HEIGHT * 0.125f, growX = true)
+            }.cell(preferredWidth = paneWidth, height = UI_HEIGHT * 0.125f, growX = true)
             row()
             table {
                 // Third row of selectBoxes, button - Altitude, Expedite, Speed
@@ -70,7 +74,7 @@ fun <S> KWidget<S>.controlPane(paneWidth: Float): KContainer<Actor> {
                     list.setAlignment(Align.center)
                     setAlignment(Align.center)
                 }.cell(grow = true, preferredWidth = paneWidth * 0.37f)
-            }.cell(preferredWidth = paneWidth, height = Variables.UI_HEIGHT * 0.125f, growX = true)
+            }.cell(preferredWidth = paneWidth, height = UI_HEIGHT * 0.125f, growX = true)
             row()
             lateralContainer = container {  }.cell(grow = true, preferredWidth = paneWidth)
             row()
@@ -79,13 +83,18 @@ fun <S> KWidget<S>.controlPane(paneWidth: Float): KContainer<Actor> {
                 textButton("Undo all", "ControlPaneButton").cell(grow = true, preferredWidth = paneWidth / 3)
                 textButton("Handover\n-\nAcknowledge", "ControlPaneButton").cell(grow = true, preferredWidth = paneWidth / 3)
                 textButton("Transmit", "ControlPaneButton").cell(grow = true, preferredWidth = paneWidth / 3)
-            }.cell(preferredWidth = paneWidth, height = Variables.UI_HEIGHT * 0.125f, growX = true, align = Align.bottom)
+            }.cell(preferredWidth = paneWidth, height = UI_HEIGHT * 0.125f, growX = true, align = Align.bottom)
             align(Align.top)
         }
         isVisible = false
     }
 }
 
+/**
+ * @param paneWidth will be used as the reference width of the UI pane when initialising the table
+ * @param setToEditRoutePane is the function that will be run when the "Edit route" button is clicked
+ * @return a [KTableWidget] used to contain the elements of the route sub-pane, which has been added to the [KWidget]
+ * */
 @Scene2dDsl
 fun <S> KWidget<S>.routeTable(paneWidth: Float, setToEditRoutePane: () -> Unit): KTableWidget {
     return table {
@@ -97,19 +106,24 @@ fun <S> KWidget<S>.routeTable(paneWidth: Float, setToEditRoutePane: () -> Unit):
             }
             setOverscroll(false, false)
             removeMouseScrollListeners()
-        }.cell(preferredWidth = 0.81f * paneWidth, preferredHeight = 0.6f * Variables.UI_HEIGHT, grow = true, padTop = 5f, align = Align.top)
+        }.cell(preferredWidth = 0.81f * paneWidth, preferredHeight = 0.6f * UI_HEIGHT, grow = true, padTop = 5f, align = Align.top)
         table {
-            textButton("Edit\nroute", "ControlPaneButton").cell(growX = true, height = Variables.UI_HEIGHT * 0.15f).addListener(object: ChangeListener() {
+            textButton("Edit\nroute", "ControlPaneButton").cell(growX = true, height = UI_HEIGHT * 0.15f).addListener(object: ChangeListener() {
                 override fun changed(event: ChangeEvent?, actor: Actor?) {
                     setToEditRoutePane()
                 }
             })
             row()
-            textButton("CDA", "ControlPaneSelected").cell(growX = true, height = Variables.UI_HEIGHT * 0.15f)
+            textButton("CDA", "ControlPaneSelected").cell(growX = true, height = UI_HEIGHT * 0.15f)
         }.cell(preferredWidth = 0.19f * paneWidth, padTop = 20f, align = Align.top)
+        isVisible = false
     }
 }
 
+/**
+ * @param paneWidth will be used as the reference width of the UI pane when initialising the table
+ * @return a [KTableWidget] used to contain the elements of the hold sub-pane, which has been added to the [KWidget]
+ * */
 @Scene2dDsl
 fun <S> KWidget<S>.holdTable(paneWidth: Float): KTableWidget {
     return table {
@@ -122,66 +136,74 @@ fun <S> KWidget<S>.holdTable(paneWidth: Float): KTableWidget {
             }.cell(grow = true, preferredWidth = 0.4f * paneWidth, padRight = 10f)
             textButton("As\n Published", "ControlPaneSelected").cell(grow = true, preferredWidth = 0.3f * paneWidth - 10f, padRight = 10f)
             textButton("Custom", "ControlPaneSelected").cell(grow = true, preferredWidth = 0.3f * paneWidth - 10f)
-        }.cell(preferredWidth = paneWidth, growX = true, height = Variables.UI_HEIGHT * 0.1f, padTop = 20f)
+        }.cell(preferredWidth = paneWidth, growX = true, height = UI_HEIGHT * 0.1f, padTop = 20f)
         row()
         table {
             // debugAll()
-            label("Legs:", "ControlPaneRoute").apply { setAlignment(Align.center) }.cell(grow = true, height = Variables.UI_HEIGHT * 0.1f, padRight = 10f, preferredWidth = 0.15f * paneWidth, align = Align.center)
+            label("Legs:", "ControlPaneRoute").apply { setAlignment(Align.center) }.cell(grow = true, height = UI_HEIGHT * 0.1f, padRight = 10f, preferredWidth = 0.15f * paneWidth, align = Align.center)
             textButton("-", "ControlPaneHold").cell(grow = true, preferredWidth = 0.15f * paneWidth)
             label("5 nm", "ControlPaneHoldDist").apply { setAlignment(Align.center) }.cell(grow = true, preferredWidth = 0.15f * paneWidth, align = Align.center)
             textButton("+", "ControlPaneHold").cell(grow = true, padRight = 30f, preferredWidth = 0.15f * paneWidth)
             textButton("Left", "ControlPaneSelected").cell(grow = true, preferredWidth = 0.2f * paneWidth - 20f)
             textButton("Right", "ControlPaneSelected").cell(grow = true, preferredWidth = 0.2f * paneWidth - 20f)
-        }.cell(preferredWidth = paneWidth, growX = true, height = Variables.UI_HEIGHT * 0.1f, padTop = 20f)
+        }.cell(preferredWidth = paneWidth, growX = true, height = UI_HEIGHT * 0.1f, padTop = 20f)
         row()
         table {
             label("Inbound\nheading:", "ControlPaneRoute").apply { setAlignment(Align.center) }.cell(grow = true, preferredWidth = 0.22f * paneWidth, padRight = 10f)
             table {
-                textButton("-20", "ControlPaneHdgDark").cell(grow = true, preferredHeight = 0.2f * Variables.UI_HEIGHT - 40f)
+                textButton("-20", "ControlPaneHdgDark").cell(grow = true, preferredHeight = 0.2f * UI_HEIGHT - 40f)
                 row()
-                textButton("-5", "ControlPaneHdgLight").cell(grow = true, preferredHeight = 0.2f * Variables.UI_HEIGHT - 40f)
+                textButton("-5", "ControlPaneHdgLight").cell(grow = true, preferredHeight = 0.2f * UI_HEIGHT - 40f)
             }.cell(grow = true, preferredWidth = 0.275f * paneWidth)
             label("360", "ControlPaneHdg").apply { setAlignment(Align.center) }.cell(grow = true, preferredWidth = 0.23f * paneWidth - 10f)
             table {
-                textButton("+20", "ControlPaneHdgDark").cell(grow = true, preferredHeight = 0.2f * Variables.UI_HEIGHT - 40f)
+                textButton("+20", "ControlPaneHdgDark").cell(grow = true, preferredHeight = 0.2f * UI_HEIGHT - 40f)
                 row()
-                textButton("+5", "ControlPaneHdgLight").cell(grow = true, preferredHeight = 0.2f * Variables.UI_HEIGHT - 40f)
+                textButton("+5", "ControlPaneHdgLight").cell(grow = true, preferredHeight = 0.2f * UI_HEIGHT - 40f)
             }.cell(grow = true, preferredWidth = 0.275f * paneWidth)
-        }.cell(preferredWidth = paneWidth, preferredHeight = 0.4f * Variables.UI_HEIGHT - 80f, growX = true, padTop = 20f, padBottom = 20f)
+        }.cell(preferredWidth = paneWidth, preferredHeight = 0.4f * UI_HEIGHT - 80f, growX = true, padTop = 20f, padBottom = 20f)
         isVisible = false
     }
 }
 
+/**
+ * @param paneWidth will be used as the reference width of the UI pane when initialising the table
+ * @return a [KTableWidget] used to contain the elements of the vector sub-pane, which has been added to the [KWidget]
+ * */
 @Scene2dDsl
 fun <S> KWidget<S>.vectorTable(paneWidth: Float): KTableWidget {
     return table {
         table {
             textButton("Left", "ControlPaneHdgLight").cell(grow = true, preferredWidth = 0.5f * paneWidth - 10f)
             textButton("Right", "ControlPaneHdgLight").cell(grow = true, preferredWidth = 0.5f * paneWidth - 10f)
-        }.cell(padTop = 20f, height = 0.1f * Variables.UI_HEIGHT, padLeft = 10f, padRight = 10f)
+        }.cell(padTop = 20f, height = 0.1f * UI_HEIGHT, padLeft = 10f, padRight = 10f)
         row()
         table {
             table {
-                textButton("-90", "ControlPaneHdgDark").cell(grow = true, preferredHeight = (0.5f * Variables.UI_HEIGHT - 40f) / 3)
+                textButton("-90", "ControlPaneHdgDark").cell(grow = true, preferredHeight = (0.5f * UI_HEIGHT - 40f) / 3)
                 row()
-                textButton("-10", "ControlPaneHdgDark").cell(grow = true, preferredHeight = (0.5f * Variables.UI_HEIGHT - 40f) / 3)
+                textButton("-10", "ControlPaneHdgDark").cell(grow = true, preferredHeight = (0.5f * UI_HEIGHT - 40f) / 3)
                 row()
-                textButton("-5", "ControlPaneHdgDark").cell(grow = true, preferredHeight = (0.5f * Variables.UI_HEIGHT - 40f) / 3)
+                textButton("-5", "ControlPaneHdgDark").cell(grow = true, preferredHeight = (0.5f * UI_HEIGHT - 40f) / 3)
             }.cell(grow = true, preferredWidth = 0.4f * paneWidth, padLeft = 10f)
             label("360", "ControlPaneHdg").apply { setAlignment(Align.center) }.cell(grow = true, preferredWidth = 0.3f * paneWidth - 20f)
             table {
-                textButton("+90", "ControlPaneHdgDark").cell(grow = true, preferredHeight = (0.5f * Variables.UI_HEIGHT - 40f) / 3)
+                textButton("+90", "ControlPaneHdgDark").cell(grow = true, preferredHeight = (0.5f * UI_HEIGHT - 40f) / 3)
                 row()
-                textButton("+10", "ControlPaneHdgDark").cell(grow = true, preferredHeight = (0.5f * Variables.UI_HEIGHT - 40f) / 3)
+                textButton("+10", "ControlPaneHdgDark").cell(grow = true, preferredHeight = (0.5f * UI_HEIGHT - 40f) / 3)
                 row()
-                textButton("+5", "ControlPaneHdgDark").cell(grow = true, preferredHeight = (0.5f * Variables.UI_HEIGHT - 40f) / 3)
+                textButton("+5", "ControlPaneHdgDark").cell(grow = true, preferredHeight = (0.5f * UI_HEIGHT - 40f) / 3)
             }.cell(grow = true, preferredWidth = 0.4f * paneWidth, padRight = 10f)
-        }.cell(preferredWidth = paneWidth, preferredHeight = 0.5f * Variables.UI_HEIGHT - 40f, padBottom = 20f)
+        }.cell(preferredWidth = paneWidth, preferredHeight = 0.5f * UI_HEIGHT - 40f, padBottom = 20f)
         isVisible = false
     }
 }
 
-/** Updates the style of the clearance mode buttons depending on the aircraft's cleared navigation state */
+/**
+ * Updates the style of the clearance mode buttons depending on the aircraft's cleared navigation state
+ * @param route the aircraft's latest cleared route
+ * @param vectorHdg the aircraft's latest cleared vector heading; is null if aircraft is not being vectored
+ * */
 fun updateClearanceMode(route: Route, vectorHdg: Short?) {
     if (vectorHdg != null) {
         // Vector mode active
@@ -203,9 +225,11 @@ fun updateClearanceMode(route: Route, vectorHdg: Short?) {
     }
 }
 
-/** Updates the lateral mode button checked status as well as the pane being displayed
+/**
+ * Updates the lateral mode button checked status as well as the pane being displayed
  *
  * Called when user taps on a lateral mode button
+ * @param mode the pane mode to show
  * */
 private fun setPaneLateralMode(mode: Byte) {
     when (mode) {
@@ -216,6 +240,7 @@ private fun setPaneLateralMode(mode: Byte) {
             routeTable.isVisible = true
             holdTable.isVisible = false
             vectorTable.isVisible = false
+            lateralContainer.actor = routeTable
         }
         UIPane.MODE_HOLD -> {
             if (!holdModeButton.isChecked) return
@@ -224,6 +249,7 @@ private fun setPaneLateralMode(mode: Byte) {
             routeTable.isVisible = false
             holdTable.isVisible = true
             vectorTable.isVisible = false
+            lateralContainer.actor = holdTable
         }
         UIPane.MODE_VECTOR -> {
             if (!vectorModeButton.isChecked) return
@@ -232,6 +258,7 @@ private fun setPaneLateralMode(mode: Byte) {
             routeTable.isVisible = false
             holdTable.isVisible = false
             vectorTable.isVisible = true
+            lateralContainer.actor = vectorTable
         }
         else -> Gdx.app.log("UIPane", "Unknown lateral mode $mode")
     }

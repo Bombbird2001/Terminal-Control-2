@@ -5,7 +5,7 @@ import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.Airport.Runway.SerialisedRunway
-import com.bombbird.terminalcontrol2.global.Constants
+import com.bombbird.terminalcontrol2.global.getEngine
 import com.bombbird.terminalcontrol2.navigation.Approach
 import com.bombbird.terminalcontrol2.navigation.SidStar
 import com.bombbird.terminalcontrol2.utilities.convertWorldAndRenderDeg
@@ -17,7 +17,7 @@ import ktx.ashley.with
 
 /** Airport class that creates an airport entity with the required components on instantiation */
 class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX: Float, posY: Float, elevation: Short, onClient: Boolean = true) {
-    val entity = Constants.getEngine(onClient).entity {
+    val entity = getEngine(onClient).entity {
         with<Position> {
             x = posX
             y = posY
@@ -152,7 +152,7 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
 
     /** Runway class that creates a runway entity with the required components on instantiation */
     class Runway(parentAirport: Airport, id: Byte, name: String, posX: Float, posY: Float, trueHdg: Float, runwayLengthM: Short, elevation: Short, labelPos: Byte, onClient: Boolean = true) {
-        val entity = Constants.getEngine(onClient).entity {
+        val entity = getEngine(onClient).entity {
             with<Position> {
                 x = posX
                 y = posY

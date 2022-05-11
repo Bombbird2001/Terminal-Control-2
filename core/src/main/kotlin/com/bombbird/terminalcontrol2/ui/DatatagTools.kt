@@ -9,8 +9,9 @@ import com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle
 import com.badlogic.gdx.scenes.scene2d.utils.DragListener
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.Aircraft
-import com.bombbird.terminalcontrol2.global.Constants
-import com.bombbird.terminalcontrol2.global.Variables
+import com.bombbird.terminalcontrol2.global.CLIENT_SCREEN
+import com.bombbird.terminalcontrol2.global.GAME
+import com.bombbird.terminalcontrol2.global.MAG_HDG_DEV
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.utilities.addChangeListener
 import com.bombbird.terminalcontrol2.utilities.convertWorldAndRenderDeg
@@ -105,7 +106,7 @@ private fun updateDatatagSize(datatag: Datatag) {
 /** Adds a dragListener and changeListener to the background [Datatag.clickSpot] */
 fun addDatatagInputListeners(datatag: Datatag, aircraft: Aircraft) {
     datatag.clickSpot.apply {
-        Constants.GAME.gameClientScreen?.addToConstZoomStage(this) // Add to uiStage in order for drag gesture to be detected by inputMultiplexer
+        GAME.gameClientScreen?.addToConstZoomStage(this) // Add to uiStage in order for drag gesture to be detected by inputMultiplexer
         zIndex = 0
         addListener(object: DragListener() {
             override fun drag(event: InputEvent?, x: Float, y: Float, pointer: Int) {
@@ -120,7 +121,7 @@ fun addDatatagInputListeners(datatag: Datatag, aircraft: Aircraft) {
                 datatag.dragging = false
                 return@addChangeListener
             }
-            Constants.CLIENT_SCREEN?.setUISelectedAircraft(aircraft)
+            CLIENT_SCREEN?.setUISelectedAircraft(aircraft)
         }
     }
 }
@@ -173,11 +174,11 @@ private fun getExpandedLabelText(entity: Entity): Array<String> {
     val vs = if (radarData.speed.vertSpdFpm > 150) '^' else if (radarData.speed.vertSpdFpm < -150) 'v' else '='
     val clearedAlt = latestClearance?.clearedAlt?.let { "=> ${it / 100}" } ?: ""
     val cmdAlt = (cmdTarget.targetAltFt / 100).roundToInt()
-    val hdg = modulateHeading((convertWorldAndRenderDeg(radarData.direction.trackUnitVector.angleDeg()) + Variables.MAG_HDG_DEV).roundToInt().toFloat()).roundToInt()
+    val hdg = modulateHeading((convertWorldAndRenderDeg(radarData.direction.trackUnitVector.angleDeg()) + MAG_HDG_DEV).roundToInt().toFloat()).roundToInt()
     val cmdHdg = cmdTarget.targetHdgDeg.roundToInt()
     val groundSpd = (radarData.direction.trackUnitVector.times(radarData.speed.speedKts) + (affectedByWind?.windVectorPx?.times(pxpsToKt(1f)) ?: Vector2())).len().roundToInt()
     val clearedLateral = latestClearance?.route?.legs?.let {
-        if (it.size == 0) null else Constants.CLIENT_SCREEN?.waypoints?.get((it[0] as? Route.WaypointLeg)?.wptId)
+        if (it.size == 0) null else CLIENT_SCREEN?.waypoints?.get((it[0] as? Route.WaypointLeg)?.wptId)
     }?.entity?.get(WaypointInfo.mapper)?.wptName ?: latestClearance?.vectorHdg?.toString() ?: ""
     val sidStar = latestClearance?.routePrimaryName ?: ""
 

@@ -13,8 +13,7 @@ import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.scenes.scene2d.Actor
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.*
-import com.bombbird.terminalcontrol2.global.Constants
-import com.bombbird.terminalcontrol2.global.Variables
+import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.graphics.ScreenSize
 import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.navigation.Route
@@ -53,10 +52,10 @@ import kotlin.math.min
  * Implements [GestureListener] and [InputProcessor] to handle input/gesture events to it
  * */
 class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProcessor {
-    private val clientEngine = Constants.getEngine(true)
-    private val radarDisplayStage = safeStage(Constants.GAME.batch)
-    private val constZoomStage = safeStage(Constants.GAME.batch)
-    private val uiStage = safeStage(Constants.GAME.batch)
+    private val clientEngine = getEngine(true)
+    private val radarDisplayStage = safeStage(GAME.batch)
+    private val constZoomStage = safeStage(GAME.batch)
+    private val uiStage = safeStage(GAME.batch)
     private val uiPane = UIPane(uiStage)
     private val shapeRenderer = ShapeRenderer()
 
@@ -71,30 +70,30 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
     private var panRate: ImmutableVector2
 
     // Airport map for access during TCP updates; see GameServer for more details
-    val airport = GdxArrayMap<Byte, Airport>(Constants.AIRPORT_SIZE)
-    val updatedAirportMapping = GdxArrayMap<String, Byte>(Constants.AIRPORT_SIZE)
+    val airport = GdxArrayMap<Byte, Airport>(AIRPORT_SIZE)
+    val updatedAirportMapping = GdxArrayMap<String, Byte>(AIRPORT_SIZE)
 
     // Waypoint map for access; see GameServer for more details
     val waypoints = HashMap<Short, Waypoint>()
     val updatedWaypointMapping = HashMap<String, Short>()
 
     // Published hold map for access
-    val publishedHolds = GdxArrayMap<String, PublishedHold>(Constants.PUBLISHED_HOLD_SIZE)
+    val publishedHolds = GdxArrayMap<String, PublishedHold>(PUBLISHED_HOLD_SIZE)
 
     // Aircraft map for access during UDP updates
-    val aircraft = GdxArrayMap<String, Aircraft>(Constants.AIRCRAFT_SIZE)
+    val aircraft = GdxArrayMap<String, Aircraft>(AIRCRAFT_SIZE)
 
     // Selected aircraft:
     var selectedAircraft: Aircraft? = null
 
     // Networking client
-    val client = Client(Constants.CLIENT_WRITE_BUFFER_SIZE, Constants.CLIENT_READ_BUFFER_SIZE)
+    val client = Client(CLIENT_WRITE_BUFFER_SIZE, CLIENT_READ_BUFFER_SIZE)
 
     // Slow update timer
     var slowUpdateTimer = 1f
 
     init {
-        if (true) Constants.GAME.gameServer = GameServer().apply { initiateServer() } // TODO True if single-player or host of multiplayer, false otherwise
+        if (true) GAME.gameServer = GameServer().apply { initiateServer() } // TODO True if single-player or host of multiplayer, false otherwise
         SerialisationRegistering.registerAll(client.kryo)
         client.start()
         client.addListener(object: Listener {
@@ -108,12 +107,12 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
                             this@RadarScreen.aircraft[it.icaoCallsign]?.apply { updateFromUDPData(it) }
                         }
                     } ?: (obj as? SerialisationRegistering.InitialAirspaceData)?.apply {
-                        Variables.MAG_HDG_DEV = magHdgDev
-                        Variables.MIN_ALT = minAlt
-                        Variables.MAX_ALT = maxAlt
-                        Variables.MIN_SEP = minSep
-                        Variables.TRANS_ALT = transAlt
-                        Variables.TRANS_LVL = transLvl
+                        MAG_HDG_DEV = magHdgDev
+                        MIN_ALT = minAlt
+                        MAX_ALT = maxAlt
+                        MIN_SEP = minSep
+                        TRANS_ALT = transAlt
+                        TRANS_LVL = transLvl
                         uiPane.updateAltSelectBoxChoices()
                     } ?: (obj as? SerialisationRegistering.InitialSectorData)?.sectors?.onEach {
                         Sector.fromSerialisedObject(it)
@@ -173,7 +172,7 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
         })
         while (true) {
             try {
-                client.connect(5000, connectionHost, Variables.TCP_PORT, Variables.UDP_PORT)
+                client.connect(5000, connectionHost, TCP_PORT, UDP_PORT)
                 break
             } catch (_: IOException) {
                 // Workaround for strange behaviour on some devices where the 5000ms timeout is ignored,
@@ -184,7 +183,7 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
 
         // Default zoom is set so that a full 100nm by 100nm square is visible (2500px x 2500px)
         (radarDisplayStage.camera as OrthographicCamera).apply {
-            zoom = nmToPx(Constants.DEFAULT_ZOOM_NM) / Variables.UI_HEIGHT
+            zoom = nmToPx(DEFAULT_ZOOM_NM) / UI_HEIGHT
             targetZoom = zoom
             // Default camera position is set at (0, 0)
             targetCenter = Vector2()
@@ -214,7 +213,7 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
         (radarDisplayStage.camera as OrthographicCamera).apply {
             val oldZoom = zoom
             zoom += deltaZoom
-            zoom = MathUtils.clamp(zoom, nmToPx(Constants.MIN_ZOOM_NM) / Variables.UI_HEIGHT, nmToPx(Constants.MAX_ZOOM_NM) / Variables.UI_HEIGHT)
+            zoom = MathUtils.clamp(zoom, nmToPx(MIN_ZOOM_NM) / UI_HEIGHT, nmToPx(MAX_ZOOM_NM) / UI_HEIGHT)
             translate(uiPane.getRadarCameraOffsetForZoom(zoom - oldZoom), 0f)
             update()
 
@@ -226,13 +225,13 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
     /** Initiates animation of [radarDisplayStage]'s camera to the new position, as well as a new zoom depending on current zoom value */
     private fun initiateCameraAnimation(targetScreenX: Float, targetScreenY: Float) {
         (radarDisplayStage.camera as OrthographicCamera).apply {
-            targetZoom = if (zoom > (nmToPx(Constants.ZOOM_THRESHOLD_NM) / Variables.UI_HEIGHT)) nmToPx(Constants.DEFAULT_ZOOM_IN_NM) / Variables.UI_HEIGHT
-            else nmToPx(Constants.DEFAULT_ZOOM_NM) / Variables.UI_HEIGHT
+            targetZoom = if (zoom > (nmToPx(ZOOM_THRESHOLD_NM) / UI_HEIGHT)) nmToPx(DEFAULT_ZOOM_IN_NM) / UI_HEIGHT
+            else nmToPx(DEFAULT_ZOOM_NM) / UI_HEIGHT
             val worldCoord = unprojectFromRadarCamera(targetScreenX, targetScreenY)
             targetCenter.x = worldCoord.x + uiPane.getRadarCameraOffsetForZoom(targetZoom)
             targetCenter.y = worldCoord.y
-            zoomRate = (targetZoom - zoom) / Constants.CAM_ANIM_TIME
-            panRate = ImmutableVector2((targetCenter.x - position.x), (targetCenter.y - position.y)).times(1 / Constants.CAM_ANIM_TIME)
+            zoomRate = (targetZoom - zoom) / CAM_ANIM_TIME
+            panRate = ImmutableVector2((targetCenter.x - position.x), (targetCenter.y - position.y)).times(1 / CAM_ANIM_TIME)
             cameraAnimating = true
         }
     }
@@ -254,8 +253,8 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
     /** Helper function for unprojecting from screen coordinates to camera world coordinates, as unfortunately Camera's unproject function is not accurate in this case */
     private var unprojectFromRadarCamera = fun (screenX: Float, screenY: Float): Vector2 {
         (radarDisplayStage.camera as OrthographicCamera).apply {
-            val scaleFactor = Variables.UI_HEIGHT / Variables.HEIGHT // 1px in screen distance = ?px in world distance (at zoom = 1)
-            return Vector2((screenX - Variables.WIDTH / 2) * zoom * scaleFactor + position.x, (Variables.HEIGHT / 2 - screenY) * zoom * scaleFactor + position.y)
+            val scaleFactor = UI_HEIGHT / HEIGHT // 1px in screen distance = ?px in world distance (at zoom = 1)
+            return Vector2((screenX - WIDTH / 2) * zoom * scaleFactor + position.x, (HEIGHT / 2 - screenY) * zoom * scaleFactor + position.y)
         }
     }
 
@@ -278,7 +277,7 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
         clientEngine.update(delta)
 
         slowUpdateTimer += delta
-        if (slowUpdateTimer > 1f / Constants.UPDATE_RATE_LOW_FREQ) {
+        if (slowUpdateTimer > 1f / UPDATE_RATE_LOW_FREQ) {
             val systems = clientEngine.systems
             for (i in 0 until systems.size()) (systems[i] as? LowFreqUpdate)?.lowFreqUpdate()
             slowUpdateTimer -= 1f
@@ -301,11 +300,11 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
 
         thread {
             client.stop()
-            Constants.GAME.gameServer?.stopServer()
+            GAME.gameServer?.stopServer()
         }
     }
 
-    /** Updates various global [Constants] and [Variables] upon a screen resize, to ensure UI will fit to the new screen size
+    /** Updates various global constants, variables upon a screen resize, to ensure UI will fit to the new screen size
      *
      * Updates the viewport and camera's projectionMatrix of [radarDisplayStage], [constZoomStage], [uiStage] and [shapeRenderer]
      * */
@@ -348,7 +347,7 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
     /** Implements [GestureListener.pan], pans the camera on detecting pan gesture */
     override fun pan(x: Float, y: Float, deltaX: Float, deltaY: Float): Boolean {
         (radarDisplayStage.camera as OrthographicCamera).apply {
-            translate(-deltaX * zoom * Variables.UI_WIDTH / Variables.WIDTH, deltaY * zoom * Variables.UI_HEIGHT / Variables.HEIGHT)
+            translate(-deltaX * zoom * UI_WIDTH / WIDTH, deltaY * zoom * UI_HEIGHT / HEIGHT)
         }
         clampUpdateCamera(0f)
         return true

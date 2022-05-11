@@ -5,8 +5,7 @@ import com.badlogic.gdx.math.MathUtils
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.*
 import com.bombbird.terminalcontrol2.files.GameLoader
-import com.bombbird.terminalcontrol2.global.Constants
-import com.bombbird.terminalcontrol2.global.Variables
+import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.systems.AISystem
@@ -28,11 +27,11 @@ import kotlin.math.roundToLong
 /** Main game server class, responsible for handling all game logic, updates, sending required game data information to clients and handling incoming client inputs */
 class GameServer {
     companion object {
-        const val UPDATE_INTERVAL = 1000.0 / Constants.SERVER_UPDATE_RATE
-        const val UPDATE_INTERVAL_LOW_FREQ = 1000.0 / Constants.UPDATE_RATE_LOW_FREQ
-        const val SERVER_TO_CLIENT_UPDATE_INTERVAL_FAST = 1000.0 / Constants.SERVER_TO_CLIENT_UPDATE_RATE_FAST
-        const val SERVER_TO_CLIENT_UPDATE_INTERVAL_SLOW = 1000.0 / Constants.SERVER_TO_CLIENT_UPDATE_RATE_SLOW
-        const val SERVER_METAR_UPDATE_INTERVAL = Constants.SERVER_METAR_UPDATE_INTERVAL_MINS * 60 * 1000
+        const val UPDATE_INTERVAL = 1000.0 / SERVER_UPDATE_RATE
+        const val UPDATE_INTERVAL_LOW_FREQ = 1000.0 / UPDATE_RATE_LOW_FREQ
+        const val SERVER_TO_CLIENT_UPDATE_INTERVAL_FAST = 1000.0 / SERVER_TO_CLIENT_UPDATE_RATE_FAST
+        const val SERVER_TO_CLIENT_UPDATE_INTERVAL_SLOW = 1000.0 / SERVER_TO_CLIENT_UPDATE_RATE_SLOW
+        const val SERVER_METAR_UPDATE_INTERVAL = SERVER_METAR_UPDATE_INTERVAL_MINS * 60 * 1000
     }
 
     private val loopRunning = AtomicBoolean(false)
@@ -41,20 +40,20 @@ class GameServer {
     private val server = Server()
     val engine = Engine()
 
-    val sectors = GdxArray<Sector>(Constants.SECTOR_SIZE)
-    val aircraft = GdxArrayMap<String, Aircraft>(Constants.AIRCRAFT_SIZE)
+    val sectors = GdxArray<Sector>(SECTOR_SIZE)
+    val aircraft = GdxArrayMap<String, Aircraft>(AIRCRAFT_SIZE)
     val minAltSectors = GdxArray<MinAltSector>()
     val shoreline = GdxArray<Shoreline>()
 
     /** Maps [AirportInfo.arptId] (instead of [AirportInfo.icaoCode]) to the airport for backwards compatibility (in case of airport ICAO code reassignments;
      * Old airport is still available as a separate entity even with the same ICAO code as the new airport)
      * */
-    val airports = GdxArrayMap<Byte, Airport>(Constants.AIRPORT_SIZE)
+    val airports = GdxArrayMap<Byte, Airport>(AIRPORT_SIZE)
 
     /** Maps [AirportInfo.icaoCode] to the most updated [AirportInfo.arptId];
      * The new airport with the ICAO code will be chosen instead of the old one after an ICAO code reassignment
      * */
-    val updatedAirportMapping = GdxArrayMap<String, Byte>(Constants.AIRPORT_SIZE)
+    val updatedAirportMapping = GdxArrayMap<String, Byte>(AIRPORT_SIZE)
 
     /** Maps [WaypointInfo.wptId] (instead of [WaypointInfo.wptName]) to the waypoint for backwards compatibility (in case waypoint position is moved;
      * old waypoint is still available as a separate entity even with the same name as the new waypoint)
@@ -70,7 +69,7 @@ class GameServer {
      *
      * This map will map to the most updated published hold, since old holding legs are stored individually with the waypoint ID in the aircraft's [ClearanceState.route]
      * */
-    val publishedHolds = GdxArrayMap<String, PublishedHold>(Constants.PUBLISHED_HOLD_SIZE)
+    val publishedHolds = GdxArrayMap<String, PublishedHold>(PUBLISHED_HOLD_SIZE)
 
     // var timeCounter = 0f
     // var frames = 0
@@ -131,7 +130,7 @@ class GameServer {
     private fun startNetworkingServer() {
         // Log.set(Log.LEVEL_DEBUG)
         SerialisationRegistering.registerAll(server.kryo)
-        server.bind(Variables.TCP_PORT, Variables.UDP_PORT)
+        server.bind(TCP_PORT, UDP_PORT)
         server.start()
         server.addListener(object: Listener {
             override fun received(connection: Connection?, `object`: Any?) {
@@ -140,7 +139,7 @@ class GameServer {
 
             override fun connected(connection: Connection?) {
                 // TODO Handle connections - send initial data and broadcast message if needed
-                connection?.sendTCP(SerialisationRegistering.InitialAirspaceData(Variables.MAG_HDG_DEV, Variables.MIN_ALT, Variables.MAX_ALT, Variables.MIN_SEP, Variables.TRANS_ALT, Variables.TRANS_LVL))
+                connection?.sendTCP(SerialisationRegistering.InitialAirspaceData(MAG_HDG_DEV, MIN_ALT, MAX_ALT, MIN_SEP, TRANS_ALT, TRANS_LVL))
                 connection?.sendTCP(SerialisationRegistering.InitialSectorData(sectors.map { it.getSerialisableObject() }.toTypedArray()))
                 connection?.sendTCP(SerialisationRegistering.InitialAircraftData(aircraft.values().map { it.getSerialisableObject() }.toTypedArray()))
                 connection?.sendTCP(SerialisationRegistering.AirportData(airports.values().map { it.getSerialisableObject() }.toTypedArray()))
@@ -203,13 +202,13 @@ class GameServer {
             }
             prevMs = currMs
             // println("$UPDATE_INTERVAL $currMs $startTime")
-            val currFrame = (currMs - startTime) * Constants.SERVER_UPDATE_RATE / 1000
+            val currFrame = (currMs - startTime) * SERVER_UPDATE_RATE / 1000
             val nextFrameTime = (UPDATE_INTERVAL - (currMs - startTime) % UPDATE_INTERVAL)
 
             // For cases where rounding errors result in a nextFrameTime of almost 0 - take the time needed to 2 frames later instead
             if (nextFrameTime < 0.1 * UPDATE_INTERVAL) {
-                var newTime = (currFrame + 2) * 1000 / Constants.SERVER_UPDATE_RATE + startTime - currMs
-                if (newTime > 24) newTime -= 1000 / Constants.SERVER_UPDATE_RATE
+                var newTime = (currFrame + 2) * 1000 / SERVER_UPDATE_RATE + startTime - currMs
+                if (newTime > 24) newTime -= 1000 / SERVER_UPDATE_RATE
                 Thread.sleep(newTime)
             } else Thread.sleep(nextFrameTime.roundToLong())
         }
@@ -226,13 +225,13 @@ class GameServer {
         // println(engine.entities.size())
     }
 
-    /** Update function that runs at a lower frequency, [Constants.UPDATE_RATE_LOW_FREQ] times a second */
+    /** Update function that runs at a lower frequency, [UPDATE_RATE_LOW_FREQ] times a second */
     private fun lowFreqUpdate() {
         val systems = engine.systems
         for (i in 0 until systems.size()) (systems[i] as? LowFreqUpdate)?.lowFreqUpdate()
     }
 
-    /** Send frequently updated data approximately [Constants.SERVER_TO_CLIENT_UPDATE_RATE_FAST] times a second
+    /** Send frequently updated data approximately [SERVER_TO_CLIENT_UPDATE_RATE_FAST] times a second
      *
      * Aircraft position
      *
@@ -246,7 +245,7 @@ class GameServer {
         server.sendToAllUDP(SerialisationRegistering.FastUDPData(aircraft.values().map { it.getSerialisableObjectUDP() }.toTypedArray()))
     }
 
-    /** Send not so frequently updated data approximately [Constants.SERVER_TO_CLIENT_UPDATE_RATE_SLOW] times a second
+    /** Send not so frequently updated data approximately [SERVER_TO_CLIENT_UPDATE_RATE_SLOW] times a second
      *
      * Thunderstorm cells
      *

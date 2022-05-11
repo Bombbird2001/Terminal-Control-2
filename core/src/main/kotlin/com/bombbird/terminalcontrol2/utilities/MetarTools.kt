@@ -5,9 +5,9 @@ import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.AirportInfo
 import com.bombbird.terminalcontrol2.components.MetarInfo
 import com.bombbird.terminalcontrol2.components.Position
-import com.bombbird.terminalcontrol2.global.Constants
+import com.bombbird.terminalcontrol2.global.GAME
+import com.bombbird.terminalcontrol2.global.MAG_HDG_DEV
 import com.bombbird.terminalcontrol2.global.Secrets
-import com.bombbird.terminalcontrol2.global.Variables
 import com.bombbird.terminalcontrol2.networking.HttpRequest
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
@@ -34,7 +34,7 @@ data class MetarRequest(
 /** Requests METAR for all airports in the current gameServer instance */
 fun requestAllMetar() {
     val metarRequest = MetarRequest(Secrets.GET_METAR_PW, ArrayList<MetarRequest.MetarMapper>().apply {
-        for (airport in Constants.GAME.gameServer?.airports?.values() ?: return) {
+        for (airport in GAME.gameServer?.airports?.values() ?: return) {
             val realIcao = airport.entity[MetarInfo.mapper]?.realLifeIcao ?: continue
             val icao = airport.entity[AirportInfo.mapper]?.arptId ?: continue
             add(MetarRequest.MetarMapper(realIcao, icao))
@@ -62,7 +62,7 @@ fun updateAirportMetar(metarJson: String) {
     Moshi.Builder().build().adapter<Map<Byte, MetarResponse>>(type).fromJson(metarJson)?.apply {
         for (entry in entries) {
             entry.value.let {
-            Constants.GAME.gameServer?.airports?.get(entry.key)?.entity?.get(MetarInfo.mapper)?.apply {
+            GAME.gameServer?.airports?.get(entry.key)?.entity?.get(MetarInfo.mapper)?.apply {
                     if (rawMetar != it.rawMetar && !(rawMetar == "" && it.rawMetar == null)) letterCode = letterCode?.let {
                         if (it + 1 <= 'Z') it + 1 else 'A'
                     } ?: MathUtils.random(65, 90).toChar()
@@ -78,7 +78,7 @@ fun updateAirportMetar(metarJson: String) {
                 }
             }
         }
-        Constants.GAME.gameServer?.sendMetarTCPToAll()
+        GAME.gameServer?.sendMetarTCPToAll()
     }
 }
 
@@ -95,7 +95,7 @@ fun updateWindVector(vec: Vector2, windDeg: Short, windSpdKt: Short) {
     }
     vec.y = 1f
     vec.x = 0f
-    vec.rotateDeg(-(windDeg + 180 - Variables.MAG_HDG_DEV))
+    vec.rotateDeg(-(windDeg + 180 - MAG_HDG_DEV))
     vec.scl(ktToPxps(windSpdKt.toInt()))
 }
 
@@ -103,7 +103,7 @@ fun updateWindVector(vec: Vector2, windDeg: Short, windSpdKt: Short) {
 fun getClosestAirportWindVector(x: Float, y: Float): Vector2 {
     var closest = -1f
     var vectorToUse = Vector2()
-    Constants.GAME.gameServer?.airports?.values()?.apply {
+    GAME.gameServer?.airports?.values()?.apply {
         for (airport in this) {
             airport.entity.let {
                 val pos = it[Position.mapper] ?: return@let

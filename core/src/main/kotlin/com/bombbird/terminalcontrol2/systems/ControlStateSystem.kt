@@ -2,7 +2,7 @@ package com.bombbird.terminalcontrol2.systems
 
 import com.badlogic.ashley.core.EntitySystem
 import com.bombbird.terminalcontrol2.components.*
-import com.bombbird.terminalcontrol2.global.Constants
+import com.bombbird.terminalcontrol2.global.GAME
 import ktx.ashley.allOf
 import ktx.ashley.get
 import ktx.ashley.remove
@@ -20,7 +20,7 @@ class ControlStateSystem: EntitySystem() {
                 val aircraftInfo = get(AircraftInfo.mapper) ?: return@apply
                 // Try to get the last pending clearance; if no pending clearances exist, use the existing clearance
                 (get(PendingClearances.mapper)?.clearanceArray?.last()?.second ?: get(ClearanceAct.mapper)?.clearance ?: return@apply).apply {
-                    Constants.GAME.gameServer?.sendAircraftClearanceStateUpdateToAll(aircraftInfo.icaoCallsign, routePrimaryName, route, hiddenLegs, vectorHdg, clearedAlt, clearedIas)
+                    GAME.gameServer?.sendAircraftClearanceStateUpdateToAll(aircraftInfo.icaoCallsign, routePrimaryName, route, hiddenLegs, vectorHdg, clearedAlt, clearedIas)
                 }
                 remove<ClearanceChanged>()
             }
@@ -37,7 +37,7 @@ class ControlStateSystem: EntitySystem() {
                 if (alt.altitudeFt > contact.altitudeFt) {
                     // TODO Set to sector of the correct player
                     controllable.sectorId = 0
-                    get(AircraftInfo.mapper)?.icaoCallsign?.let { callsign -> Constants.GAME.gameServer?.sendAircraftSectorUpdateTCPToAll(callsign, controllable.sectorId) }
+                    get(AircraftInfo.mapper)?.icaoCallsign?.let { callsign -> GAME.gameServer?.sendAircraftSectorUpdateTCPToAll(callsign, controllable.sectorId) }
                     remove<ContactFromTower>()
                 }
             }

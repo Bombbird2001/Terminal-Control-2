@@ -4,8 +4,8 @@ import com.badlogic.ashley.core.Engine
 import com.badlogic.gdx.graphics.Texture
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.math.MathUtils
-import com.bombbird.terminalcontrol2.global.Constants
-import com.bombbird.terminalcontrol2.global.Variables
+import com.bombbird.terminalcontrol2.global.BG_INDEX
+import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.networking.GameServer
 import com.bombbird.terminalcontrol2.screens.GameLoading
 import com.bombbird.terminalcontrol2.screens.MainMenu
@@ -44,7 +44,7 @@ class TerminalControl2 : KtxGame<KtxScreen>(clearScreen = false) {
                 load<Texture>("Images/MainMenuIcon.png")
             }
             // Assets are loaded
-            Constants.GAME = this@TerminalControl2
+            GAME = this@TerminalControl2
 
             batch = SpriteBatch()
             engine = Engine()
@@ -55,7 +55,7 @@ class TerminalControl2 : KtxGame<KtxScreen>(clearScreen = false) {
             setScreen<MainMenu>()
         }
 
-        Variables.BG_INDEX = MathUtils.random(1, 8)
+        BG_INDEX = MathUtils.random(1, 8)
     }
 
     /** Overrides [KtxGame.dispose] to also dispose of [batch] and [assetStorage] */

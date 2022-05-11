@@ -3,8 +3,7 @@ package com.bombbird.terminalcontrol2.systems
 import com.badlogic.ashley.core.EntitySystem
 import com.badlogic.gdx.math.MathUtils
 import com.bombbird.terminalcontrol2.components.*
-import com.bombbird.terminalcontrol2.global.Constants
-import com.bombbird.terminalcontrol2.global.Variables
+import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.*
 import ktx.math.times
@@ -75,21 +74,21 @@ class PhysicsSystem: EntitySystem(), LowFreqUpdate {
                 // Reach target altitude within 10 seconds, capped by aircraft performance constraints
                 var targetVS = (cmd.targetAltFt - alt.altitudeFt) / 10 * 60
                 targetVS = MathUtils.clamp(targetVS, aircraftInfo.minVs, aircraftInfo.maxVs) // Clamp to min, max VS (from aircraft performance)
-                val maxVsToUse = if (cmd.expedite) Constants.MAX_VS_EXPEDITE else Constants.MAX_VS
+                val maxVsToUse = if (cmd.expedite) MAX_VS_EXPEDITE else MAX_VS
                 targetVS = MathUtils.clamp(targetVS, -maxVsToUse, maxVsToUse) // Clamp to ensure no crazy rate of climb/descent
 
                 // Reach target vertical speed within 3 seconds, but is capped between -0.25G and 0.25G
                 val targetVAcc = (targetVS - spd.vertSpdFpm) / 3
-                acc.dVertSpdMps2 = MathUtils.clamp(fpmToMps(targetVAcc), Constants.MIN_VERT_ACC, Constants.MAX_VERT_ACC) // Clamp to min 0.75G, max 1.25G
+                acc.dVertSpdMps2 = MathUtils.clamp(fpmToMps(targetVAcc), MIN_VERT_ACC, MAX_VERT_ACC) // Clamp to min 0.75G, max 1.25G
 
                 // Reach target speed within 7 seconds, capped by aircraft performance constraints
                 var targetAcc = ktToMps(calculateTASFromIAS(alt.altitudeFt, cmd.targetIasKt.toFloat()) - spd.speedKts) / 7
                 targetAcc = MathUtils.clamp(targetAcc, aircraftInfo.minAcc, aircraftInfo.maxAcc) // Clamp to min, max aircraft acceleration
-                targetAcc = MathUtils.clamp(targetAcc, -Constants.MAX_ACC, Constants.MAX_ACC) // Clamp to min, max acceleration
+                targetAcc = MathUtils.clamp(targetAcc, -MAX_ACC, MAX_ACC) // Clamp to min, max acceleration
 
                 // Reach target acceleration within 3 seconds
                 var targetJerk = (targetAcc - acc.dSpeedMps2) / 3
-                targetJerk = MathUtils.clamp(targetJerk, -Constants.MAX_JERK, Constants.MAX_JERK) // Clamp to min, max jerk
+                targetJerk = MathUtils.clamp(targetJerk, -MAX_JERK, MAX_JERK) // Clamp to min, max jerk
 
                 // Apply jerk to acceleration
                 acc.dSpeedMps2 += targetJerk * deltaTime
@@ -108,16 +107,16 @@ class PhysicsSystem: EntitySystem(), LowFreqUpdate {
                 val cmd = get(CommandTarget.mapper) ?: return@apply
 
                 // Calculate the change in heading required
-                val deltaHeading = findDeltaHeading(convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()), cmd.targetHdgDeg - Variables.MAG_HDG_DEV, cmd.turnDir)
+                val deltaHeading = findDeltaHeading(convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()), cmd.targetHdgDeg - MAG_HDG_DEV, cmd.turnDir)
 
                 // Reach target heading within 5 seconds, capped by turn rate limit
                 var targetAngSpd = deltaHeading / 5
-                val maxTurnRate = if (ias.iasKt > 250) Constants.MAX_HIGH_SPD_ANGULAR_SPD else Constants.MAX_LOW_SPD_ANGULAR_SPD
+                val maxTurnRate = if (ias.iasKt > 250) MAX_HIGH_SPD_ANGULAR_SPD else MAX_LOW_SPD_ANGULAR_SPD
                 targetAngSpd = MathUtils.clamp(targetAngSpd, -maxTurnRate, maxTurnRate)
 
                 // Reach target angular speed within 1.5 seconds
                 val targetAngAcc = (targetAngSpd - spd.angularSpdDps) / 1.5f
-                acc.dAngularSpdDps2 = MathUtils.clamp(targetAngAcc, -Constants.MAX_ANGULAR_ACC, Constants.MAX_ANGULAR_ACC) // Clamp to min, max angular acceleration
+                acc.dAngularSpdDps2 = MathUtils.clamp(targetAngAcc, -MAX_ANGULAR_ACC, MAX_ANGULAR_ACC) // Clamp to min, max angular acceleration
             }
         }
     }

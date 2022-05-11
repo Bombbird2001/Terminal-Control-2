@@ -6,8 +6,8 @@ import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable
 import com.bombbird.terminalcontrol2.components.*
-import com.bombbird.terminalcontrol2.global.Constants
-import com.bombbird.terminalcontrol2.global.Variables
+import com.bombbird.terminalcontrol2.global.MAX_ALT
+import com.bombbird.terminalcontrol2.global.getEngine
 import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.ui.addDatatagInputListeners
@@ -22,7 +22,7 @@ import kotlin.math.roundToInt
 
 /** Aircraft class that creates an aircraft entity with the required components on instantiation */
 class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightType: Byte, onClient: Boolean = true) {
-    val entity = Constants.getEngine(onClient).entity {
+    val entity = getEngine(onClient).entity {
         with<Position> {
             x = posX
             y = posY
@@ -90,11 +90,11 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
                 altitudeFt = (alt + MathUtils.random(600, 1700)).toInt()
             }
             with<ContactToCentre> {
-                altitudeFt = (Variables.MAX_ALT - MathUtils.random(500, 900))
+                altitudeFt = (MAX_ALT - MathUtils.random(500, 900))
             }
         } else if (flightType == FlightType.ARRIVAL) {
             with<ContactFromCentre> {
-                altitudeFt = (Variables.MAX_ALT + MathUtils.random(-500, 800))
+                altitudeFt = (MAX_ALT + MathUtils.random(-500, 800))
             }
         }
     }

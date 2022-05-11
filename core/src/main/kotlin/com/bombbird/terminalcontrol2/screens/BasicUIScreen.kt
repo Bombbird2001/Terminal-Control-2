@@ -4,8 +4,7 @@ import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.Texture
 import com.badlogic.gdx.scenes.scene2d.Actor
-import com.bombbird.terminalcontrol2.global.Constants
-import com.bombbird.terminalcontrol2.global.Variables
+import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.graphics.ScreenSize
 import com.bombbird.terminalcontrol2.utilities.safeStage
 import ktx.app.KtxScreen
@@ -18,16 +17,16 @@ import kotlin.math.max
  * Should not be instantiated on its own, but rather extended from in other screen classes to implement their full functionality
  * */
 abstract class BasicUIScreen: KtxScreen {
-    val stage = safeStage(Constants.GAME.batch)
+    val stage = safeStage(GAME.batch)
     lateinit var container: KContainer<Actor>
 
     init {
         stage.actors {
             // Background image
-            if (Variables.BG_INDEX > 0) image(Constants.GAME.assetStorage.get<Texture>("Images/${Variables.BG_INDEX}.png")) {
-                scaleBy(max(Constants.WORLD_WIDTH / width, Constants.WORLD_HEIGHT / height) - 1)
-                x = Constants.WORLD_WIDTH / 2 - width * scaleX / 2
-                y = Constants.WORLD_HEIGHT / 2 - height * scaleY / 2
+            if (BG_INDEX > 0) image(GAME.assetStorage.get<Texture>("Images/${BG_INDEX}.png")) {
+                scaleBy(max(WORLD_WIDTH / width, WORLD_HEIGHT / height) - 1)
+                x = WORLD_WIDTH / 2 - width * scaleX / 2
+                y = WORLD_HEIGHT / 2 - height * scaleY / 2
             }
         }
     }
@@ -51,7 +50,7 @@ abstract class BasicUIScreen: KtxScreen {
         stage.disposeSafely()
     }
 
-    /** Updates various global [Constants] and [Variables] upon a screen resize, to ensure UI will fit to the new screen size
+    /** Updates various global constants, variables upon a screen resize, to ensure UI will fit to the new screen size
      *
      * Updates the [stage]'s viewport, and its camera's projectionMatrix, and resizes the root UI [container] to fit the new dimensions
      * */
@@ -60,8 +59,8 @@ abstract class BasicUIScreen: KtxScreen {
         stage.viewport.update(width, height)
         stage.batch.projectionMatrix = stage.camera.combined
         container.apply {
-            setSize(Variables.UI_WIDTH, Variables.UI_HEIGHT)
-            setPosition(Constants.WORLD_WIDTH / 2 - Variables.UI_WIDTH / 2, Constants.WORLD_HEIGHT / 2 - Variables.UI_HEIGHT / 2)
+            setSize(UI_WIDTH, UI_HEIGHT)
+            setPosition(WORLD_WIDTH / 2 - UI_WIDTH / 2, WORLD_HEIGHT / 2 - UI_HEIGHT / 2)
         }
     }
 }

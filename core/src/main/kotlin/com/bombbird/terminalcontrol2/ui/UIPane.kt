@@ -6,9 +6,9 @@ import com.badlogic.gdx.scenes.scene2d.Stage
 import com.badlogic.gdx.utils.Align
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.Aircraft
-import com.bombbird.terminalcontrol2.global.Constants
-import com.bombbird.terminalcontrol2.global.Variables
+import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.Route
+import com.bombbird.terminalcontrol2.utilities.addChangeListener
 import com.bombbird.terminalcontrol2.utilities.byte
 import ktx.ashley.get
 import ktx.collections.GdxArray
@@ -29,7 +29,7 @@ class UIPane(private val uiStage: Stage) {
 
     var paneImage: KImageButton
     val paneWidth: Float
-        get() = max(Variables.UI_WIDTH * 0.28f, 400f)
+        get() = max(UI_WIDTH * 0.28f, 400f)
 
     // Main pane (when no aircraft selected)
     val mainInfoPane: KContainer<Actor>
@@ -44,7 +44,7 @@ class UIPane(private val uiStage: Stage) {
         uiStage.actors {
             paneImage = imageButton("UIPane") {
                 // debugAll()
-                setSize(paneWidth, Variables.UI_HEIGHT)
+                setSize(paneWidth, UI_HEIGHT)
             }
             mainInfoPane = mainInfoPane(paneWidth)
             controlPane = controlPane(paneWidth)
@@ -53,13 +53,12 @@ class UIPane(private val uiStage: Stage) {
             }
             holdTable = holdTable(paneWidth)
             vectorTable = vectorTable(paneWidth)
-            lateralContainer.actor = routeTable
             routeEditPane = routeEditPane(paneWidth) {
                 setToControlPane()
             }
         }
         uiStage.camera.apply {
-            moveTo(Vector2(Variables.UI_WIDTH / 2, Variables.UI_HEIGHT / 2))
+            moveTo(Vector2(UI_WIDTH / 2, UI_HEIGHT / 2))
             update()
         }
     }
@@ -68,23 +67,23 @@ class UIPane(private val uiStage: Stage) {
     fun resize(width: Int, height: Int) {
         uiStage.viewport.update(width, height, true)
         uiStage.camera.apply {
-            moveTo(Vector2(Variables.UI_WIDTH / 2, Variables.UI_HEIGHT / 2))
+            moveTo(Vector2(UI_WIDTH / 2, UI_HEIGHT / 2))
             update()
         }
         paneImage.apply {
-            setSize(paneWidth, Variables.UI_HEIGHT)
+            setSize(paneWidth, UI_HEIGHT)
             setPosition(0f, 0f)
         }
         mainInfoPane.apply {
-            setSize(paneWidth, Variables.UI_HEIGHT)
+            setSize(paneWidth, UI_HEIGHT)
             setPosition(0f, 0f)
         }
         controlPane.apply {
-            setSize(paneWidth, Variables.UI_HEIGHT)
+            setSize(paneWidth, UI_HEIGHT)
             setPosition(0f, 0f)
         }
         routeEditPane.apply {
-            setSize(paneWidth, Variables.UI_HEIGHT)
+            setSize(paneWidth, UI_HEIGHT)
             setPosition(0f, 0f)
         }
     }
@@ -105,6 +104,7 @@ class UIPane(private val uiStage: Stage) {
         }
         val latestClearance = aircraft.entity[ClearanceAct.mapper]?.clearance ?: return
         updateRouteTable(latestClearance.route)
+        updateEditRouteTable(latestClearance.route)
         updateClearanceMode(latestClearance.route, latestClearance.vectorHdg)
         updateAltSpdClearances(latestClearance.clearedAlt, latestClearance.clearedIas, 150, 250)
         controlPane.isVisible = true
@@ -122,7 +122,9 @@ class UIPane(private val uiStage: Stage) {
             if (controllable.sectorId != 0.byte) return // TODO Check for player's sector ID
         }
         val latestClearance = aircraft.entity[ClearanceAct.mapper]?.clearance ?: return
+        // TODO Take into account any changes already being made by the player
         updateRouteTable(latestClearance.route)
+        updateEditRouteTable(latestClearance.route)
         updateClearanceMode(latestClearance.route, latestClearance.vectorHdg)
         updateAltSpdClearances(latestClearance.clearedAlt, latestClearance.clearedIas, 150, 250)
     }
@@ -146,25 +148,25 @@ class UIPane(private val uiStage: Stage) {
         controlPane.isVisible = true
     }
 
-    /** Updates [altSelectBox] with the appropriate altitude choices for [Variables.MIN_ALT] and [Variables.MAX_ALT]
+    /** Updates [altSelectBox] with the appropriate altitude choices for [MIN_ALT] and [MAX_ALT]
      *
-     * Call after updating [Variables.MIN_ALT] and [Variables.MAX_ALT]
+     * Call if [MIN_ALT] and [MAX_ALT] are updated
      * */
     fun updateAltSelectBoxChoices() {
-        /** Checks the [alt] according to [Variables.TRANS_ALT] and [Variables.TRANS_LVL] before adding it to the [array] */
+        /** Checks the [alt] according to [TRANS_ALT] and [TRANS_LVL] before adding it to the [array] */
         fun checkAltAndAddToArray(alt: Int, array: GdxArray<String>) {
-            if (alt > Variables.TRANS_ALT && alt < Variables.TRANS_LVL * 100) return
-            if (alt <= Variables.TRANS_ALT) array.add(alt.toString())
-            else if (alt >= Variables.TRANS_LVL * 100) array.add("FL${alt / 100}")
+            if (alt > TRANS_ALT && alt < TRANS_LVL * 100) return
+            if (alt <= TRANS_ALT) array.add(alt.toString())
+            else if (alt >= TRANS_LVL * 100) array.add("FL${alt / 100}")
         }
 
-        val minAlt = if (Variables.MIN_ALT % 1000 > 0) (Variables.MIN_ALT / 1000 + 1) * 1000 else Variables.MIN_ALT
-        val maxAlt = if (Variables.MAX_ALT % 1000 > 0) (Variables.MAX_ALT / 1000) * 1000 else Variables.MAX_ALT
+        val minAlt = if (MIN_ALT % 1000 > 0) (MIN_ALT / 1000 + 1) * 1000 else MIN_ALT
+        val maxAlt = if (MAX_ALT % 1000 > 0) (MAX_ALT / 1000) * 1000 else MAX_ALT
         altSelectBox.items = GdxArray<String>().apply {
             clear()
-            if (Variables.MIN_ALT % 1000 > 0) checkAltAndAddToArray(Variables.MIN_ALT, this)
+            if (MIN_ALT % 1000 > 0) checkAltAndAddToArray(MIN_ALT, this)
             for (alt in minAlt .. maxAlt step 1000) checkAltAndAddToArray(alt, this)
-            if (Variables.MAX_ALT % 1000 > 0) checkAltAndAddToArray(Variables.MAX_ALT, this)
+            if (MAX_ALT % 1000 > 0) checkAltAndAddToArray(MAX_ALT, this)
         }
     }
 
@@ -178,20 +180,23 @@ class UIPane(private val uiStage: Stage) {
             for (spd in minSpdRounded .. maxSpdRounded step 10) add(spd.toShort())
             if (maxSpd % 10 > 0) add(maxSpd)
         }
-        altSelectBox.selected = if (clearedAlt >= Variables.TRANS_LVL * 100) "FL${clearedAlt / 100}" else clearedAlt.toString()
+        altSelectBox.selected = if (clearedAlt >= TRANS_LVL * 100) "FL${clearedAlt / 100}" else clearedAlt.toString()
         spdSelectBox.selected = clearedSpd
     }
 
-    /** Updates the route list in [routeLegsTable] (Route tab) */
+    /**
+     * Updates the route list in [routeLegsTable] (Route sub-pane)
+     * @param route the route to display in the route pane; should be the aircraft's latest cleared route
+     * */
     private fun updateRouteTable(route: Route) {
         routeLegsTable.clear()
         routeLegsTable.apply {
             var firstDirectSet = false
             for (i in 0 until route.legs.size) {
                 route.legs[i].let { leg ->
-                    val legDisplay = (leg as? Route.WaypointLeg)?.wptId?.let { wptId -> Constants.GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName } ?:
+                    val legDisplay = (leg as? Route.WaypointLeg)?.wptId?.let { wptId -> GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName } ?:
                                      (leg as? Route.VectorLeg)?.heading?.let { hdg -> "HDG $hdg" } ?:
-                                     (leg as? Route.HoldLeg)?.wptId?.let { wptId -> "Hold at\n${Constants.GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName}" } ?:
+                                     (leg as? Route.HoldLeg)?.wptId?.let { wptId -> "Hold at\n${GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName}" } ?:
                                      (leg as? Route.DiscontinuityLeg)?.let { "Discontinuity" } ?:
                                      (leg as? Route.InitClimbLeg)?.heading?.let { hdg -> "Climb on\nHDG $hdg" } ?: return@let
                     val altRestrDisplay = (leg as? Route.WaypointLeg)?.let { wptLeg ->
@@ -207,7 +212,7 @@ class UIPane(private val uiStage: Stage) {
                     } + if (altRestrDisplay.isNotBlank() && !wptLeg.altRestrActive) "Cancel" else ""} ?: (leg as? Route.InitClimbLeg)?.let { "ControlPaneBottomAltRestr" } ?: "ControlPaneRoute"
                     val spdRestr = (leg as? Route.WaypointLeg)?.maxSpdKt?.let { spd -> "${spd}kts" } ?: ""
                     val spdRestrStyle = if ((leg as? Route.WaypointLeg)?.spdRestrActive == true) "ControlPaneRoute" else "ControlPaneSpdRestrCancel"
-                    textButton("=>", "ControlPaneRouteDirect").cell(growX = true, preferredWidth = 0.2f * paneWidth, preferredHeight = 0.1f * Variables.UI_HEIGHT).apply {
+                    textButton("=>", "ControlPaneRouteDirect").cell(growX = true, preferredWidth = 0.2f * paneWidth, preferredHeight = 0.1f * UI_HEIGHT).apply {
                         if (!firstDirectSet) {
                             isChecked = true
                             firstDirectSet = true
@@ -216,6 +221,45 @@ class UIPane(private val uiStage: Stage) {
                     label(legDisplay, "ControlPaneRoute").apply { setAlignment(Align.center) }.cell(growX = true, preferredWidth = 0.2f * paneWidth)
                     label(altRestrDisplay, altRestrStyle).apply { setAlignment(Align.center) }.cell(expandX = true, padLeft = 10f, padRight = 10f)
                     label(spdRestr, spdRestrStyle).apply { setAlignment(Align.center) }.cell(growX = true, preferredWidth = 0.2f * paneWidth)
+                    row()
+                }
+            }
+        }
+    }
+
+    /**
+     * Updates the route list in [routeEditTable] (Edit route pane)
+     * @param route the route to display in the route pane; should be the aircraft's latest cleared route
+     * */
+    private fun updateEditRouteTable(route: Route) {
+        routeEditTable.clear()
+        routeEditTable.apply {
+            for (i in 0 until route.legs.size) {
+                route.legs[i].let { leg ->
+                    val legDisplay = (leg as? Route.WaypointLeg)?.wptId?.let { wptId -> GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName } ?:
+                    (leg as? Route.VectorLeg)?.heading?.let { hdg -> "HDG $hdg" } ?:
+                    (leg as? Route.HoldLeg)?.wptId?.let { wptId -> "Hold at\n${GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName}" } ?:
+                    (leg as? Route.DiscontinuityLeg)?.let { "Discontinuity" } ?:
+                    (leg as? Route.InitClimbLeg)?.heading?.let { hdg -> "Climb on\nHDG $hdg" } ?: return@let
+                    val altRestrDisplay = (leg as? Route.WaypointLeg)?.let { wptLeg ->
+                        var restr = wptLeg.maxAltFt?.let { maxAltFt -> "${maxAltFt}B" } ?: ""
+                        restr += wptLeg.minAltFt?.toString()?.let { minAlt -> "${if (restr.isNotBlank()) "\n" else ""}${minAlt}A" } ?: ""
+                        restr
+                    } ?: (leg as? Route.InitClimbLeg)?.minAltFt?.let { minAlt -> "$minAlt" } ?: ""
+                    val spdRestr = (leg as? Route.WaypointLeg)?.maxSpdKt?.let { spd -> "${spd}kts" } ?: ""
+                    val skipText = when (leg) {
+                        is Route.WaypointLeg -> "SKIP"
+                        else -> "REMOVE"
+                    }
+                    label(legDisplay, "ControlPaneRoute").apply { setAlignment(Align.center) }.cell(growX = true, height = 0.125f * UI_HEIGHT, padLeft = 10f, padRight = 10f)
+                    textButton(altRestrDisplay, "ControlPaneRestr").cell(growX = true, preferredWidth = 0.25f * paneWidth, height = 0.125f * UI_HEIGHT)
+                    textButton(spdRestr, "ControlPaneRestr").cell(growX = true, preferredWidth = 0.25f * paneWidth, height = 0.125f * UI_HEIGHT)
+                    textButton(skipText, "ControlPaneSelected").cell(growX = true, preferredWidth = 0.25f * paneWidth, height = 0.125f * UI_HEIGHT).apply {
+                        if (skipText == "REMOVE") addChangeListener { _, _ ->
+                            // Remove the leg if it is a hold/vector/init climb/discontinuity
+                            remove()
+                        }
+                    }
                     row()
                 }
             }

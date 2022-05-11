@@ -6,7 +6,7 @@ import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.math.Polygon
 import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
-import com.bombbird.terminalcontrol2.global.Variables
+import com.bombbird.terminalcontrol2.global.MAG_HDG_DEV
 import ktx.ashley.allOf
 import ktx.ashley.get
 import ktx.ashley.plusAssign
@@ -49,7 +49,7 @@ fun printAirportApproaches(entity: Entity) {
             val appEntity = obj.value.entity
             val appInfo = appEntity[ApproachInfo.mapper]
             println("${appInfo?.approachName} ${appInfo?.towerName} ${appInfo?.frequency}")
-            println((convertWorldAndRenderDeg(appEntity[Direction.mapper]?.trackUnitVector?.angleDeg() ?: 0f) + 180 + Variables.MAG_HDG_DEV).roundToInt().toShort())
+            println((convertWorldAndRenderDeg(appEntity[Direction.mapper]?.trackUnitVector?.angleDeg() ?: 0f) + 180 + MAG_HDG_DEV).roundToInt().toShort())
             println(appEntity[Localizer.mapper]?.maxDistNm)
             appEntity[GlideSlope.mapper]?.apply {
                 println("$glideAngle $offsetNm $maxInterceptAlt")

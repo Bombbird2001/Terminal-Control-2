@@ -3,8 +3,7 @@ package com.bombbird.terminalcontrol2.files
 import com.badlogic.gdx.Gdx
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.*
-import com.bombbird.terminalcontrol2.global.Constants
-import com.bombbird.terminalcontrol2.global.Variables
+import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.Approach
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.navigation.SidStar
@@ -64,12 +63,12 @@ object GameLoader {
                                 else parseSector(lineData, gameServer)
                             }
                             "" -> when (lineData[0]) {
-                                "MIN_ALT" -> Variables.MIN_ALT = lineData[1].toInt()
-                                "MAX_ALT" -> Variables.MAX_ALT = lineData[1].toInt()
-                                "TRANS_ALT" -> Variables.TRANS_ALT = lineData[1].toInt()
-                                "TRANS_LVL" -> Variables.TRANS_LVL = lineData[1].toInt()
-                                "MIN_SEP" -> Variables.MIN_SEP = lineData[1].toFloat()
-                                "MAG_HDG_DEV" -> Variables.MAG_HDG_DEV = lineData[1].toFloat()
+                                "MIN_ALT" -> MIN_ALT = lineData[1].toInt()
+                                "MAX_ALT" -> MAX_ALT = lineData[1].toInt()
+                                "TRANS_ALT" -> TRANS_ALT = lineData[1].toInt()
+                                "TRANS_LVL" -> TRANS_LVL = lineData[1].toInt()
+                                "MIN_SEP" -> MIN_SEP = lineData[1].toFloat()
+                                "MAG_HDG_DEV" -> MAG_HDG_DEV = lineData[1].toFloat()
                                 else -> parseMode = lineData[0]
                             }
                         }
@@ -442,7 +441,7 @@ object GameLoader {
             }
             "HOLD" -> {
                 val wptName = wptRegex.find(data)?.groupValues?.get(1) ?: return null
-                val publishedHold = Constants.GAME.gameServer?.publishedHolds?.get(wptName)?.entity?.get(PublishedHoldInfo.mapper) ?: return null
+                val publishedHold = GAME.gameServer?.publishedHolds?.get(wptName)?.entity?.get(PublishedHoldInfo.mapper) ?: return null
                 return Route.HoldLeg(wptName, publishedHold.maxAltFt, publishedHold.minAltFt, publishedHold.maxSpdKtLower, publishedHold.maxSpdKtHigher, publishedHold.inboundHdgDeg, publishedHold.legDistNm, publishedHold.turnDir)
             }
             else -> {

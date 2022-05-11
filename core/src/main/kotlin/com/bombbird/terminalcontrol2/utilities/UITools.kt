@@ -13,7 +13,8 @@ import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener.ChangeEvent
 import com.badlogic.gdx.utils.Scaling
 import com.badlogic.gdx.utils.viewport.ScalingViewport
 import com.badlogic.gdx.utils.viewport.Viewport
-import com.bombbird.terminalcontrol2.global.Constants
+import com.bombbird.terminalcontrol2.global.WORLD_HEIGHT
+import com.bombbird.terminalcontrol2.global.WORLD_WIDTH
 
 /**
  * A thread safe implementation of [Stage]
@@ -44,11 +45,11 @@ fun safeStage(batch: Batch = SpriteBatch(), viewport: Viewport = getDefaultViewp
     }
 }
 
-/** Creates a new [ScalingViewport] set to [Scaling.fill], with world size of [Constants.WORLD_WIDTH] by [Constants.WORLD_HEIGHT] */
+/** Creates a new [ScalingViewport] set to [Scaling.fill], with world size of [WORLD_WIDTH] by [WORLD_HEIGHT] */
 private fun getDefaultViewport() = ScalingViewport(
     Scaling.fill,
-    Constants.WORLD_WIDTH,
-    Constants.WORLD_HEIGHT,
+    WORLD_WIDTH,
+    WORLD_HEIGHT,
     OrthographicCamera()
 )
 

@@ -5,8 +5,8 @@ import com.badlogic.ashley.core.EntitySystem
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.math.MathUtils
 import com.bombbird.terminalcontrol2.components.*
-import com.bombbird.terminalcontrol2.global.Constants
-import com.bombbird.terminalcontrol2.global.Variables
+import com.bombbird.terminalcontrol2.global.GAME
+import com.bombbird.terminalcontrol2.global.MAG_HDG_DEV
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.allOf
@@ -134,7 +134,7 @@ class AISystem: EntitySystem() {
                 val cmdDir = get(CommandDirect.mapper) ?: return@apply
                 val clearanceAct = get(ClearanceAct.mapper)?.clearance ?: return@apply
                 val pos = get(Position.mapper) ?: return@apply
-                val wpt = Constants.GAME.gameServer?.waypoints?.get(cmdDir.wptId)?.entity?.get(Position.mapper) ?: run {
+                val wpt = GAME.gameServer?.waypoints?.get(cmdDir.wptId)?.entity?.get(Position.mapper) ?: run {
                     Gdx.app.log("AISystem", "Unknown command direct waypoint with ID ${cmdDir.wptId}")
                     return@apply
                 }
@@ -146,7 +146,7 @@ class AISystem: EntitySystem() {
                 val targetTrack = trackAndGS.first
                 val groundSpeed = trackAndGS.second
                 // Set command target heading to target track + magnetic heading variation
-                cmdTarget.targetHdgDeg = modulateHeading(targetTrack + Variables.MAG_HDG_DEV)
+                cmdTarget.targetHdgDeg = modulateHeading(targetTrack + MAG_HDG_DEV)
 
                 // Calculate distance between aircraft and waypoint and check if aircraft should move to next leg
                 val deltaX = wpt.x - pos.x
@@ -171,7 +171,7 @@ class AISystem: EntitySystem() {
                 val pos = get(Position.mapper) ?: return@apply
                 val spd = get(Speed.mapper) ?: return@apply
                 val dir = get(Direction.mapper) ?: return@apply
-                val holdWpt = Constants.GAME.gameServer?.waypoints?.get(cmdHold.wptId)?.entity?.get(Position.mapper) ?: return@apply
+                val holdWpt = GAME.gameServer?.waypoints?.get(cmdHold.wptId)?.entity?.get(Position.mapper) ?: return@apply
                 val deltaX = holdWpt.x - pos.x
                 val deltaY = holdWpt.y - pos.y
                 val distPxFromWpt2 = deltaX * deltaX + deltaY * deltaY
@@ -189,7 +189,7 @@ class AISystem: EntitySystem() {
                                 if (distPxFromWpt2 > distToTurnPx * distToTurnPx) cmdHold.oppositeTravelled = true // Opposite leg has been travelled
                             } else {
                                 // Fly direct to waypoint
-                                cmdTarget.targetHdgDeg = getPointTargetTrackAndGS(pos.x, pos.y, holdWpt.x, holdWpt.y, spd.speedKts, dir, get(AffectedByWind.mapper)).first + Variables.MAG_HDG_DEV
+                                cmdTarget.targetHdgDeg = getPointTargetTrackAndGS(pos.x, pos.y, holdWpt.x, holdWpt.y, spd.speedKts, dir, get(AffectedByWind.mapper)).first + MAG_HDG_DEV
                                 if (distPxFromWpt2 < 3 * 3) {
                                     // Waypoint reached, entry complete, fly outbound leg
                                     cmdHold.oppositeTravelled = false
@@ -227,11 +227,11 @@ class AISystem: EntitySystem() {
                         if (distPxFromWpt2 > distToTurnPx * distToTurnPx) cmdHold.flyOutbound = false // Outbound leg complete, fly inbound leg
                     } else {
                         // Fly an extended inbound track to the waypoint
-                        val legTrackRad = Math.toRadians(convertWorldAndRenderDeg(cmdHold.inboundHdg.toFloat() - Variables.MAG_HDG_DEV) + 180.0)
+                        val legTrackRad = Math.toRadians(convertWorldAndRenderDeg(cmdHold.inboundHdg.toFloat() - MAG_HDG_DEV) + 180.0)
                         val targetDistPx = sqrt(distPxFromWpt2) - nmToPx(0.75f)
                         val targetX = holdWpt.x + cos(legTrackRad) * targetDistPx
                         val targetY = holdWpt.y + sin(legTrackRad) * targetDistPx
-                        cmdTarget.targetHdgDeg = getPointTargetTrackAndGS(pos.x, pos.y, targetX.toFloat(), targetY.toFloat(), spd.speedKts, dir, get(AffectedByWind.mapper)).first + Variables.MAG_HDG_DEV
+                        cmdTarget.targetHdgDeg = getPointTargetTrackAndGS(pos.x, pos.y, targetX.toFloat(), targetY.toFloat(), spd.speedKts, dir, get(AffectedByWind.mapper)).first + MAG_HDG_DEV
                         cmdTarget.turnDir = CommandTarget.TURN_DEFAULT
                         if (distPxFromWpt2 < 3 * 3) cmdHold.flyOutbound = true // Waypoint reached, fly outbound leg
                     }
@@ -316,7 +316,7 @@ class AISystem: EntitySystem() {
     private fun getAppropriateTurnDir(targetHeading: Float, currHeading: Float, cmdTurnDir: Byte): Byte {
         // Maintain the turn direction until magnitude of deltaHeading is less than 3 degrees
         return if (withinRange(findDeltaHeading(currHeading,
-                targetHeading - Variables.MAG_HDG_DEV, CommandTarget.TURN_DEFAULT), -3f, 3f)) CommandTarget.TURN_DEFAULT
+                targetHeading - MAG_HDG_DEV, CommandTarget.TURN_DEFAULT), -3f, 3f)) CommandTarget.TURN_DEFAULT
         else cmdTurnDir
     }
 }

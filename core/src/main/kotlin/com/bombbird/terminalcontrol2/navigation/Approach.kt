@@ -3,8 +3,8 @@ package com.bombbird.terminalcontrol2.navigation
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
-import com.bombbird.terminalcontrol2.global.Constants
-import com.bombbird.terminalcontrol2.global.Variables
+import com.bombbird.terminalcontrol2.global.MAG_HDG_DEV
+import com.bombbird.terminalcontrol2.global.getEngine
 import com.bombbird.terminalcontrol2.navigation.Approach.IlsGS.SerialisedIlsGS
 import com.bombbird.terminalcontrol2.navigation.Approach.IlsLOCOffset.SerialisedIlsLOCOffset
 import com.bombbird.terminalcontrol2.utilities.Pronounceable
@@ -33,7 +33,7 @@ abstract class Approach(name: String, runwayId: Byte, tower: String, towerFreq: 
                override val timeRestriction: Byte): UsabilityFilter, Pronounceable {
     override val pronunciation: String
         get() = "" // TODO implement pronunciation based on approach name (or I might change it to a user specified pronunciation)
-    val entity = Constants.getEngine(onClient).entity {
+    val entity = getEngine(onClient).entity {
         with<ApproachInfo> {
             approachName = name
             rwyId = runwayId
@@ -140,7 +140,7 @@ abstract class Approach(name: String, runwayId: Byte, tower: String, towerFreq: 
         init {
             entity.apply {
                 this += Position(posX, posY)
-                this += Direction(Vector2(Vector2.Y).rotateDeg(180 - (heading - Variables.MAG_HDG_DEV)))
+                this += Direction(Vector2(Vector2.Y).rotateDeg(180 - (heading - MAG_HDG_DEV)))
                 this += Localizer(locDistNm)
                 this += GlideSlope(gsAngle, gsOffsetNm, gsMaxAlt)
                 this += Minimums(decisionAlt, rvr)
@@ -161,7 +161,7 @@ abstract class Approach(name: String, runwayId: Byte, tower: String, towerFreq: 
                                        transitions.map { SerialisedTransition(it.first, it.second.getSerialisedObject()) }.toTypedArray(),
                                        routeLegs.getSerialisedObject(),
                                        missedLegs.getSerialisedObject(),
-                                       (convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()) - 180 + Variables.MAG_HDG_DEV).roundToInt().toShort(), pos.x, pos.y, loc.maxDistNm,
+                                       (convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()) - 180 + MAG_HDG_DEV).roundToInt().toShort(), pos.x, pos.y, loc.maxDistNm,
                                        gs.glideAngle, gs.offsetNm, gs.maxInterceptAlt,
                                        mins.baroAltFt, mins.rvrM
                 )
@@ -189,7 +189,7 @@ abstract class Approach(name: String, runwayId: Byte, tower: String, towerFreq: 
         init {
             entity.apply {
                 this += Position(posX, posY)
-                this += Direction(Vector2(Vector2.Y).rotateDeg(180 - (heading - Variables.MAG_HDG_DEV)))
+                this += Direction(Vector2(Vector2.Y).rotateDeg(180 - (heading - MAG_HDG_DEV)))
                 this += Localizer(locDistNm)
                 this += Minimums(decisionAlt, rvr)
                 this += Offset(centerlineInterceptDist)
@@ -212,7 +212,7 @@ abstract class Approach(name: String, runwayId: Byte, tower: String, towerFreq: 
                     transitions.map { SerialisedTransition(it.first, it.second.getSerialisedObject()) }.toTypedArray(),
                     routeLegs.getSerialisedObject(),
                     missedLegs.getSerialisedObject(),
-                    (convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()) - 180 + Variables.MAG_HDG_DEV).roundToInt().toShort(), pos.x, pos.y, loc.maxDistNm,
+                    (convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()) - 180 + MAG_HDG_DEV).roundToInt().toShort(), pos.x, pos.y, loc.maxDistNm,
                     mins.baroAltFt, mins.rvrM,
                     offset.lineUpDistNm, steps.altAtDist.map { SerialisedStep(it.first, it.second) }.toTypedArray()
                 )
