@@ -9,12 +9,9 @@ import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.scenes.scene2d.Stage
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.Constants
-import com.bombbird.terminalcontrol2.ui.DatatagTools
-import com.bombbird.terminalcontrol2.utilities.MathTools
-import com.bombbird.terminalcontrol2.utilities.MathTools.byte
-import com.bombbird.terminalcontrol2.utilities.MathTools.getRequiredTrack
-import com.bombbird.terminalcontrol2.utilities.MathTools.pointsAtBorder
-import com.bombbird.terminalcontrol2.utilities.MathTools.withinRange
+import com.bombbird.terminalcontrol2.ui.LABEL_PADDING
+import com.bombbird.terminalcontrol2.ui.updateDatatagLabelSize
+import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.allOf
 import ktx.ashley.exclude
 import ktx.ashley.get
@@ -117,7 +114,7 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
                 val rData = get(RadarData.mapper) ?: return@apply
                 val srColor = get(SRColor.mapper) ?: return@apply
                 val wind = get(AffectedByWind.mapper)
-                val spdVector = Vector2(rData.direction.trackUnitVector).scl(MathTools.ktToPxps(rData.speed.speedKts) * 90) // TODO change projection time based on settings
+                val spdVector = Vector2(rData.direction.trackUnitVector).scl(ktToPxps(rData.speed.speedKts) * 90) // TODO change projection time based on settings
                 val windVector = wind?.windVectorPx?.let { Vector2(it).scl(90f) }
                 shapeRenderer.color = srColor.color
                 shapeRenderer.line(rData.position.x, rData.position.y, rData.position.x + spdVector.x + (windVector?.x ?: 0f), rData.position.y + spdVector.y + (windVector?.y ?: 0f))
@@ -133,7 +130,7 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
 //                val dir = get(Direction.mapper) ?: return@apply
 //                val spd = get(Speed.mapper) ?: return@apply
 //                val wind = get(AffectedByWind.mapper) ?: return@apply
-//                val spdVector = Vector2(dir.trackUnitVector).scl(MathTools.ktToPxps(spd.speedKts) * 120)
+//                val spdVector = Vector2(dir.trackUnitVector).scl(ktToPxps(spd.speedKts) * 120)
 //                shapeRenderer.color = Color.WHITE
 //                shapeRenderer.line(pos.x, pos.y, pos.x + spdVector.x, pos.y + spdVector.y)
 //                val windVector = Vector2(wind.windVectorPx).scl(120f)
@@ -277,8 +274,8 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
             datatags[i]?.apply {
                 val datatag = get(Datatag.mapper) ?: return@apply
                 val radarData = get(RadarData.mapper) ?: return@apply
-                if (!datatag.smallLabelFont && camZoom > Constants.DATATAG_ZOOM_THRESHOLD) DatatagTools.updateLabelSize(datatag, true)
-                else if (datatag.smallLabelFont && camZoom <= Constants.DATATAG_ZOOM_THRESHOLD) DatatagTools.updateLabelSize(datatag, false)
+                if (!datatag.smallLabelFont && camZoom > Constants.DATATAG_ZOOM_THRESHOLD) updateDatatagLabelSize(datatag, true)
+                else if (datatag.smallLabelFont && camZoom <= Constants.DATATAG_ZOOM_THRESHOLD) updateDatatagLabelSize(datatag, false)
                 val leftX = (radarData.position.x - camX) / camZoom + datatag.xOffset
                 val bottomY = (radarData.position.y - camY) / camZoom + datatag.yOffset
                 datatag.imgButton.apply {
@@ -286,11 +283,11 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
                     draw(Constants.GAME.batch, 1f)
                 }
                 datatag.clickSpot.setPosition(leftX, bottomY)
-                var labelY = bottomY + DatatagTools.LABEL_PADDING
+                var labelY = bottomY + LABEL_PADDING
                 for (j in datatag.labelArray.size - 1 downTo 0) {
                     datatag.labelArray[j].let { label ->
                         if (label.text.isNullOrEmpty()) return@let
-                        label.setPosition(leftX + DatatagTools.LABEL_PADDING, labelY)
+                        label.setPosition(leftX + LABEL_PADDING, labelY)
                         label.draw(Constants.GAME.batch, 1f)
                         labelY += (label.height + datatag.lineSpacing)
                     }

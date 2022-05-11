@@ -7,8 +7,8 @@ import com.bombbird.terminalcontrol2.global.Constants
 import com.bombbird.terminalcontrol2.global.Variables
 import com.bombbird.terminalcontrol2.navigation.Approach.IlsGS.SerialisedIlsGS
 import com.bombbird.terminalcontrol2.navigation.Approach.IlsLOCOffset.SerialisedIlsLOCOffset
-import com.bombbird.terminalcontrol2.utilities.MathTools
 import com.bombbird.terminalcontrol2.utilities.Pronounceable
+import com.bombbird.terminalcontrol2.utilities.convertWorldAndRenderDeg
 import ktx.ashley.entity
 import ktx.ashley.get
 import ktx.ashley.plusAssign
@@ -161,7 +161,7 @@ abstract class Approach(name: String, runwayId: Byte, tower: String, towerFreq: 
                                        transitions.map { SerialisedTransition(it.first, it.second.getSerialisedObject()) }.toTypedArray(),
                                        routeLegs.getSerialisedObject(),
                                        missedLegs.getSerialisedObject(),
-                                       (MathTools.convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()) - 180 + Variables.MAG_HDG_DEV).roundToInt().toShort(), pos.x, pos.y, loc.maxDistNm,
+                                       (convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()) - 180 + Variables.MAG_HDG_DEV).roundToInt().toShort(), pos.x, pos.y, loc.maxDistNm,
                                        gs.glideAngle, gs.offsetNm, gs.maxInterceptAlt,
                                        mins.baroAltFt, mins.rvrM
                 )
@@ -212,7 +212,7 @@ abstract class Approach(name: String, runwayId: Byte, tower: String, towerFreq: 
                     transitions.map { SerialisedTransition(it.first, it.second.getSerialisedObject()) }.toTypedArray(),
                     routeLegs.getSerialisedObject(),
                     missedLegs.getSerialisedObject(),
-                    (MathTools.convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()) - 180 + Variables.MAG_HDG_DEV).roundToInt().toShort(), pos.x, pos.y, loc.maxDistNm,
+                    (convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()) - 180 + Variables.MAG_HDG_DEV).roundToInt().toShort(), pos.x, pos.y, loc.maxDistNm,
                     mins.baroAltFt, mins.rvrM,
                     offset.lineUpDistNm, steps.altAtDist.map { SerialisedStep(it.first, it.second) }.toTypedArray()
                 )

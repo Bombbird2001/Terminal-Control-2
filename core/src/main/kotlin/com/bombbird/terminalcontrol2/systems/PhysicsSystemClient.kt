@@ -2,9 +2,7 @@ package com.bombbird.terminalcontrol2.systems
 
 import com.badlogic.ashley.core.EntitySystem
 import com.bombbird.terminalcontrol2.components.*
-import com.bombbird.terminalcontrol2.utilities.MathTools
-import com.bombbird.terminalcontrol2.utilities.MetarTools
-import com.bombbird.terminalcontrol2.utilities.PhysicsTools
+import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.allOf
 import ktx.ashley.exclude
 import ktx.ashley.get
@@ -26,7 +24,7 @@ class PhysicsSystemClient: EntitySystem(), LowFreqUpdate {
                 val alt = get(Altitude.mapper) ?: return@apply
                 val spd = get(Speed.mapper) ?: return@apply
                 val dir = get(Direction.mapper) ?: return@apply
-                val velVector = dir.trackUnitVector.times(MathTools.ktToPxps(spd.speedKts) * deltaTime)
+                val velVector = dir.trackUnitVector.times(ktToPxps(spd.speedKts) * deltaTime)
                 pos.x += velVector.x
                 pos.y += velVector.y
                 dir.trackUnitVector.rotateDeg(-spd.angularSpdDps * deltaTime)
@@ -61,7 +59,7 @@ class PhysicsSystemClient: EntitySystem(), LowFreqUpdate {
                 val spd = get(Speed.mapper) ?: return@apply
                 val ias = get(IndicatedAirSpeed.mapper) ?: return@apply
                 val alt = get(Altitude.mapper) ?: return@apply
-                ias.iasKt = PhysicsTools.calculateIASFromTAS(alt.altitudeFt, spd.speedKts)
+                ias.iasKt = calculateIASFromTAS(alt.altitudeFt, spd.speedKts)
             }
         }
 
@@ -72,7 +70,7 @@ class PhysicsSystemClient: EntitySystem(), LowFreqUpdate {
             affectedByWind[i]?.apply {
                 val pos = get(Position.mapper) ?: return@apply
                 val wind = get(AffectedByWind.mapper) ?: return@apply
-                wind.windVectorPx = MetarTools.getClosestAirportWindVector(pos.x, pos.y)
+                wind.windVectorPx = getClosestAirportWindVector(pos.x, pos.y)
             }
         }
     }

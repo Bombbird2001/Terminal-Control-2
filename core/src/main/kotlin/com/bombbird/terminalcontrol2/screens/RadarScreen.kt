@@ -26,9 +26,9 @@ import com.bombbird.terminalcontrol2.systems.LowFreqUpdate
 import com.bombbird.terminalcontrol2.systems.PhysicsSystemClient
 import com.bombbird.terminalcontrol2.systems.RenderingSystem
 import com.bombbird.terminalcontrol2.ui.updateMetarInformation
-import com.bombbird.terminalcontrol2.utilities.ControlStateTools
-import com.bombbird.terminalcontrol2.utilities.MathTools
-import com.bombbird.terminalcontrol2.utilities.MathTools.byte
+import com.bombbird.terminalcontrol2.utilities.byte
+import com.bombbird.terminalcontrol2.utilities.getAircraftIcon
+import com.bombbird.terminalcontrol2.utilities.nmToPx
 import com.bombbird.terminalcontrol2.utilities.safeStage
 import com.esotericsoftware.kryonet.Client
 import com.esotericsoftware.kryonet.Connection
@@ -159,7 +159,7 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
                     } ?: (obj as? SerialisationRegistering.AircraftSectorUpdateData)?.apply {
                         aircraft[obj.callsign]?.let { aircraft ->
                             aircraft.entity[Controllable.mapper]?.sectorId = obj.newSector
-                            aircraft.entity[RSSprite.mapper]?.drawable = ControlStateTools.getAircraftIcon(aircraft.entity[FlightType.mapper]?.type ?: return@apply, obj.newSector)
+                            aircraft.entity[RSSprite.mapper]?.drawable = getAircraftIcon(aircraft.entity[FlightType.mapper]?.type ?: return@apply, obj.newSector)
                             if (obj.newSector == 0.byte && selectedAircraft == aircraft) setUISelectedAircraft(aircraft)
                         }
                     } ?: (obj as? SerialisationRegistering.AircraftControlStateUpdateData)?.apply {
@@ -184,7 +184,7 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
 
         // Default zoom is set so that a full 100nm by 100nm square is visible (2500px x 2500px)
         (radarDisplayStage.camera as OrthographicCamera).apply {
-            zoom = MathTools.nmToPx(Constants.DEFAULT_ZOOM_NM) / Variables.UI_HEIGHT
+            zoom = nmToPx(Constants.DEFAULT_ZOOM_NM) / Variables.UI_HEIGHT
             targetZoom = zoom
             // Default camera position is set at (0, 0)
             targetCenter = Vector2()
@@ -214,7 +214,7 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
         (radarDisplayStage.camera as OrthographicCamera).apply {
             val oldZoom = zoom
             zoom += deltaZoom
-            zoom = MathUtils.clamp(zoom, MathTools.nmToPx(Constants.MIN_ZOOM_NM) / Variables.UI_HEIGHT, MathTools.nmToPx(Constants.MAX_ZOOM_NM) / Variables.UI_HEIGHT)
+            zoom = MathUtils.clamp(zoom, nmToPx(Constants.MIN_ZOOM_NM) / Variables.UI_HEIGHT, nmToPx(Constants.MAX_ZOOM_NM) / Variables.UI_HEIGHT)
             translate(uiPane.getRadarCameraOffsetForZoom(zoom - oldZoom), 0f)
             update()
 
@@ -226,8 +226,8 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
     /** Initiates animation of [radarDisplayStage]'s camera to the new position, as well as a new zoom depending on current zoom value */
     private fun initiateCameraAnimation(targetScreenX: Float, targetScreenY: Float) {
         (radarDisplayStage.camera as OrthographicCamera).apply {
-            targetZoom = if (zoom > (MathTools.nmToPx(Constants.ZOOM_THRESHOLD_NM) / Variables.UI_HEIGHT)) MathTools.nmToPx(Constants.DEFAULT_ZOOM_IN_NM) / Variables.UI_HEIGHT
-            else MathTools.nmToPx(Constants.DEFAULT_ZOOM_NM) / Variables.UI_HEIGHT
+            targetZoom = if (zoom > (nmToPx(Constants.ZOOM_THRESHOLD_NM) / Variables.UI_HEIGHT)) nmToPx(Constants.DEFAULT_ZOOM_IN_NM) / Variables.UI_HEIGHT
+            else nmToPx(Constants.DEFAULT_ZOOM_NM) / Variables.UI_HEIGHT
             val worldCoord = unprojectFromRadarCamera(targetScreenX, targetScreenY)
             targetCenter.x = worldCoord.x + uiPane.getRadarCameraOffsetForZoom(targetZoom)
             targetCenter.y = worldCoord.y

@@ -10,7 +10,9 @@ import com.bombbird.terminalcontrol2.global.Constants
 import com.bombbird.terminalcontrol2.global.Variables
 import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.navigation.Route
-import com.bombbird.terminalcontrol2.ui.DatatagTools
+import com.bombbird.terminalcontrol2.ui.addDatatagInputListeners
+import com.bombbird.terminalcontrol2.ui.updateDatatagStyle
+import com.bombbird.terminalcontrol2.ui.updateDatatagText
 import ktx.ashley.entity
 import ktx.ashley.get
 import ktx.ashley.plusAssign
@@ -49,9 +51,9 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
                 position.y = posY
             }
             with<Datatag> {
-                DatatagTools.updateStyle(this, flightType)
-                DatatagTools.updateText(this, arrayOf("Test line 1", "Test line 2", "", "Test line 3"))
-                DatatagTools.addInputListeners(this, this@Aircraft)
+                updateDatatagStyle(this, flightType)
+                updateDatatagText(this, arrayOf("Test line 1", "Test line 2", "", "Test line 3"))
+                addDatatagInputListeners(this, this@Aircraft)
                 xOffset = -imgButton.width / 2
                 yOffset = 13f
             }

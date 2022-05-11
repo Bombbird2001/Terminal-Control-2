@@ -10,7 +10,7 @@ import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.navigation.SidStar
 import com.bombbird.terminalcontrol2.navigation.UsabilityFilter
 import com.bombbird.terminalcontrol2.networking.GameServer
-import com.bombbird.terminalcontrol2.utilities.MathTools
+import com.bombbird.terminalcontrol2.utilities.nmToPx
 import ktx.ashley.get
 import ktx.assets.toInternalFile
 import ktx.collections.isNotEmpty
@@ -84,8 +84,8 @@ object GameLoader {
         val id = data[0].toShort()
         val wptName = data[1]
         val pos = data[2].split(",")
-        val posX = MathTools.nmToPx(pos[0].toFloat()).toInt().toShort()
-        val posY = MathTools.nmToPx(pos[1].toFloat()).toInt().toShort()
+        val posX = nmToPx(pos[0].toFloat()).toInt().toShort()
+        val posY = nmToPx(pos[1].toFloat()).toInt().toShort()
         gameServer.waypoints[id] = Waypoint(id, wptName, posX, posY, false)
         gameServer.updatedWaypointMapping[wptName] = id
     }
@@ -98,8 +98,8 @@ object GameLoader {
         val polygon = ArrayList<Short>()
         for (i in 3 until data.size) {
             val pos = data[i].split(",")
-            polygon.add(MathTools.nmToPx(pos[0].toFloat()).toInt().toShort())
-            polygon.add(MathTools.nmToPx(pos[1].toFloat()).toInt().toShort())
+            polygon.add(nmToPx(pos[0].toFloat()).toInt().toShort())
+            polygon.add(nmToPx(pos[1].toFloat()).toInt().toShort())
         }
         gameServer.sectors.add(Sector(id, "", freq, callsign, polygon.toShortArray(), onClient = false))
     }
@@ -120,20 +120,20 @@ object GameLoader {
                 for (i in 3 until data.size) {
                     val pos = data[i].split(",")
                     if (pos[0] == "LABEL") {
-                        labelX = MathTools.nmToPx(pos[1].toFloat()).toInt().toShort()
-                        labelY = MathTools.nmToPx(pos[2].toFloat()).toInt().toShort()
+                        labelX = nmToPx(pos[1].toFloat()).toInt().toShort()
+                        labelY = nmToPx(pos[2].toFloat()).toInt().toShort()
                         continue
                     }
-                    polygon.add(MathTools.nmToPx(pos[0].toFloat()).toInt().toShort())
-                    polygon.add(MathTools.nmToPx(pos[1].toFloat()).toInt().toShort())
+                    polygon.add(nmToPx(pos[0].toFloat()).toInt().toShort())
+                    polygon.add(nmToPx(pos[1].toFloat()).toInt().toShort())
                 }
                 gameServer.minAltSectors.add(MinAltSector(minAlt, polygon.toShortArray(), labelX = labelX, labelY = labelY, restr = enforced, onClient = false))
             }
             "CIRCLE" -> {
                 val pos = data[3].split(",")
-                val posX = MathTools.nmToPx(pos[0].toFloat()).toInt().toShort()
-                val posY = MathTools.nmToPx(pos[1].toFloat()).toInt().toShort()
-                val radius = MathTools.nmToPx(data[4].toFloat())
+                val posX = nmToPx(pos[0].toFloat()).toInt().toShort()
+                val posY = nmToPx(pos[1].toFloat()).toInt().toShort()
+                val radius = nmToPx(data[4].toFloat())
                 gameServer.minAltSectors.add(MinAltSector(minAlt, null, posX, posY, radius, null, null, enforced, false))
             }
             else -> Gdx.app.log("GameLoader", "Unknown minAltSector type $type")
@@ -145,8 +145,8 @@ object GameLoader {
         val polygon = ArrayList<Short>()
         for (coord in data) {
             val pos = coord.split(",")
-            polygon.add(MathTools.nmToPx(pos[0].toFloat()).toInt().toShort())
-            polygon.add(MathTools.nmToPx(pos[1].toFloat()).toInt().toShort())
+            polygon.add(nmToPx(pos[0].toFloat()).toInt().toShort())
+            polygon.add(nmToPx(pos[1].toFloat()).toInt().toShort())
         }
         gameServer.shoreline.add(Shoreline(polygon.toShortArray()))
     }
@@ -191,8 +191,8 @@ object GameLoader {
         val name = data[3]
         val ratio = data[4].toByte()
         val pos = data[5].split(",")
-        val posX = MathTools.nmToPx(pos[0].toFloat())
-        val posY = MathTools.nmToPx(pos[1].toFloat())
+        val posX = nmToPx(pos[0].toFloat())
+        val posY = nmToPx(pos[1].toFloat())
         val elevation = data[6].toShort()
         val realLifeIcao = data[7]
         val arpt = Airport(id, icao, name, ratio, posX, posY, elevation).apply {
@@ -208,8 +208,8 @@ object GameLoader {
         val id = data[0].toByte()
         val name = data[1]
         val pos = data[2].split(",")
-        val posX = MathTools.nmToPx(pos[0].toFloat())
-        val posY = MathTools.nmToPx(pos[1].toFloat())
+        val posX = nmToPx(pos[0].toFloat())
+        val posY = nmToPx(pos[1].toFloat())
         val trueHdg = data[3].toFloat()
         val rwyLengthM = data[4].toShort()
         val elevation = data[5].toShort()
@@ -247,8 +247,8 @@ object GameLoader {
         }
         val heading = data[5].toShort()
         val pos = data[6].split(",")
-        val posX = MathTools.nmToPx(pos[0].toFloat())
-        val posY = MathTools.nmToPx(pos[1].toFloat())
+        val posX = nmToPx(pos[0].toFloat())
+        val posY = nmToPx(pos[1].toFloat())
         val decisionAltitude = data[7].toShort()
         val rvr = data[8].toShort()
         val app = when (data[1]) {

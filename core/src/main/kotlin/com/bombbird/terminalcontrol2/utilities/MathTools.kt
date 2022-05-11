@@ -5,208 +5,207 @@ import com.bombbird.terminalcontrol2.components.CommandTarget
 import kotlin.math.*
 
 /** Game specific math tools for use */
-object MathTools {
-    /** Convenience [Int] to [Byte] getter */
-    inline val Int.byte
-        get() = this.toByte()
 
-    /** Unit conversions */
-    const val NM_TO_PX = 25f
-    private const val NM_TO_FT = 6076.12f
-    private const val NM_TO_M = 1852f
+/** Convenience [Int] to [Byte] getter */
+inline val Int.byte
+    get() = this.toByte()
 
-    /** Convert from nautical miles to pixels */
-    fun nmToPx(nm: Int): Float {
-        return nmToPx(nm.toFloat())
-    }
+/** Unit conversions */
+const val NM_TO_PX = 25f
+private const val NM_TO_FT = 6076.12f
+private const val NM_TO_M = 1852f
 
-    fun nmToPx(nm: Float): Float {
-        return nm * NM_TO_PX
-    }
+/** Convert from nautical miles to pixels */
+fun nmToPx(nm: Int): Float {
+    return nmToPx(nm.toFloat())
+}
 
-    /** Convert from pixels to nautical miles */
-    fun pxToNm(px: Int): Float {
-        return pxToNm(px.toFloat())
-    }
+fun nmToPx(nm: Float): Float {
+    return nm * NM_TO_PX
+}
 
-    fun pxToNm(px: Float): Float {
-        return px / NM_TO_PX
-    }
+/** Convert from pixels to nautical miles */
+fun pxToNm(px: Int): Float {
+    return pxToNm(px.toFloat())
+}
 
-    /** Convert from feet to pixels */
-    fun ftToPx(ft: Int): Float {
-        return ftToPx(ft.toFloat())
-    }
+fun pxToNm(px: Float): Float {
+    return px / NM_TO_PX
+}
 
-    fun ftToPx(ft: Float): Float {
-        return nmToPx(ft / NM_TO_FT)
-    }
+/** Convert from feet to pixels */
+fun ftToPx(ft: Int): Float {
+    return ftToPx(ft.toFloat())
+}
 
-    /** Convert from pixels to feet */
-    fun pxToFt(px: Int): Float {
-        return pxToFt(px.toFloat())
-    }
+fun ftToPx(ft: Float): Float {
+    return nmToPx(ft / NM_TO_FT)
+}
 
-    fun pxToFt(px: Float): Float {
-        return pxToNm(px) * NM_TO_FT
-    }
+/** Convert from pixels to feet */
+fun pxToFt(px: Int): Float {
+    return pxToFt(px.toFloat())
+}
 
-    /** Convert from metres to pixels */
-    fun mToPx(m: Int): Float {
-        return mToPx(m.toFloat())
-    }
+fun pxToFt(px: Float): Float {
+    return pxToNm(px) * NM_TO_FT
+}
 
-    fun mToPx(m: Float): Float {
-        return nmToPx(m / NM_TO_M)
-    }
+/** Convert from metres to pixels */
+fun mToPx(m: Int): Float {
+    return mToPx(m.toFloat())
+}
 
-    /** Convert from pixels to metres */
-    fun pxToM(px: Int): Float {
-        return pxToNm(px) * NM_TO_M
-    }
+fun mToPx(m: Float): Float {
+    return nmToPx(m / NM_TO_M)
+}
 
-    /** Convert from metres to nautical miles */
-    fun mToNm(m: Float): Float {
-        return pxToNm(mToPx(m))
-    }
+/** Convert from pixels to metres */
+fun pxToM(px: Int): Float {
+    return pxToNm(px) * NM_TO_M
+}
 
-    /** Convert from metres to feet */
-    fun mToFt(m: Float): Float {
-        return pxToFt(mToPx(m))
-    }
+/** Convert from metres to nautical miles */
+fun mToNm(m: Float): Float {
+    return pxToNm(mToPx(m))
+}
 
-    /** Convert from feet to metres */
-    fun ftToM(ft: Float): Float {
-        return ft / mToFt(1.0f)
-    }
+/** Convert from metres to feet */
+fun mToFt(m: Float): Float {
+    return pxToFt(mToPx(m))
+}
 
-    /** Convert from knots to pixels per second */
-    fun ktToPxps(kt: Int): Float {
-        return ktToPxps(kt.toFloat())
-    }
+/** Convert from feet to metres */
+fun ftToM(ft: Float): Float {
+    return ft / mToFt(1.0f)
+}
 
-    fun ktToPxps(kt: Float): Float {
-        return nmToPx(kt / 3600)
-    }
+/** Convert from knots to pixels per second */
+fun ktToPxps(kt: Int): Float {
+    return ktToPxps(kt.toFloat())
+}
 
-    /** Convert from pixels per second to knots */
-    fun pxpsToKt(pxps: Float): Float {
-        return pxps / ktToPxps(1)
-    }
+fun ktToPxps(kt: Float): Float {
+    return nmToPx(kt / 3600)
+}
 
-    /** Convert from metres per second to knots */
-    fun mpsToKt(mps: Float): Float {
-        return mToNm(mps * 3600)
-    }
+/** Convert from pixels per second to knots */
+fun pxpsToKt(pxps: Float): Float {
+    return pxps / ktToPxps(1)
+}
 
-    /** Convert from knots to metres per second */
-    fun ktToMps(kt: Int): Float {
-        return ktToMps(kt.toFloat())
-    }
+/** Convert from metres per second to knots */
+fun mpsToKt(mps: Float): Float {
+    return mToNm(mps * 3600)
+}
 
-    fun ktToMps(kt: Float): Float {
-        return kt / mpsToKt(1f)
-    }
+/** Convert from knots to metres per second */
+fun ktToMps(kt: Int): Float {
+    return ktToMps(kt.toFloat())
+}
 
-    /** Convert from metres per second to feet per minute */
-    fun mpsToFpm(ms: Float): Float {
-        return mToFt(ms * 60)
-    }
+fun ktToMps(kt: Float): Float {
+    return kt / mpsToKt(1f)
+}
 
-    /** Convert from feet per minute to metres per second */
-    fun fpmToMps(fpm: Float): Float {
-        return fpm / mpsToFpm(1f)
-    }
+/** Convert from metres per second to feet per minute */
+fun mpsToFpm(ms: Float): Float {
+    return mToFt(ms * 60)
+}
 
-    /** Converts between in-game world degrees and degree used by the rendering systems
-     *
-     * World heading: 360 is up, 90 is right, 180 is down and 270 is left
-     *
-     * Render degrees: 90 is up, 0 is right, -90 is down and -180 is left
-     * */
-    fun convertWorldAndRenderDeg(origDeg: Float): Float {
-        return 90 - origDeg
-    }
+/** Convert from feet per minute to metres per second */
+fun fpmToMps(fpm: Float): Float {
+    return fpm / mpsToFpm(1f)
+}
 
-    /** Modulates the heading such that 0 < [hdg] <= 360 */
-    fun modulateHeading(hdg: Float): Float {
-        return hdg - floor((hdg - 0.0001f) / 360) * 360
-    }
+/** Converts between in-game world degrees and degree used by the rendering systems
+ *
+ * World heading: 360 is up, 90 is right, 180 is down and 270 is left
+ *
+ * Render degrees: 90 is up, 0 is right, -90 is down and -180 is left
+ * */
+fun convertWorldAndRenderDeg(origDeg: Float): Float {
+    return 90 - origDeg
+}
 
-    /** Calculates the effective heading difference (i.e. how much the aircraft needs to turn through) given [initHdg], [targetHdg] and [turnDir] */
-    fun findDeltaHeading(initHdg: Float, targetHdg: Float, turnDir: Byte): Float {
-        var diff = targetHdg - initHdg
-        when (turnDir) {
-            CommandTarget.TURN_DEFAULT -> {
-                diff %= 360
-                if (diff > 180) diff -= 360
-                else if (diff <= -180) diff += 360
-            }
-            CommandTarget.TURN_LEFT -> {
-                diff %= 360
-                if (diff > 0) diff -= 360
-            }
-            CommandTarget.TURN_RIGHT -> {
-                diff %= 360
-                if (diff < 0) diff += 360
-            }
+/** Modulates the heading such that 0 < [hdg] <= 360 */
+fun modulateHeading(hdg: Float): Float {
+    return hdg - floor((hdg - 0.0001f) / 360) * 360
+}
+
+/** Calculates the effective heading difference (i.e. how much the aircraft needs to turn through) given [initHdg], [targetHdg] and [turnDir] */
+fun findDeltaHeading(initHdg: Float, targetHdg: Float, turnDir: Byte): Float {
+    var diff = targetHdg - initHdg
+    when (turnDir) {
+        CommandTarget.TURN_DEFAULT -> {
+            diff %= 360
+            if (diff > 180) diff -= 360
+            else if (diff <= -180) diff += 360
         }
-
-        return diff
+        CommandTarget.TURN_LEFT -> {
+            diff %= 360
+            if (diff > 0) diff -= 360
+        }
+        CommandTarget.TURN_RIGHT -> {
+            diff %= 360
+            if (diff < 0) diff += 360
+        }
     }
 
-    /** Calculates the shortest distance required to reach the border supplied with a given track  */
-    fun distanceFromBorder(xBorder: FloatArray, yBorder: FloatArray, x: Float, y: Float, direction: Float): Float {
-        val cos = cos(Math.toRadians(90 - direction.toDouble())).toFloat()
-        val xDistRight = (xBorder[1] - x) / cos
-        val xDistLeft = (xBorder[0] - x) / cos
-        val sin = sin(Math.toRadians(90 - direction.toDouble())).toFloat()
-        val yDistUp = (yBorder[1] - y) / sin
-        val yDistDown = (yBorder[0] - y) / sin
-        val xDist = if (xDistRight > 0) xDistRight else xDistLeft
-        val yDist = if (yDistUp > 0) yDistUp else yDistDown
-        return xDist.coerceAtMost(yDist)
-    }
+    return diff
+}
 
-    /** Calculates the point where the line from a point at a specified track meets a rectangle's border  */
-    fun pointsAtBorder(xBorder: FloatArray, yBorder: FloatArray, x: Float, y: Float, direction: Float): FloatArray {
-        val dist = distanceFromBorder(xBorder, yBorder, x, y, direction)
-        return floatArrayOf(x + dist * cos(Math.toRadians(90 - direction.toDouble())).toFloat(), y + dist * sin(Math.toRadians(90 - direction.toDouble())).toFloat())
-    }
+/** Calculates the shortest distance required to reach the border supplied with a given track  */
+fun distanceFromBorder(xBorder: FloatArray, yBorder: FloatArray, x: Float, y: Float, direction: Float): Float {
+    val cos = cos(Math.toRadians(90 - direction.toDouble())).toFloat()
+    val xDistRight = (xBorder[1] - x) / cos
+    val xDistLeft = (xBorder[0] - x) / cos
+    val sin = sin(Math.toRadians(90 - direction.toDouble())).toFloat()
+    val yDistUp = (yBorder[1] - y) / sin
+    val yDistDown = (yBorder[0] - y) / sin
+    val xDist = if (xDistRight > 0) xDistRight else xDistLeft
+    val yDist = if (yDistUp > 0) yDistUp else yDistDown
+    return xDist.coerceAtMost(yDist)
+}
 
-    /** Checks whether integer is within range of 2 integers  */
-    fun withinRange(no: Int, min: Int, max: Int): Boolean {
-        return no in min..max
-    }
+/** Calculates the point where the line from a point at a specified track meets a rectangle's border  */
+fun pointsAtBorder(xBorder: FloatArray, yBorder: FloatArray, x: Float, y: Float, direction: Float): FloatArray {
+    val dist = distanceFromBorder(xBorder, yBorder, x, y, direction)
+    return floatArrayOf(x + dist * cos(Math.toRadians(90 - direction.toDouble())).toFloat(), y + dist * sin(Math.toRadians(90 - direction.toDouble())).toFloat())
+}
 
-    /** Checks whether float is within range of 2 floats  */
-    fun withinRange(no: Float, min: Float, max: Float): Boolean {
-        return no > min && no < max
-    }
+/** Checks whether integer is within range of 2 integers  */
+fun withinRange(no: Int, min: Int, max: Int): Boolean {
+    return no in min..max
+}
 
-    /** Calculates the required track to achieve a displacement of deltaX, deltaY  */
-    fun getRequiredTrack(deltaX: Float, deltaY: Float): Float {
-        return 90 - Math.toDegrees(atan2(deltaY.toDouble(), deltaX.toDouble())).toFloat()
-    }
+/** Checks whether float is within range of 2 floats  */
+fun withinRange(no: Float, min: Float, max: Float): Boolean {
+    return no > min && no < max
+}
 
-    /** Calculates the required track to go from initial point with x, y to destination point with destX, destY  */
-    fun getRequiredTrack(x: Float, y: Float, destX: Float, destY: Float): Float {
-        return getRequiredTrack(destX - x, destY - y)
-    }
+/** Calculates the required track to achieve a displacement of deltaX, deltaY  */
+fun getRequiredTrack(deltaX: Float, deltaY: Float): Float {
+    return 90 - Math.toDegrees(atan2(deltaY.toDouble(), deltaX.toDouble())).toFloat()
+}
 
-    /** Calculates the required track to go from initial point with x, y to destination point with destX, destY  */
-    fun getRequiredTrack(x: Int, y: Int, destX: Int, destY: Int): Float {
-        return getRequiredTrack((destX - x).toFloat(), (destY - y).toFloat())
-    }
+/** Calculates the required track to go from initial point with x, y to destination point with destX, destY  */
+fun getRequiredTrack(x: Float, y: Float, destX: Float, destY: Float): Float {
+    return getRequiredTrack(destX - x, destY - y)
+}
 
-    /** Calculates the distance, in px, prior to reaching a point required to turn through a heading of [deltaHeading], given the
-     * [turnRateDps] and [groundSpeedPxps] of the aircraft
-     *
-     * A positive and negative value of [deltaHeading] with the same magnitude should return the same result
-     * */
-    fun findTurnDistance(deltaHeading: Float, turnRateDps: Float, groundSpeedPxps: Float): Float {
-        val radius = groundSpeedPxps / (MathUtils.degreesToRadians * turnRateDps)
-        val halfTheta = (180 - abs(deltaHeading)) / 2f
-        return max((radius / tan(Math.toRadians(halfTheta.toDouble()))).toFloat() + 8, 3f)
-    }
+/** Calculates the required track to go from initial point with x, y to destination point with destX, destY  */
+fun getRequiredTrack(x: Int, y: Int, destX: Int, destY: Int): Float {
+    return getRequiredTrack((destX - x).toFloat(), (destY - y).toFloat())
+}
+
+/** Calculates the distance, in px, prior to reaching a point required to turn through a heading of [deltaHeading], given the
+ * [turnRateDps] and [groundSpeedPxps] of the aircraft
+ *
+ * A positive and negative value of [deltaHeading] with the same magnitude should return the same result
+ * */
+fun findTurnDistance(deltaHeading: Float, turnRateDps: Float, groundSpeedPxps: Float): Float {
+    val radius = groundSpeedPxps / (MathUtils.degreesToRadians * turnRateDps)
+    val halfTheta = (180 - abs(deltaHeading)) / 2f
+    return max((radius / tan(Math.toRadians(halfTheta.toDouble()))).toFloat() + 8, 3f)
 }

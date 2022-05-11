@@ -8,9 +8,7 @@ import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.Constants
 import com.bombbird.terminalcontrol2.global.Variables
 import com.bombbird.terminalcontrol2.navigation.Route
-import com.bombbird.terminalcontrol2.utilities.MathTools
-import com.bombbird.terminalcontrol2.utilities.MathTools.byte
-import com.bombbird.terminalcontrol2.utilities.PhysicsTools
+import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.allOf
 import ktx.ashley.get
 import ktx.ashley.plusAssign
@@ -42,8 +40,8 @@ class AISystem: EntitySystem() {
                 val ias = get(IndicatedAirSpeed.mapper) ?: return@apply
                 val dir = get(Direction.mapper) ?: return@apply
                 val wind = get(AffectedByWind.mapper) ?: return@apply
-                ias.iasKt = PhysicsTools.calculateIASFromTAS(alt.altitudeFt, spd.speedKts)
-                if (ias.iasKt >= aircraftInfo.aircraftPerf.vR + PhysicsTools.calculateIASFromTAS(alt.altitudeFt, MathTools.pxpsToKt(wind.windVectorPx.dot(dir.trackUnitVector)))) {
+                ias.iasKt = calculateIASFromTAS(alt.altitudeFt, spd.speedKts)
+                if (ias.iasKt >= aircraftInfo.aircraftPerf.vR + calculateIASFromTAS(alt.altitudeFt, pxpsToKt(wind.windVectorPx.dot(dir.trackUnitVector)))) {
                     // Transition to takeoff climb mode
                     remove<TakeoffRoll>()
                     this += TakeoffClimb(alt.altitudeFt + MathUtils.random(1200, 1800))
@@ -148,14 +146,14 @@ class AISystem: EntitySystem() {
                 val targetTrack = trackAndGS.first
                 val groundSpeed = trackAndGS.second
                 // Set command target heading to target track + magnetic heading variation
-                cmdTarget.targetHdgDeg = MathTools.modulateHeading(targetTrack + Variables.MAG_HDG_DEV)
+                cmdTarget.targetHdgDeg = modulateHeading(targetTrack + Variables.MAG_HDG_DEV)
 
                 // Calculate distance between aircraft and waypoint and check if aircraft should move to next leg
                 val deltaX = wpt.x - pos.x
                 val deltaY = wpt.y - pos.y
                 val nextWptLegTrack = clearanceAct.route.findNextWptLegTrackAndDirection()
                 val requiredDist = if (cmdDir.flyOver || nextWptLegTrack == null) 3f
-                else MathTools.findTurnDistance(MathTools.findDeltaHeading(targetTrack, nextWptLegTrack.first, nextWptLegTrack.second), if (ias.iasKt > 250) 1.5f else 3f, MathTools.ktToPxps(groundSpeed))
+                else findTurnDistance(findDeltaHeading(targetTrack, nextWptLegTrack.first, nextWptLegTrack.second), if (ias.iasKt > 250) 1.5f else 3f, ktToPxps(groundSpeed))
                 if (requiredDist * requiredDist > deltaX * deltaX + deltaY * deltaY) {
                     remove<CommandDirect>()
                     setToNextRouteLeg(this)
@@ -186,8 +184,8 @@ class AISystem: EntitySystem() {
                         1.byte -> {
                             if (!cmdHold.oppositeTravelled) {
                                 // Fly opposite to inbound leg
-                                cmdTarget.targetHdgDeg = MathTools.modulateHeading(cmdHold.inboundHdg + 180f)
-                                val distToTurnPx = MathTools.nmToPx(cmdHold.legDist - 1)
+                                cmdTarget.targetHdgDeg = modulateHeading(cmdHold.inboundHdg + 180f)
+                                val distToTurnPx = nmToPx(cmdHold.legDist - 1)
                                 if (distPxFromWpt2 > distToTurnPx * distToTurnPx) cmdHold.oppositeTravelled = true // Opposite leg has been travelled
                             } else {
                                 // Fly direct to waypoint
@@ -201,12 +199,12 @@ class AISystem: EntitySystem() {
                             }
                             // Turn direction is opposite to the hold direction
                             val reqTurnDir = (-cmdHold.legDir).toByte()
-                            cmdTarget.turnDir = getApppropriateTurnDir(cmdTarget.targetHdgDeg, MathTools.convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()), reqTurnDir)
+                            cmdTarget.turnDir = getAppropriateTurnDir(cmdTarget.targetHdgDeg, convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()), reqTurnDir)
                         }
                         2.byte -> {
                             // Fly 30 degrees off from the opposite of inbound leg, towards the outbound leg
-                            cmdTarget.targetHdgDeg = MathTools.modulateHeading(cmdHold.inboundHdg + cmdHold.legDir * 150f) // +150 degrees for right, -150 degrees for left
-                            val distToTurnPx = MathTools.nmToPx(cmdHold.legDist.toInt())
+                            cmdTarget.targetHdgDeg = modulateHeading(cmdHold.inboundHdg + cmdHold.legDir * 150f) // +150 degrees for right, -150 degrees for left
+                            val distToTurnPx = nmToPx(cmdHold.legDist.toInt())
                             if (distPxFromWpt2 > distToTurnPx * distToTurnPx) {
                                 // Entry complete, fly inbound leg
                                 cmdHold.entryDone = true
@@ -223,14 +221,14 @@ class AISystem: EntitySystem() {
                     // Entry is complete, fly the inbound or outbound legs
                     if (cmdHold.flyOutbound) {
                         // Fly opposite heading of inbound leg
-                        cmdTarget.targetHdgDeg = MathTools.modulateHeading(cmdHold.inboundHdg + 180f)
-                        cmdTarget.turnDir = getApppropriateTurnDir(cmdTarget.targetHdgDeg, MathTools.convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()), cmdHold.legDir)
-                        val distToTurnPx = MathTools.nmToPx(cmdHold.legDist.toInt())
+                        cmdTarget.targetHdgDeg = modulateHeading(cmdHold.inboundHdg + 180f)
+                        cmdTarget.turnDir = getAppropriateTurnDir(cmdTarget.targetHdgDeg, convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()), cmdHold.legDir)
+                        val distToTurnPx = nmToPx(cmdHold.legDist.toInt())
                         if (distPxFromWpt2 > distToTurnPx * distToTurnPx) cmdHold.flyOutbound = false // Outbound leg complete, fly inbound leg
                     } else {
                         // Fly an extended inbound track to the waypoint
-                        val legTrackRad = Math.toRadians(MathTools.convertWorldAndRenderDeg(cmdHold.inboundHdg.toFloat() - Variables.MAG_HDG_DEV) + 180.0)
-                        val targetDistPx = sqrt(distPxFromWpt2) - MathTools.nmToPx(0.75f)
+                        val legTrackRad = Math.toRadians(convertWorldAndRenderDeg(cmdHold.inboundHdg.toFloat() - Variables.MAG_HDG_DEV) + 180.0)
+                        val targetDistPx = sqrt(distPxFromWpt2) - nmToPx(0.75f)
                         val targetX = holdWpt.x + cos(legTrackRad) * targetDistPx
                         val targetY = holdWpt.y + sin(legTrackRad) * targetDistPx
                         cmdTarget.targetHdgDeg = getPointTargetTrackAndGS(pos.x, pos.y, targetX.toFloat(), targetY.toFloat(), spd.speedKts, dir, get(AffectedByWind.mapper)).first + Variables.MAG_HDG_DEV
@@ -251,12 +249,12 @@ class AISystem: EntitySystem() {
      * [dir] is the [Direction] component of the aircraft
      * */
     private fun getPointTargetTrackAndGS(x1: Float, y1: Float, x2: Float, y2: Float, speedKts: Float, dir: Direction, wind: AffectedByWind?): Pair<Float, Float> {
-        var targetTrack = MathTools.getRequiredTrack(x1, y1, x2, y2).toDouble()
+        var targetTrack = getRequiredTrack(x1, y1, x2, y2).toDouble()
         var groundSpeed = speedKts
         if (wind != null) {
             // Calculate angle difference required due to wind component
-            val angle = 180.0 - MathTools.convertWorldAndRenderDeg(wind.windVectorPx.angleDeg()) + MathTools.convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg())
-            val windSpdKts = MathTools.pxpsToKt(wind.windVectorPx.len())
+            val angle = 180.0 - convertWorldAndRenderDeg(wind.windVectorPx.angleDeg()) + convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg())
+            val windSpdKts = pxpsToKt(wind.windVectorPx.len())
             groundSpeed = sqrt(speedKts.pow(2.0f) + windSpdKts.pow(2.0f) - 2 * speedKts * windSpdKts * cos(Math.toRadians(angle))).toFloat()
             val angleOffset = asin(windSpdKts * sin(Math.toRadians(angle)) / groundSpeed) * MathUtils.radiansToDegrees
             targetTrack -= angleOffset
@@ -315,9 +313,9 @@ class AISystem: EntitySystem() {
      * 360 degree loop after reaching the [targetHeading] by allowing a window of 3 degrees where the aircraft should
      * return to the default turn direction behaviour
      * */
-    private fun getApppropriateTurnDir(targetHeading: Float, currHeading: Float, cmdTurnDir: Byte): Byte {
+    private fun getAppropriateTurnDir(targetHeading: Float, currHeading: Float, cmdTurnDir: Byte): Byte {
         // Maintain the turn direction until magnitude of deltaHeading is less than 3 degrees
-        return if (MathTools.withinRange(MathTools.findDeltaHeading(currHeading,
+        return if (withinRange(findDeltaHeading(currHeading,
                 targetHeading - Variables.MAG_HDG_DEV, CommandTarget.TURN_DEFAULT), -3f, 3f)) CommandTarget.TURN_DEFAULT
         else cmdTurnDir
     }

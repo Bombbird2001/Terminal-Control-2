@@ -5,9 +5,7 @@ import com.badlogic.gdx.math.MathUtils
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.Constants
 import com.bombbird.terminalcontrol2.global.Variables
-import com.bombbird.terminalcontrol2.utilities.MathTools
-import com.bombbird.terminalcontrol2.utilities.MetarTools
-import com.bombbird.terminalcontrol2.utilities.PhysicsTools
+import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.*
 import ktx.math.times
 
@@ -30,7 +28,7 @@ class PhysicsSystem: EntitySystem(), LowFreqUpdate {
                 val alt = get(Altitude.mapper) ?: return@apply
                 val spd = get(Speed.mapper) ?: return@apply
                 val dir = get(Direction.mapper) ?: return@apply
-                val velVector = dir.trackUnitVector.times(MathTools.ktToPxps(spd.speedKts) * deltaTime)
+                val velVector = dir.trackUnitVector.times(ktToPxps(spd.speedKts) * deltaTime)
                 pos.x += velVector.x
                 pos.y += velVector.y
                 dir.trackUnitVector.rotateDeg(-spd.angularSpdDps * deltaTime)
@@ -57,8 +55,8 @@ class PhysicsSystem: EntitySystem(), LowFreqUpdate {
             speedUpdates[i]?.apply {
                 val spd = get(Speed.mapper) ?: return@apply
                 val acc = get(Acceleration.mapper) ?: return@apply
-                spd.speedKts += MathTools.mpsToKt(acc.dSpeedMps2) * deltaTime
-                spd.vertSpdFpm += MathTools.mpsToFpm(acc.dVertSpdMps2) * deltaTime
+                spd.speedKts += mpsToKt(acc.dSpeedMps2) * deltaTime
+                spd.vertSpdFpm += mpsToFpm(acc.dVertSpdMps2) * deltaTime
                 spd.angularSpdDps += acc.dAngularSpdDps2 * deltaTime
             }
         }
@@ -82,10 +80,10 @@ class PhysicsSystem: EntitySystem(), LowFreqUpdate {
 
                 // Reach target vertical speed within 3 seconds, but is capped between -0.25G and 0.25G
                 val targetVAcc = (targetVS - spd.vertSpdFpm) / 3
-                acc.dVertSpdMps2 = MathUtils.clamp(MathTools.fpmToMps(targetVAcc), Constants.MIN_VERT_ACC, Constants.MAX_VERT_ACC) // Clamp to min 0.75G, max 1.25G
+                acc.dVertSpdMps2 = MathUtils.clamp(fpmToMps(targetVAcc), Constants.MIN_VERT_ACC, Constants.MAX_VERT_ACC) // Clamp to min 0.75G, max 1.25G
 
                 // Reach target speed within 7 seconds, capped by aircraft performance constraints
-                var targetAcc = MathTools.ktToMps(PhysicsTools.calculateTASFromIAS(alt.altitudeFt, cmd.targetIasKt.toFloat()) - spd.speedKts) / 7
+                var targetAcc = ktToMps(calculateTASFromIAS(alt.altitudeFt, cmd.targetIasKt.toFloat()) - spd.speedKts) / 7
                 targetAcc = MathUtils.clamp(targetAcc, aircraftInfo.minAcc, aircraftInfo.maxAcc) // Clamp to min, max aircraft acceleration
                 targetAcc = MathUtils.clamp(targetAcc, -Constants.MAX_ACC, Constants.MAX_ACC) // Clamp to min, max acceleration
 
@@ -110,7 +108,7 @@ class PhysicsSystem: EntitySystem(), LowFreqUpdate {
                 val cmd = get(CommandTarget.mapper) ?: return@apply
 
                 // Calculate the change in heading required
-                val deltaHeading = MathTools.findDeltaHeading(MathTools.convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()), cmd.targetHdgDeg - Variables.MAG_HDG_DEV, cmd.turnDir)
+                val deltaHeading = findDeltaHeading(convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()), cmd.targetHdgDeg - Variables.MAG_HDG_DEV, cmd.turnDir)
 
                 // Reach target heading within 5 seconds, capped by turn rate limit
                 var targetAngSpd = deltaHeading / 5
@@ -138,7 +136,7 @@ class PhysicsSystem: EntitySystem(), LowFreqUpdate {
                 val spd = get(Speed.mapper) ?: return@apply
                 val ias = get(IndicatedAirSpeed.mapper) ?: return@apply
                 val alt = get(Altitude.mapper) ?: return@apply
-                ias.iasKt = PhysicsTools.calculateIASFromTAS(alt.altitudeFt, spd.speedKts)
+                ias.iasKt = calculateIASFromTAS(alt.altitudeFt, spd.speedKts)
             }
         }
 
@@ -151,16 +149,16 @@ class PhysicsSystem: EntitySystem(), LowFreqUpdate {
                 val alt = get(Altitude.mapper) ?: return@apply
                 val acc = get(Acceleration.mapper) ?: return@apply
                 val aircraftInfo = get(AircraftInfo.mapper) ?: return@apply
-                aircraftInfo.maxAcc = PhysicsTools.calculateMaxAcceleration(aircraftInfo.aircraftPerf, alt.altitudeFt, spd.speedKts, false)
-                aircraftInfo.minAcc = PhysicsTools.calculateMinAcceleration(aircraftInfo.aircraftPerf, alt.altitudeFt, spd.speedKts, false)
+                aircraftInfo.maxAcc = calculateMaxAcceleration(aircraftInfo.aircraftPerf, alt.altitudeFt, spd.speedKts, false)
+                aircraftInfo.minAcc = calculateMinAcceleration(aircraftInfo.aircraftPerf, alt.altitudeFt, spd.speedKts, false)
 
                 // TODO distinguish between aircraft on approach/expediting and those not, and those on fixed VS (i.e. priority to VS)
-                aircraftInfo.maxVs = PhysicsTools.calculateMaxVerticalSpd(aircraftInfo.aircraftPerf, alt.altitudeFt, spd.speedKts, acc.dSpeedMps2, false)
-                aircraftInfo.minVs = PhysicsTools.calculateMinVerticalSpd(aircraftInfo.aircraftPerf, alt.altitudeFt, spd.speedKts, acc.dSpeedMps2, false)
+                aircraftInfo.maxVs = calculateMaxVerticalSpd(aircraftInfo.aircraftPerf, alt.altitudeFt, spd.speedKts, acc.dSpeedMps2, false)
+                aircraftInfo.minVs = calculateMinVerticalSpd(aircraftInfo.aircraftPerf, alt.altitudeFt, spd.speedKts, acc.dSpeedMps2, false)
 
 //                println("Altitude: ${alt.altitudeFt}ft")
 //                println("VS: ${spd.vertSpdFpm}fpm")
-//                println("IAS: ${PhysicsTools.calculateIASFromTAS(alt.altitudeFt, spd.speedKts)}kts")
+//                println("IAS: ${calculateIASFromTAS(alt.altitudeFt, spd.speedKts)}kts")
 //                println("TAS: ${spd.speedKts}kts")
 //                println("Acc: ${acc.dSpeedMps2}")
 //                println("Min acc: ${aircraftInfo.minAcc}m/s2")
@@ -177,7 +175,7 @@ class PhysicsSystem: EntitySystem(), LowFreqUpdate {
             affectedByWind[i]?.apply {
                 val pos = get(Position.mapper) ?: return@apply
                 val wind = get(AffectedByWind.mapper) ?: return@apply
-                wind.windVectorPx = MetarTools.getClosestAirportWindVector(pos.x, pos.y)
+                wind.windVectorPx = getClosestAirportWindVector(pos.x, pos.y)
             }
         }
     }

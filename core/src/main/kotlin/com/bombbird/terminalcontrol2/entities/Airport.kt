@@ -8,8 +8,9 @@ import com.bombbird.terminalcontrol2.entities.Airport.Runway.SerialisedRunway
 import com.bombbird.terminalcontrol2.global.Constants
 import com.bombbird.terminalcontrol2.navigation.Approach
 import com.bombbird.terminalcontrol2.navigation.SidStar
-import com.bombbird.terminalcontrol2.utilities.MathTools
-import com.bombbird.terminalcontrol2.utilities.MetarTools
+import com.bombbird.terminalcontrol2.utilities.convertWorldAndRenderDeg
+import com.bombbird.terminalcontrol2.utilities.mToPx
+import com.bombbird.terminalcontrol2.utilities.updateWindVector
 import ktx.ashley.entity
 import ktx.ashley.get
 import ktx.ashley.with
@@ -142,7 +143,7 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
             visibilityM = serialisedMetar.visibilityM
             ceilingHundredFtAGL = serialisedMetar.ceilingFtAGL
             windshear = serialisedMetar.windshear
-            MetarTools.updateWindVector(windVectorPx, windHeadingDeg, windSpeedKt)
+            updateWindVector(windVectorPx, windHeadingDeg, windSpeedKt)
         }
     }
 
@@ -163,7 +164,7 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
                 trackUnitVector = Vector2(Vector2.Y).rotateDeg(-trueHdg)
             }
             with<GRect> {
-                width = MathTools.mToPx(runwayLengthM.toInt())
+                width = mToPx(runwayLengthM.toInt())
             }
             with<RunwayInfo> {
                 rwyId = id
@@ -220,7 +221,7 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
                 return SerialisedRunway(
                     position.x, position.y,
                     altitude.altitudeFt.toInt().toShort(),
-                    MathTools.convertWorldAndRenderDeg(direction.trackUnitVector.angleDeg()),
+                    convertWorldAndRenderDeg(direction.trackUnitVector.angleDeg()),
                     rwyInfo.rwyId, rwyInfo.rwyName, rwyInfo.lengthM,
                     rwyLabel.positionToRunway
                 )

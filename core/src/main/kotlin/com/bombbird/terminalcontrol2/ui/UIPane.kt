@@ -9,7 +9,7 @@ import com.bombbird.terminalcontrol2.entities.Aircraft
 import com.bombbird.terminalcontrol2.global.Constants
 import com.bombbird.terminalcontrol2.global.Variables
 import com.bombbird.terminalcontrol2.navigation.Route
-import com.bombbird.terminalcontrol2.utilities.MathTools.byte
+import com.bombbird.terminalcontrol2.utilities.byte
 import ktx.ashley.get
 import ktx.collections.GdxArray
 import ktx.graphics.moveTo

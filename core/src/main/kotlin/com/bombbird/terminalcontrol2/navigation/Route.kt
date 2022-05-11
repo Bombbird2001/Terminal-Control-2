@@ -4,7 +4,7 @@ import com.bombbird.terminalcontrol2.components.CommandTarget
 import com.bombbird.terminalcontrol2.components.Position
 import com.bombbird.terminalcontrol2.components.WaypointInfo
 import com.bombbird.terminalcontrol2.global.Constants
-import com.bombbird.terminalcontrol2.utilities.MathTools
+import com.bombbird.terminalcontrol2.utilities.getRequiredTrack
 import ktx.ashley.get
 import ktx.collections.GdxArray
 
@@ -35,7 +35,7 @@ class Route() {
         (legs[0] as? WaypointLeg)?.let { wpt1 -> (legs[1] as? WaypointLeg)?.let { wpt2 ->
             val w1 = Constants.GAME.gameServer?.waypoints?.get(wpt1.wptId)?.entity?.get(Position.mapper) ?: return null
             val w2 = Constants.GAME.gameServer?.waypoints?.get(wpt2.wptId)?.entity?.get(Position.mapper) ?: return null
-            return Pair(MathTools.getRequiredTrack(w1.x, w1.y, w2.x, w2.y), wpt2.turnDir)
+            return Pair(getRequiredTrack(w1.x, w1.y, w2.x, w2.y), wpt2.turnDir)
         }} ?: return null
     }
 

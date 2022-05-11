@@ -3,7 +3,8 @@ package com.bombbird.terminalcontrol2.networking
 import com.badlogic.gdx.Gdx
 import com.bombbird.terminalcontrol2.global.Constants
 import com.bombbird.terminalcontrol2.global.Secrets
-import com.bombbird.terminalcontrol2.utilities.MetarTools
+import com.bombbird.terminalcontrol2.utilities.generateRandomWeather
+import com.bombbird.terminalcontrol2.utilities.updateAirportMetar
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -26,7 +27,7 @@ object HttpRequest {
                 Gdx.app.log("HttpRequest", "Request failed")
                 if (Constants.GAME.gameServer?.gameRunning != true) return
                 if (retry) sendMetarRequest(reqString, false)
-                else MetarTools.generateRandomWeather() // Generate offline weather
+                else generateRandomWeather() // Generate offline weather
             }
 
             override fun onResponse(call: Call, response: Response) {
@@ -39,7 +40,7 @@ object HttpRequest {
                     } else {
                         // Generate offline weather
                         response.close()
-                        MetarTools.generateRandomWeather()
+                        generateRandomWeather()
                     }
                 } else {
                     val responseText = response.body?.string()
@@ -47,12 +48,12 @@ object HttpRequest {
 
                     if (responseText == null) {
                         Gdx.app.log("HttpRequest", "Null sendMetarRequest response")
-                        MetarTools.generateRandomWeather()
+                        generateRandomWeather()
                         return
                     }
 
                     // METAR JSON has been received
-                    MetarTools.updateAirportMetar(responseText)
+                    updateAirportMetar(responseText)
                 }
             }
         })

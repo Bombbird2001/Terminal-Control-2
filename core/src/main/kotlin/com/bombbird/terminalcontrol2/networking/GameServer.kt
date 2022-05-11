@@ -13,9 +13,7 @@ import com.bombbird.terminalcontrol2.systems.AISystem
 import com.bombbird.terminalcontrol2.systems.ControlStateSystem
 import com.bombbird.terminalcontrol2.systems.LowFreqUpdate
 import com.bombbird.terminalcontrol2.systems.PhysicsSystem
-import com.bombbird.terminalcontrol2.utilities.MathTools
-import com.bombbird.terminalcontrol2.utilities.MetarTools
-import com.bombbird.terminalcontrol2.utilities.PhysicsTools
+import com.bombbird.terminalcontrol2.utilities.*
 import com.esotericsoftware.kryonet.Connection
 import com.esotericsoftware.kryonet.Listener
 import com.esotericsoftware.kryonet.Server
@@ -89,10 +87,10 @@ class GameServer {
             entity[Direction.mapper]?.trackUnitVector?.rotateDeg((rwy?.entity?.get(Direction.mapper)?.trackUnitVector?.angleDeg() ?: 40.92f) - 90) // Runway 05L heading
             // Calculate headwind component for takeoff
             val headwind = entity[Altitude.mapper]?.let{ alt -> entity[Direction.mapper]?.let { dir -> entity[Position.mapper]?.let { pos ->
-                val wind = MetarTools.getClosestAirportWindVector(pos.x, pos.y)
-                PhysicsTools.calculateIASFromTAS(alt.altitudeFt, MathTools.pxpsToKt(wind.dot(dir.trackUnitVector)))
+                val wind = getClosestAirportWindVector(pos.x, pos.y)
+                calculateIASFromTAS(alt.altitudeFt, pxpsToKt(wind.dot(dir.trackUnitVector)))
             }}} ?: 0f
-            entity += TakeoffRoll(PhysicsTools.calculateRequiredAcceleration(0, ((entity[AircraftInfo.mapper]?.aircraftPerf?.vR ?: 0) + headwind).toInt().toShort(), ((rwy?.entity?.get(RunwayInfo.mapper)?.lengthM ?: 3800) - 1000) * MathUtils.random(0.75f, 1f)))
+            entity += TakeoffRoll(calculateRequiredAcceleration(0, ((entity[AircraftInfo.mapper]?.aircraftPerf?.vR ?: 0) + headwind).toInt().toShort(), ((rwy?.entity?.get(RunwayInfo.mapper)?.lengthM ?: 3800) - 1000) * MathUtils.random(0.75f, 1f)))
             val climbOutSpeed = ((entity[AircraftInfo.mapper]?.aircraftPerf?.vR ?: 160) + MathUtils.random(15, 20)).toShort()
             entity[CommandTarget.mapper]?.apply {
                 targetAltFt = 3000f
@@ -107,7 +105,7 @@ class GameServer {
         engine.addSystem(AISystem())
         engine.addSystem(ControlStateSystem())
 
-        MetarTools.requestAllMetar()
+        requestAllMetar()
     }
 
     /** Starts the game loop */
@@ -199,7 +197,7 @@ class GameServer {
                 // Check if METAR update required, update timer
                 metarUpdateTime += (currMs - prevMs).toInt()
                 if (metarUpdateTime > SERVER_METAR_UPDATE_INTERVAL) {
-                    MetarTools.requestAllMetar()
+                    requestAllMetar()
                     metarUpdateTime -= SERVER_METAR_UPDATE_INTERVAL
                 }
             }

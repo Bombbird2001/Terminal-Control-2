@@ -4,7 +4,8 @@ import com.badlogic.ashley.core.EntitySystem
 import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.Variables
-import com.bombbird.terminalcontrol2.ui.DatatagTools
+import com.bombbird.terminalcontrol2.ui.getNewDatatagLabelText
+import com.bombbird.terminalcontrol2.ui.updateDatatagText
 import ktx.ashley.allOf
 import ktx.ashley.get
 
@@ -41,7 +42,7 @@ class DataSystem: EntitySystem() {
             for (i in 0 until datatagUpdates.size()) {
                 datatagUpdates[i]?.apply {
                     val datatag = get(Datatag.mapper) ?: return@apply
-                    DatatagTools.updateText(datatag, DatatagTools.getNewLabelText(this))
+                    updateDatatagText(datatag, getNewDatatagLabelText(this))
                 }
             }
             radarDataTimer -= Variables.RADAR_REFRESH_INTERVAL_S
