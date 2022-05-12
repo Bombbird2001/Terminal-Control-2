@@ -8,7 +8,11 @@ import ktx.ashley.exclude
 import ktx.ashley.get
 import ktx.math.times
 
-/** A lightweight [PhysicsSystem] that only runs certain required calculations on the client device */
+/**
+ * A lightweight [PhysicsSystem] that only runs certain required calculations on the client device
+ *
+ * Used only in RadarScreen
+ * */
 class PhysicsSystemClient: EntitySystem(), LowFreqUpdate {
     /** Main update function, for values that need to be updated frequently
      *

@@ -29,6 +29,12 @@ class Route() {
         legs.addAll(route.legs)
     }
 
+    /** Clears the existing [legs] and adds all the legs in the provided [route] */
+    fun setToRoute(route: Route) {
+        legs.clear()
+        legs.addAll(route.legs)
+    }
+
     /** Returns the track and turn direction from the first to second waypoint, or null if there is no second waypoint leg */
     fun findNextWptLegTrackAndDirection(): Pair<Float, Byte>? {
         if (legs.size < 2) return null

@@ -9,7 +9,11 @@ import com.bombbird.terminalcontrol2.ui.updateDatatagText
 import ktx.ashley.allOf
 import ktx.ashley.get
 
-/** System that is responsible solely for transmission of data */
+/**
+ * System that is responsible solely for transmission of data
+ *
+ * Used only in RadarScreen
+ * */
 class DataSystem: EntitySystem() {
     var radarDataTimer = 0f
 

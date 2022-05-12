@@ -10,6 +10,10 @@ import ktx.scene2d.*
 
 lateinit var routeEditTable: KTableWidget
 
+/**
+ * @param paneWidth will be used as the reference width of the UI pane when initialising the container
+ * @return a [KContainer] used to contain a table with the elements of the route edit pane, which has been added to the [KWidget]
+ * */
 @Scene2dDsl
 fun <S> KWidget<S>.routeEditPane(paneWidth: Float, setToControlPane: () -> Unit): KContainer<Actor> {
     return container {

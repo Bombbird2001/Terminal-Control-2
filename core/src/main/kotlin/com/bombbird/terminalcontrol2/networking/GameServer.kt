@@ -89,15 +89,15 @@ class GameServer {
                 val wind = getClosestAirportWindVector(pos.x, pos.y)
                 calculateIASFromTAS(alt.altitudeFt, pxpsToKt(wind.dot(dir.trackUnitVector)))
             }}} ?: 0f
-            entity += TakeoffRoll(calculateRequiredAcceleration(0, ((entity[AircraftInfo.mapper]?.aircraftPerf?.vR ?: 0) + headwind).toInt().toShort(), ((rwy?.entity?.get(RunwayInfo.mapper)?.lengthM ?: 3800) - 1000) * MathUtils.random(0.75f, 1f)))
-            val climbOutSpeed = ((entity[AircraftInfo.mapper]?.aircraftPerf?.vR ?: 160) + MathUtils.random(15, 20)).toShort()
+            val acPerf = entity[AircraftInfo.mapper]?.aircraftPerf ?: return@apply
+            entity += TakeoffRoll(calculateRequiredAcceleration(0, (acPerf.vR + headwind).toInt().toShort(), ((rwy?.entity?.get(RunwayInfo.mapper)?.lengthM ?: 3800) - 1000) * MathUtils.random(0.75f, 1f)))
             entity[CommandTarget.mapper]?.apply {
                 targetAltFt = 3000f
-                targetIasKt = climbOutSpeed
+                targetIasKt = acPerf.climbOutSpeed
                 targetHdgDeg = 54f
             }
             entity += ClearanceAct(ClearanceState("HICAL1C", airports[0]?.entity?.get(SIDChildren.mapper)?.sidMap?.get("HICAL1C")?.getRandomSIDRouteForRunway("05L") ?: Route(), Route(),
-                null, 3000, climbOutSpeed))
+                null, 3000, acPerf.climbOutSpeed))
         })
 
         engine.addSystem(PhysicsSystem())
@@ -268,8 +268,8 @@ class GameServer {
 
     /** Sends aircraft clearance state updates */
     fun sendAircraftClearanceStateUpdateToAll(callsign: String, primaryName: String = "", route: Route, hiddenLegs: Route,
-                                           vectorHdg: Short?, clearedAlt: Int, clearedIas: Short) {
-        server.sendToAllTCP(SerialisationRegistering.AircraftControlStateUpdateData(callsign, primaryName, route.getSerialisedObject(), hiddenLegs.getSerialisedObject(), vectorHdg, clearedAlt, clearedIas))
+                                           vectorHdg: Short?, clearedAlt: Int, clearedIas: Short, minIas: Short, maxIas: Short, optimalIas: Short) {
+        server.sendToAllTCP(SerialisationRegistering.AircraftControlStateUpdateData(callsign, primaryName, route.getSerialisedObject(), hiddenLegs.getSerialisedObject(), vectorHdg, clearedAlt, clearedIas, minIas, maxIas, optimalIas))
     }
 
     /** Send non-frequent, event-updated and/or important data

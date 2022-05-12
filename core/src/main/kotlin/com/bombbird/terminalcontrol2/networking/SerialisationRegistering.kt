@@ -129,5 +129,6 @@ object SerialisationRegistering {
 
     /** Class representing control state data sent when the aircraft command state is updated (either through player command, or due to leg being reached) */
     data class AircraftControlStateUpdateData(val callsign: String = "", var primaryName: String = "", var route: Route.SerialisedRoute = Route.SerialisedRoute(), var hiddenLegs: Route.SerialisedRoute = Route.SerialisedRoute(),
-                                         val vectorHdg: Short? = null, val clearedAlt: Int = 0, val clearedIas: Short = 0)
+                                              val vectorHdg: Short? = null, val clearedAlt: Int = 0, val clearedIas: Short = 0,
+                                              val minIas: Short = 0, val maxIas: Short = 0, val optimalIas: Short = 0)
 }

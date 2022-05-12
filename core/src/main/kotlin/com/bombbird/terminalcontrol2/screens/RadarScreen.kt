@@ -163,7 +163,8 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
                         }
                     } ?: (obj as? SerialisationRegistering.AircraftControlStateUpdateData)?.apply {
                         aircraft[obj.callsign]?.let { aircraft ->
-                            aircraft.entity += ClearanceAct(ClearanceState(obj.primaryName, Route.fromSerialisedObject(obj.route), Route.fromSerialisedObject(obj.hiddenLegs), obj.vectorHdg, obj.clearedAlt, obj.clearedIas))
+                            aircraft.entity += ClearanceAct(ClearanceState(obj.primaryName, Route.fromSerialisedObject(obj.route), Route.fromSerialisedObject(obj.hiddenLegs),
+                                obj.vectorHdg, obj.clearedAlt, obj.clearedIas, obj.minIas, obj.maxIas, obj.optimalIas))
                             if (selectedAircraft == aircraft) uiPane.updateSelectedAircraft(aircraft)
                         }
                     }

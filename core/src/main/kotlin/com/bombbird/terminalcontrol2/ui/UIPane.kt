@@ -7,6 +7,7 @@ import com.badlogic.gdx.utils.Align
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.Aircraft
 import com.bombbird.terminalcontrol2.global.*
+import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.utilities.addChangeListener
 import com.bombbird.terminalcontrol2.utilities.byte
@@ -40,6 +41,10 @@ class UIPane(private val uiStage: Stage) {
     // Route editing pane
     val routeEditPane: KContainer<Actor>
 
+    // Clearance state of the UI pane
+    val clearanceState: ClearanceState = ClearanceState()
+    val clearanceStateChanged: ClearanceState.ClearanceStateChanged = ClearanceState.ClearanceStateChanged()
+
     init {
         uiStage.actors {
             paneImage = imageButton("UIPane") {
@@ -63,7 +68,11 @@ class UIPane(private val uiStage: Stage) {
         }
     }
 
-    /** Resize the pane and containers */
+    /**
+     * Resize the pane and containers
+     * @param width the new width of the application
+     * @param height the new height of the application
+     * */
     fun resize(width: Int, height: Int) {
         uiStage.viewport.update(width, height, true)
         uiStage.camera.apply {
@@ -88,14 +97,19 @@ class UIPane(private val uiStage: Stage) {
         }
     }
 
-    /** Gets the required x offset for radarDisplayStage's camera at a zoom level */
+    /**
+     * Gets the required x offset for radarDisplayStage's camera at a zoom level
+     * @param zoom the zoom of the radarDisplayStage camera
+     * */
     fun getRadarCameraOffsetForZoom(zoom: Float): Float {
         return -paneWidth / 2 * zoom // TODO Change depending on pane position
     }
 
-    /** Sets the selected UI aircraft to the passed [aircraft]
+    /**
+     * Sets the selected UI aircraft to the passed [aircraft]
      *
      * The pane is shown only if aircraft has the Controllable component and is in the player's sector
+     * @param aircraft the [Aircraft] whose clearance information will be displayed in the pane
      * */
     fun setSelectedAircraft(aircraft: Aircraft) {
         aircraft.entity.apply {
@@ -103,18 +117,21 @@ class UIPane(private val uiStage: Stage) {
             if (controllable.sectorId != 0.byte) return // TODO Check for player's sector ID
         }
         val latestClearance = aircraft.entity[ClearanceAct.mapper]?.clearance ?: return
-        updateRouteTable(latestClearance.route)
-        updateEditRouteTable(latestClearance.route)
-        updateClearanceMode(latestClearance.route, latestClearance.vectorHdg)
-        updateAltSpdClearances(latestClearance.clearedAlt, latestClearance.clearedIas, 150, 250)
+        clearanceState.updateUIClearanceState(latestClearance)
+        updateRouteTable(clearanceState.route)
+        updateEditRouteTable(clearanceState.route)
+        updateClearanceMode(clearanceState.route, clearanceState.vectorHdg)
+        updateAltSpdClearances(clearanceState.clearedAlt, clearanceState.clearedIas, clearanceState.minIas, clearanceState.maxIas, clearanceState.optimalIas)
         controlPane.isVisible = true
         routeEditPane.isVisible = false
         mainInfoPane.isVisible = false
     }
 
-    /** Updates currently selected aircraft pane navigation state to match the updated [aircraft]
+    /**
+     * Updates currently selected aircraft pane navigation state to match the updated [aircraft]
      *
      * The pane is updated only if aircraft has the Controllable component and is in the player's sector
+     * @param aircraft the [Aircraft] whose clearance information will be displayed in the pane
      * */
     fun updateSelectedAircraft(aircraft: Aircraft) {
         aircraft.entity.apply {
@@ -122,11 +139,11 @@ class UIPane(private val uiStage: Stage) {
             if (controllable.sectorId != 0.byte) return // TODO Check for player's sector ID
         }
         val latestClearance = aircraft.entity[ClearanceAct.mapper]?.clearance ?: return
-        // TODO Take into account any changes already being made by the player
-        updateRouteTable(latestClearance.route)
-        updateEditRouteTable(latestClearance.route)
-        updateClearanceMode(latestClearance.route, latestClearance.vectorHdg)
-        updateAltSpdClearances(latestClearance.clearedAlt, latestClearance.clearedIas, 150, 250)
+        clearanceState.updateUIClearanceState(latestClearance, clearanceStateChanged)
+        updateRouteTable(clearanceState.route)
+        updateEditRouteTable(clearanceState.route)
+        updateClearanceMode(clearanceState.route, clearanceState.vectorHdg)
+        updateAltSpdClearances(clearanceState.clearedAlt, clearanceState.clearedIas, clearanceState.minIas, clearanceState.maxIas, clearanceState.optimalIas)
     }
 
     /** Unset the selected UI aircraft */
@@ -148,7 +165,8 @@ class UIPane(private val uiStage: Stage) {
         controlPane.isVisible = true
     }
 
-    /** Updates [altSelectBox] with the appropriate altitude choices for [MIN_ALT] and [MAX_ALT]
+    /**
+     * Updates [altSelectBox] with the appropriate altitude choices for [MIN_ALT] and [MAX_ALT]
      *
      * Call if [MIN_ALT] and [MAX_ALT] are updated
      * */
@@ -170,15 +188,28 @@ class UIPane(private val uiStage: Stage) {
         }
     }
 
-    /** Updates the cleared altitude, speed in the pane */
-    private fun updateAltSpdClearances(clearedAlt: Int, clearedSpd: Short, minSpd: Short, maxSpd: Short) {
+    /**
+     * Updates the cleared altitude, speed in the pane
+     * @param clearedAlt the altitude to set as selected in [altSelectBox]
+     * @param clearedSpd the IAS to set as selected in [spdSelectBox]
+     * @param minSpd the minimum IAS that can be selected
+     * @param maxSpd the maximum IAS that can be selected
+     * @param optimalSpd the optimal IAS that the aircraft will select by default without player intervention
+     * */
+    private fun updateAltSpdClearances(clearedAlt: Int, clearedSpd: Short, minSpd: Short, maxSpd: Short, optimalSpd: Short) {
         val minSpdRounded = if (minSpd % 10 > 0) ((minSpd / 10 + 1) * 10).toShort() else minSpd
         val maxSpdRounded = if (maxSpd % 10 > 0) ((maxSpd / 10) * 10).toShort() else maxSpd
         spdSelectBox.items = GdxArray<Short>().apply {
             clear()
             if (minSpd % 10 > 0) add(minSpd)
-            for (spd in minSpdRounded .. maxSpdRounded step 10) add(spd.toShort())
-            if (maxSpd % 10 > 0) add(maxSpd)
+            for (spd in minSpdRounded .. maxSpdRounded step 10) {
+                if (optimalSpd < spd && spd - optimalSpd <= 9) add(optimalSpd)
+                add(spd.toShort())
+            }
+            if (maxSpd % 10 > 0) {
+                if (optimalSpd < maxSpd && maxSpd - optimalSpd < maxSpd % 10) add(optimalSpd)
+                add(maxSpd)
+            }
         }
         altSelectBox.selected = if (clearedAlt >= TRANS_LVL * 100) "FL${clearedAlt / 100}" else clearedAlt.toString()
         spdSelectBox.selected = clearedSpd
@@ -251,12 +282,15 @@ class UIPane(private val uiStage: Stage) {
                         is Route.WaypointLeg -> "SKIP"
                         else -> "REMOVE"
                     }
-                    label(legDisplay, "ControlPaneRoute").apply { setAlignment(Align.center) }.cell(growX = true, height = 0.125f * UI_HEIGHT, padLeft = 10f, padRight = 10f)
-                    textButton(altRestrDisplay, "ControlPaneRestr").cell(growX = true, preferredWidth = 0.25f * paneWidth, height = 0.125f * UI_HEIGHT)
-                    textButton(spdRestr, "ControlPaneRestr").cell(growX = true, preferredWidth = 0.25f * paneWidth, height = 0.125f * UI_HEIGHT)
+                    val legLabel = label(legDisplay, "ControlPaneRoute").apply { setAlignment(Align.center) }.cell(growX = true, height = 0.125f * UI_HEIGHT, padLeft = 10f, padRight = 10f)
+                    val altButton = textButton(altRestrDisplay, "ControlPaneRestr").cell(growX = true, preferredWidth = 0.25f * paneWidth, height = 0.125f * UI_HEIGHT)
+                    val spdButton = textButton(spdRestr, "ControlPaneRestr").cell(growX = true, preferredWidth = 0.25f * paneWidth, height = 0.125f * UI_HEIGHT)
                     textButton(skipText, "ControlPaneSelected").cell(growX = true, preferredWidth = 0.25f * paneWidth, height = 0.125f * UI_HEIGHT).apply {
                         if (skipText == "REMOVE") addChangeListener { _, _ ->
                             // Remove the leg if it is a hold/vector/init climb/discontinuity
+                            legLabel.remove()
+                            altButton.remove()
+                            spdButton.remove()
                             remove()
                         }
                     }

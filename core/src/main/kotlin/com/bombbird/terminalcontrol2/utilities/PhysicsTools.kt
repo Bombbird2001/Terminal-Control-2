@@ -1,6 +1,7 @@
 package com.bombbird.terminalcontrol2.utilities
 
 import kotlin.math.exp
+import kotlin.math.ln
 import kotlin.math.pow
 import kotlin.math.sqrt
 
@@ -28,6 +29,16 @@ fun calculateTempAtAlt(altitudeFt: Float): Float {
 fun calculatePressureAtAlt(altitudeFt: Float): Float {
     return if (altitudeFt < 36090) AIR_PRESSURE_PA_SL_ISA * (calculateTempAtAlt(altitudeFt) / TEMPERATURE_K_SL_ISA).pow(-GRAVITY_ACCELERATION_MPS2 / LAPSE_RATE_KPM_ISA / AIR_GAS_CONSTANT_JPKGPK)
     else calculatePressureAtAlt(36089.99f) * exp(-GRAVITY_ACCELERATION_MPS2 * ftToM(altitudeFt - 36089.99f) / AIR_GAS_CONSTANT_JPKGPK / calculateTempAtAlt(36089.99f))
+}
+
+/**
+ * Calculates the altitude above sea level at which air is of a certain pressure at ISA conditions
+ * @param pressurePa the air pressure at the altitude to be calculated
+ * @return the altitude, in feet, at which air pressure is [pressurePa]
+ * */
+fun calculateAltAtPressure(pressurePa: Float): Float {
+    return if (pressurePa > 22630.9) mToFt(TEMPERATURE_K_SL_ISA / LAPSE_RATE_KPM_ISA * ((pressurePa / AIR_PRESSURE_PA_SL_ISA).pow(-AIR_GAS_CONSTANT_JPKGPK * LAPSE_RATE_KPM_ISA / GRAVITY_ACCELERATION_MPS2) - 1))
+    else calculateAltAtPressure(22630.91f) + mToFt(AIR_GAS_CONSTANT_JPKGPK * calculateTempAtAlt(36089.99f) * ln(pressurePa / 22630.91f) / -GRAVITY_ACCELERATION_MPS2)
 }
 
 /** Calculates the density of air, in kilograms per metre^3, given the [pressurePa] and [temperatureK] */
@@ -84,14 +95,33 @@ fun calculateMinDrag(aircraftPerfData: AircraftTypeData.AircraftPerfData, altitu
     ), tasKt)
 }
 
-/** Calculates the drag, in newtons, at the specified [densityKgpm3] and [tasKt] */
+/**
+ * Calculates the drag, in newtons, with the specified drag coefficient * reference area, air density and TAS
+ * @param cdTimesRefArea the product of the drag coefficient and the reference area of the aircraft, in metres^2
+ * @param densityKgpm3 the density, in kilograms per metre^3, of the air the aircraft is flying through
+ * @param tasKt the TAS, in knots, the aircraft is flying at
+ * @return the drag, in newtons, the aircraft experiences when flying through air of density [densityKgpm3] at TAS of [tasKt]
+ * */
 fun calculateDrag(cdTimesRefArea: Float, densityKgpm3: Float, tasKt: Float): Float {
     val tasMps = ktToMps(tasKt)
     return cdTimesRefArea * densityKgpm3 * tasMps * tasMps / 2
 }
 
-/** Calculates the IAS, in knots (more correctly the CAS, but we'll assume corrections between IAS and CAS are negligible),
- * from [tasKt] at [altitudeFt]
+/**
+ * Calculates the speed of sound at an altitude above sea level at ISA conditions
+ * @param altitudeFt the altitude, in feet, above sea level
+ * @return the speed of sound, in knots, at [altitudeFt]
+ * */
+fun calculateSpeedOfSoundAtAlt(altitudeFt: Float): Float {
+    return mpsToKt(sqrt(AIR_SPECIFIC_HEATS_RATIO * AIR_GAS_CONSTANT_JPKGPK * calculateTempAtAlt(altitudeFt)))
+}
+
+/**
+ * Calculates the IAS (more correctly the CAS, but we'll assume corrections between IAS and CAS are negligible)
+ * from the TAS at an altitude
+ * @param altitudeFt the altitude, in feet, of the aircraft
+ * @param tasKt the TAS, in knots, of the aircraft
+ * @return the IAS, in knots, that results in the aircraft flying with an TAS of [tasKt] at [altitudeFt]
  * */
 fun calculateIASFromTAS(altitudeFt: Float, tasKt: Float): Float {
     val pressurePa = calculatePressureAtAlt(altitudeFt)
@@ -101,8 +131,12 @@ fun calculateIASFromTAS(altitudeFt: Float, tasKt: Float): Float {
     return mpsToKt(SOUND_SPEED_MPS_SL_ISA * sqrt(5 * (impactPressurePa / AIR_PRESSURE_PA_SL_ISA + 1).pow(2f / 7) - 5)) * (if (tasKt < 0) -1 else 1)
 }
 
-/** Calculates the TAS, in knots, from [iasKt] (more correctly the CAS, but we'll assume corrections between IAS
- * and CAS are negligible) at [altitudeFt]
+/**
+ * Calculates the TAS from the IAS (more correctly the CAS, but we'll assume corrections between IAS
+ * and CAS are negligible) at an altitude
+ * @param altitudeFt the altitude, in feet, of the aircraft
+ * @param iasKt the IAS, in knots, of the aircraft
+ * @return the TAS, in knots, that the aircraft flies at with an IAS of [iasKt] at [altitudeFt]
  * */
 fun calculateTASFromIAS(altitudeFt: Float, iasKt: Float): Float {
     val pressurePa = calculatePressureAtAlt(altitudeFt)
@@ -114,13 +148,23 @@ fun calculateTASFromIAS(altitudeFt: Float, iasKt: Float): Float {
     return mpsToKt(sqrt(expr2 * 5 * AIR_SPECIFIC_HEATS_RATIO * AIR_GAS_CONSTANT_JPKGPK * tempK)) * (if (iasKt < 0) -1 else 1)
 }
 
+/**
+ * Calculates the IAS from the mach number at an altitude
+ * @param altitudeFt the altitude, in feet, of the aircraft
+ * @param mach the mach number of the aircraft
+ * @return the IAS, in knots, that results in a TAS equal to the [mach] number times the speed of sound at [altitudeFt]
+ * */
+fun calculateIASFromMach(altitudeFt: Float, mach: Float): Float {
+    return calculateIASFromTAS(altitudeFt, mach * calculateSpeedOfSoundAtAlt(altitudeFt))
+}
+
 /** Calculates the maximum achievable acceleration, in metres per second^2, of an aircraft given its [aircraftPerfData], [altitudeFt], [tasKt]
  * and whether it is on approach or expediting ([approachExpedite])
  * */
 fun calculateMaxAcceleration(aircraftPerfData: AircraftTypeData.AircraftPerfData, altitudeFt: Float, tasKt: Float, approachExpedite: Boolean): Float {
     val thrust = calculateMaxThrust(aircraftPerfData, altitudeFt, tasKt)
     val drag = if (approachExpedite) calculateMaxDrag(aircraftPerfData, altitudeFt, tasKt) else calculateMinDrag(aircraftPerfData, altitudeFt, tasKt)
-    return calculateAcceleration(thrust, drag, aircraftPerfData.weightKg)
+    return calculateAcceleration(thrust, drag, aircraftPerfData.massKg)
 }
 
 /** Calculates the minimum achievable acceleration (i.e. maximum deceleration), in metres per second^2, of an aircraft given its [aircraftPerfData], [altitudeFt], [tasKt]
@@ -129,7 +173,7 @@ fun calculateMaxAcceleration(aircraftPerfData: AircraftTypeData.AircraftPerfData
 fun calculateMinAcceleration(aircraftPerfData: AircraftTypeData.AircraftPerfData, altitudeFt: Float, tasKt: Float, approachExpedite: Boolean): Float {
     val thrust = calculateMaxThrust(aircraftPerfData, altitudeFt, tasKt) * 0.05f // Assume idle power/thrust is 5% of max thrust
     val drag = if (approachExpedite) calculateMaxDrag(aircraftPerfData, altitudeFt, tasKt) else calculateMinDrag(aircraftPerfData, altitudeFt, tasKt)
-    return calculateAcceleration(thrust, drag, aircraftPerfData.weightKg)
+    return calculateAcceleration(thrust, drag, aircraftPerfData.massKg)
 }
 
 /** Calculates the acceleration, in metres per second^2, of an aircraft given the [thrustN], [dragN] and [massKg] */
@@ -150,7 +194,7 @@ fun calculateRequiredAcceleration(initialSpdKt: Short, targetSpdKt: Short, dista
 fun calculateMaxVerticalSpd(aircraftPerfData: AircraftTypeData.AircraftPerfData, altitudeFt: Float, tasKt: Float, accMps2: Float, approachExpedite: Boolean): Float {
     val thrustN = calculateMaxThrust(aircraftPerfData, altitudeFt, tasKt)
     val dragN = if (approachExpedite) calculateMaxDrag(aircraftPerfData, altitudeFt, tasKt) else calculateMinDrag(aircraftPerfData, altitudeFt, tasKt)
-    return calculateVerticalSpd(thrustN - dragN, tasKt, accMps2, aircraftPerfData.weightKg)
+    return calculateVerticalSpd(thrustN - dragN, tasKt, accMps2, aircraftPerfData.massKg)
 }
 
 /** Calculates the minimum achievable vertical speed (i.e. maximum descent rate), in feet per minute, given the
@@ -158,10 +202,23 @@ fun calculateMaxVerticalSpd(aircraftPerfData: AircraftTypeData.AircraftPerfData,
 fun calculateMinVerticalSpd(aircraftPerfData: AircraftTypeData.AircraftPerfData, altitudeFt: Float, tasKt: Float, accMps2: Float, approachExpedite: Boolean): Float {
     val thrustN = calculateMaxThrust(aircraftPerfData, altitudeFt, tasKt) * 0.05f
     val dragN = if (approachExpedite) calculateMaxDrag(aircraftPerfData, altitudeFt, tasKt) else calculateMinDrag(aircraftPerfData, altitudeFt, tasKt)
-    return calculateVerticalSpd(thrustN - dragN, tasKt, accMps2, aircraftPerfData.weightKg)
+    return calculateVerticalSpd(thrustN - dragN, tasKt, accMps2, aircraftPerfData.massKg)
 }
 
 /** Calculates the achievable vertical speed, in feet per minute, given the [netForceN], [tasKt], [accMps2] and [massKg] of the plane */
 fun calculateVerticalSpd(netForceN: Float, tasKt: Float, accMps2: Float, massKg: Int): Float {
     return mpsToFpm((netForceN - massKg * accMps2) * ktToMps(tasKt) / massKg / GRAVITY_ACCELERATION_MPS2)
+}
+
+/**
+ * Calculates the crossover altitude (the altitude where the IAS results in a true airspeed equal to that of the mach number)
+ * @param iasKt the IAS to calculate the crossover altitude for
+ * @param mach the mach number to calculate the crossover altitude for
+ * @return the crossover altitude
+ * */
+fun calculateCrossoverAltitude(iasKt: Short, mach: Float): Float {
+    val iasMps = ktToMps(iasKt.toInt())
+    val impactPressurePa = ((iasMps * iasMps / SOUND_SPEED_MPS_SL_ISA / SOUND_SPEED_MPS_SL_ISA / 5 + 1).pow(3.5f) - 1) * AIR_PRESSURE_PA_SL_ISA
+    val pressureAtAlt = impactPressurePa / ((mach * mach / 5 + 1).pow(3.5f) - 1)
+    return calculateAltAtPressure(pressureAtAlt)
 }

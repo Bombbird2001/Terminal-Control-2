@@ -11,6 +11,8 @@ import ktx.math.times
 /** Main physics update system, which handles physics aspects such as displacement, velocity, acceleration, etc.
  *
  * I love physics
+ *
+ * Used only in GameServer
  * */
 class PhysicsSystem: EntitySystem(), LowFreqUpdate {
     /** Main update function, for values that need to be updated frequently

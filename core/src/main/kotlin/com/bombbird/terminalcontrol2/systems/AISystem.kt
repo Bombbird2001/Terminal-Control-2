@@ -18,6 +18,8 @@ import kotlin.math.*
 /** Main AI system, which handles aircraft flight controls, implementing behaviour for various basic and advanced flight modes
  *
  * Flight modes will directly alter [CommandTarget], which will then interact with PhysicsSystem to execute the required behaviour
+ *
+ * Used only in GameServer
  * */
 class AISystem: EntitySystem() {
 

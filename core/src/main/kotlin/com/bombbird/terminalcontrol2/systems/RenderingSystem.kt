@@ -18,7 +18,11 @@ import ktx.ashley.get
 import ktx.math.ImmutableVector2
 import kotlin.math.sqrt
 
-/** Main rendering system, which renders to [GAME]'s spriteBatch or radarScreen's [shapeRenderer] */
+/**
+ * Main rendering system, which renders to [GAME]'s spriteBatch or radarScreen's [shapeRenderer]
+ *
+ * Used only in RadarScreen
+ * */
 class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stage: Stage, private val constZoomStage: Stage, private val uiStage: Stage): EntitySystem() {
     override fun update(deltaTime: Float) {
         val camZoom = (stage.camera as OrthographicCamera).zoom

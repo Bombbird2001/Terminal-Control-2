@@ -114,9 +114,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
                     }
                     get(AircraftInfo.mapper)?.apply {
                         icaoType = serialisedAircraft.icaoType
-                        aircraftPerf.appSpd = serialisedAircraft.appSpd
-                        aircraftPerf.vR = serialisedAircraft.vR
-                        aircraftPerf.weightKg = serialisedAircraft.weightKg
+                        aircraftPerf.maxAlt = serialisedAircraft.maxAlt
                     }
                     get(Speed.mapper)?.apply {
                         speedKts = serialisedAircraft.speedKts
@@ -134,7 +132,8 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
                     }
                     this += ClearanceAct(ClearanceState(serialisedAircraft.routePrimaryName,
                         Route.fromSerialisedObject(serialisedAircraft.commandRoute), Route.fromSerialisedObject(serialisedAircraft.commandHiddenLegs),
-                        serialisedAircraft.vectorHdg, serialisedAircraft.commandAlt, serialisedAircraft.clearedIas
+                        serialisedAircraft.vectorHdg, serialisedAircraft.commandAlt, serialisedAircraft.clearedIas,
+                        serialisedAircraft.minIas, serialisedAircraft.maxIas, serialisedAircraft.optimalIas,
                     ))
                 }
             }
@@ -204,12 +203,13 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
      * */
     class SerialisedAircraft(val x: Float = 0f, val y: Float = 0f,
                              val altitude: Float = 0f,
-                             val icaoCallsign: String = "", val icaoType: String = "", val appSpd: Short = 0, val vR: Short = 0, val weightKg: Int = 0,
+                             val icaoCallsign: String = "", val icaoType: String = "", val maxAlt: Int = 0,
                              val directionX: Float = 0f, val directionY: Float = 0f,
                              val speedKts: Float = 0f, val vertSpdFpm: Float = 0f, val angularSpdDps: Float = 0f,
                              val flightType: Byte = 0,
                              val routePrimaryName: String = "", val commandRoute: Route.SerialisedRoute = Route.SerialisedRoute(), val commandHiddenLegs: Route.SerialisedRoute = Route.SerialisedRoute(),
-                             val vectorHdg: Short? = null, val commandAlt: Int = 0, val clearedIas: Short = 0 // Vector HDG will be null if aircraft is flying route
+                             val vectorHdg: Short? = null, val commandAlt: Int = 0, val clearedIas: Short = 0, // Vector HDG will be null if aircraft is flying route
+                             val minIas: Short = 0, val maxIas: Short = 0, val optimalIas: Short = 0
     )
 
     /** Gets a [SerialisedAircraft] from current state */
@@ -225,12 +225,13 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
             return SerialisedAircraft(
                 position.x, position.y,
                 altitude.altitudeFt,
-                acInfo.icaoCallsign, acInfo.icaoType, acInfo.aircraftPerf.appSpd, acInfo.aircraftPerf.vR, acInfo.aircraftPerf.weightKg,
+                acInfo.icaoCallsign, acInfo.icaoType, acInfo.aircraftPerf.maxAlt,
                 direction.trackUnitVector.x, direction.trackUnitVector.y,
                 speed.speedKts, speed.vertSpdFpm, speed.angularSpdDps,
                 flightType.type,
                 latestClearance.routePrimaryName, latestClearance.route.getSerialisedObject(), latestClearance.hiddenLegs.getSerialisedObject(),
-                latestClearance.vectorHdg, latestClearance.clearedAlt, latestClearance.clearedIas
+                latestClearance.vectorHdg, latestClearance.clearedAlt, latestClearance.clearedIas,
+                latestClearance.minIas, latestClearance.maxIas, latestClearance.optimalIas
             )
         }
     }

@@ -113,11 +113,9 @@ abstract class Approach(name: String, runwayId: Byte, tower: String, towerFreq: 
      * */
     fun setFromSerialisedObject(serialisedApproach: SerialisedApproach) {
         transitions.clear()
-        routeLegs.legs.clear()
-        missedLegs.legs.clear()
         for (transLeg in serialisedApproach.transitions) transitions.add(Pair(transLeg.name, Route.fromSerialisedObject(transLeg.route)))
-        routeLegs.extendRoute(Route.fromSerialisedObject(serialisedApproach.routeLegs))
-        missedLegs.extendRoute(Route.fromSerialisedObject(serialisedApproach.missedLegs))
+        routeLegs.setToRoute(Route.fromSerialisedObject(serialisedApproach.routeLegs))
+        missedLegs.setToRoute(Route.fromSerialisedObject(serialisedApproach.missedLegs))
     }
 
     /** Empty approach that is used when de-serialising an unknown/un-implemented approach type */

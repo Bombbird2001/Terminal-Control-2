@@ -97,6 +97,22 @@ object PhysicsToolsTest {
         assertEquals(318.93f, calculateTASFromIAS(30000f, 200f), 0.01f)
         assertEquals(-318.93f, calculateTASFromIAS(30000f, -200f), 0.01f)
         assertEquals(705.01f, calculateTASFromIAS(30000f, 480f), 0.01f)
+        assertEquals(661.48f, calculateSpeedOfSoundAtAlt(0f), 0.01f)
+        assertEquals(650.01f, calculateSpeedOfSoundAtAlt(5000f), 0.01f)
+        assertEquals(638.33f, calculateSpeedOfSoundAtAlt(10000f), 0.01f)
+        assertEquals(626.44f, calculateSpeedOfSoundAtAlt(15000f), 0.01f)
+        assertEquals(614.31f, calculateSpeedOfSoundAtAlt(20000f), 0.01f)
+        assertEquals(601.95f, calculateSpeedOfSoundAtAlt(25000f), 0.01f)
+        assertEquals(589.32f, calculateSpeedOfSoundAtAlt(30000f), 0.01f)
+        assertEquals(576.42f, calculateSpeedOfSoundAtAlt(35000f), 0.01f)
+        assertEquals(573.57f, calculateSpeedOfSoundAtAlt(40000f), 0.01f)
+        assertEquals(573.57f, calculateSpeedOfSoundAtAlt(45000f), 0.01f)
+        assertEquals(661.47f, calculateIASFromMach(0f, 1f), 0.01f)
+        assertEquals(551.67f, calculateIASFromMach(0f, 0.834f), 0.01f)
+        assertEquals(566.29f, calculateIASFromMach(10000f, 1f), 0.01f)
+        assertEquals(468.37f, calculateIASFromMach(10000f, 0.834f), 0.01f)
+        assertEquals(350.02f, calculateIASFromMach(35000f, 1f), 0.01f)
+        assertEquals(284.81f, calculateIASFromMach(35000f, 0.834f), 0.01f)
     }
 
     @Test
@@ -126,4 +142,28 @@ object PhysicsToolsTest {
         assertEquals(-683.012f, calculateMinVerticalSpd(AircraftTypeData.AircraftPerfData(), 9000f, 273.24f, 0f, false), 0.01f)
         assertEquals(-6620.9f, calculateMinVerticalSpd(AircraftTypeData.AircraftPerfData(), 9000f, 301.31415f, -1.5f, true), 0.1f)
     }
+
+    @Test
+    @DisplayName("Altitude calculations")
+    fun checkAltitudeCalculations() {
+        // Delta set at ones
+        assertEquals(0f, calculateAltAtPressure(101325f), 1f)
+        assertEquals(5000f, calculateAltAtPressure(84307f), 1f)
+        assertEquals(10000f, calculateAltAtPressure(69682f), 1f)
+        assertEquals(15000f, calculateAltAtPressure(57182f), 1f)
+        assertEquals(20000f, calculateAltAtPressure(46563f), 1f)
+        assertEquals(25000f, calculateAltAtPressure(37601f), 1f)
+        assertEquals(30000f, calculateAltAtPressure(30090f), 1f)
+        assertEquals(35000f, calculateAltAtPressure(23842f), 1f)
+        assertEquals(36090f, calculateAltAtPressure(22631f), 1f)
+        assertEquals(40000f, calculateAltAtPressure(18754f), 1f)
+        assertEquals(45000f, calculateAltAtPressure(14748f), 1f)
+
+        // Delta set at 2x 5th significant figure
+        assertEquals(32260f, calculateCrossoverAltitude(250, 0.7f), 2f)
+        assertEquals(29730f, calculateCrossoverAltitude(320, 0.834f), 2f)
+        assertEquals(30509f, calculateCrossoverAltitude(313, 0.83f), 2f)
+        assertEquals(29861f, calculateCrossoverAltitude(309, 0.81f), 2f)
+    }
+
 }
