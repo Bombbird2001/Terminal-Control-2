@@ -10,7 +10,8 @@ data class Controllable(var sectorId: Byte = 0): Component {
     companion object: Mapper<Controllable>()
 }
 
-/** Component for tagging aircraft flight type
+/**
+ * Component for tagging aircraft flight type
  *
  * [type] = 0 -> Arrival
  *
@@ -46,23 +47,26 @@ data class ContactToCentre(var altitudeFt: Int = 0): Component {
     companion object: Mapper<ContactToCentre>()
 }
 
-/** Component for tagging the pending [ClearanceState]s an aircraft has been cleared, as well as the corresponding reaction
+/**
+ * Component for tagging the pending [ClearanceState]s an aircraft has been cleared, as well as the corresponding reaction
  * time for each clearance
  * */
 class PendingClearances(val clearanceArray: Queue<Pair<Float, ClearanceState>> = Queue(5)): Component {
     companion object: Mapper<PendingClearances>()
 }
 
-/** Component for tagging the latest [ClearanceState] an aircraft has been cleared; for use on client aircraft only
+/**
+ * Component for tagging the latest [ClearanceState] an aircraft has been cleared; for use on client aircraft only
  * since clients do not need to remember the clearances sent apart from the latest one
  * */
 class ClearanceAct(val clearance: ClearanceState = ClearanceState()): Component {
     companion object: Mapper<ClearanceAct>()
 }
 
-/** Component for tagging when an aircraft's latest [PendingClearances] or [CommandTarget] changes
+/**
+ * Component for tagging when an aircraft's latest [PendingClearances] or [CommandTarget] changes
  *
- * The system will send a TCP update to all clients informing them of the updated clearance state
+ * The server will send a TCP update to all clients informing them of the updated clearance state
  * */
 class ClearanceChanged: Component {
     companion object: Mapper<ClearanceChanged>()

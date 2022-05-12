@@ -15,6 +15,10 @@ lateinit var metarScroll: KScrollPane
 lateinit var metarPane: KTableWidget
 val metarExpandSet = HashSet<String>()
 
+/**
+ * @param paneWidth will be used as the reference width of the UI pane when initialising the container
+ * @return a [KContainer] used to contain a table with the elements of the main information pane, which has been added to the [KWidget]
+ * */
 @Scene2dDsl
 fun <S> KWidget<S>.mainInfoPane(paneWidth: Float): KContainer<Actor> {
     return container {

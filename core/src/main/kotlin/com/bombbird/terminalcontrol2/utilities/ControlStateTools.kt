@@ -47,10 +47,9 @@ fun getMinMaxOptimalIAS(entity: Entity): Triple<Short, Short, Short> {
     val between10000ftAndCrossover = altitude.altitudeFt >= 10000 && altitude.altitudeFt < crossOverAlt
     val aboveCrossover = altitude.altitudeFt >= crossOverAlt
     val minSpd: Short = when {
-        takingOff -> perf.climbOutSpeed
-        below10000ft -> (perf.climbOutSpeed * 1.1f).roundToInt().toShort()
-        between10000ftAndCrossover -> (perf.tripIas - 35).toShort()
-        aboveCrossover -> (calculateIASFromTAS(altitude.altitudeFt, calculateSpeedOfSoundAtAlt(altitude.altitudeFt)) - 15).roundToInt().toShort()
+        takingOff || below10000ft -> perf.climbOutSpeed
+        between10000ftAndCrossover -> (((altitude.altitudeFt - 10000) / (crossOverAlt - 10000)) * (perf.maxIas * 0.735f - perf.climbOutSpeed * 1.05f) + perf.climbOutSpeed * 1.05f).roundToInt().toShort()
+        aboveCrossover -> (((altitude.altitudeFt - crossOverAlt) / (perf.maxAlt - crossOverAlt) * (calculateIASFromMach(altitude.altitudeFt, perf.tripMach) * 0.95f - perf.maxIas * 0.735f)) + perf.maxIas * 0.735f).roundToInt().toShort()
         else -> 160
     }
     val maxSpd: Short = when {

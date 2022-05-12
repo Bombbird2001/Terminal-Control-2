@@ -2,6 +2,7 @@ package com.bombbird.terminalcontrol2.utilities
 
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.math.MathUtils
+import kotlin.math.roundToInt
 
 /** Helper object for aircraft performance data */
 object AircraftTypeData {
@@ -49,12 +50,16 @@ object AircraftTypeData {
      *
      * [tripMach]: The mach number at which aircraft will climb/descend/cruise at above the crossover altitude
      *
+     * [maxAlt]: The maximum altitude the climb can fly at given its performance data - the aircraft will fly at the highest
+     * flight level below this altitude; this value will be calculated dynamically based on other performance data
+     *
      * [massKg]: Mass of the plane
      * */
     data class AircraftPerfData(val wakeCategory: Char = 'H', val recat: Char = 'B',
                                 val thrustNSLISA: Int? = 1026000, val propPowerWSLISA: Int? = null, val propArea: Float? = null,
                                 val minCdTimesRefArea: Float = 10.92f, val maxCdTimesRefArea: Float = 87.36f,
-                                var maxIas: Short = 340, var maxMach: Float = 0.89f) {
+                                val maxIas: Short = 340, val maxMach: Float = 0.89f,
+                                val operatingEmptyWeightKg: Int = 167829, val maxTakeoffWeightKg: Int = 351533) {
 
         var appSpd: Short
         var vR: Short
@@ -65,14 +70,15 @@ object AircraftTypeData {
         var massKg: Int
 
         init {
-            // TODO random generation of load factor
-            appSpd = 149
-            vR = 170
+            val loadFactor = MathUtils.random(0.1f, 0.9f) // Load factor between 10% and 90%
+            appSpd = (148 * (1 + 0.19f * (loadFactor - 0.5f))).roundToInt().toShort()
+            vR = (170 * (1 + 0.19f * (loadFactor - 0.5f))).roundToInt().toShort()
             climbOutSpeed = (vR + MathUtils.random(5, 10)).toShort()
-            tripIas = (maxIas * MathUtils.random(0.9f, 0.985f)).toInt().toShort()
+            tripIas = (maxIas * MathUtils.random(0.9f, 0.985f)).roundToInt().toShort()
             tripMach = maxMach * MathUtils.random(0.915f, 0.945f)
-            maxAlt = 43100
-            massKg = 259600
+            maxAlt = 43100 // TODO Calculate value dynamically
+            massKg = (operatingEmptyWeightKg + (maxTakeoffWeightKg - operatingEmptyWeightKg) * loadFactor).roundToInt()
+            println("$loadFactor $appSpd $vR $climbOutSpeed $tripIas $tripMach $massKg")
         }
     }
 }
