@@ -1,7 +1,9 @@
 package com.bombbird.terminalcontrol2.networking
 
 import com.badlogic.ashley.core.Engine
+import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.math.MathUtils
+import com.badlogic.gdx.utils.Queue
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.*
 import com.bombbird.terminalcontrol2.files.GameLoader
@@ -133,12 +135,21 @@ class GameServer {
         server.bind(TCP_PORT, UDP_PORT)
         server.start()
         server.addListener(object: Listener {
-            override fun received(connection: Connection?, `object`: Any?) {
+            override fun received(connection: Connection?, obj: Any?) {
                 // TODO Handle receive requests
+                Gdx.app.postRunnable {
+                    (obj as? SerialisationRegistering.AircraftControlStateUpdateData)?.apply {
+                        aircraft[obj.callsign]?.entity?.let {
+                            val pendingClearances = it[PendingClearances.mapper]
+                            if (pendingClearances == null) it += PendingClearances(Queue<Pair<Float, ClearanceState>>().apply {  }) // TODO add latest clearance
+                            else pendingClearances.clearanceArray
+                        }
+                    }
+                }
             }
 
             override fun connected(connection: Connection?) {
-                // TODO Handle connections - send initial data and broadcast message if needed
+                // TODO Send broadcast message
                 connection?.sendTCP(SerialisationRegistering.InitialAirspaceData(MAG_HDG_DEV, MIN_ALT, MAX_ALT, MIN_SEP, TRANS_ALT, TRANS_LVL))
                 connection?.sendTCP(SerialisationRegistering.InitialSectorData(sectors.map { it.getSerialisableObject() }.toTypedArray()))
                 connection?.sendTCP(SerialisationRegistering.InitialAircraftData(aircraft.values().map { it.getSerialisableObject() }.toTypedArray()))

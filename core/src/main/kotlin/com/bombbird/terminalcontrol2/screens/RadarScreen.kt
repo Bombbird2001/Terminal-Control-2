@@ -56,7 +56,7 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
     private val radarDisplayStage = safeStage(GAME.batch)
     private val constZoomStage = safeStage(GAME.batch)
     private val uiStage = safeStage(GAME.batch)
-    private val uiPane = UIPane(uiStage)
+    val uiPane = UIPane(uiStage)
     private val shapeRenderer = ShapeRenderer()
 
     private val gestureDetector = GestureDetector(40f, 0.2f, 1.1f, 0.15f, this)
@@ -113,7 +113,6 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
                         MIN_SEP = minSep
                         TRANS_ALT = transAlt
                         TRANS_LVL = transLvl
-                        uiPane.updateAltSelectBoxChoices()
                     } ?: (obj as? SerialisationRegistering.InitialSectorData)?.sectors?.onEach {
                         Sector.fromSerialisedObject(it)
                     } ?: (obj as? SerialisationRegistering.InitialAircraftData)?.aircraft?.onEach {
@@ -421,5 +420,17 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
             clampUpdateCamera(amountY * 0.06f)
         }
         return true
+    }
+
+    /**
+     * Sends a new player clearance for the aircraft
+     * @param callsign the callsign of the aircraft to send the instructions to
+     * @param newClearanceState the new clearance to send to the aircraft
+     * */
+    fun sendAircraftControlStateClearance(callsign: String, newClearanceState: ClearanceState) {
+        client.sendTCP(SerialisationRegistering.AircraftControlStateUpdateData(callsign, newClearanceState.routePrimaryName,
+            newClearanceState.route.getSerialisedObject(), newClearanceState.hiddenLegs.getSerialisedObject(),
+            newClearanceState.vectorHdg, newClearanceState.clearedAlt, newClearanceState.clearedIas,
+            newClearanceState.minIas, newClearanceState.maxIas, newClearanceState.optimalIas))
     }
 }

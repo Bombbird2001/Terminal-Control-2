@@ -25,8 +25,11 @@ class ControlStateSystem: EntitySystem(), LowFreqUpdate {
             clearanceChanged[i]?.let { entity ->
                 val aircraftInfo = entity[AircraftInfo.mapper] ?: return@let
                 // Try to get the last pending clearance; if no pending clearances exist, use the existing clearance
-                (entity[PendingClearances.mapper]?.clearanceArray?.last()?.second ?: entity[ClearanceAct.mapper]?.clearance ?: return@let).apply {
-                    GAME.gameServer?.sendAircraftClearanceStateUpdateToAll(aircraftInfo.icaoCallsign, routePrimaryName, route, hiddenLegs, vectorHdg, clearedAlt, clearedIas, minIas, maxIas, optimalIas)
+                entity[PendingClearances.mapper]?.clearanceArray?.also {
+                    if (it.size > 0) (it.last()?.second ?: entity[ClearanceAct.mapper]?.clearance ?: return@also).apply {
+                        GAME.gameServer?.sendAircraftClearanceStateUpdateToAll(aircraftInfo.icaoCallsign, routePrimaryName, route, hiddenLegs, vectorHdg, clearedAlt, clearedIas, minIas, maxIas, optimalIas)
+                    }
+                    else entity.remove<PendingClearances>()
                 }
                 entity.remove<ClearanceChanged>()
             }

@@ -13,6 +13,7 @@ import com.bombbird.terminalcontrol2.utilities.nmToPx
 import ktx.ashley.get
 import ktx.assets.toInternalFile
 import ktx.collections.isNotEmpty
+import ktx.collections.toGdxArray
 
 /** Helper object that deals with loading of game data files */
 object GameLoader {
@@ -65,6 +66,11 @@ object GameLoader {
                             "" -> when (lineData[0]) {
                                 "MIN_ALT" -> MIN_ALT = lineData[1].toInt()
                                 "MAX_ALT" -> MAX_ALT = lineData[1].toInt()
+                                "INTERMEDIATE_ALTS" -> INTERMEDIATE_ALTS.apply {
+                                    clear()
+                                    addAll(lineData.subList(1, lineData.size).map { it.toInt() }.toGdxArray())
+                                    sort()
+                                }
                                 "TRANS_ALT" -> TRANS_ALT = lineData[1].toInt()
                                 "TRANS_LVL" -> TRANS_LVL = lineData[1].toInt()
                                 "MIN_SEP" -> MIN_SEP = lineData[1].toFloat()

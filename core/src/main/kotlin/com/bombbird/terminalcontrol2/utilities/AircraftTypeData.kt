@@ -12,7 +12,7 @@ object AircraftTypeData {
     fun getAircraftPerf(icaoType: String): AircraftPerfData {
         return aircraftPerfMap[icaoType] ?: run {
             Gdx.app.log("AircraftTypeData", "No performance data found for $icaoType, returning default data")
-            return AircraftPerfData(minCdTimesRefArea = 14.4144f, maxCdTimesRefArea = 74.256f)
+            return AircraftPerfData()
         }
     }
 
@@ -57,7 +57,7 @@ object AircraftTypeData {
      * */
     data class AircraftPerfData(val wakeCategory: Char = 'H', val recat: Char = 'B',
                                 val thrustNSLISA: Int? = 1026000, val propPowerWSLISA: Int? = null, val propArea: Float? = null,
-                                val minCdTimesRefArea: Float = 10.92f, val maxCdTimesRefArea: Float = 87.36f,
+                                val minCdTimesRefArea: Float = 14.4144f, val maxCdTimesRefArea: Float = 74.256f,
                                 val maxIas: Short = 340, val maxMach: Float = 0.89f,
                                 val operatingEmptyWeightKg: Int = 167829, val maxTakeoffWeightKg: Int = 351533) {
 
@@ -76,9 +76,8 @@ object AircraftTypeData {
             climbOutSpeed = (vR + MathUtils.random(5, 10)).toShort()
             tripIas = (maxIas * MathUtils.random(0.9f, 0.985f)).roundToInt().toShort()
             tripMach = maxMach * MathUtils.random(0.915f, 0.945f)
-            maxAlt = 43100 // TODO Calculate value dynamically
+            maxAlt = (43100 * (1 - 0.3f * loadFactor)).roundToInt()
             massKg = (operatingEmptyWeightKg + (maxTakeoffWeightKg - operatingEmptyWeightKg) * loadFactor).roundToInt()
-            println("$loadFactor $appSpd $vR $climbOutSpeed $tripIas $tripMach $massKg")
         }
     }
 }

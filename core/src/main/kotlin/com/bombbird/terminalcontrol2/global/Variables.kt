@@ -1,5 +1,7 @@
 package com.bombbird.terminalcontrol2.global
 
+import ktx.collections.GdxArray
+
 /** Global variables for use, can be modified */
 
 /** Screen size retrieved with Gdx.graphics */
@@ -20,9 +22,10 @@ var UDP_PORT = 57779
 /** Magnetic heading deviation in the current game - positive for Westward deviation and negative for Eastward deviation */
 var MAG_HDG_DEV = 0f
 
-/** Minimum, maximum altitude that can be cleared */
+/** Minimum, maximum, and additional user defined altitudes that can be cleared */
 var MIN_ALT = 2000
 var MAX_ALT = 20000
+val INTERMEDIATE_ALTS = GdxArray<Int>(6)
 
 /** Radar separation required under normal circumstances */
 var MIN_SEP = 3f
