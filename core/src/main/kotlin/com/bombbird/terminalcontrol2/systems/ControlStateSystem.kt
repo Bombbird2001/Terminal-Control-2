@@ -25,11 +25,15 @@ class ControlStateSystem: EntitySystem(), LowFreqUpdate {
             clearanceChanged[i]?.let { entity ->
                 val aircraftInfo = entity[AircraftInfo.mapper] ?: return@let
                 // Try to get the last pending clearance; if no pending clearances exist, use the existing clearance
-                entity[PendingClearances.mapper]?.clearanceArray?.also {
-                    if (it.size > 0) (it.last()?.second ?: entity[ClearanceAct.mapper]?.clearance ?: return@also).apply {
+                entity[PendingClearances.mapper]?.clearanceQueue.also {
+                    val clearanceToUse = if (it != null && it.size > 0) it.last()?.clearanceState ?: return@also
+                    else {
+                        entity.remove<PendingClearances>()
+                        entity[ClearanceAct.mapper]?.actingClearance?.actingClearance ?: return@also
+                    }
+                    clearanceToUse.apply {
                         GAME.gameServer?.sendAircraftClearanceStateUpdateToAll(aircraftInfo.icaoCallsign, routePrimaryName, route, hiddenLegs, vectorHdg, clearedAlt, clearedIas, minIas, maxIas, optimalIas)
                     }
-                    else entity.remove<PendingClearances>()
                 }
                 entity.remove<ClearanceChanged>()
             }
@@ -51,9 +55,29 @@ class ControlStateSystem: EntitySystem(), LowFreqUpdate {
                 }
             }
         }
+
+        // Aircraft that have pending clearances (due to 2s pilot response)
+        val pendingFamily = allOf(PendingClearances::class, ClearanceAct::class).get()
+        val pendingClearances = engine.getEntitiesFor(pendingFamily)
+        for (i in 0 until pendingClearances.size()) {
+            pendingClearances[i]?.apply {
+                get(PendingClearances.mapper)?.clearanceQueue?.let { queue ->
+                    if (queue.notEmpty()) {
+                        val firstEntry = queue.first()
+                        firstEntry.timeLeft -= deltaTime
+                        if (firstEntry.timeLeft < 0) {
+                            (get(ClearanceAct.mapper)?.actingClearance ?: return@apply).updateClearanceAct(firstEntry.clearanceState)
+                            queue.removeFirst()
+                        }
+                    }
+                    if (queue.isEmpty) remove<PendingClearances>()
+                } ?: return@apply
+            }
+        }
     }
 
-    /** Secondary update system, for operations that can be updated at a lower frequency and do not rely on deltaTime
+    /**
+     * Secondary update system, for operations that can be updated at a lower frequency and do not rely on deltaTime
      * (e.g. can be derived from other values without needing a time variable)
      *
      * Values that require constant updating or relies on deltaTime should be put in the main [update] function
@@ -64,7 +88,7 @@ class ControlStateSystem: EntitySystem(), LowFreqUpdate {
         val minMaxOptIas = engine.getEntitiesFor(minMaxOptIasFamily)
         for (i in 0 until minMaxOptIas.size()) {
             minMaxOptIas[i]?.apply {
-                val clearanceAct = get(ClearanceAct.mapper)?.clearance ?: return@apply
+                val clearanceAct = get(ClearanceAct.mapper)?.actingClearance?.actingClearance ?: return@apply
                 val prevSpds = Triple(clearanceAct.minIas, clearanceAct.maxIas, clearanceAct.optimalIas)
                 val spds = getMinMaxOptimalIAS(this)
                 clearanceAct.minIas = spds.first

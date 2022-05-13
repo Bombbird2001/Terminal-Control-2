@@ -45,7 +45,8 @@ class Route() {
         }} ?: return null
     }
 
-    /** Gets the speed restriction active at the active leg in the current departure route
+    /**
+     * Gets the speed restriction active at the active leg in the current departure route
      *
      * Returns the max speed, or null if a speed restriction does not exist
      * */
@@ -67,7 +68,10 @@ class Route() {
         return SerialisedRoute(legs.map { it }.toTypedArray())
     }
 
-    /** Abstract leg class that is extended to give specific leg functionality, contains [phase] which specifies which part of the flight the leg is part of */
+    /**
+     * Abstract leg class that is extended to give specific leg functionality, contains abstract property[phase] which
+     * specifies which part of the flight the leg is part of
+     * */
     abstract class Leg(val phase: Byte) {
         companion object {
             const val NORMAL: Byte = 0 // Normal flight route
@@ -77,7 +81,8 @@ class Route() {
         }
     }
 
-    /** Defines a waypoint leg - waypoint, altitude restrictions and speed restrictions
+    /**
+     * Defines a waypoint leg - waypoint, altitude restrictions and speed restrictions
      *
      * Optional declaration of [flyOver], [turnDir], [phase]
      * */
@@ -105,7 +110,8 @@ class Route() {
         }
     }
 
-    /** Defines a vector leg with the [heading] to fly
+    /**
+     * Defines a vector leg with the [heading] to fly
      *
      * Optional declaration of [phase]
      * */
@@ -132,7 +138,8 @@ class Route() {
         }
     }
 
-    /** Defines a route discontinuity leg
+    /**
+     * Defines a route discontinuity leg
      *
      * In practice, this is a [VectorLeg] except the aircraft will maintain its present heading upon encountering this
      *
@@ -140,7 +147,8 @@ class Route() {
      * */
     class DiscontinuityLeg(phase: Byte = NORMAL): Leg(phase)
 
-    /** Defines a holding leg - waypoint, altitude restrictions, speed restrictions, inbound heading and leg distance
+    /**
+     * Defines a holding leg - waypoint, altitude restrictions, speed restrictions, inbound heading and leg distance
      *
      * In practice, aircraft will hold indefinitely at the specified waypoint once it reaches there, till further clearance is given
      *

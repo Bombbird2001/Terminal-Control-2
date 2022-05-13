@@ -232,18 +232,15 @@ class ControlPane {
     fun updateClearanceMode(route: Route, vectorHdg: Short?) {
         if (vectorHdg != null) {
             // Vector mode active
-            vectorModeButton.isChecked = true
             setPaneLateralMode(UIPane.MODE_VECTOR)
         } else {
             vectorModeButton.isChecked = false
             route.legs.apply {
                 if ((size == 1 && first() is Route.HoldLeg) || (size >= 2 && (first() as? Route.WaypointLeg)?.wptId == (get(1) as? Route.HoldLeg)?.wptId)) {
                     // Hold mode active when the current leg is a hold leg, or when the aircraft is flying towards the waypoint it is cleared to hold at
-                    holdModeButton.isChecked = true
                     setPaneLateralMode(UIPane.MODE_HOLD)
                 } else {
                     // Otherwise, use route mode
-                    routeModeButton.isChecked = true
                     setPaneLateralMode(UIPane.MODE_ROUTE)
                 }
             }

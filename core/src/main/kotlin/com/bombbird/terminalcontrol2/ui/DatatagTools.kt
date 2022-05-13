@@ -142,7 +142,7 @@ private fun getMinimisedLabelText(entity: Entity): Array<String> {
     // Temporary label format TODO change based on datatag format in use
     val aircraftInfo = entity[AircraftInfo.mapper] ?: return labelText
     val radarData = entity[RadarData.mapper] ?: return labelText
-    val latestClearance = entity[ClearanceAct.mapper]?.clearance
+    val latestClearance = entity[ClearanceAct.mapper]?.actingClearance?.actingClearance
     val affectedByWind = entity[AffectedByWind.mapper]
 
     val callsign = aircraftInfo.icaoCallsign
@@ -165,7 +165,7 @@ private fun getExpandedLabelText(entity: Entity): Array<String> {
     val aircraftInfo = entity[AircraftInfo.mapper] ?: return labelText
     val radarData = entity[RadarData.mapper] ?: return labelText
     val cmdTarget = entity[CommandTarget.mapper] ?: return labelText
-    val latestClearance = entity[ClearanceAct.mapper]?.clearance
+    val latestClearance = entity[ClearanceAct.mapper]?.actingClearance?.actingClearance
     val affectedByWind = entity[AffectedByWind.mapper]
 
     val callsign = aircraftInfo.icaoCallsign

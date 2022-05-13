@@ -130,11 +130,11 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
                         speed.vertSpdFpm = serialisedAircraft.vertSpdFpm
                         speed.angularSpdDps = serialisedAircraft.angularSpdDps
                     }
-                    this += ClearanceAct(ClearanceState(serialisedAircraft.routePrimaryName,
+                    this += ClearanceAct(ClearanceState.ActingClearance(ClearanceState(serialisedAircraft.routePrimaryName,
                         Route.fromSerialisedObject(serialisedAircraft.commandRoute), Route.fromSerialisedObject(serialisedAircraft.commandHiddenLegs),
                         serialisedAircraft.vectorHdg, serialisedAircraft.commandAlt, serialisedAircraft.clearedIas,
                         serialisedAircraft.minIas, serialisedAircraft.maxIas, serialisedAircraft.optimalIas,
-                    ))
+                    )))
                 }
             }
         }
@@ -221,7 +221,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
             val direction = get(Direction.mapper) ?: return SerialisedAircraft()
             val speed = get(Speed.mapper) ?: return SerialisedAircraft()
             val flightType = get(FlightType.mapper) ?: return SerialisedAircraft()
-            val latestClearance = get(PendingClearances.mapper)?.clearanceArray?.last()?.second ?: get(ClearanceAct.mapper)?.clearance ?: return SerialisedAircraft()
+            val clearance = get(PendingClearances.mapper)?.clearanceQueue?.last()?.clearanceState ?: get(ClearanceAct.mapper)?.actingClearance?.actingClearance ?: return SerialisedAircraft()
             return SerialisedAircraft(
                 position.x, position.y,
                 altitude.altitudeFt,
@@ -229,9 +229,9 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
                 direction.trackUnitVector.x, direction.trackUnitVector.y,
                 speed.speedKts, speed.vertSpdFpm, speed.angularSpdDps,
                 flightType.type,
-                latestClearance.routePrimaryName, latestClearance.route.getSerialisedObject(), latestClearance.hiddenLegs.getSerialisedObject(),
-                latestClearance.vectorHdg, latestClearance.clearedAlt, latestClearance.clearedIas,
-                latestClearance.minIas, latestClearance.maxIas, latestClearance.optimalIas
+                clearance.routePrimaryName, clearance.route.getSerialisedObject(), clearance.hiddenLegs.getSerialisedObject(),
+                clearance.vectorHdg, clearance.clearedAlt, clearance.clearedIas,
+                clearance.minIas, clearance.maxIas, clearance.optimalIas
             )
         }
     }

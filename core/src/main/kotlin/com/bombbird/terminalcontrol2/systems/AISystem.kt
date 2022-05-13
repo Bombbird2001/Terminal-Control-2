@@ -48,7 +48,7 @@ class AISystem: EntitySystem() {
                     remove<TakeoffRoll>()
                     this += TakeoffClimb(alt.altitudeFt + MathUtils.random(1200, 1800))
                     // Transition to first leg on route if present, otherwise maintain runway heading
-                    get(ClearanceAct.mapper)?.clearance?.route?.legs?.let {
+                    get(ClearanceAct.mapper)?.actingClearance?.actingClearance?.route?.legs?.let {
                         if (it.size > 0) it.get(0).also { leg ->
                             this += when (leg) {
                                 is Route.VectorLeg -> CommandVector(leg.heading)
@@ -81,7 +81,7 @@ class AISystem: EntitySystem() {
                 val alt = get(Altitude.mapper) ?: return@apply
                 val cmd = get(CommandTarget.mapper) ?: return@apply
                 val tkOff = get(TakeoffClimb.mapper) ?: return@apply
-                val clearanceAct = get(ClearanceAct.mapper)?.clearance ?: return@apply
+                val clearanceAct = get(ClearanceAct.mapper)?.actingClearance?.actingClearance ?: return@apply
                 if (alt.altitudeFt > tkOff.accelAltFt) {
                     // Climbed past acceleration altitude, set new target IAS and remove takeoff climb component
                     cmd.targetIasKt = clearanceAct.route.getMaxSpdAtCurrLegDep() ?: 250
@@ -134,7 +134,7 @@ class AISystem: EntitySystem() {
             waypoint[i]?.apply {
                 val cmdTarget = get(CommandTarget.mapper) ?: return@apply
                 val cmdDir = get(CommandDirect.mapper) ?: return@apply
-                val clearanceAct = get(ClearanceAct.mapper)?.clearance ?: return@apply
+                val clearanceAct = get(ClearanceAct.mapper)?.actingClearance?.actingClearance ?: return@apply
                 val pos = get(Position.mapper) ?: return@apply
                 val wpt = GAME.gameServer?.waypoints?.get(cmdDir.wptId)?.entity?.get(Position.mapper) ?: run {
                     Gdx.app.log("AISystem", "Unknown command direct waypoint with ID ${cmdDir.wptId}")
@@ -266,13 +266,14 @@ class AISystem: EntitySystem() {
 
     /** Removes the [entity]'s route's first leg, and adds the required component for the next leg */
     private fun setToNextRouteLeg(entity: Entity) {
-        entity[ClearanceAct.mapper]?.clearance?.route?.legs?.apply {
+        val actingClearance = entity[ClearanceAct.mapper]?.actingClearance?.actingClearance ?: return
+        actingClearance.route.legs.apply {
             if (size > 0) removeIndex(0)
             entity += ClearanceChanged()
-            while (size > 0) get(0)?.let {
+            while (size > 0) get(0).let {
                 entity += when (it) {
                     is Route.VectorLeg -> {
-                        entity[ClearanceAct.mapper]?.clearance?.vectorHdg = it.heading
+                        actingClearance.vectorHdg = it.heading
                         CommandVector(it.heading)
                     }
                     is Route.InitClimbLeg -> CommandInitClimb(it.heading, it.minAltFt)

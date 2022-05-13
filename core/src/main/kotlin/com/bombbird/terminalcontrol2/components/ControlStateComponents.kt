@@ -49,9 +49,9 @@ data class ContactToCentre(var altitudeFt: Int = 0): Component {
 
 /**
  * Component for tagging the pending [ClearanceState]s an aircraft has been cleared, as well as the corresponding reaction
- * time for each clearance
+ * time, after the preceding clearance, for each clearance
  * */
-class PendingClearances(val clearanceArray: Queue<Pair<Float, ClearanceState>> = Queue(5)): Component {
+class PendingClearances(val clearanceQueue: Queue<ClearanceState.PendingClearanceState> = Queue(5)): Component {
     companion object: Mapper<PendingClearances>()
 }
 
@@ -59,7 +59,7 @@ class PendingClearances(val clearanceArray: Queue<Pair<Float, ClearanceState>> =
  * Component for tagging the latest [ClearanceState] an aircraft has been cleared; for use on client aircraft only
  * since clients do not need to remember the clearances sent apart from the latest one
  * */
-class ClearanceAct(val clearance: ClearanceState = ClearanceState()): Component {
+class ClearanceAct(val actingClearance: ClearanceState.ActingClearance = ClearanceState.ActingClearance()): Component {
     companion object: Mapper<ClearanceAct>()
 }
 

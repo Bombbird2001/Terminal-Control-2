@@ -3,7 +3,6 @@ package com.bombbird.terminalcontrol2.networking
 import com.badlogic.ashley.core.Engine
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.math.MathUtils
-import com.badlogic.gdx.utils.Queue
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.*
 import com.bombbird.terminalcontrol2.files.GameLoader
@@ -98,8 +97,8 @@ class GameServer {
                 targetIasKt = acPerf.climbOutSpeed
                 targetHdgDeg = 54f
             }
-            entity += ClearanceAct(ClearanceState("HICAL1C", airports[0]?.entity?.get(SIDChildren.mapper)?.sidMap?.get("HICAL1C")?.getRandomSIDRouteForRunway("05L") ?: Route(), Route(),
-                null, 3000, acPerf.climbOutSpeed))
+            entity += ClearanceAct(ClearanceState.ActingClearance(ClearanceState("HICAL1C", airports[0]?.entity?.get(SIDChildren.mapper)?.sidMap?.get("HICAL1C")?.getRandomSIDRouteForRunway("05L") ?: Route(), Route(),
+                null, 3000, acPerf.climbOutSpeed)))
         })
 
         engine.addSystem(PhysicsSystem())
@@ -139,11 +138,7 @@ class GameServer {
                 // TODO Handle receive requests
                 Gdx.app.postRunnable {
                     (obj as? SerialisationRegistering.AircraftControlStateUpdateData)?.apply {
-                        aircraft[obj.callsign]?.entity?.let {
-                            val pendingClearances = it[PendingClearances.mapper]
-                            if (pendingClearances == null) it += PendingClearances(Queue<Pair<Float, ClearanceState>>().apply {  }) // TODO add latest clearance
-                            else pendingClearances.clearanceArray
-                        }
+                        aircraft[obj.callsign]?.entity?.let { addNewClearanceToPendingClearances(it, obj, connection?.returnTripTime ?: 0) }
                     }
                 }
             }

@@ -110,8 +110,8 @@ class UIPane(private val uiStage: Stage) {
             if (controllable.sectorId != 0.byte) return // TODO Check for player's sector ID
         }
         val aircraftPerf = aircraft.entity[AircraftInfo.mapper]?.aircraftPerf ?: return
-        val latestClearance = aircraft.entity[ClearanceAct.mapper]?.clearance ?: return
-        clearanceState.updateUIClearanceState(latestClearance)
+        val latestClearance = aircraft.entity[ClearanceAct.mapper]?.actingClearance ?: return
+        clearanceState.updateUIClearanceState(latestClearance.actingClearance)
         controlObj.updateRouteTable(clearanceState.route)
         controlObj.updateClearanceMode(clearanceState.route, clearanceState.vectorHdg)
         controlObj.updateAltSelectBoxChoices(aircraftPerf.maxAlt)
@@ -133,8 +133,8 @@ class UIPane(private val uiStage: Stage) {
             val controllable = get(Controllable.mapper) ?: return
             if (controllable.sectorId != 0.byte) return // TODO Check for player's sector ID
         }
-        val latestClearance = aircraft.entity[ClearanceAct.mapper]?.clearance ?: return
-        clearanceState.updateUIClearanceState(latestClearance, clearanceStateChanged)
+        val latestClearance = aircraft.entity[ClearanceAct.mapper]?.actingClearance ?: return
+        clearanceState.updateUIClearanceState(latestClearance.actingClearance, clearanceStateChanged)
         controlObj.updateRouteTable(clearanceState.route)
         controlObj.updateClearanceMode(clearanceState.route, clearanceState.vectorHdg)
         controlObj.updateAltSpdClearances(clearanceState.clearedAlt, clearanceState.clearedIas, clearanceState.minIas, clearanceState.maxIas, clearanceState.optimalIas)
