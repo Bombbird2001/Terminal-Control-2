@@ -173,7 +173,7 @@ private fun getExpandedLabelText(entity: Entity): Array<String> {
     val alt = (radarData.altitude.altitudeFt / 100).roundToInt()
     val vs = if (radarData.speed.vertSpdFpm > 150) '^' else if (radarData.speed.vertSpdFpm < -150) 'v' else '='
     val clearedAlt = latestClearance?.clearedAlt?.let { "=> ${it / 100}" } ?: ""
-    val cmdAlt = (cmdTarget.targetAltFt / 100).roundToInt()
+    val cmdAlt = (cmdTarget.targetAltFt / 100f).roundToInt()
     val hdg = modulateHeading((convertWorldAndRenderDeg(radarData.direction.trackUnitVector.angleDeg()) + MAG_HDG_DEV).roundToInt().toFloat()).roundToInt()
     val cmdHdg = cmdTarget.targetHdgDeg.roundToInt()
     val groundSpd = (radarData.direction.trackUnitVector.times(radarData.speed.speedKts) + (affectedByWind?.windVectorPx?.times(pxpsToKt(1f)) ?: Vector2())).len().roundToInt()

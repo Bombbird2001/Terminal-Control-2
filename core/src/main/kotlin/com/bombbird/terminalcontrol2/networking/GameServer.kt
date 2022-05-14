@@ -81,24 +81,28 @@ class GameServer {
         GameLoader.loadWorldData("TCTP", this)
 
         // Add dummy aircraft
-        val rwy = airports[0]?.entity?.get(RunwayChildren.mapper)?.rwyMap?.get(0)
-        val rwyPos = rwy?.entity?.get(Position.mapper)
-        aircraft.put("SHIBA2", Aircraft("SHIBA2", rwyPos?.x ?: 10f, rwyPos?.y ?: -10f, rwy?.entity?.get(Altitude.mapper)?.altitudeFt ?: 108f, FlightType.DEPARTURE, false).apply {
-            entity[Direction.mapper]?.trackUnitVector?.rotateDeg((rwy?.entity?.get(Direction.mapper)?.trackUnitVector?.angleDeg() ?: 40.92f) - 90) // Runway 05L heading
+        val rwy = airports[0]?.entity?.get(RunwayChildren.mapper)?.rwyMap?.get(0)?.entity
+        val rwyPos = rwy?.get(Position.mapper)
+        val rwyDir = rwy?.get(Direction.mapper)
+        aircraft.put("SHIBA2", Aircraft("SHIBA2", rwyPos?.x ?: 10f, rwyPos?.y ?: -10f, rwy?.get(Altitude.mapper)?.altitudeFt ?: 108f, FlightType.DEPARTURE, false).apply {
+            entity[Direction.mapper]?.trackUnitVector?.rotateDeg((rwyDir?.trackUnitVector?.angleDeg() ?: 0f) - 90) // Runway heading
             // Calculate headwind component for takeoff
-            val headwind = entity[Altitude.mapper]?.let{ alt -> entity[Direction.mapper]?.let { dir -> entity[Position.mapper]?.let { pos ->
+            val headwind = entity[Altitude.mapper]?.let { alt -> rwyDir?.let { dir -> entity[Position.mapper]?.let { pos ->
                 val wind = getClosestAirportWindVector(pos.x, pos.y)
                 calculateIASFromTAS(alt.altitudeFt, pxpsToKt(wind.dot(dir.trackUnitVector)))
             }}} ?: 0f
             val acPerf = entity[AircraftInfo.mapper]?.aircraftPerf ?: return@apply
-            entity += TakeoffRoll(calculateRequiredAcceleration(0, (acPerf.vR + headwind).toInt().toShort(), ((rwy?.entity?.get(RunwayInfo.mapper)?.lengthM ?: 3800) - 1000) * MathUtils.random(0.75f, 1f)))
+            entity += TakeoffRoll(calculateRequiredAcceleration(0, (acPerf.vR + headwind).toInt().toShort(), ((rwy?.get(RunwayInfo.mapper)?.lengthM ?: 3800) - 1000) * MathUtils.random(0.75f, 1f)))
+            val sid = airports[0]?.entity?.get(SIDChildren.mapper)?.sidMap?.get("HICAL1C") // TODO random selection from eligible SIDs
+            val rwyName = rwy?.get(RunwayInfo.mapper)?.rwyName ?: ""
+            val initClimb = sid?.rwyInitialClimbs?.get(rwyName) ?: 3000
+            entity += ClearanceAct(ClearanceState.ActingClearance(ClearanceState(sid?.name ?: "", sid?.getRandomSIDRouteForRunway(rwyName) ?: Route(), Route(),
+                null, initClimb, acPerf.climbOutSpeed)))
             entity[CommandTarget.mapper]?.apply {
-                targetAltFt = 3000f
+                targetAltFt = initClimb
                 targetIasKt = acPerf.climbOutSpeed
-                targetHdgDeg = 54f
+                targetHdgDeg = convertWorldAndRenderDeg(rwyDir?.trackUnitVector?.angleDeg() ?: 90f) + MAG_HDG_DEV
             }
-            entity += ClearanceAct(ClearanceState.ActingClearance(ClearanceState("HICAL1C", airports[0]?.entity?.get(SIDChildren.mapper)?.sidMap?.get("HICAL1C")?.getRandomSIDRouteForRunway("05L") ?: Route(), Route(),
-                null, 3000, acPerf.climbOutSpeed)))
         })
 
         engine.addSystem(PhysicsSystem())

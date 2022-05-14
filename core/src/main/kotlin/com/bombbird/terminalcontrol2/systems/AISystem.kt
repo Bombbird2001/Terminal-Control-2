@@ -60,7 +60,7 @@ class AISystem: EntitySystem() {
                                     return@let
                                 }
                             }
-                            this += ClearanceChanged()
+                            this += LatestClearanceChanged()
                         }
                     }
                     return@apply
@@ -84,12 +84,12 @@ class AISystem: EntitySystem() {
                 val clearanceAct = get(ClearanceAct.mapper)?.actingClearance?.actingClearance ?: return@apply
                 if (alt.altitudeFt > tkOff.accelAltFt) {
                     // Climbed past acceleration altitude, set new target IAS and remove takeoff climb component
-                    cmd.targetIasKt = clearanceAct.route.getMaxSpdAtCurrLegDep() ?: 250
-                    cmd.targetAltFt = 10000f // TODO dynamically update based on aircraft route state
+                    cmd.targetIasKt = clearanceAct.route.getNextMaxSpd() ?: 250
+                    cmd.targetAltFt = 10000 // TODO dynamically update based on aircraft route state
                     clearanceAct.clearedAlt = 10000
                     clearanceAct.clearedIas = cmd.targetIasKt
                     remove<TakeoffClimb>()
-                    this += ClearanceChanged()
+                    this += LatestClearanceChanged()
                 }
             }
         }
@@ -106,7 +106,7 @@ class AISystem: EntitySystem() {
                 val cmdVec = get(CommandVector.mapper) ?: return@apply
                 cmdTarget.targetHdgDeg = cmdVec.heading.toFloat()
                 remove<CommandVector>()
-                this += ClearanceChanged()
+                this += LatestClearanceChanged()
             }
         }
 
@@ -240,6 +240,16 @@ class AISystem: EntitySystem() {
                 }
             }
         }
+
+        // Update when the acting clearance has been changed by player action
+        val actingClearanceChangedFamily = allOf(CommandTarget::class, ClearanceActChanged::class, ClearanceAct::class).get()
+        val actingClearances = engine.getEntitiesFor(actingClearanceChangedFamily)
+        for (i in 0 until actingClearances.size()) {
+            actingClearances[i]?.apply {
+                setCommandTargetToNewActingClearance(this)
+                remove<ClearanceActChanged>()
+            }
+        }
     }
 
     /** Returns a pair of floats, which contains the track that the plane needs to fly as well as its ground speed (accounted for [wind] if any)
@@ -264,20 +274,34 @@ class AISystem: EntitySystem() {
         return Pair(targetTrack.toFloat(), groundSpeed)
     }
 
-    /** Removes the [entity]'s route's first leg, and adds the required component for the next leg */
-    private fun setToNextRouteLeg(entity: Entity) {
+    /**
+     * Adds the required component for the first leg
+     *
+     * Also updates the most recent restrictions if any are present (if the first leg is a waypoint leg)
+     * @param entity the aircraft entity to apply the changes to
+     */
+    private fun setToFirstRouteLeg(entity: Entity) {
         val actingClearance = entity[ClearanceAct.mapper]?.actingClearance?.actingClearance ?: return
         actingClearance.route.legs.apply {
-            if (size > 0) removeIndex(0)
-            entity += ClearanceChanged()
+            entity += LatestClearanceChanged()
             while (size > 0) get(0).let {
                 entity += when (it) {
                     is Route.VectorLeg -> {
                         actingClearance.vectorHdg = it.heading
                         CommandVector(it.heading)
                     }
-                    is Route.InitClimbLeg -> CommandInitClimb(it.heading, it.minAltFt)
-                    is Route.WaypointLeg -> CommandDirect(it.wptId, it.maxAltFt, it.minAltFt, it.maxSpdKt, it.flyOver, it.turnDir)
+                    is Route.InitClimbLeg -> {
+                        (entity[LastRestrictions.mapper] ?: LastRestrictions().also { restr -> entity += restr }).minAltFt = it.minAltFt
+                        CommandInitClimb(it.heading, it.minAltFt)
+                    }
+                    is Route.WaypointLeg -> {
+                        (entity[LastRestrictions.mapper] ?: LastRestrictions().also { restr -> entity += restr }).let { restr ->
+                            it.minAltFt?.let { minAltFt -> restr.minAltFt = minAltFt }
+                            it.maxAltFt?.let { maxAltFt -> restr.maxAltFt = maxAltFt }
+                            it.maxSpdKt?.let { maxSpdKt -> restr.maxSpdKt = maxSpdKt }
+                        }
+                        CommandDirect(it.wptId, it.maxAltFt, it.minAltFt, it.maxSpdKt, it.flyOver, it.turnDir)
+                    }
                     is Route.HoldLeg -> CommandHold(it.wptId, it.maxAltFt, it.minAltFt, it.maxSpdKtLower, it.inboundHdg, it.legDist, it.turnDir)
                     else -> {
                         removeIndex(0)
@@ -289,8 +313,118 @@ class AISystem: EntitySystem() {
         }
     }
 
-    /** Returns one of the 3 possible entry procedures for a holding pattern, with the holding pattern's [inboundHdg],
-     * [legDir] and the aircraft's [targetHeading] to the waypoint
+    /** Removes the [entity]'s route's first leg, and adds the required component for the next leg */
+    private fun setToNextRouteLeg(entity: Entity) {
+        entity[ClearanceAct.mapper]?.actingClearance?.actingClearance?.route?.legs?.apply { if (size > 0) removeIndex(0) }
+        setToFirstRouteLeg(entity)
+    }
+
+    /**
+     * Updates the command target parameters with the latest acting clearance; should be called only when the acting
+     * clearance has been changed due to player clearance
+     * @param entity the aircraft entity to apply the changes to
+     * */
+    private fun setCommandTargetToNewActingClearance(entity: Entity) {
+        val actingClearance = entity[ClearanceAct.mapper]?.actingClearance?.actingClearance ?: return
+        val commandTarget = entity[CommandTarget.mapper] ?: return
+        actingClearance.vectorHdg?.let { hdg ->
+            // Cleared vector heading
+            entity += CommandVector(hdg)
+            actingClearance.route.legs.apply {
+                while (size > 0) {
+                    // Remove any vector legs at the beginning of the route
+                    if (get(0) is Route.VectorLeg) removeIndex(0)
+                    else break
+                }
+            }
+        } ?: setToFirstRouteLeg(entity) // Not cleared vector, set to the first cleared leg instead
+
+        val flightType = entity[FlightType.mapper]
+        val lastRestriction = entity[LastRestrictions.mapper]
+        val nextRouteMinAlt = actingClearance.route.getNextMinAlt()
+        val minAlt = lastRestriction?.minAltFt.let { lastMinAlt ->
+            when {
+                lastMinAlt != null && nextRouteMinAlt != null -> min(lastMinAlt, nextRouteMinAlt)
+                lastMinAlt != null -> when (flightType?.type) {
+                    FlightType.DEPARTURE -> lastMinAlt// No further min alts, use the last min alt
+                    FlightType.ARRIVAL -> null // No further min alts, but aircraft is an arrival so allow descent below previous min alt
+                    else -> null
+                }
+                nextRouteMinAlt != null -> when (flightType?.type) {
+                    FlightType.DEPARTURE -> null// No min alts before
+                    FlightType.ARRIVAL -> nextRouteMinAlt // No min alts before, but aircraft is an arrival so must follow all subsequent min alts
+                    else -> null
+                }
+                else -> null
+            }
+        }
+        lastRestriction?.minAltFt = nextRouteMinAlt
+
+        val nextRouteMaxAlt = actingClearance.route.getNextMaxAlt()
+        var maxAlt = lastRestriction?.maxAltFt.let { lastMaxAlt ->
+            when {
+                lastMaxAlt != null && nextRouteMaxAlt != null -> max(lastMaxAlt, nextRouteMaxAlt)
+                lastMaxAlt != null -> when (flightType?.type) {
+                    FlightType.DEPARTURE -> null// No further max alts, but aircraft is a departure so allow climb above previous min alt
+                    FlightType.ARRIVAL -> lastMaxAlt// No further max alts, use the last min alt
+                    else -> null
+                }
+                nextRouteMaxAlt != null -> when (flightType?.type) {
+                    FlightType.DEPARTURE -> nextRouteMaxAlt// No max alts before, but aircraft is a departure so must follow all subsequent max alts
+                    FlightType.ARRIVAL -> null// No max alts before
+                    else -> null
+                }
+                else -> null
+            }
+        }
+
+        if (minAlt != null && maxAlt != null && minAlt > maxAlt) {
+            Gdx.app.log("AISystem", "minAlt ($minAlt) should not > maxAlt ($maxAlt)")
+            maxAlt = minAlt
+        }
+
+        entity[Altitude.mapper]?.apply {
+            var targetAlt = actingClearance.clearedAlt
+            minAlt?.let { if (targetAlt < it && altitudeFt > it) targetAlt = it }
+            maxAlt?.let { if (targetAlt > it && altitudeFt < it) targetAlt = it }
+
+            commandTarget.targetAltFt = targetAlt // Update command target to the new calculated target altitude
+        }
+
+        // TODO change this earlier before reaching waypoint so aircraft can cross the waypoint at the speed restriction
+        val nextRouteMaxSpd = actingClearance.route.getNextMaxSpd()
+        val maxSpd = lastRestriction?.maxSpdKt.let { lastMaxSpd ->
+            when {
+                lastMaxSpd != null && nextRouteMaxSpd != null -> max(lastMaxSpd.toInt(), nextRouteMaxSpd.toInt()).toShort()
+                lastMaxSpd != null -> when (flightType?.type) {
+                    FlightType.DEPARTURE -> null// No further max speeds, but aircraft is a departure so allow acceleration beyond previous max speed
+                    FlightType.ARRIVAL -> lastMaxSpd// No further max speeds, use the last max speed
+                    else -> null
+                }
+                nextRouteMaxSpd != null -> when (flightType?.type) {
+                    FlightType.DEPARTURE -> nextRouteMaxSpd// No max speeds before, but aircraft is a departure so must follow all subsequent max speeds
+                    FlightType.ARRIVAL -> null// No max speeds before
+                    else -> null
+                }
+                else -> null
+            }
+        }
+
+        commandTarget.targetIasKt = if (maxSpd != null) min(maxSpd.toInt(), actingClearance.clearedIas.toInt()).toShort() else actingClearance.clearedIas
+        // The new cleared IAS should already be constrained when the player sent the clearance, but in case it exceeds
+        // the speed restriction due to lag or pilot delay, set the acting cleared IAS to follow the constraints
+        actingClearance.clearedIas = commandTarget.targetIasKt
+
+        if (entity[PendingClearances.mapper] == null) entity += LatestClearanceChanged()
+    }
+
+    /**
+     * Returns one of the 3 possible entry procedures for a holding pattern, given the holding pattern's inbound leg heading,
+     * its turn direction, and the aircraft's target heading to the waypoint
+     * @param targetHeading the heading the aircraft is currently targeting to fly
+     * @param inboundHdg the inbound leg heading of the hold leg
+     * @param legDir the turn direction of the hold leg
+     * @return a byte denoting one of 3 possible holding entry procedures
      * */
     private fun getEntryProc(targetHeading: Float, inboundHdg: Short, legDir: Byte): Byte {
         // Offset is relative to opposite of inbound heading

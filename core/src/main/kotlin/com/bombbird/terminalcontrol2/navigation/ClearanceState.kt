@@ -1,8 +1,9 @@
 package com.bombbird.terminalcontrol2.navigation
 
-import com.bombbird.terminalcontrol2.components.CommandTarget
+import com.badlogic.ashley.core.Entity
+import com.badlogic.gdx.math.MathUtils
 import com.bombbird.terminalcontrol2.utilities.compareLegEquality
-import ktx.collections.GdxArray
+import com.bombbird.terminalcontrol2.utilities.getMinMaxOptimalIAS
 
 /**
  * Clearance class that contains data for player transmitted aircraft clearances
@@ -37,44 +38,62 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
         /**
          * Updates this acting clearance to the new clearance, performing corrections in case of any conflicts caused due to
          * pilot response time
-         * @param newClearance the new player sent clearance
+         * @param newClearance the new player sent clearance (that is being removed from PendingClearances)
+         * @param entity the aircraft entity that the clearance will be applied to
          * */
-        fun updateClearanceAct(newClearance: ClearanceState) {
-            actingClearance.route.legs.let { currRoute -> newClearance.route.legs.let { newRoute ->
-                if (currRoute.size >= 1 && newRoute.size >= 1) {
-                    val currFirstLeg = currRoute.first()
-                    val newFirstLeg = newRoute.first()
-                    if (currFirstLeg is Route.WaypointLeg && newFirstLeg is Route.WaypointLeg && !compareLegEquality(currFirstLeg, newFirstLeg)) {
-                        // 2 possible waypoint leg conflict scenarios
-                        var currDirIndex = -1
-                        // Check for whether the new route contains the current direct
-                        for (i in 0 until newRoute.size) {
-                            if (compareLegEquality(currFirstLeg, newRoute[i])) {
-                                currDirIndex = i
-                                break
+        fun updateClearanceAct(newClearance: ClearanceState, entity: Entity) {
+            actingClearance.routePrimaryName = newClearance.routePrimaryName
+
+            actingClearance.route.let { currRoute -> newClearance.route.let { newRoute ->
+                val currRouteLegs = currRoute.legs
+                val newRouteLegs = newRoute.legs
+                if (currRouteLegs.size >= 1 && newRouteLegs.size >= 1) {
+                    val currFirstLeg = currRouteLegs.first()
+                    val newFirstLeg = newRouteLegs.first()
+                    if (!compareLegEquality(currFirstLeg, newFirstLeg)) {
+                        // 3 possible leg conflict scenarios
+                        if (currRouteLegs.size >= 2 && newRouteLegs[1].let { it is Route.HoldLeg && currFirstLeg is Route.WaypointLeg && it.wptId == currFirstLeg.wptId }) {
+                            // 1. Aircraft has flown by waypoint, but the new clearance wants it to hold at that waypoint;
+                            // clear the current route, and add the new route from the 2nd leg (the hold leg) onwards
+                            newRouteLegs.removeIndex(0)
+                        } else if (currFirstLeg is Route.WaypointLeg && newFirstLeg is Route.WaypointLeg) {
+                            var currDirIndex = -1
+                            // Check for whether the new route contains the current direct
+                            for (i in 0 until newRouteLegs.size) {
+                                if (compareLegEquality(currFirstLeg, newRouteLegs[i])) {
+                                    currDirIndex = i
+                                    break
+                                }
                             }
-                        }
-                        if (currDirIndex > 0) {
-                            // 1. Aircraft has flown by waypoint, new clearance is the same route except it still contains
-                            // that waypoint; remove all legs from the new clearance till the current direct
-                            newRoute.removeRange(0, currDirIndex)
-                        } else {
-                            // 2. Aircraft has flown by waypoint, but the new clearance does not contain the current direct
-                            // (possibly due to player assigning approach transition); clear the current route, and add the
-                            // new route from the 2nd leg onwards
-                            currRoute.clear()
-                            currRoute.addAll(GdxArray(newRoute).apply { removeIndex(0) })
+                            if (currDirIndex > 0) {
+                                // 2. Aircraft has flown by waypoint, new clearance is the same route except it still contains
+                                // that waypoint; remove all legs from the new clearance till the current direct
+                                newRouteLegs.removeRange(0, currDirIndex)
+                            } else {
+                                // 3. Aircraft has flown by waypoint, but the new clearance does not contain the current direct
+                                // (possibly due to player assigning approach transition); remove the first leg from new clearance
+                                newRouteLegs.removeIndex(0)
+                            }
                         }
                     }
                 }
+                currRoute.setToRoute(newRoute) // Set the acting route clearance to the new clearance (after corrections, if any)
             }}
 
-            // TODO other potential conflicts
-        }
+            actingClearance.hiddenLegs.setToRoute(newClearance.hiddenLegs)
+            actingClearance.vectorHdg = newClearance.vectorHdg
+            actingClearance.clearedAlt = newClearance.clearedAlt
 
-        // TODO Updates the aircraft command state to follow (this) acting clearance state, including sanity checks
-        fun updateClearanceActToCommandState(commandTarget: CommandTarget) {
-
+            val spds = getMinMaxOptimalIAS(entity)
+            newClearance.clearedIas = MathUtils.clamp(newClearance.clearedIas, spds.first, spds.second)
+            if (newClearance.clearedIas == newClearance.optimalIas && newClearance.clearedIas != spds.third) newClearance.clearedIas = spds.third
+            newClearance.minIas = spds.first
+            newClearance.maxIas = spds.second
+            newClearance.optimalIas = spds.third
+            actingClearance.clearedIas = newClearance.clearedIas
+            actingClearance.minIas = newClearance.minIas
+            actingClearance.maxIas = newClearance.maxIas
+            actingClearance.optimalIas = newClearance.optimalIas
         }
     }
 

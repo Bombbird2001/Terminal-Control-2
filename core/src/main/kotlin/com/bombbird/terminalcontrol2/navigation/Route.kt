@@ -47,11 +47,34 @@ class Route() {
 
     /**
      * Gets the speed restriction active at the active leg in the current departure route
-     *
-     * Returns the max speed, or null if a speed restriction does not exist
+     * @return the max speed, or null if a speed restriction does not exist
      * */
-    fun getMaxSpdAtCurrLegDep(): Short? {
-        for (i in 0 until legs.size) return (legs[i] as? WaypointLeg)?.maxSpdKt ?: continue
+    fun getNextMaxSpd(): Short? {
+        for (i in 0 until legs.size) return (legs[i] as? WaypointLeg)?.let {
+            if (it.legActive && it.spdRestrActive) it.maxSpdKt else null
+        } ?: continue
+        return null
+    }
+
+    /**
+     * Gets the next minimum altitude restriction for the route
+     * @return the minimum altitude, or null if a minimum altitude restriction does not exist
+     * */
+    fun getNextMinAlt(): Int? {
+        for (i in 0 until legs.size) return (legs[i] as? WaypointLeg)?.let {
+            if (it.legActive && it.altRestrActive) it.minAltFt else null
+        } ?: continue
+        return null
+    }
+
+    /**
+     * Gets the next maximum altitude restriction for the route
+     * @return the maximum altitude, or null if a maximum altitude restriction does not exist
+     * */
+    fun getNextMaxAlt(): Int? {
+        for (i in 0 until legs.size) return (legs[i] as? WaypointLeg)?.let {
+            if (it.legActive && it.altRestrActive) it.maxAltFt else null
+        } ?: continue
         return null
     }
 

@@ -42,7 +42,7 @@ class LandingRoll: Component {
  * These basic parameters can be automatically altered by more advanced modes, such as Direct (to waypoint), Hold (at waypoint),
  * Climb via SID/Descend via STAR (to altitude), and SID/STAR speed restrictions in order to achieve the required behaviour
  * */
-data class CommandTarget(var targetHdgDeg: Float = 360f, var turnDir: Byte = TURN_DEFAULT, var targetAltFt: Float = 0f, var expedite: Boolean = false, var targetIasKt: Short = 0): Component {
+data class CommandTarget(var targetHdgDeg: Float = 360f, var turnDir: Byte = TURN_DEFAULT, var targetAltFt: Int = 0, var expedite: Boolean = false, var targetIasKt: Short = 0): Component {
     companion object: Mapper<CommandTarget>() {
         val TURN_DEFAULT: Byte = 0
         val TURN_LEFT: Byte = -1
@@ -103,4 +103,12 @@ data class CommandHold(var wptId: Short = 0, var maxAltFt: Int? = null, var minA
 /** Component for tagging an aircraft that is flying according to continuous descent approach (CDA) operations */
 class CommandCDA: Component {
     companion object: Mapper<CommandCDA>()
+}
+
+/**
+ * Component for storing an aircraft's most recent [minAltFt], [maxAltFt] and [maxSpdKt], since the route class does not store
+ * previous legs and cannot provide information about past restrictions
+ * */
+data class LastRestrictions(var minAltFt: Int? = null, var maxAltFt: Int? = null, var maxSpdKt: Short? = null): Component {
+    companion object: Mapper<LastRestrictions>()
 }

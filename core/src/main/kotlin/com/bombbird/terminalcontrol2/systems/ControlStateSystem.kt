@@ -19,8 +19,8 @@ class ControlStateSystem: EntitySystem(), LowFreqUpdate {
     /** Main update function */
     override fun update(deltaTime: Float) {
         // Aircraft that have their clearance states changed
-        val clearanceChangedFamily = allOf(ClearanceChanged::class, AircraftInfo::class, ClearanceAct::class).get()
-        val clearanceChanged = engine.getEntitiesFor(clearanceChangedFamily)
+        val latestClearanceChangedFamily = allOf(LatestClearanceChanged::class, AircraftInfo::class, ClearanceAct::class).get()
+        val clearanceChanged = engine.getEntitiesFor(latestClearanceChangedFamily)
         for (i in 0 until clearanceChanged.size()) {
             clearanceChanged[i]?.let { entity ->
                 val aircraftInfo = entity[AircraftInfo.mapper] ?: return@let
@@ -35,7 +35,7 @@ class ControlStateSystem: EntitySystem(), LowFreqUpdate {
                         GAME.gameServer?.sendAircraftClearanceStateUpdateToAll(aircraftInfo.icaoCallsign, routePrimaryName, route, hiddenLegs, vectorHdg, clearedAlt, clearedIas, minIas, maxIas, optimalIas)
                     }
                 }
-                entity.remove<ClearanceChanged>()
+                entity.remove<LatestClearanceChanged>()
             }
         }
 
@@ -66,7 +66,10 @@ class ControlStateSystem: EntitySystem(), LowFreqUpdate {
                         val firstEntry = queue.first()
                         firstEntry.timeLeft -= deltaTime
                         if (firstEntry.timeLeft < 0) {
-                            (get(ClearanceAct.mapper)?.actingClearance ?: return@apply).updateClearanceAct(firstEntry.clearanceState)
+                            get(ClearanceAct.mapper)?.actingClearance?.let { acting ->
+                                acting.updateClearanceAct(firstEntry.clearanceState, this)
+                                this += ClearanceActChanged()
+                            } ?: return@apply
                             queue.removeFirst()
                         }
                     }
@@ -95,7 +98,7 @@ class ControlStateSystem: EntitySystem(), LowFreqUpdate {
                 clearanceAct.maxIas = spds.second
                 clearanceAct.optimalIas = spds.third
                 // TODO update current and all pending cleared IAS with updated optimal IAS if the cleared speed is the previous optimal IAS
-                if (spds != prevSpds) this += ClearanceChanged()
+                if (spds != prevSpds) this += LatestClearanceChanged()
             }
         }
     }

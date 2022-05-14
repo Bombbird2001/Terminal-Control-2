@@ -68,6 +68,15 @@ class ClearanceAct(val actingClearance: ClearanceState.ActingClearance = Clearan
  *
  * The server will send a TCP update to all clients informing them of the updated clearance state
  * */
-class ClearanceChanged: Component {
-    companion object: Mapper<ClearanceChanged>()
+class LatestClearanceChanged: Component {
+    companion object: Mapper<LatestClearanceChanged>()
+}
+
+/**
+ * Component for tagging when an aircraft's [ClearanceAct] changes
+ *
+ * The system will update command target to follow the new clearance
+ * */
+class ClearanceActChanged: Component {
+    companion object: Mapper<ClearanceActChanged>()
 }

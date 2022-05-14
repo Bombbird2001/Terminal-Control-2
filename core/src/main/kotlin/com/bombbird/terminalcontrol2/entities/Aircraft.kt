@@ -166,7 +166,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
                 acInfo.icaoCallsign,
                 direction.trackUnitVector.x, direction.trackUnitVector.y,
                 speed.speedKts, speed.vertSpdFpm, speed.angularSpdDps,
-                cmdTarget.targetHdgDeg.toInt().toShort(), (cmdTarget.targetAltFt / 100).roundToInt().toShort(), cmdTarget.targetIasKt
+                cmdTarget.targetHdgDeg.toInt().toShort(), (cmdTarget.targetAltFt / 100f).roundToInt().toShort(), cmdTarget.targetIasKt
             )
         }
     }
@@ -191,7 +191,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
             }
             get(CommandTarget.mapper)?.apply {
                 targetHdgDeg = data.targetHdgDeg.toFloat()
-                targetAltFt = data.targetAltFt * 100f
+                targetAltFt = data.targetAltFt * 100
                 targetIasKt = data.targetIasKt
             }
         }
