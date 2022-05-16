@@ -41,8 +41,8 @@ class UIPane(private val uiStage: Stage) {
     private val routeEditPane: KContainer<Actor>
 
     // Clearance state of the UI pane
-    val clearanceState: ClearanceState = ClearanceState()
-    val clearanceStateChanged: ClearanceState.ClearanceStateChanged = ClearanceState.ClearanceStateChanged()
+    val clearanceState: ClearanceState = ClearanceState() // Aircraft's current state (without user changes)
+    val userClearanceState: ClearanceState = ClearanceState() // User's chosen state
 
     init {
         uiStage.actors {
@@ -52,8 +52,15 @@ class UIPane(private val uiStage: Stage) {
                 addChangeListener { event, _ -> event?.handle() } // Catch mis-clicks to prevent hiding the UI pane
             }
             mainInfoPane = mainInfoPane(paneWidth)
-            controlPane = controlObj.controlPane(this@UIPane, this, paneWidth) { setToEditRoutePane() }
-            routeEditPane = routeEditObj.routeEditPane(this@UIPane, this, paneWidth) { setToControlPane() }
+            controlPane = controlObj.controlPane(this@UIPane, this, paneWidth) {
+                routeEditObj.updateEditRouteTable(userClearanceState.route)
+                setToEditRoutePane()
+            }
+            routeEditPane = routeEditObj.routeEditPane(this@UIPane, this, paneWidth) {
+                setToControlPane()
+                controlObj.updateRouteTable(userClearanceState.route)
+                controlObj.updateUndoTransmitButtonStates()
+            }
         }
         uiStage.camera.apply {
             moveTo(Vector2(UI_WIDTH / 2, UI_HEIGHT / 2))
@@ -111,19 +118,23 @@ class UIPane(private val uiStage: Stage) {
         }
         val aircraftPerf = aircraft.entity[AircraftInfo.mapper]?.aircraftPerf ?: return
         val latestClearance = aircraft.entity[ClearanceAct.mapper]?.actingClearance ?: return
+        userClearanceState.updateUIClearanceState(latestClearance.actingClearance)
         clearanceState.updateUIClearanceState(latestClearance.actingClearance)
-        controlObj.updateRouteTable(clearanceState.route)
-        controlObj.updateClearanceMode(clearanceState.route, clearanceState.vectorHdg)
+        controlObj.resetDirectButton()
+        controlObj.updateRouteTable(userClearanceState.route)
+        controlObj.updateClearanceMode(userClearanceState.route, userClearanceState.vectorHdg)
         controlObj.updateAltSelectBoxChoices(aircraftPerf.maxAlt)
-        controlObj.updateAltSpdClearances(clearanceState.clearedAlt, clearanceState.clearedIas, clearanceState.minIas, clearanceState.maxIas, clearanceState.optimalIas)
-        routeEditObj.updateEditRouteTable(clearanceState.route)
+        controlObj.updateAltSpdClearances(userClearanceState.clearedAlt, userClearanceState.clearedIas, userClearanceState.minIas, userClearanceState.maxIas, userClearanceState.optimalIas)
+        controlObj.setUndoTransmitButtonsUnchanged()
         controlPane.isVisible = true
         routeEditPane.isVisible = false
         mainInfoPane.isVisible = false
     }
 
     /**
-     * Updates currently selected aircraft pane navigation state to match the updated [aircraft]
+     * Updates currently selected aircraft pane navigation state to match the updated [aircraft]; the [aircraft] should
+     * not have changed from a previous call of [setSelectedAircraft] or [updateSelectedAircraft], otherwise the UI may
+     * not display the data correctly as desired
      *
      * The pane is updated only if aircraft has the Controllable component and is in the player's sector
      * @param aircraft the [Aircraft] whose clearance information will be displayed in the pane
@@ -134,11 +145,12 @@ class UIPane(private val uiStage: Stage) {
             if (controllable.sectorId != 0.byte) return // TODO Check for player's sector ID
         }
         val latestClearance = aircraft.entity[ClearanceAct.mapper]?.actingClearance ?: return
-        clearanceState.updateUIClearanceState(latestClearance.actingClearance, clearanceStateChanged)
-        controlObj.updateRouteTable(clearanceState.route)
-        controlObj.updateClearanceMode(clearanceState.route, clearanceState.vectorHdg)
-        controlObj.updateAltSpdClearances(clearanceState.clearedAlt, clearanceState.clearedIas, clearanceState.minIas, clearanceState.maxIas, clearanceState.optimalIas)
-        routeEditObj.updateEditRouteTable(clearanceState.route)
+        userClearanceState.updateUIClearanceState(latestClearance.actingClearance, clearanceState)
+        clearanceState.updateUIClearanceState(latestClearance.actingClearance)
+        controlObj.updateRouteTable(userClearanceState.route)
+        controlObj.updateClearanceMode(userClearanceState.route, userClearanceState.vectorHdg)
+        controlObj.updateAltSpdClearances(userClearanceState.clearedAlt, userClearanceState.clearedIas, userClearanceState.minIas, userClearanceState.maxIas, userClearanceState.optimalIas)
+        controlObj.updateUndoTransmitButtonStates()
     }
 
     /** Unset the selected UI aircraft */

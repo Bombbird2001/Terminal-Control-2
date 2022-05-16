@@ -25,6 +25,7 @@ object HttpRequest {
         client.newCall(request).enqueue(object: Callback {
             override fun onFailure(call: Call, e: IOException) {
                 Gdx.app.log("HttpRequest", "Request failed")
+                println(e)
                 if (GAME.gameServer?.gameRunning != true) return
                 if (retry) sendMetarRequest(reqString, false)
                 else generateRandomWeather() // Generate offline weather

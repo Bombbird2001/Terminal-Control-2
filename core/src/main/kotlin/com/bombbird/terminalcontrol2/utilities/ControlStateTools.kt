@@ -81,6 +81,82 @@ fun compareLegEquality(leg1: Route.Leg, leg2: Route.Leg): Boolean {
 }
 
 /**
+ * Checks whether the provided routes are equal - route length, and all legs must be strictly equal (including skipped legs,
+ * cancelled restrictions for waypoint legs)
+ *
+ * Use this function when comparing route clearances in the UI
+ * @param route1 the first route to compare
+ * @param route2 the second route to compare
+ * @return a boolean denoting whether the two routes are strictly equal
+ * */
+fun checkRouteEqualityStrict(route1: Route, route2: Route): Boolean {
+    route1.legs.let { legs1 -> route2.legs.let { legs2 ->
+        if (legs1.size != legs2.size) return false
+        for (i in 0 until legs1.size) {
+            val leg1 = legs1[i]
+            val leg2 = legs2[i]
+            if (leg1 != leg2) return false // Use data class generated equality check to ensure all properties are equal
+        }
+        return true
+    }}
+}
+
+/**
+ * Compares input leg with a route and checks if it has differed
+ *
+ * Conditions to be considered changed:
+ *  - If leg is a vector/init climb/discontinuity/hold leg, and route does not contain a leg with the exact same value
+ *  - If leg is a waypoint leg, route does not contain a leg with the same wptId and restrictions
+ * @param route the original to route to check for the leg
+ * @param leg the leg to check for in the route
+ * @return a boolean denoting whether the leg has differed from in the supplied route
+ * */
+fun checkLegChanged(route: Route, leg: Route.Leg): Boolean {
+    when (leg) {
+        is Route.VectorLeg, is Route.InitClimbLeg, is Route.DiscontinuityLeg, is Route.HoldLeg -> return !route.legs.contains(leg, false)
+        is Route.WaypointLeg -> {
+            for (i in 0 until route.legs.size) route.legs[i]?.apply { if (this is Route.WaypointLeg && compareLegEquality(this, leg)) return false }
+            // No legs found with same wpt ID
+            return true
+        }
+        else -> {
+            Gdx.app.log("ControlStateTools", "Unknown leg type ${leg::class}")
+            return true
+        }
+    }
+}
+
+/**
+ * Compares input waypoint leg and checks if any of the restriction flags or the skipped flags has changed
+ * @param route the original to route to check for the waypoint leg
+ * @param leg the waypoint leg to check for in the route
+ * @return a [Triple] with 3 booleans denoting whether [Route.WaypointLeg.altRestrActive], [Route.WaypointLeg.spdRestrActive]
+ * and [Route.WaypointLeg.legActive] has changed respectively
+ * */
+fun checkRestrChanged(route: Route, leg: Route.WaypointLeg): Triple<Boolean, Boolean, Boolean> {
+    for (i in 0 until route.legs.size) route.legs[i]?.apply { if (this is Route.WaypointLeg && compareLegEquality(this, leg)) {
+        return Triple(altRestrActive != leg.altRestrActive, spdRestrActive != leg.spdRestrActive, legActive != leg.legActive)
+    }}
+    // No legs found with exact same data, return all true
+    return Triple(true, true, true)
+}
+
+/**
+ * Compares input clearance states and checks if they are the same; routes must be strictly equal and route name,
+ * cleared altitude and cleared IAS must be equal as well
+ * @param clearanceState1 the first clearance state to compare
+ * @param clearanceState2 the second clearance state to compare
+ * @return a boolean denoting whether the two clearance states are equal
+ * */
+fun checkClearanceEquality(clearanceState1: ClearanceState, clearanceState2: ClearanceState): Boolean {
+    if (!checkRouteEqualityStrict(clearanceState1.route, clearanceState2.route)) return false
+    if (!checkRouteEqualityStrict(clearanceState1.hiddenLegs, clearanceState2.hiddenLegs)) return false
+    return clearanceState1.routePrimaryName == clearanceState2.routePrimaryName &&
+            clearanceState1.clearedAlt == clearanceState2.clearedAlt &&
+            clearanceState1.clearedIas == clearanceState2.clearedIas
+}
+
+/**
  * Gets the minimum, maximum an optimal IAS that can be cleared depending on aircraft performance and navigation status
  *
  * The optimal IAS is the default IAS the aircraft will fly at without player intervention, hence it needs to be returned

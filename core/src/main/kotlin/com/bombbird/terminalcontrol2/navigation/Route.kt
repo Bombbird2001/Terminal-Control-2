@@ -7,6 +7,7 @@ import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.utilities.getRequiredTrack
 import ktx.ashley.get
 import ktx.collections.GdxArray
+import ktx.collections.toGdxArray
 
 /** Route class that contains aircraft route legs */
 class Route() {
@@ -24,15 +25,40 @@ class Route() {
         for (leg in newLegs) legs.add(leg)
     }
 
-    /** Adds all the legs in the provided [route] to the end of the leg array */
+    /**
+     * Adds all the legs in the provided [route] to the end of the leg array
+     *
+     * Note: This will directly refer to the leg object; any changes made to the leg object will be reflected in other
+     * route legs using referring to the same object; this method should only be used when reading from save files or
+     * de-serialising data, or if it is absolutely certain that two variables or properties are meant to refer to the
+     * exact same leg objects
+     * */
     fun extendRoute(route: Route) {
         legs.addAll(route.legs)
     }
 
-    /** Clears the existing [legs] and adds all the legs in the provided [route] */
+    /** Copies all the legs in the provided [route] to the end of the leg array */
+    fun extendRouteCopy(route: Route) {
+        legs.addAll(route.legs.map { it.copyLeg() }.toGdxArray())
+    }
+
+    /**
+     * Clears the existing [legs] and adds all the legs in the provided [route]
+     *
+     * Note: This will directly refer to the leg object; any changes made to the leg object will be reflected in other
+     * route legs using referring to the same object; this method should only be used when reading from save files or
+     * de-serialising data, or if it is absolutely certain that two variables or properties are meant to refer to the
+     * exact same leg objects
+     * */
     fun setToRoute(route: Route) {
         legs.clear()
         legs.addAll(route.legs)
+    }
+
+    /** Clears the existing [legs] and copies all the legs in the provided [route] */
+    fun setToRouteCopy(route: Route) {
+        legs.clear()
+        legs.addAll(route.legs.map { it.copyLeg() }.toGdxArray())
     }
 
     /** Returns the track and turn direction from the first to second waypoint, or null if there is no second waypoint leg */
@@ -92,10 +118,15 @@ class Route() {
     }
 
     /**
-     * Abstract leg class that is extended to give specific leg functionality, contains abstract property[phase] which
+     * Abstract leg class that is extended to give specific leg functionality, contains abstract property [phase] which
      * specifies which part of the flight the leg is part of
      * */
-    abstract class Leg(val phase: Byte) {
+    abstract class Leg {
+        abstract val phase: Byte
+
+        /** Abstract function for implementation - makes a copy of the leg and returns it */
+        abstract fun copyLeg(): Leg
+
         companion object {
             const val NORMAL: Byte = 0 // Normal flight route
             const val APP_TRANS: Byte = 1 // Approach transition
@@ -109,11 +140,11 @@ class Route() {
      *
      * Optional declaration of [flyOver], [turnDir], [phase]
      * */
-    class WaypointLeg(val wptId: Short, val maxAltFt: Int?, val minAltFt: Int?, val maxSpdKt: Short?,
+    data class WaypointLeg(val wptId: Short, val maxAltFt: Int?, val minAltFt: Int?, val maxSpdKt: Short?,
                       var legActive: Boolean, var altRestrActive: Boolean, var spdRestrActive: Boolean,
                       val flyOver: Boolean = false, val turnDir: Byte = CommandTarget.TURN_DEFAULT,
-                      phase: Byte = NORMAL
-    ): Leg(phase) {
+                      override val phase: Byte = NORMAL
+    ): Leg() {
         /** Secondary constructor using the name of a waypoint instead of its ID - use only when loading from internal game files */
         constructor(wptName: String, maxAltFt: Int?, minAltFt: Int?, maxSpdKt: Short?,
                     legActive: Boolean, altRestrActive: Boolean, spdRestrActive: Boolean,
@@ -125,6 +156,14 @@ class Route() {
 
         // No-arg constructor for Kryo serialisation
         constructor(): this(0, null, null, null, true, true, true)
+
+        /**
+         * Makes a copy of this waypoint leg and returns it
+         * @return a new instance of this [WaypointLeg]
+         * */
+        override fun copyLeg(): Leg {
+            return WaypointLeg(wptId, maxAltFt, minAltFt, maxSpdKt, legActive, altRestrActive, spdRestrActive, flyOver, turnDir, phase)
+        }
 
         /** Debug string representation */
         override fun toString(): String {
@@ -138,10 +177,18 @@ class Route() {
      *
      * Optional declaration of [phase]
      * */
-    class VectorLeg(val heading: Short, phase: Byte = NORMAL): Leg(phase) {
+    data class VectorLeg(val heading: Short, override val phase: Byte = NORMAL): Leg() {
 
         // No-arg constructor for Kryo serialisation
         constructor(): this(360)
+
+        /**
+         * Makes a copy of this vector leg and returns it
+         * @return a new instance of this [VectorLeg]
+         * */
+        override fun copyLeg(): Leg {
+            return VectorLeg(heading, phase)
+        }
 
         /** Debug string representation */
         override fun toString(): String {
@@ -150,10 +197,18 @@ class Route() {
     }
 
     /** Defines an initial climb leg with the [heading] to fly, and the minimum altitude after which the aircraft will continue to the next leg */
-    class InitClimbLeg(val heading: Short, val minAltFt: Int, phase: Byte = NORMAL): Leg(phase) {
+    data class InitClimbLeg(val heading: Short, val minAltFt: Int, override val phase: Byte = NORMAL): Leg() {
 
         // No-arg constructor for Kryo serialisation
         constructor(): this(360, 0)
+
+        /**
+         * Makes a copy of this initial climb leg and returns it
+         * @return a new instance of this [InitClimbLeg]
+         * */
+        override fun copyLeg(): Leg {
+            return InitClimbLeg(heading, minAltFt, phase)
+        }
 
         /** Debug string representation */
         override fun toString(): String {
@@ -168,7 +223,16 @@ class Route() {
      *
      * Optional declaration of [phase]
      * */
-    class DiscontinuityLeg(phase: Byte = NORMAL): Leg(phase)
+    data class DiscontinuityLeg(override val phase: Byte = NORMAL): Leg() {
+
+        /**
+         * Makes a copy of this discontinuity leg and returns it
+         * @return a new instance of this [DiscontinuityLeg]
+         * */
+        override fun copyLeg(): Leg {
+            return DiscontinuityLeg(phase)
+        }
+    }
 
     /**
      * Defines a holding leg - waypoint, altitude restrictions, speed restrictions, inbound heading and leg distance
@@ -177,7 +241,8 @@ class Route() {
      *
      * Optional declaration of [phase]
      * */
-    class HoldLeg(val wptId: Short, val maxAltFt: Int?, val minAltFt: Int?, val maxSpdKtLower: Short?, val maxSpdKtHigher: Short?, val inboundHdg: Short, val legDist: Byte, val turnDir: Byte, phase: Byte = NORMAL): Leg(phase) {
+    data class HoldLeg(val wptId: Short, val maxAltFt: Int?, val minAltFt: Int?, val maxSpdKtLower: Short?, val maxSpdKtHigher: Short?,
+                       val inboundHdg: Short, val legDist: Byte, val turnDir: Byte, override val phase: Byte = NORMAL): Leg() {
 
         // No-arg constructor for Kryo serialisation
         constructor(): this(0, null, null, 230, 240, 360, 5, CommandTarget.TURN_RIGHT)
@@ -187,6 +252,14 @@ class Route() {
                     turnDir: Byte, phase: Byte = NORMAL): this(GAME.gameServer?.let {
             it.waypoints[it.updatedWaypointMapping[wptName]]?.entity?.get(WaypointInfo.mapper)?.wptId ?: -1
         } ?: throw RuntimeException("gameServer is non-existent when creating route in GameLoader context"), maxAltFt, minAltFt, maxSpdKtLower, maxSpdKtHigher, inboundHdg, legDist, turnDir, phase)
+
+        /**
+         * Makes a copy of this hold leg and returns it
+         * @return a new instance of this [HoldLeg]
+         * */
+        override fun copyLeg(): Leg {
+            return HoldLeg(wptId, maxAltFt, minAltFt, maxSpdKtLower, maxSpdKtHigher, inboundHdg, legDist, turnDir, phase)
+        }
 
         /** Debug string representation */
         override fun toString(): String {

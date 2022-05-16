@@ -85,12 +85,14 @@ abstract class SidStar(val name: String,
 
         /** Gets a random SID route, made up of the [rwyLegs] segment, the [routeLegs] segment, and a [outboundLegs] segment */
         fun getRandomSIDRouteForRunway(rwyName: String): Route {
-            return rwyLegs[rwyName]?.apply {
-                extendRoute(routeLegs)
-                extendRoute(outboundLegs.random())
-            } ?: run {
-                Gdx.app.log("SID", "Runway $rwyName not available for SID $name")
-                return Route()
+            return Route().apply {
+                rwyLegs[rwyName]?.let { rwyRoute ->
+                    setToRouteCopy(rwyRoute)
+                } ?: run {
+                    Gdx.app.log("SID", "Runway $rwyName not available for SID $name")
+                }
+                extendRouteCopy(routeLegs)
+                extendRouteCopy(outboundLegs.random())
             }
         }
 

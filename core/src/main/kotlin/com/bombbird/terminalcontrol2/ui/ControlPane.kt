@@ -2,14 +2,15 @@ package com.bombbird.terminalcontrol2.ui
 
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.scenes.scene2d.Actor
-import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener
+import com.badlogic.gdx.scenes.scene2d.ui.SelectBox.SelectBoxStyle
+import com.badlogic.gdx.scenes.scene2d.ui.TextButton.TextButtonStyle
 import com.badlogic.gdx.utils.Align
 import com.bombbird.terminalcontrol2.components.AircraftInfo
+import com.bombbird.terminalcontrol2.components.ClearanceAct
 import com.bombbird.terminalcontrol2.components.WaypointInfo
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.Route
-import com.bombbird.terminalcontrol2.utilities.addChangeListener
-import com.bombbird.terminalcontrol2.utilities.removeMouseScrollListeners
+import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.get
 import ktx.collections.GdxArray
 import ktx.collections.toGdxArray
@@ -31,6 +32,14 @@ class ControlPane {
     private lateinit var routeLegsTable: KTableWidget
     private lateinit var holdTable: KTableWidget
     private lateinit var vectorTable: KTableWidget
+
+    private lateinit var undoButton: KTextButton
+    private lateinit var transmitButton: KTextButton
+
+    private var modificationInProgress = false
+
+    private var directLeg: Route.Leg? = null
+    private var directButtonArray = GdxArray<KTextButton>(10)
 
     /**
      * Creates a new table with elements of the control pane
@@ -86,11 +95,23 @@ class ControlPane {
                         items = GdxArray()
                         list.setAlignment(Align.center)
                         setAlignment(Align.center)
+                        addChangeListener { _, _ ->
+                            if (modificationInProgress) return@addChangeListener
+                            parentPane.userClearanceState.clearedAlt = if (selected.contains("FL")) selected.substring(2).toInt() * 100 else selected.toInt()
+                            style = Scene2DSkin.defaultSkin[if (parentPane.userClearanceState.clearedAlt == parentPane.clearanceState.clearedAlt) "ControlPane" else "ControlPaneChanged", SelectBoxStyle::class.java]
+                            updateUndoTransmitButtonStates()
+                        }
                     }.cell(grow = true, preferredWidth = paneWidth * 0.37f)
                     textButton("Expedite", "ControlPaneSelected").cell(grow = true, preferredWidth = paneWidth * 0.26f)
                     spdSelectBox = selectBox<Short>("ControlPane").apply {
                         list.setAlignment(Align.center)
                         setAlignment(Align.center)
+                        addChangeListener { _, _ ->
+                            if (modificationInProgress) return@addChangeListener
+                            parentPane.userClearanceState.clearedIas = selected.toShort()
+                            style = Scene2DSkin.defaultSkin[if (parentPane.userClearanceState.clearedIas == parentPane.clearanceState.clearedIas) "ControlPane" else "ControlPaneChanged", SelectBoxStyle::class.java]
+                            updateUndoTransmitButtonStates()
+                        }
                     }.cell(grow = true, preferredWidth = paneWidth * 0.37f)
                 }.cell(preferredWidth = paneWidth, height = UI_HEIGHT * 0.125f, growX = true)
                 row()
@@ -98,11 +119,18 @@ class ControlPane {
                 row()
                 table {
                     // Last row of buttons - Undo all, Acknowledge/Handover, Transmit
-                    textButton("Undo all", "ControlPaneButton").cell(grow = true, preferredWidth = paneWidth / 3)
-                    textButton("Handover\n-\nAcknowledge", "ControlPaneButton").cell(grow = true, preferredWidth = paneWidth / 3)
-                    textButton("Transmit", "ControlPaneButton").cell(grow = true, preferredWidth = paneWidth / 3).apply {
-                        addChangeListener { _, _ -> GAME.gameClientScreen?.let { radarScreen -> radarScreen.selectedAircraft?.entity?.let { entity ->
-                            radarScreen.sendAircraftControlStateClearance(entity[AircraftInfo.mapper]?.icaoCallsign ?: return@addChangeListener, parentPane.clearanceState)
+                    undoButton = textButton("Undo all", "ControlPaneButton").cell(grow = true, preferredWidth = paneWidth / 3).apply {
+                        addChangeListener { _, _ -> Gdx.app.postRunnable { parentPane.setSelectedAircraft(GAME.gameClientScreen?.selectedAircraft ?: return@postRunnable) }}
+                    }
+                    textButton("Handover\n-\nAcknowledge", "ControlPaneButton").cell(grow = true, preferredWidth = paneWidth / 3).isVisible = false
+                    transmitButton = textButton("Transmit", "ControlPaneButton").cell(grow = true, preferredWidth = paneWidth / 3).apply {
+                        addChangeListener { _, _ -> GAME.gameClientScreen?.let { radarScreen -> radarScreen.selectedAircraft?.let { aircraft ->
+                            if (checkClearanceEquality(parentPane.userClearanceState, parentPane.clearanceState)) return@addChangeListener // No need to update anything if no change to clearance
+                            radarScreen.sendAircraftControlStateClearance(aircraft.entity[AircraftInfo.mapper]?.icaoCallsign ?: return@addChangeListener, parentPane.userClearanceState)
+                            Gdx.app.postRunnable {
+                                aircraft.entity[ClearanceAct.mapper]?.actingClearance?.actingClearance?.updateUIClearanceState(parentPane.userClearanceState)
+                                parentPane.updateSelectedAircraft(aircraft)
+                            }
                         }}}
                     }
                 }.cell(preferredWidth = paneWidth, height = UI_HEIGHT * 0.125f, growX = true, align = Align.bottom)
@@ -131,11 +159,7 @@ class ControlPane {
                 removeMouseScrollListeners()
             }.cell(preferredWidth = 0.81f * paneWidth, preferredHeight = 0.6f * UI_HEIGHT, grow = true, padTop = 5f, align = Align.top)
             table {
-                textButton("Edit\nroute", "ControlPaneButton").cell(growX = true, height = UI_HEIGHT * 0.15f).addListener(object: ChangeListener() {
-                    override fun changed(event: ChangeEvent?, actor: Actor?) {
-                        setToEditRoutePane()
-                    }
-                })
+                textButton("Edit\nroute", "ControlPaneButton").cell(growX = true, height = UI_HEIGHT * 0.15f).addChangeListener { _, _ -> setToEditRoutePane() }
                 row()
                 textButton("CDA", "ControlPaneSelected").cell(growX = true, height = UI_HEIGHT * 0.15f)
             }.cell(preferredWidth = 0.19f * paneWidth, padTop = 20f, align = Align.top)
@@ -271,6 +295,7 @@ class ControlPane {
         val maxAltAircraft = aircraftMaxAlt - aircraftMaxAlt % 1000
         val maxAlt = min(MAX_ALT - MAX_ALT % 1000, maxAltAircraft)
         var intermediateQueueIndex = 0
+        modificationInProgress = true
         altSelectBox.items = GdxArray<String>().apply {
             clear()
             if (MIN_ALT % 1000 > 0) checkAltAndAddToArray(MIN_ALT, this)
@@ -287,6 +312,7 @@ class ControlPane {
             }
             if (MAX_ALT % 1000 > 0) checkAltAndAddToArray(MAX_ALT, this)
         }
+        modificationInProgress = false
     }
 
     /**
@@ -300,6 +326,7 @@ class ControlPane {
     fun updateAltSpdClearances(clearedAlt: Int, clearedSpd: Short, minSpd: Short, maxSpd: Short, optimalSpd: Short) {
         val minSpdRounded = if (minSpd % 10 > 0) ((minSpd / 10 + 1) * 10).toShort() else minSpd
         val maxSpdRounded = if (maxSpd % 10 > 0) ((maxSpd / 10) * 10).toShort() else maxSpd
+        modificationInProgress = true
         spdSelectBox.items = GdxArray<Short>().apply {
             clear()
             if (minSpd % 10 > 0) add(minSpd)
@@ -312,27 +339,30 @@ class ControlPane {
                 add(maxSpd)
             }
         }
+        modificationInProgress = false
         altSelectBox.selected = if (clearedAlt >= TRANS_LVL * 100) "FL${clearedAlt / 100}" else clearedAlt.toString()
         spdSelectBox.selected = clearedSpd
     }
 
     /**
      * Updates the route list in [ControlPane.routeLegsTable] (Route sub-pane)
-     * @param route the route to display in the route pane; should be the aircraft's latest cleared route
+     * @param route the route to display in the route pane; should be the aircraft's latest cleared route or user input route
      * */
     fun updateRouteTable(route: Route) {
         routeLegsTable.clear()
+        directButtonArray.clear()
+        var firstDirectSet = false
         routeLegsTable.apply {
-            var firstDirectSet = false
             for (i in 0 until route.legs.size) {
-                route.legs[i].let { leg ->
-                    val legDisplay = (leg as? Route.WaypointLeg)?.wptId?.let { wptId -> GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(
-                        WaypointInfo.mapper)?.wptName } ?:
+                route.legs[i].also { leg ->
+                    val legDisplay = (leg as? Route.WaypointLeg)?.let { wpt -> if (!wpt.legActive) return@also
+                        GAME.gameClientScreen?.waypoints?.get(wpt.wptId)?.entity?.get(WaypointInfo.mapper)?.wptName } ?:
                     (leg as? Route.VectorLeg)?.heading?.let { hdg -> "HDG $hdg" } ?:
                     (leg as? Route.HoldLeg)?.wptId?.let { wptId -> "Hold at\n${GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(
                         WaypointInfo.mapper)?.wptName}" } ?:
                     (leg as? Route.DiscontinuityLeg)?.let { "Discontinuity" } ?:
-                    (leg as? Route.InitClimbLeg)?.heading?.let { hdg -> "Climb on\nHDG $hdg" } ?: return@let
+                    (leg as? Route.InitClimbLeg)?.heading?.let { hdg -> "Climb on\nHDG $hdg" } ?: return@also
+                    val restrTriple = (leg as? Route.WaypointLeg)?.let { checkRestrChanged(parentPane.clearanceState.route, it) } ?: Triple(false, false, false)
                     val altRestrDisplay = (leg as? Route.WaypointLeg)?.let { wptLeg ->
                         var restr = wptLeg.maxAltFt?.toString() ?: ""
                         restr += wptLeg.minAltFt?.toString()?.let { minAlt -> "${if (restr.isNotBlank()) "\n" else ""}$minAlt" } ?: ""
@@ -343,21 +373,54 @@ class ControlPane {
                         wptLeg.minAltFt != null -> "ControlPaneBottomAltRestr"
                         wptLeg.maxAltFt != null -> "ControlPaneTopAltRestr"
                         else -> "ControlPaneRoute"
-                    } + if (altRestrDisplay.isNotBlank() && !wptLeg.altRestrActive) "Cancel" else ""} ?: (leg as? Route.InitClimbLeg)?.let { "ControlPaneBottomAltRestr" } ?: "ControlPaneRoute"
+                    } + (if (altRestrDisplay.isNotBlank() && !wptLeg.altRestrActive) "Cancel" else "") + if (restrTriple.first) "Changed" else ""
+                    } ?: (leg as? Route.InitClimbLeg)?.let { "ControlPaneBottomAltRestr" } ?: "ControlPaneRoute"
                     val spdRestr = (leg as? Route.WaypointLeg)?.maxSpdKt?.let { spd -> "${spd}kts" } ?: ""
-                    val spdRestrStyle = if ((leg as? Route.WaypointLeg)?.spdRestrActive == true) "ControlPaneRoute" else "ControlPaneSpdRestrCancel"
-                    textButton("=>", "ControlPaneRouteDirect").cell(growX = true, preferredWidth = 0.2f * parentPane.paneWidth, preferredHeight = 0.1f * UI_HEIGHT).apply {
-                        if (!firstDirectSet) {
+                    val spdRestrStyle = if ((leg as? Route.WaypointLeg)?.spdRestrActive == true) "ControlPaneRoute" else "ControlPaneSpdRestrCancel" + if (restrTriple.second) "Changed" else ""
+                    directButtonArray.add(textButton("=>", if (i == 0) "ControlPaneRouteDirect" else "ControlPaneRouteDirectChanged").cell(growX = true, preferredWidth = 0.2f * parentPane.paneWidth, preferredHeight = 0.1f * UI_HEIGHT).apply {
+                        if (directLeg?.let { compareLegEquality(it, leg) } != false) {
                             isChecked = true
+                            directLeg = leg
                             firstDirectSet = true
                         }
-                    }
+                        addChangeListener { _, _ ->
+                            if (modificationInProgress) return@addChangeListener
+                            modificationInProgress = true
+                            if (!isChecked) isChecked = true
+                            else {
+                                val prevLegIndex = directLeg?.let {
+                                    var index: Int? = null // Additional variable for finding index as making prevLegIndex a var prevents smart cast in this changing closure below
+                                    for (j in 0 until route.legs.size) {
+                                        if (compareLegEquality(it, route.legs[j])) {
+                                            index = j
+                                            break
+                                        }
+                                    }
+                                    index
+                                }
+                                for (j in 0 until directButtonArray.size) {
+                                    if (j != i) directButtonArray[j].isChecked = false
+                                    (route.legs[j] as? Route.WaypointLeg)?.let {
+                                        if (j < i) it.legActive = false
+                                        else if (j == i) it.legActive = true
+                                        else if (prevLegIndex != null && j <= prevLegIndex) it.legActive = true
+                                    }
+                                    directLeg = leg
+                                }
+                            }
+                            modificationInProgress = false
+                        }
+                    })
                     label(legDisplay, "ControlPaneRoute").apply { setAlignment(Align.center) }.cell(growX = true, preferredWidth = 0.2f * parentPane.paneWidth)
                     label(altRestrDisplay, altRestrStyle).apply { setAlignment(Align.center) }.cell(expandX = true, padLeft = 10f, padRight = 10f)
                     label(spdRestr, spdRestrStyle).apply { setAlignment(Align.center) }.cell(growX = true, preferredWidth = 0.2f * parentPane.paneWidth)
                     row()
                 }
             }
+        }
+        if (!firstDirectSet && route.legs.size > 0 && directButtonArray.size > 0) {
+            directLeg = route.legs[0]
+            directButtonArray[0].isChecked = true
         }
     }
 
@@ -398,5 +461,33 @@ class ControlPane {
             }
             else -> Gdx.app.log("UIPane", "Unknown lateral mode $mode")
         }
+    }
+
+    /** Sets the style of the Undo All and Transmit buttons to that of when the clearance state is changed */
+    private fun setUndoTransmitButtonsChanged() {
+        val newStyle = Scene2DSkin.defaultSkin["ControlPaneButtonChanged", TextButtonStyle::class.java]
+        transmitButton.style = newStyle
+        undoButton.style = newStyle
+    }
+
+    /** Sets the style of the Undo All and Transmit buttons to that of when the clearance state is unchanged */
+    fun setUndoTransmitButtonsUnchanged() {
+        val newStyle = Scene2DSkin.defaultSkin["ControlPaneButton", TextButtonStyle::class.java]
+        transmitButton.style = newStyle
+        undoButton.style = newStyle
+    }
+
+    /**
+     * Updates the appropriate changed/unchanged button styles for the Undo and Transmit buttons depending on the current
+     * state of [UIPane.clearanceState] and [UIPane.userClearanceState]
+     * */
+    fun updateUndoTransmitButtonStates() {
+        if (checkClearanceEquality(parentPane.clearanceState, parentPane.userClearanceState)) setUndoTransmitButtonsUnchanged()
+        else setUndoTransmitButtonsChanged()
+    }
+
+    /** Resets [directLeg] back to null, called when a new aircraft is being set in [parentPane] */
+    fun resetDirectButton() {
+        directLeg = null
     }
 }

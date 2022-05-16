@@ -2,7 +2,9 @@ package com.bombbird.terminalcontrol2.navigation
 
 import com.badlogic.ashley.core.Entity
 import com.badlogic.gdx.math.MathUtils
+import com.bombbird.terminalcontrol2.utilities.checkLegChanged
 import com.bombbird.terminalcontrol2.utilities.compareLegEquality
+import com.bombbird.terminalcontrol2.utilities.checkRouteEqualityStrict
 import com.bombbird.terminalcontrol2.utilities.getMinMaxOptimalIAS
 
 /**
@@ -98,63 +100,47 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
     }
 
     /**
-     * Clearance class that keeps track of which clearances have been altered by the player
-     *
-     * [routePrimaryNameChanged] - whether [routePrimaryName] has changed
-     *
-     * [routeChanged] - whether [route] has changed
-     *
-     * [hiddenLegsChanged] - whether [hiddenLegs] has changed
-     *
-     * [vectorHdgChanged] - whether [vectorHdg] has changed
-     *
-     * [clearedAltChanged] - whether [clearedAlt] has changed
-     *
-     * [clearedIasChanged] - whether [clearedIas] has changed
-     *  */
-    class ClearanceStateChanged(var routePrimaryNameChanged: Boolean = false, var routeChanged: Boolean = false, var hiddenLegsChanged: Boolean = false,
-                                var vectorHdgChanged: Boolean = false, var clearedAltChanged: Boolean = false, var clearedIasChanged: Boolean = false)
-
-    /**
      * Clearance class that also contains a [timeLeft] value that keeps track of the time remaining before the [clearanceState]
      * should be executed
      * */
     class PendingClearanceState(var timeLeft: Float, val clearanceState: ClearanceState)
 
     /**
-     * Updates this clearance state (of the UI) to match the input [latestClearance]
-     * @param latestClearance the clearance state to update the pane's state to; should be the aircraft's latest clearance state
-     * @param clearanceStateChanged if not null, takes into account existing changes made by the player
+     * Updates this clearance state to match the input clearance for UI purposes
+     * @param latestClearance the clearance state to update this state to; should be the aircraft's latest clearance state
+     * @param defaultClearance the current clearance state stored in the UI, without any player changes; set to null if
+     * the updating of this clearance state should not take into account of any existing changes made by the player
      * */
-    fun updateUIClearanceState(latestClearance: ClearanceState, clearanceStateChanged: ClearanceStateChanged? = null) {
-        clearanceStateChanged?.apply {
-            if (!routePrimaryNameChanged) routePrimaryName = latestClearance.routePrimaryName
-            if (!routeChanged) route.setToRoute(latestClearance.route)
+    fun updateUIClearanceState(latestClearance: ClearanceState, defaultClearance: ClearanceState? = null) {
+        defaultClearance?.also {
+            // Default clearance provided - compare this clearance against it and update the properties conditionally
+            // For most of the variables, update if no change has been made compared to the original aircraft clearance state
+            if (routePrimaryName == defaultClearance.routePrimaryName) routePrimaryName = latestClearance.routePrimaryName
+            if (checkRouteEqualityStrict(route, defaultClearance.route)) route.setToRouteCopy(latestClearance.route)
             else {
                 // Sanity check - all legs in the current pane clearance state must be present in the new clearance state;
                 // otherwise, those legs must be removed
                 var i = 0
                 while (0 <= i && i < route.legs.size) route.legs[i].let { leg ->
-                    if (!latestClearance.route.legs.contains(leg, false)) {
+                    if (checkLegChanged(latestClearance.route, leg)) {
                         route.legs.removeIndex(i)
                         i--
                     }
                     i++
                 }
             }
-            if (!hiddenLegsChanged) hiddenLegs.setToRoute(latestClearance.hiddenLegs)
-            if (!vectorHdgChanged) vectorHdg = latestClearance.vectorHdg
-            if (!clearedAltChanged) clearedAlt = latestClearance.clearedAlt
+            if (checkRouteEqualityStrict(hiddenLegs, defaultClearance.hiddenLegs)) hiddenLegs.setToRouteCopy(latestClearance.hiddenLegs)
+            if (vectorHdg == defaultClearance.vectorHdg) vectorHdg = latestClearance.vectorHdg
+            if (clearedAlt == defaultClearance.clearedAlt) clearedAlt = latestClearance.clearedAlt
             // Set to new IAS if the current IAS has not changed, or if it has changed but is equal to the current optimal IAS,
             // and is different from the new optimal IAS, and the new clearance is equal to the new optimal IAS
-            if (!clearedIasChanged ||
+            if (clearedIas == defaultClearance.clearedIas ||
                 (clearedIas == optimalIas && optimalIas != latestClearance.optimalIas && latestClearance.clearedIas == latestClearance.optimalIas)) clearedIas = latestClearance.clearedIas
         } ?: run {
+            // No default clearance to compare against, copy the properties directly
             routePrimaryName = latestClearance.routePrimaryName
-            route.legs.clear()
-            route.extendRoute(latestClearance.route)
-            hiddenLegs.legs.clear()
-            hiddenLegs.extendRoute(latestClearance.hiddenLegs)
+            route.setToRouteCopy(latestClearance.route)
+            hiddenLegs.setToRouteCopy(latestClearance.hiddenLegs)
             vectorHdg = latestClearance.vectorHdg
             clearedAlt = latestClearance.clearedAlt
             clearedIas = latestClearance.clearedIas

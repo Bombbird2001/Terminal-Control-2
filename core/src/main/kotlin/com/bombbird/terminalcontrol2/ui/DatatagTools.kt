@@ -121,7 +121,7 @@ fun addDatatagInputListeners(datatag: Datatag, aircraft: Aircraft) {
                 datatag.dragging = false
                 return@addChangeListener
             }
-            CLIENT_SCREEN?.setUISelectedAircraft(aircraft)
+            Gdx.app.postRunnable { CLIENT_SCREEN?.setUISelectedAircraft(aircraft) }
         }
     }
 }
@@ -185,7 +185,7 @@ private fun getExpandedLabelText(entity: Entity): Array<String> {
     labelText[0] = "$callsign $acInfo"
     labelText[1] = "$alt $vs $cmdAlt $clearedAlt"
     labelText[2] = "$hdg $cmdHdg $clearedLateral $sidStar"
-    labelText[3] = "$groundSpd ${cmdTarget.targetIasKt}"
+    labelText[3] = "$groundSpd ${latestClearance?.clearedIas}"
 
     return labelText
 }
