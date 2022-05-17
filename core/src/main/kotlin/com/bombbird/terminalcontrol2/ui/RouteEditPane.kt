@@ -113,18 +113,20 @@ class RouteEditPane {
                     val skippedChanged = restrTriple.third
                     val legLabel = label(legDisplay, "ControlPaneRoute${if (legChanged) "Changed" else ""}").apply { setAlignment(Align.center) }.cell(growX = true, height = 0.125f * UI_HEIGHT, padLeft = 10f, padRight = 10f)
                     val altButton = textButton(altRestr, "ControlPaneRestr${if (altRestrChanged) "Changed" else ""}").cell(growX = true, preferredWidth = 0.25f * parentPane.paneWidth, height = 0.125f * UI_HEIGHT).apply {
+                        isChecked = (leg as? Route.WaypointLeg)?.altRestrActive == false
                         if (altRestr.isNotBlank()) addChangeListener { _, _ -> (leg as? Route.WaypointLeg)?.let {
                             it.altRestrActive = !isChecked
                             style = toggleTextColor(style)
                         } ?: run { isChecked = false } }
                     }
                     val spdButton = textButton(spdRestr, "ControlPaneRestr${if (spdRestrChanged) "Changed" else ""}").cell(growX = true, preferredWidth = 0.25f * parentPane.paneWidth, height = 0.125f * UI_HEIGHT).apply {
+                        isChecked = (leg as? Route.WaypointLeg)?.spdRestrActive == false
                         if (spdRestr.isNotBlank()) addChangeListener { _, _ -> (leg as? Route.WaypointLeg)?.let {
                             it.spdRestrActive = !isChecked
                             style = toggleTextColor(style)
                         } ?: run { isChecked = false } }
                     }
-                    if (i < lastWptLegIndex || lastWptLegIndex == -1) textButton(skipText, "ControlPaneSelected${if (skippedChanged) "Changed" else ""}").cell(growX = true, preferredWidth = 0.25f * parentPane.paneWidth, height = 0.125f * UI_HEIGHT).apply {
+                    if (i < lastWptLegIndex || (lastWptLegIndex == -1 && i < route.legs.size - 1)) textButton(skipText, "ControlPaneSelected${if (skippedChanged) "Changed" else ""}").cell(growX = true, preferredWidth = 0.25f * parentPane.paneWidth, height = 0.125f * UI_HEIGHT).apply {
                         if ((leg as? Route.WaypointLeg)?.legActive == false) isChecked = true
                         addChangeListener { _, _ -> Gdx.app.postRunnable {
                                 // Set skipped status for waypoint legs

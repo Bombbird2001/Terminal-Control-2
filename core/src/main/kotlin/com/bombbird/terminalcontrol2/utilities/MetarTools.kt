@@ -40,7 +40,6 @@ fun requestAllMetar() {
             add(MetarRequest.MetarMapper(realIcao, icao))
         }
     })
-    println(Moshi.Builder().build().adapter(MetarRequest::class.java).toJson(metarRequest))
     HttpRequest.sendMetarRequest(Moshi.Builder().build().adapter(MetarRequest::class.java).toJson(metarRequest), true)
 }
 

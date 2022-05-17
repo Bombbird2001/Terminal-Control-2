@@ -283,6 +283,7 @@ class AISystem: EntitySystem() {
     private fun setToFirstRouteLeg(entity: Entity) {
         val actingClearance = entity[ClearanceAct.mapper]?.actingClearance?.actingClearance ?: return
         actingClearance.route.legs.apply {
+            removeAllAdvancedCommandModes(entity)
             entity += LatestClearanceChanged()
             while (size > 0) get(0).let {
                 entity += when (it) {
@@ -333,6 +334,7 @@ class AISystem: EntitySystem() {
         val commandTarget = entity[CommandTarget.mapper] ?: return
         actingClearance.vectorHdg?.let { hdg ->
             // Cleared vector heading
+            removeAllAdvancedCommandModes(entity)
             entity += CommandVector(hdg)
             actingClearance.route.legs.apply {
                 while (size > 0) {
@@ -455,7 +457,8 @@ class AISystem: EntitySystem() {
         }
     }
 
-    /** Gets the appropriate turn direction given the [targetHeading], [currHeading] and the instructed [cmdTurnDir]
+    /**
+     * Gets the appropriate turn direction given the [targetHeading], [currHeading] and the instructed [cmdTurnDir]
      *
      * This is to ensure that after the aircraft turns though the commanded turn direction, it does not perform another
      * 360 degree loop after reaching the [targetHeading] by allowing a window of 3 degrees where the aircraft should
@@ -466,5 +469,12 @@ class AISystem: EntitySystem() {
         return if (withinRange(findDeltaHeading(currHeading,
                 targetHeading - MAG_HDG_DEV, CommandTarget.TURN_DEFAULT), -3f, 3f)) CommandTarget.TURN_DEFAULT
         else cmdTurnDir
+    }
+
+    /** Removes all persistent advanced command modes from the entity */
+    private fun removeAllAdvancedCommandModes(entity: Entity) {
+        entity.remove<CommandHold>()
+        entity.remove<CommandDirect>()
+        entity.remove<CommandInitClimb>()
     }
 }

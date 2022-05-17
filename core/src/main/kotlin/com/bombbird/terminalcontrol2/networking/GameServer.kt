@@ -1,7 +1,6 @@
 package com.bombbird.terminalcontrol2.networking
 
 import com.badlogic.ashley.core.Engine
-import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.math.MathUtils
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.*
@@ -21,6 +20,8 @@ import ktx.ashley.get
 import ktx.ashley.plusAssign
 import ktx.collections.GdxArray
 import ktx.collections.GdxArrayMap
+import java.util.concurrent.ArrayBlockingQueue
+import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.thread
 import kotlin.math.roundToLong
@@ -40,6 +41,9 @@ class GameServer {
         get() = loopRunning.get()
     private val server = Server()
     val engine = Engine()
+
+    // Blocking queue to store aircraft clearance updates in a different thread as the main thread
+    val pendingClearanceQueue = ConcurrentLinkedQueue<NetworkPendingClearanceObject>()
 
     val sectors = GdxArray<Sector>(SECTOR_SIZE)
     val aircraft = GdxArrayMap<String, Aircraft>(AIRCRAFT_SIZE)
@@ -140,10 +144,8 @@ class GameServer {
         server.addListener(object: Listener {
             override fun received(connection: Connection?, obj: Any?) {
                 // TODO Handle receive requests
-                Gdx.app.postRunnable {
-                    (obj as? SerialisationRegistering.AircraftControlStateUpdateData)?.apply {
-                        aircraft[obj.callsign]?.entity?.let { addNewClearanceToPendingClearances(it, obj, connection?.returnTripTime ?: 0) }
-                    }
+                (obj as? SerialisationRegistering.AircraftControlStateUpdateData)?.apply {
+                    pendingClearanceQueue.offer(NetworkPendingClearanceObject(this, connection?.returnTripTime ?: 0))
                 }
             }
 
@@ -233,6 +235,14 @@ class GameServer {
 
         engine.update(delta)
         // println(engine.entities.size())
+
+        // Process pending aircraft clearances from networking thread
+        while (true) {
+            val obj = pendingClearanceQueue.poll() ?: break
+            aircraft[obj.aircraftControlStateUpdateData.callsign]?.entity?.let {
+                addNewClearanceToPendingClearances(it, obj.aircraftControlStateUpdateData, obj.returnTripTime)
+            }
+        }
     }
 
     /** Update function that runs at a lower frequency, [UPDATE_RATE_LOW_FREQ] times a second */
@@ -295,4 +305,13 @@ class GameServer {
     private fun sendTCPToAll() {
         // TODO send data
     }
+
+    /**
+     * Helper class for storage in an [ArrayBlockingQueue] for aircraft control state updates received by the server thread
+     *
+     * [aircraftControlStateUpdateData] is the actual control state update data
+     *
+     * [returnTripTime] is the TCP return trip time at the time of receipt
+     * */
+    class NetworkPendingClearanceObject(val aircraftControlStateUpdateData: SerialisationRegistering.AircraftControlStateUpdateData, val returnTripTime: Int)
 }

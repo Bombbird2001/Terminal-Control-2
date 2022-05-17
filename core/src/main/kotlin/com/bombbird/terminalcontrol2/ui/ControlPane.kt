@@ -2,11 +2,14 @@ package com.bombbird.terminalcontrol2.ui
 
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.scenes.scene2d.Actor
+import com.badlogic.gdx.scenes.scene2d.ui.Label
+import com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle
 import com.badlogic.gdx.scenes.scene2d.ui.SelectBox.SelectBoxStyle
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton.TextButtonStyle
 import com.badlogic.gdx.utils.Align
 import com.bombbird.terminalcontrol2.components.AircraftInfo
 import com.bombbird.terminalcontrol2.components.ClearanceAct
+import com.bombbird.terminalcontrol2.components.CommandTarget
 import com.bombbird.terminalcontrol2.components.WaypointInfo
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.Route
@@ -16,6 +19,7 @@ import ktx.collections.GdxArray
 import ktx.collections.toGdxArray
 import ktx.scene2d.*
 import kotlin.math.min
+import kotlin.math.roundToInt
 
 /** Helper object for UI pane's control pane */
 class ControlPane {
@@ -41,6 +45,8 @@ class ControlPane {
     private var directLeg: Route.Leg? = null
     private var directButtonArray = GdxArray<KTextButton>(10)
 
+    private lateinit var vectorLabel: Label
+
     /**
      * Creates a new table with elements of the control pane
      *
@@ -65,13 +71,22 @@ class ControlPane {
                 table {
                     // First row of mode buttons - Route, Hold, Vectors
                     routeModeButton = textButton("Route", "ControlPaneSelected").cell(grow = true, preferredWidth = paneWidth / 3).apply {
-                        addChangeListener { _, _ -> setPaneLateralMode(UIPane.MODE_ROUTE) }
+                        addChangeListener { _, _ ->
+                            if (modificationInProgress) return@addChangeListener
+                            setPaneLateralMode(UIPane.MODE_ROUTE)
+                        }
                     }
                     holdModeButton = textButton("Hold", "ControlPaneSelected").cell(grow = true, preferredWidth = paneWidth / 3).apply {
-                        addChangeListener { _, _ -> setPaneLateralMode(UIPane.MODE_HOLD) }
+                        addChangeListener { _, _ ->
+                            if (modificationInProgress) return@addChangeListener
+                            setPaneLateralMode(UIPane.MODE_HOLD)
+                        }
                     }
                     vectorModeButton = textButton("Vectors", "ControlPaneSelected").cell(grow = true, preferredWidth = paneWidth / 3).apply {
-                        addChangeListener { _, _ -> setPaneLateralMode(UIPane.MODE_VECTOR) }
+                        addChangeListener { _, _ ->
+                            if (modificationInProgress) return@addChangeListener
+                            setPaneLateralMode(UIPane.MODE_VECTOR)
+                        }
                     }
                 }.cell(preferredWidth = paneWidth, height = UI_HEIGHT * 0.125f, growX = true, align = Align.top)
                 row()
@@ -229,19 +244,37 @@ class ControlPane {
             row()
             table {
                 table {
-                    textButton("-90", "ControlPaneHdgDark").cell(grow = true, preferredHeight = (0.5f * UI_HEIGHT - 40f) / 3)
+                    textButton("-90", "ControlPaneHdgDark").cell(grow = true, preferredHeight = (0.5f * UI_HEIGHT - 40f) / 3).addChangeListener { _, _ ->
+                        updateVectorHdgValue(-90)
+                        updateUndoTransmitButtonStates()
+                    }
                     row()
-                    textButton("-10", "ControlPaneHdgDark").cell(grow = true, preferredHeight = (0.5f * UI_HEIGHT - 40f) / 3)
+                    textButton("-10", "ControlPaneHdgDark").cell(grow = true, preferredHeight = (0.5f * UI_HEIGHT - 40f) / 3).addChangeListener { _, _ ->
+                        updateVectorHdgValue(-10)
+                        updateUndoTransmitButtonStates()
+                    }
                     row()
-                    textButton("-5", "ControlPaneHdgDark").cell(grow = true, preferredHeight = (0.5f * UI_HEIGHT - 40f) / 3)
+                    textButton("-5", "ControlPaneHdgDark").cell(grow = true, preferredHeight = (0.5f * UI_HEIGHT - 40f) / 3).addChangeListener { _, _ ->
+                        updateVectorHdgValue(-5)
+                        updateUndoTransmitButtonStates()
+                    }
                 }.cell(grow = true, preferredWidth = 0.4f * paneWidth, padLeft = 10f)
-                label("360", "ControlPaneHdg").apply { setAlignment(Align.center) }.cell(grow = true, preferredWidth = 0.3f * paneWidth - 20f)
+                vectorLabel = label("360", "ControlPaneHdg").apply { setAlignment(Align.center) }.cell(grow = true, preferredWidth = 0.3f * paneWidth - 20f)
                 table {
-                    textButton("+90", "ControlPaneHdgDark").cell(grow = true, preferredHeight = (0.5f * UI_HEIGHT - 40f) / 3)
+                    textButton("+90", "ControlPaneHdgDark").cell(grow = true, preferredHeight = (0.5f * UI_HEIGHT - 40f) / 3).addChangeListener { _, _ ->
+                        updateVectorHdgValue(90)
+                        updateUndoTransmitButtonStates()
+                    }
                     row()
-                    textButton("+10", "ControlPaneHdgDark").cell(grow = true, preferredHeight = (0.5f * UI_HEIGHT - 40f) / 3)
+                    textButton("+10", "ControlPaneHdgDark").cell(grow = true, preferredHeight = (0.5f * UI_HEIGHT - 40f) / 3).addChangeListener { _, _ ->
+                        updateVectorHdgValue(10)
+                        updateUndoTransmitButtonStates()
+                    }
                     row()
-                    textButton("+5", "ControlPaneHdgDark").cell(grow = true, preferredHeight = (0.5f * UI_HEIGHT - 40f) / 3)
+                    textButton("+5", "ControlPaneHdgDark").cell(grow = true, preferredHeight = (0.5f * UI_HEIGHT - 40f) / 3).addChangeListener { _, _ ->
+                        updateVectorHdgValue(5)
+                        updateUndoTransmitButtonStates()
+                    }
                 }.cell(grow = true, preferredWidth = 0.4f * paneWidth, padRight = 10f)
             }.cell(preferredWidth = paneWidth, preferredHeight = 0.5f * UI_HEIGHT - 40f, padBottom = 20f)
             isVisible = false
@@ -352,6 +385,7 @@ class ControlPane {
         routeLegsTable.clear()
         directButtonArray.clear()
         var firstDirectSet = false
+        var firstAvailableLeg: Route.Leg? = null // The first leg that can be set as selected in case previous direct leg doesn't match any leg
         routeLegsTable.apply {
             for (i in 0 until route.legs.size) {
                 route.legs[i].also { leg ->
@@ -362,6 +396,7 @@ class ControlPane {
                         WaypointInfo.mapper)?.wptName}" } ?:
                     (leg as? Route.DiscontinuityLeg)?.let { "Discontinuity" } ?:
                     (leg as? Route.InitClimbLeg)?.heading?.let { hdg -> "Climb on\nHDG $hdg" } ?: return@also
+                    if (firstAvailableLeg == null) firstAvailableLeg = leg
                     val restrTriple = (leg as? Route.WaypointLeg)?.let { checkRestrChanged(parentPane.clearanceState.route, it) } ?: Triple(false, false, false)
                     val altRestrDisplay = (leg as? Route.WaypointLeg)?.let { wptLeg ->
                         var restr = wptLeg.maxAltFt?.toString() ?: ""
@@ -377,8 +412,9 @@ class ControlPane {
                     } ?: (leg as? Route.InitClimbLeg)?.let { "ControlPaneBottomAltRestr" } ?: "ControlPaneRoute"
                     val spdRestr = (leg as? Route.WaypointLeg)?.maxSpdKt?.let { spd -> "${spd}kts" } ?: ""
                     val spdRestrStyle = if ((leg as? Route.WaypointLeg)?.spdRestrActive == true) "ControlPaneRoute" else "ControlPaneSpdRestrCancel" + if (restrTriple.second) "Changed" else ""
-                    directButtonArray.add(textButton("=>", if (i == 0) "ControlPaneRouteDirect" else "ControlPaneRouteDirectChanged").cell(growX = true, preferredWidth = 0.2f * parentPane.paneWidth, preferredHeight = 0.1f * UI_HEIGHT).apply {
-                        if (directLeg?.let { compareLegEquality(it, leg) } != false) {
+                    directButtonArray.add(textButton("=>", if (!firstDirectSet) "ControlPaneRouteDirect" else "ControlPaneRouteDirectChanged").cell(growX = true, preferredWidth = 0.2f * parentPane.paneWidth, preferredHeight = 0.1f * UI_HEIGHT).apply {
+                        if (!firstDirectSet && directLeg?.let { compareLegEquality(it, leg) } != false) {
+                            // If this leg is equal to the selected direct leg, set as checked
                             isChecked = true
                             directLeg = leg
                             firstDirectSet = true
@@ -389,6 +425,7 @@ class ControlPane {
                             if (!isChecked) isChecked = true
                             else {
                                 val prevLegIndex = directLeg?.let {
+                                    // Find the index of the previously selected leg
                                     var index: Int? = null // Additional variable for finding index as making prevLegIndex a var prevents smart cast in this changing closure below
                                     for (j in 0 until route.legs.size) {
                                         if (compareLegEquality(it, route.legs[j])) {
@@ -399,16 +436,18 @@ class ControlPane {
                                     index
                                 }
                                 for (j in 0 until directButtonArray.size) {
+                                    // Uncheck all buttons except for this one
                                     if (j != i) directButtonArray[j].isChecked = false
                                     (route.legs[j] as? Route.WaypointLeg)?.let {
-                                        if (j < i) it.legActive = false
-                                        else if (j == i) it.legActive = true
-                                        else if (prevLegIndex != null && j <= prevLegIndex) it.legActive = true
+                                        if (j < i) it.legActive = false // All legs before are no longer active
+                                        else if (j == i) it.legActive = true // This leg is active
+                                        else if (prevLegIndex != null && j <= prevLegIndex) it.legActive = true // If a leg was selected previously, set all legs from this to the previous leg as active
                                     }
-                                    directLeg = leg
+                                    directLeg = leg // Update the new direct leg to this
                                 }
                             }
                             modificationInProgress = false
+                            updateUndoTransmitButtonStates()
                         }
                     })
                     label(legDisplay, "ControlPaneRoute").apply { setAlignment(Align.center) }.cell(growX = true, preferredWidth = 0.2f * parentPane.paneWidth)
@@ -419,9 +458,30 @@ class ControlPane {
             }
         }
         if (!firstDirectSet && route.legs.size > 0 && directButtonArray.size > 0) {
-            directLeg = route.legs[0]
+            // No selected leg was found - possibly due reasons such as the first leg being skipped in edit route pane
+            // Set selection to the first available leg found earlier (i.e. the first non-skipped leg)
+            directLeg = firstAvailableLeg
+            modificationInProgress = true
             directButtonArray[0].isChecked = true
+            modificationInProgress = false
         }
+    }
+     /**
+      * Updates the heading display in [vectorTable]
+      * @param vectorHdg the currently cleared vector heading
+      * */
+    fun updateVectorTable(vectorHdg: Short?) {
+         vectorLabel.setText(vectorHdg?.toString() ?: "0")
+         vectorLabel.style = Scene2DSkin.defaultSkin["ControlPaneHdg${if (parentPane.clearanceState.vectorHdg != parentPane.userClearanceState.vectorHdg) "Changed" else ""}", LabelStyle::class.java]
+    }
+
+    /**
+     * Updates the user clearance vector heading with the input delta value, and updates the [vectorLabel] as well
+     * @param change the change in heading that will be added to the user clearance vector heading
+     * */
+    private fun updateVectorHdgValue(change: Short) {
+        parentPane.userClearanceState.vectorHdg = parentPane.userClearanceState.vectorHdg?.plus(change)?.toShort()?.let { modulateHeading(it.toFloat()).toInt().toShort() }
+        updateVectorTable(parentPane.userClearanceState.vectorHdg)
     }
 
     /**
@@ -431,6 +491,7 @@ class ControlPane {
      * @param mode the pane mode to show
      * */
     private fun setPaneLateralMode(mode: Byte) {
+        modificationInProgress = true
         when (mode) {
             UIPane.MODE_ROUTE -> {
                 if (!routeModeButton.isChecked) return
@@ -440,6 +501,8 @@ class ControlPane {
                 holdTable.isVisible = false
                 vectorTable.isVisible = false
                 lateralContainer.actor = routeTable
+                parentPane.userClearanceState.vectorHdg = null
+                updateUndoTransmitButtonStates()
             }
             UIPane.MODE_HOLD -> {
                 if (!holdModeButton.isChecked) return
@@ -449,6 +512,8 @@ class ControlPane {
                 holdTable.isVisible = true
                 vectorTable.isVisible = false
                 lateralContainer.actor = holdTable
+                parentPane.userClearanceState.vectorHdg = null
+                updateUndoTransmitButtonStates()
             }
             UIPane.MODE_VECTOR -> {
                 if (!vectorModeButton.isChecked) return
@@ -458,9 +523,15 @@ class ControlPane {
                 holdTable.isVisible = false
                 vectorTable.isVisible = true
                 lateralContainer.actor = vectorTable
+                if (parentPane.userClearanceState.vectorHdg == null && parentPane.clearanceState.vectorHdg == null)
+                    parentPane.userClearanceState.vectorHdg = GAME.gameClientScreen?.selectedAircraft?.entity?.get(CommandTarget.mapper)?.targetHdgDeg?.roundToInt()?.toShort() ?: 360
+                else if (parentPane.userClearanceState.vectorHdg == null) parentPane.userClearanceState.vectorHdg = parentPane.clearanceState.vectorHdg
+                updateVectorTable(parentPane.userClearanceState.vectorHdg)
+                updateUndoTransmitButtonStates()
             }
             else -> Gdx.app.log("UIPane", "Unknown lateral mode $mode")
         }
+        modificationInProgress = false
     }
 
     /** Sets the style of the Undo All and Transmit buttons to that of when the clearance state is changed */

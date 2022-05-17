@@ -152,6 +152,7 @@ fun checkClearanceEquality(clearanceState1: ClearanceState, clearanceState2: Cle
     if (!checkRouteEqualityStrict(clearanceState1.route, clearanceState2.route)) return false
     if (!checkRouteEqualityStrict(clearanceState1.hiddenLegs, clearanceState2.hiddenLegs)) return false
     return clearanceState1.routePrimaryName == clearanceState2.routePrimaryName &&
+            clearanceState1.vectorHdg == clearanceState2.vectorHdg &&
             clearanceState1.clearedAlt == clearanceState2.clearedAlt &&
             clearanceState1.clearedIas == clearanceState2.clearedIas
 }
