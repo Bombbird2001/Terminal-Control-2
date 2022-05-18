@@ -54,12 +54,13 @@ class UIPane(private val uiStage: Stage) {
             mainInfoPane = mainInfoPane(paneWidth)
             controlPane = controlObj.controlPane(this@UIPane, this, paneWidth) {
                 routeEditObj.updateEditRouteTable(userClearanceState.route)
+                routeEditObj.updateUndoTransmitButtonStates()
                 setToEditRoutePane()
             }
             routeEditPane = routeEditObj.routeEditPane(this@UIPane, this, paneWidth) {
-                setToControlPane()
                 controlObj.updateRouteTable(userClearanceState.route)
                 controlObj.updateUndoTransmitButtonStates()
+                setToControlPane()
             }
         }
         uiStage.camera.apply {

@@ -69,13 +69,12 @@ fun printAirportApproaches(entity: Entity) {
     }
 }
 
-/** Toggles the color of the MVA(s) tapped, and also prints their details out
- *
- * [x], [y] is the tap location
- *
- * [unprojectFromRadarCamera] is the function that maps tap location to world coordinates
- *
- * [clientEngine] is the engine running on the client (not the server engine)
+/**
+ * Toggles the color of the MVA(s) tapped, and also prints their details out
+ * @param x the x coordinate of the screen tap location
+ * @param y the y coordinate of the screen tap location
+ * @param unprojectFromRadarCamera the function that maps tap location to world coordinates
+ * @param clientEngine the engine running on the client (not the server engine)
  * */
 fun toggleMinAltSectorsOnClick(x: Float, y: Float, unprojectFromRadarCamera: (Float, Float) -> Vector2, clientEngine: Engine) {
     unprojectFromRadarCamera(x, y).apply { println("${pxToNm(this.x)} ${pxToNm(this.y)}") }

@@ -9,10 +9,7 @@ import com.bombbird.terminalcontrol2.components.WaypointInfo
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.UI_HEIGHT
 import com.bombbird.terminalcontrol2.navigation.Route
-import com.bombbird.terminalcontrol2.utilities.addChangeListener
-import com.bombbird.terminalcontrol2.utilities.checkLegChanged
-import com.bombbird.terminalcontrol2.utilities.checkRestrChanged
-import com.bombbird.terminalcontrol2.utilities.removeMouseScrollListeners
+import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.get
 import ktx.collections.toGdxArray
 import ktx.scene2d.*
@@ -22,6 +19,9 @@ class RouteEditPane {
     private lateinit var parentPane: UIPane
 
     private lateinit var routeEditTable: KTableWidget
+
+    private lateinit var undoButton: KTextButton
+    private lateinit var confirmButton: KTextButton
 
     /**
      * @param uiPane the parent UI pane this control pane belongs to
@@ -38,8 +38,18 @@ class RouteEditPane {
             // debugAll()
             table {
                 table {
-                    textButton("Cancel all\nAlt restr.", "ControlPaneButton").cell(grow = true, preferredWidth = 0.3f * paneWidth)
-                    textButton("Cancel all\nSpd restr.", "ControlPaneButton").cell(grow = true, preferredWidth = 0.3f * paneWidth)
+                    textButton("Cancel all\nAlt restr.", "ControlPaneButton").cell(grow = true, preferredWidth = 0.3f * paneWidth).addChangeListener { _, _ ->
+                        val route = parentPane.userClearanceState.route
+                        for (i in 0 until route.legs.size) (route.legs[i] as? Route.WaypointLeg)?.apply { if (minAltFt != null || maxAltFt != null) altRestrActive = false }
+                        updateEditRouteTable(route)
+                        updateUndoTransmitButtonStates()
+                    }
+                    textButton("Cancel all\nSpd restr.", "ControlPaneButton").cell(grow = true, preferredWidth = 0.3f * paneWidth).addChangeListener { _, _ ->
+                        val route = parentPane.userClearanceState.route
+                        for (i in 0 until route.legs.size) (route.legs[i] as? Route.WaypointLeg)?.apply { if (maxSpdKt != null) spdRestrActive = false }
+                        updateEditRouteTable(route)
+                        updateUndoTransmitButtonStates()
+                    }
                     selectBox<String>("ControlPane") {
                         items = arrayOf("Change STAR", "TNN1B", "TONGA1A", "TONGA1B").toGdxArray()
                         setAlignment(Align.center)
@@ -57,14 +67,19 @@ class RouteEditPane {
                 }.cell(preferredWidth = paneWidth, preferredHeight = 0.8f * UI_HEIGHT - 40f, grow = true, padTop = 20f, padBottom = 20f, align = Align.top)
                 row()
                 table {
-                    textButton("Undo", "ControlPaneButton").cell(grow = true, preferredWidth = 0.5f * paneWidth).addChangeListener { _, _ ->
-                        // Reset the user clearance route to that of the default clearance
-                        parentPane.userClearanceState.route.setToRouteCopy(parentPane.clearanceState.route)
-                        parentPane.userClearanceState.hiddenLegs.setToRouteCopy(parentPane.clearanceState.hiddenLegs)
-                        updateEditRouteTable(parentPane.userClearanceState.route)
+                    undoButton = textButton("Undo", "ControlPaneButton").cell(grow = true, preferredWidth = 0.5f * paneWidth).apply {
+                        addChangeListener { _, _ ->
+                            // Reset the user clearance route to that of the default clearance
+                            parentPane.userClearanceState.route.setToRouteCopy(parentPane.clearanceState.route)
+                            parentPane.userClearanceState.hiddenLegs.setToRouteCopy(parentPane.clearanceState.hiddenLegs)
+                            updateEditRouteTable(parentPane.userClearanceState.route)
+                            setUndoConfirmButtonsUnchanged()
+                        }
                     }
-                    textButton("Confirm", "ControlPaneButton").cell(grow = true, preferredWidth = 0.5f * paneWidth).addChangeListener { _, _ ->
-                        confirmFunction()
+                    confirmButton = textButton("Confirm", "ControlPaneButton").cell(grow = true, preferredWidth = 0.5f * paneWidth).apply {
+                        addChangeListener { _, _ ->
+                            confirmFunction()
+                        }
                     }
                 }.cell(growX = true, height = 0.1f * UI_HEIGHT)
             }
@@ -117,6 +132,7 @@ class RouteEditPane {
                         if (altRestr.isNotBlank()) addChangeListener { _, _ -> (leg as? Route.WaypointLeg)?.let {
                             it.altRestrActive = !isChecked
                             style = toggleTextColor(style)
+                            updateUndoTransmitButtonStates()
                         } ?: run { isChecked = false } }
                     }
                     val spdButton = textButton(spdRestr, "ControlPaneRestr${if (spdRestrChanged) "Changed" else ""}").cell(growX = true, preferredWidth = 0.25f * parentPane.paneWidth, height = 0.125f * UI_HEIGHT).apply {
@@ -124,6 +140,7 @@ class RouteEditPane {
                         if (spdRestr.isNotBlank()) addChangeListener { _, _ -> (leg as? Route.WaypointLeg)?.let {
                             it.spdRestrActive = !isChecked
                             style = toggleTextColor(style)
+                            updateUndoTransmitButtonStates()
                         } ?: run { isChecked = false } }
                     }
                     if (i < lastWptLegIndex || (lastWptLegIndex == -1 && i < route.legs.size - 1)) textButton(skipText, "ControlPaneSelected${if (skippedChanged) "Changed" else ""}").cell(growX = true, preferredWidth = 0.25f * parentPane.paneWidth, height = 0.125f * UI_HEIGHT).apply {
@@ -149,6 +166,7 @@ class RouteEditPane {
                                     remove()
                                     route.legs.removeValue(leg, false)
                                 }
+                            updateUndoTransmitButtonStates()
                             }}
                     }
                     row()
@@ -163,5 +181,28 @@ class RouteEditPane {
      * */
     private fun toggleTextColor(style: TextButtonStyle): TextButtonStyle {
         return Scene2DSkin.defaultSkin[if (style.fontColor == Color.WHITE) "ControlPaneRestrChanged" else "ControlPaneRestr", TextButtonStyle::class.java]
+    }
+
+    /** Sets the style of the Undo and Confirm buttons to that of when the route is changed */
+    private fun setUndoConfirmButtonsChanged() {
+        val newStyle = Scene2DSkin.defaultSkin["ControlPaneButtonChanged", TextButtonStyle::class.java]
+        confirmButton.style = newStyle
+        undoButton.style = newStyle
+    }
+
+    /** Sets the style of the Undo and Confirm buttons to that of when the route is unchanged */
+    private fun setUndoConfirmButtonsUnchanged() {
+        val newStyle = Scene2DSkin.defaultSkin["ControlPaneButton", TextButtonStyle::class.java]
+        confirmButton.style = newStyle
+        undoButton.style = newStyle
+    }
+
+    /**
+     * Updates the appropriate changed/unchanged button styles for the Undo and Confirm buttons depending on the current
+     * state of [Route] in the UI pane's clearance states
+     * */
+    fun updateUndoTransmitButtonStates() {
+        if (checkRouteEqualityStrict(parentPane.clearanceState.route, parentPane.userClearanceState.route)) setUndoConfirmButtonsUnchanged()
+        else setUndoConfirmButtonsChanged()
     }
 }
