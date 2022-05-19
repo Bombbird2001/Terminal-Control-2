@@ -119,7 +119,7 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
                 val srColor = get(SRColor.mapper) ?: return@apply
                 val wind = get(AffectedByWind.mapper)
                 val spdVector = Vector2(rData.direction.trackUnitVector).scl(ktToPxps(rData.speed.speedKts) * 90) // TODO change projection time based on settings
-                val windVector = wind?.windVectorPx?.let { Vector2(it).scl(90f) }
+                val windVector = wind?.windVectorPxps?.let { Vector2(it).scl(90f) }
                 shapeRenderer.color = srColor.color
                 shapeRenderer.line(rData.position.x, rData.position.y, rData.position.x + spdVector.x + (windVector?.x ?: 0f), rData.position.y + spdVector.y + (windVector?.y ?: 0f))
             }

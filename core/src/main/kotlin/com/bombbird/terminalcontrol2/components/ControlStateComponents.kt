@@ -47,6 +47,16 @@ data class ContactToCentre(var altitudeFt: Int = 0): Component {
     companion object: Mapper<ContactToCentre>()
 }
 
+/** Component for tagging aircraft that should accelerate to their trip speed (> 250 knots) once above 10000 feet */
+class AccelerateToAbove250kts: Component {
+    companion object: Mapper<AccelerateToAbove250kts>()
+}
+
+/** Component for tagging aircraft that should decelerate to 240 knots when nearing 10000 feet */
+class DecelerateTo240kts: Component {
+    companion object: Mapper<AccelerateToAbove250kts>()
+}
+
 /**
  * Component for tagging the pending [ClearanceState]s an aircraft has been cleared, as well as the corresponding reaction
  * time, after the preceding clearance, for each clearance

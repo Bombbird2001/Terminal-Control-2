@@ -28,6 +28,7 @@ class AISystem: EntitySystem() {
         updateTakeoffAcceleration()
         updateTakeoffClimb()
         updateCommandTarget()
+        update10000ftSpeed()
     }
 
     /** Set the acceleration for takeoff aircraft */
@@ -43,26 +44,13 @@ class AISystem: EntitySystem() {
                 val dir = get(Direction.mapper) ?: return@apply
                 val wind = get(AffectedByWind.mapper) ?: return@apply
                 ias.iasKt = calculateIASFromTAS(alt.altitudeFt, spd.speedKts)
-                if (ias.iasKt >= aircraftInfo.aircraftPerf.vR + calculateIASFromTAS(alt.altitudeFt, pxpsToKt(wind.windVectorPx.dot(dir.trackUnitVector)))) {
+                if (ias.iasKt >= aircraftInfo.aircraftPerf.vR + calculateIASFromTAS(alt.altitudeFt, pxpsToKt(wind.windVectorPxps.dot(dir.trackUnitVector)))) {
                     // Transition to takeoff climb mode
                     remove<TakeoffRoll>()
                     this += TakeoffClimb(alt.altitudeFt + MathUtils.random(1200, 1800))
+                    this += AccelerateToAbove250kts()
                     // Transition to first leg on route if present, otherwise maintain runway heading
-                    get(ClearanceAct.mapper)?.actingClearance?.actingClearance?.route?.legs?.let {
-                        if (it.size > 0) it.get(0).also { leg ->
-                            this += when (leg) {
-                                is Route.VectorLeg -> CommandVector(leg.heading)
-                                is Route.InitClimbLeg -> CommandInitClimb(leg.heading, leg.minAltFt)
-                                is Route.WaypointLeg -> CommandDirect(leg.wptId, leg.maxAltFt, leg.minAltFt, leg.maxSpdKt, leg.flyOver, leg.turnDir)
-                                is Route.HoldLeg -> CommandHold(leg.wptId, leg.maxAltFt, leg.minAltFt, leg.maxSpdKtLower, leg.inboundHdg, leg.legDist, leg.turnDir)
-                                else -> {
-                                    Gdx.app.log("AISystem", "${leg::class} not allowed in departure")
-                                    return@let
-                                }
-                            }
-                            this += LatestClearanceChanged()
-                        }
-                    }
+                    setToFirstRouteLeg(this)
                     return@apply
                 }
                 val acc = get(Acceleration.mapper) ?: return@apply
@@ -74,7 +62,7 @@ class AISystem: EntitySystem() {
 
     /** Set initial takeoff climb, transition to acceleration for departing aircraft */
     private fun updateTakeoffClimb() {
-        val takeoffClimbFamily = allOf(Altitude::class, CommandTarget::class, TakeoffClimb::class, ClearanceAct::class).get()
+        val takeoffClimbFamily = allOf(Altitude::class, CommandTarget::class, TakeoffClimb::class, ClearanceAct::class, AircraftInfo::class).get() // TODO occasional indexOutOfBoundsException here
         val takeoffClimb = engine.getEntitiesFor(takeoffClimbFamily)
         for (i in 0 until takeoffClimb.size()) {
             takeoffClimb[i]?.apply {
@@ -82,11 +70,57 @@ class AISystem: EntitySystem() {
                 val cmd = get(CommandTarget.mapper) ?: return@apply
                 val tkOff = get(TakeoffClimb.mapper) ?: return@apply
                 val clearanceAct = get(ClearanceAct.mapper)?.actingClearance?.actingClearance ?: return@apply
+                val perf = get(AircraftInfo.mapper)?.aircraftPerf ?: return@apply
                 if (alt.altitudeFt > tkOff.accelAltFt) {
                     // Climbed past acceleration altitude, set new target IAS and remove takeoff climb component
-                    cmd.targetIasKt = clearanceAct.route.getNextMaxSpd() ?: 250
+                    cmd.targetIasKt = min(clearanceAct.route.getNextMaxSpd()?.toInt() ?: 250, min(250, perf.maxIas.toInt())).toShort()
                     clearanceAct.clearedIas = cmd.targetIasKt
                     remove<TakeoffClimb>()
+                    this += LatestClearanceChanged()
+                }
+            }
+        }
+    }
+
+    /** Update cleared IAS changes at 10000 feet */
+    private fun update10000ftSpeed() {
+        // Update for aircraft going faster than 250 knots above 10000 feet
+        val above250Family = allOf(AccelerateToAbove250kts::class, Altitude::class, CommandTarget::class, ClearanceAct::class).get()
+        val above250 = engine.getEntitiesFor(above250Family)
+        for (i in 0 until above250.size()) {
+            above250[i]?.apply {
+                val alt = get(Altitude.mapper) ?: return@apply
+                val cmd = get(CommandTarget.mapper) ?: return@apply
+                val clearanceAct = get(ClearanceAct.mapper) ?: return@apply
+                if (alt.altitudeFt > 10000) {
+                    val spds = getMinMaxOptimalIAS(this)
+                    cmd.targetIasKt = spds.third // If aircraft is still constrained by SIDs, it will automatically accelerate to optimal speed later
+                    clearanceAct.actingClearance.actingClearance.let {
+                        it.clearedIas = spds.third
+                        it.optimalIas = spds.third
+                        it.maxIas = spds.second
+                        it.minIas = spds.first
+                    }
+                    remove<AccelerateToAbove250kts>()
+                    this += LatestClearanceChanged()
+                }
+            }
+        }
+
+        // Update aircraft to slow down before reaching 10000 feet
+        val below240Family = allOf(AircraftInfo::class, DecelerateTo240kts::class, Altitude::class, CommandTarget::class, ClearanceAct::class).get()
+        val below240 = engine.getEntitiesFor(below240Family)
+        for (i in 0 until below240.size()) {
+            below240[i]?.apply {
+                val alt = get(Altitude.mapper) ?: return@apply
+                val cmd = get(CommandTarget.mapper) ?: return@apply
+                val clearanceAct = get(ClearanceAct.mapper) ?: return@apply
+                if (alt.altitudeFt < 11000 && cmd.targetAltFt < 10000) {
+                    if (cmd.targetIasKt > 240) {
+                        cmd.targetIasKt = 240
+                        clearanceAct.actingClearance.actingClearance.clearedIas = 240
+                    }
+                    remove<DecelerateTo240kts>()
                     this += LatestClearanceChanged()
                 }
             }
@@ -162,7 +196,7 @@ class AISystem: EntitySystem() {
         }
 
         // Update for holding leg
-        val holdFamily = allOf(CommandHold::class, CommandTarget::class, Position::class, Speed::class, Direction::class).get()
+        val holdFamily = allOf(CommandHold::class, CommandTarget::class, Position::class, Speed::class, Direction::class).get() // TODO occasional indexOutOfBoundsException here
         val hold = engine.getEntitiesFor(holdFamily)
         for (i in 0 until hold.size()) {
             hold[i]?.apply {
@@ -250,28 +284,6 @@ class AISystem: EntitySystem() {
         }
     }
 
-    /** Returns a pair of floats, which contains the track that the plane needs to fly as well as its ground speed (accounted for [wind] if any)
-     *
-     * [x1], [y1] is the present position and [x2], [y2] is the target destination
-     *
-     * [speedKts] is the true airspeed of the aircraft
-     *
-     * [dir] is the [Direction] component of the aircraft
-     * */
-    private fun getPointTargetTrackAndGS(x1: Float, y1: Float, x2: Float, y2: Float, speedKts: Float, dir: Direction, wind: AffectedByWind?): Pair<Float, Float> {
-        var targetTrack = getRequiredTrack(x1, y1, x2, y2).toDouble()
-        var groundSpeed = speedKts
-        if (wind != null) {
-            // Calculate angle difference required due to wind component
-            val angle = 180.0 - convertWorldAndRenderDeg(wind.windVectorPx.angleDeg()) + convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg())
-            val windSpdKts = pxpsToKt(wind.windVectorPx.len())
-            groundSpeed = sqrt(speedKts.pow(2.0f) + windSpdKts.pow(2.0f) - 2 * speedKts * windSpdKts * cos(Math.toRadians(angle))).toFloat()
-            val angleOffset = asin(windSpdKts * sin(Math.toRadians(angle)) / groundSpeed) * MathUtils.radiansToDegrees
-            targetTrack -= angleOffset
-        }
-        return Pair(targetTrack.toFloat(), groundSpeed)
-    }
-
     /**
      * Adds the required component for the first leg
      *
@@ -303,11 +315,12 @@ class AISystem: EntitySystem() {
                             it.maxAltFt?.let { maxAltFt -> restr.maxAltFt = maxAltFt }
                             it.maxSpdKt?.let { maxSpdKt -> restr.maxSpdKt = maxSpdKt }
                         }
-                        updateWaypointLegAltRestr(entity)
+                        updateWaypointLegRestr(entity)
                         CommandDirect(it.wptId, it.maxAltFt, it.minAltFt, it.maxSpdKt, it.flyOver, it.turnDir)
                     }
                     is Route.HoldLeg -> CommandHold(it.wptId, it.maxAltFt, it.minAltFt, it.maxSpdKtLower, it.inboundHdg, it.legDist, it.turnDir)
                     else -> {
+                        Gdx.app.log("AISystem", "Unknown leg type ${it::class}")
                         removeIndex(0)
                         return@let
                     }
@@ -328,16 +341,18 @@ class AISystem: EntitySystem() {
 
     /**
      * Updates the new command target the aircraft should fly with its current clearance state's altitude clearance and
-     * the restrictions along its route
+     * the altitude, speed restrictions along its route
+     *
+     * Call this function after the aircraft's next waypoint leg has changed
      * @param entity the aircraft entity
      * */
-    private fun updateWaypointLegAltRestr(entity: Entity) {
+    private fun updateWaypointLegRestr(entity: Entity) {
         val actingClearance = entity[ClearanceAct.mapper]?.actingClearance?.actingClearance ?: return
         val commandTarget = entity[CommandTarget.mapper] ?: return
         val flightType = entity[FlightType.mapper]
-        val lastRestriction = entity[LastRestrictions.mapper]
+        val lastRestriction = entity[LastRestrictions.mapper] ?: LastRestrictions().apply { entity += this }
         val nextRouteMinAlt = actingClearance.route.getNextMinAlt()
-        val minAlt = lastRestriction?.minAltFt.let { lastMinAlt ->
+        val minAlt = lastRestriction.minAltFt.let { lastMinAlt ->
             when {
                 lastMinAlt != null && nextRouteMinAlt != null -> min(lastMinAlt, nextRouteMinAlt)
                 lastMinAlt != null -> when (flightType?.type) {
@@ -353,10 +368,10 @@ class AISystem: EntitySystem() {
                 else -> null
             }
         }
-        lastRestriction?.minAltFt = nextRouteMinAlt
+        lastRestriction.minAltFt = nextRouteMinAlt
 
         val nextRouteMaxAlt = actingClearance.route.getNextMaxAlt()
-        var maxAlt = lastRestriction?.maxAltFt.let { lastMaxAlt ->
+        var maxAlt = lastRestriction.maxAltFt.let { lastMaxAlt ->
             when {
                 lastMaxAlt != null && nextRouteMaxAlt != null -> max(lastMaxAlt, nextRouteMaxAlt)
                 lastMaxAlt != null -> when (flightType?.type) {
@@ -385,30 +400,21 @@ class AISystem: EntitySystem() {
 
             commandTarget.targetAltFt = targetAlt // Update command target to the new calculated target altitude
         }
-
-        // TODO change this earlier before reaching waypoint so aircraft can cross the waypoint at the speed restriction
-        val nextRouteMaxSpd = actingClearance.route.getNextMaxSpd()
-        val maxSpd = lastRestriction?.maxSpdKt.let { lastMaxSpd ->
-            when {
-                lastMaxSpd != null && nextRouteMaxSpd != null -> max(lastMaxSpd.toInt(), nextRouteMaxSpd.toInt()).toShort()
-                lastMaxSpd != null -> when (flightType?.type) {
-                    FlightType.DEPARTURE -> null// No further max speeds, but aircraft is a departure so allow acceleration beyond previous max speed
-                    FlightType.ARRIVAL -> lastMaxSpd// No further max speeds, use the last max speed
-                    else -> null
-                }
-                nextRouteMaxSpd != null -> when (flightType?.type) {
-                    FlightType.DEPARTURE -> nextRouteMaxSpd// No max speeds before, but aircraft is a departure so must follow all subsequent max speeds
-                    FlightType.ARRIVAL -> null// No max speeds before
-                    else -> null
-                }
-                else -> null
-            }
-        }
-
-        commandTarget.targetIasKt = if (maxSpd != null) min(maxSpd.toInt(), actingClearance.clearedIas.toInt()).toShort() else actingClearance.clearedIas
-        // The new cleared IAS should already be constrained when the player sent the clearance, but in case it exceeds
-        // the speed restriction due to lag or pilot delay, set the acting cleared IAS to follow the constraints
+        val spds = getMinMaxOptimalIAS(entity)
+        val maxSpd = spds.second
+        val optimalSpd = spds.third
+        // If the cleared IAS is currently at the maximum possible and the new max speed is higher than (or equal to, as in
+        // the event of player clearing speed restriction the acting max speed is already set to maxSpd) it, update it to the new optimal speed
+        if (actingClearance.clearedIas == actingClearance.maxIas && maxSpd >= actingClearance.maxIas) commandTarget.targetIasKt = optimalSpd
+        else if (actingClearance.clearedIas > maxSpd) commandTarget.targetIasKt = maxSpd // If currently cleared IAS exceeds max speed restriction
+        val prevMaxIas = actingClearance.maxIas
+        val prevClearedIas = actingClearance.clearedIas
+        actingClearance.maxIas = maxSpd
         actingClearance.clearedIas = commandTarget.targetIasKt
+        if (prevMaxIas != actingClearance.maxIas || prevClearedIas != actingClearance.clearedIas) {
+            val pendingClearances = entity[PendingClearances.mapper]
+            if (pendingClearances == null || pendingClearances.clearanceQueue.isEmpty) entity += LatestClearanceChanged()
+        }
     }
 
     /**

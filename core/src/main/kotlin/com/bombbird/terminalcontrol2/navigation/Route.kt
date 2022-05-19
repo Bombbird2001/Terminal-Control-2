@@ -70,6 +70,15 @@ class Route() {
             return Pair(getRequiredTrack(w1.x, w1.y, w2.x, w2.y), wpt2.turnDir)
         }} ?: return null
     }
+    /**
+     * Gets the first upcoming waypoint leg with a speed restriction; if a non-waypoint leg is reached before finding any
+     * waypoint legs with a restriction, null is returned
+     * @return a [WaypointLeg], or null if no legs with a speed restriction are found
+     * */
+    fun getNextWaypointWithSpdRestr(): WaypointLeg? {
+        for (i in 0 until legs.size) (legs[i] as? WaypointLeg)?.let { if (it.maxSpdKt != null && it.spdRestrActive) return it } ?: return null
+        return null
+    }
 
     /**
      * Gets the speed restriction active at the active leg in the current departure route

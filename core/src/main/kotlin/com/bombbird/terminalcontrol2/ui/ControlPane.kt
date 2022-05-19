@@ -18,6 +18,7 @@ import ktx.ashley.get
 import ktx.collections.GdxArray
 import ktx.collections.toGdxArray
 import ktx.scene2d.*
+import kotlin.math.ceil
 import kotlin.math.min
 import kotlin.math.roundToInt
 
@@ -480,7 +481,10 @@ class ControlPane {
      * @param change the change in heading that will be added to the user clearance vector heading
      * */
     private fun updateVectorHdgValue(change: Short) {
-        parentPane.userClearanceState.vectorHdg = parentPane.userClearanceState.vectorHdg?.plus(change)?.toShort()?.let { modulateHeading(it.toFloat()).toInt().toShort() }
+        parentPane.userClearanceState.vectorHdg = parentPane.userClearanceState.vectorHdg?.plus(change)?.toShort()?.let {
+            val rectifiedHeading = if (change >= 0) (it / 5f).toInt() * 5 else ceil(it / 5f).roundToInt() * 5
+            modulateHeading(rectifiedHeading.toFloat()).toInt().toShort()
+        }
         updateVectorTable(parentPane.userClearanceState.vectorHdg)
     }
 

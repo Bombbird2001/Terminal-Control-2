@@ -118,7 +118,8 @@ fun fpmToMps(fpm: Float): Float {
     return fpm / mpsToFpm(1f)
 }
 
-/** Converts between in-game world degrees and degree used by the rendering systems
+/**
+ * Converts between in-game world degrees and degree used by the rendering systems
  *
  * World heading: 360 is up, 90 is right, 180 is down and 270 is left
  *
@@ -199,7 +200,8 @@ fun getRequiredTrack(x: Int, y: Int, destX: Int, destY: Int): Float {
     return getRequiredTrack((destX - x).toFloat(), (destY - y).toFloat())
 }
 
-/** Calculates the distance, in px, prior to reaching a point required to turn through a heading of [deltaHeading], given the
+/**
+ * Calculates the distance, in px, prior to reaching a point required to turn through a heading of [deltaHeading], given the
  * [turnRateDps] and [groundSpeedPxps] of the aircraft
  *
  * A positive and negative value of [deltaHeading] with the same magnitude should return the same result

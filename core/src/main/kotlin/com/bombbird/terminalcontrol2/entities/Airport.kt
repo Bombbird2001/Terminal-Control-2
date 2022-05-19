@@ -91,7 +91,7 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
                             val stars: Array<SidStar.STAR.SerialisedSTAR> = arrayOf(),
                             val approaches: Array<Approach.SerialisedApproach> = arrayOf(),
                             val metar: SerialisedMetar = SerialisedMetar()
-    ) // TODO Also send over SID, STAR, approach arrays
+    )
 
     /** Gets a [SerialisedAirport] from current state */
     fun getSerialisableObject(): SerialisedAirport {

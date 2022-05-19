@@ -162,12 +162,18 @@ fun checkClearanceEquality(clearanceState1: ClearanceState, clearanceState2: Cle
  *
  * The optimal IAS is the default IAS the aircraft will fly at without player intervention, hence it needs to be returned
  * to be added to the UI pane speed selectBox
+ *
+ * This also takes into account any current or upcoming speed restrictions from SIDs/STARs
+ * @param entity the aircraft entity to calculate the speed values for
  * @return a [Triple] that contains 3 shorts, the first being the minimum IAS, the second being the maximum IAS, and
  * the third being the optimal IAS for the phase of flight
  * */
 fun getMinMaxOptimalIAS(entity: Entity): Triple<Short, Short, Short> {
     val perf = entity[AircraftInfo.mapper]?.aircraftPerf ?: return Triple(150, 250, 240)
     val altitude = entity[Altitude.mapper] ?: return Triple(150, 250, 240)
+    val actingClearance = entity[ClearanceAct.mapper]?.actingClearance?.actingClearance ?: return Triple(150, 250, 240)
+    val lastRestriction = entity[LastRestrictions.mapper] ?: return Triple(150, 250, 240)
+    val flightType = entity[FlightType.mapper] ?: return Triple(150, 250, 240)
     val takingOff = entity[TakeoffClimb.mapper] != null || entity[TakeoffRoll.mapper] != null
     val crossOverAlt = calculateCrossoverAltitude(perf.tripIas, perf.maxMach)
     val below10000ft = altitude.altitudeFt < 10000
@@ -178,11 +184,29 @@ fun getMinMaxOptimalIAS(entity: Entity): Triple<Short, Short, Short> {
         between10000ftAndCrossover || aboveCrossover -> (((altitude.altitudeFt - 10000) / (perf.maxAlt - 10000)) * (perf.climbOutSpeed * 2f / 9) + perf.climbOutSpeed * 10f / 9).roundToInt().toShort()
         else -> 160
     }
-    val maxSpd: Short = when {
+    val maxAircraftSpd: Short = when {
         below10000ft -> min(250, perf.maxIas.toInt()).toShort()
         between10000ftAndCrossover -> perf.maxIas
         aboveCrossover -> calculateIASFromMach(altitude.altitudeFt, perf.maxMach).roundToInt().toShort()
         else -> 250
+    }
+    val nextRouteMaxSpd = actingClearance.route.getNextMaxSpd()
+    // SID/STAR enforced max speeds
+    val maxSpd = lastRestriction.maxSpdKt.let { lastMaxSpd ->
+        when {
+            lastMaxSpd != null && nextRouteMaxSpd != null -> max(lastMaxSpd.toInt(), nextRouteMaxSpd.toInt()).toShort()
+            lastMaxSpd != null -> when (flightType.type) {
+                FlightType.DEPARTURE -> null// No further max speeds, but aircraft is a departure so allow acceleration beyond previous max speed
+                FlightType.ARRIVAL -> lastMaxSpd// No further max speeds, use the last max speed
+                else -> null
+            }
+            nextRouteMaxSpd != null -> when (flightType.type) {
+                FlightType.DEPARTURE -> nextRouteMaxSpd// No max speeds before, but aircraft is a departure so must follow all subsequent max speeds
+                FlightType.ARRIVAL -> null// No max speeds before
+                else -> null
+            }
+            else -> null
+        }
     }
     val optimalSpd: Short = MathUtils.clamp(when {
         takingOff -> perf.climbOutSpeed
@@ -190,6 +214,6 @@ fun getMinMaxOptimalIAS(entity: Entity): Triple<Short, Short, Short> {
         between10000ftAndCrossover -> perf.tripIas
         aboveCrossover -> calculateIASFromMach(altitude.altitudeFt, perf.tripMach).roundToInt().toShort()
         else -> 240
-    }, minSpd, maxSpd)
-    return Triple(minSpd, maxSpd, optimalSpd)
+    }, minSpd, maxAircraftSpd)
+    return Triple(minSpd, min(maxAircraftSpd.toInt(), (maxSpd ?: maxAircraftSpd).toInt()).toShort(), min(optimalSpd.toInt(), (maxSpd ?: optimalSpd).toInt()).toShort())
 }

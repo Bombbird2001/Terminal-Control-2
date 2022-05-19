@@ -2,7 +2,6 @@ package com.bombbird.terminalcontrol2.ui
 
 import com.badlogic.ashley.core.Entity
 import com.badlogic.gdx.Gdx
-import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.scenes.scene2d.InputEvent
 import com.badlogic.gdx.scenes.scene2d.ui.ImageButton
 import com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle
@@ -16,10 +15,7 @@ import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.utilities.addChangeListener
 import com.bombbird.terminalcontrol2.utilities.convertWorldAndRenderDeg
 import com.bombbird.terminalcontrol2.utilities.modulateHeading
-import com.bombbird.terminalcontrol2.utilities.pxpsToKt
 import ktx.ashley.get
-import ktx.math.plus
-import ktx.math.times
 import ktx.scene2d.Scene2DSkin
 import kotlin.math.roundToInt
 
@@ -142,13 +138,13 @@ private fun getMinimisedLabelText(entity: Entity): Array<String> {
     // Temporary label format TODO change based on datatag format in use
     val aircraftInfo = entity[AircraftInfo.mapper] ?: return labelText
     val radarData = entity[RadarData.mapper] ?: return labelText
+    val groundSpeed = entity[GroundSpeed.mapper] ?: return labelText
     val latestClearance = entity[ClearanceAct.mapper]?.actingClearance?.actingClearance
-    val affectedByWind = entity[AffectedByWind.mapper]
 
     val callsign = aircraftInfo.icaoCallsign
     val recat = aircraftInfo.aircraftPerf.recat
     val alt = (radarData.altitude.altitudeFt / 100).roundToInt()
-    val groundSpd = (radarData.direction.trackUnitVector.times(radarData.speed.speedKts) + (affectedByWind?.windVectorPx?.times(pxpsToKt(1f)) ?: Vector2())).len().roundToInt()
+    val groundSpd = groundSpeed.gsKt.roundToInt()
     val clearedAlt = latestClearance?.let { it.clearedAlt / 100 }?.toString() ?: ""
     val icaoType = aircraftInfo.icaoType
 
@@ -165,8 +161,9 @@ private fun getExpandedLabelText(entity: Entity): Array<String> {
     val aircraftInfo = entity[AircraftInfo.mapper] ?: return labelText
     val radarData = entity[RadarData.mapper] ?: return labelText
     val cmdTarget = entity[CommandTarget.mapper] ?: return labelText
+    val groundSpeed = entity[GroundSpeed.mapper] ?: return labelText
     val latestClearance = entity[ClearanceAct.mapper]?.actingClearance?.actingClearance
-    val affectedByWind = entity[AffectedByWind.mapper]
+
 
     val callsign = aircraftInfo.icaoCallsign
     val acInfo = "${aircraftInfo.icaoType}/${aircraftInfo.aircraftPerf.wakeCategory}/${aircraftInfo.aircraftPerf.recat}"
@@ -176,7 +173,7 @@ private fun getExpandedLabelText(entity: Entity): Array<String> {
     val cmdAlt = (cmdTarget.targetAltFt / 100f).roundToInt()
     val hdg = modulateHeading((convertWorldAndRenderDeg(radarData.direction.trackUnitVector.angleDeg()) + MAG_HDG_DEV).roundToInt().toFloat()).roundToInt()
     val cmdHdg = cmdTarget.targetHdgDeg.roundToInt()
-    val groundSpd = (radarData.direction.trackUnitVector.times(radarData.speed.speedKts) + (affectedByWind?.windVectorPx?.times(pxpsToKt(1f)) ?: Vector2())).len().roundToInt()
+    val groundSpd = groundSpeed.gsKt.roundToInt()
     val clearedLateral = latestClearance?.route?.legs?.let {
         if (it.size == 0) null else CLIENT_SCREEN?.waypoints?.get((it[0] as? Route.WaypointLeg)?.wptId)
     }?.entity?.get(WaypointInfo.mapper)?.wptName ?: latestClearance?.vectorHdg?.toString() ?: ""

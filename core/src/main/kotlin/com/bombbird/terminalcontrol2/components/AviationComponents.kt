@@ -8,14 +8,12 @@ import ktx.ashley.Mapper
 
 /** Component for tagging airport related information */
 data class AirportInfo(var arptId: Byte = 0, var icaoCode: String = "", var name: String = "", var tfcRatio: Byte = 1): Component {
-    // TODO Add other airport related components
     companion object: Mapper<AirportInfo>()
 }
 
 /** Component for tagging runway related information */
 data class RunwayInfo(var rwyId: Byte = 0, var rwyName: String = "", var lengthM: Short = 4000): Component {
     lateinit var airport: Airport
-    // TODO Add other runway related components
     companion object: Mapper<RunwayInfo>()
 }
 

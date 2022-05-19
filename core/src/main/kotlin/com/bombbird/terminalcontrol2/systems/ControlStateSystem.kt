@@ -3,7 +3,11 @@ package com.bombbird.terminalcontrol2.systems
 import com.badlogic.ashley.core.EntitySystem
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.GAME
+import com.bombbird.terminalcontrol2.navigation.Route
+import com.bombbird.terminalcontrol2.utilities.calculateAccelerationDistanceRequired
 import com.bombbird.terminalcontrol2.utilities.getMinMaxOptimalIAS
+import com.bombbird.terminalcontrol2.utilities.getPointTargetTrackAndGS
+import com.bombbird.terminalcontrol2.utilities.mToPx
 import ktx.ashley.allOf
 import ktx.ashley.get
 import ktx.ashley.plusAssign
@@ -57,7 +61,7 @@ class ControlStateSystem: EntitySystem(), LowFreqUpdate {
         }
 
         // Aircraft that have pending clearances (due to 2s pilot response)
-        val pendingFamily = allOf(PendingClearances::class, ClearanceAct::class).get()
+        val pendingFamily = allOf(PendingClearances::class, ClearanceAct::class).get() // TODO occasional indexOutOfBoundsException here
         val pendingClearances = engine.getEntitiesFor(pendingFamily)
         for (i in 0 until pendingClearances.size()) {
             pendingClearances[i]?.apply {
@@ -97,8 +101,51 @@ class ControlStateSystem: EntitySystem(), LowFreqUpdate {
                 clearanceAct.minIas = spds.first
                 clearanceAct.maxIas = spds.second
                 clearanceAct.optimalIas = spds.third
-                // TODO update current and all pending cleared IAS with updated optimal IAS if the cleared speed is the previous optimal IAS
-                if (spds != prevSpds) this += LatestClearanceChanged()
+                if (Triple(clearanceAct.minIas, clearanceAct.maxIas, clearanceAct.optimalIas) != prevSpds) this += LatestClearanceChanged()
+            }
+        }
+
+        // Check whether the aircraft is approaching a lower speed restriction, and set the reduced speed before
+        // reaching the waypoint, so it crosses at the speed restriction
+        val spdRestrFamily = allOf(ClearanceAct::class, LastRestrictions::class, Position::class, Speed::class, Direction::class, GroundSpeed::class, AircraftInfo::class, CommandTarget::class).get()
+        val spdRestr = engine.getEntitiesFor(spdRestrFamily)
+        for (i in 0 until spdRestr.size()) {
+            spdRestr[i]?.apply {
+                val actingClearance = get(ClearanceAct.mapper)?.actingClearance?.actingClearance ?: return@apply
+                val lastRestriction = get(LastRestrictions.mapper) ?: return@apply
+                val pos = get(Position.mapper) ?: return@apply
+                val speed = get(Speed.mapper) ?: return@apply
+                val dir = get(Direction.mapper) ?: return@apply
+                val gs = get(GroundSpeed.mapper) ?: return@apply
+                val acInfo = get(AircraftInfo.mapper) ?: return@apply
+                val cmdTarget = get(CommandTarget.mapper) ?: return@apply
+                if (actingClearance.vectorHdg != null) return@apply // If aircraft is being vectored, this check is not needed
+
+                // Get the first upcoming waypoint with a speed restriction
+                val nextRestrWpt = actingClearance.route.getNextWaypointWithSpdRestr() ?: return@apply // If no waypoints with speed restriction, this check is not needed
+                val nextMaxSpd = nextRestrWpt.maxSpdKt ?: return@apply // This value shouldn't be null in the first place, but just in case
+                val currMaxSpd = lastRestriction.maxSpdKt
+                if (currMaxSpd != null && currMaxSpd <= nextMaxSpd) return@apply // Not required if next max speed is not lower than current max speed
+                // Physics - check distance needed to slow down from current speed to speed restriction
+                val targetWptId = (actingClearance.route.legs.first() as? Route.WaypointLeg)?.wptId ?: return@apply // Skip if next leg is not waypoint
+                val targetPos = GAME.gameServer?.waypoints?.get(targetWptId)?.entity?.get(Position.mapper) ?: return@apply // Skip if waypoint not found or position not present
+                val newGs = getPointTargetTrackAndGS(pos.x, pos.y, targetPos.x, targetPos.y, speed.speedKts, dir, get(AffectedByWind.mapper)).second
+                val distReqPx = mToPx(calculateAccelerationDistanceRequired(gs.gsKt, newGs, acInfo.minAcc))
+                val deltaX = targetPos.x - pos.x
+                val deltaY = targetPos.y - pos.y
+                if (deltaX * deltaX + deltaY * deltaY < distReqPx * distReqPx) {
+                    lastRestriction.maxSpdKt = nextMaxSpd
+                    if (actingClearance.clearedIas > nextMaxSpd) cmdTarget.targetIasKt = nextMaxSpd
+                    val prevMaxIas = actingClearance.maxIas
+                    val prevClearedIas = actingClearance.clearedIas
+                    if (actingClearance.maxIas > nextMaxSpd) actingClearance.maxIas = nextMaxSpd
+                    actingClearance.clearedIas = nextMaxSpd
+                    if (prevMaxIas != actingClearance.maxIas || prevClearedIas != actingClearance.clearedIas) {
+                        val pendingClearances = get(PendingClearances.mapper)
+                        // Send clearance change to clients if no pending clearance exists
+                        if (pendingClearances == null || pendingClearances.clearanceQueue.isEmpty) this += LatestClearanceChanged()
+                    }
+                }
             }
         }
     }

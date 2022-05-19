@@ -95,6 +95,7 @@ class GameServer {
                 val wind = getClosestAirportWindVector(pos.x, pos.y)
                 calculateIASFromTAS(alt.altitudeFt, pxpsToKt(wind.dot(dir.trackUnitVector)))
             }}} ?: 0f
+            entity[Speed.mapper]?.speedKts = -headwind
             val acPerf = entity[AircraftInfo.mapper]?.aircraftPerf ?: return@apply
             entity += TakeoffRoll(calculateRequiredAcceleration(0, (acPerf.vR + headwind).toInt().toShort(), ((rwy?.get(RunwayInfo.mapper)?.lengthM ?: 3800) - 1000) * MathUtils.random(0.75f, 1f)))
             val sid = airports[0]?.entity?.get(SIDChildren.mapper)?.sidMap?.get("HICAL1C") // TODO random selection from eligible SIDs
@@ -152,13 +153,13 @@ class GameServer {
             override fun connected(connection: Connection?) {
                 // TODO Send broadcast message
                 connection?.sendTCP(SerialisationRegistering.InitialAirspaceData(MAG_HDG_DEV, MIN_ALT, MAX_ALT, MIN_SEP, TRANS_ALT, TRANS_LVL))
-                connection?.sendTCP(SerialisationRegistering.InitialSectorData(sectors.map { it.getSerialisableObject() }.toTypedArray()))
-                connection?.sendTCP(SerialisationRegistering.InitialAircraftData(aircraft.values().map { it.getSerialisableObject() }.toTypedArray()))
-                connection?.sendTCP(SerialisationRegistering.AirportData(airports.values().map { it.getSerialisableObject() }.toTypedArray()))
-                connection?.sendTCP(SerialisationRegistering.WaypointData(waypoints.values.map { it.getSerialisableObject() }.toTypedArray()))
-                connection?.sendTCP(SerialisationRegistering.PublishedHoldData(publishedHolds.values().map { it.getSerialisableObject() }.toTypedArray()))
-                connection?.sendTCP(SerialisationRegistering.MinAltData(minAltSectors.map { it.getSerialisableObject() }.toTypedArray()))
-                connection?.sendTCP(SerialisationRegistering.ShorelineData(shoreline.map { it.getSerialisableObject() }.toTypedArray()))
+                connection?.sendTCP(SerialisationRegistering.InitialSectorData(sectors.toArray().map { it.getSerialisableObject() }.toTypedArray()))
+                connection?.sendTCP(SerialisationRegistering.InitialAircraftData(aircraft.values().toArray().map { it.getSerialisableObject() }.toTypedArray()))
+                connection?.sendTCP(SerialisationRegistering.AirportData(airports.values().toArray().map { it.getSerialisableObject() }.toTypedArray()))
+                connection?.sendTCP(SerialisationRegistering.WaypointData(waypoints.values.toTypedArray().map { it.getSerialisableObject() }.toTypedArray()))
+                connection?.sendTCP(SerialisationRegistering.PublishedHoldData(publishedHolds.values().toArray().map { it.getSerialisableObject() }.toTypedArray()))
+                connection?.sendTCP(SerialisationRegistering.MinAltData(minAltSectors.toArray().map { it.getSerialisableObject() }.toTypedArray()))
+                connection?.sendTCP(SerialisationRegistering.ShorelineData(shoreline.toArray().map { it.getSerialisableObject() }.toTypedArray()))
             }
         })
     }

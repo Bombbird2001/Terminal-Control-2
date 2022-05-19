@@ -2,11 +2,14 @@ package com.bombbird.terminalcontrol2.systems
 
 import com.badlogic.ashley.core.EntitySystem
 import com.badlogic.gdx.math.MathUtils
+import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.*
+import ktx.math.plus
 import ktx.math.times
+import kotlin.math.max
 
 /** Main physics update system, which handles physics aspects such as displacement, velocity, acceleration, etc.
  *
@@ -44,8 +47,8 @@ class PhysicsSystem: EntitySystem(), LowFreqUpdate {
             windAffected[i]?.apply {
                 val pos = get(Position.mapper) ?: return@apply
                 val wind = get(AffectedByWind.mapper) ?: return@apply
-                pos.x += wind.windVectorPx.x * deltaTime
-                pos.y += wind.windVectorPx.y * deltaTime
+                pos.x += wind.windVectorPxps.x * deltaTime
+                pos.y += wind.windVectorPxps.y * deltaTime
             }
         }
 
@@ -121,6 +124,29 @@ class PhysicsSystem: EntitySystem(), LowFreqUpdate {
                 acc.dAngularSpdDps2 = MathUtils.clamp(targetAngAcc, -MAX_ANGULAR_ACC, MAX_ANGULAR_ACC) // Clamp to min, max angular acceleration
             }
         }
+
+        // Calculate GS of the aircraft
+        val gsFamily = allOf(GroundSpeed::class, Speed::class, Direction::class).get()
+        val gs = engine.getEntitiesFor(gsFamily)
+        for (i in 0 until gs.size()) {
+            gs[i]?.apply {
+                val groundSpeed = get(GroundSpeed.mapper) ?: return@apply
+                val speed = get(Speed.mapper) ?: return@apply
+                val dir = get(Direction.mapper) ?: return@apply
+                val takeoffRoll = get(TakeoffRoll.mapper)
+                val landingRoll = get(LandingRoll.mapper)
+                val affectedByWind = get(AffectedByWind.mapper)
+
+                groundSpeed.gsKt = if (takeoffRoll != null || landingRoll != null) {
+                    val headwind = get(Position.mapper)?.let { pos ->
+                        val wind = getClosestAirportWindVector(pos.x, pos.y)
+                        pxpsToKt(wind.dot(dir.trackUnitVector))
+                    } ?: 0f
+                    max(speed.speedKts + headwind, 0f)
+                } else if (affectedByWind == null) speed.speedKts
+                else (Vector2(dir.trackUnitVector).times(speed.speedKts) + (affectedByWind.windVectorPxps.times(pxpsToKt(1f)))).len()
+            }
+        }
     }
 
     /** Secondary update system, for operations that can be updated at a lower frequency and do not rely on deltaTime
@@ -176,7 +202,7 @@ class PhysicsSystem: EntitySystem(), LowFreqUpdate {
             affectedByWind[i]?.apply {
                 val pos = get(Position.mapper) ?: return@apply
                 val wind = get(AffectedByWind.mapper) ?: return@apply
-                wind.windVectorPx = getClosestAirportWindVector(pos.x, pos.y)
+                wind.windVectorPxps = getClosestAirportWindVector(pos.x, pos.y)
             }
         }
     }

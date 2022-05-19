@@ -87,11 +87,11 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
             actingClearance.clearedAlt = newClearance.clearedAlt
 
             val spds = getMinMaxOptimalIAS(entity)
-            newClearance.clearedIas = MathUtils.clamp(newClearance.clearedIas, spds.first, spds.second)
             if (newClearance.clearedIas == newClearance.optimalIas && newClearance.clearedIas != spds.third) newClearance.clearedIas = spds.third
             newClearance.minIas = spds.first
             newClearance.maxIas = spds.second
             newClearance.optimalIas = spds.third
+            newClearance.clearedIas = MathUtils.clamp(newClearance.clearedIas, newClearance.minIas, newClearance.maxIas)
             actingClearance.clearedIas = newClearance.clearedIas
             actingClearance.minIas = newClearance.minIas
             actingClearance.maxIas = newClearance.maxIas

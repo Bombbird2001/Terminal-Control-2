@@ -1,9 +1,9 @@
 package com.bombbird.terminalcontrol2.utilities
 
-import kotlin.math.exp
-import kotlin.math.ln
-import kotlin.math.pow
-import kotlin.math.sqrt
+import com.badlogic.gdx.math.MathUtils
+import com.bombbird.terminalcontrol2.components.AffectedByWind
+import com.bombbird.terminalcontrol2.components.Direction
+import kotlin.math.*
 
 /** PHYSICSSSSSSSSSSSSSSSSSSSSSSS
  *
@@ -221,4 +221,43 @@ fun calculateCrossoverAltitude(iasKt: Short, mach: Float): Float {
     val impactPressurePa = ((iasMps * iasMps / SOUND_SPEED_MPS_SL_ISA / SOUND_SPEED_MPS_SL_ISA / 5 + 1).pow(3.5f) - 1) * AIR_PRESSURE_PA_SL_ISA
     val pressureAtAlt = impactPressurePa / ((mach * mach / 5 + 1).pow(3.5f) - 1)
     return calculateAltAtPressure(pressureAtAlt)
+}
+
+/**
+ * Calculates the track that the plane needs to fly as well as its ground speed (accounted for [wind] if any)
+ * @param x1 the x coordinate of the present position
+ * @param y1 the y coordinate of the present position
+ * @param x2 the x coordinate of the target position
+ * @param y2 the y coordinate of the target position
+ * @param speedKts the true airspeed of the aircraft
+ * @param dir the [Direction] component of the aircraft
+ * @return a [Pair] of floats, the first being the required target track the aircraft should fly in order to reach
+ * the target position, the second being the resulting ground speed of the aircraft if this track is followed
+ * */
+fun getPointTargetTrackAndGS(x1: Float, y1: Float, x2: Float, y2: Float, speedKts: Float, dir: Direction, wind: AffectedByWind?): Pair<Float, Float> {
+    var targetTrack = getRequiredTrack(x1, y1, x2, y2).toDouble()
+    var groundSpeed = speedKts
+    if (wind != null) {
+        // Calculate angle difference required due to wind component
+        val angle = 180.0 - convertWorldAndRenderDeg(wind.windVectorPxps.angleDeg()) + convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg())
+        val windSpdKts = pxpsToKt(wind.windVectorPxps.len())
+        groundSpeed = sqrt(speedKts.pow(2.0f) + windSpdKts.pow(2.0f) - 2 * speedKts * windSpdKts * cos(Math.toRadians(angle))).toFloat()
+        val angleOffset = asin(windSpdKts * sin(Math.toRadians(angle)) / groundSpeed) * MathUtils.radiansToDegrees
+        targetTrack -= angleOffset
+    }
+    return Pair(targetTrack.toFloat(), groundSpeed)
+}
+
+/**
+ * Calculates the distance required for an entity with an initial speed to accelerate to a target speed, assuming a constant
+ * acceleration value
+ * @param initSpeedKt the initial speed, in knots
+ * @param finalSpeedKt the target speed, in knots
+ * @param acc the acceleration, in metres per second^2
+ * @return the acceleration distance required, in metres
+ * */
+fun calculateAccelerationDistanceRequired(initSpeedKt: Float, finalSpeedKt: Float, acc: Float): Float {
+    val initSpdMps = ktToMps(initSpeedKt)
+    val finalSpdMps = ktToMps(finalSpeedKt)
+    return (finalSpdMps * finalSpdMps - initSpdMps * initSpdMps) / 2f / acc
 }
