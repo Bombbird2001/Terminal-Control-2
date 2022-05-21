@@ -60,7 +60,7 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
     private val shapeRenderer = ShapeRenderer()
 
     private val gestureDetector = GestureDetector(40f, 0.2f, 1.1f, 0.15f, this)
-    val inputMultiplexer = InputMultiplexer()
+    private val inputMultiplexer = InputMultiplexer()
 
     // Camera animation parameters
     private var cameraAnimating = false
@@ -166,7 +166,7 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
                     } ?: (obj as? SerialisationRegistering.AircraftControlStateUpdateData)?.apply {
                         aircraft[obj.callsign]?.let { aircraft ->
                             aircraft.entity += ClearanceAct(ClearanceState.ActingClearance(ClearanceState(obj.primaryName, Route.fromSerialisedObject(obj.route), Route.fromSerialisedObject(obj.hiddenLegs),
-                                obj.vectorHdg, obj.clearedAlt, obj.clearedIas, obj.minIas, obj.maxIas, obj.optimalIas)))
+                                obj.vectorHdg, obj.vectorTurnDir, obj.clearedAlt, obj.clearedIas, obj.minIas, obj.maxIas, obj.optimalIas)))
                             if (selectedAircraft == aircraft) uiPane.updateSelectedAircraft(aircraft)
                         }
                     }
@@ -433,7 +433,7 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
     fun sendAircraftControlStateClearance(callsign: String, newClearanceState: ClearanceState) {
         client.sendTCP(SerialisationRegistering.AircraftControlStateUpdateData(callsign, newClearanceState.routePrimaryName,
             newClearanceState.route.getSerialisedObject(), newClearanceState.hiddenLegs.getSerialisedObject(),
-            newClearanceState.vectorHdg, newClearanceState.clearedAlt, newClearanceState.clearedIas,
+            newClearanceState.vectorHdg, newClearanceState.vectorTurnDir, newClearanceState.clearedAlt, newClearanceState.clearedIas,
             newClearanceState.minIas, newClearanceState.maxIas, newClearanceState.optimalIas))
     }
 }

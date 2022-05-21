@@ -45,6 +45,8 @@ class ControlPane {
     private var directButtonArray = GdxArray<KTextButton>(10)
 
     private lateinit var vectorLabel: Label
+    private lateinit var leftButton: KTextButton
+    private lateinit var rightButton: KTextButton
 
     private var selectedHoldLeg: Route.HoldLeg? = null
     private lateinit var holdSelectBox: KSelectBox<String>
@@ -102,12 +104,12 @@ class ControlPane {
                     // Second row of selectBoxes - Approach, Transition
                     selectBox<String>("ControlPane").apply {
                         items = arrayOf("Approach", "ILS05L", "ILS05R").toGdxArray()
-                        list.setAlignment(Align.center)
+                        list.alignment = Align.center
                         setAlignment(Align.center)
                     }.cell(grow = true, preferredWidth = paneWidth / 2)
                     selectBox<String>("ControlPane").apply {
                         items = arrayOf("Via vectors", "Via JAMMY", "Via FETUS", "Via MARCH").toGdxArray()
-                        list.setAlignment(Align.center)
+                        list.alignment = Align.center
                         setAlignment(Align.center)
                     }.cell(grow = true, preferredWidth = paneWidth / 2)
                 }.cell(preferredWidth = paneWidth, height = UI_HEIGHT * 0.125f, growX = true)
@@ -116,7 +118,7 @@ class ControlPane {
                     // Third row of selectBoxes, button - Altitude, Expedite, Speed
                     altSelectBox = selectBox<String>("ControlPane").apply {
                         items = GdxArray()
-                        list.setAlignment(Align.center)
+                        list.alignment = Align.center
                         setAlignment(Align.center)
                         addChangeListener { _, _ ->
                             if (modificationInProgress) return@addChangeListener
@@ -349,8 +351,30 @@ class ControlPane {
     private fun vectorTable(widget: KWidget<Actor>, paneWidth: Float): KTableWidget {
         return widget.table {
             table {
-                textButton("Left", "ControlPaneHdgLight").cell(grow = true, preferredWidth = 0.5f * paneWidth - 10f)
-                textButton("Right", "ControlPaneHdgLight").cell(grow = true, preferredWidth = 0.5f * paneWidth - 10f)
+                leftButton = textButton("Left", "ControlPaneHdgDir").cell(grow = true, preferredWidth = 0.5f * paneWidth - 10f).apply {
+                    addChangeListener { _, _ ->
+                        if (modificationInProgress) return@addChangeListener
+                        modificationInProgress = true
+                        if (isChecked) {
+                            parentPane.userClearanceState.vectorTurnDir = CommandTarget.TURN_LEFT
+                            rightButton.isChecked = false
+                        } else parentPane.userClearanceState.vectorTurnDir = CommandTarget.TURN_DEFAULT
+                        updateVectorTable(parentPane.userClearanceState.vectorHdg, parentPane.userClearanceState.vectorTurnDir)
+                        modificationInProgress = false
+                    }
+                }
+                rightButton = textButton("Right", "ControlPaneHdgDir").cell(grow = true, preferredWidth = 0.5f * paneWidth - 10f).apply {
+                    addChangeListener { _, _ ->
+                        if (modificationInProgress) return@addChangeListener
+                        modificationInProgress = true
+                        if (isChecked) {
+                            parentPane.userClearanceState.vectorTurnDir = CommandTarget.TURN_RIGHT
+                            leftButton.isChecked = false
+                        } else parentPane.userClearanceState.vectorTurnDir = CommandTarget.TURN_DEFAULT
+                        updateVectorTable(parentPane.userClearanceState.vectorHdg, parentPane.userClearanceState.vectorTurnDir)
+                        modificationInProgress = false
+                    }
+                }
             }.cell(padTop = 20f, height = 0.1f * UI_HEIGHT, padLeft = 10f, padRight = 10f)
             row()
             table {
@@ -360,7 +384,7 @@ class ControlPane {
                         updateUndoTransmitButtonStates()
                     }
                     row()
-                    textButton("-10", "ControlPaneHdgDark").cell(grow = true, preferredHeight = (0.5f * UI_HEIGHT - 40f) / 3).addChangeListener { _, _ ->
+                    textButton("-10", "ControlPaneHdgLight").cell(grow = true, preferredHeight = (0.5f * UI_HEIGHT - 40f) / 3).addChangeListener { _, _ ->
                         updateVectorHdgValue(-10)
                         updateUndoTransmitButtonStates()
                     }
@@ -377,7 +401,7 @@ class ControlPane {
                         updateUndoTransmitButtonStates()
                     }
                     row()
-                    textButton("+10", "ControlPaneHdgDark").cell(grow = true, preferredHeight = (0.5f * UI_HEIGHT - 40f) / 3).addChangeListener { _, _ ->
+                    textButton("+10", "ControlPaneHdgLight").cell(grow = true, preferredHeight = (0.5f * UI_HEIGHT - 40f) / 3).addChangeListener { _, _ ->
                         updateVectorHdgValue(10)
                         updateUndoTransmitButtonStates()
                     }
@@ -653,9 +677,20 @@ class ControlPane {
       * Updates the heading display in [vectorTable]
       * @param vectorHdg the currently cleared vector heading
       * */
-     fun updateVectorTable(vectorHdg: Short?) {
+     fun updateVectorTable(vectorHdg: Short?, vectorTurnDir: Byte?) {
          vectorLabel.setText(vectorHdg?.toString() ?: "0")
          vectorLabel.style = Scene2DSkin.defaultSkin["ControlPaneHdg${if (parentPane.clearanceState.vectorHdg != parentPane.userClearanceState.vectorHdg) "Changed" else ""}", LabelStyle::class.java]
+
+         modificationInProgress = true
+         leftButton.isChecked = vectorTurnDir == CommandTarget.TURN_LEFT
+         rightButton.isChecked = vectorTurnDir == CommandTarget.TURN_RIGHT
+         modificationInProgress = false
+         val leftChanged = (parentPane.clearanceState.vectorTurnDir == CommandTarget.TURN_LEFT && parentPane.userClearanceState.vectorTurnDir == CommandTarget.TURN_DEFAULT) ||
+                 (parentPane.userClearanceState.vectorTurnDir == CommandTarget.TURN_LEFT && parentPane.clearanceState.vectorTurnDir != CommandTarget.TURN_LEFT)
+         val rightChanged = (parentPane.clearanceState.vectorTurnDir == CommandTarget.TURN_RIGHT && parentPane.userClearanceState.vectorTurnDir == CommandTarget.TURN_DEFAULT) ||
+                 (parentPane.userClearanceState.vectorTurnDir == CommandTarget.TURN_RIGHT && parentPane.clearanceState.vectorTurnDir != CommandTarget.TURN_RIGHT)
+         leftButton.style = Scene2DSkin.defaultSkin[if (leftChanged) "ControlPaneHdgDirChanged" else "ControlPaneHdgDir", TextButtonStyle::class.java]
+         rightButton.style = Scene2DSkin.defaultSkin[if (rightChanged) "ControlPaneHdgDirChanged" else "ControlPaneHdgDir", TextButtonStyle::class.java]
     }
 
     /**
@@ -667,7 +702,7 @@ class ControlPane {
             val rectifiedHeading = if (change >= 0) (it / 5f).toInt() * 5 else ceil(it / 5f).roundToInt() * 5
             modulateHeading(rectifiedHeading.toFloat()).toInt().toShort()
         }
-        updateVectorTable(parentPane.userClearanceState.vectorHdg)
+        updateVectorTable(parentPane.userClearanceState.vectorHdg, parentPane.userClearanceState.vectorTurnDir)
     }
 
     /**
@@ -714,7 +749,7 @@ class ControlPane {
                 if (parentPane.userClearanceState.vectorHdg == null && parentPane.clearanceState.vectorHdg == null)
                     parentPane.userClearanceState.vectorHdg = GAME.gameClientScreen?.selectedAircraft?.entity?.get(CommandTarget.mapper)?.targetHdgDeg?.roundToInt()?.toShort() ?: 360
                 else if (parentPane.userClearanceState.vectorHdg == null) parentPane.userClearanceState.vectorHdg = parentPane.clearanceState.vectorHdg
-                updateVectorTable(parentPane.userClearanceState.vectorHdg)
+                updateVectorTable(parentPane.userClearanceState.vectorHdg, parentPane.userClearanceState.vectorTurnDir)
                 updateUndoTransmitButtonStates()
             }
             else -> Gdx.app.log("UIPane", "Unknown lateral mode $mode")

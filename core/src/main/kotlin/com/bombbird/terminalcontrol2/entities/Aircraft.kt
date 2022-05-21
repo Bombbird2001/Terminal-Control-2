@@ -136,7 +136,8 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
                     }
                     this += ClearanceAct(ClearanceState.ActingClearance(ClearanceState(serialisedAircraft.routePrimaryName,
                         Route.fromSerialisedObject(serialisedAircraft.commandRoute), Route.fromSerialisedObject(serialisedAircraft.commandHiddenLegs),
-                        serialisedAircraft.vectorHdg, serialisedAircraft.commandAlt, serialisedAircraft.clearedIas,
+                        serialisedAircraft.vectorHdg, serialisedAircraft.vectorTurnDir,
+                        serialisedAircraft.commandAlt, serialisedAircraft.clearedIas,
                         serialisedAircraft.minIas, serialisedAircraft.maxIas, serialisedAircraft.optimalIas,
                     )))
                 }
@@ -216,7 +217,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
                              val speedKts: Float = 0f, val vertSpdFpm: Float = 0f, val angularSpdDps: Float = 0f, val gsKts: Float = 0f,
                              val flightType: Byte = 0,
                              val routePrimaryName: String = "", val commandRoute: Route.SerialisedRoute = Route.SerialisedRoute(), val commandHiddenLegs: Route.SerialisedRoute = Route.SerialisedRoute(),
-                             val vectorHdg: Short? = null, val commandAlt: Int = 0, val clearedIas: Short = 0, // Vector HDG will be null if aircraft is flying route
+                             val vectorHdg: Short? = null, val vectorTurnDir: Byte? = null, val commandAlt: Int = 0, val clearedIas: Short = 0, // Vector HDG will be null if aircraft is flying route
                              val minIas: Short = 0, val maxIas: Short = 0, val optimalIas: Short = 0
     )
 
@@ -239,7 +240,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
                 speed.speedKts, speed.vertSpdFpm, speed.angularSpdDps, gs.gsKt,
                 flightType.type,
                 clearance.routePrimaryName, clearance.route.getSerialisedObject(), clearance.hiddenLegs.getSerialisedObject(),
-                clearance.vectorHdg, clearance.clearedAlt, clearance.clearedIas,
+                clearance.vectorHdg, clearance.vectorTurnDir, clearance.clearedAlt, clearance.clearedIas,
                 clearance.minIas, clearance.maxIas, clearance.optimalIas
             )
         }

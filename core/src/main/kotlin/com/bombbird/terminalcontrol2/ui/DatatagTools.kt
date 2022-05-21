@@ -95,6 +95,10 @@ private fun updateDatatagSize(datatag: Datatag) {
         }
         height += datatag.lineSpacing
     }
+    val changeInWidth = maxWidth + LABEL_PADDING * 2 - datatag.clickSpot.width
+    val changeInHeight = height + LABEL_PADDING * 2 - datatag.clickSpot.height
+    datatag.xOffset -= (changeInWidth * if (datatag.xOffset < -datatag.clickSpot.width / 2) 1 else 0)
+    datatag.yOffset -= (changeInHeight * if (datatag.yOffset < -datatag.clickSpot.height / 2) 1 else 0)
     datatag.imgButton.setSize(maxWidth + LABEL_PADDING * 2, height + LABEL_PADDING * 2)
     datatag.clickSpot.setSize(maxWidth + LABEL_PADDING * 2, height + LABEL_PADDING * 2)
 }

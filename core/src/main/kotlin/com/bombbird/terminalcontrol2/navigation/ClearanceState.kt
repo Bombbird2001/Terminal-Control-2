@@ -2,6 +2,7 @@ package com.bombbird.terminalcontrol2.navigation
 
 import com.badlogic.ashley.core.Entity
 import com.badlogic.gdx.math.MathUtils
+import com.bombbird.terminalcontrol2.components.CommandTarget
 import com.bombbird.terminalcontrol2.utilities.checkLegChanged
 import com.bombbird.terminalcontrol2.utilities.compareLegEquality
 import com.bombbird.terminalcontrol2.utilities.checkRouteEqualityStrict
@@ -28,7 +29,8 @@ import com.bombbird.terminalcontrol2.utilities.getMinMaxOptimalIAS
  * Also contains utility functions for updating the actual aircraft command state
  * */
 class ClearanceState(var routePrimaryName: String = "", val route: Route = Route(), val hiddenLegs: Route = Route(),
-                     var vectorHdg: Short? = null, var clearedAlt: Int = 0, var clearedIas: Short = 0,
+                     var vectorHdg: Short? = null, var vectorTurnDir: Byte? = null,
+                     var clearedAlt: Int = 0, var clearedIas: Short = 0,
                      var minIas: Short = 0, var maxIas: Short = 0, var optimalIas: Short = 0) {
 
     /**
@@ -83,6 +85,11 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
             }}
 
             actingClearance.hiddenLegs.setToRoute(newClearance.hiddenLegs)
+            if (actingClearance.vectorHdg != newClearance.vectorHdg || actingClearance.vectorTurnDir != CommandTarget.TURN_DEFAULT) {
+                // Do not change the turn direction only if the heading has not changed, and current turn direction is default
+                // i.e. Change turn direction if heading has changed or current turn direction is not default
+                actingClearance.vectorTurnDir = newClearance.vectorTurnDir
+            }
             actingClearance.vectorHdg = newClearance.vectorHdg
             actingClearance.clearedAlt = newClearance.clearedAlt
 
@@ -130,7 +137,11 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
                 }
             }
             if (checkRouteEqualityStrict(hiddenLegs, defaultClearance.hiddenLegs)) hiddenLegs.setToRouteCopy(latestClearance.hiddenLegs)
-            if (vectorHdg == defaultClearance.vectorHdg) vectorHdg = latestClearance.vectorHdg
+            if (vectorHdg == defaultClearance.vectorHdg) {
+                vectorHdg = latestClearance.vectorHdg
+                // If user has not changed both the heading and the turn direction, set to new turn direction
+                if (vectorTurnDir == defaultClearance.vectorTurnDir) vectorTurnDir = latestClearance.vectorTurnDir
+            }
             if (clearedAlt == defaultClearance.clearedAlt) clearedAlt = latestClearance.clearedAlt
             // Set to new IAS if the current IAS has not changed, or if it has changed but is equal to the current optimal IAS,
             // and is different from the new optimal IAS, and the new clearance is equal to the new optimal IAS
@@ -142,6 +153,7 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
             route.setToRouteCopy(latestClearance.route)
             hiddenLegs.setToRouteCopy(latestClearance.hiddenLegs)
             vectorHdg = latestClearance.vectorHdg
+            vectorTurnDir = latestClearance.vectorTurnDir
             clearedAlt = latestClearance.clearedAlt
             clearedIas = latestClearance.clearedIas
         }

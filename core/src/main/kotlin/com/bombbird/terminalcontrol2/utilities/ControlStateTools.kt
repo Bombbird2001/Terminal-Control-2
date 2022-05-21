@@ -46,7 +46,7 @@ fun getAircraftIcon(flightType: Byte, sectorID: Byte): TextureRegionDrawable {
 fun addNewClearanceToPendingClearances(entity: Entity, clearance: SerialisationRegistering.AircraftControlStateUpdateData, returnTripTime: Int) {
     val pendingClearances = entity[PendingClearances.mapper]
     val newClearance = ClearanceState(clearance.primaryName, Route.fromSerialisedObject(clearance.route), Route.fromSerialisedObject(clearance.hiddenLegs),
-        clearance.vectorHdg, clearance.clearedAlt, clearance.clearedIas, clearance.minIas, clearance.maxIas, clearance.optimalIas)
+        clearance.vectorHdg, clearance.vectorTurnDir, clearance.clearedAlt, clearance.clearedIas, clearance.minIas, clearance.maxIas, clearance.optimalIas)
     if (pendingClearances == null) entity += PendingClearances(Queue<ClearanceState.PendingClearanceState>().apply {
         addLast(ClearanceState.PendingClearanceState(2f - returnTripTime / 2000f, newClearance))
     })
@@ -198,7 +198,7 @@ fun getMinMaxOptimalIAS(entity: Entity): Triple<Short, Short, Short> {
     }
     val nextRouteMaxSpd = actingClearance.route.getNextMaxSpd()
     // SID/STAR enforced max speeds
-    val maxSpd = lastRestriction.maxSpdKt.let { lastMaxSpd ->
+    val maxSpd = if (actingClearance.vectorHdg != null) null else lastRestriction.maxSpdKt.let { lastMaxSpd ->
         when {
             lastMaxSpd != null && nextRouteMaxSpd != null -> max(lastMaxSpd.toInt(), nextRouteMaxSpd.toInt()).toShort()
             lastMaxSpd != null -> when (flightType.type) {

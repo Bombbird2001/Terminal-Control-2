@@ -9,10 +9,7 @@ import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.MAG_HDG_DEV
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.utilities.*
-import ktx.ashley.allOf
-import ktx.ashley.get
-import ktx.ashley.plusAssign
-import ktx.ashley.remove
+import ktx.ashley.*
 import kotlin.math.*
 
 /** Main AI system, which handles aircraft flight controls, implementing behaviour for various basic and advanced flight modes
@@ -275,6 +272,27 @@ class AISystem: EntitySystem() {
             }
         }
 
+        // Update for pure vector (i.e. no legs)
+        val pureVectorFamily = allOf(CommandTarget::class, Direction::class, ClearanceAct::class).exclude(CommandInitClimb::class, CommandDirect::class, CommandHold::class, CommandVector::class).get()
+        val pureVector = engine.getEntitiesFor(pureVectorFamily)
+        for (i in 0 until pureVector.size()) {
+            pureVector[i]?.apply {
+                val cmd = get(CommandTarget.mapper) ?: return@apply
+                if (cmd.turnDir == CommandTarget.TURN_DEFAULT) return@apply // Return if turn direction not specified
+                val dir = get(Direction.mapper) ?: return@apply
+                val actingClearance = get(ClearanceAct.mapper)?.actingClearance ?: return@apply
+                val actlHdg = convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()) + MAG_HDG_DEV
+                val appropriateTurnDir = getAppropriateTurnDir(cmd.targetHdgDeg, actlHdg, cmd.turnDir)
+                if (appropriateTurnDir != cmd.turnDir) {
+                    // Aircraft has reached the end of turn
+                    cmd.turnDir = appropriateTurnDir
+                    actingClearance.actingClearance.vectorTurnDir = appropriateTurnDir
+                    val pendingClearances = get(PendingClearances.mapper)
+                    if (pendingClearances == null || pendingClearances.clearanceQueue.isEmpty) this += LatestClearanceChanged()
+                }
+            }
+        }
+
         // Update when the acting clearance has been changed by player action
         val actingClearanceChangedFamily = allOf(CommandTarget::class, ClearanceActChanged::class, ClearanceAct::class).get()
         val actingClearances = engine.getEntitiesFor(actingClearanceChangedFamily)
@@ -444,6 +462,7 @@ class AISystem: EntitySystem() {
 
         actingClearance.vectorHdg?.let { hdg ->
             commandTarget.targetHdgDeg = hdg.toFloat()
+            commandTarget.turnDir = actingClearance.vectorTurnDir ?: CommandTarget.TURN_DEFAULT
             commandTarget.targetAltFt = actingClearance.clearedAlt
             commandTarget.targetIasKt = actingClearance.clearedIas
         }

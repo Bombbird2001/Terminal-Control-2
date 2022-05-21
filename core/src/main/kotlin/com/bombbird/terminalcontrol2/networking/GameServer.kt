@@ -102,7 +102,7 @@ class GameServer {
             val rwyName = rwy?.get(RunwayInfo.mapper)?.rwyName ?: ""
             val initClimb = sid?.rwyInitialClimbs?.get(rwyName) ?: 3000
             entity += ClearanceAct(ClearanceState.ActingClearance(ClearanceState(sid?.name ?: "", sid?.getRandomSIDRouteForRunway(rwyName) ?: Route(), Route(),
-                null, initClimb, acPerf.climbOutSpeed)))
+                null, null, initClimb, acPerf.climbOutSpeed)))
             entity[CommandTarget.mapper]?.apply {
                 targetAltFt = initClimb
                 targetIasKt = acPerf.climbOutSpeed
@@ -291,8 +291,8 @@ class GameServer {
 
     /** Sends aircraft clearance state updates */
     fun sendAircraftClearanceStateUpdateToAll(callsign: String, primaryName: String = "", route: Route, hiddenLegs: Route,
-                                           vectorHdg: Short?, clearedAlt: Int, clearedIas: Short, minIas: Short, maxIas: Short, optimalIas: Short) {
-        server.sendToAllTCP(SerialisationRegistering.AircraftControlStateUpdateData(callsign, primaryName, route.getSerialisedObject(), hiddenLegs.getSerialisedObject(), vectorHdg, clearedAlt, clearedIas, minIas, maxIas, optimalIas))
+                                           vectorHdg: Short?, vectorTurnDir: Byte?, clearedAlt: Int, clearedIas: Short, minIas: Short, maxIas: Short, optimalIas: Short) {
+        server.sendToAllTCP(SerialisationRegistering.AircraftControlStateUpdateData(callsign, primaryName, route.getSerialisedObject(), hiddenLegs.getSerialisedObject(), vectorHdg, vectorTurnDir, clearedAlt, clearedIas, minIas, maxIas, optimalIas))
     }
 
     /** Send non-frequent, event-updated and/or important data
