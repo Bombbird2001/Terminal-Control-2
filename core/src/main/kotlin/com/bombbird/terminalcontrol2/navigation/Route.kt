@@ -70,6 +70,46 @@ class Route() {
             return Pair(getRequiredTrack(w1.x, w1.y, w2.x, w2.y), wpt2.turnDir)
         }} ?: return null
     }
+
+    /**
+     * Gets the first upcoming holding leg; if a non-waypoint leg is reached before finding any
+     * hold legs, null is returned
+     * @return a [HoldLeg], or null if no hold legs are found
+     * */
+    fun getNextHoldLeg(): HoldLeg? {
+        for (i in 0 until legs.size) legs[i]?.apply {
+            if (this is HoldLeg) return this
+            else if (this !is WaypointLeg) return null
+        }
+        return null
+    }
+
+    /**
+     * Gets the first upcoming hold leg with the input ID; if a non-waypoint/hold leg is reached before finding any hold
+     * legs, null is returned
+     *
+     * If waypoint ID is -1, a search for present position hold leg in the first position is done instead, and returns it
+     * if found
+     * @param wptId the waypoint ID of the hold leg to search for in the route
+     * @return a [HoldLeg], or null if no hold legs are found
+     * */
+    fun findFirstHoldLegWithID(wptId: Short): HoldLeg? {
+        if (wptId <= -1) {
+            // Searching for present position hold leg - only the first leg should be
+            if (legs.size == 0) return null
+            return (legs[0] as? HoldLeg)?.let {
+                // If the first leg is hold and has a wptId of less than -1 (present position waypoints have custom IDs less than -1)
+                if (it.wptId < -1) it else null
+            }
+        }
+
+        for (i in 0 until legs.size) legs[i]?.apply {
+            if (this is HoldLeg && this.wptId == wptId) return this
+            else if (this !is WaypointLeg && this !is HoldLeg) return null
+        }
+        return null
+    }
+
     /**
      * Gets the first upcoming waypoint leg with a speed restriction; if a non-waypoint leg is reached before finding any
      * waypoint legs with a restriction, null is returned
@@ -250,8 +290,8 @@ class Route() {
      *
      * Optional declaration of [phase]
      * */
-    data class HoldLeg(val wptId: Short, val maxAltFt: Int?, val minAltFt: Int?, val maxSpdKtLower: Short?, val maxSpdKtHigher: Short?,
-                       val inboundHdg: Short, val legDist: Byte, val turnDir: Byte, override val phase: Byte = NORMAL): Leg() {
+    data class HoldLeg(val wptId: Short, var maxAltFt: Int?, var minAltFt: Int?, var maxSpdKtLower: Short?, var maxSpdKtHigher: Short?,
+                       var inboundHdg: Short, var legDist: Byte, var turnDir: Byte, override val phase: Byte = NORMAL): Leg() {
 
         // No-arg constructor for Kryo serialisation
         constructor(): this(0, null, null, 230, 240, 360, 5, CommandTarget.TURN_RIGHT)

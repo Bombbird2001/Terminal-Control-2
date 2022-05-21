@@ -139,6 +139,9 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
                                 this@RadarScreen.waypoints[id] = this
                             }
                         }
+                    } ?: (obj as? SerialisationRegistering.WaypointMappingData)?.waypointMapping?.apply {
+                        updatedWaypointMapping.clear()
+                        onEach { updatedWaypointMapping[it.name] = it.wptId }
                     } ?: (obj as? SerialisationRegistering.PublishedHoldData)?.publishedHolds?.onEach {
                         PublishedHold.fromSerialisedObject(it).apply {
                             waypoints[entity[PublishedHoldInfo.mapper]?.wptId]?.entity?.get(WaypointInfo.mapper)?.wptName?.let {wptName ->

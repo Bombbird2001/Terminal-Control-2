@@ -1,16 +1,14 @@
 package com.bombbird.terminalcontrol2.ui
 
 import com.badlogic.gdx.Gdx
+import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.scenes.scene2d.Actor
 import com.badlogic.gdx.scenes.scene2d.ui.Label
 import com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle
 import com.badlogic.gdx.scenes.scene2d.ui.SelectBox.SelectBoxStyle
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton.TextButtonStyle
 import com.badlogic.gdx.utils.Align
-import com.bombbird.terminalcontrol2.components.AircraftInfo
-import com.bombbird.terminalcontrol2.components.ClearanceAct
-import com.bombbird.terminalcontrol2.components.CommandTarget
-import com.bombbird.terminalcontrol2.components.WaypointInfo
+import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.utilities.*
@@ -47,6 +45,15 @@ class ControlPane {
     private var directButtonArray = GdxArray<KTextButton>(10)
 
     private lateinit var vectorLabel: Label
+
+    private var selectedHoldLeg: Route.HoldLeg? = null
+    private lateinit var holdSelectBox: KSelectBox<String>
+    private lateinit var holdLegDistLabel: Label
+    private lateinit var holdInboundHdgLabel: Label
+    private lateinit var holdAsPublishedButton: KTextButton
+    private lateinit var holdCustomButton: KTextButton
+    private lateinit var holdLeftButton: KTextButton
+    private lateinit var holdRightButton: KTextButton
 
     /**
      * Creates a new table with elements of the control pane
@@ -141,7 +148,24 @@ class ControlPane {
                     textButton("Handover\n-\nAcknowledge", "ControlPaneButton").cell(grow = true, preferredWidth = paneWidth / 3).isVisible = false
                     transmitButton = textButton("Transmit", "ControlPaneButton").cell(grow = true, preferredWidth = paneWidth / 3).apply {
                         addChangeListener { _, _ -> GAME.gameClientScreen?.let { radarScreen -> radarScreen.selectedAircraft?.let { aircraft ->
-                            if (checkClearanceEquality(parentPane.userClearanceState, parentPane.clearanceState)) return@addChangeListener // No need to update anything if no change to clearance
+                            val leg1 = if (parentPane.clearanceState.route.legs.size > 0) parentPane.clearanceState.route.legs[0] else null
+                            val leg2 = directLeg
+                            val directChanged = if (leg1 == null && leg2 == null) false else if (leg1 == null || leg2 == null) true else !compareLegEquality(leg1, leg2)
+                            // Remove any non waypoint legs before directLeg
+                            leg2?.also {
+                                var index = 0
+                                parentPane.userClearanceState.route.legs.apply { while (index < size) {
+                                    val legToCheck = get(index)
+                                    if (legToCheck is Route.WaypointLeg && compareLegEquality(legToCheck, leg2)) return@also // Direct reached
+                                    if (legToCheck !is Route.WaypointLeg) {
+                                        // Remove any non waypoint legs
+                                        removeIndex(index)
+                                        index--
+                                    }
+                                    index++
+                                }}
+                            }
+                            if (checkClearanceEquality(parentPane.userClearanceState, parentPane.clearanceState) && !directChanged) return@addChangeListener // No need to update anything if no change to clearance
                             radarScreen.sendAircraftControlStateClearance(aircraft.entity[AircraftInfo.mapper]?.icaoCallsign ?: return@addChangeListener, parentPane.userClearanceState)
                             Gdx.app.postRunnable {
                                 aircraft.entity[ClearanceAct.mapper]?.actingClearance?.actingClearance?.updateUIClearanceState(parentPane.userClearanceState)
@@ -193,37 +217,123 @@ class ControlPane {
         return widget.table {
             // debugAll()
             table {
-                selectBox<String>("ControlPane") {
-                    items = arrayOf("Present position", "JAMMY", "MARCH").toGdxArray()
+                holdSelectBox = selectBox<String>("ControlPane") {
                     setAlignment(Align.center)
                     list.setAlignment(Align.center)
+                    addChangeListener { _, _ ->
+                        if (modificationInProgress) return@addChangeListener
+                        // Update the hold legs in route when selected hold leg changes
+                        updateHoldClearanceState(parentPane.userClearanceState.route)
+                        updateHoldTable(parentPane.userClearanceState.route)
+                        updateUndoTransmitButtonStates()
+                    }
                 }.cell(grow = true, preferredWidth = 0.4f * paneWidth, padRight = 10f)
-                textButton("As\n Published", "ControlPaneSelected").cell(grow = true, preferredWidth = 0.3f * paneWidth - 10f, padRight = 10f)
-                textButton("Custom", "ControlPaneSelected").cell(grow = true, preferredWidth = 0.3f * paneWidth - 10f)
+                holdAsPublishedButton = textButton("As\n Published", "ControlPaneSelected").cell(grow = true, preferredWidth = 0.3f * paneWidth - 10f).apply {
+                    addChangeListener { _, _ ->
+                        if (modificationInProgress) return@addChangeListener
+                        if (isChecked) {
+                            modificationInProgress = true
+                            holdCustomButton.isChecked = false
+                            selectedHoldLeg?.let {
+                                setHoldAsPublished(it)
+                                updateHoldTable(parentPane.userClearanceState.route)
+                            }
+                            modificationInProgress = false
+                        } else holdAsPublishedButton.isChecked = true
+                    }
+                }
+                holdCustomButton = textButton("Custom", "ControlPaneSelected").cell(grow = true, preferredWidth = 0.3f * paneWidth - 10f, padRight = 10f).apply {
+                    addChangeListener { _, _ ->
+                        if (modificationInProgress) return@addChangeListener
+                        if (isChecked) {
+                            modificationInProgress = true
+                            holdAsPublishedButton.isChecked = false
+                            modificationInProgress = false
+                        } else holdCustomButton.isChecked = true
+                    }
+                }
             }.cell(preferredWidth = paneWidth, growX = true, height = UI_HEIGHT * 0.1f, padTop = 20f)
             row()
             table {
                 // debugAll()
                 label("Legs:", "ControlPaneRoute").apply { setAlignment(Align.center) }.cell(grow = true, height = UI_HEIGHT * 0.1f, padRight = 10f, preferredWidth = 0.15f * paneWidth, align = Align.center)
-                textButton("-", "ControlPaneHold").cell(grow = true, preferredWidth = 0.15f * paneWidth)
-                label("5 nm", "ControlPaneHoldDist").apply { setAlignment(Align.center) }.cell(grow = true, preferredWidth = 0.15f * paneWidth, align = Align.center)
-                textButton("+", "ControlPaneHold").cell(grow = true, padRight = 30f, preferredWidth = 0.15f * paneWidth)
-                textButton("Left", "ControlPaneSelected").cell(grow = true, preferredWidth = 0.2f * paneWidth - 20f)
-                textButton("Right", "ControlPaneSelected").cell(grow = true, preferredWidth = 0.2f * paneWidth - 20f)
+                textButton("-", "ControlPaneHold").cell(grow = true, preferredWidth = 0.15f * paneWidth).addChangeListener { _, _ ->
+                    val newDist = MathUtils.clamp(holdLegDistLabel.text.split(" ")[0].toInt() - 1, 3, 10)
+                    selectedHoldLeg?.legDist = newDist.toByte()
+                    holdLegDistLabel.setText("$newDist nm")
+                    updateAsPublishedStatus()
+                    updateHoldParameterChangedState(selectedHoldLeg)
+                    updateUndoTransmitButtonStates()
+                }
+                holdLegDistLabel = label("5 nm", "ControlPaneHoldDist").apply { setAlignment(Align.center) }.cell(grow = true, preferredWidth = 0.15f * paneWidth, align = Align.center)
+                textButton("+", "ControlPaneHold").cell(grow = true, padRight = 30f, preferredWidth = 0.15f * paneWidth).addChangeListener { _, _ ->
+                    val newDist = MathUtils.clamp(holdLegDistLabel.text.split(" ")[0].toInt() + 1, 3, 10)
+                    selectedHoldLeg?.legDist = newDist.toByte()
+                    holdLegDistLabel.setText("$newDist nm")
+                    updateAsPublishedStatus()
+                    updateHoldParameterChangedState(selectedHoldLeg)
+                    updateUndoTransmitButtonStates()
+                }
+                holdLeftButton = textButton("Left", "ControlPaneSelected").cell(grow = true, preferredWidth = 0.2f * paneWidth - 20f).apply {
+                    addChangeListener { _, _ ->
+                        if (modificationInProgress) return@addChangeListener
+                        if (isChecked) {
+                            modificationInProgress = true
+                            holdRightButton.isChecked = false
+                            modificationInProgress = false
+                            updateAsPublishedStatus()
+                            updateHoldParameterChangedState(selectedHoldLeg)
+                            updateUndoTransmitButtonStates()
+                        } else isChecked = true
+                    }
+                }
+                holdRightButton = textButton("Right", "ControlPaneSelected").cell(grow = true, preferredWidth = 0.2f * paneWidth - 20f).apply {
+                    addChangeListener { _, _ ->
+                        if (modificationInProgress) return@addChangeListener
+                        if (isChecked) {
+                            modificationInProgress = true
+                            holdLeftButton.isChecked = false
+                            modificationInProgress = false
+                            updateAsPublishedStatus()
+                            updateHoldParameterChangedState(selectedHoldLeg)
+                            updateUndoTransmitButtonStates()
+                        } else isChecked = true
+                    }
+                }
             }.cell(preferredWidth = paneWidth, growX = true, height = UI_HEIGHT * 0.1f, padTop = 20f)
             row()
             table {
                 label("Inbound\nheading:", "ControlPaneRoute").apply { setAlignment(Align.center) }.cell(grow = true, preferredWidth = 0.22f * paneWidth, padRight = 10f)
                 table {
-                    textButton("-20", "ControlPaneHdgDark").cell(grow = true, preferredHeight = 0.2f * UI_HEIGHT - 40f)
+                    textButton("-20", "ControlPaneHdgDark").cell(grow = true, preferredHeight = 0.2f * UI_HEIGHT - 40f).addChangeListener { _, _ ->
+                        updateHoldHdgValue(-20)
+                        updateAsPublishedStatus()
+                        updateHoldParameterChangedState(selectedHoldLeg)
+                        updateUndoTransmitButtonStates()
+                    }
                     row()
-                    textButton("-5", "ControlPaneHdgLight").cell(grow = true, preferredHeight = 0.2f * UI_HEIGHT - 40f)
+                    textButton("-5", "ControlPaneHdgLight").cell(grow = true, preferredHeight = 0.2f * UI_HEIGHT - 40f).addChangeListener { _, _ ->
+                        updateHoldHdgValue(-5)
+                        updateAsPublishedStatus()
+                        updateHoldParameterChangedState(selectedHoldLeg)
+                        updateUndoTransmitButtonStates()
+                    }
                 }.cell(grow = true, preferredWidth = 0.275f * paneWidth)
-                label("360", "ControlPaneHdg").apply { setAlignment(Align.center) }.cell(grow = true, preferredWidth = 0.23f * paneWidth - 10f)
+                holdInboundHdgLabel = label("360", "ControlPaneHdg").apply { setAlignment(Align.center) }.cell(grow = true, preferredWidth = 0.23f * paneWidth - 10f)
                 table {
-                    textButton("+20", "ControlPaneHdgDark").cell(grow = true, preferredHeight = 0.2f * UI_HEIGHT - 40f)
+                    textButton("+20", "ControlPaneHdgDark").cell(grow = true, preferredHeight = 0.2f * UI_HEIGHT - 40f).addChangeListener { _, _ ->
+                        updateHoldHdgValue(20)
+                        updateAsPublishedStatus()
+                        updateHoldParameterChangedState(selectedHoldLeg)
+                        updateUndoTransmitButtonStates()
+                    }
                     row()
-                    textButton("+5", "ControlPaneHdgLight").cell(grow = true, preferredHeight = 0.2f * UI_HEIGHT - 40f)
+                    textButton("+5", "ControlPaneHdgLight").cell(grow = true, preferredHeight = 0.2f * UI_HEIGHT - 40f).addChangeListener { _, _ ->
+                        updateHoldHdgValue(5)
+                        updateAsPublishedStatus()
+                        updateHoldParameterChangedState(selectedHoldLeg)
+                        updateUndoTransmitButtonStates()
+                    }
                 }.cell(grow = true, preferredWidth = 0.275f * paneWidth)
             }.cell(preferredWidth = paneWidth, preferredHeight = 0.4f * UI_HEIGHT - 80f, growX = true, padTop = 20f, padBottom = 20f)
             isVisible = false
@@ -331,7 +441,6 @@ class ControlPane {
         var intermediateQueueIndex = 0
         modificationInProgress = true
         altSelectBox.items = GdxArray<String>().apply {
-            clear()
             if (MIN_ALT % 1000 > 0) checkAltAndAddToArray(MIN_ALT, this)
             for (alt in minAlt .. maxAlt step 1000) {
                 INTERMEDIATE_ALTS.also { while (intermediateQueueIndex < it.size) {
@@ -339,9 +448,7 @@ class ControlPane {
                         if (intermediateAlt < alt) checkAltAndAddToArray(intermediateAlt, this)
                         intermediateQueueIndex++
                     } else return@also } ?: intermediateQueueIndex++
-                }
-
-                }
+                }}
                 checkAltAndAddToArray(alt, this)
             }
             if (MAX_ALT % 1000 > 0) checkAltAndAddToArray(MAX_ALT, this)
@@ -362,7 +469,6 @@ class ControlPane {
         val maxSpdRounded = if (maxSpd % 10 > 0) ((maxSpd / 10) * 10).toShort() else maxSpd
         modificationInProgress = true
         spdSelectBox.items = GdxArray<Short>().apply {
-            clear()
             if (minSpd % 10 > 0) add(minSpd)
             for (spd in minSpdRounded .. maxSpdRounded step 10) {
                 if (optimalSpd < spd && spd - optimalSpd <= 9) add(optimalSpd)
@@ -444,8 +550,8 @@ class ControlPane {
                                         else if (j == i) it.legActive = true // This leg is active
                                         else if (prevLegIndex != null && j <= prevLegIndex) it.legActive = true // If a leg was selected previously, set all legs from this to the previous leg as active
                                     }
-                                    directLeg = leg // Update the new direct leg to this
                                 }
+                                directLeg = leg // Update the new direct leg to this
                             }
                             modificationInProgress = false
                             updateUndoTransmitButtonStates()
@@ -467,11 +573,87 @@ class ControlPane {
             modificationInProgress = false
         }
     }
+
+    /**
+     * Updates the hold table to the next cleared hold clearance if any
+     * @param route the route to refer to; should be the aircraft's latest cleared route or user input route
+     * */
+    private fun updateHoldTable(route: Route) {
+        modificationInProgress = true
+        holdSelectBox.items = GdxArray<String>().apply {
+            if (parentPane.clearanceState.route.legs.size > 0) { (parentPane.clearanceState.route.legs[0] as? Route.HoldLeg)?.let {
+                add(if (it.wptId.toInt() == -1) "Present position" else GAME.gameClientScreen?.waypoints?.get(it.wptId)?.entity?.get(WaypointInfo.mapper)?.wptName)
+                return@apply // Only allow the current hold leg in the selection if aircraft is already holding
+            }}
+            add("Present position")
+            for (i in 0 until route.legs.size) route.legs[i]?.let {
+                if (it is Route.WaypointLeg) GAME.gameClientScreen?.waypoints?.get(it.wptId)?.entity?.get(WaypointInfo.mapper)?.wptName?.also { name -> add(name) }
+            }
+        }
+        selectedHoldLeg?.apply {
+            val wptName = if (wptId.toInt() == -1) "Present position" else GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName ?: return@apply
+            holdSelectBox.selected = wptName
+            holdLegDistLabel.setText("$legDist nm")
+            holdInboundHdgLabel.setText(inboundHdg.toString())
+            holdLeftButton.isChecked = turnDir == CommandTarget.TURN_LEFT
+            holdRightButton.isChecked = turnDir == CommandTarget.TURN_RIGHT
+            GAME.gameClientScreen?.publishedHolds?.get(wptName)?.entity?.get(PublishedHoldInfo.mapper)?.let {
+                holdAsPublishedButton.isVisible = true
+                val asPublished = legDist == it.legDistNm && inboundHdg == it.inboundHdgDeg && turnDir == it.turnDir
+                holdAsPublishedButton.isChecked = asPublished
+                holdCustomButton.isChecked = !asPublished
+            } ?: run {
+                holdAsPublishedButton.isChecked = false
+                holdAsPublishedButton.isVisible = false
+            }
+            updateHoldParameterChangedState(this)
+        } ?: run {
+            Gdx.app.log("ControlPane", "Null selectedHoldLeg; should not be null")
+            holdSelectBox.selectedIndex = 0
+            holdLegDistLabel.setText("5 nm")
+            holdInboundHdgLabel.setText("360")
+        }
+        modificationInProgress = false
+    }
+
+    /**
+     * Updates the user cleared hold inbound heading with the input delta value, and updates the [holdInboundHdgLabel] as well
+     * @param change the change in heading that will be added to the user cleared hold inbound heading
+     * */
+    private fun updateHoldHdgValue(change: Short) {
+        selectedHoldLeg?.apply {
+            inboundHdg = (inboundHdg + change).toShort().let {
+                val rectifiedHeading = if (change >= 0) (it / 5f).toInt() * 5 else ceil(it / 5f).roundToInt() * 5
+                modulateHeading(rectifiedHeading.toFloat()).toInt().toShort()
+            }
+            holdInboundHdgLabel.setText(inboundHdg.toString())
+
+        }
+    }
+
+    /**
+     * Updates the styles for the hold parameter input fields (selectBox, Labels, etc.) given the input hold leg
+     * @param holdLeg the hold leg to compare with the acting clearance state
+     * */
+    private fun updateHoldParameterChangedState(holdLeg: Route.HoldLeg?) {
+        holdLeg?.apply {
+            val sameLeg = parentPane.clearanceState.route.findFirstHoldLegWithID(wptId)
+            holdSelectBox.style = Scene2DSkin.defaultSkin[if (sameLeg == null) "ControlPaneChanged" else "ControlPane", SelectBoxStyle::class.java]
+            val distChanged = sameLeg?.legDist != legDist
+            holdLegDistLabel.style = Scene2DSkin.defaultSkin[if (distChanged) "ControlPaneHoldDistChanged" else "ControlPaneHoldDist", LabelStyle::class.java]
+            val hdgChanged = sameLeg?.inboundHdg != inboundHdg
+            holdInboundHdgLabel.style = Scene2DSkin.defaultSkin[if (hdgChanged) "ControlPaneHdgChanged" else "ControlPaneHdg", LabelStyle::class.java]
+            val turnDirChanged = sameLeg?.turnDir != turnDir
+            holdRightButton.style = Scene2DSkin.defaultSkin[if (turnDirChanged && holdRightButton.isChecked) "ControlPaneSelectedChanged" else "ControlPaneSelected", TextButtonStyle::class.java]
+            holdLeftButton.style = Scene2DSkin.defaultSkin[if (turnDirChanged && holdLeftButton.isChecked) "ControlPaneSelectedChanged" else "ControlPaneSelected", TextButtonStyle::class.java]
+        }
+    }
+
      /**
       * Updates the heading display in [vectorTable]
       * @param vectorHdg the currently cleared vector heading
       * */
-    fun updateVectorTable(vectorHdg: Short?) {
+     fun updateVectorTable(vectorHdg: Short?) {
          vectorLabel.setText(vectorHdg?.toString() ?: "0")
          vectorLabel.style = Scene2DSkin.defaultSkin["ControlPaneHdg${if (parentPane.clearanceState.vectorHdg != parentPane.userClearanceState.vectorHdg) "Changed" else ""}", LabelStyle::class.java]
     }
@@ -516,7 +698,9 @@ class ControlPane {
                 holdTable.isVisible = true
                 vectorTable.isVisible = false
                 lateralContainer.actor = holdTable
-                parentPane.userClearanceState.vectorHdg = null
+                selectedHoldLeg = parentPane.userClearanceState.route.getNextHoldLeg()
+                if (selectedHoldLeg == null) updateHoldClearanceState(parentPane.userClearanceState.route)
+                updateHoldTable(parentPane.userClearanceState.route)
                 updateUndoTransmitButtonStates()
             }
             UIPane.MODE_VECTOR -> {
@@ -557,8 +741,132 @@ class ControlPane {
      * state of [UIPane.clearanceState] and [UIPane.userClearanceState]
      * */
     fun updateUndoTransmitButtonStates() {
-        if (checkClearanceEquality(parentPane.clearanceState, parentPane.userClearanceState)) setUndoTransmitButtonsUnchanged()
+        val leg1 = if (parentPane.clearanceState.route.legs.size > 0) parentPane.clearanceState.route.legs[0] else null
+        val leg2 = directLeg
+        val directChanged = if (leg1 == null && leg2 == null) false else if (leg1 == null || leg2 == null) true else !compareLegEquality(leg1, leg2)
+        if (checkClearanceEquality(parentPane.clearanceState, parentPane.userClearanceState) && !directChanged) setUndoTransmitButtonsUnchanged()
         else setUndoTransmitButtonsChanged()
+    }
+
+    /**
+     * Updates the appropriate hold legs in the route clearance; should be called when the selected hold leg in [holdTable]
+     * have been changed
+     *
+     * Also updates the [selectedHoldLeg] with the new selected holding leg
+     * @param route the route to update the hold legs
+     * */
+    private fun updateHoldClearanceState(route: Route) {
+        (selectedHoldLeg?.wptId)?.let {
+            // Look for hold legs that are present in the selected clearance but not the acting clearance
+            for (i in 0 until route.legs.size) (route.legs[i] as? Route.HoldLeg)?.apply {
+                if ((it.toInt() == -1 && wptId.toInt() == -1) || it == wptId) {
+                    // Found in selected clearance
+                    for (j in 0 until parentPane.clearanceState.route.legs.size) (parentPane.clearanceState.route.legs[j] as? Route.HoldLeg)?.also { actLeg ->
+                        if ((it.toInt() == -1 && actLeg.wptId.toInt() == -1) || it == actLeg.wptId) {
+                            // Also found in acting clearance, don't remove
+                            return@let
+                        }
+                    }
+                    // Not found in acting clearance, remove from selected clearance
+                    route.legs.removeIndex(i)
+                    selectedHoldLeg = null
+                    return@let
+                }
+            }
+        }
+
+        (holdSelectBox.selected ?: "Present position").let {
+            val selectedInboundHdg = holdInboundHdgLabel.text.toString().toShort()
+            val selectedLegDist = holdLegDistLabel.text.split(" ")[0].toByte()
+            val selectedTurnDir = if (holdLeftButton.isChecked) CommandTarget.TURN_LEFT else CommandTarget.TURN_RIGHT
+            if (it != "Present position") {
+                // Find the corresponding hold or waypoint leg in route (until a non waypoint/hold leg is found)
+                route.legs.also { legs -> for (i in 0 until legs.size) legs[i]?.apply {
+                    // Search for hold leg first
+                        if (this is Route.HoldLeg && GAME.gameClientScreen?.updatedWaypointMapping?.get(it) == wptId) {
+                            // Hold already exists in route, update to selected parameters
+                            inboundHdg = selectedInboundHdg
+                            legDist = selectedLegDist
+                            turnDir = selectedTurnDir
+                            selectedHoldLeg = this
+                            return@also
+                        } else if (this !is Route.HoldLeg && this !is Route.WaypointLeg) return@apply // Non waypoint/hold leg reached
+                    }
+
+                    // Hold leg not found, search for waypoint leg instead
+                    for (i in 0 until legs.size) legs[i]?.apply {
+                        if (this is Route.WaypointLeg && GAME.gameClientScreen?.updatedWaypointMapping?.get(it) == wptId) {
+                            // Add a new hold leg after this waypoint leg (phase will be the same as the parent waypoint leg)
+                            val newHold = GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName?.let { name ->
+                                // If this leg is a published hold leg, set to published by default
+                                GAME.gameClientScreen?.publishedHolds?.get(name)?.entity?.get(PublishedHoldInfo.mapper)?.let { pubHold ->
+                                    Route.HoldLeg(wptId, pubHold.maxAltFt, pubHold.minAltFt, pubHold.maxSpdKtLower, pubHold.maxSpdKtHigher,
+                                        pubHold.inboundHdgDeg, pubHold.legDistNm, pubHold.turnDir, phase)
+                                }} ?: Route.HoldLeg(wptId, null, null, 230, 240, selectedInboundHdg, selectedLegDist, selectedTurnDir, phase)
+                            route.legs.insert(i + 1, newHold)
+                            selectedHoldLeg = newHold
+                            return@also
+                        } else if (this !is Route.HoldLeg && this !is Route.WaypointLeg) return@also // Non waypoint/hold leg reached
+                    }
+                }
+            } else {
+                // Present position hold - create/update custom waypoint
+                // Check if first leg is already present hold position
+                if (route.legs.size >= 1) (route.legs[0] as? Route.HoldLeg)?.apply {
+                    if (wptId.toInt() == -1) {
+                        // First leg is present position hold
+                        inboundHdg = selectedInboundHdg
+                        legDist = selectedLegDist
+                        turnDir = selectedTurnDir
+                        selectedHoldLeg = this
+                        return@let
+                    } else return@apply
+                }
+                // Empty route or first leg is not present position hold leg
+                // Add a new present hold leg as the first leg (phase will be the same as the subsequent leg, or normal if no subsequent legs exist)
+                val phaseToUse = if (route.legs.size > 0) route.legs[0]?.phase ?: Route.Leg.NORMAL else Route.Leg.NORMAL
+                val newHold = Route.HoldLeg(-1, null, null, 230, 240, selectedInboundHdg, selectedLegDist, selectedTurnDir, phaseToUse)
+                route.legs.insert(0, newHold)
+                selectedHoldLeg = newHold
+            }
+        }
+    }
+
+    /**
+     * Sets the parameters of the hold leg to be the same as published holds
+     * @param holdWpt the hold leg
+     * */
+    private fun setHoldAsPublished(holdWpt: Route.HoldLeg) {
+        val name = GAME.gameClientScreen?.waypoints?.get(holdWpt.wptId)?.entity?.get(WaypointInfo.mapper)?.wptName ?: return
+        val publishedHold = GAME.gameClientScreen?.publishedHolds?.get(name)?.entity?.get(PublishedHoldInfo.mapper) ?: return // Return if no published hold found
+        holdWpt.apply {
+            maxAltFt = publishedHold.maxAltFt
+            minAltFt = publishedHold.minAltFt
+            maxSpdKtLower = publishedHold.maxSpdKtLower
+            maxSpdKtHigher = publishedHold.maxSpdKtHigher
+            inboundHdg = publishedHold.inboundHdgDeg
+            legDist = publishedHold.legDistNm
+            turnDir = publishedHold.turnDir
+        }
+    }
+
+    /** Updates the "As Published" and "Custom" buttons state for the selected hold waypoint */
+    private fun updateAsPublishedStatus() {
+        selectedHoldLeg?.apply {
+            val name = GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName ?: return
+            val pubHold = GAME.gameClientScreen?.publishedHolds?.get(name)?.entity?.get(PublishedHoldInfo.mapper)
+            modificationInProgress = true
+            if (pubHold == null || pubHold.maxAltFt != maxAltFt || pubHold.minAltFt != minAltFt || pubHold.inboundHdgDeg != inboundHdg ||
+                    pubHold.maxSpdKtLower != maxSpdKtLower || pubHold.maxSpdKtHigher != maxSpdKtHigher || pubHold.legDistNm != legDist || pubHold.turnDir != turnDir) {
+                // No published hold, or selected hold differs from published hold
+                holdAsPublishedButton.isChecked = false
+                holdCustomButton.isChecked = true
+            } else {
+                holdAsPublishedButton.isChecked = true
+                holdCustomButton.isChecked = false
+            }
+            modificationInProgress = false
+        }
     }
 
     /** Resets [directLeg] back to null, called when a new aircraft is being set in [parentPane] */

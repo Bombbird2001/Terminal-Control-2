@@ -62,4 +62,12 @@ class Waypoint(id: Short, name: String, posX: Short, posY: Short, onClient: Bool
             )
         }
     }
+
+    /** Object that contains [Waypoint] data for mapping name to wptId, to be serialised by Kryo */
+    class SerialisedWaypointMapping(val name: String = "", val wptId: Short = 0)
+
+    fun getMappingSerialisableObject(): SerialisedWaypointMapping {
+        val wptInfo = entity[WaypointInfo.mapper] ?: return SerialisedWaypointMapping()
+        return SerialisedWaypointMapping(wptInfo.wptName, wptInfo.wptId)
+    }
 }

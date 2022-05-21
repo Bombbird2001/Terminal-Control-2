@@ -106,9 +106,9 @@ class RouteEditPane {
                         GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName
                     } ?:
                     (leg as? Route.VectorLeg)?.heading?.let { hdg -> "HDG $hdg" } ?:
-                    (leg as? Route.HoldLeg)?.wptId?.let { wptId -> "Hold at\n${
-                        GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(
-                            WaypointInfo.mapper)?.wptName}" } ?:
+                    (leg as? Route.HoldLeg)?.wptId?.let {
+                            wptId -> "Hold at\n${GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName}"
+                    } ?:
                     (leg as? Route.DiscontinuityLeg)?.let { "Discontinuity" } ?:
                     (leg as? Route.InitClimbLeg)?.heading?.let { hdg -> "Climb on\nHDG $hdg" } ?: return@let
                     val altRestr = (leg as? Route.WaypointLeg)?.let { wptLeg ->

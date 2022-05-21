@@ -47,7 +47,9 @@ class AISystem: EntitySystem() {
                 if (ias.iasKt >= aircraftInfo.aircraftPerf.vR + calculateIASFromTAS(alt.altitudeFt, pxpsToKt(wind.windVectorPxps.dot(dir.trackUnitVector)))) {
                     // Transition to takeoff climb mode
                     remove<TakeoffRoll>()
-                    this += TakeoffClimb(alt.altitudeFt + MathUtils.random(1200, 1800))
+                    val randomAGL = MathUtils.random(1200, 1800)
+                    val accelAlt = alt.altitudeFt + randomAGL
+                    this += TakeoffClimb(accelAlt)
                     this += AccelerateToAbove250kts()
                     // Transition to first leg on route if present, otherwise maintain runway heading
                     setToFirstRouteLeg(this)
@@ -294,6 +296,7 @@ class AISystem: EntitySystem() {
         val actingClearance = entity[ClearanceAct.mapper]?.actingClearance?.actingClearance ?: return
         actingClearance.route.legs.apply {
             removeAllAdvancedCommandModes(entity)
+            unsetTurnDirection(entity)
             entity += LatestClearanceChanged()
             while (size > 0) get(0).let {
                 entity += when (it) {
@@ -428,6 +431,7 @@ class AISystem: EntitySystem() {
         actingClearance.vectorHdg?.let { hdg ->
             // Cleared vector heading
             removeAllAdvancedCommandModes(entity)
+            unsetTurnDirection(entity)
             entity += CommandVector(hdg)
             actingClearance.route.legs.apply {
                 while (size > 0) {
@@ -474,11 +478,15 @@ class AISystem: EntitySystem() {
     }
 
     /**
-     * Gets the appropriate turn direction given the [targetHeading], [currHeading] and the instructed [cmdTurnDir]
+     * Gets the appropriate turn direction given the target heading, aircraft heading and the instructed turn direction
      *
      * This is to ensure that after the aircraft turns though the commanded turn direction, it does not perform another
      * 360 degree loop after reaching the [targetHeading] by allowing a window of 3 degrees where the aircraft should
      * return to the default turn direction behaviour
+     * @param targetHeading the heading that the aircraft is targeting to fly
+     * @param currHeading the heading that the aircraft is flying
+     * @param cmdTurnDir the current turn direction
+     * @return the appropriate turn direction after taking into account the difference between th target and actual heading
      * */
     private fun getAppropriateTurnDir(targetHeading: Float, currHeading: Float, cmdTurnDir: Byte): Byte {
         // Maintain the turn direction until magnitude of deltaHeading is less than 3 degrees
@@ -487,10 +495,21 @@ class AISystem: EntitySystem() {
         else cmdTurnDir
     }
 
-    /** Removes all persistent advanced command modes from the entity */
+    /**
+     * Removes all persistent advanced command modes from the entity
+     * @param entity the aircraft entity to remove the modes from
+     * */
     private fun removeAllAdvancedCommandModes(entity: Entity) {
         entity.remove<CommandHold>()
         entity.remove<CommandDirect>()
         entity.remove<CommandInitClimb>()
+    }
+
+    /**
+     * Sets the turn direction back to default
+     * @param entity the aircraft entity to update the command target turn direction
+     * */
+    private fun unsetTurnDirection(entity: Entity) {
+        entity[CommandTarget.mapper]?.turnDir = CommandTarget.TURN_DEFAULT
     }
 }

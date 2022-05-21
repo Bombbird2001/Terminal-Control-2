@@ -106,6 +106,7 @@ fun checkRouteEqualityStrict(route1: Route, route2: Route): Boolean {
  *
  * Conditions to be considered changed:
  *  - If leg is a vector/init climb/discontinuity/hold leg, and route does not contain a leg with the exact same value
+ *  - If leg is a hold leg, route does not contain a leg with the same wptId
  *  - If leg is a waypoint leg, route does not contain a leg with the same wptId and restrictions
  * @param route the original to route to check for the leg
  * @param leg the leg to check for in the route
@@ -113,10 +114,15 @@ fun checkRouteEqualityStrict(route1: Route, route2: Route): Boolean {
  * */
 fun checkLegChanged(route: Route, leg: Route.Leg): Boolean {
     when (leg) {
-        is Route.VectorLeg, is Route.InitClimbLeg, is Route.DiscontinuityLeg, is Route.HoldLeg -> return !route.legs.contains(leg, false)
+        is Route.VectorLeg, is Route.InitClimbLeg, is Route.DiscontinuityLeg -> return !route.legs.contains(leg, false)
+        is Route.HoldLeg -> {
+            for (i in 0 until route.legs.size) route.legs[i]?.apply { if (this is Route.HoldLeg && this.wptId == leg.wptId) return false }
+            // No legs found with same wpt ID
+            return true
+        }
         is Route.WaypointLeg -> {
             for (i in 0 until route.legs.size) route.legs[i]?.apply { if (this is Route.WaypointLeg && compareLegEquality(this, leg)) return false }
-            // No legs found with same wpt ID
+            // No legs found with same wpt ID, restrictions
             return true
         }
         else -> {

@@ -103,7 +103,7 @@ fun updateWindVector(vec: Vector2, windDeg: Short, windSpdKt: Short) {
 fun getClosestAirportWindVector(x: Float, y: Float): Vector2 {
     var closest = -1f
     var vectorToUse = Vector2()
-    GAME.gameServer?.airports?.values()?.apply {
+    GAME.gameServer?.airports?.values()?.toArray()?.apply {
         for (airport in this) {
             airport.entity.let {
                 val pos = it[Position.mapper] ?: return@let
