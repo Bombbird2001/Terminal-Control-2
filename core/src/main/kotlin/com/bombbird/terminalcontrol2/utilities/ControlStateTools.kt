@@ -6,9 +6,11 @@ import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable
 import com.badlogic.gdx.utils.Queue
 import com.bombbird.terminalcontrol2.components.*
+import com.bombbird.terminalcontrol2.entities.Waypoint
+import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.navigation.Route
-import com.bombbird.terminalcontrol2.networking.SerialisationRegistering
+import com.bombbird.terminalcontrol2.networking.AircraftControlStateUpdateData
 import ktx.ashley.get
 import ktx.ashley.plusAssign
 import ktx.scene2d.Scene2DSkin
@@ -39,11 +41,11 @@ fun getAircraftIcon(flightType: Byte, sectorID: Byte): TextureRegionDrawable {
 /**
  * Adds a new clearance sent by the client to the pending clearances for an aircraft
  * @param entity the aircraft entity to add the clearance to
- * @param clearance the [SerialisationRegistering.AircraftControlStateUpdateData] object that the clearance will be constructed from
+ * @param clearance the [AircraftControlStateUpdateData] object that the clearance will be constructed from
  * @param returnTripTime the time taken for a ping to be sent and acknowledged, in ms, calculated by the server; half of
  * this value in seconds will be subtracted from the delay time (2s) to account for any ping time lag
  * */
-fun addNewClearanceToPendingClearances(entity: Entity, clearance: SerialisationRegistering.AircraftControlStateUpdateData, returnTripTime: Int) {
+fun addNewClearanceToPendingClearances(entity: Entity, clearance: AircraftControlStateUpdateData, returnTripTime: Int) {
     val pendingClearances = entity[PendingClearances.mapper]
     val newClearance = ClearanceState(clearance.primaryName, Route.fromSerialisedObject(clearance.route), Route.fromSerialisedObject(clearance.hiddenLegs),
         clearance.vectorHdg, clearance.vectorTurnDir, clearance.clearedAlt, clearance.clearedIas, clearance.minIas, clearance.maxIas, clearance.optimalIas)
@@ -116,8 +118,8 @@ fun checkLegChanged(route: Route, leg: Route.Leg): Boolean {
     when (leg) {
         is Route.VectorLeg, is Route.InitClimbLeg, is Route.DiscontinuityLeg -> return !route.legs.contains(leg, false)
         is Route.HoldLeg -> {
-            for (i in 0 until route.legs.size) route.legs[i]?.apply { if (this is Route.HoldLeg && this.wptId == leg.wptId) return false }
-            // No legs found with same wpt ID
+            for (i in 0 until route.legs.size) route.legs[i]?.apply { if (this is Route.HoldLeg && (wptId == leg.wptId || (wptId <= -1 && leg.wptId <= -1))) return false }
+            // No legs found with same wpt ID (or no present position hold leg with ID <= -1)
             return true
         }
         is Route.WaypointLeg -> {
@@ -190,6 +192,7 @@ fun getMinMaxOptimalIAS(entity: Entity): Triple<Short, Short, Short> {
         between10000ftAndCrossover || aboveCrossover -> (((altitude.altitudeFt - 10000) / (perf.maxAlt - 10000)) * (perf.climbOutSpeed * 2f / 9) + perf.climbOutSpeed * 10f / 9).roundToInt().toShort()
         else -> 160
     }
+    // Aircraft enforced speeds - max 250 knots below 10000 ft, max IAS between 10000 ft and crossover, max mach above crossover
     val maxAircraftSpd: Short = when {
         below10000ft -> min(250, perf.maxIas.toInt()).toShort()
         between10000ftAndCrossover -> perf.maxIas
@@ -198,21 +201,35 @@ fun getMinMaxOptimalIAS(entity: Entity): Triple<Short, Short, Short> {
     }
     val nextRouteMaxSpd = actingClearance.route.getNextMaxSpd()
     // SID/STAR enforced max speeds
-    val maxSpd = if (actingClearance.vectorHdg != null) null else lastRestriction.maxSpdKt.let { lastMaxSpd ->
-        when {
-            lastMaxSpd != null && nextRouteMaxSpd != null -> max(lastMaxSpd.toInt(), nextRouteMaxSpd.toInt()).toShort()
-            lastMaxSpd != null -> when (flightType.type) {
-                FlightType.DEPARTURE -> null// No further max speeds, but aircraft is a departure so allow acceleration beyond previous max speed
-                FlightType.ARRIVAL -> lastMaxSpd// No further max speeds, use the last max speed
-                else -> null
+    val maxSpd = if (actingClearance.vectorHdg != null) null // If being cleared on vectors, no speed restrictions
+    else {
+        var holdMaxSpd: Short? = null
+        var holding = false
+        // Check if aircraft is holding; if so use the max speed for the holding leg
+        actingClearance.route.legs.let {
+            if (it.size > 0) holdMaxSpd = (it[0] as? Route.HoldLeg)?.let { holdLeg ->
+                holding = true
+                if (altitude.altitudeFt > 14050) holdLeg.maxSpdKtHigher else holdLeg.maxSpdKtLower
             }
-            nextRouteMaxSpd != null -> when (flightType.type) {
-                FlightType.DEPARTURE -> nextRouteMaxSpd// No max speeds before, but aircraft is a departure so must follow all subsequent max speeds
-                FlightType.ARRIVAL -> null// No max speeds before
-                else -> null
-            }
-            else -> null
         }
+        // If aircraft is not holding, get restrictions for the SID/STAR
+        if (!holding) holdMaxSpd = lastRestriction.maxSpdKt.let { lastMaxSpd ->
+            when {
+                lastMaxSpd != null && nextRouteMaxSpd != null -> max(lastMaxSpd.toInt(), nextRouteMaxSpd.toInt()).toShort()
+                lastMaxSpd != null -> when (flightType.type) {
+                    FlightType.DEPARTURE -> null// No further max speeds, but aircraft is a departure so allow acceleration beyond previous max speed
+                    FlightType.ARRIVAL -> lastMaxSpd// No further max speeds, use the last max speed
+                    else -> null
+                }
+                nextRouteMaxSpd != null -> when (flightType.type) {
+                    FlightType.DEPARTURE -> nextRouteMaxSpd// No max speeds before, but aircraft is a departure so must follow all subsequent max speeds
+                    FlightType.ARRIVAL -> null// No max speeds before
+                    else -> null
+                }
+                else -> null
+            }
+        }
+        holdMaxSpd
     }
     val optimalSpd: Short = MathUtils.clamp(when {
         takingOff -> perf.climbOutSpeed
@@ -222,4 +239,49 @@ fun getMinMaxOptimalIAS(entity: Entity): Triple<Short, Short, Short> {
         else -> 240
     }, minSpd, maxAircraftSpd)
     return Triple(minSpd, min(maxAircraftSpd.toInt(), (maxSpd ?: maxAircraftSpd).toInt()).toShort(), min(optimalSpd.toInt(), (maxSpd ?: optimalSpd).toInt()).toShort())
+}
+
+/**
+ * Creates a new custom waypoint for the purpose of present position holds, and adds it to the waypoint map
+ *
+ * Also sends a network update to all clients informing them of the new waypoint addition
+ * @param posX the x coordinate of the new waypoint
+ * @param posY the y coordinate of the new wayoint
+ * @return the wptID of the new created waypoint
+ * */
+fun createCustomHoldWaypoint(posX: Float, posY: Float): Short {
+    // Search for an available ID below -1
+    var wptId: Short? = null
+    for (i in -2 downTo Short.MIN_VALUE) if (GAME.gameServer?.waypoints?.containsKey(i.toShort()) == false) {
+        wptId = i.toShort()
+        break
+    }
+    if (wptId == null) {
+        Gdx.app.log("ControlStateTools", "Could not find a custom waypoint ID to use")
+        return 0
+    }
+    // Create the waypoint, add to gameServer, and send data to clients
+    val newWpt = Waypoint(wptId, "", posX.toInt().toShort(), posY.toInt().toShort(), false)
+    GAME.gameServer?.apply {
+        waypoints[wptId] = newWpt
+        sendCustomWaypointAdditionToAll(newWpt)
+    }
+    return wptId
+}
+
+/**
+ * Removes a custom waypoint with its ID
+ * @param wptId the ID of the waypoint to remove; this must be less than -1
+ * */
+fun removeCustomHoldWaypoint(wptId: Short) {
+    if (wptId >= -1) {
+        Gdx.app.log("ControlStateTools", "Custom waypoint must have ID < -1; $wptId was provided")
+        return
+    }
+    // Remove the custom waypoint with specified ID
+    GAME.gameServer?.apply {
+        waypoints[wptId]?.let { engine.removeEntity(it.entity) }
+        waypoints.remove(wptId)
+        sendCustomWaypointRemovalToAll(wptId)
+    }
 }

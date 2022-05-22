@@ -158,9 +158,9 @@ class ControlPane {
                                 var index = 0
                                 parentPane.userClearanceState.route.legs.apply { while (index < size) {
                                     val legToCheck = get(index)
-                                    if (legToCheck is Route.WaypointLeg && compareLegEquality(legToCheck, leg2)) return@also // Direct reached
+                                    if (compareLegEquality(legToCheck, leg2)) return@also // Leg reached
                                     if (legToCheck !is Route.WaypointLeg) {
-                                        // Remove any non waypoint legs
+                                        // Remove any non waypoint legs along the way
                                         removeIndex(index)
                                         index--
                                     }
@@ -221,7 +221,7 @@ class ControlPane {
             table {
                 holdSelectBox = selectBox<String>("ControlPane") {
                     setAlignment(Align.center)
-                    list.setAlignment(Align.center)
+                    list.alignment = Align.center
                     addChangeListener { _, _ ->
                         if (modificationInProgress) return@addChangeListener
                         // Update the hold legs in route when selected hold leg changes
@@ -283,6 +283,7 @@ class ControlPane {
                             modificationInProgress = true
                             holdRightButton.isChecked = false
                             modificationInProgress = false
+                            selectedHoldLeg?.turnDir = CommandTarget.TURN_LEFT
                             updateAsPublishedStatus()
                             updateHoldParameterChangedState(selectedHoldLeg)
                             updateUndoTransmitButtonStates()
@@ -296,6 +297,7 @@ class ControlPane {
                             modificationInProgress = true
                             holdLeftButton.isChecked = false
                             modificationInProgress = false
+                            selectedHoldLeg?.turnDir = CommandTarget.TURN_RIGHT
                             updateAsPublishedStatus()
                             updateHoldParameterChangedState(selectedHoldLeg)
                             updateUndoTransmitButtonStates()
@@ -523,8 +525,9 @@ class ControlPane {
                     val legDisplay = (leg as? Route.WaypointLeg)?.let { wpt -> if (!wpt.legActive) return@also
                         GAME.gameClientScreen?.waypoints?.get(wpt.wptId)?.entity?.get(WaypointInfo.mapper)?.wptName } ?:
                     (leg as? Route.VectorLeg)?.heading?.let { hdg -> "HDG $hdg" } ?:
-                    (leg as? Route.HoldLeg)?.wptId?.let { wptId -> "Hold at\n${GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(
-                        WaypointInfo.mapper)?.wptName}" } ?:
+                    (leg as? Route.HoldLeg)?.wptId?.let { wptId -> "Hold ${
+                        if (wptId >= 0) "at\n" + GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName else "here"
+                    }" } ?:
                     (leg as? Route.DiscontinuityLeg)?.let { "Discontinuity" } ?:
                     (leg as? Route.InitClimbLeg)?.heading?.let { hdg -> "Climb on\nHDG $hdg" } ?: return@also
                     if (firstAvailableLeg == null) firstAvailableLeg = leg
@@ -606,7 +609,7 @@ class ControlPane {
         modificationInProgress = true
         holdSelectBox.items = GdxArray<String>().apply {
             if (parentPane.clearanceState.route.legs.size > 0) { (parentPane.clearanceState.route.legs[0] as? Route.HoldLeg)?.let {
-                add(if (it.wptId.toInt() == -1) "Present position" else GAME.gameClientScreen?.waypoints?.get(it.wptId)?.entity?.get(WaypointInfo.mapper)?.wptName)
+                add(if (it.wptId.toInt() <= -1) "Present position" else GAME.gameClientScreen?.waypoints?.get(it.wptId)?.entity?.get(WaypointInfo.mapper)?.wptName)
                 return@apply // Only allow the current hold leg in the selection if aircraft is already holding
             }}
             add("Present position")
@@ -615,7 +618,7 @@ class ControlPane {
             }
         }
         selectedHoldLeg?.apply {
-            val wptName = if (wptId.toInt() == -1) "Present position" else GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName ?: return@apply
+            val wptName = if (wptId.toInt() <= -1) "Present position" else GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName ?: return@apply
             holdSelectBox.selected = wptName
             holdLegDistLabel.setText("$legDist nm")
             holdInboundHdgLabel.setText(inboundHdg.toString())
@@ -637,6 +640,7 @@ class ControlPane {
             holdLegDistLabel.setText("5 nm")
             holdInboundHdgLabel.setText("360")
         }
+        updateAsPublishedStatus()
         modificationInProgress = false
     }
 
@@ -723,6 +727,7 @@ class ControlPane {
                 vectorTable.isVisible = false
                 lateralContainer.actor = routeTable
                 parentPane.userClearanceState.vectorHdg = null
+                updateRouteTable(parentPane.userClearanceState.route)
                 updateUndoTransmitButtonStates()
             }
             UIPane.MODE_HOLD -> {
@@ -863,6 +868,7 @@ class ControlPane {
                 val newHold = Route.HoldLeg(-1, null, null, 230, 240, selectedInboundHdg, selectedLegDist, selectedTurnDir, phaseToUse)
                 route.legs.insert(0, newHold)
                 selectedHoldLeg = newHold
+                directLeg = newHold
             }
         }
     }
@@ -888,7 +894,7 @@ class ControlPane {
     /** Updates the "As Published" and "Custom" buttons state for the selected hold waypoint */
     private fun updateAsPublishedStatus() {
         selectedHoldLeg?.apply {
-            val name = GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName ?: return
+            val name = if (wptId.toInt() == -1) "" else GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName ?: return
             val pubHold = GAME.gameClientScreen?.publishedHolds?.get(name)?.entity?.get(PublishedHoldInfo.mapper)
             modificationInProgress = true
             if (pubHold == null || pubHold.maxAltFt != maxAltFt || pubHold.minAltFt != minAltFt || pubHold.inboundHdgDeg != inboundHdg ||

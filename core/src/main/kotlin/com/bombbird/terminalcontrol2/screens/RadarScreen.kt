@@ -11,30 +11,25 @@ import com.badlogic.gdx.input.GestureDetector.GestureListener
 import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.scenes.scene2d.Actor
-import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.*
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.graphics.ScreenSize
 import com.bombbird.terminalcontrol2.navigation.ClearanceState
-import com.bombbird.terminalcontrol2.navigation.Route
+import com.bombbird.terminalcontrol2.networking.AircraftControlStateUpdateData
 import com.bombbird.terminalcontrol2.ui.UIPane
 import com.bombbird.terminalcontrol2.networking.GameServer
-import com.bombbird.terminalcontrol2.networking.SerialisationRegistering
+import com.bombbird.terminalcontrol2.networking.handleIncomingRequest
+import com.bombbird.terminalcontrol2.networking.registerClassesToKryo
 import com.bombbird.terminalcontrol2.systems.DataSystem
 import com.bombbird.terminalcontrol2.systems.LowFreqUpdate
 import com.bombbird.terminalcontrol2.systems.PhysicsSystemClient
 import com.bombbird.terminalcontrol2.systems.RenderingSystem
-import com.bombbird.terminalcontrol2.ui.updateMetarInformation
-import com.bombbird.terminalcontrol2.utilities.byte
-import com.bombbird.terminalcontrol2.utilities.getAircraftIcon
 import com.bombbird.terminalcontrol2.utilities.nmToPx
 import com.bombbird.terminalcontrol2.utilities.safeStage
 import com.esotericsoftware.kryonet.Client
 import com.esotericsoftware.kryonet.Connection
 import com.esotericsoftware.kryonet.Listener
 import ktx.app.KtxScreen
-import ktx.ashley.get
-import ktx.ashley.plusAssign
 import ktx.assets.disposeSafely
 import ktx.collections.GdxArrayMap
 import ktx.graphics.moveTo
@@ -70,7 +65,7 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
     private var panRate: ImmutableVector2
 
     // Airport map for access during TCP updates; see GameServer for more details
-    val airport = GdxArrayMap<Byte, Airport>(AIRPORT_SIZE)
+    val airports = GdxArrayMap<Byte, Airport>(AIRPORT_SIZE)
     val updatedAirportMapping = GdxArrayMap<String, Byte>(AIRPORT_SIZE)
 
     // Waypoint map for access; see GameServer for more details
@@ -90,87 +85,15 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
     val client = Client(CLIENT_WRITE_BUFFER_SIZE, CLIENT_READ_BUFFER_SIZE)
 
     // Slow update timer
-    var slowUpdateTimer = 1f
+    private var slowUpdateTimer = 1f
 
     init {
         if (true) GAME.gameServer = GameServer().apply { initiateServer() } // TODO True if single-player or host of multiplayer, false otherwise
-        SerialisationRegistering.registerAll(client.kryo)
+        registerClassesToKryo(client.kryo)
         client.start()
         client.addListener(object: Listener {
             override fun received(connection: Connection?, obj: Any?) {
-                // TODO Handle data receipts
-                Gdx.app.postRunnable {
-                    (obj as? String)?.apply {
-                        println(this)
-                    } ?: (obj as? SerialisationRegistering.FastUDPData)?.apply {
-                        aircraft.forEach {
-                            this@RadarScreen.aircraft[it.icaoCallsign]?.apply { updateFromUDPData(it) }
-                        }
-                    } ?: (obj as? SerialisationRegistering.InitialAirspaceData)?.apply {
-                        MAG_HDG_DEV = magHdgDev
-                        MIN_ALT = minAlt
-                        MAX_ALT = maxAlt
-                        MIN_SEP = minSep
-                        TRANS_ALT = transAlt
-                        TRANS_LVL = transLvl
-                    } ?: (obj as? SerialisationRegistering.InitialSectorData)?.sectors?.onEach {
-                        Sector.fromSerialisedObject(it)
-                    } ?: (obj as? SerialisationRegistering.InitialAircraftData)?.aircraft?.onEach {
-                        Aircraft.fromSerialisedObject(it).apply {
-                            entity[AircraftInfo.mapper]?.icaoCallsign?.let { callsign ->
-                                this@RadarScreen.aircraft.put(callsign, this)
-                            }
-                        }
-                    } ?: (obj as? SerialisationRegistering.AirportData)?.apply {
-                        airports.forEach {
-                            Airport.fromSerialisedObject(it).apply {
-                                entity[AirportInfo.mapper]?.arptId?.let { id ->
-                                    this@RadarScreen.airport.put(id, this)
-                                }
-                                // Debug.printAirportSIDs(entity)
-                                // Debug.printAirportSTARs(entity)
-                                // Debug.printAirportApproaches(entity)
-                            }
-                        }
-                        updateMetarInformation()
-                    } ?: (obj as? SerialisationRegistering.WaypointData)?.waypoints?.onEach {
-                        Waypoint.fromSerialisedObject(it).apply {
-                            entity[WaypointInfo.mapper]?.wptId?.let { id ->
-                                this@RadarScreen.waypoints[id] = this
-                            }
-                        }
-                    } ?: (obj as? SerialisationRegistering.WaypointMappingData)?.waypointMapping?.apply {
-                        updatedWaypointMapping.clear()
-                        onEach { updatedWaypointMapping[it.name] = it.wptId }
-                    } ?: (obj as? SerialisationRegistering.PublishedHoldData)?.publishedHolds?.onEach {
-                        PublishedHold.fromSerialisedObject(it).apply {
-                            waypoints[entity[PublishedHoldInfo.mapper]?.wptId]?.entity?.get(WaypointInfo.mapper)?.wptName?.let {wptName ->
-                                this@RadarScreen.publishedHolds.put(wptName, this)
-                            }
-                        }
-                    } ?: (obj as? SerialisationRegistering.MinAltData)?.minAltSectors?.onEach {
-                        MinAltSector.fromSerialisedObject(it)
-                    } ?: (obj as? SerialisationRegistering.ShorelineData)?.shoreline?.onEach {
-                        Shoreline.fromSerialisedObject(it)
-                    } ?: (obj as? SerialisationRegistering.MetarData)?.apply {
-                        metars.forEach {
-                            airport[it.arptId]?.updateFromSerialisedMetar(it)
-                        }
-                        updateMetarInformation()
-                    } ?: (obj as? SerialisationRegistering.AircraftSectorUpdateData)?.apply {
-                        aircraft[obj.callsign]?.let { aircraft ->
-                            aircraft.entity[Controllable.mapper]?.sectorId = obj.newSector
-                            aircraft.entity[RSSprite.mapper]?.drawable = getAircraftIcon(aircraft.entity[FlightType.mapper]?.type ?: return@apply, obj.newSector)
-                            if (obj.newSector == 0.byte && selectedAircraft == aircraft) setUISelectedAircraft(aircraft)
-                        }
-                    } ?: (obj as? SerialisationRegistering.AircraftControlStateUpdateData)?.apply {
-                        aircraft[obj.callsign]?.let { aircraft ->
-                            aircraft.entity += ClearanceAct(ClearanceState.ActingClearance(ClearanceState(obj.primaryName, Route.fromSerialisedObject(obj.route), Route.fromSerialisedObject(obj.hiddenLegs),
-                                obj.vectorHdg, obj.vectorTurnDir, obj.clearedAlt, obj.clearedIas, obj.minIas, obj.maxIas, obj.optimalIas)))
-                            if (selectedAircraft == aircraft) uiPane.updateSelectedAircraft(aircraft)
-                        }
-                    }
-                }
+                handleIncomingRequest(this@RadarScreen, obj)
             }
         })
         while (true) {
@@ -312,6 +235,7 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
      * Updates the viewport and camera's projectionMatrix of [radarDisplayStage], [constZoomStage], [uiStage] and [shapeRenderer]
      * */
     override fun resize(width: Int, height: Int) {
+        println("Resize called")
         ScreenSize.updateScreenSizeParameters(width, height)
         radarDisplayStage.viewport.update(width, height)
         constZoomStage.viewport.update(width, height)
@@ -431,9 +355,11 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
      * @param newClearanceState the new clearance to send to the aircraft
      * */
     fun sendAircraftControlStateClearance(callsign: String, newClearanceState: ClearanceState) {
-        client.sendTCP(SerialisationRegistering.AircraftControlStateUpdateData(callsign, newClearanceState.routePrimaryName,
+        client.sendTCP(
+            AircraftControlStateUpdateData(callsign, newClearanceState.routePrimaryName,
             newClearanceState.route.getSerialisedObject(), newClearanceState.hiddenLegs.getSerialisedObject(),
             newClearanceState.vectorHdg, newClearanceState.vectorTurnDir, newClearanceState.clearedAlt, newClearanceState.clearedIas,
-            newClearanceState.minIas, newClearanceState.maxIas, newClearanceState.optimalIas))
+            newClearanceState.minIas, newClearanceState.maxIas, newClearanceState.optimalIas)
+        )
     }
 }

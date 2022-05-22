@@ -107,7 +107,9 @@ class RouteEditPane {
                     } ?:
                     (leg as? Route.VectorLeg)?.heading?.let { hdg -> "HDG $hdg" } ?:
                     (leg as? Route.HoldLeg)?.wptId?.let {
-                            wptId -> "Hold at\n${GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName}"
+                            wptId -> "Hold ${
+                                if (wptId >= 0) "at\n" + GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName else "here"
+                            }"
                     } ?:
                     (leg as? Route.DiscontinuityLeg)?.let { "Discontinuity" } ?:
                     (leg as? Route.InitClimbLeg)?.heading?.let { hdg -> "Climb on\nHDG $hdg" } ?: return@let

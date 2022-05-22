@@ -3,6 +3,7 @@ package com.bombbird.terminalcontrol2.components
 import com.badlogic.ashley.core.Component
 import com.badlogic.gdx.math.Vector2
 import ktx.ashley.Mapper
+import kotlin.math.abs
 
 /**
  * Component for lateral position on radarScreen
@@ -48,7 +49,14 @@ data class Speed(var speedKts: Float = 0f, var vertSpdFpm: Float = 0f, var angul
  * Component for altitude
  * @param altitudeFt the altitude, in feet
  * */
-data class Altitude(var altitudeFt: Float = 0f): Component {
+class Altitude: Component {
+    var altitudeFt: Float = 0f
+    set(value) {
+        if (abs(value - field) > 1000) {
+            println()
+        }
+        field = value
+    }
     companion object: Mapper<Altitude>()
 }
 

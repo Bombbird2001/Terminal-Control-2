@@ -3,10 +3,9 @@ package com.bombbird.terminalcontrol2.navigation
 import com.badlogic.ashley.core.Entity
 import com.badlogic.gdx.math.MathUtils
 import com.bombbird.terminalcontrol2.components.CommandTarget
-import com.bombbird.terminalcontrol2.utilities.checkLegChanged
-import com.bombbird.terminalcontrol2.utilities.compareLegEquality
-import com.bombbird.terminalcontrol2.utilities.checkRouteEqualityStrict
-import com.bombbird.terminalcontrol2.utilities.getMinMaxOptimalIAS
+import com.bombbird.terminalcontrol2.components.Position
+import com.bombbird.terminalcontrol2.utilities.*
+import ktx.ashley.get
 
 /**
  * Clearance class that contains data for player transmitted aircraft clearances
@@ -42,6 +41,8 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
         /**
          * Updates this acting clearance to the new clearance, performing corrections in case of any conflicts caused due to
          * pilot response time
+         *
+         * Also adds the custom waypoint in the event of a hold at present position
          * @param newClearance the new player sent clearance (that is being removed from PendingClearances)
          * @param entity the aircraft entity that the clearance will be applied to
          * */
@@ -51,9 +52,21 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
             actingClearance.route.let { currRoute -> newClearance.route.let { newRoute ->
                 val currRouteLegs = currRoute.legs
                 val newRouteLegs = newRoute.legs
-                if (currRouteLegs.size >= 1 && newRouteLegs.size >= 1) {
-                    val currFirstLeg = currRouteLegs.first()
-                    val newFirstLeg = newRouteLegs.first()
+                val currFirstLeg = if (currRouteLegs.size > 0) currRouteLegs.first() else null
+                val newFirstLeg = if (newRouteLegs.size > 0) newRouteLegs.first() else null
+                // Remove current present position hold leg if next leg is a different hold leg and is not an uninitialised leg, or not a hold leg
+                if (currFirstLeg is Route.HoldLeg && currFirstLeg.wptId < -1 && (newFirstLeg !is Route.HoldLeg || (newFirstLeg.wptId.toInt() != -1 && newFirstLeg.wptId != currFirstLeg.wptId)))
+                    removeCustomHoldWaypoint(currFirstLeg.wptId)
+                // Create new present hold waypoint if previous leg is not a present hold leg (wptId >= 0), and new leg is uninitialised
+                if ((currFirstLeg !is Route.HoldLeg || currFirstLeg.wptId >= 0) && (newFirstLeg as? Route.HoldLeg)?.wptId?.toInt() == -1)
+                    entity[Position.mapper]?.apply {
+                        newFirstLeg.wptId = createCustomHoldWaypoint(x, y)
+                    }
+                // If previous leg is a present hold leg, and new leg is an uninitialised present hold leg, set new leg ID to that of current leg
+                if (currFirstLeg is Route.HoldLeg && currFirstLeg.wptId < -1 && newFirstLeg is Route.HoldLeg && newFirstLeg.wptId.toInt() == -1)
+                    newFirstLeg.wptId = currFirstLeg.wptId
+
+                if (currFirstLeg != null && newFirstLeg != null) {
                     if (!compareLegEquality(currFirstLeg, newFirstLeg)) {
                         // 3 possible leg conflict scenarios
                         if (currRouteLegs.size >= 2 && newRouteLegs[1].let { it is Route.HoldLeg && currFirstLeg is Route.WaypointLeg && it.wptId == currFirstLeg.wptId }) {

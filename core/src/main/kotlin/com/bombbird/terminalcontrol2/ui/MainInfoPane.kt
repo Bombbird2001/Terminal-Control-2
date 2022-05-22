@@ -46,7 +46,7 @@ fun updateMetarInformation() {
     metarPane.clear()
     CLIENT_SCREEN?.let {
         var padTop = false
-        for (airport in it.airport.values()) {
+        for (airport in it.airports.values()) {
             val airportInfo = airport.entity[AirportInfo.mapper] ?: continue
             val metarInfo = airport.entity[MetarInfo.mapper] ?: continue
             val text =

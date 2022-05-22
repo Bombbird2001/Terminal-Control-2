@@ -139,29 +139,29 @@ class GameServer {
     /** Initiates the KryoNet server for networking */
     private fun startNetworkingServer() {
         // Log.set(Log.LEVEL_DEBUG)
-        SerialisationRegistering.registerAll(server.kryo)
+        registerClassesToKryo(server.kryo)
         server.bind(TCP_PORT, UDP_PORT)
         server.start()
         server.addListener(object: Listener {
             override fun received(connection: Connection?, obj: Any?) {
                 // TODO Handle receive requests
-                (obj as? SerialisationRegistering.AircraftControlStateUpdateData)?.apply {
+                (obj as? AircraftControlStateUpdateData)?.apply {
                     pendingClearanceQueue.offer(NetworkPendingClearanceObject(this, connection?.returnTripTime ?: 0))
                 }
             }
 
             override fun connected(connection: Connection?) {
                 // TODO Send broadcast message
-                connection?.sendTCP(SerialisationRegistering.InitialAirspaceData(MAG_HDG_DEV, MIN_ALT, MAX_ALT, MIN_SEP, TRANS_ALT, TRANS_LVL))
-                connection?.sendTCP(SerialisationRegistering.InitialSectorData(sectors.toArray().map { it.getSerialisableObject() }.toTypedArray()))
-                connection?.sendTCP(SerialisationRegistering.InitialAircraftData(aircraft.values().toArray().map { it.getSerialisableObject() }.toTypedArray()))
-                connection?.sendTCP(SerialisationRegistering.AirportData(airports.values().toArray().map { it.getSerialisableObject() }.toTypedArray()))
+                connection?.sendTCP(InitialAirspaceData(MAG_HDG_DEV, MIN_ALT, MAX_ALT, MIN_SEP, TRANS_ALT, TRANS_LVL))
+                connection?.sendTCP(InitialSectorData(sectors.toArray().map { it.getSerialisableObject() }.toTypedArray()))
+                connection?.sendTCP(InitialAircraftData(aircraft.values().toArray().map { it.getSerialisableObject() }.toTypedArray()))
+                connection?.sendTCP(AirportData(airports.values().toArray().map { it.getSerialisableObject() }.toTypedArray()))
                 val wptArray = waypoints.values.toTypedArray()
-                connection?.sendTCP(SerialisationRegistering.WaypointData(wptArray.map { it.getSerialisableObject() }.toTypedArray()))
-                connection?.sendTCP(SerialisationRegistering.WaypointMappingData(wptArray.map { it.getMappingSerialisableObject() }.toTypedArray()))
-                connection?.sendTCP(SerialisationRegistering.PublishedHoldData(publishedHolds.values().toArray().map { it.getSerialisableObject() }.toTypedArray()))
-                connection?.sendTCP(SerialisationRegistering.MinAltData(minAltSectors.toArray().map { it.getSerialisableObject() }.toTypedArray()))
-                connection?.sendTCP(SerialisationRegistering.ShorelineData(shoreline.toArray().map { it.getSerialisableObject() }.toTypedArray()))
+                connection?.sendTCP(WaypointData(wptArray.map { it.getSerialisableObject() }.toTypedArray()))
+                connection?.sendTCP(WaypointMappingData(wptArray.map { it.getMappingSerialisableObject() }.toTypedArray()))
+                connection?.sendTCP(PublishedHoldData(publishedHolds.values().toArray().map { it.getSerialisableObject() }.toTypedArray()))
+                connection?.sendTCP(MinAltData(minAltSectors.toArray().map { it.getSerialisableObject() }.toTypedArray()))
+                connection?.sendTCP(ShorelineData(shoreline.toArray().map { it.getSerialisableObject() }.toTypedArray()))
             }
         })
     }
@@ -265,7 +265,7 @@ class GameServer {
     private fun sendFastUDPToAll() {
         // TODO send data
         // println("Fast UDP sent, time passed since program start: ${(System.currentTimeMillis() - startTime) / 1000f}s")
-        server.sendToAllUDP(SerialisationRegistering.FastUDPData(aircraft.values().map { it.getSerialisableObjectUDP() }.toTypedArray()))
+        server.sendToAllUDP(FastUDPData(aircraft.values().map { it.getSerialisableObjectUDP() }.toTypedArray()))
     }
 
     /** Send not so frequently updated data approximately [SERVER_TO_CLIENT_UPDATE_RATE_SLOW] times a second
@@ -281,18 +281,51 @@ class GameServer {
 
     /** Send non-frequent METAR updates */
     fun sendMetarTCPToAll() {
-        server.sendToAllTCP(SerialisationRegistering.MetarData(airports.values().map { it.getSerialisedMetar() }.toTypedArray()))
+        server.sendToAllTCP(MetarData(airports.values().map { it.getSerialisedMetar() }.toTypedArray()))
     }
 
-    /** Sends aircraft control state sector updates */
+    /**
+     * Sends aircraft control state sector updates
+     * @param callsign the callsign of the aircraft to update
+     * @param newSector the new sector that the aircraft is under control of
+     * */
     fun sendAircraftSectorUpdateTCPToAll(callsign: String, newSector: Byte) {
-        server.sendToAllTCP(SerialisationRegistering.AircraftSectorUpdateData(callsign, newSector))
+        server.sendToAllTCP(AircraftSectorUpdateData(callsign, newSector))
     }
 
-    /** Sends aircraft clearance state updates */
+    /**
+     * Sends aircraft clearance state updates
+     * @param callsign the callsign of the aircraft to update
+     * @param primaryName the updated primary name of the route
+     * @param route the updated route
+     * @param hiddenLegs the updated hidden legs
+     * @param vectorHdg the updated cleared vector heading
+     * @param vectorTurnDir the updated vector turn direction
+     * @param clearedAlt the updated cleared altitude
+     * @param clearedIas the updated cleared IAS
+     * @param minIas the updated minimum IAS that can be cleared
+     * @param maxIas the updated maximum IAS that can be cleared
+     * @param optimalIas the updated optimal IAS that aircraft will target
+     * */
     fun sendAircraftClearanceStateUpdateToAll(callsign: String, primaryName: String = "", route: Route, hiddenLegs: Route,
                                            vectorHdg: Short?, vectorTurnDir: Byte?, clearedAlt: Int, clearedIas: Short, minIas: Short, maxIas: Short, optimalIas: Short) {
-        server.sendToAllTCP(SerialisationRegistering.AircraftControlStateUpdateData(callsign, primaryName, route.getSerialisedObject(), hiddenLegs.getSerialisedObject(), vectorHdg, vectorTurnDir, clearedAlt, clearedIas, minIas, maxIas, optimalIas))
+        server.sendToAllTCP(AircraftControlStateUpdateData(callsign, primaryName, route.getSerialisedObject(), hiddenLegs.getSerialisedObject(), vectorHdg, vectorTurnDir, clearedAlt, clearedIas, minIas, maxIas, optimalIas))
+    }
+
+    /**
+     * Sends a new custom waypoint to be added by clients
+     * @param waypoint the new custom waypoint
+     * */
+    fun sendCustomWaypointAdditionToAll(waypoint: Waypoint) {
+        server.sendToAllTCP(CustomWaypointData(waypoint.getSerialisableObject()))
+    }
+
+    /**
+     * Sends a message to clients to remove a custom waypoint
+     * @param wptId the new ID of the custom waypoint to remove
+     * */
+    fun sendCustomWaypointRemovalToAll(wptId: Short) {
+        server.sendToAllTCP(RemoveCustomWaypointData(wptId))
     }
 
     /** Send non-frequent, event-updated and/or important data
@@ -316,5 +349,5 @@ class GameServer {
      *
      * [returnTripTime] is the TCP return trip time at the time of receipt
      * */
-    class NetworkPendingClearanceObject(val aircraftControlStateUpdateData: SerialisationRegistering.AircraftControlStateUpdateData, val returnTripTime: Int)
+    class NetworkPendingClearanceObject(val aircraftControlStateUpdateData: AircraftControlStateUpdateData, val returnTripTime: Int)
 }

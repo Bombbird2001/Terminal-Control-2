@@ -42,6 +42,7 @@ class AISystem: EntitySystem() {
                 val wind = get(AffectedByWind.mapper) ?: return@apply
                 ias.iasKt = calculateIASFromTAS(alt.altitudeFt, spd.speedKts)
                 if (ias.iasKt >= aircraftInfo.aircraftPerf.vR + calculateIASFromTAS(alt.altitudeFt, pxpsToKt(wind.windVectorPxps.dot(dir.trackUnitVector)))) {
+                    // TODO Sanity check for airport AGL - since engine sometimes filters out the wrong entities
                     // Transition to takeoff climb mode
                     remove<TakeoffRoll>()
                     val randomAGL = MathUtils.random(1200, 1800)

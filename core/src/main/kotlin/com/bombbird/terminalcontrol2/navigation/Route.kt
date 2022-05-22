@@ -98,8 +98,8 @@ class Route() {
             // Searching for present position hold leg - only the first leg should be
             if (legs.size == 0) return null
             return (legs[0] as? HoldLeg)?.let {
-                // If the first leg is hold and has a wptId of less than -1 (present position waypoints have custom IDs less than -1)
-                if (it.wptId < -1) it else null
+                // If the first leg is hold and has a wptId of less than or equal to -1 (present position waypoints have custom IDs less than -1, or -1 if uninitialised)
+                if (it.wptId <= -1) it else null
             }
         }
 
@@ -290,7 +290,7 @@ class Route() {
      *
      * Optional declaration of [phase]
      * */
-    data class HoldLeg(val wptId: Short, var maxAltFt: Int?, var minAltFt: Int?, var maxSpdKtLower: Short?, var maxSpdKtHigher: Short?,
+    data class HoldLeg(var wptId: Short, var maxAltFt: Int?, var minAltFt: Int?, var maxSpdKtLower: Short?, var maxSpdKtHigher: Short?,
                        var inboundHdg: Short, var legDist: Byte, var turnDir: Byte, override val phase: Byte = NORMAL): Leg() {
 
         // No-arg constructor for Kryo serialisation
