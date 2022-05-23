@@ -54,9 +54,11 @@ data class CommandTarget(var targetHdgDeg: Float = 360f, var turnDir: Byte = TUR
  *
  * [heading] is the heading the aircraft will fly
  *
+ * [turnDir] is the turn direction for the vector leg
+ *
  * This component does not persist; it is removed after setting the [CommandTarget] parameters
  * */
-data class CommandVector(var heading: Short = 360): Component {
+data class CommandVector(var heading: Short = 360, var turnDir: Byte = CommandTarget.TURN_DEFAULT): Component {
     companion object: Mapper<CommandVector>()
 }
 

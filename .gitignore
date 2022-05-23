@@ -3,6 +3,10 @@
 gradle-app.setting
 build/
 
+## Game assets
+assets/
+assetsDesktop/
+
 ## Java:
 *.class
 *.war

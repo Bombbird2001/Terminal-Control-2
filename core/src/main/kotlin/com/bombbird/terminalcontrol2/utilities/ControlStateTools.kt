@@ -75,7 +75,7 @@ fun compareLegEquality(leg1: Route.Leg, leg2: Route.Leg): Boolean {
             leg1.wptId == leg2.wptId && leg1.maxAltFt == leg2.maxAltFt && leg1.minAltFt == leg2.minAltFt &&
                     leg1.maxSpdKtLower == leg2.maxSpdKtLower && leg1.maxSpdKtHigher == leg2.maxSpdKtHigher &&
                     leg1.inboundHdg == leg2.inboundHdg && leg1.legDist == leg2.legDist && leg1.turnDir == leg2.turnDir
-        leg1 is Route.VectorLeg && leg2 is Route.VectorLeg -> leg1.heading == leg2.heading
+        leg1 is Route.VectorLeg && leg2 is Route.VectorLeg -> leg1.heading == leg2.heading && leg1.turnDir == leg2.turnDir
         leg1 is Route.InitClimbLeg && leg2 is Route.InitClimbLeg -> leg1.heading == leg2.heading && leg1.minAltFt == leg2.minAltFt
         leg1 is Route.DiscontinuityLeg && leg2 is Route.DiscontinuityLeg -> true
         else -> false

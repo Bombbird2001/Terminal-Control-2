@@ -425,7 +425,20 @@ object GameLoader {
                 val minAlt = aboveAltRegex.find(data)?.groupValues?.get(1)?.toInt() ?: return null
                 return Route.InitClimbLeg(hdg, minAlt)
             }
-            "HDNG" -> return Route.VectorLeg(hdgRegex.find(data)?.groupValues?.get(1)?.toInt()?.toShort() ?: return null)
+            "HDNG" -> {
+                val hdg = hdgRegex.find(data)?.groupValues?.get(1)?.toInt()?.toShort() ?: return null
+                val turnDir = dirRegex.find(data)?.let {
+                    when (it.groupValues[1]) {
+                        "LEFT" -> CommandTarget.TURN_LEFT
+                        "RIGHT" -> CommandTarget.TURN_RIGHT
+                        else -> {
+                            Gdx.app.log("GameLoader", "Unknown turn direction for HDG ${it.groupValues[0]}")
+                            CommandTarget.TURN_DEFAULT
+                        }
+                    }
+                } ?: CommandTarget.TURN_DEFAULT
+                return Route.VectorLeg(hdg, turnDir)
+            }
             "WYPT" -> {
                 val wptName = wptRegex.find(data)?.groupValues?.get(1) ?: return null
                 val atAlt = atAltRegex.find(data)?.groupValues?.get(1)?.toInt()

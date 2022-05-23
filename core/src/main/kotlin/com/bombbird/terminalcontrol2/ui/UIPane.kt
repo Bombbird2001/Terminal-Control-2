@@ -14,7 +14,8 @@ import ktx.graphics.moveTo
 import ktx.scene2d.*
 import kotlin.math.max
 
-/** The main UI panel display that will integrate the main information pane, and the lateral, altitude and speed panes for controlling of aircraft
+/**
+ * The main UI panel display that will integrate the main information pane, and the lateral, altitude and speed panes for controlling of aircraft
  *
  * The overall UI layout is generated on initialisation, and the exact content can be modified by accessing and modifying the relevant UI components stored as variables
  * */
@@ -122,8 +123,8 @@ class UIPane(private val uiStage: Stage) {
         userClearanceState.updateUIClearanceState(latestClearance.actingClearance)
         clearanceState.updateUIClearanceState(latestClearance.actingClearance)
         controlObj.resetDirectButton()
-        controlObj.updateRouteTable(userClearanceState.route)
-        controlObj.updateVectorTable(userClearanceState.vectorHdg, userClearanceState.vectorTurnDir)
+        // controlObj.updateRouteTable(userClearanceState.route)
+        // controlObj.updateVectorTable(userClearanceState.vectorHdg, userClearanceState.vectorTurnDir)
         controlObj.updateClearanceMode(userClearanceState.route, userClearanceState.vectorHdg)
         controlObj.updateAltSelectBoxChoices(aircraftPerf.maxAlt)
         controlObj.updateAltSpdClearances(userClearanceState.clearedAlt, userClearanceState.clearedIas, userClearanceState.minIas, userClearanceState.maxIas, userClearanceState.optimalIas)
@@ -149,8 +150,8 @@ class UIPane(private val uiStage: Stage) {
         val latestClearance = aircraft.entity[ClearanceAct.mapper]?.actingClearance ?: return
         userClearanceState.updateUIClearanceState(latestClearance.actingClearance, clearanceState)
         clearanceState.updateUIClearanceState(latestClearance.actingClearance)
-        controlObj.updateRouteTable(userClearanceState.route)
-        controlObj.updateVectorTable(userClearanceState.vectorHdg, userClearanceState.vectorTurnDir)
+        // controlObj.updateRouteTable(userClearanceState.route)
+        // controlObj.updateVectorTable(userClearanceState.vectorHdg, userClearanceState.vectorTurnDir)
         controlObj.updateClearanceMode(userClearanceState.route, userClearanceState.vectorHdg)
         controlObj.updateAltSpdClearances(userClearanceState.clearedAlt, userClearanceState.clearedIas, userClearanceState.minIas, userClearanceState.maxIas, userClearanceState.optimalIas)
         controlObj.updateUndoTransmitButtonStates()

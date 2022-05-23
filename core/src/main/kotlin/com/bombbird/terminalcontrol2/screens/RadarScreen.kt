@@ -21,7 +21,6 @@ import com.bombbird.terminalcontrol2.networking.GameServer
 import com.bombbird.terminalcontrol2.networking.handleIncomingRequest
 import com.bombbird.terminalcontrol2.networking.registerClassesToKryo
 import com.bombbird.terminalcontrol2.systems.DataSystem
-import com.bombbird.terminalcontrol2.systems.LowFreqUpdate
 import com.bombbird.terminalcontrol2.systems.PhysicsSystemClient
 import com.bombbird.terminalcontrol2.systems.RenderingSystem
 import com.bombbird.terminalcontrol2.utilities.nmToPx
@@ -35,6 +34,7 @@ import ktx.collections.GdxArrayMap
 import ktx.graphics.moveTo
 import ktx.math.ImmutableVector2
 import java.io.IOException
+import java.util.concurrent.ConcurrentLinkedQueue
 import kotlin.concurrent.thread
 import kotlin.math.min
 
@@ -52,7 +52,7 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
     private val constZoomStage = safeStage(GAME.batch)
     private val uiStage = safeStage(GAME.batch)
     val uiPane = UIPane(uiStage)
-    private val shapeRenderer = ShapeRenderer()
+    private val shapeRenderer = ShapeRenderer(3000)
 
     private val gestureDetector = GestureDetector(40f, 0.2f, 1.1f, 0.15f, this)
     private val inputMultiplexer = InputMultiplexer()
@@ -84,8 +84,8 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
     // Networking client
     val client = Client(CLIENT_WRITE_BUFFER_SIZE, CLIENT_READ_BUFFER_SIZE)
 
-    // Slow update timer
-    private var slowUpdateTimer = 1f
+    // Blocking queue to store runnables to be run in the main thread after engine update
+    val pendingRunnablesQueue = ConcurrentLinkedQueue<Runnable>()
 
     init {
         if (true) GAME.gameServer = GameServer().apply { initiateServer() } // TODO True if single-player or host of multiplayer, false otherwise
@@ -119,7 +119,7 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
         constZoomStage.camera.moveTo(Vector2())
 
         clientEngine.addSystem(RenderingSystem(shapeRenderer, radarDisplayStage, constZoomStage, uiStage))
-        clientEngine.addSystem(PhysicsSystemClient())
+        clientEngine.addSystem(PhysicsSystemClient(1f))
         clientEngine.addSystem(DataSystem())
     }
 
@@ -202,12 +202,8 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
         runCameraAnimations(delta)
         clientEngine.update(delta)
 
-        slowUpdateTimer += delta
-        if (slowUpdateTimer > 1f / UPDATE_RATE_LOW_FREQ) {
-            val systems = clientEngine.systems
-            for (i in 0 until systems.size()) (systems[i] as? LowFreqUpdate)?.lowFreqUpdate()
-            slowUpdateTimer -= 1f
-        }
+        // Process pending runnables
+        while (true) { pendingRunnablesQueue.poll()?.run() ?: break }
     }
 
     /** Clears and disposes of [radarDisplayStage], [constZoomStage], [uiStage], [shapeRenderer], stops the [client] and [GameServer] if present */
@@ -235,7 +231,6 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
      * Updates the viewport and camera's projectionMatrix of [radarDisplayStage], [constZoomStage], [uiStage] and [shapeRenderer]
      * */
     override fun resize(width: Int, height: Int) {
-        println("Resize called")
         ScreenSize.updateScreenSizeParameters(width, height)
         radarDisplayStage.viewport.update(width, height)
         constZoomStage.viewport.update(width, height)
@@ -347,6 +342,16 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
             clampUpdateCamera(amountY * 0.06f)
         }
         return true
+    }
+
+    /**
+     * Adds a runnable to be run on the main client thread after the current engine update
+     *
+     * This is different from Gdx.app.postRunnable in that the runnable will only be run after
+     * @param runnable the runnable to add
+     * */
+    fun postRunnable(runnable: Runnable) {
+        pendingRunnablesQueue.offer(runnable)
     }
 
     /**

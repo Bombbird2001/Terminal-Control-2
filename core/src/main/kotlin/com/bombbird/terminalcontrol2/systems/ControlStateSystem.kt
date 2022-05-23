@@ -18,7 +18,8 @@ import ktx.ashley.remove
  *
  * Used only in GameServer
  * */
-class ControlStateSystem: EntitySystem(), LowFreqUpdate {
+class ControlStateSystem(override val updateTimeS: Float = 0f): EntitySystem(), LowFreqUpdate {
+    override var timer = 0f
 
     /** Main update function */
     override fun update(deltaTime: Float) {
@@ -81,6 +82,8 @@ class ControlStateSystem: EntitySystem(), LowFreqUpdate {
                 } ?: return@apply
             }
         }
+
+        checkLowFreqUpdate(deltaTime)
     }
 
     /**

@@ -13,7 +13,9 @@ import ktx.math.times
  *
  * Used only in RadarScreen
  * */
-class PhysicsSystemClient: EntitySystem(), LowFreqUpdate {
+class PhysicsSystemClient(override val updateTimeS: Float): EntitySystem(), LowFreqUpdate {
+    override var timer = 0f
+
     /** Main update function, for values that need to be updated frequently
      *
      * For values that can be updated less frequently and are not dependent on [deltaTime], put in [lowFreqUpdate]
@@ -47,9 +49,12 @@ class PhysicsSystemClient: EntitySystem(), LowFreqUpdate {
                 pos.y += wind.windVectorPxps.y * deltaTime
             }
         }
+
+        checkLowFreqUpdate(deltaTime)
     }
 
-    /** Secondary update system, for operations that can be updated at a lower frequency and do not rely on deltaTime
+    /**
+     * Secondary update system, for operations that can be updated at a lower frequency and do not rely on deltaTime
      * (e.g. can be derived from other values without needing a time variable)
      *
      * Values that require constant updating or relies on deltaTime should be put in the main [update] function

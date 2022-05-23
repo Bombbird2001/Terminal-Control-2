@@ -4,6 +4,8 @@ import com.bombbird.terminalcontrol2.components.CommandTarget
 import com.bombbird.terminalcontrol2.components.Position
 import com.bombbird.terminalcontrol2.components.WaypointInfo
 import com.bombbird.terminalcontrol2.global.GAME
+import com.bombbird.terminalcontrol2.global.MAG_HDG_DEV
+import com.bombbird.terminalcontrol2.utilities.compareLegEquality
 import com.bombbird.terminalcontrol2.utilities.getRequiredTrack
 import ktx.ashley.get
 import ktx.collections.GdxArray
@@ -32,12 +34,16 @@ class Route() {
      * route legs using referring to the same object; this method should only be used when reading from save files or
      * de-serialising data, or if it is absolutely certain that two variables or properties are meant to refer to the
      * exact same leg objects
+     * @param route the route used to extend this route (via reference)
      * */
     fun extendRoute(route: Route) {
         legs.addAll(route.legs)
     }
 
-    /** Copies all the legs in the provided [route] to the end of the leg array */
+    /**
+     * Copies all the legs in the provided [route] to the end of the leg array
+     * @param route the route used to extend this route (via copying)
+     * */
     fun extendRouteCopy(route: Route) {
         legs.addAll(route.legs.map { it.copyLeg() }.toGdxArray())
     }
@@ -49,13 +55,17 @@ class Route() {
      * route legs using referring to the same object; this method should only be used when reading from save files or
      * de-serialising data, or if it is absolutely certain that two variables or properties are meant to refer to the
      * exact same leg objects
+     * @param route the route to set this route to (via reference)
      * */
     fun setToRoute(route: Route) {
         legs.clear()
         legs.addAll(route.legs)
     }
 
-    /** Clears the existing [legs] and copies all the legs in the provided [route] */
+    /**
+     * Clears the existing [legs] and copies all the legs in the provided [route]
+     * @param route the route to set this route to (via copying)
+     * */
     fun setToRouteCopy(route: Route) {
         legs.clear()
         legs.addAll(route.legs.map { it.copyLeg() }.toGdxArray())
@@ -64,11 +74,53 @@ class Route() {
     /** Returns the track and turn direction from the first to second waypoint, or null if there is no second waypoint leg */
     fun findNextWptLegTrackAndDirection(): Pair<Float, Byte>? {
         if (legs.size < 2) return null
-        (legs[0] as? WaypointLeg)?.let { wpt1 -> (legs[1] as? WaypointLeg)?.let { wpt2 ->
-            val w1 = GAME.gameServer?.waypoints?.get(wpt1.wptId)?.entity?.get(Position.mapper) ?: return null
-            val w2 = GAME.gameServer?.waypoints?.get(wpt2.wptId)?.entity?.get(Position.mapper) ?: return null
-            return Pair(getRequiredTrack(w1.x, w1.y, w2.x, w2.y), wpt2.turnDir)
-        }} ?: return null
+        (legs[0] as? WaypointLeg)?.let { wpt1 ->
+            (legs[1] as? WaypointLeg)?.let { wpt2 ->
+                val w1 = GAME.gameServer?.waypoints?.get(wpt1.wptId)?.entity?.get(Position.mapper) ?: return null
+                val w2 = GAME.gameServer?.waypoints?.get(wpt2.wptId)?.entity?.get(Position.mapper) ?: return null
+                return Pair(getRequiredTrack(w1.x, w1.y, w2.x, w2.y), wpt2.turnDir)
+            } ?: (legs[1] as? VectorLeg)?.let { return Pair(it.heading - MAG_HDG_DEV, CommandTarget.TURN_DEFAULT)}
+        } ?: return null
+    }
+
+    /**
+     * Gets the after waypoint vector leg; if no vector legs exist after the waypoint leg, null is returned
+     * @param wpt the waypoint leg to check for a vector leg after
+     * @return a [VectorLeg], or null if no vector leg found
+     * */
+    fun getAfterWptHdgLeg(wpt: WaypointLeg): VectorLeg? {
+        for (i in 0 until legs.size) legs[i]?.apply {
+            if (compareLegEquality(wpt, this)) {
+                if (legs.size > i + 1) (legs[i + 1] as? VectorLeg)?.let { return it } ?: return null // If subsequent leg exists and is vector, return it
+            }
+        }
+        return null
+    }
+
+    /**
+     * Gets the after waypoint vector leg; if no vector legs exist after the waypoint leg, null is returned
+     * @param wptName the waypoint name to check for a vector leg after
+     * @return a [VectorLeg], or null if no vector leg found
+     * */
+    fun getAfterWptHdgLeg(wptName: String): VectorLeg? {
+        for (i in 0 until legs.size) (legs[i] as? WaypointLeg)?.apply {
+            if (GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName == wptName) {
+                if (legs.size > i + 1) (legs[i + 1] as? VectorLeg)?.let { return it } ?: return null // If subsequent leg exists and is vector, return it
+            }
+        }
+        return null
+    }
+
+    /**
+     * Gets the current direct if there is a vector leg immediately after; if no vector legs exist after the waypoint leg,
+     * or current direct is not waypoint leg, null is returned
+     * @return a [WaypointLeg], or null if no vector leg found
+     * */
+    fun getNextAfterWptHdgLeg(): WaypointLeg? {
+        if (legs.size < 2) return null
+        val firstLeg = legs[0]
+        if (firstLeg !is WaypointLeg || legs[1] !is VectorLeg) return null
+        return firstLeg
     }
 
     /**
@@ -226,7 +278,7 @@ class Route() {
      *
      * Optional declaration of [phase]
      * */
-    data class VectorLeg(val heading: Short, override val phase: Byte = NORMAL): Leg() {
+    data class VectorLeg(var heading: Short, var turnDir: Byte = CommandTarget.TURN_DEFAULT, override val phase: Byte = NORMAL): Leg() {
 
         // No-arg constructor for Kryo serialisation
         constructor(): this(360)
@@ -236,12 +288,12 @@ class Route() {
          * @return a new instance of this [VectorLeg]
          * */
         override fun copyLeg(): Leg {
-            return VectorLeg(heading, phase)
+            return VectorLeg(heading, turnDir, phase)
         }
 
         /** Debug string representation */
         override fun toString(): String {
-            return "HDG $heading"
+            return "HDG $heading $turnDir"
         }
     }
 

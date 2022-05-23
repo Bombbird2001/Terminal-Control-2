@@ -10,7 +10,6 @@ import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.systems.AISystem
 import com.bombbird.terminalcontrol2.systems.ControlStateSystem
-import com.bombbird.terminalcontrol2.systems.LowFreqUpdate
 import com.bombbird.terminalcontrol2.systems.PhysicsSystem
 import com.bombbird.terminalcontrol2.utilities.*
 import com.esotericsoftware.kryonet.Connection
@@ -20,7 +19,6 @@ import ktx.ashley.get
 import ktx.ashley.plusAssign
 import ktx.collections.GdxArray
 import ktx.collections.GdxArrayMap
-import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.thread
@@ -30,7 +28,6 @@ import kotlin.math.roundToLong
 class GameServer {
     companion object {
         const val UPDATE_INTERVAL = 1000.0 / SERVER_UPDATE_RATE
-        const val UPDATE_INTERVAL_LOW_FREQ = 1000.0 / UPDATE_RATE_LOW_FREQ
         const val SERVER_TO_CLIENT_UPDATE_INTERVAL_FAST = 1000.0 / SERVER_TO_CLIENT_UPDATE_RATE_FAST
         const val SERVER_TO_CLIENT_UPDATE_INTERVAL_SLOW = 1000.0 / SERVER_TO_CLIENT_UPDATE_RATE_SLOW
         const val SERVER_METAR_UPDATE_INTERVAL = SERVER_METAR_UPDATE_INTERVAL_MINS * 60 * 1000
@@ -42,8 +39,8 @@ class GameServer {
     private val server = Server()
     val engine = Engine()
 
-    // Blocking queue to store aircraft clearance updates in a different thread as the main thread
-    val pendingClearanceQueue = ConcurrentLinkedQueue<NetworkPendingClearanceObject>()
+    // Blocking queue to store runnables to be run in the main thread after engine update
+    private val pendingRunnablesQueue = ConcurrentLinkedQueue<Runnable>()
 
     val sectors = GdxArray<Sector>(SECTOR_SIZE)
     val aircraft = GdxArrayMap<String, Aircraft>(AIRCRAFT_SIZE)
@@ -110,7 +107,7 @@ class GameServer {
             }
         })
 
-        engine.addSystem(PhysicsSystem())
+        engine.addSystem(PhysicsSystem(1f))
         engine.addSystem(AISystem())
         engine.addSystem(ControlStateSystem())
 
@@ -146,7 +143,11 @@ class GameServer {
             override fun received(connection: Connection?, obj: Any?) {
                 // TODO Handle receive requests
                 (obj as? AircraftControlStateUpdateData)?.apply {
-                    pendingClearanceQueue.offer(NetworkPendingClearanceObject(this, connection?.returnTripTime ?: 0))
+                    postRunnable {
+                        aircraft[obj.callsign]?.entity?.let {
+                            addNewClearanceToPendingClearances(it, obj, connection?.returnTripTime ?: 0)
+                        }
+                    }
                 }
             }
 
@@ -174,7 +175,6 @@ class GameServer {
     /** Main game loop */
     private fun gameLoop() {
         var prevMs = -1L
-        var lowFreqUpdateSlot = -1L
         var fastUpdateSlot = -1L
         var slowUpdateSlot = -1L
         var metarUpdateTime = 0
@@ -187,12 +187,6 @@ class GameServer {
                 // Update client with seconds passed since last frame
                 // println("Time diff: ${currMs - prevMs}")
                 update((currMs - prevMs) / 1000f)
-                val currLowFreqSlot = (currMs - startTime) / (UPDATE_INTERVAL_LOW_FREQ).toLong()
-                if (currLowFreqSlot > lowFreqUpdateSlot) {
-                    // Do low frequency update if this update is after the time slot for the next low frequency update
-                    lowFreqUpdate()
-                    lowFreqUpdateSlot = currLowFreqSlot
-                }
 
                 val currFastSlot = (currMs - startTime) / (SERVER_TO_CLIENT_UPDATE_INTERVAL_FAST).toLong()
                 if (currFastSlot > fastUpdateSlot) {
@@ -237,21 +231,9 @@ class GameServer {
         // println(1 / delta)
 
         engine.update(delta)
-        // println(engine.entities.size())
 
-        // Process pending aircraft clearances from networking thread
-        while (true) {
-            val obj = pendingClearanceQueue.poll() ?: break
-            aircraft[obj.aircraftControlStateUpdateData.callsign]?.entity?.let {
-                addNewClearanceToPendingClearances(it, obj.aircraftControlStateUpdateData, obj.returnTripTime)
-            }
-        }
-    }
-
-    /** Update function that runs at a lower frequency, [UPDATE_RATE_LOW_FREQ] times a second */
-    private fun lowFreqUpdate() {
-        val systems = engine.systems
-        for (i in 0 until systems.size()) (systems[i] as? LowFreqUpdate)?.lowFreqUpdate()
+        // Process pending runnables
+        while (true) { pendingRunnablesQueue.poll()?.run() ?: break }
     }
 
     /** Send frequently updated data approximately [SERVER_TO_CLIENT_UPDATE_RATE_FAST] times a second
@@ -343,11 +325,10 @@ class GameServer {
     }
 
     /**
-     * Helper class for storage in an [ArrayBlockingQueue] for aircraft control state updates received by the server thread
-     *
-     * [aircraftControlStateUpdateData] is the actual control state update data
-     *
-     * [returnTripTime] is the TCP return trip time at the time of receipt
+     * Adds a runnable to be run on the main server thread after the current engine update
+     * @param runnable the runnable to add
      * */
-    class NetworkPendingClearanceObject(val aircraftControlStateUpdateData: AircraftControlStateUpdateData, val returnTripTime: Int)
+    fun postRunnable(runnable: Runnable) {
+        pendingRunnablesQueue.offer(runnable)
+    }
 }

@@ -19,7 +19,8 @@ import ktx.assets.disposeSafely
 import ktx.async.KtxAsync
 import ktx.scene2d.*
 
-/** Main game class, extending the [KtxGame] class
+/**
+ * Main game class, extending the [KtxGame] class
  *
  * [clearScreen] is set to false as it will be handled by the individual screens
  * */
@@ -30,7 +31,8 @@ class TerminalControl2 : KtxGame<KtxScreen>(clearScreen = false) {
     var gameServer: GameServer? = null
     var gameClientScreen: RadarScreen? = null
 
-    /** Overrides [KtxGame.create] to also initiate [KtxAsync], and load assets using [AssetStorage]
+    /**
+     * Overrides [KtxGame.create] to also initiate [KtxAsync], and load assets using [AssetStorage]
      *
      * Sets the screen to [MainMenu] upon completion
      * */

@@ -1,12 +1,15 @@
 package com.bombbird.terminalcontrol2.systems
 
+import com.badlogic.ashley.core.Entity
 import com.badlogic.ashley.core.EntitySystem
+import com.badlogic.ashley.utils.ImmutableArray
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.OrthographicCamera
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.scenes.scene2d.Stage
+import com.badlogic.gdx.utils.Array
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.ui.LABEL_PADDING
@@ -24,6 +27,10 @@ import kotlin.math.sqrt
  * Used only in RadarScreen
  * */
 class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stage: Stage, private val constZoomStage: Stage, private val uiStage: Stage): EntitySystem() {
+    // "Buffer" polygon/circle arrays as a workaround to occasional errors when engine does not filter any polygon/circles to render
+    private var prevPolygon: ImmutableArray<Entity?> = ImmutableArray(Array())
+    private var prevCircles: ImmutableArray<Entity?> = ImmutableArray(Array())
+
     override fun update(deltaTime: Float) {
         val camZoom = (stage.camera as OrthographicCamera).zoom
         val camX = stage.camera.position.x
@@ -57,7 +64,12 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
 
         // Render polygons
         val polygonFamily = allOf(GPolygon::class, SRColor::class).exclude(RenderLast::class).get()
-        val polygons = engine.getEntitiesFor(polygonFamily)
+        var polygons = engine.getEntitiesFor(polygonFamily)
+        if (polygons.size() == 0) {
+            polygons = prevPolygon
+            println("New polygon size ${polygons.size()}")
+        }
+        else prevPolygon = polygons
         for (i in 0 until polygons.size()) {
             polygons[i]?.apply {
                 val poly = get(GPolygon.mapper) ?: return@apply
@@ -81,7 +93,12 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
 
         // Render circles
         val circleFamily = allOf(Position::class, GCircle::class, SRColor::class).exclude(SRConstantZoomSize::class).get()
-        val circles = engine.getEntitiesFor(circleFamily)
+        var circles = engine.getEntitiesFor(circleFamily)
+        if (circles.size() == 0) {
+            circles = prevCircles
+            println("New polygon size ${circles.size()}")
+        }
+        else prevCircles = circles
         for (i in 0 until circles.size()) {
             circles[i]?.apply {
                 val pos = get(Position.mapper) ?: return@apply
@@ -186,7 +203,6 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
                 shapeRenderer.circle((pos.x - camX) / camZoom, (pos.y - camY) / camZoom, circle.radius)
             }
         }
-
         shapeRenderer.end()
 
         GAME.batch.projectionMatrix = stage.camera.combined

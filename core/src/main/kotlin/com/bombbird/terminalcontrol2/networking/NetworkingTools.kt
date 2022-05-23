@@ -162,7 +162,7 @@ data class RemoveCustomWaypointData(val wptId: Short = -1)
  * @param obj the incoming data object whose class should have been registered to [Kryo]
  * */
 fun handleIncomingRequest(rs: RadarScreen, obj: Any?) {
-    Gdx.app.postRunnable {
+    rs.postRunnable {
         (obj as? String)?.apply {
             println(this)
         } ?: (obj as? FastUDPData)?.apply {

@@ -17,7 +17,9 @@ import kotlin.math.max
  *
  * Used only in GameServer
  * */
-class PhysicsSystem: EntitySystem(), LowFreqUpdate {
+class PhysicsSystem(override val updateTimeS: Float): EntitySystem(), LowFreqUpdate {
+    override var timer = 0f
+
     /** Main update function, for values that need to be updated frequently
      *
      * For values that can be updated less frequently and are not dependent on [deltaTime], put in [lowFreqUpdate]
@@ -147,9 +149,12 @@ class PhysicsSystem: EntitySystem(), LowFreqUpdate {
                 else (Vector2(dir.trackUnitVector).times(speed.speedKts) + (affectedByWind.windVectorPxps.times(pxpsToKt(1f)))).len()
             }
         }
+
+        checkLowFreqUpdate(deltaTime)
     }
 
-    /** Secondary update system, for operations that can be updated at a lower frequency and do not rely on deltaTime
+    /**
+     * Secondary update system, for operations that can be updated at a lower frequency and do not rely on deltaTime
      * (e.g. can be derived from other values without needing a time variable)
      *
      * Values that require constant updating or relies on deltaTime should be put in the main [update] function

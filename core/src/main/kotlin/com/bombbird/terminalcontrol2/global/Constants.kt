@@ -1,6 +1,7 @@
 package com.bombbird.terminalcontrol2.global
 
 import com.badlogic.ashley.core.Engine
+import com.badlogic.gdx.Gdx
 import com.bombbird.terminalcontrol2.TerminalControl2
 import com.bombbird.terminalcontrol2.screens.RadarScreen
 import com.bombbird.terminalcontrol2.utilities.GRAVITY_ACCELERATION_MPS2
@@ -43,7 +44,10 @@ const val MAX_ACC = 3f
 /** List of available airports (can be modified, but don't) */
 val AVAIL_AIRPORTS = GdxArray<String>(arrayOf("TCTP", "TCWS", "TCTT", "TCBB", "TCHH", "TCBD", "TCMD", "TCPG"))
 
-/** The current game instance (can be modified, but don't), client engine, and server engine (if [TerminalControl2.gameServer] exists, else throws a [RuntimeException] when accessed) */
+/** Application platform type */
+val APP_TYPE = Gdx.app.type
+
+        /** The current game instance (can be modified, but don't), client engine, and server engine (if [TerminalControl2.gameServer] exists, else throws a [RuntimeException] when accessed) */
 lateinit var GAME: TerminalControl2
 private val CLIENT_ENGINE: Engine
     get() = GAME.engine
@@ -60,7 +64,6 @@ fun getEngine(onClient: Boolean): Engine {
 }
 
 /** Server target refresh rates (in Hz) */
-const val UPDATE_RATE_LOW_FREQ = 1 // Low frequency update rate
 const val SERVER_UPDATE_RATE = 60 // Server game loop
 const val SERVER_TO_CLIENT_UPDATE_RATE_FAST = 20 // Frequently updated data such as aircraft position, navigation, etc.
 const val SERVER_TO_CLIENT_UPDATE_RATE_SLOW = 0.1f // Not so frequently updated data such as thunderstorm cells

@@ -137,6 +137,7 @@ class AISystem: EntitySystem() {
                 val cmdTarget = get(CommandTarget.mapper) ?: return@apply
                 val cmdVec = get(CommandVector.mapper) ?: return@apply
                 cmdTarget.targetHdgDeg = cmdVec.heading.toFloat()
+                cmdTarget.turnDir = cmdVec.turnDir
                 remove<CommandVector>()
                 this += LatestClearanceChanged()
             }
@@ -321,7 +322,8 @@ class AISystem: EntitySystem() {
                 entity += when (it) {
                     is Route.VectorLeg -> {
                         actingClearance.vectorHdg = it.heading
-                        CommandVector(it.heading)
+                        actingClearance.vectorTurnDir = it.turnDir
+                        CommandVector(it.heading, it.turnDir)
                     }
                     is Route.InitClimbLeg -> {
                         (entity[LastRestrictions.mapper] ?: LastRestrictions().also { restr -> entity += restr }).minAltFt = it.minAltFt

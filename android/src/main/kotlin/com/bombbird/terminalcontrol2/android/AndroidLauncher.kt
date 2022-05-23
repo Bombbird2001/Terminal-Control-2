@@ -12,6 +12,9 @@ class AndroidLauncher : AndroidApplication() {
         super.onCreate(savedInstanceState)
         initialize(TerminalControl2(), AndroidApplicationConfiguration().apply {
             // Configure your application here.
+            numSamples = 0
+            useAccelerometer = false
+            useCompass = false
         })
     }
 }
