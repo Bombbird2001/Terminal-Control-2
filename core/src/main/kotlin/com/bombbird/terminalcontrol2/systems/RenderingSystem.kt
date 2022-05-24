@@ -40,6 +40,7 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
         shapeRenderer.begin(ShapeRenderer.ShapeType.Line)
         shapeRenderer.projectionMatrix = stage.camera.combined
         // Estimation circles
+        shapeRenderer.color = Color.WHITE
         shapeRenderer.circle(0f, 0f, 1250f)
         shapeRenderer.circle(0f, 0f, 125f)
         shapeRenderer.circle(0f, 0f, 12.5f)

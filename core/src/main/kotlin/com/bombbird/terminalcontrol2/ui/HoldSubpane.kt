@@ -330,8 +330,12 @@ class HoldSubpane {
                                     Route.HoldLeg(wptId, pubHold.maxAltFt, pubHold.minAltFt, pubHold.maxSpdKtLower, pubHold.maxSpdKtHigher,
                                         pubHold.inboundHdgDeg, pubHold.legDistNm, pubHold.turnDir, phase)
                                 }} ?: Route.HoldLeg(wptId, null, null, 230, 240, selectedInboundHdg, selectedLegDist, selectedTurnDir, phase)
+                            // Remove after waypoint heading leg if it exists
+                            if (i + 1 < legs.size && legs[i + 1] is Route.VectorLeg) route.legs.removeIndex(i + 1)
                             route.legs.insert(i + 1, newHold)
                             selectedHoldLeg = newHold
+                            // If direct leg was previously set to present position hold due to default hold selection, set it back to first leg
+                            (directLeg as? Route.HoldLeg)?.let { if (it.wptId.toInt() == -1) directLeg = legs[0] }
                             return@also
                         } else if (this !is Route.HoldLeg && this !is Route.WaypointLeg) return@also // Non waypoint/hold leg reached
                     }

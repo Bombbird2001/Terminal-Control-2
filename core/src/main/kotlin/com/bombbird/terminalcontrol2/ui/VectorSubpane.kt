@@ -2,13 +2,18 @@ package com.bombbird.terminalcontrol2.ui
 
 import com.badlogic.gdx.scenes.scene2d.Actor
 import com.badlogic.gdx.scenes.scene2d.ui.Label
+import com.badlogic.gdx.scenes.scene2d.ui.SelectBox.SelectBoxStyle
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton
 import com.badlogic.gdx.utils.Align
 import com.bombbird.terminalcontrol2.components.CommandTarget
+import com.bombbird.terminalcontrol2.components.WaypointInfo
+import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.UI_HEIGHT
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.utilities.addChangeListener
 import com.bombbird.terminalcontrol2.utilities.modulateHeading
+import ktx.ashley.get
+import ktx.collections.GdxArray
 import ktx.scene2d.*
 import kotlin.math.ceil
 import kotlin.math.roundToInt
@@ -69,14 +74,15 @@ class VectorSubpane {
                         modificationInProgress = false
                     }
                 }
-                afterWaypointSelectBox = selectBox("ControlPane") {
+                afterWaypointSelectBox = selectBox<String>("ControlPane") {
                     setAlignment(Align.center)
                     list.alignment = Align.center
                     addChangeListener { _, _ ->
                         if (modificationInProgress) return@addChangeListener
-
+                        updateVectorHdgClearanceState(0, parentPane.userClearanceState.route, afterWptHdgLeg)
+                        parentControlPane.updateUndoTransmitButtonStates()
                     }
-                }
+                }.cell(grow = true, preferredWidth = 0.4f * paneWidth)
                 rightButton = textButton("Right", "ControlPaneHdgDir").cell(grow = true, preferredWidth = 0.3f * paneWidth - 10f).apply {
                     addChangeListener { _, _ ->
                         if (modificationInProgress) return@addChangeListener
@@ -84,7 +90,7 @@ class VectorSubpane {
                         if (isChecked) {
                             afterWptHdgLeg?.apply { parentPane.userClearanceState.route.getAfterWptHdgLeg(this)?.turnDir = CommandTarget.TURN_RIGHT } ?:
                             run { parentPane.userClearanceState.vectorTurnDir = CommandTarget.TURN_RIGHT }
-                            rightButton.isChecked = false
+                            leftButton.isChecked = false
                         } else {
                             afterWptHdgLeg?.apply { parentPane.userClearanceState.route.getAfterWptHdgLeg(this)?.turnDir = CommandTarget.TURN_DEFAULT } ?:
                             run { parentPane.userClearanceState.vectorTurnDir = CommandTarget.TURN_DEFAULT }
@@ -142,6 +148,16 @@ class VectorSubpane {
      * @param vectorTurnDir the currently selected turn direction
      * */
     fun updateVectorTable(route: Route, vectorHdg: Short?, vectorTurnDir: Byte?) {
+        modificationInProgress = true
+        afterWaypointSelectBox.items = GdxArray<String>().apply {
+            add("Now")
+            for (i in 0 until parentPane.userClearanceState.route.legs.size) {
+                (parentPane.userClearanceState.route.legs[i] as? Route.WaypointLeg)?.let {
+                    val wptName = GAME.gameClientScreen?.waypoints?.get(it.wptId)?.entity?.get(WaypointInfo.mapper)?.wptName
+                    add("After $wptName")
+                }
+            }
+        }
         var leftChanged = false
         var rightChanged = false
         afterWptHdgLeg?.apply {
@@ -149,11 +165,12 @@ class VectorSubpane {
             vectorLabel.setText(newAftWptLeg.heading.toString())
             val prevAftWptLeg = parentPane.clearanceState.route.getAfterWptHdgLeg(this)
             vectorLabel.style = Scene2DSkin.defaultSkin["ControlPaneHdg${if (prevAftWptLeg?.heading != newAftWptLeg.heading) "Changed" else ""}", Label.LabelStyle::class.java]
-
-            modificationInProgress = true
-            leftButton.isChecked = turnDir == CommandTarget.TURN_LEFT
-            rightButton.isChecked = turnDir == CommandTarget.TURN_RIGHT
-            modificationInProgress = false
+            val wptName = GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName
+            afterWaypointSelectBox.selected = if (wptName == null) "Now" else "After $wptName"
+            // Set style as changed if new after waypoint leg does not yet exist in acting clearance
+            afterWaypointSelectBox.style = Scene2DSkin.defaultSkin[if (wptName == null || parentPane.clearanceState.route.getAfterWptHdgLeg(wptName) == null) "ControlPaneChanged" else "ControlPane", SelectBoxStyle::class.java]
+            leftButton.isChecked = newAftWptLeg.turnDir == CommandTarget.TURN_LEFT
+            rightButton.isChecked = newAftWptLeg.turnDir == CommandTarget.TURN_RIGHT
             leftChanged = (prevAftWptLeg?.turnDir == CommandTarget.TURN_LEFT && newAftWptLeg.turnDir == CommandTarget.TURN_DEFAULT) ||
                     (newAftWptLeg.turnDir == CommandTarget.TURN_LEFT && prevAftWptLeg?.turnDir != CommandTarget.TURN_LEFT)
             rightChanged = (prevAftWptLeg?.turnDir == CommandTarget.TURN_RIGHT && newAftWptLeg.turnDir == CommandTarget.TURN_DEFAULT) ||
@@ -161,11 +178,10 @@ class VectorSubpane {
         } ?: run {
             vectorLabel.setText(vectorHdg?.toString() ?: "0")
             vectorLabel.style = Scene2DSkin.defaultSkin["ControlPaneHdg${if (parentPane.clearanceState.vectorHdg != parentPane.userClearanceState.vectorHdg) "Changed" else ""}", Label.LabelStyle::class.java]
-
-            modificationInProgress = true
+            afterWaypointSelectBox.selectedIndex = 0
+            afterWaypointSelectBox.style = Scene2DSkin.defaultSkin[if (parentPane.clearanceState.vectorHdg == null) "ControlPaneChanged" else "ControlPane", SelectBoxStyle::class.java]
             leftButton.isChecked = vectorTurnDir == CommandTarget.TURN_LEFT
             rightButton.isChecked = vectorTurnDir == CommandTarget.TURN_RIGHT
-            modificationInProgress = false
             leftChanged = (parentPane.clearanceState.vectorTurnDir == CommandTarget.TURN_LEFT && parentPane.userClearanceState.vectorTurnDir == CommandTarget.TURN_DEFAULT) ||
                     (parentPane.userClearanceState.vectorTurnDir == CommandTarget.TURN_LEFT && parentPane.clearanceState.vectorTurnDir != CommandTarget.TURN_LEFT)
             rightChanged = (parentPane.clearanceState.vectorTurnDir == CommandTarget.TURN_RIGHT && parentPane.userClearanceState.vectorTurnDir == CommandTarget.TURN_DEFAULT) ||
@@ -173,6 +189,8 @@ class VectorSubpane {
         }
         leftButton.style = Scene2DSkin.defaultSkin[if (leftChanged) "ControlPaneHdgDirChanged" else "ControlPaneHdgDir", TextButton.TextButtonStyle::class.java]
         rightButton.style = Scene2DSkin.defaultSkin[if (rightChanged) "ControlPaneHdgDirChanged" else "ControlPaneHdgDir", TextButton.TextButtonStyle::class.java]
+
+        modificationInProgress = false
     }
 
     /**
@@ -202,9 +220,26 @@ class VectorSubpane {
             }
         }
 
-        (afterWaypointSelectBox.selected ?: "Now").apply {
-            if (this != "Now") {
-                val newAftWptLeg = route.getAfterWptHdgLeg(this) ?: return@apply
+        (afterWaypointSelectBox.selected ?: "Now").let { selectedOption ->
+            if (selectedOption != "Now") {
+                parentPane.userClearanceState.vectorHdg = null
+                parentPane.userClearanceState.vectorTurnDir = null
+                val wpt = selectedOption.replace("After ", "")
+                val newAftWptLeg = route.getAfterWptHdgLeg(wpt)?.let { pairFound ->
+                    afterWptHdgLeg = pairFound.second // Also set the selected after waypoint leg to that returned by the method
+                    pairFound.first
+                } ?: Route.VectorLeg(vectorLabel.text.toString().toShort()).also { addedLeg ->
+                    // If no current after waypoint vector leg exists, add one after the selected waypoint
+                    for (i in 0 until route.legs.size) (route.legs[i] as? Route.WaypointLeg)?.apply {
+                        if (GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName == wpt) {
+                            // Remove hold leg if it exists
+                            if (i + 1 < route.legs.size && route.legs[i + 1] is Route.HoldLeg) route.legs.removeIndex(i + 1)
+                            route.legs.insert(i + 1, addedLeg)
+                            afterWptHdgLeg = this
+                            return@also
+                        }
+                    }
+                }
                 newAftWptLeg.heading = (newAftWptLeg.heading + change).toShort().let {
                     val rectifiedHeading = if (change >= 0) (it / 5f).toInt() * 5 else ceil(it / 5f).roundToInt() * 5
                     modulateHeading(rectifiedHeading.toFloat()).toInt().toShort()
@@ -214,6 +249,7 @@ class VectorSubpane {
                     val rectifiedHeading = if (change >= 0) (it / 5f).toInt() * 5 else ceil(it / 5f).roundToInt() * 5
                     modulateHeading(rectifiedHeading.toFloat()).toInt().toShort()
                 }
+                afterWptHdgLeg = null
             }
         }
         updateVectorTable(parentPane.userClearanceState.route, parentPane.userClearanceState.vectorHdg, parentPane.userClearanceState.vectorTurnDir)

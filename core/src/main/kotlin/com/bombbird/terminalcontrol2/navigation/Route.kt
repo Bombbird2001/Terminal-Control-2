@@ -98,14 +98,15 @@ class Route() {
     }
 
     /**
-     * Gets the after waypoint vector leg; if no vector legs exist after the waypoint leg, null is returned
+     * Gets the after waypoint vector AND waypoint legs; if no vector legs exist after the waypoint leg, null is returned
      * @param wptName the waypoint name to check for a vector leg after
-     * @return a [VectorLeg], or null if no vector leg found
+     * @return a pair, the first being the [VectorLeg] and the second being the [WaypointLeg] the earlier vector leg
+     * belongs to, or null if no vector leg found
      * */
-    fun getAfterWptHdgLeg(wptName: String): VectorLeg? {
+    fun getAfterWptHdgLeg(wptName: String): Pair<VectorLeg, WaypointLeg>? {
         for (i in 0 until legs.size) (legs[i] as? WaypointLeg)?.apply {
             if (GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName == wptName) {
-                if (legs.size > i + 1) (legs[i + 1] as? VectorLeg)?.let { return it } ?: return null // If subsequent leg exists and is vector, return it
+                if (legs.size > i + 1) (legs[i + 1] as? VectorLeg)?.let { return Pair(it, this) } ?: return null // If subsequent leg exists and is vector, return it
             }
         }
         return null

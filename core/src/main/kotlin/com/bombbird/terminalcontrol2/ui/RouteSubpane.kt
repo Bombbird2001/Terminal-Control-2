@@ -2,6 +2,7 @@ package com.bombbird.terminalcontrol2.ui
 
 import com.badlogic.gdx.scenes.scene2d.Actor
 import com.badlogic.gdx.utils.Align
+import com.bombbird.terminalcontrol2.components.CommandTarget
 import com.bombbird.terminalcontrol2.components.WaypointInfo
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.UI_HEIGHT
@@ -85,7 +86,11 @@ class RouteSubpane {
                 route.legs[i].also { leg ->
                     val legDisplay = (leg as? Route.WaypointLeg)?.let { wpt -> if (!wpt.legActive) return@also
                         GAME.gameClientScreen?.waypoints?.get(wpt.wptId)?.entity?.get(WaypointInfo.mapper)?.wptName } ?:
-                    (leg as? Route.VectorLeg)?.heading?.let { hdg -> "HDG $hdg" } ?:
+                    (leg as? Route.VectorLeg)?.let { vec -> "${when (vec.turnDir) {
+                        CommandTarget.TURN_LEFT -> "Left\n"
+                        CommandTarget.TURN_RIGHT -> "Right\n"
+                        else -> ""
+                    }}HDG ${vec.heading}" } ?:
                     (leg as? Route.HoldLeg)?.wptId?.let { wptId -> "Hold ${
                         if (wptId >= 0) "at\n" + GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName else "here"
                     }" } ?:
