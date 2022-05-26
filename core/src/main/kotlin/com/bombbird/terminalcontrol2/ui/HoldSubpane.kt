@@ -335,7 +335,7 @@ class HoldSubpane {
                             route.legs.insert(i + 1, newHold)
                             selectedHoldLeg = newHold
                             // If direct leg was previously set to present position hold due to default hold selection, set it back to first leg
-                            (directLeg as? Route.HoldLeg)?.let { if (it.wptId.toInt() == -1) directLeg = legs[0] }
+                            (directLeg as? Route.HoldLeg)?.let { selectedHold -> if (selectedHold.wptId.toInt() == -1) directLeg = legs[0] }
                             return@also
                         } else if (this !is Route.HoldLeg && this !is Route.WaypointLeg) return@also // Non waypoint/hold leg reached
                     }

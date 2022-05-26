@@ -92,7 +92,7 @@ abstract class SidStar(val name: String,
                     Gdx.app.log("SID", "Runway $rwyName not available for SID $name")
                 }
                 extendRouteCopy(routeLegs)
-                extendRouteCopy(outboundLegs.random())
+                if (!outboundLegs.isEmpty) extendRouteCopy(outboundLegs.random())
             }
         }
 
@@ -139,6 +139,17 @@ abstract class SidStar(val name: String,
 
         val inboundLegs: GdxArray<Route>
             get() = inOutboundLegs
+
+        /**
+         * Gets a random STAR route, made up of the [inboundLegs] segment, and the [routeLegs] segment
+         * @return the [Route] that is generated for the aircraft
+         * */
+        fun getRandomSTARRouteForRunway(): Route {
+            return Route().apply {
+                if (!inboundLegs.isEmpty) extendRouteCopy(inboundLegs.random())
+                extendRouteCopy(routeLegs)
+            }
+        }
 
         /** Object that contains [STAR] data to be serialised by Kryo */
         class SerialisedSTAR(name: String = "",

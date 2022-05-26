@@ -1,6 +1,7 @@
 package com.bombbird.terminalcontrol2.files
 
 import com.badlogic.gdx.Gdx
+import com.badlogic.gdx.utils.Array
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.*
 import com.bombbird.terminalcontrol2.global.*
@@ -9,6 +10,7 @@ import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.navigation.SidStar
 import com.bombbird.terminalcontrol2.navigation.UsabilityFilter
 import com.bombbird.terminalcontrol2.networking.GameServer
+import com.bombbird.terminalcontrol2.utilities.byte
 import com.bombbird.terminalcontrol2.utilities.nmToPx
 import ktx.ashley.get
 import ktx.assets.toInternalFile
@@ -24,7 +26,7 @@ object GameLoader {
             var currAirport: Airport? = null
             var currSid: SidStar.SID? = null
             var currStar: SidStar.STAR? = null
-            var currSectorCount = 0
+            var currSectorCount = 0.byte
             var currApp: Approach? = null
             for (line in this) {
                 val lineData = line.split(" ")
@@ -60,8 +62,8 @@ object GameLoader {
                             "SHORELINE" -> parseShoreline(lineData, gameServer)
                             "RWYS" -> parseRunway(lineData, currAirport ?: continue)
                             "SECTORS" -> {
-                                if (currSectorCount == 0) currSectorCount = lineData[0].toInt()
-                                else parseSector(lineData, gameServer)
+                                if (currSectorCount == 0.byte) currSectorCount = lineData[0].toByte()
+                                else parseSector(lineData, currSectorCount, gameServer)
                             }
                             "" -> when (lineData[0]) {
                                 "MIN_ALT" -> MIN_ALT = lineData[1].toInt()
@@ -95,8 +97,13 @@ object GameLoader {
         gameServer.updatedWaypointMapping[wptName] = id
     }
 
-    /** Parse th given [data] into a [Sector], and adds it to [GameServer.sectors] */
-    private fun parseSector(data: List<String>, gameServer: GameServer) {
+    /**
+     * Parse the given [data] into a [Sector], and adds it to [GameServer.sectors]
+     * @param data the line array for the sector
+     * @param currSectorCount the number of players this sector configuration is for
+     * @param gameServer the [GameServer] to add this sector to
+     * */
+    private fun parseSector(data: List<String>, currSectorCount: Byte, gameServer: GameServer) {
         val id = data[0].toByte()
         val freq = data[1]
         val callsign = data[2]
@@ -106,7 +113,10 @@ object GameLoader {
             polygon.add(nmToPx(pos[0].toFloat()).toInt().toShort())
             polygon.add(nmToPx(pos[1].toFloat()).toInt().toShort())
         }
-        gameServer.sectors.add(Sector(id, "", freq, callsign, polygon.toShortArray(), onClient = false))
+        val sector = Sector(id, "", freq, callsign, polygon.toShortArray(), onClient = false)
+        if (currSectorCount == 1.byte) gameServer.primarySector.vertices = polygon.map { it.toFloat() }.toFloatArray()
+        if (!gameServer.sectors.containsKey(currSectorCount)) gameServer.sectors.put(currSectorCount, Array<Sector>().apply { add(sector) })
+        else gameServer.sectors[currSectorCount].add(sector)
     }
 
     /** Parse the given [data] into a [MinAltSector], and adds it to [GameServer.minAltSectors] */
@@ -361,11 +371,17 @@ object GameLoader {
         return star
     }
 
-    /** Parse the given [data] into the route data for runway segment of the STAR, and adds it to the supplied [star]'s [SidStar.rwyLegs] */
+    /**
+     * Parse the given [data] runway availability to the STAR, and adds it to the supplied STAR's runway legs
+     *
+     * [SidStar.STAR.rwyLegs]'s values will contain an empty route, since this is used only to mark the runways where
+     * this STAR can be used
+     * @param data the line array for the sector
+     * @param star the STAR to add the runway to
+     * */
     private fun parseSTARRwyRoute(data: List<String>, star: SidStar.STAR) {
         val rwy = data[1]
-        val route = parseLegs(data.subList(2, data.size), Route.Leg.NORMAL)
-        star.rwyLegs.put(rwy, route)
+        star.rwyLegs.put(rwy, Route())
     }
 
     /** Parse the given [data] into the route legs data, and adds it to the supplied [sidStar]'s [SidStar.routeLegs] */

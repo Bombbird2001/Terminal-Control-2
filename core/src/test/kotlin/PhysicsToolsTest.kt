@@ -1,4 +1,3 @@
-import com.bombbird.terminalcontrol2.utilities.AircraftTypeData
 import com.bombbird.terminalcontrol2.utilities.*
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.DisplayName
@@ -122,8 +121,6 @@ object PhysicsToolsTest {
         assertEquals(0.7f, calculateAcceleration(17000f, 10000f, 10000), 0.00001f)
         assertEquals(3.9504f, calculateAcceleration(294600f, 4048.4f, 73550), 0.0001f)
         assertEquals(3.8028f, calculateAcceleration(260000f, 1866.9f, 67880), 0.0001f)
-        assertEquals(3.9086f, calculateMaxAcceleration(AircraftTypeData.AircraftPerfData(), 0f, 80f, false), 0.0001f)
-        assertEquals(-0.87157f, calculateMinAcceleration(AircraftTypeData.AircraftPerfData(), 0f, 140f, true), 0.00001f)
         assertEquals(0.44109f, calculateRequiredAcceleration(0, 100, 3000f), 0.00001f)
         assertEquals(1.1292f, calculateRequiredAcceleration(0, 160, 3000f), 0.0001f)
         assertEquals(2.0238f, calculateRequiredAcceleration(80, 180, 1700f), 0.0001f)
@@ -137,10 +134,6 @@ object PhysicsToolsTest {
         assertEquals(3453.1f, calculateVerticalSpd(286000f, 140f, 1.5f, 73550), 0.1f)
         assertEquals(5367.1f, calculateVerticalSpd(252000f, 140f, 0f, 67880), 0.1f)
         assertEquals(3198.5f, calculateVerticalSpd(252000f, 140f, 1.5f, 67880), 0.1f)
-        assertEquals(6764.9f, calculateMaxVerticalSpd(AircraftTypeData.AircraftPerfData(), 0f, 175f, 0f, false), 0.1f)
-        assertEquals(3692.7f, calculateMaxVerticalSpd(AircraftTypeData.AircraftPerfData(), 0f, 175f, 1.7f, false), 0.1f)
-        assertEquals(-683.012f, calculateMinVerticalSpd(AircraftTypeData.AircraftPerfData(), 9000f, 273.24f, 0f, false), 0.01f)
-        assertEquals(-6620.9f, calculateMinVerticalSpd(AircraftTypeData.AircraftPerfData(), 9000f, 301.31415f, -1.5f, true), 0.1f)
     }
 
     @Test
@@ -166,4 +159,10 @@ object PhysicsToolsTest {
         assertEquals(29861f, calculateCrossoverAltitude(309, 0.81f), 2f)
     }
 
+    @Test
+    @DisplayName("Gradient calculations")
+    fun checkGradientCalculations() {
+        // Delta set at 5th significant figure
+        assertEquals(0.060632f, calculateDescentGradient(112973f, 190000), 0.000001f)
+    }
 }

@@ -1,10 +1,10 @@
 package com.bombbird.terminalcontrol2.navigation
 
+import com.badlogic.gdx.math.Polygon
 import com.bombbird.terminalcontrol2.components.CommandTarget
 import com.bombbird.terminalcontrol2.components.Position
 import com.bombbird.terminalcontrol2.components.WaypointInfo
 import com.bombbird.terminalcontrol2.global.GAME
-import com.bombbird.terminalcontrol2.global.MAG_HDG_DEV
 import com.bombbird.terminalcontrol2.utilities.compareLegEquality
 import com.bombbird.terminalcontrol2.utilities.getRequiredTrack
 import ktx.ashley.get
@@ -71,7 +71,25 @@ class Route() {
         legs.addAll(route.legs.map { it.copyLeg() }.toGdxArray())
     }
 
-    /** Returns the track and turn direction from the first to second waypoint, or null if there is no second waypoint leg */
+    /**
+     * Gets the first waypoint leg in the route that is within the input sector
+     * @param sector the sector to test the waypoint in
+     * @return a Pair, first being the [WaypointLeg], second being the index of the [WaypointLeg], or null if none found
+     * */
+    fun getFirstWaypointLegInSector(sector: Polygon): Pair<WaypointLeg, Int>? {
+        for (i in 0 until legs.size) {
+            (legs[i] as? WaypointLeg)?.apply {
+                val pos = GAME.gameServer?.waypoints?.get(wptId)?.entity?.get(Position.mapper) ?: return@apply
+                if (sector.contains(pos.x, pos.y)) return Pair(this, i)
+            }
+        }
+        return null
+    }
+
+    /**
+     * Gets the track and turn direction from the first to second waypoint, or null if there is no second waypoint leg
+     * @return a Pair, the first being a float denoting the track, the second being a byte representing the turn direction
+     * */
     fun findNextWptLegTrackAndDirection(): Pair<Float, Byte>? {
         if (legs.size < 2) return null
         (legs[0] as? WaypointLeg)?.let { wpt1 ->
@@ -79,7 +97,7 @@ class Route() {
                 val w1 = GAME.gameServer?.waypoints?.get(wpt1.wptId)?.entity?.get(Position.mapper) ?: return null
                 val w2 = GAME.gameServer?.waypoints?.get(wpt2.wptId)?.entity?.get(Position.mapper) ?: return null
                 return Pair(getRequiredTrack(w1.x, w1.y, w2.x, w2.y), wpt2.turnDir)
-            } ?: (legs[1] as? VectorLeg)?.let { return Pair(it.heading - MAG_HDG_DEV, CommandTarget.TURN_DEFAULT)}
+            }
         } ?: return null
     }
 

@@ -1,7 +1,13 @@
 package com.bombbird.terminalcontrol2.utilities
 
+import com.badlogic.gdx.Gdx
+import com.badlogic.gdx.math.Intersector
 import com.badlogic.gdx.math.MathUtils
+import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.CommandTarget
+import ktx.math.minus
+import ktx.math.plusAssign
+import ktx.math.times
 import kotlin.math.*
 
 /** Game specific math tools for use */
@@ -210,4 +216,46 @@ fun findTurnDistance(deltaHeading: Float, turnRateDps: Float, groundSpeedPxps: F
     val radius = groundSpeedPxps / (MathUtils.degreesToRadians * turnRateDps)
     val halfTheta = (180 - abs(deltaHeading)) / 2f
     return max((radius / tan(Math.toRadians(halfTheta.toDouble()))).toFloat() + 8, 3f)
+}
+
+/**
+ * Calculates the point of intersection point between a line and a polygon, choosing the point closest to the line origin
+ * if multiple intersections with the polygon is found
+ * @param originX the line origin's x coordinate
+ * @param originY the line origin's y coordinate
+ * @param endX the line end's x coordinate
+ * @param endY the line end's y coordinate
+ * @param vertices the borders of the polygon
+ * @return a [Vector2] object with the point of intersection, or null if none is found
+ * */
+fun findClosestIntersectionBetweenSegmentAndPolygon(originX: Float, originY: Float, endX: Float, endY: Float, vertices: FloatArray): Vector2? {
+    if (vertices.size % 2 != 0) {
+        Gdx.app.log("MathTools", "Coordinates cannot be odd in number: ${vertices.size}")
+        return null
+    }
+    if (vertices.size < 4) return null
+    var intersectionVector: Vector2? = null
+    for (i in 0 until vertices.size - 2 step 2) {
+        val posVector = Vector2()
+        if (Intersector.intersectSegments(originX, originY, endX, endY, vertices[i], vertices[i + 1], vertices[i + 2], vertices[i + 3], posVector)) {
+            // Intersect found, compare lengths and set if length is less than current
+            if (intersectionVector == null || Vector2(intersectionVector).apply {
+                    x -= originX
+                    y -= originY
+                }.len2() > Vector2(posVector).apply {
+                    x -= originX
+                    y -= originY
+                }.len2()) intersectionVector = posVector
+        }
+    }
+
+    // Extend the intersection point by 10nm
+    return intersectionVector?.apply {
+        // Get the vector between the intersection and origin
+        val diff = this - Vector2(originX, originY)
+        // Calculate length in pixels
+        val currLen = diff.len()
+        // Add the diff vector scaled by 10nm/length
+        plusAssign(diff * (nmToPx(10) / currLen))
+    }
 }

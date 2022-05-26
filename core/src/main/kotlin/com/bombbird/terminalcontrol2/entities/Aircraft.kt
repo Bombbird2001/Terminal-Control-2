@@ -44,7 +44,6 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
             type = flightType
         }
         with<CommandTarget>()
-        with<TakeoffRoll>()
         with<AffectedByWind>()
         if (onClient) {
             with<RadarData> {

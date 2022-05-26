@@ -17,6 +17,16 @@ data class RunwayInfo(var rwyId: Byte = 0, var rwyName: String = "", var lengthM
     companion object: Mapper<RunwayInfo>()
 }
 
+/** Component for tagging runway that is active for landings */
+class ActiveLanding: Component {
+    companion object: Mapper<ActiveLanding>()
+}
+
+/** Component for tagging runway that is active for takeoffs */
+class ActiveTakeoff: Component {
+    companion object: Mapper<ActiveTakeoff>()
+}
+
 /** Component for tagging airport METAR information */
 data class MetarInfo(var realLifeIcao: String = "", var letterCode: Char? = null, var rawMetar: String? = null, var windHeadingDeg: Short = 360, var windSpeedKt: Short = 0, var windGustKt: Short = 0, var visibilityM: Short = 10000, var ceilingHundredFtAGL: Short? = null, var windshear: String = ""): Component {
     val windVectorPx = Vector2()

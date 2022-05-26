@@ -1,7 +1,7 @@
 package com.bombbird.terminalcontrol2.networking
 
 import com.badlogic.ashley.core.Engine
-import com.badlogic.gdx.math.MathUtils
+import com.badlogic.gdx.math.Polygon
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.*
 import com.bombbird.terminalcontrol2.files.GameLoader
@@ -41,8 +41,8 @@ class GameServer {
 
     // Blocking queue to store runnables to be run in the main thread after engine update
     private val pendingRunnablesQueue = ConcurrentLinkedQueue<Runnable>()
-
-    val sectors = GdxArray<Sector>(SECTOR_SIZE)
+    val primarySector = Polygon() // The primary TMA sector polygon without being split up into sub-sectors
+    val sectors =  GdxArrayMap<Byte, GdxArray<Sector>>(SECTOR_COUNT_SIZE) // Sector configuration for different player number
     val aircraft = GdxArrayMap<String, Aircraft>(AIRCRAFT_SIZE)
     val minAltSectors = GdxArray<MinAltSector>()
     val shoreline = GdxArray<Shoreline>()
@@ -81,31 +81,17 @@ class GameServer {
     private fun loadGame() {
         GameLoader.loadWorldData("TCTP", this)
 
+        // Set 05L, 05R as active for development
+        airports[0]?.entity?.get(RunwayChildren.mapper)?.rwyMap?.apply {
+            get(0).entity += ActiveLanding()
+            get(0).entity += ActiveTakeoff()
+            get(1).entity += ActiveLanding()
+            get(1).entity += ActiveTakeoff()
+        }
+
         // Add dummy aircraft
-        val rwy = airports[0]?.entity?.get(RunwayChildren.mapper)?.rwyMap?.get(0)?.entity
-        val rwyPos = rwy?.get(Position.mapper)
-        val rwyDir = rwy?.get(Direction.mapper)
-        aircraft.put("SHIBA2", Aircraft("SHIBA2", rwyPos?.x ?: 10f, rwyPos?.y ?: -10f, rwy?.get(Altitude.mapper)?.altitudeFt ?: 108f, FlightType.DEPARTURE, false).apply {
-            entity[Direction.mapper]?.trackUnitVector?.rotateDeg((rwyDir?.trackUnitVector?.angleDeg() ?: 0f) - 90) // Runway heading
-            // Calculate headwind component for takeoff
-            val headwind = entity[Altitude.mapper]?.let { alt -> rwyDir?.let { dir -> entity[Position.mapper]?.let { pos ->
-                val wind = getClosestAirportWindVector(pos.x, pos.y)
-                calculateIASFromTAS(alt.altitudeFt, pxpsToKt(wind.dot(dir.trackUnitVector)))
-            }}} ?: 0f
-            entity[Speed.mapper]?.speedKts = -headwind
-            val acPerf = entity[AircraftInfo.mapper]?.aircraftPerf ?: return@apply
-            entity += TakeoffRoll(calculateRequiredAcceleration(0, (acPerf.vR + headwind).toInt().toShort(), ((rwy?.get(RunwayInfo.mapper)?.lengthM ?: 3800) - 1000) * MathUtils.random(0.75f, 1f)))
-            val sid = airports[0]?.entity?.get(SIDChildren.mapper)?.sidMap?.get("HICAL1C") // TODO random selection from eligible SIDs
-            val rwyName = rwy?.get(RunwayInfo.mapper)?.rwyName ?: ""
-            val initClimb = sid?.rwyInitialClimbs?.get(rwyName) ?: 3000
-            entity += ClearanceAct(ClearanceState.ActingClearance(ClearanceState(sid?.name ?: "", sid?.getRandomSIDRouteForRunway(rwyName) ?: Route(), Route(),
-                null, null, initClimb, acPerf.climbOutSpeed)))
-            entity[CommandTarget.mapper]?.apply {
-                targetAltFt = initClimb
-                targetIasKt = acPerf.climbOutSpeed
-                targetHdgDeg = convertWorldAndRenderDeg(rwyDir?.trackUnitVector?.angleDeg() ?: 90f) + MAG_HDG_DEV
-            }
-        })
+        airports[0]?.entity?.get(RunwayChildren.mapper)?.rwyMap?.get(0)?.entity?.let { rwy -> createDeparture(rwy, this) }
+        airports[0]?.entity?.let { arpt -> createArrival(arpt, this) }
 
         engine.addSystem(PhysicsSystem(1f))
         engine.addSystem(AISystem())
@@ -143,7 +129,7 @@ class GameServer {
             override fun received(connection: Connection?, obj: Any?) {
                 // TODO Handle receive requests
                 (obj as? AircraftControlStateUpdateData)?.apply {
-                    postRunnable {
+                    postRunnableAfterEngineUpdate {
                         aircraft[obj.callsign]?.entity?.let {
                             addNewClearanceToPendingClearances(it, obj, connection?.returnTripTime ?: 0)
                         }
@@ -154,7 +140,11 @@ class GameServer {
             override fun connected(connection: Connection?) {
                 // TODO Send broadcast message
                 connection?.sendTCP(InitialAirspaceData(MAG_HDG_DEV, MIN_ALT, MAX_ALT, MIN_SEP, TRANS_ALT, TRANS_LVL))
-                connection?.sendTCP(InitialSectorData(sectors.toArray().map { it.getSerialisableObject() }.toTypedArray()))
+                val playerNo = 1.byte // TODO Change depending on current number of connected players
+                connection?.sendTCP(
+                    InitialIndividualSectorData(playerNo, sectors[playerNo].toArray().map { it.getSerialisableObject() }.toTypedArray(),
+                    primarySector.vertices ?: floatArrayOf()
+                ))
                 connection?.sendTCP(InitialAircraftData(aircraft.values().toArray().map { it.getSerialisableObject() }.toTypedArray()))
                 connection?.sendTCP(AirportData(airports.values().toArray().map { it.getSerialisableObject() }.toTypedArray()))
                 val wptArray = waypoints.values.toTypedArray()
@@ -328,7 +318,7 @@ class GameServer {
      * Adds a runnable to be run on the main server thread after the current engine update
      * @param runnable the runnable to add
      * */
-    fun postRunnable(runnable: Runnable) {
+    fun postRunnableAfterEngineUpdate(runnable: Runnable) {
         pendingRunnablesQueue.offer(runnable)
     }
 }

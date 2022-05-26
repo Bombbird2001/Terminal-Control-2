@@ -76,7 +76,7 @@ const val CLIENT_READ_BUFFER_SIZE = 4096
 /** Default Gdx collections initial sizes */
 const val AIRPORT_SIZE = 6
 const val AIRCRAFT_SIZE = 35
-const val SECTOR_SIZE = 5
+const val SECTOR_COUNT_SIZE = 5
 const val PUBLISHED_HOLD_SIZE = 30
 
 /** Zoom threshold to switch between small and large datatag fonts */

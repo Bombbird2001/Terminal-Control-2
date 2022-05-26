@@ -9,6 +9,7 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import com.badlogic.gdx.input.GestureDetector
 import com.badlogic.gdx.input.GestureDetector.GestureListener
 import com.badlogic.gdx.math.MathUtils
+import com.badlogic.gdx.math.Polygon
 import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.scenes.scene2d.Actor
 import com.bombbird.terminalcontrol2.entities.*
@@ -30,6 +31,7 @@ import com.esotericsoftware.kryonet.Connection
 import com.esotericsoftware.kryonet.Listener
 import ktx.app.KtxScreen
 import ktx.assets.disposeSafely
+import ktx.collections.GdxArray
 import ktx.collections.GdxArrayMap
 import ktx.graphics.moveTo
 import ktx.math.ImmutableVector2
@@ -75,6 +77,12 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
     // Published hold map for access
     val publishedHolds = GdxArrayMap<String, PublishedHold>(PUBLISHED_HOLD_SIZE)
 
+    // The primary TMA sector polygon without being split up into sub-sectors
+    val primarySector = Polygon()
+
+    // The current active configuration of polygons
+    val sectors = GdxArray<Sector>()
+
     // Aircraft map for access during UDP updates
     val aircraft = GdxArrayMap<String, Aircraft>(AIRCRAFT_SIZE)
 
@@ -85,7 +93,7 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
     val client = Client(CLIENT_WRITE_BUFFER_SIZE, CLIENT_READ_BUFFER_SIZE)
 
     // Blocking queue to store runnables to be run in the main thread after engine update
-    val pendingRunnablesQueue = ConcurrentLinkedQueue<Runnable>()
+    private val pendingRunnablesQueue = ConcurrentLinkedQueue<Runnable>()
 
     init {
         if (true) GAME.gameServer = GameServer().apply { initiateServer() } // TODO True if single-player or host of multiplayer, false otherwise
@@ -350,7 +358,7 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
      * This is different from Gdx.app.postRunnable in that the runnable will only be run after
      * @param runnable the runnable to add
      * */
-    fun postRunnable(runnable: Runnable) {
+    fun postRunnableAfterEngineUpdate(runnable: Runnable) {
         pendingRunnablesQueue.offer(runnable)
     }
 

@@ -1,8 +1,14 @@
 package com.bombbird.terminalcontrol2.utilities
 
+import com.badlogic.ashley.core.Entity
+import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.math.MathUtils
-import com.bombbird.terminalcontrol2.components.AffectedByWind
-import com.bombbird.terminalcontrol2.components.Direction
+import com.badlogic.gdx.math.Polygon
+import com.bombbird.terminalcontrol2.components.*
+import com.bombbird.terminalcontrol2.global.GAME
+import com.bombbird.terminalcontrol2.navigation.Route
+import com.bombbird.terminalcontrol2.navigation.SidStar
+import ktx.ashley.get
 import kotlin.math.*
 
 /** PHYSICSSSSSSSSSSSSSSSSSSSSSSS
@@ -260,4 +266,206 @@ fun calculateAccelerationDistanceRequired(initSpeedKt: Float, finalSpeedKt: Floa
     val initSpdMps = ktToMps(initSpeedKt)
     val finalSpdMps = ktToMps(finalSpeedKt)
     return (finalSpdMps * finalSpdMps - initSpdMps * initSpdMps) / 2f / acc
+}
+
+/**
+ * Calculates the descent gradient that is achievable with the net force acting against the aircraft - this uses a simple
+ * energy approach that assumes the power loss due to the net force (drag - thrust) translates fully into the aircraft
+ * descending hence losing potential energy instead of kinetic energy
+ *
+ * Assumes the slight reduction in true airspeed (due to loss in altitude) is negligible
+ * @param netForceN the net force acting against the aircraft
+ * @param massKg mass of the aircraft
+ * @return a float denoting the gradient of descent (rise / run)
+ * */
+fun calculateDescentGradient(netForceN: Float, massKg: Int): Float {
+    return netForceN / massKg / GRAVITY_ACCELERATION_MPS2
+}
+
+/**
+ * Calculates the spawn coordinates, track for an arrival aircraft route, just outside the primary sector's borders
+ * @param route the route of the arrival aircraft
+ * @param primarySector the polygon encompassing primary sector
+ * @return a Triple of floats, the first being the x coordinate and the second being the y coordinate of the spawn position
+ * */
+fun calculateArrivalSpawnPoint(route: Route, primarySector: Polygon): Triple<Float, Float, Float> {
+    val originX: Float
+    val originY: Float
+    val endX: Float
+    val endY: Float
+    val oppSpawnTrack: Float
+    val firstWptLeg = route.getFirstWaypointLegInSector(primarySector)
+    if (firstWptLeg != null) {
+        // Waypoint inside sector found
+        val pos = GAME.gameServer?.waypoints?.get(firstWptLeg.first.wptId)?.entity?.get(Position.mapper) ?: Position()
+        originX = pos.x
+        originY = pos.y
+        if (firstWptLeg.second == 0) {
+            var nextWptLeg: Route.WaypointLeg? = null
+            route.legs.apply {
+                for (i in 1 until size) get(i)?.let { nextLeg ->
+                        if (nextLeg is Route.WaypointLeg) {
+                            nextWptLeg = nextLeg
+                            return@apply
+                        } else if (nextLeg !is Route.HoldLeg) return@apply // If a non-hold waypoint is reached, exit the loop
+                    }
+            }
+            if (nextWptLeg != null) {
+                // If this is the first leg, but subsequent leg is waypoint leg, use the same track as that from first to second leg
+                val destPos = (route.legs[1] as? Route.WaypointLeg)?.let { GAME.gameServer?.waypoints?.get(it.wptId)?.entity?.get(Position.mapper) } ?: Position()
+                oppSpawnTrack = getRequiredTrack(originX, originY, destPos.x, destPos.y)
+                val trackToUse = Math.toRadians(convertWorldAndRenderDeg(oppSpawnTrack).toDouble())
+                endX = (nmToPx(75) * cos(trackToUse)).toFloat() + pos.x
+                endY = (nmToPx(75) * sin(trackToUse)).toFloat() + pos.y
+            } else {
+                // If this is the first leg with no subsequent waypoint leg, choose a random track towards the first leg
+                oppSpawnTrack = MathUtils.random(1, 360).toFloat()
+                val randomTrackConvertedRadians = Math.toRadians(convertWorldAndRenderDeg(oppSpawnTrack).toDouble())
+                endX = (nmToPx(75) * cos(randomTrackConvertedRadians)).toFloat() + pos.x
+                endY = (nmToPx(75) * sin(randomTrackConvertedRadians)).toFloat() + pos.y
+            }
+        } else {
+            // Use the leg prior to this waypoint
+            var prevWptLeg: Route.WaypointLeg? = null
+            var prevVectorLeg: Route.VectorLeg? = null
+            route.legs.apply {
+                for (i in firstWptLeg.second - 1 downTo 0) get(i)?.let { prevLeg ->
+                    when (prevLeg) {
+                        is Route.WaypointLeg -> {
+                            prevWptLeg = prevLeg
+                            return@apply
+                        }
+                        is Route.VectorLeg -> {
+                            prevVectorLeg = prevLeg
+                            return@apply
+                        }
+                        !is Route.HoldLeg -> return@apply // If a non-hold waypoint is reached, exit the loop
+                        else -> return@let
+                    }
+                }
+            }
+            val finalPrevWptLeg = prevWptLeg
+            val finalPrevVectorLeg = prevVectorLeg
+            if (finalPrevWptLeg != null) {
+                // If a previous waypoint exists
+                val prevWptPos = GAME.gameServer?.waypoints?.get(finalPrevWptLeg.wptId)?.entity?.get(Position.mapper) ?: Position()
+                endX = prevWptPos.x
+                endY = prevWptPos.y
+                oppSpawnTrack = getRequiredTrack(originX, originY, endX, endY)
+            } else if (finalPrevVectorLeg != null) {
+                // If a previous vector leg exists
+                oppSpawnTrack = finalPrevVectorLeg.heading.toFloat() + 180
+                val trackToUse = Math.toRadians(convertWorldAndRenderDeg(oppSpawnTrack).toDouble())
+                endX = (nmToPx(75) * cos(trackToUse)).toFloat() + pos.x
+                endY = (nmToPx(75) * sin(trackToUse)).toFloat() + pos.y
+            } else {
+                // Shouldn't happen, but meh
+                oppSpawnTrack = MathUtils.random(1, 360).toFloat()
+                val randomTrackConvertedRadians = Math.toRadians(convertWorldAndRenderDeg(oppSpawnTrack).toDouble())
+                endX = (nmToPx(75) * cos(randomTrackConvertedRadians)).toFloat()
+                endY = (nmToPx(75) * sin(randomTrackConvertedRadians)).toFloat()
+            }
+
+            // Remove all previous legs and set the first leg to the first waypoint leg inside the sector
+            route.legs.removeRange(0, firstWptLeg.second - 1)
+        }
+    } else {
+        // If no waypoint leg in sector, choose a random track towards the center (0, 0)
+        originX = 0f
+        originY = 0f
+        oppSpawnTrack = MathUtils.random(1, 360).toFloat()
+        val randomTrackConvertedRadians = Math.toRadians(convertWorldAndRenderDeg(oppSpawnTrack).toDouble())
+        endX = (nmToPx(75) * cos(randomTrackConvertedRadians)).toFloat()
+        endY = (nmToPx(75) * sin(randomTrackConvertedRadians)).toFloat()
+    }
+
+    return findClosestIntersectionBetweenSegmentAndPolygon(originX, originY, endX, endY, primarySector.vertices)?.let {
+        Triple(it.x, it.y, oppSpawnTrack)
+    } ?: Triple(endX, endY, oppSpawnTrack)
+}
+
+/**
+ * Calculates the spawn altitude of an arrival aircraft on the STAR
+ * @param origRoute the original [SidStar.STAR] route that the aircraft is using
+ * @param aircraftRoute the current aircraft route
+ * @return the altitude to spawn the aircraft at
+ * */
+fun calculateArrivalSpawnAltitude(aircraft: Entity, airport: Entity, origRoute: Route, posX: Float, posY: Float, aircraftRoute: Route): Float {
+    // Find the distance between the first point with an upper altitude restriction if any, else select airport elevation as this point
+    val distPxToAlt: Float
+    val firstMaxAlt: Float
+    var maxStarAlt: Int? = null
+    if (aircraftRoute.legs.isEmpty) {
+        // No legs, select airport position and use airport elevation as closest point with max altitude restriction
+        firstMaxAlt = airport[Altitude.mapper]?.altitudeFt ?: 0f
+        val airportPos = airport[Position.mapper] ?: Position()
+        val deltaX = airportPos.x - posX
+        val deltaY = airportPos.y - posY
+        distPxToAlt = sqrt(deltaX * deltaX + deltaY * deltaY)
+    } else {
+        // Find the closest point with a max altitude restriction
+        var cumulativeDistPx = 0f
+        var prevPos = Position(posX, posY)
+        aircraftRoute.legs.also { legs ->
+            for (i in 0 until legs.size) { (legs[i] as? Route.WaypointLeg)?.apply {
+                val thisWptPos = GAME.gameServer?.waypoints?.get(wptId)?.entity?.get(Position.mapper) ?: Position()
+                val deltaX = thisWptPos.x - prevPos.x
+                val deltaY = thisWptPos.y - prevPos.y
+                cumulativeDistPx += sqrt(deltaX * deltaX + deltaY * deltaY)
+                maxAltFt?.let {
+                    // When max altitude found, set the distance to the currently accumulated distance
+                    firstMaxAlt = it.toFloat()
+                    distPxToAlt = cumulativeDistPx
+                    return@also
+                }
+                prevPos = thisWptPos
+            }}
+            // End of loop reached without a max alt being found - add distance between last position and airport
+            // and set airport elevation as max alt
+            val airportPos = airport[Position.mapper] ?: Position()
+            val deltaX = airportPos.x - prevPos.x
+            val deltaY = airportPos.y - prevPos.y
+            cumulativeDistPx += sqrt(deltaX * deltaX + deltaY * deltaY)
+            distPxToAlt = cumulativeDistPx
+            firstMaxAlt = airport[Altitude.mapper]?.altitudeFt ?: 0f
+        }
+
+        // Take into account any STAR max altitude restrictions
+        (aircraftRoute.legs[0] as? Route.WaypointLeg)?.apply {
+            for (i in 0 until origRoute.legs.size) (origRoute.legs[i] as? Route.WaypointLeg)?.let { wpt ->
+                val currMaxStarAlt = maxStarAlt // Variable to bypass changing closure error
+                wpt.maxAltFt?.let { maxAlt -> if (currMaxStarAlt == null || currMaxStarAlt > maxAlt) maxStarAlt = maxAlt }
+            }
+        }
+    }
+
+    // 8 - 12nm leeway
+    val effectiveDistPxToAlt = max(distPxToAlt - nmToPx(12), 0f)
+    val aircraftPerf = aircraft[AircraftInfo.mapper]?.aircraftPerf ?: run {
+        Gdx.app.log("PhysicsTools", "No aircraft performance data found")
+        AircraftTypeData.AircraftPerfData()
+    }
+    var currStepAlt = firstMaxAlt
+    var currStepDist = 0f
+    val stepSize = nmToPx(1)
+    while (currStepDist < effectiveDistPxToAlt) {
+        val effectiveStepSize = min(stepSize, effectiveDistPxToAlt - currStepDist)
+        // Estimate the altitude on top of each altitude step
+        val estTas = calculateTASFromIAS(currStepAlt, aircraftPerf.tripIas.toFloat())
+        val estMinDrag = calculateMinDrag(aircraftPerf, currStepAlt, estTas)
+        val estMinThrust = calculateMaxThrust(aircraftPerf, currStepAlt, estTas) * 0.05f
+        val estGrad = calculateDescentGradient(estMinDrag - estMinThrust, aircraftPerf.massKg)
+        val topOfStepAlt = estGrad * pxToFt(effectiveStepSize) + currStepAlt
+        // Use the estimated top altitude step to calculate the gradient
+        val actlTas = calculateTASFromIAS(topOfStepAlt, aircraftPerf.tripIas.toFloat())
+        val actlMinDrag = calculateMinDrag(aircraftPerf, topOfStepAlt, actlTas)
+        val actlMinThrust = calculateMaxThrust(aircraftPerf, topOfStepAlt, actlTas) * 0.05f
+        val actlGrad = calculateDescentGradient(actlMinDrag - actlMinThrust, aircraftPerf.massKg)
+        currStepAlt += actlGrad * pxToFt(effectiveStepSize)
+        currStepDist += effectiveStepSize
+    }
+    println("Average gradient: ${(currStepAlt - firstMaxAlt) / pxToFt(effectiveDistPxToAlt) * 100}%")
+    currStepAlt = min(currStepAlt, aircraftPerf.maxAlt.toFloat())
+    val finalMaxStarAlt = maxStarAlt // Another final variable to bypass changing closure error
+    return if (finalMaxStarAlt == null) currStepAlt else min(currStepAlt, finalMaxStarAlt.toFloat())
 }

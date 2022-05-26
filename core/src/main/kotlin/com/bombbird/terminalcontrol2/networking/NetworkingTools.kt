@@ -27,10 +27,11 @@ fun registerClassesToKryo(kryo: Kryo?) {
         // Classes to register for generic serialisation
         register(Vector2::class.java)
         register(ShortArray::class.java)
+        register(FloatArray::class.java)
 
         // Initial load classes
         register(InitialAirspaceData::class.java)
-        register(InitialSectorData::class.java)
+        register(InitialIndividualSectorData::class.java)
         register(InitialAircraftData::class.java)
         register(AirportData::class.java)
         register(WaypointData::class.java)
@@ -111,8 +112,11 @@ fun registerClassesToKryo(kryo: Kryo?) {
 /** Class representing airspace data sent on initial connection, loading of the game on a client */
 data class InitialAirspaceData(val magHdgDev: Float = 0f, val minAlt: Int = 2000, val maxAlt: Int = 20000, val minSep: Float = 3f, val transAlt: Int = 18000, val transLvl: Int = 180)
 
+/** Class representing fata for all the sector configurations sent on initial connection, loading of the game on a client */
+class InitialSectorData(val configSectors: Array<InitialIndividualSectorData> = arrayOf(), val primarySector: FloatArray)
+
 /** Class representing sector data sent on initial connection, loading of the game on a client */
-class InitialSectorData(val sectors: Array<Sector.SerialisedSector> = arrayOf())
+class InitialIndividualSectorData(val playerNo: Byte = 0, val sectors: Array<Sector.SerialisedSector> = arrayOf(), val primarySector: FloatArray = floatArrayOf())
 
 /** Class representing aircraft data sent on initial connection, loading of the game on a client */
 class InitialAircraftData(val aircraft: Array<Aircraft.SerialisedAircraft> = arrayOf())
@@ -162,7 +166,7 @@ data class RemoveCustomWaypointData(val wptId: Short = -1)
  * @param obj the incoming data object whose class should have been registered to [Kryo]
  * */
 fun handleIncomingRequest(rs: RadarScreen, obj: Any?) {
-    rs.postRunnable {
+    rs.postRunnableAfterEngineUpdate {
         (obj as? String)?.apply {
             println(this)
         } ?: (obj as? FastUDPData)?.apply {
@@ -176,8 +180,9 @@ fun handleIncomingRequest(rs: RadarScreen, obj: Any?) {
             MIN_SEP = minSep
             TRANS_ALT = transAlt
             TRANS_LVL = transLvl
-        } ?: (obj as? InitialSectorData)?.sectors?.onEach {
-            Sector.fromSerialisedObject(it)
+        } ?: (obj as? InitialIndividualSectorData)?.apply {
+            sectors.onEach { sector -> rs.sectors.add(Sector.fromSerialisedObject(sector)) }
+            rs.primarySector.vertices = primarySector
         } ?: (obj as? InitialAircraftData)?.aircraft?.onEach {
             Aircraft.fromSerialisedObject(it).apply {
                 entity[AircraftInfo.mapper]?.icaoCallsign?.let { callsign ->
