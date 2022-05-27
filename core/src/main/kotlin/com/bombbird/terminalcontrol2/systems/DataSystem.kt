@@ -1,6 +1,7 @@
 package com.bombbird.terminalcontrol2.systems
 
 import com.badlogic.ashley.core.EntitySystem
+import com.badlogic.ashley.core.Family
 import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.RADAR_REFRESH_INTERVAL_S
@@ -17,12 +18,14 @@ import ktx.ashley.get
 class DataSystem: EntitySystem() {
     var radarDataTimer = 0f
 
+    private val radarDataUpdateFamily: Family = allOf(Position::class, Direction::class, Speed::class, Altitude::class, RadarData::class).get()
+    private val datatagUpdateFamily: Family = allOf(AircraftInfo::class, RadarData::class, CommandTarget::class, Datatag::class).get()
+
     /** Main update function */
     override fun update(deltaTime: Float) {
         // Timer for updating radar returns and datatags
         radarDataTimer += deltaTime
         if (radarDataTimer > RADAR_REFRESH_INTERVAL_S) {
-            val radarDataUpdateFamily = allOf(Position::class, Direction::class, Speed::class, Altitude::class, RadarData::class).get()
             val radarDataUpdate = engine.getEntitiesFor(radarDataUpdateFamily)
             for (i in 0 until radarDataUpdate.size()) {
                 radarDataUpdate[i]?.apply {
@@ -41,7 +44,6 @@ class DataSystem: EntitySystem() {
                 }
             }
 
-            val datatagUpdateFamily = allOf(AircraftInfo::class, RadarData::class, CommandTarget::class, Datatag::class).get()
             val datatagUpdates = engine.getEntitiesFor(datatagUpdateFamily)
             for (i in 0 until datatagUpdates.size()) {
                 datatagUpdates[i]?.apply {

@@ -90,3 +90,12 @@ class LatestClearanceChanged: Component {
 class ClearanceActChanged: Component {
     companion object: Mapper<ClearanceActChanged>()
 }
+
+/**
+ * Component for tagging an initial arrival spawn
+ *
+ * Required actions will be performed in the AI system and then removed for the entity
+ * */
+class InitialArrivalSpawn: Component {
+    companion object: Mapper<InitialArrivalSpawn>()
+}

@@ -2,6 +2,7 @@ package com.bombbird.terminalcontrol2.systems
 
 import com.badlogic.ashley.core.Entity
 import com.badlogic.ashley.core.EntitySystem
+import com.badlogic.ashley.core.Family
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.math.MathUtils
 import com.bombbird.terminalcontrol2.components.*
@@ -19,6 +20,17 @@ import kotlin.math.*
  * Used only in GameServer
  * */
 class AISystem: EntitySystem() {
+    private val takeoffAccFamily: Family = allOf(Acceleration::class, AircraftInfo::class, TakeoffRoll::class, Speed::class, Direction::class, AffectedByWind::class).get()
+    private val takeoffClimbFamily: Family = allOf(Altitude::class, CommandTarget::class, TakeoffClimb::class, ClearanceAct::class, AircraftInfo::class).get()
+    private val above250Family: Family = allOf(AccelerateToAbove250kts::class, Altitude::class, CommandTarget::class, ClearanceAct::class).get()
+    private val below240Family: Family = allOf(AircraftInfo::class, DecelerateTo240kts::class, Altitude::class, CommandTarget::class, ClearanceAct::class).get()
+    private val initialArrivalFamily: Family = allOf(ClearanceAct::class, InitialArrivalSpawn::class).get()
+    private val vectorFamily: Family = allOf(CommandVector::class, CommandTarget::class).get()
+    private val initClimbFamily: Family = allOf(CommandInitClimb::class, CommandTarget::class, Altitude::class).get()
+    private val waypointFamily: Family = allOf(CommandDirect::class, CommandTarget::class, ClearanceAct::class, Position::class, Speed::class, Direction::class, IndicatedAirSpeed::class).get()
+    private val holdFamily: Family = allOf(CommandHold::class, CommandTarget::class, Position::class, Speed::class, Direction::class).get()
+    private val pureVectorFamily: Family = allOf(CommandTarget::class, Direction::class, ClearanceAct::class).exclude(CommandInitClimb::class, CommandDirect::class, CommandHold::class, CommandVector::class).get()
+    private val actingClearanceChangedFamily: Family = allOf(CommandTarget::class, ClearanceActChanged::class, ClearanceAct::class).get()
 
     /** Main update function */
     override fun update(deltaTime: Float) {
@@ -26,11 +38,11 @@ class AISystem: EntitySystem() {
         updateTakeoffClimb()
         updateCommandTarget()
         update10000ftSpeed()
+        updateInitialArrival()
     }
 
     /** Set the acceleration for takeoff aircraft */
     private fun updateTakeoffAcceleration() {
-        val takeoffAccFamily = allOf(Acceleration::class, AircraftInfo::class, TakeoffRoll::class, Speed::class, Direction::class, AffectedByWind::class).get()
         val takeoffAcc = engine.getEntitiesFor(takeoffAccFamily)
         for (i in 0 until takeoffAcc.size()) {
             takeoffAcc[i]?.apply {
@@ -42,7 +54,6 @@ class AISystem: EntitySystem() {
                 val wind = get(AffectedByWind.mapper) ?: return@apply
                 ias.iasKt = calculateIASFromTAS(alt.altitudeFt, spd.speedKts)
                 if (ias.iasKt >= aircraftInfo.aircraftPerf.vR + calculateIASFromTAS(alt.altitudeFt, pxpsToKt(wind.windVectorPxps.dot(dir.trackUnitVector)))) {
-                    // TODO Sanity check for airport AGL - since engine sometimes filters out the wrong entities
                     // Transition to takeoff climb mode
                     remove<TakeoffRoll>()
                     val randomAGL = MathUtils.random(1200, 1800)
@@ -62,7 +73,6 @@ class AISystem: EntitySystem() {
 
     /** Set initial takeoff climb, transition to acceleration for departing aircraft */
     private fun updateTakeoffClimb() {
-        val takeoffClimbFamily = allOf(Altitude::class, CommandTarget::class, TakeoffClimb::class, ClearanceAct::class, AircraftInfo::class).get() // TODO occasional indexOutOfBoundsException here
         val takeoffClimb = engine.getEntitiesFor(takeoffClimbFamily)
         for (i in 0 until takeoffClimb.size()) {
             takeoffClimb[i]?.apply {
@@ -85,7 +95,6 @@ class AISystem: EntitySystem() {
     /** Update cleared IAS changes at 10000 feet */
     private fun update10000ftSpeed() {
         // Update for aircraft going faster than 250 knots above 10000 feet
-        val above250Family = allOf(AccelerateToAbove250kts::class, Altitude::class, CommandTarget::class, ClearanceAct::class).get()
         val above250 = engine.getEntitiesFor(above250Family)
         for (i in 0 until above250.size()) {
             above250[i]?.apply {
@@ -108,7 +117,6 @@ class AISystem: EntitySystem() {
         }
 
         // Update aircraft to slow down before reaching 10000 feet
-        val below240Family = allOf(AircraftInfo::class, DecelerateTo240kts::class, Altitude::class, CommandTarget::class, ClearanceAct::class).get()
         val below240 = engine.getEntitiesFor(below240Family)
         for (i in 0 until below240.size()) {
             below240[i]?.apply {
@@ -127,10 +135,17 @@ class AISystem: EntitySystem() {
         }
     }
 
+    /** Updates parameters for initial arrival aircraft spawns */
+    private fun updateInitialArrival() {
+        val initialArrivals = engine.getEntitiesFor(initialArrivalFamily)
+        for (i in 0 until initialArrivals.size()) {
+            initialArrivals[i]?.apply { setToFirstRouteLeg(this) }
+        }
+    }
+
     /** Update the [CommandTarget] parameters for aircraft */
     private fun updateCommandTarget() {
         // Update for vector leg
-        val vectorFamily = allOf(CommandVector::class, CommandTarget::class).get()
         val vector = engine.getEntitiesFor(vectorFamily)
         for (i in 0 until vector.size()) {
             vector[i]?.apply {
@@ -144,7 +159,6 @@ class AISystem: EntitySystem() {
         }
 
         // Update for initial climb leg
-        val initClimbFamily = allOf(CommandInitClimb::class, CommandTarget::class, Altitude::class).get()
         val initClimb = engine.getEntitiesFor(initClimbFamily)
         for (i in 0 until initClimb.size()) {
             initClimb[i]?.apply {
@@ -161,7 +175,6 @@ class AISystem: EntitySystem() {
         }
 
         // Update for waypoint direct leg
-        val waypointFamily = allOf(CommandDirect::class, CommandTarget::class, ClearanceAct::class, Position::class, Speed::class, Direction::class, IndicatedAirSpeed::class).get()
         val waypoint = engine.getEntitiesFor(waypointFamily)
         for (i in 0 until waypoint.size()) {
             waypoint[i]?.apply {
@@ -197,7 +210,6 @@ class AISystem: EntitySystem() {
         }
 
         // Update for holding leg
-        val holdFamily = allOf(CommandHold::class, CommandTarget::class, Position::class, Speed::class, Direction::class).get() // TODO occasional indexOutOfBoundsException here
         val hold = engine.getEntitiesFor(holdFamily)
         for (i in 0 until hold.size()) {
             hold[i]?.apply {
@@ -275,7 +287,6 @@ class AISystem: EntitySystem() {
         }
 
         // Update for pure vector (i.e. no legs)
-        val pureVectorFamily = allOf(CommandTarget::class, Direction::class, ClearanceAct::class).exclude(CommandInitClimb::class, CommandDirect::class, CommandHold::class, CommandVector::class).get()
         val pureVector = engine.getEntitiesFor(pureVectorFamily)
         for (i in 0 until pureVector.size()) {
             pureVector[i]?.apply {
@@ -296,7 +307,6 @@ class AISystem: EntitySystem() {
         }
 
         // Update when the acting clearance has been changed by player action
-        val actingClearanceChangedFamily = allOf(CommandTarget::class, ClearanceActChanged::class, ClearanceAct::class).get()
         val actingClearances = engine.getEntitiesFor(actingClearanceChangedFamily)
         for (i in 0 until actingClearances.size()) {
             actingClearances[i]?.apply {

@@ -1,13 +1,12 @@
 package com.bombbird.terminalcontrol2.systems
 
 import com.badlogic.ashley.core.EntitySystem
+import com.badlogic.ashley.core.Family
+import com.badlogic.gdx.math.Polygon
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.navigation.Route
-import com.bombbird.terminalcontrol2.utilities.calculateAccelerationDistanceRequired
-import com.bombbird.terminalcontrol2.utilities.getMinMaxOptimalIAS
-import com.bombbird.terminalcontrol2.utilities.getPointTargetTrackAndGS
-import com.bombbird.terminalcontrol2.utilities.mToPx
+import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.allOf
 import ktx.ashley.get
 import ktx.ashley.plusAssign
@@ -21,10 +20,16 @@ import ktx.ashley.remove
 class ControlStateSystem(override val updateTimeS: Float = 0f): EntitySystem(), LowFreqUpdate {
     override var timer = 0f
 
+    private val latestClearanceChangedFamily: Family = allOf(LatestClearanceChanged::class, AircraftInfo::class, ClearanceAct::class).get()
+    private val contactFromTowerFamily: Family = allOf(Altitude::class, ContactFromTower::class, Controllable::class).get()
+    private val pendingFamily: Family = allOf(PendingClearances::class, ClearanceAct::class).get()
+    private val minMaxOptIasFamily: Family = allOf(AircraftInfo::class, Altitude::class, ClearanceAct::class, CommandTarget::class).get()
+    private val spdRestrFamily: Family = allOf(ClearanceAct::class, LastRestrictions::class, Position::class, Speed::class, Direction::class, GroundSpeed::class, AircraftInfo::class, CommandTarget::class).get()
+    private val contactFromCentreFamily: Family = allOf(Altitude::class, Position::class, ContactFromCentre::class, Controllable::class).get()
+
     /** Main update function */
     override fun update(deltaTime: Float) {
         // Aircraft that have their clearance states changed
-        val latestClearanceChangedFamily = allOf(LatestClearanceChanged::class, AircraftInfo::class, ClearanceAct::class).get()
         val clearanceChanged = engine.getEntitiesFor(latestClearanceChangedFamily)
         for (i in 0 until clearanceChanged.size()) {
             clearanceChanged[i]?.let { entity ->
@@ -45,7 +50,6 @@ class ControlStateSystem(override val updateTimeS: Float = 0f): EntitySystem(), 
         }
 
         // Aircraft that are expected to switch from tower to approach/departure
-        val contactFromTowerFamily = allOf(Altitude::class, ContactFromTower::class, Controllable::class).get()
         val contactFromTower = engine.getEntitiesFor(contactFromTowerFamily)
         for (i in 0 until contactFromTower.size()) {
             contactFromTower[i]?.apply {
@@ -62,7 +66,6 @@ class ControlStateSystem(override val updateTimeS: Float = 0f): EntitySystem(), 
         }
 
         // Aircraft that have pending clearances (due to 2s pilot response)
-        val pendingFamily = allOf(PendingClearances::class, ClearanceAct::class).get() // TODO occasional indexOutOfBoundsException here
         val pendingClearances = engine.getEntitiesFor(pendingFamily)
         for (i in 0 until pendingClearances.size()) {
             pendingClearances[i]?.apply {
@@ -94,23 +97,27 @@ class ControlStateSystem(override val updateTimeS: Float = 0f): EntitySystem(), 
      * */
     override fun lowFreqUpdate() {
         // Updating the minimum, maximum and optimal IAS for aircraft
-        val minMaxOptIasFamily = allOf(AircraftInfo::class, Altitude::class, ClearanceAct::class).get()
         val minMaxOptIas = engine.getEntitiesFor(minMaxOptIasFamily)
         for (i in 0 until minMaxOptIas.size()) {
             minMaxOptIas[i]?.apply {
                 val clearanceAct = get(ClearanceAct.mapper)?.actingClearance?.actingClearance ?: return@apply
+                val cmd = get(CommandTarget.mapper) ?: return@apply
                 val prevSpds = Triple(clearanceAct.minIas, clearanceAct.maxIas, clearanceAct.optimalIas)
                 val spds = getMinMaxOptimalIAS(this)
                 clearanceAct.minIas = spds.first
                 clearanceAct.maxIas = spds.second
                 clearanceAct.optimalIas = spds.third
-                if (Triple(clearanceAct.minIas, clearanceAct.maxIas, clearanceAct.optimalIas) != prevSpds) this += LatestClearanceChanged()
+                val prevClearedIas = clearanceAct.clearedIas
+                if (clearanceAct.clearedIas == prevSpds.third && spds.third != prevSpds.third) {
+                    clearanceAct.clearedIas = spds.third
+                    cmd.targetIasKt = clearanceAct.clearedIas
+                }
+                if (Triple(clearanceAct.minIas, clearanceAct.maxIas, clearanceAct.optimalIas) != prevSpds || prevClearedIas != clearanceAct.clearedIas) this += LatestClearanceChanged()
             }
         }
 
         // Check whether the aircraft is approaching a lower speed restriction, and set the reduced speed before
         // reaching the waypoint, so it crosses at the speed restriction
-        val spdRestrFamily = allOf(ClearanceAct::class, LastRestrictions::class, Position::class, Speed::class, Direction::class, GroundSpeed::class, AircraftInfo::class, CommandTarget::class).get()
         val spdRestr = engine.getEntitiesFor(spdRestrFamily)
         for (i in 0 until spdRestr.size()) {
             spdRestr[i]?.apply {
@@ -147,6 +154,30 @@ class ControlStateSystem(override val updateTimeS: Float = 0f): EntitySystem(), 
                         val pendingClearances = get(PendingClearances.mapper)
                         // Send clearance change to clients if no pending clearance exists
                         if (pendingClearances == null || pendingClearances.clearanceQueue.isEmpty) this += LatestClearanceChanged()
+                    }
+                }
+            }
+        }
+
+        // Aircraft that are expected to switch from centre to approach/departure
+        val contactFromCentre = engine.getEntitiesFor(contactFromCentreFamily)
+        for (i in 0 until contactFromCentre.size()) {
+            contactFromCentre[i]?.apply {
+                val alt = get(Altitude.mapper) ?: return@apply
+                val pos = get(Position.mapper) ?: return@apply
+                val contact = get(ContactFromCentre.mapper) ?: return@apply
+                val controllable = get(Controllable.mapper) ?: return@apply
+                if (alt.altitudeFt < contact.altitudeFt) {
+                    // Below contact alt, check whether in any of the player sectors
+                    GAME.gameServer?.sectors?.get(1.byte)?.let { allSectors ->
+                        for (j in 0 until allSectors.size) { allSectors[i]?.let { sector ->
+                            if (Polygon(sector.entity[GPolygon.mapper]?.vertices ?: floatArrayOf(0f, 1f, 1f, 0f, -1f, 0f)).contains(pos.x, pos.y)) {
+                                controllable.sectorId = sector.entity[SectorInfo.mapper]?.sectorId ?: 0.byte
+                                get(AircraftInfo.mapper)?.icaoCallsign?.let { callsign -> GAME.gameServer?.sendAircraftSectorUpdateTCPToAll(callsign, controllable.sectorId) }
+                                remove<ContactFromCentre>()
+                                return@apply
+                            }
+                        }}
                     }
                 }
             }

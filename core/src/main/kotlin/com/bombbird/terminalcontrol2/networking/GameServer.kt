@@ -95,7 +95,7 @@ class GameServer {
 
         engine.addSystem(PhysicsSystem(1f))
         engine.addSystem(AISystem())
-        engine.addSystem(ControlStateSystem())
+        engine.addSystem(ControlStateSystem(1f))
 
         requestAllMetar()
     }

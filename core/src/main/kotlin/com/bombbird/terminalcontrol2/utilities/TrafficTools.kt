@@ -6,6 +6,7 @@ import com.badlogic.gdx.math.MathUtils
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.Aircraft
 import com.bombbird.terminalcontrol2.global.MAG_HDG_DEV
+import com.bombbird.terminalcontrol2.global.MAX_ALT
 import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.navigation.SidStar
@@ -120,8 +121,14 @@ fun createArrival(airport: Entity, gs: GameServer) {
         val alt = calculateArrivalSpawnAltitude(entity, airport, origStarRoute, spawnPos.first, spawnPos.second, starRoute)
         entity[Altitude.mapper]?.altitudeFt = alt
         entity[Direction.mapper]?.trackUnitVector?.rotateDeg(-spawnPos.third - 180)
-        val ias = entity[AircraftInfo.mapper]?.aircraftPerf?.tripIas ?: 250
-        entity[Speed.mapper]?.speedKts = calculateTASFromIAS(alt, ias.toFloat())
+        val aircraftPerf = entity[AircraftInfo.mapper]?.aircraftPerf ?: AircraftTypeData.AircraftPerfData()
+        val ias = calculateArrivalSpawnIAS(origStarRoute, starRoute, alt, aircraftPerf)
+        println(ias)
+        val tas = calculateTASFromIAS(alt, ias.toFloat())
+        entity[Speed.mapper]?.apply {
+            speedKts = tas
+            vertSpdFpm = calculateMinVerticalSpd(aircraftPerf, alt, tas, 0f, false)
+        }
         val clearedAlt = min(15000, (alt / 1000).toInt() * 1000)
         entity += ClearanceAct(ClearanceState.ActingClearance(
             ClearanceState(randomStar?.name ?: "", starRoute, Route(),
@@ -133,5 +140,8 @@ fun createArrival(airport: Entity, gs: GameServer) {
             targetIasKt = ias
             targetHdgDeg = modulateHeading(spawnPos.third + 180)
         }
+        entity += ContactFromCentre(MAX_ALT + MathUtils.random(400, 1500))
+        entity += InitialArrivalSpawn()
+        if (alt > 10000) entity += DecelerateTo240kts()
     })
 }

@@ -1,15 +1,13 @@
 package com.bombbird.terminalcontrol2.systems
 
-import com.badlogic.ashley.core.Entity
 import com.badlogic.ashley.core.EntitySystem
-import com.badlogic.ashley.utils.ImmutableArray
+import com.badlogic.ashley.core.Family
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.OrthographicCamera
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.scenes.scene2d.Stage
-import com.badlogic.gdx.utils.Array
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.ui.LABEL_PADDING
@@ -27,9 +25,19 @@ import kotlin.math.sqrt
  * Used only in RadarScreen
  * */
 class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stage: Stage, private val constZoomStage: Stage, private val uiStage: Stage): EntitySystem() {
-    // "Buffer" polygon/circle arrays as a workaround to occasional errors when engine does not filter any polygon/circles to render
-    private var prevPolygon: ImmutableArray<Entity?> = ImmutableArray(Array())
-    private var prevCircles: ImmutableArray<Entity?> = ImmutableArray(Array())
+    private val lineArrayFamily: Family = allOf(GLineArray::class, SRColor::class).get()
+    private val polygonFamily: Family = allOf(GPolygon::class, SRColor::class).exclude(RenderLast::class).get()
+    private val polygonLastFamily: Family = allOf(GPolygon::class, SRColor::class, RenderLast::class).get()
+    private val circleFamily: Family = allOf(Position::class, GCircle::class, SRColor::class).exclude(SRConstantZoomSize::class).get()
+    private val runwayFamily: Family = allOf(RunwayInfo::class, SRColor::class).get()
+    private val trajectoryFamily: Family = allOf(RadarData::class, Controllable::class, SRColor::class).get()
+    private val datatagLineFamily: Family = allOf(Datatag::class, RadarData::class).get()
+    private val constCircleFamily: Family = allOf(Position::class, GCircle::class, SRColor::class, SRConstantZoomSize::class).get()
+    private val rwyLabelFamily: Family = allOf(GenericLabel::class, RunwayInfo::class, RunwayLabel::class).get()
+    private val labelFamily: Family = allOf(GenericLabel::class, Position::class).exclude(ConstantZoomSize::class).get()
+    private val aircraftFamily: Family = allOf(AircraftInfo::class, RadarData::class, RSSprite::class).get()
+    private val constSizeLabelFamily: Family = allOf(GenericLabel::class, Position::class, ConstantZoomSize::class).get()
+    private val datatagFamily: Family = allOf(Datatag::class, RadarData::class).get()
 
     override fun update(deltaTime: Float) {
         val camZoom = (stage.camera as OrthographicCamera).zoom
@@ -48,7 +56,6 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
         // shapeRenderer.circle(10f, -10f, 5f)
 
         // Render lineArrays
-        val lineArrayFamily = allOf(GLineArray::class, SRColor::class).get()
         val lineArrays = engine.getEntitiesFor(lineArrayFamily)
         for (i in 0 until lineArrays.size()) {
             lineArrays[i]?.apply {
@@ -64,13 +71,7 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
         }
 
         // Render polygons
-        val polygonFamily = allOf(GPolygon::class, SRColor::class).exclude(RenderLast::class).get()
-        var polygons = engine.getEntitiesFor(polygonFamily)
-        if (polygons.size() == 0) {
-            polygons = prevPolygon
-            println("New polygon size ${polygons.size()}")
-        }
-        else prevPolygon = polygons
+        val polygons = engine.getEntitiesFor(polygonFamily)
         for (i in 0 until polygons.size()) {
             polygons[i]?.apply {
                 val poly = get(GPolygon.mapper) ?: return@apply
@@ -81,7 +82,6 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
         }
 
         // Render polygons with RenderLast
-        val polygonLastFamily = allOf(GPolygon::class, SRColor::class, RenderLast::class).get()
         val polygonsLast = engine.getEntitiesFor(polygonLastFamily)
         for (i in 0 until polygonsLast.size()) {
             polygonsLast[i]?.apply {
@@ -93,13 +93,7 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
         }
 
         // Render circles
-        val circleFamily = allOf(Position::class, GCircle::class, SRColor::class).exclude(SRConstantZoomSize::class).get()
-        var circles = engine.getEntitiesFor(circleFamily)
-        if (circles.size() == 0) {
-            circles = prevCircles
-            println("New polygon size ${circles.size()}")
-        }
-        else prevCircles = circles
+        val circles = engine.getEntitiesFor(circleFamily)
         for (i in 0 until circles.size()) {
             circles[i]?.apply {
                 val pos = get(Position.mapper) ?: return@apply
@@ -111,7 +105,6 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
         }
 
         // Render runways
-        val runwayFamily = allOf(RunwayInfo::class, SRColor::class).get()
         val rwyWidthPx = RWY_WIDTH_PX_ZOOM_1 + (camZoom - 1) * RWY_WIDTH_CHANGE_PX_PER_ZOOM
         val rwys = engine.getEntitiesFor(runwayFamily)
         for (i in 0 until rwys.size()) {
@@ -127,7 +120,6 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
         }
 
         // Render trajectory line for controlled aircraft
-        val trajectoryFamily = allOf(RadarData::class, Controllable::class, SRColor::class).get()
         val trajectory = engine.getEntitiesFor(trajectoryFamily)
         for (i in 0 until trajectory.size()) {
             trajectory[i]?.apply {
@@ -166,7 +158,6 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
 
         shapeRenderer.projectionMatrix = constZoomStage.camera.combined
         // Render datatag to aircraft icon line
-        val datatagLineFamily = allOf(Datatag::class, RadarData::class).get()
         val datatagLines = engine.getEntitiesFor(datatagLineFamily)
         for (i in 0 until datatagLines.size()) {
             datatagLines[i]?.apply {
@@ -193,7 +184,6 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
         }
 
         // Render circles with constant zoom size
-        val constCircleFamily = allOf(Position::class, GCircle::class, SRColor::class, SRConstantZoomSize::class).get()
         val constCircles = engine.getEntitiesFor(constCircleFamily)
         for (i in 0 until constCircles.size()) {
             constCircles[i]?.apply {
@@ -212,7 +202,6 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
         GAME.batch.packedColor = Color.WHITE_FLOAT_BITS // Prevent fading out behaviour during selectBox animations due to tint being changed
 
         // Update runway labels rendering size, position
-        val rwyLabelFamily = allOf(GenericLabel::class, RunwayInfo::class, RunwayLabel::class).get()
         val rwyLabels = engine.getEntitiesFor(rwyLabelFamily)
         for (i in 0 until rwyLabels.size()) {
             rwyLabels[i]?.apply {
@@ -248,7 +237,6 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
         }
 
         // Render generic labels (non-constant size)
-        val labelFamily = allOf(GenericLabel::class, Position::class).exclude(ConstantZoomSize::class).get()
         val labels = engine.getEntitiesFor(labelFamily)
         for (i in 0 until labels.size()) {
             labels[i]?.apply {
@@ -262,7 +250,6 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
         }
 
         // Render aircraft blip
-        val aircraftFamily = allOf(AircraftInfo::class, RadarData::class, RSSprite::class).get()
         val blipSize = if (camZoom <= 1) AIRCRAFT_BLIP_LENGTH_PX_ZOOM_1 * camZoom else AIRCRAFT_BLIP_LENGTH_PX_ZOOM_1 + (camZoom - 1) * AIRCRAFT_BLIP_LENGTH_CHANGE_PX_PER_ZOOM
         val allAircraft = engine.getEntitiesFor(aircraftFamily)
         for (i in 0 until allAircraft.size()) {
@@ -275,7 +262,6 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
 
         GAME.batch.projectionMatrix = constZoomStage.camera.combined
         // Render generic constant size labels
-        val constSizeLabelFamily = allOf(GenericLabel::class, Position::class, ConstantZoomSize::class).get()
         val constLabels = engine.getEntitiesFor(constSizeLabelFamily)
         for (i in 0 until constLabels.size()) {
             constLabels[i].apply {
@@ -289,7 +275,6 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
         }
 
         // Render aircraft datatags
-        val datatagFamily = allOf(Datatag::class, RadarData::class).get()
         val datatags = engine.getEntitiesFor(datatagFamily)
         for (i in 0 until datatags.size()) {
             datatags[i]?.apply {

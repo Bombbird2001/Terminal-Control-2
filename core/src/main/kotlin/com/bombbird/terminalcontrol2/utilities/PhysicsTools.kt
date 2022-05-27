@@ -433,8 +433,11 @@ fun calculateArrivalSpawnAltitude(aircraft: Entity, airport: Entity, origRoute: 
         // Take into account any STAR max altitude restrictions
         (aircraftRoute.legs[0] as? Route.WaypointLeg)?.apply {
             for (i in 0 until origRoute.legs.size) (origRoute.legs[i] as? Route.WaypointLeg)?.let { wpt ->
+                if (compareLegEquality(this, wpt)) return@apply // Once the current direct is reached, stop searching for max altitude restrictions
                 val currMaxStarAlt = maxStarAlt // Variable to bypass changing closure error
-                wpt.maxAltFt?.let { maxAlt -> if (currMaxStarAlt == null || currMaxStarAlt > maxAlt) maxStarAlt = maxAlt }
+                wpt.maxAltFt?.let { maxAlt ->
+                    if (currMaxStarAlt == null || currMaxStarAlt > maxAlt) maxStarAlt = maxAlt
+                }
             }
         }
     }
@@ -464,7 +467,6 @@ fun calculateArrivalSpawnAltitude(aircraft: Entity, airport: Entity, origRoute: 
         currStepAlt += actlGrad * pxToFt(effectiveStepSize)
         currStepDist += effectiveStepSize
     }
-    println("Average gradient: ${(currStepAlt - firstMaxAlt) / pxToFt(effectiveDistPxToAlt) * 100}%")
     currStepAlt = min(currStepAlt, aircraftPerf.maxAlt.toFloat())
     val finalMaxStarAlt = maxStarAlt // Another final variable to bypass changing closure error
     return if (finalMaxStarAlt == null) currStepAlt else min(currStepAlt, finalMaxStarAlt.toFloat())

@@ -1,6 +1,7 @@
 package com.bombbird.terminalcontrol2.systems
 
 import com.badlogic.ashley.core.EntitySystem
+import com.badlogic.ashley.core.Family
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.allOf
@@ -16,13 +17,17 @@ import ktx.math.times
 class PhysicsSystemClient(override val updateTimeS: Float): EntitySystem(), LowFreqUpdate {
     override var timer = 0f
 
+    private val positionUpdateFamily: Family = allOf(Position::class, Altitude::class, Speed::class, Direction::class).get()
+    private val windAffectedFamily: Family = allOf(AffectedByWind::class, Position::class).get()
+    private val tasToIasFamily: Family = allOf(Speed::class, IndicatedAirSpeed::class, Altitude::class).exclude(TakeoffRoll::class).get()
+    private val affectedByWindFamily: Family = allOf(Position::class, AffectedByWind::class).get()
+
     /** Main update function, for values that need to be updated frequently
      *
      * For values that can be updated less frequently and are not dependent on [deltaTime], put in [lowFreqUpdate]
      * */
     override fun update(deltaTime: Float) {
         // Update position with speed, direction
-        val positionUpdateFamily = allOf(Position::class, Altitude::class, Speed::class, Direction::class).get()
         val positionUpdates = engine.getEntitiesFor(positionUpdateFamily)
         for (i in 0 until positionUpdates.size()) {
             positionUpdates[i]?.apply {
@@ -39,7 +44,6 @@ class PhysicsSystemClient(override val updateTimeS: Float): EntitySystem(), LowF
         }
 
         // Position affected by wind
-        val windAffectedFamily = allOf(AffectedByWind::class, Position::class).get()
         val windAffected = engine.getEntitiesFor(windAffectedFamily)
         for (i in 0 until windAffected.size()) {
             windAffected[i]?.apply {
@@ -61,7 +65,6 @@ class PhysicsSystemClient(override val updateTimeS: Float): EntitySystem(), LowF
      * */
     override fun lowFreqUpdate() {
         // Calculate the IAS of the aircraft
-        val tasToIasFamily = allOf(Speed::class, IndicatedAirSpeed::class, Altitude::class).exclude(TakeoffRoll::class).get()
         val tasToIas = engine.getEntitiesFor(tasToIasFamily)
         for (i in 0 until tasToIas.size()) {
             tasToIas[i]?.apply {
@@ -73,7 +76,6 @@ class PhysicsSystemClient(override val updateTimeS: Float): EntitySystem(), LowF
         }
 
         // Update the wind vector (to that of the METAR of the nearest airport)
-        val affectedByWindFamily = allOf(Position::class, AffectedByWind::class).get()
         val affectedByWind = engine.getEntitiesFor(affectedByWindFamily)
         for (i in 0 until affectedByWind.size()) {
             affectedByWind[i]?.apply {

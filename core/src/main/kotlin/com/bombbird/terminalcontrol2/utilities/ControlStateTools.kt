@@ -183,7 +183,7 @@ fun getMinMaxOptimalIAS(entity: Entity): Triple<Short, Short, Short> {
     val lastRestriction = entity[LastRestrictions.mapper] ?: return Triple(150, 250, 240)
     val flightType = entity[FlightType.mapper] ?: return Triple(150, 250, 240)
     val takingOff = entity[TakeoffClimb.mapper] != null || entity[TakeoffRoll.mapper] != null
-    val crossOverAlt = calculateCrossoverAltitude(perf.tripIas, perf.maxMach)
+    val crossOverAlt = calculateCrossoverAltitude(perf.tripIas, perf.tripMach)
     val below10000ft = altitude.altitudeFt < 10000
     val between10000ftAndCrossover = altitude.altitudeFt >= 10000 && altitude.altitudeFt < crossOverAlt
     val aboveCrossover = altitude.altitudeFt >= crossOverAlt
@@ -242,11 +242,34 @@ fun getMinMaxOptimalIAS(entity: Entity): Triple<Short, Short, Short> {
 }
 
 /**
+ * Calculates the arrival aircraft's IAS that it should be set to fly at on aircraft creation
+ * @param origStarRoute the original route of the STAR
+ * @param aircraftRoute the current aircraft route
+ * @param spawnAlt the altitude at which the aircraft will spawn at
+ * @return the IAS the aircraft should spawn at
+ * */
+fun calculateArrivalSpawnIAS(origStarRoute: Route, aircraftRoute: Route, spawnAlt: Float, aircraftPerf: AircraftTypeData.AircraftPerfData): Short {
+    var maxSpd: Short? = null
+    // Try to find an existing speed restriction
+    if (aircraftRoute.legs.size > 0) { (aircraftRoute.legs[0] as? Route.WaypointLeg)?.apply {
+        for (i in 0 until origStarRoute.legs.size) { origStarRoute.legs[i]?.let { wpt ->
+            if (compareLegEquality(this, wpt)) return@apply // Stop searching for max speed once current direct is reached
+            val currMaxSpd = maxSpd
+            maxSpdKt?.let { wptMaxSpd -> if (currMaxSpd == null || wptMaxSpd < currMaxSpd) maxSpd = maxSpdKt }
+        }}
+    }}
+
+    val crossOverAlt = calculateCrossoverAltitude(aircraftPerf.tripIas, aircraftPerf.tripMach)
+    return min((maxSpd ?: aircraftPerf.maxIas).toInt(), (if (spawnAlt > crossOverAlt) calculateIASFromMach(spawnAlt, aircraftPerf.tripMach).roundToInt().toShort()
+    else aircraftPerf.tripIas).toInt()).toShort()
+}
+
+/**
  * Creates a new custom waypoint for the purpose of present position holds, and adds it to the waypoint map
  *
  * Also sends a network update to all clients informing them of the new waypoint addition
  * @param posX the x coordinate of the new waypoint
- * @param posY the y coordinate of the new wayoint
+ * @param posY the y coordinate of the new waypoint
  * @return the wptID of the new created waypoint
  * */
 fun createCustomHoldWaypoint(posX: Float, posY: Float): Short {
