@@ -139,7 +139,10 @@ class AISystem: EntitySystem() {
     private fun updateInitialArrival() {
         val initialArrivals = engine.getEntitiesFor(initialArrivalFamily)
         for (i in 0 until initialArrivals.size()) {
-            initialArrivals[i]?.apply { setToFirstRouteLeg(this) }
+            initialArrivals[i]?.apply {
+                setToFirstRouteLeg(this)
+                remove<InitialArrivalSpawn>()
+            }
         }
     }
 

@@ -71,7 +71,7 @@ data class PublishedHoldInfo(var wptId: Short = 0, var maxAltFt: Int? = null, va
  * Includes performance determining data - minimum approach speed, rotation speed, weight, others in [aircraftPerf]
  * */
 data class AircraftInfo(var icaoCallsign: String = "SHIBA1", var icaoType: String = "B77W"): Component {
-    val aircraftPerf = AircraftTypeData.getAircraftPerf(icaoType)
+    var aircraftPerf = AircraftTypeData.AircraftPerfData()
     var maxAcc: Float = 0f
     var minAcc: Float = 0f
     var maxVs: Float = 0f

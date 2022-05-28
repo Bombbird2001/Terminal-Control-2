@@ -66,8 +66,7 @@ class PendingClearances(val clearanceQueue: Queue<ClearanceState.PendingClearanc
 }
 
 /**
- * Component for tagging the latest [ClearanceState] an aircraft has been cleared; for use on client aircraft only
- * since clients do not need to remember the clearances sent apart from the latest one
+ * Component for tagging the latest [ClearanceState] an aircraft has been cleared
  * */
 class ClearanceAct(val actingClearance: ClearanceState.ActingClearance = ClearanceState.ActingClearance()): Component {
     companion object: Mapper<ClearanceAct>()

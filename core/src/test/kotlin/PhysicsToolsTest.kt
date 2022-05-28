@@ -76,10 +76,12 @@ object PhysicsToolsTest {
     @DisplayName("Drag calculations")
     fun checkDragCalculations() {
         // Delta set at 5th significant figure
-        assertEquals(518.719f, calculateDrag(1.28f, 1.225f, 50f), 0.01f)
-        assertEquals(11951.374f, calculateDrag(1.28f, 1.225f, 240f), 1f)
-        assertEquals(6797.322f, calculateDrag(6.552f, 1.225f, 80f), 0.1f)
-        assertEquals(50658.08f, calculateDrag(6.552f, 0.36518f, 400f), 1f)
+        assertEquals(518.719f, calculateParasiticDrag(1.28f, 1.225f, 50f), 0.01f)
+        assertEquals(11951.374f, calculateParasiticDrag(1.28f, 1.225f, 240f), 1f)
+        assertEquals(6797.322f, calculateParasiticDrag(6.552f, 1.225f, 80f), 0.1f)
+        assertEquals(50658.08f, calculateParasiticDrag(6.552f, 0.36518f, 400f), 1f)
+        assertEquals(180204f, calculateInducedDrag(351533, 160, 340, 300000f, 37000f, 488f), 10f)
+        assertEquals(557677f, calculateInducedDrag(240000, 175, 340, 1000000f, 1000f, 178f), 10f)
     }
 
     @Test
@@ -157,6 +159,18 @@ object PhysicsToolsTest {
         assertEquals(29730f, calculateCrossoverAltitude(320, 0.834f), 2f)
         assertEquals(30509f, calculateCrossoverAltitude(313, 0.83f), 2f)
         assertEquals(29861f, calculateCrossoverAltitude(309, 0.81f), 2f)
+
+        // 0 delta for max altitude calculations
+        val aircraftPerfData = AircraftTypeData.AircraftPerfData().apply {
+            massKg = 260000
+            tripMach = 0.85f
+        }
+        assertEquals(36000, calculateMaxAlt(aircraftPerfData))
+        aircraftPerfData.apply {
+            massKg = 310000
+            tripMach = 0.843f
+        }
+        assertEquals(34000, calculateMaxAlt(aircraftPerfData))
     }
 
     @Test

@@ -13,6 +13,7 @@ import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.ui.addDatatagInputListeners
 import com.bombbird.terminalcontrol2.ui.updateDatatagStyle
 import com.bombbird.terminalcontrol2.ui.updateDatatagText
+import com.bombbird.terminalcontrol2.utilities.AircraftTypeData
 import ktx.ashley.entity
 import ktx.ashley.get
 import ktx.ashley.plusAssign
@@ -21,7 +22,7 @@ import ktx.scene2d.Scene2DSkin
 import kotlin.math.roundToInt
 
 /** Aircraft class that creates an aircraft entity with the required components on instantiation */
-class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightType: Byte, onClient: Boolean = true) {
+class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoType: String, flightType: Byte, onClient: Boolean = true) {
     val entity = getEngine(onClient).entity {
         with<Position> {
             x = posX
@@ -32,6 +33,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
         }
         with<AircraftInfo> {
             icaoCallsign = callsign
+            aircraftPerf = AircraftTypeData.getAircraftPerf(icaoType, flightType)
         }
         with<Direction> {
             trackUnitVector = Vector2(Vector2.Y)
@@ -106,6 +108,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, flightTyp
                 serialisedAircraft.icaoCallsign,
                 serialisedAircraft.x, serialisedAircraft.y,
                 serialisedAircraft.altitude,
+                "", // ICAO type can be ignored on the client
                 serialisedAircraft.flightType
             ).apply {
                 entity.apply {
