@@ -83,10 +83,10 @@ data class IndicatedAirSpeed(var iasKt: Float = 0f): Component {
 
 /**
  * Component for ground speed - the magnitude of the sum of the aircraft's velocity vector and the wind velocity vector
- * @param gsKt the ground speed, in knots, of the aircraft
+ * @param trackVectorPxps the ground track vector, in pixels per second, of the aircraft
  * */
-data class GroundSpeed(var gsKt: Float = 0f): Component {
-    companion object: Mapper<GroundSpeed>()
+data class GroundTrack(var trackVectorPxps: Vector2 = Vector2()): Component {
+    companion object: Mapper<GroundTrack>()
 }
 
 /**

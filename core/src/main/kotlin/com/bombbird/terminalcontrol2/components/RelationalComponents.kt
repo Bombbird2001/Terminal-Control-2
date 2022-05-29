@@ -1,6 +1,7 @@
 package com.bombbird.terminalcontrol2.components
 
 import com.badlogic.ashley.core.Component
+import com.badlogic.ashley.core.Entity
 import com.bombbird.terminalcontrol2.entities.Airport
 import com.bombbird.terminalcontrol2.navigation.Approach
 import com.bombbird.terminalcontrol2.navigation.SidStar
@@ -25,4 +26,9 @@ data class STARChildren(val starMap: GdxArrayMap<String, SidStar.STAR> = GdxArra
 /** Component to keep track of an airport's approaches (for O(1) access) */
 data class ApproachChildren(val approachMap: GdxArrayMap<String, Approach> = GdxArrayMap()): Component {
     companion object: Mapper<ApproachChildren>()
+}
+
+/** Component to keep track of a runway's default generated visual approach */
+data class VisualApproach(val visual: Entity = Entity()): Component {
+    companion object: Mapper<VisualApproach>()
 }

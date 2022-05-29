@@ -73,7 +73,7 @@ fun pxToM(px: Int): Float {
 
 /** Convert from metres to nautical miles */
 fun mToNm(m: Float): Float {
-    return pxToNm(mToPx(m))
+    return m / NM_TO_M
 }
 
 /** Convert from metres to feet */

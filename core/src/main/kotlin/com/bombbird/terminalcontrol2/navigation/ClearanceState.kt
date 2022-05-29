@@ -128,37 +128,47 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
     /**
      * Updates this clearance state to match the input clearance for UI purposes
      * @param latestClearance the clearance state to update this state to; should be the aircraft's latest clearance state
-     * @param defaultClearance the current clearance state stored in the UI, without any player changes; set to null if
+     * @param uiClearance the current clearance state stored in the UI, without any player changes; set to null if
      * the updating of this clearance state should not take into account of any existing changes made by the player
      * */
-    fun updateUIClearanceState(latestClearance: ClearanceState, defaultClearance: ClearanceState? = null) {
-        defaultClearance?.also {
+    fun updateUIClearanceState(latestClearance: ClearanceState, uiClearance: ClearanceState? = null) {
+        uiClearance?.also {
             // Default clearance provided - compare this clearance against it and update the properties conditionally
             // For most of the variables, update if no change has been made compared to the original aircraft clearance state
-            if (routePrimaryName == defaultClearance.routePrimaryName) routePrimaryName = latestClearance.routePrimaryName
-            if (checkRouteEqualityStrict(route, defaultClearance.route)) route.setToRouteCopy(latestClearance.route)
+            if (routePrimaryName == uiClearance.routePrimaryName) routePrimaryName = latestClearance.routePrimaryName
+            if (checkRouteEqualityStrict(route, uiClearance.route)) route.setToRouteCopy(latestClearance.route)
             else {
-                // Sanity check - all legs in the current pane clearance state must be present in the new clearance state;
-                // otherwise, those legs must be removed
                 var i = 0
-                while (0 <= i && i < route.legs.size) route.legs[i].let { leg ->
-                    if (checkLegChanged(latestClearance.route, leg)) {
-                        route.legs.removeIndex(i)
-                        i--
+                while (0 <= i && i < route.legs.size) { route.legs[i]?.also { leg ->
+                    (leg as? Route.WaypointLeg)?.let { wptLeg ->
+                        // Sanity check - all waypoint legs in the current pane clearance state must be present in the
+                        // new clearance state; otherwise, those legs must be removed
+                        if (checkLegChanged(latestClearance.route, wptLeg)) {
+                            route.legs.removeIndex(i)
+                            i--
+                        }
+                    } ?: ((leg as? Route.HoldLeg) ?: (leg as? Route.VectorLeg))?.let {
+                        // Additionally, for hold and after waypoint heading legs, the leg preceding them in the UI state
+                        // must be a waypoint and present unless this leg is the first; otherwise, those legs must also be removed
+                        val prevLeg = if (i >= 1) route.legs[i - 1] ?: return@let else return@let
+                        if (prevLeg !is Route.WaypointLeg || checkLegChanged(latestClearance.route, prevLeg)) {
+                            route.legs.removeIndex(i)
+                            i--
+                        }
                     }
                     i++
-                }
+                }}
             }
-            if (checkRouteEqualityStrict(hiddenLegs, defaultClearance.hiddenLegs)) hiddenLegs.setToRouteCopy(latestClearance.hiddenLegs)
-            if (vectorHdg == defaultClearance.vectorHdg) {
+            if (checkRouteEqualityStrict(hiddenLegs, uiClearance.hiddenLegs)) hiddenLegs.setToRouteCopy(latestClearance.hiddenLegs)
+            if (vectorHdg == uiClearance.vectorHdg) {
                 vectorHdg = latestClearance.vectorHdg
                 // If user has not changed both the heading and the turn direction, set to new turn direction
-                if (vectorTurnDir == defaultClearance.vectorTurnDir) vectorTurnDir = latestClearance.vectorTurnDir
+                if (vectorTurnDir == uiClearance.vectorTurnDir) vectorTurnDir = latestClearance.vectorTurnDir
             }
-            if (clearedAlt == defaultClearance.clearedAlt) clearedAlt = latestClearance.clearedAlt
+            if (clearedAlt == uiClearance.clearedAlt) clearedAlt = latestClearance.clearedAlt
             // Set to new IAS if the current IAS has not changed, or if it has changed but is equal to the current optimal IAS,
             // and is different from the new optimal IAS, and the new clearance is equal to the new optimal IAS
-            if (clearedIas == defaultClearance.clearedIas ||
+            if (clearedIas == uiClearance.clearedIas ||
                 (clearedIas == optimalIas && optimalIas != latestClearance.optimalIas && latestClearance.clearedIas == latestClearance.optimalIas)) clearedIas = latestClearance.clearedIas
         } ?: run {
             // No default clearance to compare against, copy the properties directly

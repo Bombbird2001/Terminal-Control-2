@@ -227,8 +227,9 @@ object GameLoader {
         val posY = nmToPx(pos[1].toFloat())
         val trueHdg = data[3].toFloat()
         val rwyLengthM = data[4].toShort()
-        val elevation = data[5].toShort()
-        val labelPos = when (data[6]) {
+        val displacedThresholdLengthM = data[5].toShort()
+        val elevation = data[6].toShort()
+        val labelPos = when (data[7]) {
             "LABEL_BEFORE" -> RunwayLabel.BEFORE
             "LABEL_RIGHT" -> RunwayLabel.RIGHT
             "LABEL_LEFT" -> RunwayLabel.LEFT
@@ -237,7 +238,7 @@ object GameLoader {
                 RunwayLabel.BEFORE
             }
         }
-        airport.addRunway(id, name, posX, posY, trueHdg, rwyLengthM, elevation, labelPos)
+        airport.addRunway(id, name, posX, posY, trueHdg, rwyLengthM, displacedThresholdLengthM, elevation, labelPos)
         airport.setRunwayMapping(name, id)
     }
 
@@ -256,6 +257,7 @@ object GameLoader {
                 UsabilityFilter.DAY_AND_NIGHT
             }
         }
+        val arptId = airport.entity[AirportInfo.mapper]?.arptId ?: return null
         val rwyId = airport.entity[RunwayChildren.mapper]?.updatedRwyMapping?.get(data[4]) ?: run {
             Gdx.app.log("GameLoader", "Runway ${data[4]} not found for approach $name")
             return null
@@ -274,7 +276,7 @@ object GameLoader {
                 val maxInterceptAlt = data[12].toShort()
                 val towerCallsign = data[13].replace("-", " ")
                 val towerFreq = data[14]
-                Approach.IlsGS(name, rwyId, towerCallsign, towerFreq, heading, posX, posY, locDist, glideAngle, gsOffset, maxInterceptAlt, decisionAltitude, rvr, dayNight)
+                Approach.IlsGS(name, arptId, rwyId, towerCallsign, towerFreq, heading, posX, posY, locDist, glideAngle, gsOffset, maxInterceptAlt, decisionAltitude, rvr, dayNight)
             }
             "ILS-LOC-OFFSET" -> {
                 val locDist = data[9].toByte()
@@ -286,7 +288,8 @@ object GameLoader {
                     val step = data[i].split("@")
                     steps.add(Pair(step[1].toFloat(), step[0].toShort()))
                 }
-                Approach.IlsLOCOffset(name, rwyId, towerCallsign, towerFreq, heading, posX, posY, locDist, decisionAltitude, rvr, lineUpDist, steps.toTypedArray(), dayNight)
+                steps.sortBy { it.first }
+                Approach.IlsLOCOffset(name, arptId, rwyId, towerCallsign, towerFreq, heading, posX, posY, locDist, decisionAltitude, rvr, lineUpDist, steps.toTypedArray(), dayNight)
             }
             else -> {
                 Gdx.app.log("GameLoader", "Unknown approach type ${data[1]} for $name")

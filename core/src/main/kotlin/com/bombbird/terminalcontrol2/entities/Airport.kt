@@ -13,7 +13,9 @@ import com.bombbird.terminalcontrol2.utilities.mToPx
 import com.bombbird.terminalcontrol2.utilities.updateWindVector
 import ktx.ashley.entity
 import ktx.ashley.get
+import ktx.ashley.plusAssign
 import ktx.ashley.with
+import ktx.math.times
 
 /** Airport class that creates an airport entity with the required components on instantiation */
 class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX: Float, posY: Float, elevation: Short, onClient: Boolean = true) {
@@ -151,7 +153,7 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
     class SerialisedRunwayMapping(val rwyName: String = "", val rwyId: Byte = 0)
 
     /** Runway class that creates a runway entity with the required components on instantiation */
-    class Runway(parentAirport: Airport, id: Byte, name: String, posX: Float, posY: Float, trueHdg: Float, runwayLengthM: Short, elevation: Short, labelPos: Byte, onClient: Boolean = true) {
+    class Runway(parentAirport: Airport, id: Byte, name: String, posX: Float, posY: Float, trueHdg: Float, runwayLengthM: Short, displacedM: Short, elevation: Short, labelPos: Byte, onClient: Boolean = true) {
         val entity = getEngine(onClient).entity {
             with<Position> {
                 x = posX
@@ -171,6 +173,13 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
                 rwyName = name
                 lengthM = runwayLengthM
                 airport = parentAirport
+                displacedThresholdM = displacedM
+            }
+            with<VisualApproach> {
+                val totalDisplacementM = displacedM + 150 // TDZ is 150m after the threshold (with displacement if any)
+                val displacementVector = Vector2(Vector2.Y).rotateDeg(-trueHdg) * mToPx(totalDisplacementM)
+                visual += Position(posX + displacementVector.x, posY + displacementVector.y)
+                visual += Direction(Vector2(Vector2.Y).rotateDeg(180 - trueHdg))
             }
             with<SRColor> {
                 color = Color.WHITE
@@ -197,6 +206,7 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
                     serialisedRunway.x, serialisedRunway.y,
                     serialisedRunway.trueHdg,
                     serialisedRunway.lengthM,
+                    serialisedRunway.displacedM,
                     serialisedRunway.altitude,
                     serialisedRunway.rwyLabelPos
                 )
@@ -207,7 +217,7 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
         class SerialisedRunway(val x: Float = 0f, val y: Float = 0f,
                                val altitude: Short = 0,
                                val trueHdg: Float = 0f,
-                               val rwyId: Byte = -1, val rwyName: String = "", val lengthM: Short = 0,
+                               val rwyId: Byte = -1, val rwyName: String = "", val lengthM: Short = 0, val displacedM: Short = 0,
                                val rwyLabelPos: Byte = 0)
 
         /** Gets a [SerialisedRunway] from current state */
@@ -222,7 +232,7 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
                     position.x, position.y,
                     altitude.altitudeFt.toInt().toShort(),
                     convertWorldAndRenderDeg(direction.trackUnitVector.angleDeg()),
-                    rwyInfo.rwyId, rwyInfo.rwyName, rwyInfo.lengthM,
+                    rwyInfo.rwyId, rwyInfo.rwyName, rwyInfo.lengthM, rwyInfo.displacedThresholdM,
                     rwyLabel.positionToRunway
                 )
             }
@@ -230,8 +240,8 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
     }
 
     /** Creates a runway entity with the required components, and adds it to airport component's runway map */
-    fun addRunway(id: Byte, name: String, posX: Float, posY: Float, trueHdg: Float, runwayLengthM: Short, elevation: Short, labelPos: Byte) {
-        Runway(this, id, name, posX, posY, trueHdg, runwayLengthM, elevation, labelPos, false).also { rwy ->
+    fun addRunway(id: Byte, name: String, posX: Float, posY: Float, trueHdg: Float, runwayLengthM: Short, displacedThresholdM: Short, elevation: Short, labelPos: Byte) {
+        Runway(this, id, name, posX, posY, trueHdg, runwayLengthM, displacedThresholdM, elevation, labelPos, false).also { rwy ->
             entity[RunwayChildren.mapper]?.rwyMap?.put(id, rwy)
         }
     }

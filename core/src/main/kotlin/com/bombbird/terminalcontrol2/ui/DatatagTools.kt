@@ -15,6 +15,7 @@ import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.utilities.addChangeListener
 import com.bombbird.terminalcontrol2.utilities.convertWorldAndRenderDeg
 import com.bombbird.terminalcontrol2.utilities.modulateHeading
+import com.bombbird.terminalcontrol2.utilities.pxpsToKt
 import ktx.ashley.get
 import ktx.scene2d.Scene2DSkin
 import kotlin.math.roundToInt
@@ -142,13 +143,13 @@ private fun getMinimisedLabelText(entity: Entity): Array<String> {
     // Temporary label format TODO change based on datatag format in use
     val aircraftInfo = entity[AircraftInfo.mapper] ?: return labelText
     val radarData = entity[RadarData.mapper] ?: return labelText
-    val groundSpeed = entity[GroundSpeed.mapper] ?: return labelText
+    val groundTrack = entity[GroundTrack.mapper] ?: return labelText
     val latestClearance = entity[ClearanceAct.mapper]?.actingClearance?.actingClearance
 
     val callsign = aircraftInfo.icaoCallsign
     val recat = aircraftInfo.aircraftPerf.recat
     val alt = (radarData.altitude.altitudeFt / 100).roundToInt()
-    val groundSpd = groundSpeed.gsKt.roundToInt()
+    val groundSpd = pxpsToKt(groundTrack.trackVectorPxps.len()).roundToInt()
     val clearedAlt = latestClearance?.let { it.clearedAlt / 100 }?.toString() ?: ""
     val icaoType = aircraftInfo.icaoType
 
@@ -165,7 +166,7 @@ private fun getExpandedLabelText(entity: Entity): Array<String> {
     val aircraftInfo = entity[AircraftInfo.mapper] ?: return labelText
     val radarData = entity[RadarData.mapper] ?: return labelText
     val cmdTarget = entity[CommandTarget.mapper] ?: return labelText
-    val groundSpeed = entity[GroundSpeed.mapper] ?: return labelText
+    val groundTrack = entity[GroundTrack.mapper] ?: return labelText
     val latestClearance = entity[ClearanceAct.mapper]?.actingClearance?.actingClearance
 
 
@@ -177,7 +178,7 @@ private fun getExpandedLabelText(entity: Entity): Array<String> {
     val cmdAlt = (cmdTarget.targetAltFt / 100f).roundToInt()
     val hdg = modulateHeading((convertWorldAndRenderDeg(radarData.direction.trackUnitVector.angleDeg()) + MAG_HDG_DEV).roundToInt().toFloat()).roundToInt()
     val cmdHdg = cmdTarget.targetHdgDeg.roundToInt()
-    val groundSpd = groundSpeed.gsKt.roundToInt()
+    val groundSpd = pxpsToKt(groundTrack.trackVectorPxps.len()).roundToInt()
     val clearedLateral = latestClearance?.route?.legs?.let {
         if (it.size == 0) null else CLIENT_SCREEN?.waypoints?.get((it[0] as? Route.WaypointLeg)?.wptId)
     }?.entity?.get(WaypointInfo.mapper)?.wptName ?: latestClearance?.vectorHdg?.toString() ?: ""

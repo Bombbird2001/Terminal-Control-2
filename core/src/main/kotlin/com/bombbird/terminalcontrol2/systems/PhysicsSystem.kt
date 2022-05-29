@@ -3,14 +3,15 @@ package com.bombbird.terminalcontrol2.systems
 import com.badlogic.ashley.core.EntitySystem
 import com.badlogic.ashley.core.Family
 import com.badlogic.gdx.math.MathUtils
-import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.*
+import com.bombbird.terminalcontrol2.navigation.getAltAtPos
 import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.*
-import ktx.math.plus
+import ktx.math.plusAssign
 import ktx.math.times
 import kotlin.math.max
+import kotlin.math.tan
 
 /** Main physics update system, which handles physics aspects such as displacement, velocity, acceleration, etc.
  *
@@ -24,9 +25,10 @@ class PhysicsSystem(override val updateTimeS: Float): EntitySystem(), LowFreqUpd
     private val positionUpdateFamily: Family = allOf(Position::class, Altitude::class, Speed::class, Direction::class).get()
     private val windAffectedFamily: Family = allOf(AffectedByWind::class, Position::class).exclude(TakeoffRoll::class, LandingRoll::class).get()
     private val speedUpdateFamily: Family = allOf(Speed::class, Acceleration::class).get()
-    private val cmdTargetFamily: Family = allOf(AircraftInfo::class, Altitude::class, Speed::class, Acceleration::class, CommandTarget::class).exclude(TakeoffRoll::class).get()
-    private val headingFamily: Family = allOf(IndicatedAirSpeed::class, Direction::class, Speed::class, Acceleration::class, CommandTarget::class).exclude(TakeoffRoll::class).get()
-    private val gsFamily: Family = allOf(GroundSpeed::class, Speed::class, Direction::class).get()
+    private val cmdTargetAltFamily: Family = allOf(AircraftInfo::class, Altitude::class, Speed::class, Acceleration::class, CommandTarget::class).exclude(GlideSlopeCaptured::class, TakeoffRoll::class, LandingRoll::class).get()
+    private val cmdTargetHeadingFamily: Family = allOf(IndicatedAirSpeed::class, Direction::class, Speed::class, Acceleration::class, CommandTarget::class).exclude(TakeoffRoll::class, LandingRoll::class).get()
+    private val glideSlopeCapturedFamily: Family = allOf(Altitude::class, Speed::class, GlideSlopeCaptured::class).get()
+    private val gsFamily: Family = allOf(Position::class, Altitude::class, GroundTrack::class, Speed::class, Direction::class, Acceleration::class).get()
     private val tasToIasFamily: Family = allOf(Speed::class, IndicatedAirSpeed::class, Altitude::class).exclude(TakeoffRoll::class).get()
     private val accLimitFamily: Family = allOf(Speed::class, Altitude::class, Acceleration::class, AircraftInfo::class).get()
     private val affectedByWindFamily: Family = allOf(Position::class, AffectedByWind::class).get()
@@ -76,9 +78,9 @@ class PhysicsSystem(override val updateTimeS: Float): EntitySystem(), LowFreqUpd
         }
 
         // Set altitude, speed behaviour using target values from CommandTarget
-        val cmdTarget = engine.getEntitiesFor(cmdTargetFamily)
-        for (i in 0 until cmdTarget.size()) {
-            cmdTarget[i]?.apply {
+        val cmdAltitude = engine.getEntitiesFor(cmdTargetAltFamily)
+        for (i in 0 until cmdAltitude.size()) {
+            cmdAltitude[i]?.apply {
                 val aircraftInfo = get(AircraftInfo.mapper) ?: return@apply
                 val alt = get(Altitude.mapper) ?: return@apply
                 val spd = get(Speed.mapper) ?: return@apply
@@ -109,10 +111,29 @@ class PhysicsSystem(override val updateTimeS: Float): EntitySystem(), LowFreqUpd
             }
         }
 
+        // Update properties for aircraft on the glide slope
+        val gsCaptured = engine.getEntitiesFor(glideSlopeCapturedFamily)
+        for (i in 0 until gsCaptured.size()) {
+            gsCaptured[i]?.apply {
+                val pos = get(Position.mapper) ?: return@apply
+                val gsApp = get(GlideSlopeCaptured.mapper)?.gsApp ?: return@apply
+                val appTrack = gsApp[Direction.mapper]?.trackUnitVector ?: return@apply
+                val glideAngle = gsApp[GlideSlope.mapper]?.glideAngle ?: return@apply
+                val spd = get(Speed.mapper) ?: return@apply
+                val acc = get(Acceleration.mapper) ?: return@apply
+                val alt = get(Altitude.mapper) ?: return@apply
+                val track = get(GroundTrack.mapper)?.trackVectorPxps ?: return@apply
+                alt.altitudeFt = getAltAtPos(gsApp, pos.x, pos.y, pxpsToKt(track.len())) ?: return@apply
+                val gsKtComponentToAppTrack = pxpsToKt(track.dot(appTrack))
+                spd.vertSpdFpm = (gsKtComponentToAppTrack / 60 * tan(Math.toRadians(glideAngle.toDouble()))).toFloat()
+                acc.dVertSpdMps2 = 0f
+            }
+        }
+
         // Set heading behaviour using target values from CommandTarget
-        val heading = engine.getEntitiesFor(headingFamily)
-        for (i in 0 until heading.size()) {
-            heading[i]?.apply {
+        val cmdHeading = engine.getEntitiesFor(cmdTargetHeadingFamily)
+        for (i in 0 until cmdHeading.size()) {
+            cmdHeading[i]?.apply {
                 val ias = get(IndicatedAirSpeed.mapper) ?: return@apply
                 val dir = get(Direction.mapper) ?: return@apply
                 val spd = get(Speed.mapper) ?: return@apply
@@ -137,21 +158,21 @@ class PhysicsSystem(override val updateTimeS: Float): EntitySystem(), LowFreqUpd
         val gs = engine.getEntitiesFor(gsFamily)
         for (i in 0 until gs.size()) {
             gs[i]?.apply {
-                val groundSpeed = get(GroundSpeed.mapper) ?: return@apply
+                val groundTrack = get(GroundTrack.mapper) ?: return@apply
                 val speed = get(Speed.mapper) ?: return@apply
                 val dir = get(Direction.mapper) ?: return@apply
                 val takeoffRoll = get(TakeoffRoll.mapper)
                 val landingRoll = get(LandingRoll.mapper)
                 val affectedByWind = get(AffectedByWind.mapper)
 
-                groundSpeed.gsKt = if (takeoffRoll != null || landingRoll != null) {
-                    val headwind = get(Position.mapper)?.let { pos ->
-                        val wind = getClosestAirportWindVector(pos.x, pos.y)
-                        pxpsToKt(wind.dot(dir.trackUnitVector))
-                    } ?: 0f
-                    max(speed.speedKts + headwind, 0f)
-                } else if (affectedByWind == null) speed.speedKts
-                else (Vector2(dir.trackUnitVector).times(speed.speedKts) + (affectedByWind.windVectorPxps.times(pxpsToKt(1f)))).len()
+                groundTrack.trackVectorPxps = if (takeoffRoll != null || landingRoll != null) {
+                    val tailwind = affectedByWind?.windVectorPxps?.dot(dir.trackUnitVector) ?: 0f
+                    dir.trackUnitVector * ktToPxps(max(speed.speedKts + tailwind, 0f))
+                } else {
+                    val tasVector = dir.trackUnitVector * ktToPxps(speed.speedKts.toInt())
+                    if (affectedByWind != null) tasVector.plusAssign(affectedByWind.windVectorPxps)
+                    tasVector
+                }
             }
         }
 

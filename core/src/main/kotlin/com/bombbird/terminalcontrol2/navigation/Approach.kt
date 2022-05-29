@@ -3,6 +3,7 @@ package com.bombbird.terminalcontrol2.navigation
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
+import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.MAG_HDG_DEV
 import com.bombbird.terminalcontrol2.global.getEngine
 import com.bombbird.terminalcontrol2.navigation.Approach.IlsGS.SerialisedIlsGS
@@ -16,7 +17,8 @@ import ktx.ashley.with
 import ktx.collections.GdxArray
 import kotlin.math.roundToInt
 
-/** Approach class that stores all relevant data regarding the approach and utility functions
+/**
+ * Approach class that stores all relevant data regarding the approach and utility functions
  *
  * [transitions] stores arrays of legs for possible transitions onto the approach
  *
@@ -29,16 +31,18 @@ import kotlin.math.roundToInt
  *
  * This class is abstract and is extended by the various approach types: [IlsGS], [IlsLOCOffset]
  * */
-abstract class Approach(name: String, runwayId: Byte, tower: String, towerFreq: String, onClient: Boolean = true,
+abstract class Approach(name: String, arptId: Byte, runwayId: Byte, tower: String, towerFreq: String, onClient: Boolean = true,
                override val timeRestriction: Byte): UsabilityFilter, Pronounceable {
     override val pronunciation: String
         get() = "" // TODO implement pronunciation based on approach name (or I might change it to a user specified pronunciation)
     val entity = getEngine(onClient).entity {
         with<ApproachInfo> {
             approachName = name
+            airportId = arptId
             rwyId = runwayId
             towerName = tower
             frequency = towerFreq
+            GAME.gameServer?.airports?.get(arptId)?.entity?.get(RunwayChildren.mapper)?.rwyMap?.get(runwayId)?.let { rwyObj = it }
         }
     }
 
@@ -46,16 +50,19 @@ abstract class Approach(name: String, runwayId: Byte, tower: String, towerFreq: 
     val routeLegs = Route()
     val missedLegs = Route()
 
-    /** Gets a [SerialisedApproach] from current state
+    /**
+     * Gets a [SerialisedApproach] from current state
      *
      * This method is abstract and must be implemented by each individual approach class
      * */
     abstract fun getSerialisableObject(): SerialisedApproach
 
     companion object {
-        /** De-serialises a [SerialisedApproach] and creates a new [Approach] object from it
+        /**
+         * De-serialises a [SerialisedApproach] and creates a new [Approach] object from it
          *
          * Will invoke the specific [fromSerialisedObject] function for different type of approaches
+         * @param serialisedApproach the serialised approach object to de-serialise
          * */
         fun fromSerialisedObject(serialisedApproach: SerialisedApproach): Approach {
             (serialisedApproach as? SerialisedIlsGS)?.let {
@@ -68,9 +75,13 @@ abstract class Approach(name: String, runwayId: Byte, tower: String, towerFreq: 
             }
         }
 
-        /** De-serialises a [SerialisedIlsGS] and creates a new [IlsGS] object from it */
+        /**
+         * De-serialises a [SerialisedIlsGS] and creates a new [IlsGS] object from it
+         * @param serialisedIlsGS the serialised ILS GS object to de-serialise
+         * @return a new [IlsGS] object instance
+         * */
         private fun fromSerialisedObject(serialisedIlsGS: SerialisedIlsGS): IlsGS {
-            return IlsGS(serialisedIlsGS.name, serialisedIlsGS.rwyId, serialisedIlsGS.tower, serialisedIlsGS.towerFreq,
+            return IlsGS(serialisedIlsGS.name, serialisedIlsGS.arptId, serialisedIlsGS.rwyId, serialisedIlsGS.tower, serialisedIlsGS.towerFreq,
                 serialisedIlsGS.heading, serialisedIlsGS.posX, serialisedIlsGS.posY, serialisedIlsGS.locDistNm,
                 serialisedIlsGS.gsAngle, serialisedIlsGS.gsOffsetNm, serialisedIlsGS.gsMaxAlt,
                 serialisedIlsGS.decisionAlt, serialisedIlsGS.rvr,
@@ -79,9 +90,13 @@ abstract class Approach(name: String, runwayId: Byte, tower: String, towerFreq: 
             }
         }
 
-        /** De-serialises a [SerialisedIlsLOCOffset] and creates a new [IlsLOCOffset] object from it */
+        /**
+         * De-serialises a [SerialisedIlsLOCOffset] and creates a new [IlsLOCOffset] object from it
+         * @param serialisedIlsLOCOffset the serialised offset ILS LOC object to de-serialise
+         * @return a new [IlsLOCOffset] object instance
+         * */
         private fun fromSerialisedObject(serialisedIlsLOCOffset: SerialisedIlsLOCOffset): IlsLOCOffset {
-            return IlsLOCOffset(serialisedIlsLOCOffset.name, serialisedIlsLOCOffset.rwyId, serialisedIlsLOCOffset.tower, serialisedIlsLOCOffset.towerFreq,
+            return IlsLOCOffset(serialisedIlsLOCOffset.name, serialisedIlsLOCOffset.arptId, serialisedIlsLOCOffset.rwyId, serialisedIlsLOCOffset.tower, serialisedIlsLOCOffset.towerFreq,
                 serialisedIlsLOCOffset.heading, serialisedIlsLOCOffset.posX, serialisedIlsLOCOffset.posY, serialisedIlsLOCOffset.locDistNm,
                 serialisedIlsLOCOffset.decisionAlt, serialisedIlsLOCOffset.rvr,
                 serialisedIlsLOCOffset.centerlineInterceptDist, serialisedIlsLOCOffset.steps.map { Pair(it.dist, it.alt) }.toTypedArray(),
@@ -91,11 +106,12 @@ abstract class Approach(name: String, runwayId: Byte, tower: String, towerFreq: 
         }
     }
 
-    /** Object that contains [Approach] data to be serialised by Kryo
+    /**
+     * Object that contains [Approach] data to be serialised by Kryo
      *
      * This class is abstract and is extended by SerialisedIlsGS and SerialisedIlsLOCOffset
      * */
-    abstract class SerialisedApproach(val name: String = "", val rwyId: Byte = 0, val tower: String = "", val towerFreq: String = "",
+    abstract class SerialisedApproach(val name: String = "", val arptId: Byte = 0, val rwyId: Byte = 0, val tower: String = "", val towerFreq: String = "",
                                       val timeRestriction: Byte = 0,
                                       val transitions: Array<SerialisedTransition> = arrayOf(),
                                       val routeLegs: Route.SerialisedRoute = Route.SerialisedRoute(),
@@ -107,9 +123,11 @@ abstract class Approach(name: String, runwayId: Byte, tower: String, towerFreq: 
     /** Object that contains non-precision approach step down data to be serialised by Kryo */
     class SerialisedStep(val dist: Float = 0f, val alt: Short = 0)
 
-    /** Sets [transitions], [routeLegs] and [missedLegs] from the supplied [serialisedApproach]
+    /**
+     * Sets [transitions], [routeLegs] and [missedLegs] from the supplied [serialisedApproach]
      *
      * This will clear any existing route data (there should not be any data in the route to begin with, should this function be used)
+     * @param serialisedApproach the serialised approach object to refer to
      * */
     fun setFromSerialisedObject(serialisedApproach: SerialisedApproach) {
         transitions.clear()
@@ -119,7 +137,7 @@ abstract class Approach(name: String, runwayId: Byte, tower: String, towerFreq: 
     }
 
     /** Empty approach that is used when de-serialising an unknown/un-implemented approach type */
-    class EmptyApproach: Approach("", 0, "", "", timeRestriction = UsabilityFilter.DAY_AND_NIGHT) {
+    class EmptyApproach: Approach("", 0, 0, "", "", timeRestriction = UsabilityFilter.DAY_AND_NIGHT) {
         override fun getSerialisableObject(): SerialisedApproach {
             return SerialisedEmptyApproach()
         }
@@ -128,13 +146,14 @@ abstract class Approach(name: String, runwayId: Byte, tower: String, towerFreq: 
         class SerialisedEmptyApproach: SerialisedApproach()
     }
 
-    /** ILS class that stores all relevant data regarding the ILS (with glide slope) and utility functions
+    /**
+     * ILS class that stores all relevant data regarding the ILS (with glide slope) and utility functions
      *
      * [entity], [transitions], [routeLegs], [missedLegs], [UsabilityFilter] and [Pronounceable] are directly inherited from [Approach]
      * */
-    class IlsGS(name: String, runwayId: Byte, tower: String, towerFreq: String,
+    class IlsGS(name: String, arptId: Byte, runwayId: Byte, tower: String, towerFreq: String,
                 heading: Short, posX: Float, posY: Float, locDistNm: Byte, gsAngle: Float, gsOffsetNm: Float, gsMaxAlt: Short, decisionAlt: Short, rvr: Short,
-                timeRestriction: Byte): Approach(name, runwayId, tower, towerFreq, timeRestriction = timeRestriction) {
+                timeRestriction: Byte): Approach(name, arptId, runwayId, tower, towerFreq, timeRestriction = timeRestriction) {
         init {
             entity.apply {
                 this += Position(posX, posY)
@@ -145,7 +164,10 @@ abstract class Approach(name: String, runwayId: Byte, tower: String, towerFreq: 
             }
         }
 
-        /** Gets a [SerialisedIlsGS] from current state */
+        /**
+         * Gets a serialised ILS GS object from current state
+         * @return a [SerialisedIlsGS] object representing the current state of this [IlsGS] object
+         * */
         override fun getSerialisableObject(): SerialisedApproach {
             entity.apply {
                 val appInfo = get(ApproachInfo.mapper) ?: return SerialisedIlsGS()
@@ -154,7 +176,7 @@ abstract class Approach(name: String, runwayId: Byte, tower: String, towerFreq: 
                 val loc = get(Localizer.mapper) ?: return SerialisedIlsGS()
                 val gs = get(GlideSlope.mapper) ?: return SerialisedIlsGS()
                 val mins = get(Minimums.mapper) ?: return SerialisedIlsGS()
-                return SerialisedIlsGS(appInfo.approachName, appInfo.rwyId, appInfo.towerName, appInfo.frequency,
+                return SerialisedIlsGS(appInfo.approachName, appInfo.airportId, appInfo.rwyId, appInfo.towerName, appInfo.frequency,
                                        timeRestriction,
                                        transitions.map { SerialisedTransition(it.first, it.second.getSerialisedObject()) }.toTypedArray(),
                                        routeLegs.getSerialisedObject(),
@@ -167,23 +189,24 @@ abstract class Approach(name: String, runwayId: Byte, tower: String, towerFreq: 
         }
 
         /** Object that contains [IlsGS] data to be serialised by Kryo */
-        class SerialisedIlsGS(name: String = "", rwyId: Byte = 0, tower: String = "", towerFreq: String = "",
+        class SerialisedIlsGS(name: String = "", arptId: Byte = 0, rwyId: Byte = 0, tower: String = "", towerFreq: String = "",
                               timeRestriction: Byte = 0,
                               transitions: Array<SerialisedTransition> = arrayOf(),
                               routeLegs: Route.SerialisedRoute = Route.SerialisedRoute(),
                               missedLegs: Route.SerialisedRoute = Route.SerialisedRoute(),
                               val heading: Short = 360, val posX: Float = 0f, val posY: Float = 0f, val locDistNm: Byte = 0,
                               val gsAngle: Float = 0f, val gsOffsetNm: Float = 0f, val gsMaxAlt: Short = 0,
-                              val decisionAlt: Short = 0, val rvr: Short = 0): SerialisedApproach(name, rwyId, tower, towerFreq, timeRestriction, transitions, routeLegs, missedLegs)
+                              val decisionAlt: Short = 0, val rvr: Short = 0): SerialisedApproach(name, rwyId, arptId, tower, towerFreq, timeRestriction, transitions, routeLegs, missedLegs)
     }
 
-    /** ILS class that stores all relevant data regarding the ILS (without glide slope, with localiser offset) and utility functions
+    /**
+     * ILS class that stores all relevant data regarding the ILS (without glide slope, with localiser offset) and utility functions
      *
      * [entity], [transitions], [routeLegs], [missedLegs], [UsabilityFilter] and [Pronounceable] are directly inherited from [Approach]
      * */
-    class IlsLOCOffset(name: String, runwayId: Byte, tower: String, towerFreq: String,
+    class IlsLOCOffset(name: String, arptId: Byte, runwayId: Byte, tower: String, towerFreq: String,
                        heading: Short, posX: Float, posY: Float, locDistNm: Byte, decisionAlt: Short, rvr: Short, centerlineInterceptDist: Float, steps: Array<Pair<Float, Short>>,
-                       timeRestriction: Byte): Approach(name, runwayId, tower, towerFreq, timeRestriction = timeRestriction) {
+                       timeRestriction: Byte): Approach(name, arptId, runwayId, tower, towerFreq, timeRestriction = timeRestriction) {
         init {
             entity.apply {
                 this += Position(posX, posY)
@@ -195,7 +218,10 @@ abstract class Approach(name: String, runwayId: Byte, tower: String, towerFreq: 
             }
         }
 
-        /** Gets a [SerialisedIlsLOCOffset] from current state */
+        /**
+         * Gets a serialised offset ILS LOC object from current state
+         * @return a [SerialisedIlsLOCOffset] object representing the current state of this [IlsLOCOffset] object
+         * */
         override fun getSerialisableObject(): SerialisedApproach {
             entity.apply {
                 val appInfo = get(ApproachInfo.mapper) ?: return SerialisedIlsLOCOffset()
@@ -205,7 +231,7 @@ abstract class Approach(name: String, runwayId: Byte, tower: String, towerFreq: 
                 val mins = get(Minimums.mapper) ?: return SerialisedIlsLOCOffset()
                 val offset = get(Offset.mapper) ?: return SerialisedIlsLOCOffset()
                 val steps = get(StepDown.mapper) ?: return SerialisedIlsLOCOffset()
-                return SerialisedIlsLOCOffset(appInfo.approachName, appInfo.rwyId, appInfo.towerName, appInfo.frequency,
+                return SerialisedIlsLOCOffset(appInfo.approachName, appInfo.airportId, appInfo.rwyId, appInfo.towerName, appInfo.frequency,
                     timeRestriction,
                     transitions.map { SerialisedTransition(it.first, it.second.getSerialisedObject()) }.toTypedArray(),
                     routeLegs.getSerialisedObject(),
@@ -218,13 +244,13 @@ abstract class Approach(name: String, runwayId: Byte, tower: String, towerFreq: 
         }
 
         /** Object that contains [IlsLOCOffset] data to be serialised by Kryo */
-        class SerialisedIlsLOCOffset(name: String = "", rwyId: Byte = 0, tower: String = "", towerFreq: String = "",
+        class SerialisedIlsLOCOffset(name: String = "", arptId: Byte = 0, rwyId: Byte = 0, tower: String = "", towerFreq: String = "",
                               timeRestriction: Byte = 0,
                               transitions: Array<SerialisedTransition> = arrayOf(),
                               routeLegs: Route.SerialisedRoute = Route.SerialisedRoute(),
                               missedLegs: Route.SerialisedRoute = Route.SerialisedRoute(),
                               val heading: Short = 360, val posX: Float = 0f, val posY: Float = 0f, val locDistNm: Byte = 0,
                               val decisionAlt: Short = 0, val rvr: Short = 0,
-                              val centerlineInterceptDist: Float = 0f, val steps: Array<SerialisedStep> = arrayOf()): SerialisedApproach(name, rwyId, tower, towerFreq, timeRestriction, transitions, routeLegs, missedLegs)
+                              val centerlineInterceptDist: Float = 0f, val steps: Array<SerialisedStep> = arrayOf()): SerialisedApproach(name, arptId, rwyId, tower, towerFreq, timeRestriction, transitions, routeLegs, missedLegs)
     }
 }

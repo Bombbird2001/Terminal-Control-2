@@ -12,7 +12,7 @@ data class AirportInfo(var arptId: Byte = 0, var icaoCode: String = "", var name
 }
 
 /** Component for tagging runway related information */
-data class RunwayInfo(var rwyId: Byte = 0, var rwyName: String = "", var lengthM: Short = 4000): Component {
+data class RunwayInfo(var rwyId: Byte = 0, var rwyName: String = "", var lengthM: Short = 4000, var displacedThresholdM: Short = 0): Component {
     lateinit var airport: Airport
     companion object: Mapper<RunwayInfo>()
 }
@@ -33,7 +33,8 @@ data class MetarInfo(var realLifeIcao: String = "", var letterCode: Char? = null
     companion object: Mapper<MetarInfo>()
 }
 
-/** Component for tagging sector related information
+/**
+ * Component for tagging sector related information
  *
  * [sectorId] = -1 -> tower control
  *
@@ -46,7 +47,8 @@ data class SectorInfo(var sectorId: Byte = 0, var controllerName: String = "Chan
     }
 }
 
-/** Component for tagging MVA/Restricted area related information
+/**
+ * Component for tagging MVA/Restricted area related information
  *
  * Additional tagging of [GPolygon] or [GCircle] is required for boundary information
  * */
@@ -66,7 +68,8 @@ data class PublishedHoldInfo(var wptId: Short = 0, var maxAltFt: Int? = null, va
      companion object: Mapper<PublishedHoldInfo>()
  }
 
-/** Component for tagging aircraft specific information
+/**
+ * Component for tagging aircraft specific information
  *
  * Includes performance determining data - minimum approach speed, rotation speed, weight, others in [aircraftPerf]
  * */
@@ -80,7 +83,9 @@ data class AircraftInfo(var icaoCallsign: String = "SHIBA1", var icaoType: Strin
 }
 
 /** Component for tagging basic approach information */
-data class ApproachInfo(var approachName: String = "", var rwyId: Byte = 0, var towerName: String = "", var frequency: String = ""): Component {
+data class ApproachInfo(var approachName: String = "", var airportId: Byte = 0, var rwyId: Byte = 0, var towerName: String = "", var frequency: String = ""): Component {
+    lateinit var rwyObj: Airport.Runway
+
     companion object: Mapper<ApproachInfo>()
 }
 
@@ -109,8 +114,13 @@ data class Offset(var lineUpDistNm: Float = 0f): Component {
     companion object: Mapper<Offset>()
 }
 
-/** Component for tagging visual approach (one will be created for every runway with their own extended centerline and glide path of 3 degrees) */
-class Visual: Component {
+/**
+ * Component for tagging visual approach (one will be created for every runway with their own extended centerline up to
+ * 10nm and glide path of 3 degrees)
+ *
+ * A [Position] component is tagged to mark the location of the touchdown zone
+ * */
+class Visual(val position: Position = Position()): Component {
     companion object: Mapper<Visual>()
 }
 

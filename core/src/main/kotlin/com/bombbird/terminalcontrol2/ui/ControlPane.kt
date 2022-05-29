@@ -13,6 +13,7 @@ import ktx.ashley.get
 import ktx.collections.GdxArray
 import ktx.collections.toGdxArray
 import ktx.scene2d.*
+import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
 
@@ -169,6 +170,7 @@ class ControlPane {
      * Updates the style of the clearance mode buttons depending on the aircraft's cleared navigation state
      * @param route the aircraft's latest cleared route
      * @param vectorHdg the aircraft's latest cleared vector heading; is null if aircraft is not being vectored
+     * hold waypoint is selected
      * */
     fun updateClearanceMode(route: Route, vectorHdg: Short?) {
         if (vectorHdg != null) {
@@ -198,33 +200,65 @@ class ControlPane {
 
     /**
      * Updates [ControlPane.altSelectBox] with the appropriate altitude choices for [MIN_ALT], [MAX_ALT] and [aircraftMaxAlt]
-     * @param aircraftMaxAlt the maximum altitude the aircraft can fly at
+     * @param aircraftMaxAlt the maximum altitude the aircraft can fly at, or null if none provided in which it will be
+     * ignored
      * */
-    fun updateAltSelectBoxChoices(aircraftMaxAlt: Int) {
-        /** Checks the [alt] according to [TRANS_ALT] and [TRANS_LVL] before adding it to the [array] */
+    fun updateAltSelectBoxChoices(aircraftMaxAlt: Int?) {
+        /**
+         * Checks the input altitude according to transition altitude and transition level parsing it into the FLXXX format
+         * if necessary, before adding it to the string array
+         * @param alt the altitude value to add
+         * @param array the string [GdxArray] to add the value into
+         * */
         fun checkAltAndAddToArray(alt: Int, array: GdxArray<String>) {
             if (alt > TRANS_ALT && alt < TRANS_LVL * 100) return
             if (alt <= TRANS_ALT) array.add(alt.toString())
             else if (alt >= TRANS_LVL * 100) array.add("FL${alt / 100}")
         }
 
-        val minAlt = if (MIN_ALT % 1000 > 0) (MIN_ALT / 1000 + 1) * 1000 else MIN_ALT
-        val maxAltAircraft = aircraftMaxAlt - aircraftMaxAlt % 1000
-        val maxAlt = min(MAX_ALT - MAX_ALT % 1000, maxAltAircraft)
+        /**
+         * Selects the appropriate selection in the altitude box for the input altitude value, accounting for altitudes
+         * above the transition altitude being represented in the FLXXX format
+         * @param alt the altitude value to set
+         * */
+        fun setToAltValue(alt: Int) {
+            if (alt <= TRANS_ALT) altSelectBox.selected = alt.toString()
+            else altSelectBox.selected = "FL${alt / 100}"
+        }
+
+        val nextHold = parentPane.userClearanceState.route.getNextHoldLeg()
+        val holdMinAlt = nextHold?.minAltFt
+        val holdMaxAlt = nextHold?.maxAltFt
+        val effectiveMinAlt = if (holdMinAlt == null) MIN_ALT else max(MIN_ALT, holdMinAlt)
+        val roundedMinAlt = if (effectiveMinAlt % 1000 > 0) (effectiveMinAlt / 1000 + 1) * 1000 else effectiveMinAlt
+        val maxAltAircraft = if (aircraftMaxAlt != null) aircraftMaxAlt - aircraftMaxAlt % 1000 else null
+        val effectiveMaxAlt = if (holdMaxAlt == null) MAX_ALT else min(MAX_ALT, holdMaxAlt)
+        val roundedMaxAlt = if (maxAltAircraft != null) min(effectiveMaxAlt - effectiveMaxAlt % 1000, maxAltAircraft) else effectiveMaxAlt - effectiveMaxAlt % 1000
         var intermediateQueueIndex = 0
         modificationInProgress = true
         altSelectBox.items = GdxArray<String>().apply {
-            if (MIN_ALT % 1000 > 0) checkAltAndAddToArray(MIN_ALT, this)
-            for (alt in minAlt .. maxAlt step 1000) {
+            if (effectiveMinAlt % 1000 > 0) checkAltAndAddToArray(effectiveMinAlt, this)
+            for (alt in roundedMinAlt .. roundedMaxAlt step 1000) {
                 INTERMEDIATE_ALTS.also { while (intermediateQueueIndex < it.size) {
                     it[intermediateQueueIndex]?.let { intermediateAlt -> if (intermediateAlt <= alt) {
-                        if (intermediateAlt < alt) checkAltAndAddToArray(intermediateAlt, this)
+                        if (intermediateAlt < alt && intermediateAlt in (effectiveMinAlt + 1) until effectiveMaxAlt) checkAltAndAddToArray(intermediateAlt, this)
                         intermediateQueueIndex++
                     } else return@also } ?: intermediateQueueIndex++
                 }}
                 checkAltAndAddToArray(alt, this)
             }
-            if (MAX_ALT % 1000 > 0) checkAltAndAddToArray(MAX_ALT, this)
+            if (effectiveMaxAlt % 1000 > 0) checkAltAndAddToArray(effectiveMaxAlt, this)
+        }
+        if (altSelectBox.selection.size() >= 1) altSelectBox.selected?.let {
+            val selAlt = if (it.contains("FL")) it.replace("FL", "").toInt() * 100
+            else it.toInt()
+            if (selAlt < effectiveMinAlt) {
+                setToAltValue(effectiveMinAlt)
+                parentPane.userClearanceState.clearedAlt = effectiveMinAlt
+            } else if (selAlt > effectiveMaxAlt) {
+                setToAltValue(effectiveMaxAlt)
+                parentPane.userClearanceState.clearedAlt = effectiveMaxAlt
+            }
         }
         modificationInProgress = false
     }
@@ -286,6 +320,7 @@ class ControlPane {
                 holdSubpaneObj.isVisible = true
                 vectorSubpaneObj.isVisible = false
                 lateralContainer.actor = holdSubpaneObj.actor
+                updateAltSelectBoxChoices(parentPane.aircraftMaxAlt)
                 selectedHoldLeg = parentPane.userClearanceState.route.getNextHoldLeg()
                 if (selectedHoldLeg == null) holdSubpaneObj.updateHoldClearanceState(parentPane.userClearanceState.route)
                 holdSubpaneObj.updateHoldTable(parentPane.userClearanceState.route, selectedHoldLeg)

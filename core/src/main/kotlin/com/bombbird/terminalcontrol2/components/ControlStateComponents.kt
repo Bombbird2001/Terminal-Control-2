@@ -1,6 +1,7 @@
 package com.bombbird.terminalcontrol2.components
 
 import com.badlogic.ashley.core.Component
+import com.badlogic.ashley.core.Entity
 import com.badlogic.gdx.utils.Queue
 import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import ktx.ashley.Mapper
@@ -55,6 +56,48 @@ class AccelerateToAbove250kts: Component {
 /** Component for tagging aircraft that should decelerate to 240 knots when nearing 10000 feet */
 class DecelerateTo240kts: Component {
     companion object: Mapper<AccelerateToAbove250kts>()
+}
+
+/**
+ * Component for tagging aircraft that has captured the extended runway centreline in a visual approach, and will alter
+ * aircraft AI behaviour to follow the extended centreline track
+ * */
+class VisualCaptured(val visApp: Entity = Entity()): Component {
+    companion object: Mapper<VisualCaptured>()
+}
+
+/**
+ * Component for tagging aircraft that have been cleared for an approach with a localizer component
+ *
+ * The aircraft will monitor its position relative to the approach position origin and capture it when within range
+ * */
+class LocalizerArmed(val locApp: Entity = Entity()): Component {
+    companion object: Mapper<LocalizerArmed>()
+}
+
+/**
+ * Component for tagging aircraft that has captured the localizer, and will alter aircraft AI behaviour to follow the
+ * localizer track
+ * */
+class LocalizerCaptured(val locApp: Entity = Entity()): Component {
+    companion object: Mapper<LocalizerCaptured>()
+}
+
+/**
+ * Component for tagging aircraft that have been cleared for an approach with a glide slope component
+ *
+ * The aircraft will monitor its altitude and capture it when it reaches the appropriate altitude
+ */
+class GlideSlopeArmed(val gsApp: Entity = Entity()): Component {
+    companion object: Mapper<GlideSlopeArmed>()
+}
+
+/**
+ * Component for tagging aircraft that has captured the glide slope, and will alter aircraft AI, physics behaviour to follow
+ * the glide slope strictly
+ * */
+class GlideSlopeCaptured(val gsApp: Entity = Entity()): Component {
+    companion object: Mapper<GlideSlopeCaptured>()
 }
 
 /**

@@ -55,13 +55,13 @@ fun createDeparture(rwy: Entity, gs: GameServer) {
     gs.aircraft.put("SHIBA2", Aircraft("SHIBA2", rwyPos?.x ?: 10f, rwyPos?.y ?: -10f, rwy[Altitude.mapper]?.altitudeFt ?: 108f, "B77W", FlightType.DEPARTURE, false).apply {
         entity[Direction.mapper]?.trackUnitVector?.rotateDeg((rwyDir?.trackUnitVector?.angleDeg() ?: 0f) - 90) // Runway heading
         // Calculate headwind component for takeoff
-        val headwind = entity[Altitude.mapper]?.let { alt -> rwyDir?.let { dir -> entity[Position.mapper]?.let { pos ->
+        val tailwind = entity[Altitude.mapper]?.let { alt -> rwyDir?.let { dir -> entity[Position.mapper]?.let { pos ->
             val wind = getClosestAirportWindVector(pos.x, pos.y)
             calculateIASFromTAS(alt.altitudeFt, pxpsToKt(wind.dot(dir.trackUnitVector)))
         }}} ?: 0f
-        entity[Speed.mapper]?.speedKts = -headwind
+        entity[Speed.mapper]?.speedKts = -tailwind
         val acPerf = entity[AircraftInfo.mapper]?.aircraftPerf ?: return@apply
-        entity += TakeoffRoll(calculateRequiredAcceleration(0, (acPerf.vR + headwind).toInt().toShort(), ((rwy[RunwayInfo.mapper]?.lengthM ?: 3800) - 1000) * MathUtils.random(0.75f, 1f)))
+        entity += TakeoffRoll(calculateRequiredAcceleration(0, (acPerf.vR + tailwind).toInt().toShort(), ((rwy[RunwayInfo.mapper]?.lengthM ?: 3800) - 1000) * MathUtils.random(0.75f, 1f)))
         val sid = randomSid(rwy)
         val rwyName = rwy[RunwayInfo.mapper]?.rwyName ?: ""
         val initClimb = sid?.rwyInitialClimbs?.get(rwyName) ?: 3000
