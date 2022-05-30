@@ -47,6 +47,7 @@ class UIPane(private val uiStage: Stage) {
 
     // Max alt of the aircraft, for persistence across panes
     var aircraftMaxAlt: Int? = null
+    var aircraftArrivalArptId: Byte? = null
 
     init {
         uiStage.actors {
@@ -122,6 +123,7 @@ class UIPane(private val uiStage: Stage) {
             if (controllable.sectorId != 0.byte) return // TODO Check for player's sector ID
         }
         aircraftMaxAlt = aircraft.entity[AircraftInfo.mapper]?.aircraftPerf?.maxAlt ?: return
+        aircraftArrivalArptId = aircraft.entity[ArrivalAirport.mapper]?.arptId
         val latestClearance = aircraft.entity[ClearanceAct.mapper]?.actingClearance ?: return
         userClearanceState.updateUIClearanceState(latestClearance.actingClearance)
         clearanceState.updateUIClearanceState(latestClearance.actingClearance)
@@ -130,7 +132,10 @@ class UIPane(private val uiStage: Stage) {
         // controlObj.updateVectorTable(userClearanceState.vectorHdg, userClearanceState.vectorTurnDir)
         controlObj.updateClearanceMode(userClearanceState.route, userClearanceState.vectorHdg)
         controlObj.updateAltSelectBoxChoices(aircraftMaxAlt)
-        controlObj.updateAltSpdClearances(userClearanceState.clearedAlt, userClearanceState.clearedIas, userClearanceState.minIas, userClearanceState.maxIas, userClearanceState.optimalIas)
+        controlObj.updateApproachSelectBoxChoices(aircraft.entity[ArrivalAirport.mapper]?.arptId)
+        controlObj.updateAltSpdClearances(userClearanceState.clearedAlt, userClearanceState.clearedIas,
+            userClearanceState.minIas, userClearanceState.maxIas, userClearanceState.optimalIas,
+            userClearanceState.clearedApp, userClearanceState.clearedTrans)
         controlObj.setUndoTransmitButtonsUnchanged()
         controlPane.isVisible = true
         routeEditPane.isVisible = false
@@ -157,7 +162,9 @@ class UIPane(private val uiStage: Stage) {
         // controlObj.updateVectorTable(userClearanceState.vectorHdg, userClearanceState.vectorTurnDir)
         controlObj.updateClearanceMode(userClearanceState.route, userClearanceState.vectorHdg)
         controlObj.updateAltSelectBoxChoices(aircraftMaxAlt)
-        controlObj.updateAltSpdClearances(userClearanceState.clearedAlt, userClearanceState.clearedIas, userClearanceState.minIas, userClearanceState.maxIas, userClearanceState.optimalIas)
+        controlObj.updateAltSpdClearances(userClearanceState.clearedAlt, userClearanceState.clearedIas,
+            userClearanceState.minIas, userClearanceState.maxIas, userClearanceState.optimalIas,
+            userClearanceState.clearedApp, userClearanceState.clearedTrans)
         controlObj.updateUndoTransmitButtonStates()
     }
 
@@ -167,6 +174,7 @@ class UIPane(private val uiStage: Stage) {
         routeEditPane.isVisible = false
         mainInfoPane.isVisible = true
         aircraftMaxAlt = null
+        aircraftArrivalArptId = null
     }
 
     /** Helper function to set the UI pane to show [routeEditPane] from [controlPane] */

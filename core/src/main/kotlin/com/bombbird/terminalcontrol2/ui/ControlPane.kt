@@ -11,7 +11,7 @@ import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.get
 import ktx.collections.GdxArray
-import ktx.collections.toGdxArray
+import ktx.collections.map
 import ktx.scene2d.*
 import kotlin.math.max
 import kotlin.math.min
@@ -25,6 +25,8 @@ class ControlPane {
     private lateinit var routeModeButton: KTextButton
     private lateinit var holdModeButton: KTextButton
     private lateinit var vectorModeButton: KTextButton
+    private lateinit var appSelectBox: KSelectBox<String>
+    private lateinit var transitionSelectBox: KSelectBox<String>
     private lateinit var altSelectBox: KSelectBox<String>
     private lateinit var spdSelectBox: KSelectBox<Short>
 
@@ -86,15 +88,34 @@ class ControlPane {
                 row()
                 table {
                     // Second row of selectBoxes - Approach, Transition
-                    selectBox<String>("ControlPane").apply {
-                        items = arrayOf("Approach", "ILS05L", "ILS05R").toGdxArray()
+                    appSelectBox = selectBox<String>("ControlPane").apply {
+                        items = GdxArray()
                         list.alignment = Align.center
                         setAlignment(Align.center)
+                        addChangeListener { event, _ ->
+                            event?.handle()
+                            if (modificationInProgress) return@addChangeListener
+                            updateTransitionSelectBoxChoices(parentPane.aircraftArrivalArptId, selected)
+                            parentPane.userClearanceState.clearedApp = if (selected == "Approach") null else selected
+                            style = Scene2DSkin.defaultSkin[if (parentPane.userClearanceState.clearedApp == parentPane.clearanceState.clearedApp) "ControlPane" else "ControlPaneChanged", SelectBoxStyle::class.java]
+                            transitionSelectBox.style = Scene2DSkin.defaultSkin[if (parentPane.userClearanceState.clearedTrans == parentPane.clearanceState.clearedTrans) "ControlPane" else "ControlPaneChanged", SelectBoxStyle::class.java]
+                            // TODO add approach route behind current route
+                            updateUndoTransmitButtonStates()
+                        }
                     }.cell(grow = true, preferredWidth = paneWidth / 2)
-                    selectBox<String>("ControlPane").apply {
-                        items = arrayOf("Via vectors", "Via JAMMY", "Via FETUS", "Via MARCH").toGdxArray()
+                    transitionSelectBox = selectBox<String>("ControlPane").apply {
+                        items = GdxArray()
                         list.alignment = Align.center
                         setAlignment(Align.center)
+                        isDisabled = true
+                        addChangeListener { event, _ ->
+                            event?.handle()
+                            if (modificationInProgress) return@addChangeListener
+                            parentPane.userClearanceState.clearedTrans = selected.replace("Via ", "")
+                            style = Scene2DSkin.defaultSkin[if (parentPane.userClearanceState.clearedTrans == parentPane.clearanceState.clearedTrans) "ControlPane" else "ControlPaneChanged", SelectBoxStyle::class.java]
+                            // TODO perform logic to bridge STAR route and approach route
+                            updateUndoTransmitButtonStates()
+                        }
                     }.cell(grow = true, preferredWidth = paneWidth / 2)
                 }.cell(preferredWidth = paneWidth, height = UI_HEIGHT * 0.125f, growX = true)
                 row()
@@ -199,6 +220,45 @@ class ControlPane {
     }
 
     /**
+     * Updates [ControlPane.appSelectBox] and [ControlPane.transitionSelectBox] for the provided arrival airport ID
+     *
+     * If the ID provided is null, the boxes will be disabled
+     * @param airportId the airport to refer to when selecting approaches that can be cleared
+     * */
+    fun updateApproachSelectBoxChoices(airportId: Byte?) {
+        modificationInProgress = true
+        GAME.gameClientScreen?.airports?.get(airportId)?.entity?.let { arpt ->
+            updateAppTransBoxesDisabled(false)
+            appSelectBox.apply {
+                items = getAvailableApproaches(arpt)
+            }
+        } ?: updateAppTransBoxesDisabled(true)
+        modificationInProgress = false
+    }
+
+    /**
+     * Updates [ControlPane.transitionSelectBox] with possible transitions for the selected approach given the airport ID
+     *
+     * If the ID provided is null, the boxes (including [appSelectBox]) will be disabled
+     * */
+    private fun updateTransitionSelectBoxChoices(airportId: Byte?, selectedApp: String) {
+        modificationInProgress = true
+        transitionSelectBox.apply {
+            GAME.gameClientScreen?.airports?.get(airportId)?.entity?.get(ApproachChildren.mapper)?.approachMap?.get(selectedApp)?.let { app ->
+                items = GdxArray<String>().also { array ->
+                    app.transitions.map { "Via ${it.first}" }.forEach { array.add(it) }
+                }
+                if (!selection.isEmpty) parentPane.userClearanceState.clearedTrans = selected
+                isDisabled = false
+            } ?: run {
+                isDisabled = true
+                items = GdxArray<String>().apply { add("Via ...") }
+            }
+        }
+        modificationInProgress = false
+    }
+
+    /**
      * Updates [ControlPane.altSelectBox] with the appropriate altitude choices for [MIN_ALT], [MAX_ALT] and [aircraftMaxAlt]
      * @param aircraftMaxAlt the maximum altitude the aircraft can fly at, or null if none provided in which it will be
      * ignored
@@ -264,14 +324,16 @@ class ControlPane {
     }
 
     /**
-     * Updates the cleared altitude, speed in the pane
+     * Updates the cleared altitude, speed, approach and approach transition in the pane
      * @param clearedAlt the altitude to set as selected in [ControlPane.altSelectBox]
      * @param clearedSpd the IAS to set as selected in [ControlPane.spdSelectBox]
      * @param minSpd the minimum IAS that can be selected
      * @param maxSpd the maximum IAS that can be selected
      * @param optimalSpd the optimal IAS that the aircraft will select by default without player intervention
+     * @param appName the cleared approach, or null if no approach is cleared
+     * @param transName the cleared approach transition, or null if no approach has been cleared
      * */
-    fun updateAltSpdClearances(clearedAlt: Int, clearedSpd: Short, minSpd: Short, maxSpd: Short, optimalSpd: Short) {
+    fun updateAltSpdClearances(clearedAlt: Int, clearedSpd: Short, minSpd: Short, maxSpd: Short, optimalSpd: Short, appName: String?, transName: String?) {
         val minSpdRounded = if (minSpd % 10 > 0) ((minSpd / 10 + 1) * 10).toShort() else minSpd
         val maxSpdRounded = if (maxSpd % 10 > 0) ((maxSpd / 10) * 10).toShort() else maxSpd
         modificationInProgress = true
@@ -289,6 +351,8 @@ class ControlPane {
         modificationInProgress = false
         altSelectBox.selected = if (clearedAlt >= TRANS_LVL * 100) "FL${clearedAlt / 100}" else clearedAlt.toString()
         spdSelectBox.selected = clearedSpd
+        appSelectBox.selected = appName ?: "Approach"
+        if (appName != null && transName != null) transitionSelectBox.selected = "Via $transName"
     }
 
     /**
@@ -308,6 +372,7 @@ class ControlPane {
                 holdSubpaneObj.isVisible = false
                 vectorSubpaneObj.isVisible = false
                 lateralContainer.actor = routeSubpaneObj.actor
+                updateApproachSelectBoxChoices(parentPane.aircraftArrivalArptId)
                 parentPane.userClearanceState.vectorHdg = null
                 routeSubpaneObj.updateRouteTable(parentPane.userClearanceState.route)
                 updateUndoTransmitButtonStates()
@@ -393,5 +458,22 @@ class ControlPane {
     /** Resets [directLeg] back to null, called when a new aircraft is being set in [parentPane] */
     fun resetDirectButton() {
         directLeg = null
+    }
+
+    /**
+     * Sets the disabled status of the approach and transition select boxes
+     *
+     * Will also clear any items in the select boxes' lists if disabled
+     * @param disabled whether to disable the select boxes
+     * */
+    private fun updateAppTransBoxesDisabled(disabled: Boolean) {
+        appSelectBox.isDisabled = disabled
+        // Transition select box will also be disabled if no approach is cleared
+        transitionSelectBox.isDisabled = disabled || appSelectBox.selection.isEmpty || appSelectBox.selected == "Approach"
+        if (disabled) {
+            // Clear all items if disabled
+            appSelectBox.items = GdxArray<String>().apply { add("Approach") }
+            transitionSelectBox.items = GdxArray<String>().apply { add("Via ...") }
+        }
     }
 }

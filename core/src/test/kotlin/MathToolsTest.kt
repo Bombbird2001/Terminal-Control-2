@@ -1,6 +1,6 @@
 import com.bombbird.terminalcontrol2.components.CommandTarget
 import com.bombbird.terminalcontrol2.utilities.*
-import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 
@@ -47,5 +47,18 @@ object MathToolsTest {
         assertEquals(120f, findDeltaHeading(-30f, 450f, CommandTarget.TURN_DEFAULT))
         assertEquals(120f, findDeltaHeading(-30f, 450f, CommandTarget.TURN_RIGHT))
         assertEquals(-240f, findDeltaHeading(-30f, 450f, CommandTarget.TURN_LEFT))
+    }
+
+    @Test
+    @DisplayName("Arc calculations")
+    fun checkArcCalculations() {
+        assertTrue(checkInArc(0f, 0f, 45f, 10f, 35f, 2f, 2f))
+        assertTrue(checkInArc(100f, -100f, 45f, 300f, 35f, 300f, 100f))
+        assertTrue(checkInArc(0f, 0f, 45f, 10f, 35f, 1f, 2f))
+        assertTrue(checkInArc(100f, -100f, 45f, 300f, 35f, 200f, 100f))
+        assertFalse(checkInArc(0f, 0f, 45f, 10f, 35f, 0f, 2f))
+        assertFalse(checkInArc(100f, -100f, 45f, 300f, 35f, 100f, 100f))
+        assertFalse(checkInArc(0f, 0f, 45f, 1f, 35f, 2f, 2f))
+        assertFalse(checkInArc(100f, -100f, 45f, 100f, 35f, 300f, 100f))
     }
 }

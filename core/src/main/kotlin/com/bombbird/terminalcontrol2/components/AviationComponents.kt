@@ -82,6 +82,11 @@ data class AircraftInfo(var icaoCallsign: String = "SHIBA1", var icaoType: Strin
     companion object: Mapper<AircraftInfo>()
 }
 
+/** Component for tagging the arrival airport for an aircraft */
+data class ArrivalAirport(var arptId: Byte = 0): Component {
+    companion object: Mapper<ArrivalAirport>()
+}
+
 /** Component for tagging basic approach information */
 data class ApproachInfo(var approachName: String = "", var airportId: Byte = 0, var rwyId: Byte = 0, var towerName: String = "", var frequency: String = ""): Component {
     lateinit var rwyObj: Airport.Runway

@@ -209,7 +209,10 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
                     serialisedRunway.displacedM,
                     serialisedRunway.altitude,
                     serialisedRunway.rwyLabelPos
-                )
+                ).apply {
+                    if (serialisedRunway.landing) entity += ActiveLanding()
+                    if (serialisedRunway.takeoff) entity += ActiveTakeoff()
+                }
             }
         }
 
@@ -218,7 +221,8 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
                                val altitude: Short = 0,
                                val trueHdg: Float = 0f,
                                val rwyId: Byte = -1, val rwyName: String = "", val lengthM: Short = 0, val displacedM: Short = 0,
-                               val rwyLabelPos: Byte = 0)
+                               val rwyLabelPos: Byte = 0,
+                               val landing: Boolean = false, val takeoff: Boolean = false)
 
         /** Gets a [SerialisedRunway] from current state */
         fun getSerialisableObject(): SerialisedRunway {
@@ -228,12 +232,15 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
                 val direction = get(Direction.mapper) ?: return SerialisedRunway()
                 val rwyInfo = get(RunwayInfo.mapper) ?: return SerialisedRunway()
                 val rwyLabel = get(RunwayLabel.mapper) ?: return SerialisedRunway()
+                val landing = get(ActiveLanding.mapper) != null
+                val takeoff = get(ActiveTakeoff.mapper) != null
                 return SerialisedRunway(
                     position.x, position.y,
                     altitude.altitudeFt.toInt().toShort(),
                     convertWorldAndRenderDeg(direction.trackUnitVector.angleDeg()),
                     rwyInfo.rwyId, rwyInfo.rwyName, rwyInfo.lengthM, rwyInfo.displacedThresholdM,
-                    rwyLabel.positionToRunway
+                    rwyLabel.positionToRunway,
+                    landing, takeoff
                 )
             }
         }

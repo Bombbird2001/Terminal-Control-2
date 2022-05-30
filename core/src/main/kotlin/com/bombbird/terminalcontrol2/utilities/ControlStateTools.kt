@@ -162,7 +162,9 @@ fun checkClearanceEquality(clearanceState1: ClearanceState, clearanceState2: Cle
     return clearanceState1.routePrimaryName == clearanceState2.routePrimaryName &&
             clearanceState1.vectorHdg == clearanceState2.vectorHdg &&
             clearanceState1.clearedAlt == clearanceState2.clearedAlt &&
-            clearanceState1.clearedIas == clearanceState2.clearedIas
+            clearanceState1.clearedIas == clearanceState2.clearedIas &&
+            clearanceState1.clearedApp == clearanceState2.clearedApp &&
+            clearanceState1.clearedTrans == clearanceState2.clearedTrans
 }
 
 /**

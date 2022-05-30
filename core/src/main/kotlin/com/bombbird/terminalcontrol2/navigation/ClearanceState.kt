@@ -30,7 +30,8 @@ import ktx.ashley.get
 class ClearanceState(var routePrimaryName: String = "", val route: Route = Route(), val hiddenLegs: Route = Route(),
                      var vectorHdg: Short? = null, var vectorTurnDir: Byte? = null,
                      var clearedAlt: Int = 0, var clearedIas: Short = 0,
-                     var minIas: Short = 0, var maxIas: Short = 0, var optimalIas: Short = 0) {
+                     var minIas: Short = 0, var maxIas: Short = 0, var optimalIas: Short = 0,
+                     var clearedApp: String? = null, var clearedTrans: String? = null) {
 
     /**
      * Wrapper class used solely to denote and store the currently active clearance the aircraft is following
@@ -170,6 +171,8 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
             // and is different from the new optimal IAS, and the new clearance is equal to the new optimal IAS
             if (clearedIas == uiClearance.clearedIas ||
                 (clearedIas == optimalIas && optimalIas != latestClearance.optimalIas && latestClearance.clearedIas == latestClearance.optimalIas)) clearedIas = latestClearance.clearedIas
+            if (clearedApp == uiClearance.clearedApp) clearedApp = latestClearance.clearedApp
+            if (clearedTrans == uiClearance.clearedTrans) clearedTrans = latestClearance.clearedTrans
         } ?: run {
             // No default clearance to compare against, copy the properties directly
             routePrimaryName = latestClearance.routePrimaryName
@@ -179,6 +182,8 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
             vectorTurnDir = latestClearance.vectorTurnDir
             clearedAlt = latestClearance.clearedAlt
             clearedIas = latestClearance.clearedIas
+            clearedApp = latestClearance.clearedApp
+            clearedTrans = latestClearance.clearedTrans
         }
         minIas = latestClearance.minIas
         maxIas = latestClearance.maxIas

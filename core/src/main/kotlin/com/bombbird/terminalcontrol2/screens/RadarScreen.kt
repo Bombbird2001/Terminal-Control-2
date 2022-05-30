@@ -372,7 +372,8 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
             AircraftControlStateUpdateData(callsign, newClearanceState.routePrimaryName,
             newClearanceState.route.getSerialisedObject(), newClearanceState.hiddenLegs.getSerialisedObject(),
             newClearanceState.vectorHdg, newClearanceState.vectorTurnDir, newClearanceState.clearedAlt, newClearanceState.clearedIas,
-            newClearanceState.minIas, newClearanceState.maxIas, newClearanceState.optimalIas)
+            newClearanceState.minIas, newClearanceState.maxIas, newClearanceState.optimalIas,
+            newClearanceState.clearedApp, newClearanceState.clearedTrans)
         )
     }
 }

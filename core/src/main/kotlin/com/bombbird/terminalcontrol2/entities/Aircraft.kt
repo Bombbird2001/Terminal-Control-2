@@ -144,6 +144,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoType:
                         serialisedAircraft.commandAlt, serialisedAircraft.clearedIas,
                         serialisedAircraft.minIas, serialisedAircraft.maxIas, serialisedAircraft.optimalIas,
                     )))
+                    serialisedAircraft.arrivalArptId?.let { this += ArrivalAirport(it) }
                 }
             }
         }
@@ -226,7 +227,8 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoType:
                              val flightType: Byte = 0,
                              val routePrimaryName: String = "", val commandRoute: Route.SerialisedRoute = Route.SerialisedRoute(), val commandHiddenLegs: Route.SerialisedRoute = Route.SerialisedRoute(),
                              val vectorHdg: Short? = null, val vectorTurnDir: Byte? = null, val commandAlt: Int = 0, val clearedIas: Short = 0, // Vector HDG will be null if aircraft is flying route
-                             val minIas: Short = 0, val maxIas: Short = 0, val optimalIas: Short = 0
+                             val minIas: Short = 0, val maxIas: Short = 0, val optimalIas: Short = 0,
+                             val arrivalArptId: Byte? = null
     )
 
     /** Gets a [SerialisedAircraft] from current state */
@@ -240,6 +242,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoType:
             val gs = get(GroundTrack.mapper) ?: return SerialisedAircraft()
             val flightType = get(FlightType.mapper) ?: return SerialisedAircraft()
             val clearance = get(PendingClearances.mapper)?.clearanceQueue?.last()?.clearanceState ?: get(ClearanceAct.mapper)?.actingClearance?.actingClearance ?: return SerialisedAircraft()
+            val arrArptId = get(ArrivalAirport.mapper)?.arptId
             return SerialisedAircraft(
                 position.x, position.y,
                 altitude.altitudeFt,
@@ -249,7 +252,8 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoType:
                 flightType.type,
                 clearance.routePrimaryName, clearance.route.getSerialisedObject(), clearance.hiddenLegs.getSerialisedObject(),
                 clearance.vectorHdg, clearance.vectorTurnDir, clearance.clearedAlt, clearance.clearedIas,
-                clearance.minIas, clearance.maxIas, clearance.optimalIas
+                clearance.minIas, clearance.maxIas, clearance.optimalIas,
+                arrArptId
             )
         }
     }

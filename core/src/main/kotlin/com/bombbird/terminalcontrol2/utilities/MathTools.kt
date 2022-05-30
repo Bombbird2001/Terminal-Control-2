@@ -207,10 +207,14 @@ fun getRequiredTrack(x: Int, y: Int, destX: Int, destY: Int): Float {
 }
 
 /**
- * Calculates the distance, in px, prior to reaching a point required to turn through a heading of [deltaHeading], given the
- * [turnRateDps] and [groundSpeedPxps] of the aircraft
+ * Calculates the distance prior to reaching a point required to turn through a change in heading, given the
+ * turn rate and ground speed of the aircraft
  *
  * A positive and negative value of [deltaHeading] with the same magnitude should return the same result
+ * @param deltaHeading the change in heading from the turn
+ * @param turnRateDps the rate of turn of the aircraft
+ * @param groundSpeedPxps the ground speed, in px per second, of the aircraft
+ * @return the distance, in px, to turn early
  * */
 fun findTurnDistance(deltaHeading: Float, turnRateDps: Float, groundSpeedPxps: Float): Float {
     val radius = groundSpeedPxps / (MathUtils.degreesToRadians * turnRateDps)
@@ -258,4 +262,22 @@ fun findClosestIntersectionBetweenSegmentAndPolygon(originX: Float, originY: Flo
         // Add the diff vector scaled by 10nm/length
         plusAssign(diff * (nmToPx(10) / currLen))
     }
+}
+
+/**
+ * Tests whether an arc with the given coordinates, angles and length contains the input point
+ * @param centerX the x coordinate of the arc center
+ * @param centreY the y coordinate of the arc center
+ * @param centerTrackDeg the track in which the line of symmetry of the arc extends to
+ * @param arcLengthPx the radius of the arc
+ * @param arcAngleRangeDeg the angle to which the arc rotates through towards both sides of the line of symmetry
+ * @param posX the x coordinate of the position to test
+ * @param posY the y coordinate of the position to test
+ * */
+fun checkInArc(centerX: Float, centreY: Float, centerTrackDeg: Float, arcLengthPx: Float, arcAngleRangeDeg: Float, posX: Float, posY: Float): Boolean {
+    val deltaX = centerX - posX
+    val deltaY = centreY - posY
+    if (sqrt(deltaX * deltaX + deltaY * deltaY) > arcLengthPx) return false
+    val centerToPosTrack = getRequiredTrack(centerX, centreY, posX, posY)
+    return abs(findDeltaHeading(centerToPosTrack, centerTrackDeg, CommandTarget.TURN_DEFAULT)) < arcAngleRangeDeg
 }

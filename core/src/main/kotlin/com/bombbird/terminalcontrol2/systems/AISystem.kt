@@ -4,13 +4,19 @@ import com.badlogic.ashley.core.Entity
 import com.badlogic.ashley.core.EntitySystem
 import com.badlogic.ashley.core.Family
 import com.badlogic.gdx.Gdx
+import com.badlogic.gdx.math.Intersector
 import com.badlogic.gdx.math.MathUtils
+import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
-import com.bombbird.terminalcontrol2.global.GAME
-import com.bombbird.terminalcontrol2.global.MAG_HDG_DEV
+import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.Route
+import com.bombbird.terminalcontrol2.navigation.getAppAltAtPos
+import com.bombbird.terminalcontrol2.navigation.getTargetPos
+import com.bombbird.terminalcontrol2.navigation.isInsideLocArc
 import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.*
+import ktx.math.plusAssign
+import ktx.math.times
 import kotlin.math.*
 
 /** Main AI system, which handles aircraft flight controls, implementing behaviour for various basic and advanced flight modes
@@ -29,7 +35,13 @@ class AISystem: EntitySystem() {
     private val initClimbFamily: Family = allOf(CommandInitClimb::class, CommandTarget::class, Altitude::class).get()
     private val waypointFamily: Family = allOf(CommandDirect::class, CommandTarget::class, ClearanceAct::class, Position::class, Speed::class, Direction::class, IndicatedAirSpeed::class).get()
     private val holdFamily: Family = allOf(CommandHold::class, CommandTarget::class, Position::class, Speed::class, Direction::class).get()
-    private val pureVectorFamily: Family = allOf(CommandTarget::class, Direction::class, ClearanceAct::class).exclude(CommandInitClimb::class, CommandDirect::class, CommandHold::class, CommandVector::class).get()
+    private val pureVectorFamily: Family = allOf(CommandTarget::class, Direction::class, ClearanceAct::class)
+        .exclude(CommandInitClimb::class, CommandDirect::class, CommandHold::class, CommandVector::class).get()
+    private val appTrackCapFamily: Family = allOf(CommandTarget::class, ClearanceAct::class, Position::class, Speed::class, Direction::class)
+        .oneOf(LocalizerCaptured::class, VisualCaptured::class).get()
+    private val visAppGlideFamily: Family = allOf(CommandTarget::class, ClearanceAct::class, Position::class, GroundTrack::class).get()
+    private val locArmedFamily: Family = allOf(Position::class, Direction::class, IndicatedAirSpeed::class, GroundTrack::class, LocalizerArmed::class).get()
+    private val gsArmedFamily: Family = allOf(Position::class, Altitude::class, GlideSlopeArmed::class).get()
     private val actingClearanceChangedFamily: Family = allOf(CommandTarget::class, ClearanceActChanged::class, ClearanceAct::class).get()
 
     /** Main update function */
@@ -202,7 +214,12 @@ class AISystem: EntitySystem() {
                 // Calculate distance between aircraft and waypoint and check if aircraft should move to next leg
                 val deltaX = wpt.x - pos.x
                 val deltaY = wpt.y - pos.y
-                val nextWptLegTrack = clearanceAct.route.findNextWptLegTrackAndDirection()
+                val nextWptLegTrack = clearanceAct.route.findNextWptLegTrackAndDirection() ?: run {
+                    // If aircraft is departure, and the next leg is a vector leg and the last leg in the route, turn early as well
+                    if (get(FlightType.mapper)?.type == FlightType.DEPARTURE && clearanceAct.route.legs.size == 2)
+                            (clearanceAct.route.legs[1] as? Route.VectorLeg)?.let { Pair(it.heading.toFloat(), it.turnDir) }
+                    else null
+                }
                 val requiredDist = if (cmdDir.flyOver || nextWptLegTrack == null) 3f
                 else findTurnDistance(findDeltaHeading(targetTrack, nextWptLegTrack.first, nextWptLegTrack.second), if (ias.iasKt > 250) 1.5f else 3f, ktToPxps(groundSpeed))
                 if (requiredDist * requiredDist > deltaX * deltaX + deltaY * deltaY) {
@@ -305,6 +322,90 @@ class AISystem: EntitySystem() {
                     actingClearance.actingClearance.vectorTurnDir = appropriateTurnDir
                     val pendingClearances = get(PendingClearances.mapper)
                     if (pendingClearances == null || pendingClearances.clearanceQueue.isEmpty) this += LatestClearanceChanged()
+                }
+            }
+        }
+
+        // Update for localizer/extended centreline captured
+        val appTrackCaptured = engine.getEntitiesFor(appTrackCapFamily)
+        for (i in 0 until appTrackCaptured.size()) {
+            appTrackCaptured[i]?.apply {
+                val cmd = get(CommandTarget.mapper) ?: return@apply
+                val actingClearance = get(ClearanceAct.mapper)?.actingClearance ?: return@apply
+                val pos = get(Position.mapper) ?: return@apply
+                val spd = get(Speed.mapper) ?: return@apply
+                val dir = get(Direction.mapper) ?: return@apply
+                val appEntity = get(LocalizerCaptured.mapper)?.locApp ?: get(VisualCaptured.mapper)?.visApp ?: return@apply
+                val targetPos = getTargetPos(appEntity, pos.x, pos.y) ?: return@apply
+                cmd.turnDir = CommandTarget.TURN_DEFAULT
+                actingClearance.actingClearance.vectorTurnDir = CommandTarget.TURN_DEFAULT
+                val targetTrackAndGs = getPointTargetTrackAndGS(getRequiredTrack(pos.x, pos.y, targetPos.x, targetPos.y).toDouble(), spd.speedKts, dir, get(AffectedByWind.mapper))
+                cmd.targetHdgDeg = targetTrackAndGs.first
+                actingClearance.actingClearance.vectorHdg = null
+            }
+        }
+
+        // Update for visual glide path captured
+        val visGlideCaptured = engine.getEntitiesFor(visAppGlideFamily)
+        for (i in 0 until visGlideCaptured.size()) {
+            visGlideCaptured[i]?.apply {
+                val pos = get(Position.mapper) ?: return@apply
+                val groundTrack = get(GroundTrack.mapper) ?: return@apply
+                val cmd = get(CommandTarget.mapper) ?: return@apply
+                val actingClearance = get(ClearanceAct.mapper)?.actingClearance ?: return@apply
+                val visApp = get(VisualCaptured.mapper)?.visApp ?: return@apply
+                val targetAlt = getAppAltAtPos(visApp, pos.x, pos.y, pxpsToKt(groundTrack.trackVectorPxps.len())) ?: return@apply
+                cmd.targetAltFt = targetAlt.roundToInt()
+                val prevClearedAlt = actingClearance.actingClearance.clearedAlt
+                actingClearance.actingClearance.clearedAlt = 3000 // TODO set to missed approach procedure altitude
+                if (prevClearedAlt != actingClearance.actingClearance.clearedAlt) this += LatestClearanceChanged()
+            }
+        }
+
+        // Update for localizer armed
+        val locArmed = engine.getEntitiesFor(locArmedFamily)
+        for (i in 0 until locArmed.size()) {
+            locArmed[i]?.apply {
+                val pos = get(Position.mapper) ?: return@apply
+                val dir = get(Direction.mapper) ?: return@apply
+                val ias = get(IndicatedAirSpeed.mapper) ?: return@apply
+                val locApp = get(LocalizerArmed.mapper)?.locApp ?: return@apply
+                val groundTrack = get(GroundTrack.mapper) ?: return@apply
+                val locPos = locApp[Position.mapper] ?: return@apply
+                val locTrack = locApp[Direction.mapper]?.trackUnitVector ?: return@apply
+                val locCourseHdg = convertWorldAndRenderDeg(locTrack.angleDeg()) + 180 - MAG_HDG_DEV
+
+                // Check whether aircraft is in the ILS arc - 35 deg at <= 10 nm and 10 deg at > 10nm
+                if (!isInsideLocArc(locApp, pos.x, pos.y, LOC_INNER_ARC_ANGLE_DEG, LOC_INNER_ARC_DIST_NM) &&
+                    !isInsideLocArc(locApp, pos.x, pos.y, LOC_OUTER_ARC_ANGLE_DEG, locApp[Localizer.mapper]?.maxDistNm ?: return@apply)) return@apply
+
+                // Find point of intersection between aircraft ground track and localizer course
+                val intersectionPoint = Vector2(locPos.x, locPos.y)
+                val distFromAppOrigin = Intersector.intersectRayRay(intersectionPoint, locTrack, Vector2(pos.x, pos.y), groundTrack.trackVectorPxps)
+                intersectionPoint.plusAssign(locTrack * distFromAppOrigin)
+                // Calculate distance between aircraft and waypoint and check if aircraft should move to next leg
+                val deltaX = intersectionPoint.x - pos.x
+                val deltaY = intersectionPoint.y - pos.y
+                val requiredDist = findTurnDistance(findDeltaHeading(convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()),
+                    locCourseHdg, CommandTarget.TURN_DEFAULT), if (ias.iasKt > 250) 1.5f else 3f, groundTrack.trackVectorPxps.len())
+                if (requiredDist * requiredDist > deltaX * deltaX + deltaY * deltaY) {
+                    remove<LocalizerArmed>()
+                    this += LocalizerCaptured(locApp)
+                }
+            }
+        }
+
+        // Update for glide slope armed
+        val gsArmed = engine.getEntitiesFor(gsArmedFamily)
+        for (i in 0 until gsArmed.size()) {
+            gsArmed[i]?.apply {
+                val pos = get(Position.mapper) ?: return@apply
+                val alt = get(Altitude.mapper) ?: return@apply
+                val gsApp = get(GlideSlopeArmed.mapper)?.gsApp ?: return@apply
+                // Capture glide slope when within 20 feet
+                if (abs(alt.altitudeFt - (getAppAltAtPos(gsApp, pos.x, pos.y, 0f) ?: return@apply)) < 20) {
+                    remove<GlideSlopeArmed>()
+                    this += GlideSlopeCaptured(gsApp)
                 }
             }
         }

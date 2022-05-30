@@ -152,7 +152,8 @@ data class AircraftSectorUpdateData(val callsign: String = "", val newSector: By
 data class AircraftControlStateUpdateData(val callsign: String = "", var primaryName: String = "", var route: Route.SerialisedRoute = Route.SerialisedRoute(), var hiddenLegs: Route.SerialisedRoute = Route.SerialisedRoute(),
                                           val vectorHdg: Short? = null, val vectorTurnDir: Byte? = null,
                                           val clearedAlt: Int = 0, val clearedIas: Short = 0,
-                                          val minIas: Short = 0, val maxIas: Short = 0, val optimalIas: Short = 0)
+                                          val minIas: Short = 0, val maxIas: Short = 0, val optimalIas: Short = 0,
+                                          val clearedApp: String? = null, val clearedTrans: String? = null)
 
 /** Class representing data sent during creation of a new custom waypoint */
 data class CustomWaypointData(val customWpt: Waypoint.SerialisedWaypoint = Waypoint.SerialisedWaypoint())

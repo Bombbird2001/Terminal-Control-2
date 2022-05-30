@@ -59,8 +59,8 @@ class DecelerateTo240kts: Component {
 }
 
 /**
- * Component for tagging aircraft that has captured the extended runway centreline in a visual approach, and will alter
- * aircraft AI behaviour to follow the extended centreline track
+ * Component for tagging aircraft that has captured the extended runway centreline and glide path in a visual approach,
+ * and will alter aircraft AI behaviour to follow the extended centreline track and glide path
  * */
 class VisualCaptured(val visApp: Entity = Entity()): Component {
     companion object: Mapper<VisualCaptured>()

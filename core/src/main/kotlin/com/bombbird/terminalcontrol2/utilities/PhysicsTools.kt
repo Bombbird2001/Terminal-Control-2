@@ -370,15 +370,27 @@ fun calculateCrossoverAltitude(iasKt: Short, mach: Float): Float {
  * the target position, the second being the resulting ground speed of the aircraft if this track is followed
  * */
 fun getPointTargetTrackAndGS(x1: Float, y1: Float, x2: Float, y2: Float, speedKts: Float, dir: Direction, wind: AffectedByWind?): Pair<Float, Float> {
-    var targetTrack = getRequiredTrack(x1, y1, x2, y2).toDouble()
+    return getPointTargetTrackAndGS(getRequiredTrack(x1, y1, x2, y2).toDouble(), speedKts, dir, wind)
+}
+
+/**
+ * Calculates the track that the plane needs to fly as well as its ground speed (accounted for [wind] if any)
+ * @param targetTrack the track the aircraft wants to fly (taking into account any wind)
+ * @param speedKts the true airspeed of the aircraft
+ * @param dir the [Direction] component of the aircraft
+ * @return a [Pair] of floats, the first being the required target track the aircraft should fly in order to reach
+ * the target position, the second being the resulting ground speed of the aircraft if this track is followed
+ * */
+fun getPointTargetTrackAndGS(targetTrack: Double, speedKts: Float, dir: Direction, wind: AffectedByWind?): Pair<Float, Float> {
     var groundSpeed = speedKts
+    var aircraftTrack = targetTrack
     if (wind != null) {
         // Calculate angle difference required due to wind component
         val angle = 180.0 - convertWorldAndRenderDeg(wind.windVectorPxps.angleDeg()) + convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg())
         val windSpdKts = pxpsToKt(wind.windVectorPxps.len())
         groundSpeed = sqrt(speedKts.pow(2.0f) + windSpdKts.pow(2.0f) - 2 * speedKts * windSpdKts * cos(Math.toRadians(angle))).toFloat()
         val angleOffset = asin(windSpdKts * sin(Math.toRadians(angle)) / groundSpeed) * MathUtils.radiansToDegrees
-        targetTrack -= angleOffset
+        aircraftTrack -= angleOffset
     }
     return Pair(targetTrack.toFloat(), groundSpeed)
 }

@@ -5,7 +5,7 @@ import com.badlogic.ashley.core.Family
 import com.badlogic.gdx.math.MathUtils
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.*
-import com.bombbird.terminalcontrol2.navigation.getAltAtPos
+import com.bombbird.terminalcontrol2.navigation.getAppAltAtPos
 import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.*
 import ktx.math.plusAssign
@@ -25,9 +25,11 @@ class PhysicsSystem(override val updateTimeS: Float): EntitySystem(), LowFreqUpd
     private val positionUpdateFamily: Family = allOf(Position::class, Altitude::class, Speed::class, Direction::class).get()
     private val windAffectedFamily: Family = allOf(AffectedByWind::class, Position::class).exclude(TakeoffRoll::class, LandingRoll::class).get()
     private val speedUpdateFamily: Family = allOf(Speed::class, Acceleration::class).get()
-    private val cmdTargetAltFamily: Family = allOf(AircraftInfo::class, Altitude::class, Speed::class, Acceleration::class, CommandTarget::class).exclude(GlideSlopeCaptured::class, TakeoffRoll::class, LandingRoll::class).get()
-    private val cmdTargetHeadingFamily: Family = allOf(IndicatedAirSpeed::class, Direction::class, Speed::class, Acceleration::class, CommandTarget::class).exclude(TakeoffRoll::class, LandingRoll::class).get()
-    private val glideSlopeCapturedFamily: Family = allOf(Altitude::class, Speed::class, GlideSlopeCaptured::class).get()
+    private val cmdTargetAltFamily: Family = allOf(AircraftInfo::class, Altitude::class, Speed::class, Acceleration::class, CommandTarget::class)
+        .exclude(GlideSlopeCaptured::class, TakeoffRoll::class, LandingRoll::class).get()
+    private val cmdTargetHeadingFamily: Family = allOf(IndicatedAirSpeed::class, Direction::class, Speed::class, Acceleration::class, CommandTarget::class)
+        .exclude(TakeoffRoll::class, LandingRoll::class).get()
+    private val glideSlopeCapturedFamily: Family = allOf(Altitude::class, Speed::class, GlideSlopeCaptured::class, ClearanceAct::class).get()
     private val gsFamily: Family = allOf(Position::class, Altitude::class, GroundTrack::class, Speed::class, Direction::class, Acceleration::class).get()
     private val tasToIasFamily: Family = allOf(Speed::class, IndicatedAirSpeed::class, Altitude::class).exclude(TakeoffRoll::class).get()
     private val accLimitFamily: Family = allOf(Speed::class, Altitude::class, Acceleration::class, AircraftInfo::class).get()
@@ -123,10 +125,15 @@ class PhysicsSystem(override val updateTimeS: Float): EntitySystem(), LowFreqUpd
                 val acc = get(Acceleration.mapper) ?: return@apply
                 val alt = get(Altitude.mapper) ?: return@apply
                 val track = get(GroundTrack.mapper)?.trackVectorPxps ?: return@apply
-                alt.altitudeFt = getAltAtPos(gsApp, pos.x, pos.y, pxpsToKt(track.len())) ?: return@apply
+                val actingClearance = get(ClearanceAct.mapper)?.actingClearance ?: return@apply
+                alt.altitudeFt = getAppAltAtPos(gsApp, pos.x, pos.y, pxpsToKt(track.len())) ?: return@apply
                 val gsKtComponentToAppTrack = pxpsToKt(track.dot(appTrack))
                 spd.vertSpdFpm = (gsKtComponentToAppTrack / 60 * tan(Math.toRadians(glideAngle.toDouble()))).toFloat()
                 acc.dVertSpdMps2 = 0f
+                val prevClearedAlt = actingClearance.actingClearance.clearedAlt
+                actingClearance.actingClearance.clearedAlt = 3000 // TODO set to missed approach procedure altitude
+                val pendingClearances = get(PendingClearances.mapper)
+                if (prevClearedAlt != actingClearance.actingClearance.clearedAlt && (pendingClearances == null || pendingClearances.clearanceQueue.isEmpty)) this += LatestClearanceChanged()
             }
         }
 

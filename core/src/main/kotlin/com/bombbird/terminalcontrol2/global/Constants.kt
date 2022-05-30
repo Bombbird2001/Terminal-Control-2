@@ -42,8 +42,11 @@ const val MAX_VS_EXPEDITE = 6000f
 const val MAX_ACC = 3f
 
 /** Approach constants */
-const val VIS_MAX_DIST_NM = 10
+const val VIS_MAX_DIST_NM: Byte = 10
 const val VIS_GLIDE_ANGLE_DEG = 3f
+const val LOC_INNER_ARC_DIST_NM: Byte = 10
+const val LOC_INNER_ARC_ANGLE_DEG = 35f
+const val LOC_OUTER_ARC_ANGLE_DEG = 10f
 
 /** List of available airports (can be modified, but don't) */
 val AVAIL_AIRPORTS = GdxArray<String>(arrayOf("TCTP", "TCWS", "TCTT", "TCBB", "TCHH", "TCBD", "TCMD", "TCPG"))

@@ -118,6 +118,7 @@ fun createArrival(airport: Entity, gs: GameServer) {
     val spawnPos = calculateArrivalSpawnPoint(starRoute, gs.primarySector)
 
     gs.aircraft.put("SHIBA3", Aircraft("SHIBA3", spawnPos.first, spawnPos.second, 0f, "B77W", FlightType.ARRIVAL, false).apply {
+        entity += ArrivalAirport(airport[AirportInfo.mapper]?.arptId ?: 0)
         val alt = calculateArrivalSpawnAltitude(entity, airport, origStarRoute, spawnPos.first, spawnPos.second, starRoute)
         entity[Altitude.mapper]?.altitudeFt = alt
         entity[Direction.mapper]?.trackUnitVector?.rotateDeg(-spawnPos.third - 180)
@@ -143,4 +144,24 @@ fun createArrival(airport: Entity, gs: GameServer) {
         entity += InitialArrivalSpawn()
         if (alt > 10000) entity += DecelerateTo240kts()
     })
+}
+
+/**
+ * Gets all available approaches for the input airport
+ * @param airport the airport to use
+ * @return a [GdxArray] of strings containing the eligible approach names
+ * */
+fun getAvailableApproaches(airport: Entity): GdxArray<String> {
+    val currentTime = UsabilityFilter.DAY_ONLY // TODO change depending on whether night operations are active
+    val array = GdxArray<String>().apply { add("Approach") }
+    val rwys = airport[RunwayChildren.mapper]?.rwyMap ?: return array
+    airport[ApproachChildren.mapper]?.approachMap?.values()?.forEach { app ->
+        app.entity[ApproachInfo.mapper]?.also {
+            // Add to list of eligible approaches if its runway is active for landings and time restriction checks passes
+            if (rwys[it.rwyId]?.entity?.get(ActiveLanding.mapper) == null) return@forEach
+            if (app.timeRestriction != UsabilityFilter.DAY_AND_NIGHT && app.timeRestriction != currentTime) return@forEach
+            array.add(it.approachName)
+        }
+    }
+    return array
 }

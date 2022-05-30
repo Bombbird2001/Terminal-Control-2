@@ -58,7 +58,7 @@ class ControlStateSystem(override val updateTimeS: Float = 0f): EntitySystem(), 
                 val contact = get(ContactFromTower.mapper) ?: return@apply
                 val controllable = get(Controllable.mapper) ?: return@apply
                 if (alt.altitudeFt > contact.altitudeFt) {
-                    controllable.sectorId = getSectorForPosition(pos.x, pos.y)
+                    controllable.sectorId = getSectorForPosition(pos.x, pos.y) ?: return@apply
                     get(AircraftInfo.mapper)?.icaoCallsign?.let { callsign -> GAME.gameServer?.sendAircraftSectorUpdateTCPToAll(callsign, controllable.sectorId) }
                     remove<ContactFromTower>()
                 }
@@ -168,7 +168,7 @@ class ControlStateSystem(override val updateTimeS: Float = 0f): EntitySystem(), 
                 val contact = get(ContactFromCentre.mapper) ?: return@apply
                 val controllable = get(Controllable.mapper) ?: return@apply
                 if (alt.altitudeFt < contact.altitudeFt) {
-                    controllable.sectorId = getSectorForPosition(pos.x, pos.y)
+                    controllable.sectorId = getSectorForPosition(pos.x, pos.y) ?: return@apply
                     get(AircraftInfo.mapper)?.icaoCallsign?.let { callsign -> GAME.gameServer?.sendAircraftSectorUpdateTCPToAll(callsign, controllable.sectorId) }
                     remove<ContactFromCentre>()
                     return@apply
@@ -181,9 +181,9 @@ class ControlStateSystem(override val updateTimeS: Float = 0f): EntitySystem(), 
      * Gets the appropriate sector the aircraft is in
      * @param posX the x coordinate of the aircraft position
      * @param posY the y coordinate of the aircraft position
-     * @return the sector ID of the sector the aircraft is in, or 0 by default if none found
+     * @return the sector ID of the sector the aircraft is in, or null if none found
      */
-    private fun getSectorForPosition(posX: Float, posY: Float): Byte {
+    private fun getSectorForPosition(posX: Float, posY: Float): Byte? {
         GAME.gameServer?.sectors?.get(1.byte)?.also { allSectors ->
             for (j in 0 until allSectors.size) allSectors[j]?.let { sector ->
                 if (Polygon(sector.entity[GPolygon.mapper]?.vertices ?: floatArrayOf(0f, 1f, 1f, 0f, -1f, 0f)).contains(posX, posY)) {
@@ -192,6 +192,6 @@ class ControlStateSystem(override val updateTimeS: Float = 0f): EntitySystem(), 
             }
         }
 
-        return 0
+        return null
     }
 }

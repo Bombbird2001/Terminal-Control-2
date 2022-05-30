@@ -6,9 +6,7 @@ import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.VIS_GLIDE_ANGLE_DEG
 import com.bombbird.terminalcontrol2.global.VIS_MAX_DIST_NM
-import com.bombbird.terminalcontrol2.utilities.nmToPx
-import com.bombbird.terminalcontrol2.utilities.pxToFt
-import com.bombbird.terminalcontrol2.utilities.pxToNm
+import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.get
 import ktx.math.plus
 import ktx.math.times
@@ -25,10 +23,10 @@ import kotlin.math.tan
  * @param approach the approach entity
  * @param posX the x coordinate of aircraft position
  * @param posY the y coordinate of aircraft position
- * @param gsKt the ground speed of the aircraft
+ * @param gsKt the ground speed of the aircraft; required for visual approaches only
  * @return the altitude the aircraft should be at, or null if aircraft is too far from approach position
  * */
-fun getAltAtPos(approach: Entity, posX: Float, posY: Float, gsKt: Float): Float? {
+fun getAppAltAtPos(approach: Entity, posX: Float, posY: Float, gsKt: Float): Float? {
     val pos = approach[Position.mapper] ?: return null
     val appInfo = approach[ApproachInfo.mapper] ?: return null
     val glide = approach[GlideSlope.mapper]
@@ -43,7 +41,7 @@ fun getAltAtPos(approach: Entity, posX: Float, posY: Float, gsKt: Float): Float?
     if (glide != null || vis != null) {
         // Return null if aircraft is further away than the max operating range of the localizer or visual range for visual approaches (10nm)
         if (loc != null && distPx > nmToPx(loc.maxDistNm.toFloat())) return null
-        if (vis != null && distPx > nmToPx(VIS_MAX_DIST_NM)) return null
+        if (vis != null && distPx > nmToPx(VIS_MAX_DIST_NM.toFloat())) return null
         // Add the glide slope offset, or subtract distance covered in 10s at current GS if visual
         val slopeDistPx = distPx + nmToPx(glide?.offsetNm ?: (-gsKt / 360))
         return pxToFt((slopeDistPx * tan(Math.toRadians((glide?.glideAngle ?: VIS_GLIDE_ANGLE_DEG).toDouble()))).toFloat()) + (appInfo.rwyObj.entity[Altitude.mapper]?.altitudeFt ?: 0f)
@@ -56,7 +54,7 @@ fun getAltAtPos(approach: Entity, posX: Float, posY: Float, gsKt: Float): Float?
     }
 
     // If last point of NPA already reached, follow visual segment of runway
-    return getAltAtPos(appInfo.rwyObj.entity[VisualApproach.mapper]?.visual ?: return null, posX, posY, gsKt)
+    return getAppAltAtPos(appInfo.rwyObj.entity[VisualApproach.mapper]?.visual ?: return null, posX, posY, gsKt)
 }
 
 /**
@@ -80,7 +78,7 @@ fun getTargetPos(approach: Entity, posX: Float, posY: Float): Vector2? {
     val deltaY = pos.y - posY
     val distPx = sqrt(deltaX * deltaX + deltaY * deltaY)
 
-    if ((loc != null && distPx < nmToPx(loc.maxDistNm.toFloat())) || (vis != null && distPx < nmToPx(VIS_MAX_DIST_NM))) {
+    if ((loc != null && distPx < nmToPx(loc.maxDistNm.toFloat())) || (vis != null && distPx < nmToPx(VIS_MAX_DIST_NM.toFloat()))) {
         val distNmSubtracted = when {
             pxToNm(distPx) > 10 -> 1.5f
             pxToNm(distPx) > 4 -> 0.75f
@@ -91,4 +89,20 @@ fun getTargetPos(approach: Entity, posX: Float, posY: Float): Vector2? {
     }
 
     return null
+}
+
+/**
+ * Checks whether the aircraft is inside the localizer arc with the given angle range to both sides and the input arc length
+ * @param locApp the approach entity
+ * @param posX the x coordinate of aircraft position
+ * @param posY the y coordinate of aircraft position
+ * @param angleDeg the maximum angle range on both sides of the localizer course
+ * @param distNm the range of the arc
+ * @return whether the aircraft is within range of the specified localizer arc
+ * */
+fun isInsideLocArc(locApp: Entity, posX: Float, posY: Float, angleDeg: Float, distNm: Byte): Boolean {
+    val pos = locApp[Position.mapper] ?: return false
+    val dir = locApp[Direction.mapper] ?: return false
+
+    return checkInArc(pos.x, pos.y, convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()), nmToPx(distNm.toFloat()), angleDeg, posX, posY)
 }
