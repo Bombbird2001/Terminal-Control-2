@@ -85,8 +85,8 @@ class GameServer {
         airports[0]?.entity?.get(RunwayChildren.mapper)?.rwyMap?.apply {
             get(0).entity += ActiveLanding()
             get(0).entity += ActiveTakeoff()
-            get(1).entity += ActiveLanding()
-            get(1).entity += ActiveTakeoff()
+            get(2).entity += ActiveLanding()
+            get(2).entity += ActiveTakeoff()
         }
 
         // Add dummy aircraft
@@ -280,8 +280,11 @@ class GameServer {
      * @param optimalIas the updated optimal IAS that aircraft will target
      * */
     fun sendAircraftClearanceStateUpdateToAll(callsign: String, primaryName: String = "", route: Route, hiddenLegs: Route,
-                                           vectorHdg: Short?, vectorTurnDir: Byte?, clearedAlt: Int, clearedIas: Short, minIas: Short, maxIas: Short, optimalIas: Short) {
-        server.sendToAllTCP(AircraftControlStateUpdateData(callsign, primaryName, route.getSerialisedObject(), hiddenLegs.getSerialisedObject(), vectorHdg, vectorTurnDir, clearedAlt, clearedIas, minIas, maxIas, optimalIas))
+                                           vectorHdg: Short?, vectorTurnDir: Byte?, clearedAlt: Int,
+                                              clearedIas: Short, minIas: Short, maxIas: Short, optimalIas: Short,
+                                              clearedApp: String?, clearedTrans: String?) {
+        server.sendToAllTCP(AircraftControlStateUpdateData(callsign, primaryName, route.getSerialisedObject(), hiddenLegs.getSerialisedObject(),
+            vectorHdg, vectorTurnDir, clearedAlt, clearedIas, minIas, maxIas, optimalIas, clearedApp, clearedTrans))
     }
 
     /**

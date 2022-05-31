@@ -107,8 +107,8 @@ class RouteEditPane {
                         GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName
                     } ?:
                     (leg as? Route.VectorLeg)?.let { vec -> "${when (vec.turnDir) {
-                        CommandTarget.TURN_LEFT -> "Left\n"
-                        CommandTarget.TURN_RIGHT -> "Right\n"
+                        CommandTarget.TURN_LEFT -> "Left "
+                        CommandTarget.TURN_RIGHT -> "Right "
                         else -> ""
                     }}HDG ${vec.heading}" } ?:
                     (leg as? Route.HoldLeg)?.wptId?.let {
@@ -133,8 +133,9 @@ class RouteEditPane {
                     val altRestrChanged = legChanged || restrTriple.first
                     val spdRestrChanged = legChanged || restrTriple.second
                     val skippedChanged = restrTriple.third
-                    val legLabel = label(legDisplay, "ControlPaneRoute${if (legChanged) "Changed" else ""}").apply { setAlignment(Align.center) }.cell(growX = true, height = 0.125f * UI_HEIGHT, padLeft = 10f, padRight = 10f)
-                    val altButton = textButton(altRestr, "ControlPaneRestr${if (altRestrChanged) "Changed" else ""}").cell(growX = true, preferredWidth = 0.25f * parentPane.paneWidth, height = 0.125f * UI_HEIGHT).apply {
+                    val showRestrDisplay = leg is Route.WaypointLeg
+                    val legLabel = label(legDisplay, "ControlPaneRoute${if (legChanged) "Changed" else ""}").apply { setAlignment(Align.center) }.cell(growX = true, height = 0.125f * UI_HEIGHT, padLeft = 10f, padRight = 10f, colspan = if (showRestrDisplay) null else 2)
+                    if (showRestrDisplay) textButton(altRestr, "ControlPaneRestr${if (altRestrChanged) "Changed" else ""}").cell(growX = true, preferredWidth = 0.25f * parentPane.paneWidth, height = 0.125f * UI_HEIGHT).apply {
                         isChecked = (leg as? Route.WaypointLeg)?.altRestrActive == false
                         if (altRestr.isNotBlank()) addChangeListener { _, _ -> (leg as? Route.WaypointLeg)?.let {
                             it.altRestrActive = !isChecked
@@ -142,7 +143,7 @@ class RouteEditPane {
                             updateUndoTransmitButtonStates()
                         } ?: run { isChecked = false } }
                     }
-                    val spdButton = textButton(spdRestr, "ControlPaneRestr${if (spdRestrChanged) "Changed" else ""}").cell(growX = true, preferredWidth = 0.25f * parentPane.paneWidth, height = 0.125f * UI_HEIGHT).apply {
+                    if (showRestrDisplay) textButton(spdRestr, "ControlPaneRestr${if (spdRestrChanged) "Changed" else ""}").cell(growX = true, preferredWidth = 0.25f * parentPane.paneWidth, height = 0.125f * UI_HEIGHT).apply {
                         isChecked = (leg as? Route.WaypointLeg)?.spdRestrActive == false
                         if (spdRestr.isNotBlank()) addChangeListener { _, _ -> (leg as? Route.WaypointLeg)?.let {
                             it.spdRestrActive = !isChecked
@@ -168,8 +169,6 @@ class RouteEditPane {
                                 } ?: run {
                                     // Remove the leg if it is a hold/vector/init climb/discontinuity
                                     legLabel.remove()
-                                    altButton.remove()
-                                    spdButton.remove()
                                     remove()
                                     route.legs.removeValue(leg, false)
                                 }

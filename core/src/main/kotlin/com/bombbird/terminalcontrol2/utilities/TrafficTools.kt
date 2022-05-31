@@ -93,8 +93,8 @@ private fun randomStar(airport: Entity): SidStar.STAR? {
         if (rwy.entity.has(ActiveLanding.mapper)) runwaysAvailable.add(rwy.entity[RunwayInfo.mapper]?.rwyName ?: return@forEach)
     }
     airport[STARChildren.mapper]?.starMap?.values()?.forEach { star ->
-        // Add to list of eligible SIDs if both runway and time restriction checks passes
-        if ((star.rwyLegs.keys() union runwaysAvailable).isEmpty()) return@forEach
+        // Add to list of eligible STARs if both runway and time restriction checks passes
+        if ((star.rwyLegs.keys() intersect  runwaysAvailable).isEmpty()) return@forEach
         if (star.timeRestriction != UsabilityFilter.DAY_AND_NIGHT && star.timeRestriction != currentTime) return@forEach
         availableStars.add(star)
     }

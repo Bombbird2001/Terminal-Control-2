@@ -11,7 +11,6 @@ import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.get
 import ktx.collections.GdxArray
-import ktx.collections.map
 import ktx.scene2d.*
 import kotlin.math.max
 import kotlin.math.min
@@ -96,10 +95,13 @@ class ControlPane {
                             event?.handle()
                             if (modificationInProgress) return@addChangeListener
                             updateTransitionSelectBoxChoices(parentPane.aircraftArrivalArptId, selected)
-                            parentPane.userClearanceState.clearedApp = if (selected == "Approach") null else selected
+                            val appName = if (selected == NO_APP_SELECTION) null else selected
+                            parentPane.userClearanceState.clearedApp = appName
                             style = Scene2DSkin.defaultSkin[if (parentPane.userClearanceState.clearedApp == parentPane.clearanceState.clearedApp) "ControlPane" else "ControlPaneChanged", SelectBoxStyle::class.java]
+                            val transName = if (transitionSelectBox.selected == "$TRANS_PREFIX$NO_TRANS_SELECTION") null
+                            else transitionSelectBox.selected.replace(TRANS_PREFIX, "")
                             transitionSelectBox.style = Scene2DSkin.defaultSkin[if (parentPane.userClearanceState.clearedTrans == parentPane.clearanceState.clearedTrans) "ControlPane" else "ControlPaneChanged", SelectBoxStyle::class.java]
-                            // TODO add approach route behind current route
+                            updateApproachRoute(parentPane.aircraftArrivalArptId, appName, transName)
                             updateUndoTransmitButtonStates()
                         }
                     }.cell(grow = true, preferredWidth = paneWidth / 2)
@@ -111,9 +113,11 @@ class ControlPane {
                         addChangeListener { event, _ ->
                             event?.handle()
                             if (modificationInProgress) return@addChangeListener
-                            parentPane.userClearanceState.clearedTrans = selected.replace("Via ", "")
+                            val transName = if (selected == "$TRANS_PREFIX$NO_TRANS_SELECTION") null else selected.replace(TRANS_PREFIX, "")
+                            parentPane.userClearanceState.clearedTrans = transName
                             style = Scene2DSkin.defaultSkin[if (parentPane.userClearanceState.clearedTrans == parentPane.clearanceState.clearedTrans) "ControlPane" else "ControlPaneChanged", SelectBoxStyle::class.java]
-                            // TODO perform logic to bridge STAR route and approach route
+                            val appName = if (appSelectBox.selected == NO_APP_SELECTION) null else appSelectBox.selected
+                            updateApproachRoute(parentPane.aircraftArrivalArptId, appName, transName)
                             updateUndoTransmitButtonStates()
                         }
                     }.cell(grow = true, preferredWidth = paneWidth / 2)
@@ -246,13 +250,14 @@ class ControlPane {
         transitionSelectBox.apply {
             GAME.gameClientScreen?.airports?.get(airportId)?.entity?.get(ApproachChildren.mapper)?.approachMap?.get(selectedApp)?.let { app ->
                 items = GdxArray<String>().also { array ->
-                    app.transitions.map { "Via ${it.first}" }.forEach { array.add(it) }
+                    app.transitions.keys().map { "$TRANS_PREFIX$it" }.forEach { array.add(it) }
                 }
-                if (!selection.isEmpty) parentPane.userClearanceState.clearedTrans = selected
+                if (!selection.isEmpty) parentPane.userClearanceState.clearedTrans = if (selected == "$TRANS_PREFIX$NO_TRANS_SELECTION") null
+                else selected.replace(TRANS_PREFIX, "")
                 isDisabled = false
             } ?: run {
                 isDisabled = true
-                items = GdxArray<String>().apply { add("Via ...") }
+                items = GdxArray<String>().apply { add("$TRANS_PREFIX$NO_TRANS_SELECTION") }
             }
         }
         modificationInProgress = false
@@ -333,7 +338,7 @@ class ControlPane {
      * @param appName the cleared approach, or null if no approach is cleared
      * @param transName the cleared approach transition, or null if no approach has been cleared
      * */
-    fun updateAltSpdClearances(clearedAlt: Int, clearedSpd: Short, minSpd: Short, maxSpd: Short, optimalSpd: Short, appName: String?, transName: String?) {
+    fun updateAltSpdAppClearances(clearedAlt: Int, clearedSpd: Short, minSpd: Short, maxSpd: Short, optimalSpd: Short, appName: String?, transName: String?) {
         val minSpdRounded = if (minSpd % 10 > 0) ((minSpd / 10 + 1) * 10).toShort() else minSpd
         val maxSpdRounded = if (maxSpd % 10 > 0) ((maxSpd / 10) * 10).toShort() else maxSpd
         modificationInProgress = true
@@ -351,8 +356,16 @@ class ControlPane {
         modificationInProgress = false
         altSelectBox.selected = if (clearedAlt >= TRANS_LVL * 100) "FL${clearedAlt / 100}" else clearedAlt.toString()
         spdSelectBox.selected = clearedSpd
-        appSelectBox.selected = appName ?: "Approach"
-        if (appName != null && transName != null) transitionSelectBox.selected = "Via $transName"
+        appSelectBox.apply {
+            selected = appName ?: NO_APP_SELECTION
+            // Explicitly set style as change event is not getting fired for some reason
+            style = Scene2DSkin.defaultSkin[if (parentPane.userClearanceState.clearedApp == parentPane.clearanceState.clearedApp) "ControlPane" else "ControlPaneChanged", SelectBoxStyle::class.java]
+        }
+        if (appName != null && transName != null) transitionSelectBox.selected = "$TRANS_PREFIX$transName"
+        else {
+            transitionSelectBox.isDisabled = true
+            transitionSelectBox.items = GdxArray<String>().apply { add("$TRANS_PREFIX$NO_TRANS_SELECTION") }
+        }
     }
 
     /**
@@ -409,6 +422,60 @@ class ControlPane {
             else -> Gdx.app.log("UIPane", "Unknown lateral mode $mode")
         }
         modificationInProgress = false
+    }
+
+    /**
+     * Updates the route to include the input approach and transition given the arrival airport
+     * @param arptId the ID of the arrival airport
+     * @param appName the name of the approach, or null if none cleared
+     * @param transName the name of the approach transition, or null if no approach cleared
+     * */
+    private fun updateApproachRoute(arptId: Byte?, appName: String?, transName: String?) {
+        removeApproachLegs(parentPane.userClearanceState.route, parentPane.userClearanceState.hiddenLegs)
+        if (arptId == null || appName == null || transName == null) return updateRouteTable(parentPane.userClearanceState.route)
+        val app = GAME.gameClientScreen?.airports?.get(arptId)?.entity?.get(ApproachChildren.mapper)?.approachMap?.get(appName) ?: return
+        val trans = app.transitions[transName] ?: null // Force to nullable Route? type, instead of a Route! type
+        // Search for the first leg in the current route that matches the first leg in the transition
+        val matchingIndex = if (transName != "vectors" && (trans?.legs?.size ?: 0) > 0) (trans?.legs?.first() as? Route.WaypointLeg)?.let { firstTransWpt ->
+            parentPane.userClearanceState.route.also { currRoute -> for (i in 0 until currRoute.legs.size) {
+                if (firstTransWpt.wptId == (currRoute.legs[i] as? Route.WaypointLeg)?.wptId) return@let i
+                }}
+            null
+        } else null
+        parentPane.userClearanceState.route.apply {
+            if (matchingIndex == null) {
+                legs.add(Route.DiscontinuityLeg(Route.Leg.APP_TRANS))
+                if (trans != null) extendRouteCopy(trans)
+            } else {
+                // Add the legs after the transition waypoint to hidden legs
+                for (i in matchingIndex + 1 until legs.size) parentPane.userClearanceState.hiddenLegs.legs.add(legs[i])
+                if (matchingIndex <= legs.size - 2) legs.removeRange(matchingIndex + 1, legs.size - 1) // Remove them from the current route if waypoints exist after
+                if (trans != null) {
+                    extendRouteCopy(trans)
+                    // Remove the duplicate waypoint
+                    legs.removeIndex(matchingIndex + 1)
+                }
+            }
+            extendRouteCopy(app.routeLegs)
+            updateRouteTable(parentPane.userClearanceState.route)
+        }
+    }
+
+    /**
+     * Remove the current approach, approach transition, missed approach legs from route, and adds all the hidden route
+     * legs back
+     *
+     * Also clears the hidden leg route
+     * @param route the route to remove approach legs from
+     * @param hiddenLegs the route containing currently hidden legs to add back to the route
+     * */
+    private fun removeApproachLegs(route: Route, hiddenLegs: Route) {
+        for (i in route.legs.size - 1 downTo 0) {
+            if (route.legs[i].phase == Route.Leg.NORMAL) break // Once a normal leg is encountered, break from loop
+            route.legs.removeIndex(i)
+        }
+        route.extendRoute(hiddenLegs)
+        hiddenLegs.legs.clear()
     }
 
     /**

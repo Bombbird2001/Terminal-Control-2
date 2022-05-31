@@ -117,6 +117,8 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
             actingClearance.minIas = newClearance.minIas
             actingClearance.maxIas = newClearance.maxIas
             actingClearance.optimalIas = newClearance.optimalIas
+            actingClearance.clearedApp = newClearance.clearedApp
+            actingClearance.clearedTrans = newClearance.clearedTrans
         }
     }
 
@@ -142,12 +144,12 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
                 var i = 0
                 while (0 <= i && i < route.legs.size) { route.legs[i]?.also { leg ->
                     (leg as? Route.WaypointLeg)?.let { wptLeg ->
-                        // Sanity check - all waypoint legs in the current pane clearance state must be present in the
-                        // new clearance state; otherwise, those legs must be removed
+                        // Sanity check - any waypoint legs in the current pane clearance state not in the new clearance
+                        // must be removed
                         if (checkLegChanged(latestClearance.route, wptLeg)) {
                             route.legs.removeIndex(i)
                             i--
-                        }
+                        } else i = route.legs.size // Exit the loop once a matching waypoint has been found from the front
                     } ?: ((leg as? Route.HoldLeg) ?: (leg as? Route.VectorLeg))?.let {
                         // Additionally, for hold and after waypoint heading legs, the leg preceding them in the UI state
                         // must be a waypoint and present unless this leg is the first; otherwise, those legs must also be removed

@@ -260,7 +260,7 @@ fun findClosestIntersectionBetweenSegmentAndPolygon(originX: Float, originY: Flo
         // Calculate length in pixels
         val currLen = diff.len()
         // Add the diff vector scaled by 10nm/length
-        plusAssign(diff * (nmToPx(10) / currLen))
+        plusAssign(diff * (nmToPx(0.2f) / currLen))
     }
 }
 

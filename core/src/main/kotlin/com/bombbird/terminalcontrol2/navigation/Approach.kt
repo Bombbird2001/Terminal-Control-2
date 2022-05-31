@@ -14,7 +14,7 @@ import ktx.ashley.entity
 import ktx.ashley.get
 import ktx.ashley.plusAssign
 import ktx.ashley.with
-import ktx.collections.GdxArray
+import ktx.collections.GdxArrayMap
 import kotlin.math.roundToInt
 
 /**
@@ -46,7 +46,7 @@ abstract class Approach(name: String, arptId: Byte, runwayId: Byte, tower: Strin
         }
     }
 
-    val transitions = GdxArray<Pair<String, Route>>(6)
+    val transitions = GdxArrayMap<String, Route>(6)
     val routeLegs = Route()
     val missedLegs = Route()
 
@@ -131,7 +131,7 @@ abstract class Approach(name: String, arptId: Byte, runwayId: Byte, tower: Strin
      * */
     fun setFromSerialisedObject(serialisedApproach: SerialisedApproach) {
         transitions.clear()
-        for (transLeg in serialisedApproach.transitions) transitions.add(Pair(transLeg.name, Route.fromSerialisedObject(transLeg.route)))
+        for (transLeg in serialisedApproach.transitions) transitions.put(transLeg.name, Route.fromSerialisedObject(transLeg.route))
         routeLegs.setToRoute(Route.fromSerialisedObject(serialisedApproach.routeLegs))
         missedLegs.setToRoute(Route.fromSerialisedObject(serialisedApproach.missedLegs))
     }
@@ -178,7 +178,7 @@ abstract class Approach(name: String, arptId: Byte, runwayId: Byte, tower: Strin
                 val mins = get(Minimums.mapper) ?: return SerialisedIlsGS()
                 return SerialisedIlsGS(appInfo.approachName, appInfo.airportId, appInfo.rwyId, appInfo.towerName, appInfo.frequency,
                                        timeRestriction,
-                                       transitions.map { SerialisedTransition(it.first, it.second.getSerialisedObject()) }.toTypedArray(),
+                                       transitions.entries().map { SerialisedTransition(it.key, it.value.getSerialisedObject()) }.toTypedArray(),
                                        routeLegs.getSerialisedObject(),
                                        missedLegs.getSerialisedObject(),
                                        (convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()) - 180 + MAG_HDG_DEV).roundToInt().toShort(), pos.x, pos.y, loc.maxDistNm,
@@ -233,7 +233,7 @@ abstract class Approach(name: String, arptId: Byte, runwayId: Byte, tower: Strin
                 val steps = get(StepDown.mapper) ?: return SerialisedIlsLOCOffset()
                 return SerialisedIlsLOCOffset(appInfo.approachName, appInfo.airportId, appInfo.rwyId, appInfo.towerName, appInfo.frequency,
                     timeRestriction,
-                    transitions.map { SerialisedTransition(it.first, it.second.getSerialisedObject()) }.toTypedArray(),
+                    transitions.entries().map { SerialisedTransition(it.key, it.value.getSerialisedObject()) }.toTypedArray(),
                     routeLegs.getSerialisedObject(),
                     missedLegs.getSerialisedObject(),
                     (convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()) - 180 + MAG_HDG_DEV).roundToInt().toShort(), pos.x, pos.y, loc.maxDistNm,

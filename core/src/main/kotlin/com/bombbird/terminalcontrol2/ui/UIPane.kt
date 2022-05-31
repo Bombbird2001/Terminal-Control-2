@@ -133,7 +133,7 @@ class UIPane(private val uiStage: Stage) {
         controlObj.updateClearanceMode(userClearanceState.route, userClearanceState.vectorHdg)
         controlObj.updateAltSelectBoxChoices(aircraftMaxAlt)
         controlObj.updateApproachSelectBoxChoices(aircraft.entity[ArrivalAirport.mapper]?.arptId)
-        controlObj.updateAltSpdClearances(userClearanceState.clearedAlt, userClearanceState.clearedIas,
+        controlObj.updateAltSpdAppClearances(userClearanceState.clearedAlt, userClearanceState.clearedIas,
             userClearanceState.minIas, userClearanceState.maxIas, userClearanceState.optimalIas,
             userClearanceState.clearedApp, userClearanceState.clearedTrans)
         controlObj.setUndoTransmitButtonsUnchanged()
@@ -162,7 +162,7 @@ class UIPane(private val uiStage: Stage) {
         // controlObj.updateVectorTable(userClearanceState.vectorHdg, userClearanceState.vectorTurnDir)
         controlObj.updateClearanceMode(userClearanceState.route, userClearanceState.vectorHdg)
         controlObj.updateAltSelectBoxChoices(aircraftMaxAlt)
-        controlObj.updateAltSpdClearances(userClearanceState.clearedAlt, userClearanceState.clearedIas,
+        controlObj.updateAltSpdAppClearances(userClearanceState.clearedAlt, userClearanceState.clearedIas,
             userClearanceState.minIas, userClearanceState.maxIas, userClearanceState.optimalIas,
             userClearanceState.clearedApp, userClearanceState.clearedTrans)
         controlObj.updateUndoTransmitButtonStates()

@@ -392,7 +392,7 @@ fun getPointTargetTrackAndGS(targetTrack: Double, speedKts: Float, dir: Directio
         val angleOffset = asin(windSpdKts * sin(Math.toRadians(angle)) / groundSpeed) * MathUtils.radiansToDegrees
         aircraftTrack -= angleOffset
     }
-    return Pair(targetTrack.toFloat(), groundSpeed)
+    return Pair(aircraftTrack.toFloat(), groundSpeed)
 }
 
 /**

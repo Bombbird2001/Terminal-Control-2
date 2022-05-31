@@ -312,7 +312,7 @@ object GameLoader {
 
     /** Parse the given [data] into approach transition legs data, and adds it to the supplied [approach]'s [Approach.transitions] */
     private fun parseApproachTransition(data: List<String>, approach: Approach) {
-        approach.transitions.add(Pair(data[1], parseLegs(data.subList(2, data.size), Route.Leg.APP_TRANS)))
+        approach.transitions.put(data[1], parseLegs(data.subList(2, data.size), Route.Leg.APP_TRANS))
     }
 
     /** Parse the given [data] into missed approach procedure legs data, and adds it to the supplied [approach]'s [Approach.missedLegs] */

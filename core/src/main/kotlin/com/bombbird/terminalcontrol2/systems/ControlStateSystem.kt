@@ -42,7 +42,8 @@ class ControlStateSystem(override val updateTimeS: Float = 0f): EntitySystem(), 
                         entity[ClearanceAct.mapper]?.actingClearance?.actingClearance ?: return@also
                     }
                     clearanceToUse.apply {
-                        GAME.gameServer?.sendAircraftClearanceStateUpdateToAll(aircraftInfo.icaoCallsign, routePrimaryName, route, hiddenLegs, vectorHdg, vectorTurnDir, clearedAlt, clearedIas, minIas, maxIas, optimalIas)
+                        GAME.gameServer?.sendAircraftClearanceStateUpdateToAll(aircraftInfo.icaoCallsign, routePrimaryName, route, hiddenLegs,
+                            vectorHdg, vectorTurnDir, clearedAlt, clearedIas, minIas, maxIas, optimalIas, clearedApp, clearedTrans)
                     }
                 }
                 entity.remove<LatestClearanceChanged>()

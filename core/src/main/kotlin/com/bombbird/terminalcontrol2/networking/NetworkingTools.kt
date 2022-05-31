@@ -237,8 +237,8 @@ fun handleIncomingRequest(rs: RadarScreen, obj: Any?) {
                 aircraft.entity += ClearanceAct(
                     ClearanceState.ActingClearance(
                         ClearanceState(obj.primaryName, Route.fromSerialisedObject(obj.route), Route.fromSerialisedObject(obj.hiddenLegs),
-                    obj.vectorHdg, obj.vectorTurnDir, obj.clearedAlt, obj.clearedIas, obj.minIas, obj.maxIas, obj.optimalIas)
-                    ))
+                            obj.vectorHdg, obj.vectorTurnDir, obj.clearedAlt,
+                            obj.clearedIas, obj.minIas, obj.maxIas, obj.optimalIas, obj.clearedApp, obj.clearedTrans)))
                 if (rs.selectedAircraft == aircraft) rs.uiPane.updateSelectedAircraft(aircraft)
             }
         } ?: (obj as? CustomWaypointData)?.apply {

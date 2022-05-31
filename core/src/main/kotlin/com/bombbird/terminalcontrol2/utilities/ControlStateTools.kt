@@ -48,7 +48,9 @@ fun getAircraftIcon(flightType: Byte, sectorID: Byte): TextureRegionDrawable {
 fun addNewClearanceToPendingClearances(entity: Entity, clearance: AircraftControlStateUpdateData, returnTripTime: Int) {
     val pendingClearances = entity[PendingClearances.mapper]
     val newClearance = ClearanceState(clearance.primaryName, Route.fromSerialisedObject(clearance.route), Route.fromSerialisedObject(clearance.hiddenLegs),
-        clearance.vectorHdg, clearance.vectorTurnDir, clearance.clearedAlt, clearance.clearedIas, clearance.minIas, clearance.maxIas, clearance.optimalIas)
+        clearance.vectorHdg, clearance.vectorTurnDir, clearance.clearedAlt,
+        clearance.clearedIas, clearance.minIas, clearance.maxIas, clearance.optimalIas,
+        clearance.clearedApp, clearance.clearedTrans)
     if (pendingClearances == null) entity += PendingClearances(Queue<ClearanceState.PendingClearanceState>().apply {
         addLast(ClearanceState.PendingClearanceState(2f - returnTripTime / 2000f, newClearance))
     })

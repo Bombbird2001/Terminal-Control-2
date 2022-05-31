@@ -7,10 +7,7 @@ import com.bombbird.terminalcontrol2.components.WaypointInfo
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.UI_HEIGHT
 import com.bombbird.terminalcontrol2.navigation.Route
-import com.bombbird.terminalcontrol2.utilities.addChangeListener
-import com.bombbird.terminalcontrol2.utilities.checkRestrChanged
-import com.bombbird.terminalcontrol2.utilities.compareLegEquality
-import com.bombbird.terminalcontrol2.utilities.removeMouseScrollListeners
+import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.get
 import ktx.collections.GdxArray
 import ktx.scene2d.*
@@ -87,8 +84,8 @@ class RouteSubpane {
                     val legDisplay = (leg as? Route.WaypointLeg)?.let { wpt -> if (!wpt.legActive) return@also
                         GAME.gameClientScreen?.waypoints?.get(wpt.wptId)?.entity?.get(WaypointInfo.mapper)?.wptName } ?:
                     (leg as? Route.VectorLeg)?.let { vec -> "${when (vec.turnDir) {
-                        CommandTarget.TURN_LEFT -> "Left\n"
-                        CommandTarget.TURN_RIGHT -> "Right\n"
+                        CommandTarget.TURN_LEFT -> "Left "
+                        CommandTarget.TURN_RIGHT -> "Right "
                         else -> ""
                     }}HDG ${vec.heading}" } ?:
                     (leg as? Route.HoldLeg)?.wptId?.let { wptId -> "Hold ${
@@ -150,9 +147,10 @@ class RouteSubpane {
                             parentControlPane.updateUndoTransmitButtonStates()
                         }
                     })
-                    label(legDisplay, "ControlPaneRoute").apply { setAlignment(Align.center) }.cell(growX = true, preferredWidth = 0.2f * parentPane.paneWidth)
-                    label(altRestrDisplay, altRestrStyle).apply { setAlignment(Align.center) }.cell(expandX = true, padLeft = 10f, padRight = 10f)
-                    label(spdRestr, spdRestrStyle).apply { setAlignment(Align.center) }.cell(growX = true, preferredWidth = 0.2f * parentPane.paneWidth)
+                    val showRestrDisplay = leg is Route.WaypointLeg || leg is Route.InitClimbLeg
+                    label(legDisplay, "ControlPaneRoute${if (checkLegChanged(parentPane.clearanceState.route, leg)) "Changed" else ""}").apply { setAlignment(Align.center) }.cell(growX = true, preferredWidth = 0.2f * parentPane.paneWidth, colspan = if (showRestrDisplay) null else 2)
+                    if (showRestrDisplay) label(altRestrDisplay, altRestrStyle).apply { setAlignment(Align.center) }.cell(expandX = true, padLeft = 10f, padRight = 10f)
+                    if (showRestrDisplay) label(spdRestr, spdRestrStyle).apply { setAlignment(Align.center) }.cell(growX = true, preferredWidth = 0.2f * parentPane.paneWidth)
                     row()
                 }
             }
