@@ -2,10 +2,12 @@ package com.bombbird.terminalcontrol2.navigation
 
 import com.badlogic.ashley.core.Entity
 import com.badlogic.gdx.math.MathUtils
-import com.bombbird.terminalcontrol2.components.CommandTarget
-import com.bombbird.terminalcontrol2.components.Position
+import com.bombbird.terminalcontrol2.components.*
+import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.get
+import ktx.ashley.has
+import ktx.ashley.plusAssign
 
 /**
  * Clearance class that contains data for player transmitted aircraft clearances
@@ -118,6 +120,13 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
             actingClearance.maxIas = newClearance.maxIas
             actingClearance.optimalIas = newClearance.optimalIas
             actingClearance.clearedApp = newClearance.clearedApp
+            newClearance.clearedApp?.let {
+                val app = GAME.gameServer?.airports?.get(entity[ArrivalAirport.mapper]?.arptId)?.entity?.get(ApproachChildren.mapper)?.approachMap?.get(it)?.entity ?: return@let
+                if (app.has(Localizer.mapper)) entity += LocalizerArmed(app)
+                if (app.has(GlideSlope.mapper)) entity += GlideSlopeArmed(app)
+                else if (app.has(StepDown.mapper)) entity += StepDownApproach(app)
+                // Visual approach can only be cleared by other approaches
+            }
             actingClearance.clearedTrans = newClearance.clearedTrans
         }
     }

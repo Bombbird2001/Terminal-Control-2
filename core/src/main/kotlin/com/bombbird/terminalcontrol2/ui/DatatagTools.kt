@@ -17,6 +17,7 @@ import com.bombbird.terminalcontrol2.utilities.convertWorldAndRenderDeg
 import com.bombbird.terminalcontrol2.utilities.modulateHeading
 import com.bombbird.terminalcontrol2.utilities.pxpsToKt
 import ktx.ashley.get
+import ktx.ashley.has
 import ktx.scene2d.Scene2DSkin
 import kotlin.math.roundToInt
 
@@ -169,17 +170,18 @@ private fun getExpandedLabelText(entity: Entity): Array<String> {
     val groundTrack = entity[GroundTrack.mapper] ?: return labelText
     val latestClearance = entity[ClearanceAct.mapper]?.actingClearance?.actingClearance
 
-
     val callsign = aircraftInfo.icaoCallsign
     val acInfo = "${aircraftInfo.icaoType}/${aircraftInfo.aircraftPerf.wakeCategory}/${aircraftInfo.aircraftPerf.recat}"
     val alt = (radarData.altitude.altitudeFt / 100).roundToInt()
     val vs = if (radarData.speed.vertSpdFpm > 150) '^' else if (radarData.speed.vertSpdFpm < -150) 'v' else '='
     val clearedAlt = latestClearance?.clearedAlt?.let { "=> ${it / 100}" } ?: ""
-    val cmdAlt = (cmdTarget.targetAltFt / 100f).roundToInt()
+    val cmdAlt = if (entity.has(GlideSlopeCaptured.mapper)) "GS" else if (entity.has(VisualCaptured.mapper)) "VIS"
+    else (cmdTarget.targetAltFt / 100f).roundToInt().toString()
     val hdg = modulateHeading((convertWorldAndRenderDeg(radarData.direction.trackUnitVector.angleDeg()) + MAG_HDG_DEV).roundToInt().toFloat()).roundToInt()
     val cmdHdg = cmdTarget.targetHdgDeg.roundToInt()
     val groundSpd = pxpsToKt(groundTrack.trackVectorPxps.len()).roundToInt()
-    val clearedLateral = latestClearance?.route?.legs?.let {
+    val clearedLateral = if (entity.has(LocalizerCaptured.mapper)) "LOC" else if (entity.has(VisualCaptured.mapper)) "VIS"
+    else latestClearance?.route?.legs?.let {
         if (it.size == 0) null else CLIENT_SCREEN?.waypoints?.get((it[0] as? Route.WaypointLeg)?.wptId)
     }?.entity?.get(WaypointInfo.mapper)?.wptName ?: latestClearance?.vectorHdg?.toString() ?: ""
     val sidStar = latestClearance?.routePrimaryName ?: ""

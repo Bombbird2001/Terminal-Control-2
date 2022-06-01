@@ -85,10 +85,26 @@ fun getTargetPos(approach: Entity, posX: Float, posY: Float): Vector2? {
             else -> 0.25f
         }
         val targetDistPx = distPx - nmToPx(distNmSubtracted)
-        return Vector2(posX, posY) + dir.trackUnitVector * targetDistPx
+        return Vector2(pos.x, pos.y) + dir.trackUnitVector * targetDistPx
     }
 
     return null
+}
+
+/**
+ * Checks whether the aircraft position has reached past the line-up distance from the runway
+ * @param approach the offset approach entity which should contain a [LineUpDist] component
+ * @param posX the x coordinate of aircraft position
+ * @param posY the y coordinate of aircraft position
+ * @return whether the aircraft position has reached the distance from the runway threshold
+ * */
+fun checkLineUpDistReached(approach: Entity, posX: Float, posY: Float): Boolean {
+    val lineUpDist = approach[LineUpDist.mapper]?.lineUpDistNm ?: return false
+    val rwyPos = approach[ApproachInfo.mapper]?.rwyObj?.entity?.get(Position.mapper) ?: return false
+    val deltaX = rwyPos.x - posX
+    val deltaY = rwyPos.y - posY
+    val distPx = sqrt(deltaX * deltaX + deltaY * deltaY)
+    return pxToNm(distPx) < lineUpDist
 }
 
 /**

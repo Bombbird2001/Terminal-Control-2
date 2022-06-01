@@ -128,7 +128,7 @@ class PhysicsSystem(override val updateTimeS: Float): EntitySystem(), LowFreqUpd
                 val actingClearance = get(ClearanceAct.mapper)?.actingClearance ?: return@apply
                 alt.altitudeFt = getAppAltAtPos(gsApp, pos.x, pos.y, pxpsToKt(track.len())) ?: return@apply
                 val gsKtComponentToAppTrack = pxpsToKt(track.dot(appTrack))
-                spd.vertSpdFpm = (gsKtComponentToAppTrack / 60 * tan(Math.toRadians(glideAngle.toDouble()))).toFloat()
+                spd.vertSpdFpm = ktToFpm(gsKtComponentToAppTrack * tan(Math.toRadians(glideAngle.toDouble())).toFloat())
                 acc.dVertSpdMps2 = 0f
                 val prevClearedAlt = actingClearance.actingClearance.clearedAlt
                 actingClearance.actingClearance.clearedAlt = 3000 // TODO set to missed approach procedure altitude

@@ -14,10 +14,7 @@ import com.bombbird.terminalcontrol2.ui.addDatatagInputListeners
 import com.bombbird.terminalcontrol2.ui.updateDatatagStyle
 import com.bombbird.terminalcontrol2.ui.updateDatatagText
 import com.bombbird.terminalcontrol2.utilities.AircraftTypeData
-import ktx.ashley.entity
-import ktx.ashley.get
-import ktx.ashley.plusAssign
-import ktx.ashley.with
+import ktx.ashley.*
 import ktx.scene2d.Scene2DSkin
 import kotlin.math.roundToInt
 
@@ -96,7 +93,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoType:
             }
         } else if (flightType == FlightType.ARRIVAL) {
             with<ContactFromCentre> {
-                altitudeFt = (MAX_ALT + MathUtils.random(-500, 800))
+                altitudeFt = (MAX_ALT + MathUtils.random(400, 1500))
             }
         }
     }
@@ -145,6 +142,15 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoType:
                         serialisedAircraft.minIas, serialisedAircraft.maxIas, serialisedAircraft.optimalIas,
                     )))
                     serialisedAircraft.arrivalArptId?.let { this += ArrivalAirport(it) }
+                    get(Controllable.mapper)?.apply {
+                        sectorId = serialisedAircraft.controlSectorId
+                    }
+                    if (serialisedAircraft.gsCap) this += GlideSlopeCaptured()
+                    else remove<GlideSlopeCaptured>()
+                    if (serialisedAircraft.locCap) this += LocalizerCaptured()
+                    else remove<LocalizerCaptured>()
+                    if (serialisedAircraft.visCap) this += VisualCaptured()
+                    else remove<VisualCaptured>()
                 }
             }
         }
@@ -160,7 +166,8 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoType:
                                 val directionX: Float = 0f, val directionY: Float = 0f,
                                 val speedKts: Float = 0f, val vertSpdFpm: Float = 0f, val angularSpdDps: Float = 0f,
                                 val trackX: Float = 0f, val trackY: Float = 0f,
-                                val targetHdgDeg: Short = 0, val targetAltFt: Short = 0, val targetIasKt: Short = 0)
+                                val targetHdgDeg: Short = 0, val targetAltFt: Short = 0, val targetIasKt: Short = 0,
+                                val gsCap: Boolean = false, val locCap: Boolean = false, val visCap: Boolean = false)
 
     /** Gets a [SerialisedAircraftUDP] from current state */
     fun getSerialisableObjectUDP(): SerialisedAircraftUDP {
@@ -178,7 +185,8 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoType:
                 acInfo.icaoCallsign,
                 direction.trackUnitVector.x, direction.trackUnitVector.y,
                 speed.speedKts, speed.vertSpdFpm, speed.angularSpdDps, gs.trackVectorPxps.x, gs.trackVectorPxps.y,
-                cmdTarget.targetHdgDeg.toInt().toShort(), (cmdTarget.targetAltFt / 100f).roundToInt().toShort(), cmdTarget.targetIasKt
+                cmdTarget.targetHdgDeg.toInt().toShort(), (cmdTarget.targetAltFt / 100f).roundToInt().toShort(), cmdTarget.targetIasKt,
+                has(GlideSlopeCaptured.mapper), has(LocalizerCaptured.mapper), has(VisualCaptured.mapper)
             )
         }
     }
@@ -211,6 +219,12 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoType:
                 targetAltFt = data.targetAltFt * 100
                 targetIasKt = data.targetIasKt
             }
+            if (data.gsCap) this += GlideSlopeCaptured()
+            else remove<GlideSlopeCaptured>()
+            if (data.locCap) this += LocalizerCaptured()
+            else remove<LocalizerCaptured>()
+            if (data.visCap) this += VisualCaptured()
+            else remove<VisualCaptured>()
         }
     }
 
@@ -228,7 +242,9 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoType:
                              val routePrimaryName: String = "", val commandRoute: Route.SerialisedRoute = Route.SerialisedRoute(), val commandHiddenLegs: Route.SerialisedRoute = Route.SerialisedRoute(),
                              val vectorHdg: Short? = null, val vectorTurnDir: Byte? = null, val commandAlt: Int = 0, val clearedIas: Short = 0, // Vector HDG will be null if aircraft is flying route
                              val minIas: Short = 0, val maxIas: Short = 0, val optimalIas: Short = 0,
-                             val arrivalArptId: Byte? = null
+                             val arrivalArptId: Byte? = null,
+                             val controlSectorId: Byte = 0,
+                             val gsCap: Boolean = false, val locCap: Boolean = false, val visCap: Boolean = false
     )
 
     /** Gets a [SerialisedAircraft] from current state */
@@ -243,6 +259,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoType:
             val flightType = get(FlightType.mapper) ?: return SerialisedAircraft()
             val clearance = get(PendingClearances.mapper)?.clearanceQueue?.last()?.clearanceState ?: get(ClearanceAct.mapper)?.actingClearance?.actingClearance ?: return SerialisedAircraft()
             val arrArptId = get(ArrivalAirport.mapper)?.arptId
+            val controllable = get(Controllable.mapper) ?: return SerialisedAircraft()
             return SerialisedAircraft(
                 position.x, position.y,
                 altitude.altitudeFt,
@@ -253,7 +270,9 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoType:
                 clearance.routePrimaryName, clearance.route.getSerialisedObject(), clearance.hiddenLegs.getSerialisedObject(),
                 clearance.vectorHdg, clearance.vectorTurnDir, clearance.clearedAlt, clearance.clearedIas,
                 clearance.minIas, clearance.maxIas, clearance.optimalIas,
-                arrArptId
+                arrArptId,
+                controllable.sectorId,
+                has(GlideSlopeCaptured.mapper), has(LocalizerCaptured.mapper), has(VisualCaptured.mapper)
             )
         }
     }

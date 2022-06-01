@@ -215,6 +215,7 @@ abstract class Approach(name: String, arptId: Byte, runwayId: Byte, tower: Strin
                 this += Minimums(decisionAlt, rvr)
                 this += Offset(centerlineInterceptDist)
                 this += StepDown(steps)
+                this += LineUpDist(centerlineInterceptDist)
             }
         }
 

@@ -91,7 +91,8 @@ class GameServer {
 
         // Add dummy aircraft
         airports[0]?.entity?.get(RunwayChildren.mapper)?.rwyMap?.get(0)?.entity?.let { rwy -> createDeparture(rwy, this) }
-        airports[0]?.entity?.let { arpt -> createArrival(arpt, this) }
+        // airports[0]?.entity?.let { arpt -> createArrival(arpt, this) }
+        appTestArrival(this)
 
         engine.addSystem(PhysicsSystem(1f))
         engine.addSystem(AISystem())
@@ -263,6 +264,14 @@ class GameServer {
      * */
     fun sendAircraftSectorUpdateTCPToAll(callsign: String, newSector: Byte) {
         server.sendToAllTCP(AircraftSectorUpdateData(callsign, newSector))
+    }
+
+    /**
+     * Sends aircraft despawn data
+     * @param callsign the callsign of the aircraft to despawn
+     * */
+    fun sendAircraftDespawn(callsign: String) {
+        server.sendToAllTCP(AircraftDespawnData(callsign))
     }
 
     /**

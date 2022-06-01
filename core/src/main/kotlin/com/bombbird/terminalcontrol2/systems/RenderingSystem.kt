@@ -16,7 +16,8 @@ import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.allOf
 import ktx.ashley.exclude
 import ktx.ashley.get
-import ktx.math.ImmutableVector2
+import ktx.ashley.has
+import ktx.math.*
 import kotlin.math.sqrt
 
 /**
@@ -30,6 +31,7 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
     private val polygonLastFamily: Family = allOf(GPolygon::class, SRColor::class, RenderLast::class).get()
     private val circleFamily: Family = allOf(Position::class, GCircle::class, SRColor::class).exclude(SRConstantZoomSize::class).get()
     private val runwayFamily: Family = allOf(RunwayInfo::class, SRColor::class).get()
+    private val locFamily: Family = allOf(Position::class, Localizer::class, Direction::class).get()
     private val trajectoryFamily: Family = allOf(RadarData::class, Controllable::class, SRColor::class).get()
     private val datatagLineFamily: Family = allOf(Datatag::class, RadarData::class).get()
     private val constCircleFamily: Family = allOf(Position::class, GCircle::class, SRColor::class, SRConstantZoomSize::class).get()
@@ -39,6 +41,7 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
     private val constSizeLabelFamily: Family = allOf(GenericLabel::class, Position::class, ConstantZoomSize::class).get()
     private val datatagFamily: Family = allOf(Datatag::class, RadarData::class).get()
 
+    /** Main update function */
     override fun update(deltaTime: Float) {
         val camZoom = (stage.camera as OrthographicCamera).zoom
         val camX = stage.camera.position.x
@@ -116,6 +119,32 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
                 rect.height = rwyWidthPx
                 shapeRenderer.color = srColor.color
                 shapeRenderer.rect(pos.x, pos.y - rect.height / 2, 0f, rect.height / 2, rect.width, rect.height, 1f, 1f, deg.trackUnitVector.angleDeg())
+
+                if (!has(ActiveLanding.mapper)) return@apply
+                // Render extended centreline (21nm)
+                shapeRenderer.color = Color.CYAN
+                val startPos = Vector2(pos.x, pos.y) - deg.trackUnitVector * nmToPx(1)
+                val perpendicularVector = Vector2(deg.trackUnitVector).rotate90(-1).scl(nmToPx(0.4f))
+                for (j in 1..21 step 2) {
+                    if (j % 5 == 0) shapeRenderer.line(startPos - perpendicularVector, startPos + perpendicularVector)
+                    val endPos = startPos - deg.trackUnitVector * nmToPx(1)
+                    shapeRenderer.line(startPos, endPos)
+                    if ((j + 1) % 5 == 0) shapeRenderer.line(endPos - perpendicularVector, endPos + perpendicularVector)
+                    startPos.minusAssign(deg.trackUnitVector * nmToPx(2))
+                }
+            }
+        }
+
+        // Render localizers
+        val localizer = engine.getEntitiesFor(locFamily)
+        for (i in 0 until localizer.size()) {
+            localizer[i]?.apply {
+                val pos = get(Position.mapper) ?: return@apply
+                val loc = get(Localizer.mapper) ?: return@apply
+                val dir = get(Direction.mapper)?.trackUnitVector ?: return@apply
+                val posVec = Vector2(pos.x, pos.y)
+                shapeRenderer.color = Color.CYAN
+                shapeRenderer.line(posVec, posVec + dir * nmToPx(loc.maxDistNm.toFloat()))
             }
         }
 

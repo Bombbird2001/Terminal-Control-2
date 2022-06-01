@@ -99,6 +99,11 @@ data class Localizer(var maxDistNm: Byte = 0): Component {
     companion object: Mapper<Localizer>()
 }
 
+/** Component for tagging the distance from the runway threshold to turn and line up (in an offset approach) */
+data class LineUpDist(var lineUpDistNm: Float = 0f): Component {
+    companion object: Mapper<LineUpDist>()
+}
+
 /** Component for tagging glide slope information */
 data class GlideSlope(var glideAngle: Float = 0f, var offsetNm: Float = 0f, var maxInterceptAlt: Short = 0): Component {
     companion object: Mapper<GlideSlope>()

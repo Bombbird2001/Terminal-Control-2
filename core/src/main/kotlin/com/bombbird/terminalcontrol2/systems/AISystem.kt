@@ -9,10 +9,7 @@ import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.*
-import com.bombbird.terminalcontrol2.navigation.Route
-import com.bombbird.terminalcontrol2.navigation.getAppAltAtPos
-import com.bombbird.terminalcontrol2.navigation.getTargetPos
-import com.bombbird.terminalcontrol2.navigation.isInsideLocArc
+import com.bombbird.terminalcontrol2.navigation.*
 import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.*
 import ktx.math.plusAssign
@@ -28,6 +25,7 @@ import kotlin.math.*
 class AISystem: EntitySystem() {
     private val takeoffAccFamily: Family = allOf(Acceleration::class, AircraftInfo::class, TakeoffRoll::class, Speed::class, Direction::class, AffectedByWind::class).get()
     private val takeoffClimbFamily: Family = allOf(Altitude::class, CommandTarget::class, TakeoffClimb::class, ClearanceAct::class, AircraftInfo::class).get()
+    private val landingAccFamily: Family = allOf(Acceleration::class, LandingRoll::class, GroundTrack::class).get()
     private val above250Family: Family = allOf(AccelerateToAbove250kts::class, Altitude::class, CommandTarget::class, ClearanceAct::class).get()
     private val below240Family: Family = allOf(AircraftInfo::class, DecelerateTo240kts::class, Altitude::class, CommandTarget::class, ClearanceAct::class).get()
     private val initialArrivalFamily: Family = allOf(ClearanceAct::class, InitialArrivalSpawn::class).get()
@@ -42,12 +40,15 @@ class AISystem: EntitySystem() {
     private val visAppGlideFamily: Family = allOf(CommandTarget::class, ClearanceAct::class, Position::class, GroundTrack::class).get()
     private val locArmedFamily: Family = allOf(Position::class, Direction::class, IndicatedAirSpeed::class, GroundTrack::class, LocalizerArmed::class).get()
     private val gsArmedFamily: Family = allOf(Position::class, Altitude::class, GlideSlopeArmed::class).get()
+    private val stepDownAppFamily: Family = allOf(CommandTarget::class, Position::class, LocalizerCaptured::class, StepDownApproach::class).get()
+    private val checkTouchdownFamily: Family = allOf(Altitude::class, Speed::class, Acceleration::class, Direction::class).oneOf(VisualCaptured::class, GlideSlopeCaptured::class).get()
     private val actingClearanceChangedFamily: Family = allOf(CommandTarget::class, ClearanceActChanged::class, ClearanceAct::class).get()
 
     /** Main update function */
     override fun update(deltaTime: Float) {
         updateTakeoffAcceleration()
         updateTakeoffClimb()
+        updateLandingAcceleration()
         updateCommandTarget()
         update10000ftSpeed()
         updateInitialArrival()
@@ -99,6 +100,26 @@ class AISystem: EntitySystem() {
                     clearanceAct.clearedIas = cmd.targetIasKt
                     remove<TakeoffClimb>()
                     this += LatestClearanceChanged()
+                }
+            }
+        }
+    }
+
+    /** Set the acceleration for landing aircraft */
+    private fun updateLandingAcceleration() {
+        val landingAcc = engine.getEntitiesFor(landingAccFamily)
+        for (i in 0 until landingAcc.size()) {
+            landingAcc[i]?.apply {
+                val acc = get(Acceleration.mapper) ?: return@apply
+                val gsKt = pxpsToKt(get(GroundTrack.mapper)?.trackVectorPxps?.len() ?: return@apply)
+                acc.dSpeedMps2 = if (gsKt > 60) -1.5f else -0.6f
+                if (gsKt < 35) {
+                    engine.removeEntity(this)
+                    GAME.gameServer?.let {
+                        val callsign = get(AircraftInfo.mapper)?.icaoCallsign ?: return@let
+                        it.aircraft.removeKey(callsign) // Remove from aircraft map
+                        it.sendAircraftDespawn(callsign) // Send removal data to all clients
+                    }
                 }
             }
         }
@@ -340,8 +361,16 @@ class AISystem: EntitySystem() {
                 cmd.turnDir = CommandTarget.TURN_DEFAULT
                 actingClearance.actingClearance.vectorTurnDir = CommandTarget.TURN_DEFAULT
                 val targetTrackAndGs = getPointTargetTrackAndGS(getRequiredTrack(pos.x, pos.y, targetPos.x, targetPos.y).toDouble(), spd.speedKts, dir, get(AffectedByWind.mapper))
-                cmd.targetHdgDeg = targetTrackAndGs.first
+                cmd.targetHdgDeg = targetTrackAndGs.first + MAG_HDG_DEV
                 actingClearance.actingClearance.vectorHdg = null
+
+                appEntity[LineUpDist.mapper]?.let { if (checkLineUpDistReached(appEntity, pos.x, pos.y)) {
+                    // If line up distance exists and is reached, remove all other approach components and add visual approach component
+                    remove<LocalizerCaptured>()
+                    remove<GlideSlopeCaptured>()
+                    remove<StepDownApproach>()
+                    this += VisualCaptured(appEntity[ApproachInfo.mapper]?.rwyObj?.entity?.get(VisualApproach.mapper)?.visual ?: return@let)
+                }}
             }
         }
 
@@ -402,10 +431,48 @@ class AISystem: EntitySystem() {
                 val pos = get(Position.mapper) ?: return@apply
                 val alt = get(Altitude.mapper) ?: return@apply
                 val gsApp = get(GlideSlopeArmed.mapper)?.gsApp ?: return@apply
-                // Capture glide slope when within 20 feet
-                if (abs(alt.altitudeFt - (getAppAltAtPos(gsApp, pos.x, pos.y, 0f) ?: return@apply)) < 20) {
+                // Capture glide slope when within 20 feet and below the max intercept altitude
+                if (alt.altitudeFt < (gsApp[GlideSlope.mapper]?.maxInterceptAlt ?: return@apply) && abs(alt.altitudeFt - (getAppAltAtPos(gsApp, pos.x, pos.y, 0f) ?: return@apply)) < 20) {
                     remove<GlideSlopeArmed>()
                     this += GlideSlopeCaptured(gsApp)
+                }
+            }
+        }
+
+        // Update for step down approach
+        val stepDown = engine.getEntitiesFor(stepDownAppFamily)
+        for (i in 0 until stepDown.size()) {
+            stepDown[i]?.apply {
+                val pos = get(Position.mapper) ?: return@apply
+                val cmd = get(CommandTarget.mapper) ?: return@apply
+                val stepDownApp = get(StepDownApproach.mapper)?.stepDownApp?: return@apply
+                val stepDownAltAtPos = getAppAltAtPos(stepDownApp, pos.x, pos.y, 0f) ?: return@apply // No advanced altitude prediction needed, so ground speed is set at 0 knots
+                cmd.targetAltFt = stepDownAltAtPos.roundToInt()
+            }
+        }
+
+        // Update touchdown status for aircraft on approach
+        val touchDown = engine.getEntitiesFor(checkTouchdownFamily)
+        for (i in 0 until touchDown.size()) {
+            touchDown[i]?.apply {
+                val alt = get(Altitude.mapper) ?: return@apply
+                val spd = get(Speed.mapper) ?: return@apply
+                val acc = get(Acceleration.mapper) ?: return@apply
+                val dir = get(Direction.mapper) ?: return@apply
+                val appEntity = get(GlideSlopeCaptured.mapper)?.gsApp ?: get(VisualCaptured.mapper)?.visApp ?: return@apply
+                val rwyEntity = appEntity[ApproachInfo.mapper]?.rwyObj?.entity ?: return@apply
+                val rwyElevation = rwyEntity[Altitude.mapper]?.altitudeFt ?: return@apply
+                if (alt.altitudeFt < rwyElevation + 25) {
+                    remove<VisualCaptured>()
+                    remove<GlideSlopeCaptured>()
+                    remove<LocalizerCaptured>()
+                    this += LandingRoll()
+                    alt.altitudeFt = rwyElevation
+                    spd.vertSpdFpm = 0f
+                    spd.angularSpdDps = 0f
+                    acc.dVertSpdMps2 = 0f
+                    acc.dAngularSpdDps2 = 0f
+                    dir.trackUnitVector = rwyEntity[Direction.mapper]?.trackUnitVector ?: return@apply
                 }
             }
         }

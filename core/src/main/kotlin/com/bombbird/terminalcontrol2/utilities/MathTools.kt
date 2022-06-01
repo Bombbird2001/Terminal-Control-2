@@ -114,6 +114,11 @@ fun ktToMps(kt: Float): Float {
     return kt / mpsToKt(1f)
 }
 
+/** Convert from knots to feet per minute */
+fun ktToFpm(kt: Float): Float {
+    return kt * NM_TO_FT / 60
+}
+
 /** Convert from metres per second to feet per minute */
 fun mpsToFpm(ms: Float): Float {
     return mToFt(ms * 60)
@@ -260,7 +265,7 @@ fun findClosestIntersectionBetweenSegmentAndPolygon(originX: Float, originY: Flo
         // Calculate length in pixels
         val currLen = diff.len()
         // Add the diff vector scaled by 10nm/length
-        plusAssign(diff * (nmToPx(0.2f) / currLen))
+        plusAssign(diff * (nmToPx(5f) / currLen))
     }
 }
 

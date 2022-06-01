@@ -14,6 +14,7 @@ object MathToolsTest {
         assertEquals(0.3048f, ftToM(1f), 0.00001f)
         assertEquals(1.943844f, mpsToKt(1f), 0.0001f)
         assertEquals(0.514444f, ktToMps(1f), 0.00001f)
+        assertEquals(101.269f, ktToFpm(1f), 0.01f)
         assertEquals(196.8504f, mpsToFpm(1f), 0.01f)
         assertEquals(10.16f, fpmToMps(2000f), 0.001f)
     }

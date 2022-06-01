@@ -102,6 +102,7 @@ fun registerClassesToKryo(kryo: Kryo?) {
 
         // Miscellaneous event triggered updated classes
         register(AircraftSectorUpdateData::class.java)
+        register(AircraftDespawnData::class.java)
         register(AircraftControlStateUpdateData::class.java)
         register(CustomWaypointData::class.java)
         register(RemoveCustomWaypointData::class.java)
@@ -147,6 +148,9 @@ class FastUDPData(val aircraft: Array<Aircraft.SerialisedAircraftUDP> = arrayOf(
 
 /** Class representing data sent during aircraft sector update */
 data class AircraftSectorUpdateData(val callsign: String = "", val newSector: Byte = 0)
+
+/** Class representing de-spawn data sent when an aircraft is removed from the game */
+data class AircraftDespawnData(val callsign: String = "")
 
 /** Class representing control state data sent when the aircraft command state is updated (either through player command, or due to leg being reached) */
 data class AircraftControlStateUpdateData(val callsign: String = "", var primaryName: String = "", var route: Route.SerialisedRoute = Route.SerialisedRoute(), var hiddenLegs: Route.SerialisedRoute = Route.SerialisedRoute(),
@@ -232,6 +236,9 @@ fun handleIncomingRequest(rs: RadarScreen, obj: Any?) {
                 aircraft.entity[RSSprite.mapper]?.drawable = getAircraftIcon(aircraft.entity[FlightType.mapper]?.type ?: return@apply, obj.newSector)
                 if (obj.newSector == 0.byte && rs.selectedAircraft == aircraft) rs.setUISelectedAircraft(aircraft)
             }
+        } ?: (obj as? AircraftDespawnData)?.apply {
+            GAME.engine.removeEntity(rs.aircraft[obj.callsign]?.entity)
+            rs.aircraft.removeKey(obj.callsign)
         } ?: (obj as? AircraftControlStateUpdateData)?.apply {
             rs.aircraft[obj.callsign]?.let { aircraft ->
                 aircraft.entity += ClearanceAct(

@@ -101,6 +101,14 @@ class GlideSlopeCaptured(val gsApp: Entity = Entity()): Component {
 }
 
 /**
+ * Component for tagging aircraft that have been cleared for a non-precision step down approach, and will alter aircraft
+ * AI behaviour to follow the step-down altitudes if the localizer is captured
+ * */
+class StepDownApproach(val stepDownApp: Entity = Entity()): Component {
+    companion object: Mapper<StepDownApproach>()
+}
+
+/**
  * Component for tagging the pending [ClearanceState]s an aircraft has been cleared, as well as the corresponding reaction
  * time, after the preceding clearance, for each clearance
  * */

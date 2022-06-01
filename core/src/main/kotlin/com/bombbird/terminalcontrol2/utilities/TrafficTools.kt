@@ -6,7 +6,6 @@ import com.badlogic.gdx.math.MathUtils
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.Aircraft
 import com.bombbird.terminalcontrol2.global.MAG_HDG_DEV
-import com.bombbird.terminalcontrol2.global.MAX_ALT
 import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.navigation.SidStar
@@ -140,9 +139,33 @@ fun createArrival(airport: Entity, gs: GameServer) {
             targetIasKt = ias
             targetHdgDeg = modulateHeading(spawnPos.third + 180)
         }
-        entity += ContactFromCentre(MAX_ALT + MathUtils.random(400, 1500))
         entity += InitialArrivalSpawn()
         if (alt > 10000) entity += DecelerateTo240kts()
+    })
+}
+
+fun appTestArrival(gs: GameServer) {
+    gs.aircraft.put("SHIBA4", Aircraft("SHIBA4", -200f, -150f, 2000f, "B77W", FlightType.ARRIVAL, false).apply {
+        entity += ArrivalAirport(0)
+        entity[Direction.mapper]?.trackUnitVector?.rotateDeg(-70f)
+        val aircraftPerf = entity[AircraftInfo.mapper]?.aircraftPerf ?: AircraftTypeData.AircraftPerfData()
+        val ias = 220.toShort()
+        val tas = calculateTASFromIAS(2000f, ias.toFloat())
+        entity[Speed.mapper]?.apply {
+            speedKts = tas
+            vertSpdFpm = 0f
+        }
+        val clearedAlt = 2000
+        entity += ClearanceAct(ClearanceState.ActingClearance(
+            ClearanceState("NTN1A", Route(), Route(),
+                70, null, clearedAlt, ias)
+        ))
+        entity[CommandTarget.mapper]?.apply {
+            targetAltFt = clearedAlt
+            targetIasKt = ias
+            targetHdgDeg = 70f
+        }
+        entity += InitialArrivalSpawn()
     })
 }
 
