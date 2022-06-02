@@ -8,6 +8,7 @@ import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.get
 import ktx.ashley.has
 import ktx.ashley.plusAssign
+import ktx.ashley.remove
 
 /**
  * Clearance class that contains data for player transmitted aircraft clearances
@@ -126,6 +127,14 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
                 if (app.has(GlideSlope.mapper)) entity += GlideSlopeArmed(app)
                 else if (app.has(StepDown.mapper)) entity += StepDownApproach(app)
                 // Visual approach can only be cleared by other approaches
+                entity += AppDecelerateTo190kts()
+                entity += DecelerateToAppSpd()
+                val alt = GAME.gameServer?.airports?.get(entity[ArrivalAirport.mapper]?.arptId)?.entity?.get(Altitude.mapper)?.altitudeFt ?: 0f
+                entity += ContactToTower((alt + MathUtils.random(1100, 1400)).toInt())
+            } ?: run {
+                entity.remove<AppDecelerateTo190kts>()
+                entity.remove<DecelerateToAppSpd>()
+                entity.remove<ContactToTower>()
             }
             actingClearance.clearedTrans = newClearance.clearedTrans
         }

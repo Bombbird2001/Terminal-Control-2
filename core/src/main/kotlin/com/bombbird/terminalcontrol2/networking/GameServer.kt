@@ -4,7 +4,8 @@ import com.badlogic.ashley.core.Engine
 import com.badlogic.gdx.math.Polygon
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.*
-import com.bombbird.terminalcontrol2.files.GameLoader
+import com.bombbird.terminalcontrol2.files.loadAircraftData
+import com.bombbird.terminalcontrol2.files.loadWorldData
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.navigation.Route
@@ -79,7 +80,8 @@ class GameServer {
 
     /** Initialises game world */
     private fun loadGame() {
-        GameLoader.loadWorldData("TCTP", this)
+        loadAircraftData()
+        loadWorldData("TCTP", this)
 
         // Set 05L, 05R as active for development
         airports[0]?.entity?.get(RunwayChildren.mapper)?.rwyMap?.apply {
@@ -92,7 +94,7 @@ class GameServer {
         // Add dummy aircraft
         airports[0]?.entity?.get(RunwayChildren.mapper)?.rwyMap?.get(0)?.entity?.let { rwy -> createDeparture(rwy, this) }
         // airports[0]?.entity?.let { arpt -> createArrival(arpt, this) }
-        appTestArrival(this)
+        // appTestArrival(this)
 
         engine.addSystem(PhysicsSystem(1f))
         engine.addSystem(AISystem())

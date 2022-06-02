@@ -160,7 +160,7 @@ private fun getMinimisedLabelText(entity: Entity): Array<String> {
     return labelText
 }
 
-/** Gets a nw array of strings for the expanded datatag, based on the player's datatag format */
+/** Gets a new array of strings for the expanded datatag, based on the player's datatag format */
 private fun getExpandedLabelText(entity: Entity): Array<String> {
     val labelText = arrayOf("", "", "", "")
     // Temporary label format TODO change based on datatag format in use

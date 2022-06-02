@@ -167,6 +167,21 @@ fun findDeltaHeading(initHdg: Float, targetHdg: Float, turnDir: Byte): Float {
     return diff
 }
 
+/**
+ * Calculates the distance between the 2 input points
+ * @param x1 the x position of the first point
+ * @param y1 the y position of the first point
+ * @param x2 the x position of the second point
+ * @param y2 the y position of the second point
+ * @return the distance between ([x1], [y1]) and ([x2], [y2]), units will be the same as whatever units were used in the
+ * input
+ * */
+fun calculateDistanceBetweenPoints(x1: Float, y1: Float, x2: Float, y2: Float): Float {
+    val deltaX = x2 - x1
+    val deltaY = y2 - y1
+    return sqrt(deltaX * deltaX + deltaY * deltaY)
+}
+
 /** Calculates the shortest distance required to reach the border supplied with a given track  */
 fun distanceFromBorder(xBorder: FloatArray, yBorder: FloatArray, x: Float, y: Float, direction: Float): Float {
     val cos = cos(Math.toRadians(90 - direction.toDouble())).toFloat()
@@ -280,9 +295,7 @@ fun findClosestIntersectionBetweenSegmentAndPolygon(originX: Float, originY: Flo
  * @param posY the y coordinate of the position to test
  * */
 fun checkInArc(centerX: Float, centreY: Float, centerTrackDeg: Float, arcLengthPx: Float, arcAngleRangeDeg: Float, posX: Float, posY: Float): Boolean {
-    val deltaX = centerX - posX
-    val deltaY = centreY - posY
-    if (sqrt(deltaX * deltaX + deltaY * deltaY) > arcLengthPx) return false
+    if (calculateDistanceBetweenPoints(posX, posY, centerX, centreY) > arcLengthPx) return false
     val centerToPosTrack = getRequiredTrack(centerX, centreY, posX, posY)
     return abs(findDeltaHeading(centerToPosTrack, centerTrackDeg, CommandTarget.TURN_DEFAULT)) < arcAngleRangeDeg
 }

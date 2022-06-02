@@ -28,6 +28,10 @@ class AISystem: EntitySystem() {
     private val landingAccFamily: Family = allOf(Acceleration::class, LandingRoll::class, GroundTrack::class).get()
     private val above250Family: Family = allOf(AccelerateToAbove250kts::class, Altitude::class, CommandTarget::class, ClearanceAct::class).get()
     private val below240Family: Family = allOf(AircraftInfo::class, DecelerateTo240kts::class, Altitude::class, CommandTarget::class, ClearanceAct::class).get()
+    private val app190Family: Family = allOf(Position::class, AppDecelerateTo190kts::class, CommandTarget::class, ClearanceAct::class)
+        .oneOf(VisualCaptured::class, LocalizerCaptured::class, GlideSlopeCaptured::class).get()
+    private val minAppSpdFamily: Family = allOf(Position::class, DecelerateToAppSpd::class, CommandTarget::class, ClearanceAct::class, AircraftInfo::class)
+        .oneOf(VisualCaptured::class, LocalizerCaptured::class, GlideSlopeCaptured::class).get()
     private val initialArrivalFamily: Family = allOf(ClearanceAct::class, InitialArrivalSpawn::class).get()
     private val vectorFamily: Family = allOf(CommandVector::class, CommandTarget::class).get()
     private val initClimbFamily: Family = allOf(CommandInitClimb::class, CommandTarget::class, Altitude::class).get()
@@ -112,7 +116,7 @@ class AISystem: EntitySystem() {
             landingAcc[i]?.apply {
                 val acc = get(Acceleration.mapper) ?: return@apply
                 val gsKt = pxpsToKt(get(GroundTrack.mapper)?.trackVectorPxps?.len() ?: return@apply)
-                acc.dSpeedMps2 = if (gsKt > 60) -1.5f else -0.6f
+                acc.dSpeedMps2 = if (gsKt > 60) -1.5f else -1f
                 if (gsKt < 35) {
                     engine.removeEntity(this)
                     GAME.gameServer?.let {
@@ -162,6 +166,49 @@ class AISystem: EntitySystem() {
                         clearanceAct.actingClearance.actingClearance.clearedIas = 240
                     }
                     remove<DecelerateTo240kts>()
+                    this += LatestClearanceChanged()
+                }
+            }
+        }
+
+        // Update aircraft to slow down to 190 knots at less than 16nm from runway threshold
+        val below190 = engine.getEntitiesFor(app190Family)
+        for (i in 0 until below190.size()) {
+            below190[i]?.apply {
+                val pos = get(Position.mapper) ?: return@apply
+                val cmd = get(CommandTarget.mapper) ?: return@apply
+                val clearanceAct = get(ClearanceAct.mapper) ?: return@apply
+                val appEntity = get(GlideSlopeCaptured.mapper)?.gsApp ?: get(LocalizerCaptured.mapper)?.locApp ?: get(VisualCaptured.mapper)?.visApp ?: return@apply
+                val rwyThrPos = appEntity[ApproachInfo.mapper]?.rwyObj?.entity?.get(CustomPosition.mapper) ?: return@apply
+                val distNm = pxToNm(calculateDistanceBetweenPoints(pos.x, pos.y, rwyThrPos.x, rwyThrPos.y))
+                if (distNm < 16) {
+                    if (cmd.targetIasKt > 190) {
+                        cmd.targetIasKt = 190
+                        clearanceAct.actingClearance.actingClearance.clearedIas = 190
+                    }
+                    remove<AppDecelerateTo190kts>()
+                    this += LatestClearanceChanged()
+                }
+            }
+        }
+
+        // Update aircraft to slow down to minimum approach speed at less than 4nm from runway threshold
+        val minApp = engine.getEntitiesFor(minAppSpdFamily)
+        for (i in 0 until minApp.size()) {
+            minApp[i]?.apply {
+                val pos = get(Position.mapper) ?: return@apply
+                val cmd = get(CommandTarget.mapper) ?: return@apply
+                val clearanceAct = get(ClearanceAct.mapper) ?: return@apply
+                val appEntity = get(GlideSlopeCaptured.mapper)?.gsApp ?: get(LocalizerCaptured.mapper)?.locApp ?: get(VisualCaptured.mapper)?.visApp ?: return@apply
+                val rwyThrPos = appEntity[ApproachInfo.mapper]?.rwyObj?.entity?.get(CustomPosition.mapper) ?: return@apply
+                val minAppSpd = get(AircraftInfo.mapper)?.aircraftPerf?.appSpd ?: return@apply
+                val distNm = pxToNm(calculateDistanceBetweenPoints(pos.x, pos.y, rwyThrPos.x, rwyThrPos.y))
+                if (distNm < 5) {
+                    if (cmd.targetIasKt > minAppSpd) {
+                        cmd.targetIasKt = minAppSpd
+                        clearanceAct.actingClearance.actingClearance.clearedIas = minAppSpd
+                    }
+                    remove<DecelerateToAppSpd>()
                     this += LatestClearanceChanged()
                 }
             }

@@ -16,7 +16,7 @@ data class Position(var x: Float = 0f, var y: Float = 0f): Component {
 /**
  * Component for mapping an additional user defined position for whatever needs
  *
- * Note that this component is likely not used for any game logic or rendering - it is solely to carry additional
+ * Note that this component is likely not used for any built-in game logic or rendering - it is solely to carry additional
  * positional data to be retrieved for other purposes
  * @param x the x coordinate, in px, on radarScreen
  * @param y the y coordinate, in px, on radarScreen

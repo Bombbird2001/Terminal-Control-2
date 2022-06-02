@@ -134,7 +134,7 @@ class RouteEditPane {
                     val spdRestrChanged = legChanged || restrTriple.second
                     val skippedChanged = restrTriple.third
                     val showRestrDisplay = leg is Route.WaypointLeg
-                    val legLabel = label(legDisplay, "ControlPaneRoute${if (legChanged) "Changed" else ""}").apply { setAlignment(Align.center) }.cell(growX = true, height = 0.125f * UI_HEIGHT, padLeft = 10f, padRight = 10f, colspan = if (showRestrDisplay) null else 2)
+                    val legLabel = label(legDisplay, "ControlPaneRoute${if (legChanged) "Changed" else ""}").apply { setAlignment(if (showRestrDisplay) Align.center else Align.left) }.cell(growX = true, height = 0.125f * UI_HEIGHT, padLeft = 10f, padRight = 10f, colspan = if (showRestrDisplay) null else 3)
                     if (showRestrDisplay) textButton(altRestr, "ControlPaneRestr${if (altRestrChanged) "Changed" else ""}").cell(growX = true, preferredWidth = 0.25f * parentPane.paneWidth, height = 0.125f * UI_HEIGHT).apply {
                         isChecked = (leg as? Route.WaypointLeg)?.altRestrActive == false
                         if (altRestr.isNotBlank()) addChangeListener { _, _ -> (leg as? Route.WaypointLeg)?.let {

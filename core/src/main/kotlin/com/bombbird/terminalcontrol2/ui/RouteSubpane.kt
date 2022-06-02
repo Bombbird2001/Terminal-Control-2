@@ -148,7 +148,7 @@ class RouteSubpane {
                         }
                     })
                     val showRestrDisplay = leg is Route.WaypointLeg || leg is Route.InitClimbLeg
-                    label(legDisplay, "ControlPaneRoute${if (checkLegChanged(parentPane.clearanceState.route, leg)) "Changed" else ""}").apply { setAlignment(Align.center) }.cell(growX = true, preferredWidth = 0.2f * parentPane.paneWidth, colspan = if (showRestrDisplay) null else 2)
+                    label(legDisplay, "ControlPaneRoute${if (checkLegChanged(parentPane.clearanceState.route, leg)) "Changed" else ""}").apply { setAlignment(if (showRestrDisplay) Align.center else Align.left) }.cell(growX = true, preferredWidth = 0.2f * parentPane.paneWidth, colspan = if (showRestrDisplay) null else 3)
                     if (showRestrDisplay) label(altRestrDisplay, altRestrStyle).apply { setAlignment(Align.center) }.cell(expandX = true, padLeft = 10f, padRight = 10f)
                     if (showRestrDisplay) label(spdRestr, spdRestrStyle).apply { setAlignment(Align.center) }.cell(growX = true, preferredWidth = 0.2f * parentPane.paneWidth)
                     row()

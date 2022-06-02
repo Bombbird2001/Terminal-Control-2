@@ -80,8 +80,8 @@ object PhysicsToolsTest {
         assertEquals(11951.374f, calculateParasiticDrag(1.28f, 1.225f, 240f), 1f)
         assertEquals(6797.322f, calculateParasiticDrag(6.552f, 1.225f, 80f), 0.1f)
         assertEquals(50658.08f, calculateParasiticDrag(6.552f, 0.36518f, 400f), 1f)
-        assertEquals(180204f, calculateInducedDrag(351533, 160, 340, 300000f, 37000f, 488f), 10f)
-        assertEquals(557677f, calculateInducedDrag(240000, 175, 340, 1000000f, 1000f, 178f), 10f)
+        assertEquals(174161f, calculateInducedDrag(351533, 160, 340, 300000f, 37000f, 488f, false), 10f)
+        assertEquals(274022f, calculateInducedDrag(240000, 175, 340, 1000000f, 1000f, 178f, true), 10f)
     }
 
     @Test
@@ -164,11 +164,13 @@ object PhysicsToolsTest {
         val aircraftPerfData = AircraftTypeData.AircraftPerfData().apply {
             massKg = 260000
             tripMach = 0.85f
+            vR = 170
         }
-        assertEquals(36000, calculateMaxAlt(aircraftPerfData))
+        assertEquals(37000, calculateMaxAlt(aircraftPerfData))
         aircraftPerfData.apply {
             massKg = 310000
             tripMach = 0.843f
+            vR = 170
         }
         assertEquals(34000, calculateMaxAlt(aircraftPerfData))
     }

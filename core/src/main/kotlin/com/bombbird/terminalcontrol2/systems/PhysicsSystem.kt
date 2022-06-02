@@ -27,6 +27,7 @@ class PhysicsSystem(override val updateTimeS: Float): EntitySystem(), LowFreqUpd
     private val speedUpdateFamily: Family = allOf(Speed::class, Acceleration::class).get()
     private val cmdTargetAltFamily: Family = allOf(AircraftInfo::class, Altitude::class, Speed::class, Acceleration::class, CommandTarget::class)
         .exclude(GlideSlopeCaptured::class, TakeoffRoll::class, LandingRoll::class).get()
+    private val cmdTargetSpdFamily: Family = allOf(AircraftInfo::class, Altitude::class, Speed::class, Acceleration::class, CommandTarget::class).get()
     private val cmdTargetHeadingFamily: Family = allOf(IndicatedAirSpeed::class, Direction::class, Speed::class, Acceleration::class, CommandTarget::class)
         .exclude(TakeoffRoll::class, LandingRoll::class).get()
     private val glideSlopeCapturedFamily: Family = allOf(Altitude::class, Speed::class, GlideSlopeCaptured::class, ClearanceAct::class).get()
@@ -79,7 +80,7 @@ class PhysicsSystem(override val updateTimeS: Float): EntitySystem(), LowFreqUpd
             }
         }
 
-        // Set altitude, speed behaviour using target values from CommandTarget
+        // Set altitude behaviour using target values from CommandTarget
         val cmdAltitude = engine.getEntitiesFor(cmdTargetAltFamily)
         for (i in 0 until cmdAltitude.size()) {
             cmdAltitude[i]?.apply {
@@ -98,6 +99,18 @@ class PhysicsSystem(override val updateTimeS: Float): EntitySystem(), LowFreqUpd
                 // Reach target vertical speed within 3 seconds, but is capped between -0.25G and 0.25G
                 val targetVAcc = (targetVS - spd.vertSpdFpm) / 3
                 acc.dVertSpdMps2 = MathUtils.clamp(fpmToMps(targetVAcc), MIN_VERT_ACC, MAX_VERT_ACC) // Clamp to min 0.75G, max 1.25G
+            }
+        }
+
+        // Set speed behaviour using target values from CommandTarget
+        val cmdIas = engine.getEntitiesFor(cmdTargetSpdFamily)
+        for (i in 0 until cmdIas.size()) {
+            cmdIas[i]?.apply {
+                val aircraftInfo = get(AircraftInfo.mapper) ?: return@apply
+                val alt = get(Altitude.mapper) ?: return@apply
+                val spd = get(Speed.mapper) ?: return@apply
+                val acc = get(Acceleration.mapper) ?: return@apply
+                val cmd = get(CommandTarget.mapper) ?: return@apply
 
                 // Reach target speed within 7 seconds, capped by aircraft performance constraints
                 var targetAcc = ktToMps(calculateTASFromIAS(alt.altitudeFt, cmd.targetIasKt.toFloat()) - spd.speedKts) / 7
@@ -212,13 +225,15 @@ class PhysicsSystem(override val updateTimeS: Float): EntitySystem(), LowFreqUpd
                 val alt = get(Altitude.mapper) ?: return@apply
                 val acc = get(Acceleration.mapper) ?: return@apply
                 val aircraftInfo = get(AircraftInfo.mapper) ?: return@apply
-                val takingOff = get(TakeoffRoll.mapper) != null || get(LandingRoll.mapper) != null
-                aircraftInfo.maxAcc = calculateMaxAcceleration(aircraftInfo.aircraftPerf, alt.altitudeFt, spd.speedKts, false, takingOff)
-                aircraftInfo.minAcc = calculateMinAcceleration(aircraftInfo.aircraftPerf, alt.altitudeFt, spd.speedKts, false, takingOff)
+                val takingOff = has(TakeoffRoll.mapper) || has(LandingRoll.mapper)
+                val takeoffClimb = has(TakeoffClimb.mapper)
+                val approach = has(LocalizerCaptured.mapper) || has(GlideSlopeCaptured.mapper) || has(VisualCaptured.mapper)
+                aircraftInfo.maxAcc = calculateMaxAcceleration(aircraftInfo.aircraftPerf, alt.altitudeFt, spd.speedKts, approach, takingOff, takeoffClimb)
+                aircraftInfo.minAcc = calculateMinAcceleration(aircraftInfo.aircraftPerf, alt.altitudeFt, spd.speedKts, approach, takingOff, takeoffClimb)
 
-                // TODO distinguish between aircraft on approach/expediting and those not, and those on fixed VS (i.e. priority to VS)
-                aircraftInfo.maxVs = calculateMaxVerticalSpd(aircraftInfo.aircraftPerf, alt.altitudeFt, spd.speedKts, acc.dSpeedMps2, false, takingOff)
-                aircraftInfo.minVs = calculateMinVerticalSpd(aircraftInfo.aircraftPerf, alt.altitudeFt, spd.speedKts, acc.dSpeedMps2, false, takingOff)
+                // TODO distinguish between aircraft on expediting and those not, and those on fixed VS (i.e. priority to VS)
+                aircraftInfo.maxVs = calculateMaxVerticalSpd(aircraftInfo.aircraftPerf, alt.altitudeFt, spd.speedKts, acc.dSpeedMps2, approach, takingOff, takeoffClimb)
+                aircraftInfo.minVs = calculateMinVerticalSpd(aircraftInfo.aircraftPerf, alt.altitudeFt, spd.speedKts, acc.dSpeedMps2, approach, takingOff, takeoffClimb)
 
 //                println("Altitude: ${alt.altitudeFt}ft")
 //                println("VS: ${spd.vertSpdFpm}fpm")

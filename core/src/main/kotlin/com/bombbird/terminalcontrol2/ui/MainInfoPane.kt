@@ -1,14 +1,15 @@
 package com.bombbird.terminalcontrol2.ui
 
+import com.badlogic.ashley.core.Entity
 import com.badlogic.gdx.scenes.scene2d.Actor
 import com.badlogic.gdx.utils.Align
-import com.bombbird.terminalcontrol2.components.AirportInfo
-import com.bombbird.terminalcontrol2.components.MetarInfo
+import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.CLIENT_SCREEN
 import com.bombbird.terminalcontrol2.global.UI_HEIGHT
 import com.bombbird.terminalcontrol2.utilities.addChangeListener
 import com.bombbird.terminalcontrol2.utilities.removeMouseScrollListeners
 import ktx.ashley.get
+import ktx.ashley.has
 import ktx.scene2d.*
 
 lateinit var metarScroll: KScrollPane
@@ -49,15 +50,16 @@ fun updateMetarInformation() {
         for (airport in it.airports.values()) {
             val airportInfo = airport.entity[AirportInfo.mapper] ?: continue
             val metarInfo = airport.entity[MetarInfo.mapper] ?: continue
+            val rwyDisplay = getRunwayInformationDisplay(airport.entity)
             val text =
                 """
                     ${airportInfo.icaoCode} - ${metarInfo.letterCode}
-                    DEP - ???, ???     ARR - ???, ???
+                    $rwyDisplay
                     ${metarInfo.rawMetar ?: "Loading METAR..."}
                     """.trimIndent()
             val expandedText = """
                     ${airportInfo.icaoCode} - ${metarInfo.letterCode}
-                    DEP - ???, ???     ARR - ???, ???
+                    $rwyDisplay
                     ${metarInfo.rawMetar ?: "Loading METAR..."}
                     Winds: ${if (metarInfo.windSpeedKt.toInt() == 0) "Calm" else "${if (metarInfo.windHeadingDeg == 0.toShort()) "VRB" else metarInfo.windHeadingDeg}@${metarInfo.windSpeedKt}kt ${if (metarInfo.windGustKt > 0) "gusting to ${metarInfo.windGustKt}kt" else ""}"}
                     Visibility: ${if (metarInfo.visibilityM == 9999.toShort()) 10000 else metarInfo.visibilityM}m
@@ -89,4 +91,28 @@ fun updateMetarInformation() {
         }
     }
     metarPane.padBottom(20f)
+}
+
+/**
+ * Gets the arrival, departure runway display string in the format of:
+ *
+ * DEP - XXX, XXX     ARR - XXX, XXX
+ * @return a string representing the arrival, departure runways in the above format
+ * */
+fun getRunwayInformationDisplay(airport: Entity): String {
+    var dep = "DEP - "
+    var depAdded = false
+    var arr = "ARR - "
+    var arrAdded = false
+    airport[RunwayChildren.mapper]?.rwyMap?.values()?.forEach {
+        if (it.entity.has(ActiveTakeoff.mapper)) {
+            if (depAdded) dep += ", " else depAdded = true
+            dep += it.entity[RunwayInfo.mapper]?.rwyName
+        }
+        if (it.entity.has(ActiveLanding.mapper)) {
+            if (arrAdded) arr += ", " else arrAdded = true
+            arr += it.entity[RunwayInfo.mapper]?.rwyName
+        }
+    }
+    return "$dep      $arr"
 }

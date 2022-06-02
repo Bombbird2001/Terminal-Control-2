@@ -7,7 +7,17 @@ import kotlin.math.roundToInt
 
 /** Helper object for aircraft performance data */
 object AircraftTypeData {
-    val aircraftPerfMap = HashMap<String, AircraftPerfData>()
+    private val aircraftPerfMap = HashMap<String, AircraftPerfData>()
+
+    /**
+     * Adds aircraft performance data for the input ICAO type code; this instance will be used to generate new instances
+     * with the randomised load factors and speed values
+     * @param icaoType the ICAO type code of the aircraft
+     * @param perf the [AircraftPerfData] object for the aircraft type
+     */
+    fun addAircraftPerf(icaoType: String, perf: AircraftPerfData) {
+        aircraftPerfMap[icaoType] = perf
+    }
 
     /**
      * Gets the aircraft performance data for the specified aircraft ICAO type; a new instance is created for the random values
@@ -22,7 +32,8 @@ object AircraftTypeData {
         }
     }
 
-    /** Aircraft performance data class
+    /**
+     * Aircraft performance data class
      *
      * [wakeCategory]: ICAO wake turbulence category: L, M, H, J
      *
@@ -32,7 +43,7 @@ object AircraftTypeData {
      *
      * [propPowerWSLISA]: For turboprop/propeller planes only: Max total power, in watts, produced by the propeller engines at sea level under ISA conditions
      *
-     * [propArea]: For turboprop/propeller planes only: Total propeller blade area
+     * [propArea]: For turboprop/propeller planes only: Total propeller blade area, in metres^2
      *
      * [minCd0TimesRefArea]: The lowest possible value of the product of the zero-lift drag coefficient and reference area in the
      * drag equation; will be used for most calculations
@@ -47,8 +58,6 @@ object AircraftTypeData {
      * [operatingEmptyWeightKg]: The operating empty weight of the aircraft
      *
      * [maxTakeoffWeightKg]: The maximum takeoff weight of the aircraft
-     *
-     * [flightType]: The type of the flight
      *
      * [appSpd]: The final aircraft approach IAS
      *
@@ -66,12 +75,14 @@ object AircraftTypeData {
      * flight level below this altitude; this value will be calculated dynamically based on other performance data
      *
      * [massKg]: Mass of the plane
+     *
+     * @param flightType the type of the flight, used for load factor calculation purposes
      * */
-    data class AircraftPerfData(val wakeCategory: Char = 'H', val recat: Char = 'B',
-                                val thrustNSLISA: Int? = 1026000, val propPowerWSLISA: Int? = null, val propArea: Float? = null,
-                                val minCd0TimesRefArea: Float = 6.1152f, val maxCdTimesRefArea: Float = 74.256f,
-                                val maxIas: Short = 340, val maxMach: Float = 0.89f,
-                                val operatingEmptyWeightKg: Int = 167829, val maxTakeoffWeightKg: Int = 351533, val flightType: Byte = FlightType.ARRIVAL) {
+    class AircraftPerfData(val wakeCategory: Char = 'H', val recat: Char = 'B',
+                           val thrustNSLISA: Int? = 1026000, val propPowerWSLISA: Int? = null, val propArea: Float? = null,
+                           val minCd0TimesRefArea: Float = 6.1152f, val maxCdTimesRefArea: Float = 43.68f,
+                           val maxIas: Short = 340, val maxMach: Float = 0.89f, private val typApp: Short = 148, private val typVr: Short = 165,
+                           private val operatingEmptyWeightKg: Int = 167829, private val maxTakeoffWeightKg: Int = 351533, flightType: Byte = FlightType.ARRIVAL) {
 
         var appSpd: Short
         var vR: Short
@@ -87,8 +98,8 @@ object AircraftTypeData {
                 FlightType.EN_ROUTE -> 0.6f
                 else -> 0.3f
             }) // Load factor between 10% and 90% (for departures), 60% (for en-route) or 30% (for arrivals)
-            appSpd = (148 * (1 + 0.19f * (loadFactor - 0.5f))).roundToInt().toShort()
-            vR = (170 * (1 + 0.19f * (loadFactor - 0.5f))).roundToInt().toShort()
+            appSpd = (typApp * (1 + 0.19f * (loadFactor - 0.5f))).roundToInt().toShort()
+            vR = (typVr * (1 + 0.19f * (loadFactor - 0.5f))).roundToInt().toShort()
             climbOutSpeed = (vR + MathUtils.random(5, 10)).toShort()
             tripIas = (maxIas * MathUtils.random(0.9f, 0.985f)).roundToInt().toShort()
             tripMach = maxMach * MathUtils.random(0.915f, 0.945f)
@@ -97,7 +108,7 @@ object AircraftTypeData {
         }
 
         /**
-         * Creates a new instance of the aircraft type data, where a new value of loa factor will be generated and its
+         * Creates a new instance of the aircraft type data, where a new value of load factor will be generated and its
          * dependent values calculated
          * @param flightType the type of the flight to generate the parameters for
          * @return a new instance of [AircraftPerfData]
@@ -105,7 +116,7 @@ object AircraftTypeData {
         fun newInstance(flightType: Byte): AircraftPerfData {
             return AircraftPerfData(wakeCategory, recat,
                 thrustNSLISA, propPowerWSLISA, propArea,
-                minCd0TimesRefArea, maxCdTimesRefArea, maxIas, maxMach,
+                minCd0TimesRefArea, maxCdTimesRefArea, maxIas, maxMach, typApp, typVr,
                 operatingEmptyWeightKg, maxTakeoffWeightKg, flightType)
         }
     }

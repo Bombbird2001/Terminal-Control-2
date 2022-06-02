@@ -22,6 +22,7 @@ class ControlStateSystem(override val updateTimeS: Float = 0f): EntitySystem(), 
 
     private val latestClearanceChangedFamily: Family = allOf(LatestClearanceChanged::class, AircraftInfo::class, ClearanceAct::class).get()
     private val contactFromTowerFamily: Family = allOf(Altitude::class, Position::class, ContactFromTower::class, Controllable::class).get()
+    private val contactToTowerFamily: Family = allOf(Altitude::class, ContactToTower::class, Controllable::class).get()
     private val pendingFamily: Family = allOf(PendingClearances::class, ClearanceAct::class).get()
     private val minMaxOptIasFamily: Family = allOf(AircraftInfo::class, Altitude::class, ClearanceAct::class, CommandTarget::class).get()
     private val spdRestrFamily: Family = allOf(ClearanceAct::class, LastRestrictions::class, Position::class, Speed::class, Direction::class, GroundTrack::class, AircraftInfo::class, CommandTarget::class).get()
@@ -62,6 +63,21 @@ class ControlStateSystem(override val updateTimeS: Float = 0f): EntitySystem(), 
                     controllable.sectorId = getSectorForPosition(pos.x, pos.y) ?: return@apply
                     get(AircraftInfo.mapper)?.icaoCallsign?.let { callsign -> GAME.gameServer?.sendAircraftSectorUpdateTCPToAll(callsign, controllable.sectorId) }
                     remove<ContactFromTower>()
+                }
+            }
+        }
+
+        // Aircraft that are expected to switch from approach to tower
+        val contactToTower = engine.getEntitiesFor(contactToTowerFamily)
+        for (i in 0 until contactToTower.size()) {
+            contactToTower[i]?.apply {
+                val alt = get(Altitude.mapper) ?: return@apply
+                val contact = get(ContactToTower.mapper) ?: return@apply
+                val controllable = get(Controllable.mapper) ?: return@apply
+                if (alt.altitudeFt < contact.altitudeFt) {
+                    controllable.sectorId = SectorInfo.TOWER
+                    get(AircraftInfo.mapper)?.icaoCallsign?.let { callsign -> GAME.gameServer?.sendAircraftSectorUpdateTCPToAll(callsign, controllable.sectorId) }
+                    remove<ContactToTower>()
                 }
             }
         }

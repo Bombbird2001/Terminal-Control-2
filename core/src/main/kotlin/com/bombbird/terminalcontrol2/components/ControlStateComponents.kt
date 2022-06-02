@@ -58,6 +58,19 @@ class DecelerateTo240kts: Component {
     companion object: Mapper<AccelerateToAbove250kts>()
 }
 
+/** Component for tagging aircraft that should decelerate to 190 knots when less than 16 nm from the runway threshold */
+class AppDecelerateTo190kts: Component {
+    companion object: Mapper<AppDecelerateTo190kts>()
+}
+
+/**
+ * Component for tagging aircraft that should decelerate to their minimum approach speed when less than 5 nm from the
+ * runway threshold
+ * */
+class DecelerateToAppSpd: Component {
+    companion object: Mapper<DecelerateToAppSpd>()
+}
+
 /**
  * Component for tagging aircraft that has captured the extended runway centreline and glide path in a visual approach,
  * and will alter aircraft AI behaviour to follow the extended centreline track and glide path

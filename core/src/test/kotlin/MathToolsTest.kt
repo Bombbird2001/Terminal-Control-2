@@ -62,4 +62,13 @@ object MathToolsTest {
         assertFalse(checkInArc(0f, 0f, 45f, 1f, 35f, 2f, 2f))
         assertFalse(checkInArc(100f, -100f, 45f, 100f, 35f, 300f, 100f))
     }
+
+    @Test
+    @DisplayName("Distance calculations")
+    fun checkDistanceCalculations() {
+        // Delta set at 5th significant figure
+        assertEquals(22.3607f, calculateDistanceBetweenPoints(0f, 0f, 10f, 20f), 0.001f)
+        assertEquals(22.3607f, calculateDistanceBetweenPoints(0f, 0f, -20f, -10f), 0.001f)
+        assertEquals(70.7107f, calculateDistanceBetweenPoints(0f, 0f, 50f, 50f), 0.001f)
+    }
 }

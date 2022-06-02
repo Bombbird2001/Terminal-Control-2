@@ -175,6 +175,13 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
                 airport = parentAirport
                 displacedThresholdM = displacedM
             }
+            with<CustomPosition> {
+                // Custom position component will store the position of the actual runway threshold (i.e. taking into
+                // any displaced threshold)
+                val displacementVector = Vector2(Vector2.Y).rotateDeg(-trueHdg) * mToPx(displacedM.toFloat())
+                x = posX + displacementVector.x
+                y = posY + displacementVector.y
+            }
             with<VisualApproach> {
                 val totalDisplacementM = displacedM + 150 // TDZ is 150m after the threshold (with displacement if any)
                 val displacementVector = Vector2(Vector2.Y).rotateDeg(-trueHdg) * mToPx(totalDisplacementM)

@@ -14,12 +14,13 @@ import com.bombbird.terminalcontrol2.ui.addDatatagInputListeners
 import com.bombbird.terminalcontrol2.ui.updateDatatagStyle
 import com.bombbird.terminalcontrol2.ui.updateDatatagText
 import com.bombbird.terminalcontrol2.utilities.AircraftTypeData
+import com.bombbird.terminalcontrol2.utilities.getAircraftIcon
 import ktx.ashley.*
 import ktx.scene2d.Scene2DSkin
 import kotlin.math.roundToInt
 
 /** Aircraft class that creates an aircraft entity with the required components on instantiation */
-class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoType: String, flightType: Byte, onClient: Boolean = true) {
+class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircraftType: String, flightType: Byte, onClient: Boolean = true) {
     val entity = getEngine(onClient).entity {
         with<Position> {
             x = posX
@@ -30,7 +31,8 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoType:
         }
         with<AircraftInfo> {
             icaoCallsign = callsign
-            aircraftPerf = AircraftTypeData.getAircraftPerf(icaoType, flightType)
+            icaoType = icaoAircraftType
+            aircraftPerf = AircraftTypeData.getAircraftPerf(icaoAircraftType, flightType)
         }
         with<Direction> {
             trackUnitVector = Vector2(Vector2.Y)
@@ -105,7 +107,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoType:
                 serialisedAircraft.icaoCallsign,
                 serialisedAircraft.x, serialisedAircraft.y,
                 serialisedAircraft.altitude,
-                "", // ICAO type can be ignored on the client
+                serialisedAircraft.icaoType,
                 serialisedAircraft.flightType
             ).apply {
                 entity.apply {
@@ -114,7 +116,6 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoType:
                         trackUnitVector.y = serialisedAircraft.directionY
                     }
                     get(AircraftInfo.mapper)?.apply {
-                        icaoType = serialisedAircraft.icaoType
                         aircraftPerf.maxAlt = serialisedAircraft.maxAlt
                     }
                     get(Speed.mapper)?.apply {
@@ -145,6 +146,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoType:
                     get(Controllable.mapper)?.apply {
                         sectorId = serialisedAircraft.controlSectorId
                     }
+                    get(RSSprite.mapper)?.drawable = getAircraftIcon(serialisedAircraft.flightType, serialisedAircraft.controlSectorId)
                     if (serialisedAircraft.gsCap) this += GlideSlopeCaptured()
                     else remove<GlideSlopeCaptured>()
                     if (serialisedAircraft.locCap) this += LocalizerCaptured()

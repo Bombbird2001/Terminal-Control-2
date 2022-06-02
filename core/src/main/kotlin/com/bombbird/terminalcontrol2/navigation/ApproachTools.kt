@@ -10,7 +10,6 @@ import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.get
 import ktx.math.plus
 import ktx.math.times
-import kotlin.math.sqrt
 import kotlin.math.tan
 
 /** Helper file containing functions for dealing with approaches */
@@ -34,9 +33,7 @@ fun getAppAltAtPos(approach: Entity, posX: Float, posY: Float, gsKt: Float): Flo
     val vis = approach[Visual.mapper]
     val npa = approach[StepDown.mapper]
 
-    val deltaX = pos.x - posX
-    val deltaY = pos.y - posY
-    val distPx = sqrt(deltaX * deltaX + deltaY * deltaY)
+    val distPx = calculateDistanceBetweenPoints(posX, posY, pos.x, pos.y)
 
     if (glide != null || vis != null) {
         // Return null if aircraft is further away than the max operating range of the localizer or visual range for visual approaches (10nm)
@@ -74,9 +71,7 @@ fun getTargetPos(approach: Entity, posX: Float, posY: Float): Vector2? {
     val loc = approach[Localizer.mapper]
     val vis = approach[Visual.mapper]
 
-    val deltaX = pos.x - posX
-    val deltaY = pos.y - posY
-    val distPx = sqrt(deltaX * deltaX + deltaY * deltaY)
+    val distPx = calculateDistanceBetweenPoints(posX, posY, pos.x, pos.y)
 
     if ((loc != null && distPx < nmToPx(loc.maxDistNm.toFloat())) || (vis != null && distPx < nmToPx(VIS_MAX_DIST_NM.toFloat()))) {
         val distNmSubtracted = when {
@@ -101,9 +96,7 @@ fun getTargetPos(approach: Entity, posX: Float, posY: Float): Vector2? {
 fun checkLineUpDistReached(approach: Entity, posX: Float, posY: Float): Boolean {
     val lineUpDist = approach[LineUpDist.mapper]?.lineUpDistNm ?: return false
     val rwyPos = approach[ApproachInfo.mapper]?.rwyObj?.entity?.get(Position.mapper) ?: return false
-    val deltaX = rwyPos.x - posX
-    val deltaY = rwyPos.y - posY
-    val distPx = sqrt(deltaX * deltaX + deltaY * deltaY)
+    val distPx = calculateDistanceBetweenPoints(posX, posY, rwyPos.x, rwyPos.y)
     return pxToNm(distPx) < lineUpDist
 }
 

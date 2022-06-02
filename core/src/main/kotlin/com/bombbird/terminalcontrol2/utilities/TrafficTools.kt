@@ -15,6 +15,7 @@ import ktx.ashley.get
 import ktx.ashley.has
 import ktx.ashley.plusAssign
 import ktx.collections.GdxArray
+import kotlin.math.max
 import kotlin.math.min
 
 /**
@@ -51,7 +52,7 @@ fun createDeparture(rwy: Entity, gs: GameServer) {
     val rwyPos = rwy[Position.mapper]
     val rwyDir = rwy[Direction.mapper]
 
-    gs.aircraft.put("SHIBA2", Aircraft("SHIBA2", rwyPos?.x ?: 10f, rwyPos?.y ?: -10f, rwy[Altitude.mapper]?.altitudeFt ?: 108f, "B77W", FlightType.DEPARTURE, false).apply {
+    gs.aircraft.put("SHIBA2", Aircraft("SHIBA2", rwyPos?.x ?: 10f, rwyPos?.y ?: -10f, rwy[Altitude.mapper]?.altitudeFt ?: 108f, "DH8D", FlightType.DEPARTURE, false).apply {
         entity[Direction.mapper]?.trackUnitVector?.rotateDeg((rwyDir?.trackUnitVector?.angleDeg() ?: 0f) - 90) // Runway heading
         // Calculate headwind component for takeoff
         val tailwind = entity[Altitude.mapper]?.let { alt -> rwyDir?.let { dir -> entity[Position.mapper]?.let { pos ->
@@ -60,7 +61,7 @@ fun createDeparture(rwy: Entity, gs: GameServer) {
         }}} ?: 0f
         entity[Speed.mapper]?.speedKts = -tailwind
         val acPerf = entity[AircraftInfo.mapper]?.aircraftPerf ?: return@apply
-        entity += TakeoffRoll(calculateRequiredAcceleration(0, (acPerf.vR + tailwind).toInt().toShort(), ((rwy[RunwayInfo.mapper]?.lengthM ?: 3800) - 1000) * MathUtils.random(0.75f, 1f)))
+        entity += TakeoffRoll(max(1.5f, calculateRequiredAcceleration(0, (acPerf.vR + tailwind).toInt().toShort(), ((rwy[RunwayInfo.mapper]?.lengthM ?: 3800) - 1000) * MathUtils.random(0.75f, 1f))))
         val sid = randomSid(rwy)
         val rwyName = rwy[RunwayInfo.mapper]?.rwyName ?: ""
         val initClimb = sid?.rwyInitialClimbs?.get(rwyName) ?: 3000
@@ -126,7 +127,7 @@ fun createArrival(airport: Entity, gs: GameServer) {
         val tas = calculateTASFromIAS(alt, ias.toFloat())
         entity[Speed.mapper]?.apply {
             speedKts = tas
-            vertSpdFpm = calculateMinVerticalSpd(aircraftPerf, alt, tas, 0f, approachExpedite = false, takingOff = false)
+            vertSpdFpm = calculateMinVerticalSpd(aircraftPerf, alt, tas, 0f, approachExpedite = false, takingOff = false, takeoffClimb = false)
         }
         val clearedAlt = min(15000, (alt / 1000).toInt() * 1000)
         entity += ClearanceAct(ClearanceState.ActingClearance(
@@ -145,7 +146,7 @@ fun createArrival(airport: Entity, gs: GameServer) {
 }
 
 fun appTestArrival(gs: GameServer) {
-    gs.aircraft.put("SHIBA4", Aircraft("SHIBA4", -200f, -150f, 2000f, "B77W", FlightType.ARRIVAL, false).apply {
+    gs.aircraft.put("SHIBA4", Aircraft("SHIBA4", -200f, -150f, 2000f, "A359", FlightType.ARRIVAL, false).apply {
         entity += ArrivalAirport(0)
         entity[Direction.mapper]?.trackUnitVector?.rotateDeg(-70f)
         val ias = 220.toShort()
