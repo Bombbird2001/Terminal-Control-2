@@ -148,7 +148,6 @@ fun appTestArrival(gs: GameServer) {
     gs.aircraft.put("SHIBA4", Aircraft("SHIBA4", -200f, -150f, 2000f, "B77W", FlightType.ARRIVAL, false).apply {
         entity += ArrivalAirport(0)
         entity[Direction.mapper]?.trackUnitVector?.rotateDeg(-70f)
-        val aircraftPerf = entity[AircraftInfo.mapper]?.aircraftPerf ?: AircraftTypeData.AircraftPerfData()
         val ias = 220.toShort()
         val tas = calculateTASFromIAS(2000f, ias.toFloat())
         entity[Speed.mapper]?.apply {

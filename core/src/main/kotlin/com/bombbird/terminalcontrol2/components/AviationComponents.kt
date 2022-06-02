@@ -119,11 +119,6 @@ data class Minimums(var baroAltFt: Short = 0, var rvrM: Short = 0): Component {
     companion object: Mapper<Minimums>()
 }
 
-/** Component for tagging offset approach information */
-data class Offset(var lineUpDistNm: Float = 0f): Component {
-    companion object: Mapper<Offset>()
-}
-
 /**
  * Component for tagging visual approach (one will be created for every runway with their own extended centerline up to
  * 10nm and glide path of 3 degrees)

@@ -83,12 +83,11 @@ fun registerClassesToKryo(kryo: Kryo?) {
 
         // Approach classes
         register(Array<Approach.SerialisedApproach>::class.java)
+        register(Approach.SerialisedApproach::class.java)
         register(Array<Approach.SerialisedTransition>::class.java)
         register(Approach.SerialisedTransition::class.java)
         register(Array<Approach.SerialisedStep>::class.java)
         register(Approach.SerialisedStep::class.java)
-        register(Approach.IlsGS.SerialisedIlsGS::class.java)
-        register(Approach.IlsLOCOffset.SerialisedIlsLOCOffset::class.java)
 
         // METAR classes
         register(MetarData::class.java)
@@ -200,9 +199,9 @@ fun handleIncomingRequest(rs: RadarScreen, obj: Any?) {
                     entity[AirportInfo.mapper]?.arptId?.let { id ->
                         rs.airports.put(id, this)
                     }
-                    // Debug.printAirportSIDs(entity)
-                    // Debug.printAirportSTARs(entity)
-                    // Debug.printAirportApproaches(entity)
+                    // printAirportSIDs(entity)
+                    // printAirportSTARs(entity)
+                    // printAirportApproaches(entity)
                 }
             }
             updateMetarInformation()

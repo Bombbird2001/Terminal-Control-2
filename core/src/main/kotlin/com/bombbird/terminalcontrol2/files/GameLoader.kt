@@ -50,6 +50,9 @@ object GameLoader {
                     "INBOUND" -> if (currStar != null) parseSIDSTARinOutboundRoute(lineData, currStar)
                     "APCH" -> currApp = parseApproach(lineData, currAirport ?: continue)
                     "/APCH" -> currApp = null
+                    "LOC" -> if (currApp != null) parseAppLocalizer(lineData, currApp)
+                    "GS" -> if (currApp != null) parseAppGlideslope(lineData, currApp)
+                    "STEPDOWN" -> if (currApp != null) parseAppStepDown(lineData, currApp)
                     "TRANSITION" -> if (currApp != null) parseApproachTransition(lineData, currApp)
                     "MISSED" -> if (currApp != null) parseApproachMissed(lineData, currApp)
                     "/$currSectorCount" -> currSectorCount = 0
@@ -247,8 +250,8 @@ object GameLoader {
      * Returns the constructed [Approach] or null if an invalid runway is specified
      * */
     private fun parseApproach(data: List<String>, airport: Airport): Approach? {
-        val name = data[2].replace("-", " ")
-        val dayNight = when (data[3]) {
+        val name = data[1].replace("-", " ")
+        val dayNight = when (data[2]) {
             "DAY_NIGHT" -> UsabilityFilter.DAY_AND_NIGHT
             "DAY_ONLY" -> UsabilityFilter.DAY_ONLY
             "NIGHT_ONLY" -> UsabilityFilter.NIGHT_ONLY
@@ -258,48 +261,58 @@ object GameLoader {
             }
         }
         val arptId = airport.entity[AirportInfo.mapper]?.arptId ?: return null
-        val rwyId = airport.entity[RunwayChildren.mapper]?.updatedRwyMapping?.get(data[4]) ?: run {
-            Gdx.app.log("GameLoader", "Runway ${data[4]} not found for approach $name")
+        val rwyId = airport.entity[RunwayChildren.mapper]?.updatedRwyMapping?.get(data[3]) ?: run {
+            Gdx.app.log("GameLoader", "Runway ${data[3]} not found for approach $name")
             return null
         }
-        val heading = data[5].toShort()
-        val pos = data[6].split(",")
+        val pos = data[4].split(",")
         val posX = nmToPx(pos[0].toFloat())
         val posY = nmToPx(pos[1].toFloat())
-        val decisionAltitude = data[7].toShort()
-        val rvr = data[8].toShort()
-        val app = when (data[1]) {
-            "ILS-GS" -> {
-                val locDist = data[9].toByte()
-                val glideAngle = data[10].toFloat()
-                val gsOffset = data[11].toFloat()
-                val maxInterceptAlt = data[12].toShort()
-                val towerCallsign = data[13].replace("-", " ")
-                val towerFreq = data[14]
-                Approach.IlsGS(name, arptId, rwyId, towerCallsign, towerFreq, heading, posX, posY, locDist, glideAngle, gsOffset, maxInterceptAlt, decisionAltitude, rvr, dayNight)
-            }
-            "ILS-LOC-OFFSET" -> {
-                val locDist = data[9].toByte()
-                val towerCallsign = data[10].replace("-", " ")
-                val towerFreq = data[11]
-                val lineUpDist = data[12].toFloat()
-                val steps = ArrayList<Pair<Float, Short>>()
-                for (i in 13 until data.size) {
-                    val step = data[i].split("@")
-                    steps.add(Pair(step[1].toFloat(), step[0].toShort()))
-                }
-                steps.sortBy { it.first }
-                Approach.IlsLOCOffset(name, arptId, rwyId, towerCallsign, towerFreq, heading, posX, posY, locDist, decisionAltitude, rvr, lineUpDist, steps.toTypedArray(), dayNight)
-            }
-            else -> {
-                Gdx.app.log("GameLoader", "Unknown approach type ${data[1]} for $name")
-                null
-            }
-        }
-        app?.apply {
-            airport.entity[ApproachChildren.mapper]?.approachMap?.put(name, this)
-        }
+        val decisionAltitude = data[5].toShort()
+        val rvr = data[6].toShort()
+        val towerCallsign = data[7].replace("-", " ")
+        val towerFreq = data[8]
+        val app = Approach(name, arptId, rwyId, posX, posY, decisionAltitude, rvr, towerCallsign, towerFreq, false, dayNight)
+        airport.entity[ApproachChildren.mapper]?.approachMap?.put(name, app)
         return app
+    }
+
+    /**
+     * Parse the given data into localizer data, and adds it to the input approach
+     * @param data containing localizer information
+     * @param approach the approach to add the localizer to
+     * */
+    private fun parseAppLocalizer(data: List<String>, approach: Approach) {
+        val heading = data[1].toShort()
+        val locDistNm = data[2].toByte()
+        approach.addLocalizer(heading, locDistNm)
+    }
+
+    /**
+     * Parse the given data into glideslope data, and adds it to the input approach
+     * @param data containing glideslope information
+     * @param approach the approach to add the glideslope to
+     * */
+    private fun parseAppGlideslope(data: List<String>, approach: Approach) {
+        val angleDeg = data[1].toFloat()
+        val offsetNm = data[2].toFloat()
+        val maxInterceptAltFt = data[3].toShort()
+        approach.addGlideslope(angleDeg, offsetNm, maxInterceptAltFt)
+    }
+
+    /**
+     * Parse the given data into step-down procedure data, and adds it to the input approach
+     * @param data containing step-down information
+     * @param approach the approach to add the step-down procedure to
+     * */
+    private fun parseAppStepDown(data: List<String>, approach: Approach) {
+        val steps = ArrayList<Pair<Float, Short>>()
+        for (i in 1 until data.size) {
+            val step = data[i].split("@")
+            steps.add(Pair(step[1].toFloat(), step[0].toShort()))
+        }
+        steps.sortBy { it.first }
+        approach.addStepDown(steps.toTypedArray())
     }
 
     /** Parse the given [data] into the route legs data, and adds it to the supplied [approach]'s [Approach.routeLegs] */

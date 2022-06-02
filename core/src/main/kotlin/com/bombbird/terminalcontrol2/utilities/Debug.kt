@@ -56,7 +56,7 @@ fun printAirportApproaches(entity: Entity) {
             appEntity[GlideSlope.mapper]?.apply {
                 println("$glideAngle $offsetNm $maxInterceptAlt")
             }
-            appEntity[Offset.mapper]?.apply {
+            appEntity[LineUpDist.mapper]?.apply {
                 println(lineUpDistNm)
             }
             appEntity[StepDown.mapper]?.apply {
