@@ -228,22 +228,22 @@ class PhysicsSystem(override val updateTimeS: Float): EntitySystem(), LowFreqUpd
                 val takingOff = has(TakeoffRoll.mapper) || has(LandingRoll.mapper)
                 val takeoffClimb = has(TakeoffClimb.mapper)
                 val approach = has(LocalizerCaptured.mapper) || has(GlideSlopeCaptured.mapper) || has(VisualCaptured.mapper)
-                aircraftInfo.maxAcc = calculateMaxAcceleration(aircraftInfo.aircraftPerf, alt.altitudeFt, spd.speedKts, approach, takingOff, takeoffClimb)
-                aircraftInfo.minAcc = calculateMinAcceleration(aircraftInfo.aircraftPerf, alt.altitudeFt, spd.speedKts, approach, takingOff, takeoffClimb)
 
-                // TODO distinguish between aircraft on expediting and those not, and those on fixed VS (i.e. priority to VS)
+                val fixedVs = if (has(GlideSlopeCaptured.mapper)) {
+                    spd.vertSpdFpm
+                } else {
+                    val cmd = get(CommandTarget.mapper)
+                    if (cmd == null) 0f
+                    // Minimum vertical speed of 500fpm if more than 100ft away from target altitude
+                    else if (cmd.targetAltFt > alt.altitudeFt + 100) 500f
+                    else if (cmd.targetAltFt < alt.altitudeFt - 100) -500f
+                    else 0f
+                }
+                // TODO distinguish between aircraft expediting and those not
+                aircraftInfo.maxAcc = calculateMaxAcceleration(aircraftInfo.aircraftPerf, alt.altitudeFt, spd.speedKts, fixedVs, approach, takingOff, takeoffClimb)
+                aircraftInfo.minAcc = calculateMinAcceleration(aircraftInfo.aircraftPerf, alt.altitudeFt, spd.speedKts, fixedVs, approach, takingOff, takeoffClimb)
                 aircraftInfo.maxVs = calculateMaxVerticalSpd(aircraftInfo.aircraftPerf, alt.altitudeFt, spd.speedKts, acc.dSpeedMps2, approach, takingOff, takeoffClimb)
                 aircraftInfo.minVs = calculateMinVerticalSpd(aircraftInfo.aircraftPerf, alt.altitudeFt, spd.speedKts, acc.dSpeedMps2, approach, takingOff, takeoffClimb)
-
-//                println("Altitude: ${alt.altitudeFt}ft")
-//                println("VS: ${spd.vertSpdFpm}fpm")
-//                println("IAS: ${calculateIASFromTAS(alt.altitudeFt, spd.speedKts)}kts")
-//                println("TAS: ${spd.speedKts}kts")
-//                println("Acc: ${acc.dSpeedMps2}")
-//                println("Min acc: ${aircraftInfo.minAcc}m/s2")
-//                println("Max acc: ${aircraftInfo.maxAcc}m/s2")
-//                println("Min VS: ${aircraftInfo.minVs}ft/min")
-//                println("Max VS: ${aircraftInfo.maxVs}ft/min")
             }
         }
 

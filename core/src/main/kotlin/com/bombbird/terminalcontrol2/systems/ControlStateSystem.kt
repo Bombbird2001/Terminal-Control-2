@@ -25,7 +25,7 @@ class ControlStateSystem(override val updateTimeS: Float = 0f): EntitySystem(), 
     private val contactToTowerFamily: Family = allOf(Altitude::class, ContactToTower::class, Controllable::class).get()
     private val pendingFamily: Family = allOf(PendingClearances::class, ClearanceAct::class).get()
     private val minMaxOptIasFamily: Family = allOf(AircraftInfo::class, Altitude::class, ClearanceAct::class, CommandTarget::class).get()
-    private val spdRestrFamily: Family = allOf(ClearanceAct::class, LastRestrictions::class, Position::class, Speed::class, Direction::class, GroundTrack::class, AircraftInfo::class, CommandTarget::class).get()
+    private val spdRestrFamily: Family = allOf(ClearanceAct::class, LastRestrictions::class, Position::class, Direction::class, GroundTrack::class, AircraftInfo::class, CommandTarget::class).get()
     private val contactFromCentreFamily: Family = allOf(Altitude::class, Position::class, ContactFromCentre::class, Controllable::class).get()
 
     /** Main update function */
@@ -141,7 +141,6 @@ class ControlStateSystem(override val updateTimeS: Float = 0f): EntitySystem(), 
                 val actingClearance = get(ClearanceAct.mapper)?.actingClearance?.actingClearance ?: return@apply
                 val lastRestriction = get(LastRestrictions.mapper) ?: return@apply
                 val pos = get(Position.mapper) ?: return@apply
-                val speed = get(Speed.mapper) ?: return@apply
                 val dir = get(Direction.mapper) ?: return@apply
                 val gs = get(GroundTrack.mapper) ?: return@apply
                 val acInfo = get(AircraftInfo.mapper) ?: return@apply
@@ -149,14 +148,14 @@ class ControlStateSystem(override val updateTimeS: Float = 0f): EntitySystem(), 
                 if (actingClearance.vectorHdg != null) return@apply // If aircraft is being vectored, this check is not needed
 
                 // Get the first upcoming waypoint with a speed restriction
-                val nextRestrWpt = actingClearance.route.getNextWaypointWithSpdRestr() ?: return@apply // If no waypoints with speed restriction, this check is not needed
+                val nextRestrWpt = getNextWaypointWithSpdRestr(actingClearance.route) ?: return@apply // If no waypoints with speed restriction, this check is not needed
                 val nextMaxSpd = nextRestrWpt.maxSpdKt ?: return@apply // This value shouldn't be null in the first place, but just in case
                 val currMaxSpd = lastRestriction.maxSpdKt
                 if (currMaxSpd != null && currMaxSpd <= nextMaxSpd) return@apply // Not required if next max speed is not lower than current max speed
                 // Physics - check distance needed to slow down from current speed to speed restriction
                 val targetWptId = (actingClearance.route.legs.first() as? Route.WaypointLeg)?.wptId ?: return@apply // Skip if next leg is not waypoint
                 val targetPos = GAME.gameServer?.waypoints?.get(targetWptId)?.entity?.get(Position.mapper) ?: return@apply // Skip if waypoint not found or position not present
-                val newGs = getPointTargetTrackAndGS(pos.x, pos.y, targetPos.x, targetPos.y, speed.speedKts, dir, get(AffectedByWind.mapper)).second
+                val newGs = getPointTargetTrackAndGS(pos.x, pos.y, targetPos.x, targetPos.y, nextMaxSpd.toFloat(), dir, get(AffectedByWind.mapper)).second
                 val distReqPx = mToPx(calculateAccelerationDistanceRequired(pxpsToKt(gs.trackVectorPxps.len()), newGs, acInfo.minAcc))
                 val deltaX = targetPos.x - pos.x
                 val deltaY = targetPos.y - pos.y

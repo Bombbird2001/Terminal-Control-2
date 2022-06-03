@@ -80,7 +80,7 @@ object PhysicsToolsTest {
         assertEquals(11951.374f, calculateParasiticDrag(1.28f, 1.225f, 240f), 1f)
         assertEquals(6797.322f, calculateParasiticDrag(6.552f, 1.225f, 80f), 0.1f)
         assertEquals(50658.08f, calculateParasiticDrag(6.552f, 0.36518f, 400f), 1f)
-        assertEquals(174161f, calculateInducedDrag(351533, 160, 340, 300000f, 37000f, 488f, false), 10f)
+        assertEquals(162054f, calculateInducedDrag(351533, 160, 340, 300000f, 37000f, 488f, false), 10f)
         assertEquals(274022f, calculateInducedDrag(240000, 175, 340, 1000000f, 1000f, 178f, true), 10f)
     }
 
@@ -123,6 +123,8 @@ object PhysicsToolsTest {
         assertEquals(0.7f, calculateAcceleration(17000f, 10000f, 10000), 0.00001f)
         assertEquals(3.9504f, calculateAcceleration(294600f, 4048.4f, 73550), 0.0001f)
         assertEquals(3.8028f, calculateAcceleration(260000f, 1866.9f, 67880), 0.0001f)
+        assertEquals(0.77471f, calculateAccelerationDueToVertSpd(-2000f, 250f), 0.0001f)
+        assertEquals(0.37245f, calculateAccelerationDueToVertSpd(-1000f, 260f), 0.0001f)
         assertEquals(0.44109f, calculateRequiredAcceleration(0, 100, 3000f), 0.00001f)
         assertEquals(1.1292f, calculateRequiredAcceleration(0, 160, 3000f), 0.0001f)
         assertEquals(2.0238f, calculateRequiredAcceleration(80, 180, 1700f), 0.0001f)

@@ -146,7 +146,7 @@ fun createArrival(airport: Entity, gs: GameServer) {
 }
 
 fun appTestArrival(gs: GameServer) {
-    gs.aircraft.put("SHIBA4", Aircraft("SHIBA4", -200f, -150f, 2000f, "A359", FlightType.ARRIVAL, false).apply {
+    gs.aircraft.put("SHIBA4", Aircraft("SHIBA4", -250f, -150f, 2000f, "A359", FlightType.ARRIVAL, false).apply {
         entity += ArrivalAirport(0)
         entity[Direction.mapper]?.trackUnitVector?.rotateDeg(-70f)
         val ias = 220.toShort()

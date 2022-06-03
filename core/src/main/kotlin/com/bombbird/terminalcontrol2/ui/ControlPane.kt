@@ -102,6 +102,7 @@ class ControlPane {
                             else transitionSelectBox.selected.replace(TRANS_PREFIX, "")
                             transitionSelectBox.style = Scene2DSkin.defaultSkin[if (parentPane.userClearanceState.clearedTrans == parentPane.clearanceState.clearedTrans) "ControlPane" else "ControlPaneChanged", SelectBoxStyle::class.java]
                             updateApproachRoute(parentPane.aircraftArrivalArptId, appName, transName)
+                            updateAltSelectBoxChoices(parentPane.aircraftMaxAlt)
                             updateUndoTransmitButtonStates()
                         }
                     }.cell(grow = true, preferredWidth = paneWidth / 2)
@@ -118,6 +119,7 @@ class ControlPane {
                             style = Scene2DSkin.defaultSkin[if (parentPane.userClearanceState.clearedTrans == parentPane.clearanceState.clearedTrans) "ControlPane" else "ControlPaneChanged", SelectBoxStyle::class.java]
                             val appName = if (appSelectBox.selected == NO_APP_SELECTION) null else appSelectBox.selected
                             updateApproachRoute(parentPane.aircraftArrivalArptId, appName, transName)
+                            updateAltSelectBoxChoices(parentPane.aircraftMaxAlt)
                             updateUndoTransmitButtonStates()
                         }
                     }.cell(grow = true, preferredWidth = paneWidth / 2)
@@ -197,9 +199,9 @@ class ControlPane {
      * @param vectorHdg the aircraft's latest cleared vector heading; is null if aircraft is not being vectored
      * hold waypoint is selected
      * */
-    fun updateClearanceMode(route: Route, vectorHdg: Short?) {
-        if (vectorHdg != null) {
-            // Vector mode active
+    fun updateClearanceMode(route: Route, vectorHdg: Short?, appTrackCaptured: Boolean) {
+        if (vectorHdg != null || (route.legs.isEmpty && appTrackCaptured)) {
+            // Vector mode active or localizer/visual track captured in vector mode (no route legs)
             routeModeButton.isChecked = false
             holdModeButton.isChecked = false
             vectorModeButton.isChecked = true
@@ -291,16 +293,35 @@ class ControlPane {
             else altSelectBox.selected = "FL${alt / 100}"
         }
 
-        val nextHold = parentPane.userClearanceState.route.getNextHoldLeg()
-        val holdMinAlt = nextHold?.minAltFt
-        val holdMaxAlt = nextHold?.maxAltFt
-        val effectiveMinAlt = if (holdMinAlt == null) MIN_ALT else max(MIN_ALT, holdMinAlt)
+        val effectiveMinAlt: Int
+        val effectiveMaxAlt: Int
+        if (parentPane.userClearanceState.clearedApp != null && parentPane.glidePathCaptured) {
+            effectiveMinAlt = parentPane.userClearanceState.clearedAlt
+            effectiveMaxAlt = effectiveMinAlt
+        } else if (parentPane.userClearanceState.clearedApp != null && hasOnlyWaypointLegsTillMissed(directLeg, parentPane.userClearanceState.route)) {
+            // Check if aircraft is cleared for the approach with no interruptions (i.e. no discontinuity, vector or hold legs)
+            parentPane.userClearanceState.route.legs.apply {
+                // Set to the FAF altitude (i.e. the minimum altitude restriction of the last waypoint)
+                val faf = (get(size - 1) as? Route.WaypointLeg)?.minAltFt ?: run {
+                    Gdx.app.log("ControlPane", "No FAF altitude found for ${parentPane.userClearanceState.clearedApp}")
+                    MIN_ALT
+                }
+                effectiveMinAlt = faf
+                effectiveMaxAlt = faf
+            }
+        } else {
+            val nextHold = getNextHoldLeg(parentPane.userClearanceState.route)
+            val holdMinAlt = nextHold?.minAltFt
+            val holdMaxAlt = nextHold?.maxAltFt
+            effectiveMinAlt = if (holdMinAlt == null) MIN_ALT else max(MIN_ALT, holdMinAlt)
+            effectiveMaxAlt = if (holdMaxAlt == null) MAX_ALT else min(MAX_ALT, holdMaxAlt)
+        }
         val roundedMinAlt = if (effectiveMinAlt % 1000 > 0) (effectiveMinAlt / 1000 + 1) * 1000 else effectiveMinAlt
         val maxAltAircraft = if (aircraftMaxAlt != null) aircraftMaxAlt - aircraftMaxAlt % 1000 else null
-        val effectiveMaxAlt = if (holdMaxAlt == null) MAX_ALT else min(MAX_ALT, holdMaxAlt)
         val roundedMaxAlt = if (maxAltAircraft != null) min(effectiveMaxAlt - effectiveMaxAlt % 1000, maxAltAircraft) else effectiveMaxAlt - effectiveMaxAlt % 1000
         var intermediateQueueIndex = 0
         modificationInProgress = true
+        val initialising = altSelectBox.items.isEmpty // If the selection is previously empty, the box is still being initialised, hence do not update the user clearance state below
         altSelectBox.items = GdxArray<String>().apply {
             if (effectiveMinAlt % 1000 > 0) checkAltAndAddToArray(effectiveMinAlt, this)
             for (alt in roundedMinAlt .. roundedMaxAlt step 1000) {
@@ -312,19 +333,28 @@ class ControlPane {
                 }}
                 checkAltAndAddToArray(alt, this)
             }
-            if (effectiveMaxAlt % 1000 > 0) checkAltAndAddToArray(effectiveMaxAlt, this)
+            if (effectiveMaxAlt % 1000 > 0 && effectiveMaxAlt > effectiveMinAlt) checkAltAndAddToArray(effectiveMaxAlt, this)
         }
         if (altSelectBox.selection.size() >= 1) altSelectBox.selected?.let {
             val selAlt = if (it.contains("FL")) it.replace("FL", "").toInt() * 100
             else it.toInt()
-            if (selAlt < effectiveMinAlt) {
-                setToAltValue(effectiveMinAlt)
-                parentPane.userClearanceState.clearedAlt = effectiveMinAlt
-            } else if (selAlt > effectiveMaxAlt) {
-                setToAltValue(effectiveMaxAlt)
-                parentPane.userClearanceState.clearedAlt = effectiveMaxAlt
-            }
+            if (selAlt < effectiveMinAlt) setToAltValue(effectiveMinAlt)
+            else if (selAlt > effectiveMaxAlt) setToAltValue(effectiveMaxAlt)
         }
+        // Do a final setting of the user clearance state after any changes to the selected value in the box has been made
+        // unless the box has just been initialised and hence ignore the default value that is selected
+        if (!initialising) altSelectBox.selected?.let {
+            parentPane.userClearanceState.clearedAlt = if (it.contains("FL")) it.replace("FL", "").toInt() * 100
+            else it.toInt()
+            altSelectBox.style = Scene2DSkin.defaultSkin[if (parentPane.userClearanceState.clearedAlt == parentPane.clearanceState.clearedAlt) "ControlPane" else "ControlPaneChanged", SelectBoxStyle::class.java]
+        }
+        modificationInProgress = false
+    }
+
+    /** Clears all the choices in the altitude select box; should be used when deselecting an aircraft */
+    fun clearAltSelectBoxChoices() {
+        modificationInProgress = true
+        altSelectBox.items = GdxArray()
         modificationInProgress = false
     }
 
@@ -357,11 +387,15 @@ class ControlPane {
         altSelectBox.selected = if (clearedAlt >= TRANS_LVL * 100) "FL${clearedAlt / 100}" else clearedAlt.toString()
         spdSelectBox.selected = clearedSpd
         appSelectBox.apply {
-            selected = appName ?: NO_APP_SELECTION
+            if (selection.isEmpty || selected != (appName ?: NO_APP_SELECTION)) selected = appName ?: NO_APP_SELECTION
             // Explicitly set style as change event is not getting fired for some reason
             style = Scene2DSkin.defaultSkin[if (parentPane.userClearanceState.clearedApp == parentPane.clearanceState.clearedApp) "ControlPane" else "ControlPaneChanged", SelectBoxStyle::class.java]
         }
-        if (appName != null && transName != null) transitionSelectBox.selected = "$TRANS_PREFIX$transName"
+        if (appName != null && transName != null) transitionSelectBox.apply {
+            if (selection.isEmpty || selected != "$TRANS_PREFIX$transName") selected = "$TRANS_PREFIX$transName"
+            // Explicitly set style as change event is not getting fired for some reason
+            style = Scene2DSkin.defaultSkin[if (parentPane.userClearanceState.clearedTrans == parentPane.clearanceState.clearedTrans) "ControlPane" else "ControlPaneChanged", SelectBoxStyle::class.java]
+        }
         else {
             transitionSelectBox.isDisabled = true
             transitionSelectBox.items = GdxArray<String>().apply { add("$TRANS_PREFIX$NO_TRANS_SELECTION") }
@@ -399,7 +433,7 @@ class ControlPane {
                 vectorSubpaneObj.isVisible = false
                 lateralContainer.actor = holdSubpaneObj.actor
                 updateAltSelectBoxChoices(parentPane.aircraftMaxAlt)
-                selectedHoldLeg = parentPane.userClearanceState.route.getNextHoldLeg()
+                selectedHoldLeg = getNextHoldLeg(parentPane.userClearanceState.route)
                 if (selectedHoldLeg == null) holdSubpaneObj.updateHoldClearanceState(parentPane.userClearanceState.route)
                 holdSubpaneObj.updateHoldTable(parentPane.userClearanceState.route, selectedHoldLeg)
                 updateUndoTransmitButtonStates()
@@ -412,10 +446,11 @@ class ControlPane {
                 holdSubpaneObj.isVisible = false
                 vectorSubpaneObj.isVisible = true
                 lateralContainer.actor = vectorSubpaneObj.actor
-                afterWptHdgLeg = parentPane.userClearanceState.route.getNextAfterWptHdgLeg()
+                afterWptHdgLeg = getNextAfterWptHdgLeg(parentPane.userClearanceState.route)
                 if (parentPane.userClearanceState.vectorHdg == null && parentPane.clearanceState.vectorHdg == null)
                     parentPane.userClearanceState.vectorHdg = GAME.gameClientScreen?.selectedAircraft?.entity?.get(CommandTarget.mapper)?.targetHdgDeg?.roundToInt()?.toShort() ?: 360
                 else if (parentPane.userClearanceState.vectorHdg == null) parentPane.userClearanceState.vectorHdg = parentPane.clearanceState.vectorHdg
+                vectorSubpaneObj.setHdgElementsDisabled(parentPane.appTrackCaptured)
                 vectorSubpaneObj.updateVectorTable(parentPane.userClearanceState.route, parentPane.userClearanceState.vectorHdg, parentPane.userClearanceState.vectorTurnDir)
                 updateUndoTransmitButtonStates()
             }
@@ -457,6 +492,7 @@ class ControlPane {
                 }
             }
             extendRouteCopy(app.routeLegs)
+            extendRouteCopy(app.missedLegs)
             updateRouteTable(parentPane.userClearanceState.route)
         }
     }

@@ -20,6 +20,7 @@ class RouteEditPane {
     private lateinit var parentPane: UIPane
 
     private lateinit var routeEditTable: KTableWidget
+    private lateinit var changeStarBox: KSelectBox<String>
 
     private lateinit var undoButton: KTextButton
     private lateinit var confirmButton: KTextButton
@@ -51,7 +52,7 @@ class RouteEditPane {
                         updateEditRouteTable(route)
                         updateUndoTransmitButtonStates()
                     }
-                    selectBox<String>("ControlPane") {
+                    changeStarBox = selectBox<String>("ControlPane") {
                         items = arrayOf("Change STAR", "TNN1B", "TONGA1A", "TONGA1B").toGdxArray()
                         setAlignment(Align.center)
                         list.setAlignment(Align.center)
@@ -120,7 +121,7 @@ class RouteEditPane {
                     (leg as? Route.InitClimbLeg)?.heading?.let { hdg -> "Climb on\nHDG $hdg" } ?: return@let
                     val altRestr = (leg as? Route.WaypointLeg)?.let { wptLeg ->
                         var restr = wptLeg.maxAltFt?.let { maxAltFt -> "${maxAltFt}B" } ?: ""
-                        restr += wptLeg.minAltFt?.toString()?.let { minAlt -> "${if (restr.isNotBlank()) "\n" else ""}${minAlt}A" } ?: ""
+                        if (wptLeg.maxAltFt != wptLeg.minAltFt) restr += wptLeg.minAltFt?.toString()?.let { minAlt -> "${if (restr.isNotBlank()) "\n" else ""}${minAlt}A" } ?: ""
                         restr
                     } ?: (leg as? Route.InitClimbLeg)?.minAltFt?.let { minAlt -> "$minAlt" } ?: ""
                     val spdRestr = (leg as? Route.WaypointLeg)?.maxSpdKt?.let { spd -> "${spd}kts" } ?: ""
@@ -133,8 +134,10 @@ class RouteEditPane {
                     val altRestrChanged = legChanged || restrTriple.first
                     val spdRestrChanged = legChanged || restrTriple.second
                     val skippedChanged = restrTriple.third
-                    val showRestrDisplay = leg is Route.WaypointLeg
-                    val legLabel = label(legDisplay, "ControlPaneRoute${if (legChanged) "Changed" else ""}").apply { setAlignment(if (showRestrDisplay) Align.center else Align.left) }.cell(growX = true, height = 0.125f * UI_HEIGHT, padLeft = 10f, padRight = 10f, colspan = if (showRestrDisplay) null else 3)
+                    val showRestrDisplay = leg is Route.WaypointLeg || leg is Route.InitClimbLeg
+                    val legLabel = label(legDisplay, "ControlPaneRoute${if (legChanged) "Changed" else ""}")
+                        .apply { setAlignment(if (showRestrDisplay) Align.center else Align.left) }
+                        .cell(growX = true, height = 0.125f * UI_HEIGHT, padLeft = if (showRestrDisplay) 10f else 25f, padRight = 10f, colspan = if (showRestrDisplay) null else 3)
                     if (showRestrDisplay) textButton(altRestr, "ControlPaneRestr${if (altRestrChanged) "Changed" else ""}").cell(growX = true, preferredWidth = 0.25f * parentPane.paneWidth, height = 0.125f * UI_HEIGHT).apply {
                         isChecked = (leg as? Route.WaypointLeg)?.altRestrActive == false
                         if (altRestr.isNotBlank()) addChangeListener { _, _ -> (leg as? Route.WaypointLeg)?.let {
@@ -210,5 +213,13 @@ class RouteEditPane {
     fun updateUndoTransmitButtonStates() {
         if (checkRouteEqualityStrict(parentPane.clearanceState.route, parentPane.userClearanceState.route)) setUndoConfirmButtonsUnchanged()
         else setUndoConfirmButtonsChanged()
+    }
+
+    /**
+     * Sets whether the "Change STAR" select box is disabled
+     * @param disabled whether to disable the select box
+     */
+    fun setChangeStarDisabled(disabled: Boolean) {
+        changeStarBox.isDisabled = disabled
     }
 }

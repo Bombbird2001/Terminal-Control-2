@@ -14,6 +14,7 @@ import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.UI_HEIGHT
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.utilities.addChangeListener
+import com.bombbird.terminalcontrol2.utilities.findFirstHoldLegWithID
 import com.bombbird.terminalcontrol2.utilities.modulateHeading
 import ktx.ashley.get
 import ktx.collections.GdxArray
@@ -264,7 +265,7 @@ class HoldSubpane {
      * */
     private fun updateHoldParameterChangedState(holdLeg: Route.HoldLeg?) {
         holdLeg?.apply {
-            val sameLeg = parentPane.clearanceState.route.findFirstHoldLegWithID(wptId)
+            val sameLeg = findFirstHoldLegWithID(wptId, parentPane.clearanceState.route)
             holdSelectBox.style = Scene2DSkin.defaultSkin[if (sameLeg == null) "ControlPaneChanged" else "ControlPane", SelectBox.SelectBoxStyle::class.java]
             val distChanged = sameLeg?.legDist != legDist
             holdLegDistLabel.style = Scene2DSkin.defaultSkin[if (distChanged) "ControlPaneHoldDistChanged" else "ControlPaneHoldDist", Label.LabelStyle::class.java]

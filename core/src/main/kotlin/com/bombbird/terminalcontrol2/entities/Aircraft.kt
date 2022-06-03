@@ -88,7 +88,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
         }
         if (flightType == FlightType.DEPARTURE) {
             with<ContactFromTower> {
-                altitudeFt = (alt + MathUtils.random(600, 1700)).toInt()
+                altitudeFt = alt.roundToInt() + MathUtils.random(600, 1100)
             }
             with<ContactToCentre> {
                 altitudeFt = (MAX_ALT - MathUtils.random(500, 900))

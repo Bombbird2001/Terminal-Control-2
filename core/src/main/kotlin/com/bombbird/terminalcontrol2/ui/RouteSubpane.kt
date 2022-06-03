@@ -94,21 +94,24 @@ class RouteSubpane {
                     (leg as? Route.DiscontinuityLeg)?.let { "Discontinuity" } ?:
                     (leg as? Route.InitClimbLeg)?.heading?.let { hdg -> "Climb on\nHDG $hdg" } ?: return@also
                     if (firstAvailableLeg == null) firstAvailableLeg = leg
-                    val restrTriple = (leg as? Route.WaypointLeg)?.let { checkRestrChanged(parentPane.clearanceState.route, it) } ?: Triple(false, false, false)
+                    val restrTriple = (leg as? Route.WaypointLeg)?.let { checkRestrChanged(parentPane.clearanceState.route, it) } ?:
+                    (leg as? Route.InitClimbLeg)?.let { if (checkLegChanged(parentPane.clearanceState.route, it)) Triple(true, true, true)
+                    else Triple(false, false, false)} ?:
+                    Triple(false, false, false)
                     val altRestrDisplay = (leg as? Route.WaypointLeg)?.let { wptLeg ->
                         var restr = wptLeg.maxAltFt?.toString() ?: ""
-                        restr += wptLeg.minAltFt?.toString()?.let { minAlt -> "${if (restr.isNotBlank()) "\n" else ""}$minAlt" } ?: ""
+                        if (wptLeg.maxAltFt != wptLeg.minAltFt) restr += wptLeg.minAltFt?.toString()?.let { minAlt -> "${if (restr.isNotBlank()) "\n" else ""}$minAlt" } ?: ""
                         restr
                     } ?: (leg as? Route.InitClimbLeg)?.minAltFt?.let { minAlt -> "$minAlt" } ?: ""
-                    val altRestrStyle = (leg as? Route.WaypointLeg)?.let { wptLeg -> when {
+                    val altRestrStyle = ((leg as? Route.WaypointLeg)?.let { wptLeg -> when {
                         wptLeg.minAltFt != null && wptLeg.maxAltFt != null -> "ControlPaneBothAltRestr"
                         wptLeg.minAltFt != null -> "ControlPaneBottomAltRestr"
                         wptLeg.maxAltFt != null -> "ControlPaneTopAltRestr"
                         else -> "ControlPaneRoute"
-                    } + (if (altRestrDisplay.isNotBlank() && !wptLeg.altRestrActive) "Cancel" else "") + if (restrTriple.first) "Changed" else ""
-                    } ?: (leg as? Route.InitClimbLeg)?.let { "ControlPaneBottomAltRestr" } ?: "ControlPaneRoute"
+                    } + (if (altRestrDisplay.isNotBlank() && !wptLeg.altRestrActive) "Cancel" else "")
+                    } ?: (leg as? Route.InitClimbLeg)?.let { "ControlPaneBottomAltRestr" } ?: "ControlPaneRoute") + if (restrTriple.first) "Changed" else ""
                     val spdRestr = (leg as? Route.WaypointLeg)?.maxSpdKt?.let { spd -> "${spd}kts" } ?: ""
-                    val spdRestrStyle = if ((leg as? Route.WaypointLeg)?.spdRestrActive == true) "ControlPaneRoute" else "ControlPaneSpdRestrCancel" + if (restrTriple.second) "Changed" else ""
+                    val spdRestrStyle = (if ((leg as? Route.WaypointLeg)?.spdRestrActive == true) "ControlPaneRoute" else "ControlPaneSpdRestrCancel") + if (restrTriple.second) "Changed" else ""
                     directButtonArray.add(textButton("=>", if (!firstDirectSet) "ControlPaneRouteDirect" else "ControlPaneRouteDirectChanged").cell(growX = true, preferredWidth = 0.2f * parentPane.paneWidth, preferredHeight = 0.1f * UI_HEIGHT).apply {
                         if (!firstDirectSet && directLeg?.let { compareLegEquality(it, leg) } != false) {
                             // If this leg is equal to the selected direct leg, set as checked
@@ -142,13 +145,16 @@ class RouteSubpane {
                                     }
                                 }
                                 directLeg = leg // Update the new direct leg to this
+                                parentControlPane.updateAltSelectBoxChoices(parentPane.aircraftMaxAlt)
                             }
                             modificationInProgress = false
                             parentControlPane.updateUndoTransmitButtonStates()
                         }
                     })
                     val showRestrDisplay = leg is Route.WaypointLeg || leg is Route.InitClimbLeg
-                    label(legDisplay, "ControlPaneRoute${if (checkLegChanged(parentPane.clearanceState.route, leg)) "Changed" else ""}").apply { setAlignment(if (showRestrDisplay) Align.center else Align.left) }.cell(growX = true, preferredWidth = 0.2f * parentPane.paneWidth, colspan = if (showRestrDisplay) null else 3)
+                    label(legDisplay, "ControlPaneRoute${if (checkLegChanged(parentPane.clearanceState.route, leg)) "Changed" else ""}")
+                        .apply { setAlignment(if (showRestrDisplay) Align.center else Align.left) }
+                        .cell(growX = true, preferredWidth = 0.2f * parentPane.paneWidth, colspan = if (showRestrDisplay) null else 3, padLeft = if (showRestrDisplay) 0f else 15f)
                     if (showRestrDisplay) label(altRestrDisplay, altRestrStyle).apply { setAlignment(Align.center) }.cell(expandX = true, padLeft = 10f, padRight = 10f)
                     if (showRestrDisplay) label(spdRestr, spdRestrStyle).apply { setAlignment(Align.center) }.cell(growX = true, preferredWidth = 0.2f * parentPane.paneWidth)
                     row()

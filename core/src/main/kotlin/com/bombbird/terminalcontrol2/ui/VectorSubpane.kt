@@ -11,6 +11,7 @@ import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.UI_HEIGHT
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.utilities.addChangeListener
+import com.bombbird.terminalcontrol2.utilities.getAfterWptHdgLeg
 import com.bombbird.terminalcontrol2.utilities.modulateHeading
 import ktx.ashley.get
 import ktx.collections.GdxArray
@@ -39,6 +40,13 @@ class VectorSubpane {
     private lateinit var rightButton: KTextButton
     private lateinit var afterWaypointSelectBox: KSelectBox<String>
 
+    private lateinit var left90Button: KTextButton
+    private lateinit var left10Button: KTextButton
+    private lateinit var left5Button: KTextButton
+    private lateinit var right90Button: KTextButton
+    private lateinit var right10Button: KTextButton
+    private lateinit var right5Button: KTextButton
+
     var isVisible: Boolean
         get() = vectorTable.isVisible
         set(value) {
@@ -63,11 +71,11 @@ class VectorSubpane {
                         if (modificationInProgress) return@addChangeListener
                         modificationInProgress = true
                         if (isChecked) {
-                            afterWptHdgLeg?.apply { parentPane.userClearanceState.route.getAfterWptHdgLeg(this)?.turnDir = CommandTarget.TURN_LEFT } ?:
+                            afterWptHdgLeg?.apply { getAfterWptHdgLeg(this, parentPane.userClearanceState.route)?.turnDir = CommandTarget.TURN_LEFT } ?:
                             run { parentPane.userClearanceState.vectorTurnDir = CommandTarget.TURN_LEFT }
                             rightButton.isChecked = false
                         } else {
-                            afterWptHdgLeg?.apply { parentPane.userClearanceState.route.getAfterWptHdgLeg(this)?.turnDir = CommandTarget.TURN_DEFAULT } ?:
+                            afterWptHdgLeg?.apply { getAfterWptHdgLeg(this, parentPane.userClearanceState.route)?.turnDir = CommandTarget.TURN_DEFAULT } ?:
                             run { parentPane.userClearanceState.vectorTurnDir = CommandTarget.TURN_DEFAULT }
                         }
                         updateVectorTable(parentPane.userClearanceState.route, parentPane.userClearanceState.vectorHdg, parentPane.userClearanceState.vectorTurnDir)
@@ -88,11 +96,11 @@ class VectorSubpane {
                         if (modificationInProgress) return@addChangeListener
                         modificationInProgress = true
                         if (isChecked) {
-                            afterWptHdgLeg?.apply { parentPane.userClearanceState.route.getAfterWptHdgLeg(this)?.turnDir = CommandTarget.TURN_RIGHT } ?:
+                            afterWptHdgLeg?.apply { getAfterWptHdgLeg(this, parentPane.userClearanceState.route)?.turnDir = CommandTarget.TURN_RIGHT } ?:
                             run { parentPane.userClearanceState.vectorTurnDir = CommandTarget.TURN_RIGHT }
                             leftButton.isChecked = false
                         } else {
-                            afterWptHdgLeg?.apply { parentPane.userClearanceState.route.getAfterWptHdgLeg(this)?.turnDir = CommandTarget.TURN_DEFAULT } ?:
+                            afterWptHdgLeg?.apply { getAfterWptHdgLeg(this, parentPane.userClearanceState.route)?.turnDir = CommandTarget.TURN_DEFAULT } ?:
                             run { parentPane.userClearanceState.vectorTurnDir = CommandTarget.TURN_DEFAULT }
                         }
                         updateVectorTable(parentPane.userClearanceState.route, parentPane.userClearanceState.vectorHdg, parentPane.userClearanceState.vectorTurnDir)
@@ -103,36 +111,48 @@ class VectorSubpane {
             row()
             table {
                 table {
-                    textButton("-90", "ControlPaneHdgDark").cell(grow = true, preferredHeight = (0.5f * UI_HEIGHT - 40f) / 3).addChangeListener { _, _ ->
-                        updateVectorHdgClearanceState(-90, parentPane.userClearanceState.route, afterWptHdgLeg)
-                        parentControlPane.updateUndoTransmitButtonStates()
+                    left90Button = textButton("-90", "ControlPaneHdgDark").cell(grow = true, preferredHeight = (0.5f * UI_HEIGHT - 40f) / 3).apply {
+                        addChangeListener { _, _ ->
+                            updateVectorHdgClearanceState(-90, parentPane.userClearanceState.route, afterWptHdgLeg)
+                            parentControlPane.updateUndoTransmitButtonStates()
+                        }
                     }
                     row()
-                    textButton("-10", "ControlPaneHdgLight").cell(grow = true, preferredHeight = (0.5f * UI_HEIGHT - 40f) / 3).addChangeListener { _, _ ->
-                        updateVectorHdgClearanceState(-10, parentPane.userClearanceState.route, afterWptHdgLeg)
-                        parentControlPane.updateUndoTransmitButtonStates()
+                    left10Button = textButton("-10", "ControlPaneHdgLight").cell(grow = true, preferredHeight = (0.5f * UI_HEIGHT - 40f) / 3).apply {
+                        addChangeListener { _, _ ->
+                            updateVectorHdgClearanceState(-10, parentPane.userClearanceState.route, afterWptHdgLeg)
+                            parentControlPane.updateUndoTransmitButtonStates()
+                        }
                     }
                     row()
-                    textButton("-5", "ControlPaneHdgDark").cell(grow = true, preferredHeight = (0.5f * UI_HEIGHT - 40f) / 3).addChangeListener { _, _ ->
-                        updateVectorHdgClearanceState(-5, parentPane.userClearanceState.route, afterWptHdgLeg)
-                        parentControlPane.updateUndoTransmitButtonStates()
+                    left5Button = textButton("-5", "ControlPaneHdgDark").cell(grow = true, preferredHeight = (0.5f * UI_HEIGHT - 40f) / 3).apply {
+                        addChangeListener { _, _ ->
+                            updateVectorHdgClearanceState(-5, parentPane.userClearanceState.route, afterWptHdgLeg)
+                            parentControlPane.updateUndoTransmitButtonStates()
+                        }
                     }
                 }.cell(grow = true, preferredWidth = 0.4f * paneWidth, padLeft = 10f)
                 vectorLabel = label("360", "ControlPaneHdg").apply { setAlignment(Align.center) }.cell(grow = true, preferredWidth = 0.3f * paneWidth - 20f)
                 table {
-                    textButton("+90", "ControlPaneHdgDark").cell(grow = true, preferredHeight = (0.5f * UI_HEIGHT - 40f) / 3).addChangeListener { _, _ ->
-                        updateVectorHdgClearanceState(90, parentPane.userClearanceState.route, afterWptHdgLeg)
-                        parentControlPane.updateUndoTransmitButtonStates()
+                    right90Button = textButton("+90", "ControlPaneHdgDark").cell(grow = true, preferredHeight = (0.5f * UI_HEIGHT - 40f) / 3).apply {
+                        addChangeListener { _, _ ->
+                            updateVectorHdgClearanceState(90, parentPane.userClearanceState.route, afterWptHdgLeg)
+                            parentControlPane.updateUndoTransmitButtonStates()
+                        }
                     }
                     row()
-                    textButton("+10", "ControlPaneHdgLight").cell(grow = true, preferredHeight = (0.5f * UI_HEIGHT - 40f) / 3).addChangeListener { _, _ ->
-                        updateVectorHdgClearanceState(10, parentPane.userClearanceState.route, afterWptHdgLeg)
-                        parentControlPane.updateUndoTransmitButtonStates()
+                    right10Button = textButton("+10", "ControlPaneHdgLight").cell(grow = true, preferredHeight = (0.5f * UI_HEIGHT - 40f) / 3).apply {
+                        addChangeListener { _, _ ->
+                            updateVectorHdgClearanceState(10, parentPane.userClearanceState.route, afterWptHdgLeg)
+                            parentControlPane.updateUndoTransmitButtonStates()
+                        }
                     }
                     row()
-                    textButton("+5", "ControlPaneHdgDark").cell(grow = true, preferredHeight = (0.5f * UI_HEIGHT - 40f) / 3).addChangeListener { _, _ ->
-                        updateVectorHdgClearanceState(5, parentPane.userClearanceState.route, afterWptHdgLeg)
-                        parentControlPane.updateUndoTransmitButtonStates()
+                    right5Button = textButton("+5", "ControlPaneHdgDark").cell(grow = true, preferredHeight = (0.5f * UI_HEIGHT - 40f) / 3).apply {
+                        addChangeListener { _, _ ->
+                            updateVectorHdgClearanceState(5, parentPane.userClearanceState.route, afterWptHdgLeg)
+                            parentControlPane.updateUndoTransmitButtonStates()
+                        }
                     }
                 }.cell(grow = true, preferredWidth = 0.4f * paneWidth, padRight = 10f)
             }.cell(preferredWidth = paneWidth, preferredHeight = 0.5f * UI_HEIGHT - 40f, padBottom = 20f)
@@ -161,14 +181,14 @@ class VectorSubpane {
         var leftChanged = false
         var rightChanged = false
         afterWptHdgLeg?.apply {
-            val newAftWptLeg = route.getAfterWptHdgLeg(this) ?: return@apply
+            val newAftWptLeg = getAfterWptHdgLeg(this, route) ?: return@apply
             vectorLabel.setText(newAftWptLeg.heading.toString())
-            val prevAftWptLeg = parentPane.clearanceState.route.getAfterWptHdgLeg(this)
+            val prevAftWptLeg = getAfterWptHdgLeg(this, parentPane.clearanceState.route)
             vectorLabel.style = Scene2DSkin.defaultSkin["ControlPaneHdg${if (prevAftWptLeg?.heading != newAftWptLeg.heading) "Changed" else ""}", Label.LabelStyle::class.java]
             val wptName = GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName
             afterWaypointSelectBox.selected = if (wptName == null) "Now" else "After $wptName"
             // Set style as changed if new after waypoint leg does not yet exist in acting clearance
-            afterWaypointSelectBox.style = Scene2DSkin.defaultSkin[if (wptName == null || parentPane.clearanceState.route.getAfterWptHdgLeg(wptName) == null) "ControlPaneChanged" else "ControlPane", SelectBoxStyle::class.java]
+            afterWaypointSelectBox.style = Scene2DSkin.defaultSkin[if (wptName == null || getAfterWptHdgLeg(wptName, parentPane.clearanceState.route) == null) "ControlPaneChanged" else "ControlPane", SelectBoxStyle::class.java]
             leftButton.isChecked = newAftWptLeg.turnDir == CommandTarget.TURN_LEFT
             rightButton.isChecked = newAftWptLeg.turnDir == CommandTarget.TURN_RIGHT
             leftChanged = (prevAftWptLeg?.turnDir == CommandTarget.TURN_LEFT && newAftWptLeg.turnDir == CommandTarget.TURN_DEFAULT) ||
@@ -225,7 +245,7 @@ class VectorSubpane {
                 parentPane.userClearanceState.vectorHdg = null
                 parentPane.userClearanceState.vectorTurnDir = null
                 val wpt = selectedOption.replace("After ", "")
-                val newAftWptLeg = route.getAfterWptHdgLeg(wpt)?.let { pairFound ->
+                val newAftWptLeg = getAfterWptHdgLeg(wpt, route)?.let { pairFound ->
                     afterWptHdgLeg = pairFound.second // Also set the selected after waypoint leg to that returned by the method
                     pairFound.first
                 } ?: Route.VectorLeg(vectorLabel.text.toString().toShort()).also { addedLeg ->
@@ -253,5 +273,23 @@ class VectorSubpane {
             }
         }
         updateVectorTable(parentPane.userClearanceState.route, parentPane.userClearanceState.vectorHdg, parentPane.userClearanceState.vectorTurnDir)
+    }
+
+    /**
+     * Sets whether the heading elements (value buttons, direction buttons, after waypoint select box) are disabled
+     * @param disabled whether to disable the heading elements
+     */
+    fun setHdgElementsDisabled(disabled: Boolean) {
+        afterWaypointSelectBox.isDisabled = disabled
+
+        leftButton.isDisabled = disabled
+        left90Button.isDisabled = disabled
+        left10Button.isDisabled = disabled
+        left5Button.isDisabled = disabled
+
+        rightButton.isDisabled = disabled
+        right90Button.isDisabled = disabled
+        right10Button.isDisabled = disabled
+        right5Button.isDisabled = disabled
     }
 }

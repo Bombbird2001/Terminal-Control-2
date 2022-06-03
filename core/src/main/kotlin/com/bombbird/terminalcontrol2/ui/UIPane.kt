@@ -10,6 +10,7 @@ import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.utilities.addChangeListener
 import com.bombbird.terminalcontrol2.utilities.byte
 import ktx.ashley.get
+import ktx.ashley.has
 import ktx.graphics.moveTo
 import ktx.scene2d.*
 import kotlin.math.max
@@ -45,9 +46,11 @@ class UIPane(private val uiStage: Stage) {
     val clearanceState: ClearanceState = ClearanceState() // Aircraft's current state (without user changes)
     val userClearanceState: ClearanceState = ClearanceState() // User's chosen state
 
-    // Max alt of the aircraft, for persistence across panes
+    // Max alt, arrival airport and approach track capture status of the aircraft, for persistence across panes
     var aircraftMaxAlt: Int? = null
     var aircraftArrivalArptId: Byte? = null
+    var appTrackCaptured = false
+    var glidePathCaptured = false
 
     init {
         uiStage.actors {
@@ -124,19 +127,21 @@ class UIPane(private val uiStage: Stage) {
         }
         aircraftMaxAlt = aircraft.entity[AircraftInfo.mapper]?.aircraftPerf?.maxAlt ?: return
         aircraftArrivalArptId = aircraft.entity[ArrivalAirport.mapper]?.arptId
+        appTrackCaptured = aircraft.entity.has(VisualCaptured.mapper) || aircraft.entity.has(LocalizerCaptured.mapper)
+        glidePathCaptured = aircraft.entity.has(VisualCaptured.mapper) || aircraft.entity.has(GlideSlopeCaptured.mapper)
         val latestClearance = aircraft.entity[ClearanceAct.mapper]?.actingClearance ?: return
         userClearanceState.updateUIClearanceState(latestClearance.actingClearance)
         clearanceState.updateUIClearanceState(latestClearance.actingClearance)
         controlObj.resetDirectButton()
-        // controlObj.updateRouteTable(userClearanceState.route)
-        // controlObj.updateVectorTable(userClearanceState.vectorHdg, userClearanceState.vectorTurnDir)
-        controlObj.updateClearanceMode(userClearanceState.route, userClearanceState.vectorHdg)
+        controlObj.updateClearanceMode(userClearanceState.route, userClearanceState.vectorHdg,
+            aircraft.entity.has(VisualCaptured.mapper) || aircraft.entity.has(LocalizerCaptured.mapper))
         controlObj.updateAltSelectBoxChoices(aircraftMaxAlt)
         controlObj.updateApproachSelectBoxChoices(aircraft.entity[ArrivalAirport.mapper]?.arptId)
         controlObj.updateAltSpdAppClearances(userClearanceState.clearedAlt, userClearanceState.clearedIas,
             userClearanceState.minIas, userClearanceState.maxIas, userClearanceState.optimalIas,
             userClearanceState.clearedApp, userClearanceState.clearedTrans)
         controlObj.setUndoTransmitButtonsUnchanged()
+        routeEditObj.setChangeStarDisabled(aircraftArrivalArptId == null)
         controlPane.isVisible = true
         routeEditPane.isVisible = false
         mainInfoPane.isVisible = false
@@ -155,17 +160,20 @@ class UIPane(private val uiStage: Stage) {
             val controllable = get(Controllable.mapper) ?: return
             if (controllable.sectorId != 0.byte) return // TODO Check for player's sector ID
         }
+        aircraftArrivalArptId = aircraft.entity[ArrivalAirport.mapper]?.arptId
+        appTrackCaptured = aircraft.entity.has(VisualCaptured.mapper) || aircraft.entity.has(LocalizerCaptured.mapper)
+        glidePathCaptured = aircraft.entity.has(VisualCaptured.mapper) || aircraft.entity.has(GlideSlopeCaptured.mapper)
         val latestClearance = aircraft.entity[ClearanceAct.mapper]?.actingClearance ?: return
         userClearanceState.updateUIClearanceState(latestClearance.actingClearance, clearanceState)
         clearanceState.updateUIClearanceState(latestClearance.actingClearance)
-        // controlObj.updateRouteTable(userClearanceState.route)
-        // controlObj.updateVectorTable(userClearanceState.vectorHdg, userClearanceState.vectorTurnDir)
-        controlObj.updateClearanceMode(userClearanceState.route, userClearanceState.vectorHdg)
+        controlObj.updateClearanceMode(userClearanceState.route, userClearanceState.vectorHdg,
+            aircraft.entity.has(VisualCaptured.mapper) || aircraft.entity.has(LocalizerCaptured.mapper))
         controlObj.updateAltSelectBoxChoices(aircraftMaxAlt)
         controlObj.updateAltSpdAppClearances(userClearanceState.clearedAlt, userClearanceState.clearedIas,
             userClearanceState.minIas, userClearanceState.maxIas, userClearanceState.optimalIas,
             userClearanceState.clearedApp, userClearanceState.clearedTrans)
         controlObj.updateUndoTransmitButtonStates()
+        routeEditObj.setChangeStarDisabled(aircraftArrivalArptId == null)
     }
 
     /** Unset the selected UI aircraft */
@@ -175,6 +183,7 @@ class UIPane(private val uiStage: Stage) {
         mainInfoPane.isVisible = true
         aircraftMaxAlt = null
         aircraftArrivalArptId = null
+        controlObj.clearAltSelectBoxChoices()
     }
 
     /** Helper function to set the UI pane to show [routeEditPane] from [controlPane] */

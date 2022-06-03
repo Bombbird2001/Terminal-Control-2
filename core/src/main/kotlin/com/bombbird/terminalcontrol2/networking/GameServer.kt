@@ -94,7 +94,7 @@ class GameServer {
         // Add dummy aircraft
         airports[0]?.entity?.get(RunwayChildren.mapper)?.rwyMap?.get(0)?.entity?.let { rwy -> createDeparture(rwy, this) }
         // airports[0]?.entity?.let { arpt -> createArrival(arpt, this) }
-        // appTestArrival(this)
+        appTestArrival(this)
 
         engine.addSystem(PhysicsSystem(1f))
         engine.addSystem(AISystem())

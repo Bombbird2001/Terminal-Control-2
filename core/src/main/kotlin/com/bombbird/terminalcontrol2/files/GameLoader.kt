@@ -482,7 +482,7 @@ private fun parseLeg(legType: String, data: String, flightPhase: Byte): Route.Le
         "INITCLIMB" -> {
             val hdg = hdgRegex.find(data)?.groupValues?.get(1)?.toInt()?.toShort() ?: return null
             val minAlt = aboveAltRegex.find(data)?.groupValues?.get(1)?.toInt() ?: return null
-            return Route.InitClimbLeg(hdg, minAlt)
+            return Route.InitClimbLeg(hdg, minAlt, flightPhase)
         }
         "HDNG" -> {
             val hdg = hdgRegex.find(data)?.groupValues?.get(1)?.toInt()?.toShort() ?: return null
@@ -496,7 +496,7 @@ private fun parseLeg(legType: String, data: String, flightPhase: Byte): Route.Le
                     }
                 }
             } ?: CommandTarget.TURN_DEFAULT
-            return Route.VectorLeg(hdg, turnDir)
+            return Route.VectorLeg(hdg, turnDir, flightPhase)
         }
         "WYPT" -> {
             val wptName = wptRegex.find(data)?.groupValues?.get(1) ?: return null
@@ -520,7 +520,7 @@ private fun parseLeg(legType: String, data: String, flightPhase: Byte): Route.Le
         "HOLD" -> {
             val wptName = wptRegex.find(data)?.groupValues?.get(1) ?: return null
             val publishedHold = GAME.gameServer?.publishedHolds?.get(wptName)?.entity?.get(PublishedHoldInfo.mapper) ?: return null
-            return Route.HoldLeg(wptName, publishedHold.maxAltFt, publishedHold.minAltFt, publishedHold.maxSpdKtLower, publishedHold.maxSpdKtHigher, publishedHold.inboundHdgDeg, publishedHold.legDistNm, publishedHold.turnDir)
+            return Route.HoldLeg(wptName, publishedHold.maxAltFt, publishedHold.minAltFt, publishedHold.maxSpdKtLower, publishedHold.maxSpdKtHigher, publishedHold.inboundHdgDeg, publishedHold.legDistNm, publishedHold.turnDir, flightPhase)
         }
         else -> {
             if (legType.isNotEmpty()) Gdx.app.log("GameLoader", "Unknown leg type: $legType")
