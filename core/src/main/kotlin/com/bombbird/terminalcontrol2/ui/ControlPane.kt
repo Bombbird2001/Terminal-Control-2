@@ -208,7 +208,8 @@ class ControlPane {
             setPaneLateralMode(UIPane.MODE_VECTOR)
         } else {
             route.legs.apply {
-                if ((size == 1 && first() is Route.HoldLeg) || (size >= 2 && (first() as? Route.WaypointLeg)?.wptId == (get(1) as? Route.HoldLeg)?.wptId)) {
+                if ((size == 1 && first() is Route.HoldLeg) ||
+                    (size >= 2 && first() is Route.WaypointLeg && get(1) is Route.HoldLeg && (first() as? Route.WaypointLeg)?.wptId == (get(1) as? Route.HoldLeg)?.wptId)) {
                     // Hold mode active when the current leg is a hold leg, or when the aircraft is flying towards the waypoint it is cleared to hold at
                     routeModeButton.isChecked = false
                     holdModeButton.isChecked = true
@@ -295,16 +296,13 @@ class ControlPane {
 
         val effectiveMinAlt: Int
         val effectiveMaxAlt: Int
-        if (parentPane.userClearanceState.clearedApp != null && parentPane.glidePathCaptured) {
-            effectiveMinAlt = parentPane.userClearanceState.clearedAlt
-            effectiveMaxAlt = effectiveMinAlt
-        } else if (parentPane.userClearanceState.clearedApp != null && hasOnlyWaypointLegsTillMissed(directLeg, parentPane.userClearanceState.route)) {
+        if (parentPane.userClearanceState.clearedApp != null && hasOnlyWaypointLegsTillMissed(directLeg, parentPane.userClearanceState.route)) {
             // Check if aircraft is cleared for the approach with no interruptions (i.e. no discontinuity, vector or hold legs)
             parentPane.userClearanceState.route.legs.apply {
                 // Set to the FAF altitude (i.e. the minimum altitude restriction of the last waypoint)
-                val faf = (get(size - 1) as? Route.WaypointLeg)?.minAltFt ?: run {
-                    Gdx.app.log("ControlPane", "No FAF altitude found for ${parentPane.userClearanceState.clearedApp}")
-                    MIN_ALT
+                val faf = getFafAltitude(parentPane.userClearanceState.route) ?: run {
+                    // If aircraft has flown past last waypoint, use the currently cleared altitude
+                    parentPane.userClearanceState.clearedAlt
                 }
                 effectiveMinAlt = faf
                 effectiveMaxAlt = faf
@@ -386,20 +384,22 @@ class ControlPane {
         modificationInProgress = false
         altSelectBox.selected = if (clearedAlt >= TRANS_LVL * 100) "FL${clearedAlt / 100}" else clearedAlt.toString()
         spdSelectBox.selected = clearedSpd
+        modificationInProgress = true
         appSelectBox.apply {
-            if (selection.isEmpty || selected != (appName ?: NO_APP_SELECTION)) selected = appName ?: NO_APP_SELECTION
-            // Explicitly set style as change event is not getting fired for some reason
+            selected = appName ?: NO_APP_SELECTION
+            // Explicitly set style
             style = Scene2DSkin.defaultSkin[if (parentPane.userClearanceState.clearedApp == parentPane.clearanceState.clearedApp) "ControlPane" else "ControlPaneChanged", SelectBoxStyle::class.java]
         }
         if (appName != null && transName != null) transitionSelectBox.apply {
-            if (selection.isEmpty || selected != "$TRANS_PREFIX$transName") selected = "$TRANS_PREFIX$transName"
-            // Explicitly set style as change event is not getting fired for some reason
+            selected = "$TRANS_PREFIX$transName"
+            // Explicitly set style
             style = Scene2DSkin.defaultSkin[if (parentPane.userClearanceState.clearedTrans == parentPane.clearanceState.clearedTrans) "ControlPane" else "ControlPaneChanged", SelectBoxStyle::class.java]
         }
         else {
             transitionSelectBox.isDisabled = true
             transitionSelectBox.items = GdxArray<String>().apply { add("$TRANS_PREFIX$NO_TRANS_SELECTION") }
         }
+        modificationInProgress = false
     }
 
     /**

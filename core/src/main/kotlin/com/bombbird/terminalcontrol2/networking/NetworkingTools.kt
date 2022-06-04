@@ -233,7 +233,10 @@ fun handleIncomingRequest(rs: RadarScreen, obj: Any?) {
             rs.aircraft[obj.callsign]?.let { aircraft ->
                 aircraft.entity[Controllable.mapper]?.sectorId = obj.newSector
                 aircraft.entity[RSSprite.mapper]?.drawable = getAircraftIcon(aircraft.entity[FlightType.mapper]?.type ?: return@apply, obj.newSector)
-                if (obj.newSector == 0.byte && rs.selectedAircraft == aircraft) rs.setUISelectedAircraft(aircraft)
+                if (rs.selectedAircraft == aircraft) {
+                    if (obj.newSector == 0.byte) rs.setUISelectedAircraft(aircraft) // TODO Check for player's sector
+                    else rs.deselectUISelectedAircraft()
+                }
             }
         } ?: (obj as? AircraftDespawnData)?.apply {
             GAME.engine.removeEntity(rs.aircraft[obj.callsign]?.entity)

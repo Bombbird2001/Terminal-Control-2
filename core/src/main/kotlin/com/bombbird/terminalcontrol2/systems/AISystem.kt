@@ -194,7 +194,7 @@ class AISystem: EntitySystem() {
             }
         }
 
-        // Update aircraft to slow down to minimum approach speed at less than 4nm from runway threshold
+        // Update aircraft to slow down to minimum approach speed at less than 6.4nm from runway threshold
         val minApp = engine.getEntitiesFor(minAppSpdFamily)
         for (i in 0 until minApp.size()) {
             minApp[i]?.apply {
@@ -205,7 +205,7 @@ class AISystem: EntitySystem() {
                 val rwyThrPos = appEntity[ApproachInfo.mapper]?.rwyObj?.entity?.get(CustomPosition.mapper) ?: return@apply
                 val minAppSpd = get(AircraftInfo.mapper)?.aircraftPerf?.appSpd ?: return@apply
                 val distNm = pxToNm(calculateDistanceBetweenPoints(pos.x, pos.y, rwyThrPos.x, rwyThrPos.y))
-                if (distNm < 5) {
+                if (distNm < 6.4) {
                     if (cmd.targetIasKt > minAppSpd) {
                         cmd.targetIasKt = minAppSpd
                         clearanceAct.actingClearance.actingClearance.clearedIas = minAppSpd
@@ -280,6 +280,7 @@ class AISystem: EntitySystem() {
                 val groundSpeed = trackAndGS.second
                 // Set command target heading to target track + magnetic heading variation
                 cmdTarget.targetHdgDeg = modulateHeading(targetTrack + MAG_HDG_DEV)
+                cmdTarget.turnDir = getAppropriateTurnDir(cmdTarget.targetHdgDeg, convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()), cmdDir.turnDir)
 
                 // Calculate distance between aircraft and waypoint and check if aircraft should move to next leg
                 val deltaX = wpt.x - pos.x
@@ -416,11 +417,12 @@ class AISystem: EntitySystem() {
 
                 appEntity[LineUpDist.mapper]?.let { if (checkLineUpDistReached(appEntity, pos.x, pos.y)) {
                     // If line up distance exists and is reached, remove all other approach components and add visual approach component
+                    remove<LocalizerArmed>()
                     remove<LocalizerCaptured>()
+                    remove<GlideSlopeArmed>()
                     remove<GlideSlopeCaptured>()
                     remove<StepDownApproach>()
                     this += VisualCaptured(appEntity[ApproachInfo.mapper]?.rwyObj?.entity?.get(VisualApproach.mapper)?.visual ?: return@let)
-                    setMissedApproachAltitude(this)
                 }}
             }
         }
@@ -483,7 +485,6 @@ class AISystem: EntitySystem() {
                     remove<GlideSlopeArmed>()
                     remove<CommandDirect>()
                     this += GlideSlopeCaptured(gsApp)
-                    setMissedApproachAltitude(this)
                 }
             }
         }
@@ -526,10 +527,13 @@ class AISystem: EntitySystem() {
                 // For visual approach, check speed not more than 10 knots above approach speed
                 // For approach with glide slope, check speed not more than 20 knots above approach speed
                 val maxAllowableIas = perf.appSpd + (if (gsApp != null) 20 else 10)
-                if (ias.iasKt > maxAllowableIas) return@apply initiateGoAround(this)
+                if (ias.iasKt > maxAllowableIas) {
+                    println("Too fast ${ias.iasKt} >> $maxAllowableIas")
+                    return@apply initiateGoAround(this)
+                }
 
                 // Check altitude
-                // For visual approach, check altitude not more than 100 feet above 3 degree glide path altitude
+                // For visual approach, check altitude not more than 200 feet above 3 degree glide path altitude
                 // For approach with glide slope, check altitude not more than (0.12 * glide angle) degrees (but will be
                 // capped at min 50 feet difference) above the glide path
                 val maxAllowableAlt = if (gsApp != null) {
@@ -540,9 +544,12 @@ class AISystem: EntitySystem() {
                     val maxGsAngleDeg = 1.12 * gs.glideAngle
                     max(pxToFt(gsDistPx * tan(Math.toRadians(maxGsAngleDeg)).toFloat()), (getAppAltAtPos(appVert, pos.x, pos.y, 0f) ?: return@apply) + 50)
                 } else {
-                    (getAppAltAtPos(appVert, pos.x, pos.y, 0f) ?: return@apply) + 100
+                    (getAppAltAtPos(appVert, pos.x, pos.y, 0f) ?: return@apply) + 200
                 }
-                if (alt.altitudeFt > maxAllowableAlt) return@apply initiateGoAround(this)
+                if (alt.altitudeFt > maxAllowableAlt) {
+                    println("Too high ${alt.altitudeFt} >> $maxAllowableAlt")
+                    return@apply initiateGoAround(this)
+                }
 
                 // Check position; only when aircraft is still more than 0.5nm from runway threshold
                 // For visual approach, aircraft position should be within 10 degrees of track to runway
@@ -550,7 +557,11 @@ class AISystem: EntitySystem() {
                 val maxAllowableDeviation = if (locApp != null) 1 else 10
                 val trackToRwy = getRequiredTrack(pos.x, pos.y, rwyPos.x, rwyPos.y)
                 val appTrack = convertWorldAndRenderDeg(appLat[Direction.mapper]?.trackUnitVector?.angleDeg() ?: return@apply) + 180
-                if (pxToNm(distFromRwyPx) > 0.5f && abs(findDeltaHeading(trackToRwy, appTrack, CommandTarget.TURN_DEFAULT)) > maxAllowableDeviation) return@apply initiateGoAround(this)
+                val deviation = abs(findDeltaHeading(trackToRwy, appTrack, CommandTarget.TURN_DEFAULT))
+                if (pxToNm(distFromRwyPx) > 0.5f && deviation > maxAllowableDeviation) {
+                    println("Too much deviation $deviation >> $maxAllowableDeviation")
+                    return@apply initiateGoAround(this)
+                }
 
                 // Check wind
                 // For all approaches, tailwind should be maximum 15 knots, crosswind should be maximum 25 knots
@@ -860,8 +871,20 @@ class AISystem: EntitySystem() {
             remove<LocalizerCaptured>()
             remove<VisualCaptured>()
 
-            // Set route to first missed approach leg
-            get(ClearanceAct.mapper)?.actingClearance?.actingClearance?.route?.let { removeAllLegsTillMissed(it) }
+            get(ClearanceAct.mapper)?.actingClearance?.actingClearance?.let {
+                // Set route to first missed approach leg
+                removeAllLegsTillMissed(it.route)
+
+                // Un-clear approach and approach transition, set speed and altitude
+                setMissedApproachAltitude(this)
+                it.clearedApp = null
+                it.clearedTrans = null
+                it.clearedIas = 220
+                get(CommandTarget.mapper)?.targetIasKt = 220
+            }
+
+            // Clear any preceding altitude and speed restrictions since approach route is no longer being used
+            remove<LastRestrictions>()
 
             // Update clearance states
             entity += ClearanceActChanged()

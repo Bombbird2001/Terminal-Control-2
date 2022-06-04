@@ -228,13 +228,12 @@ class VectorSubpane {
                 val nextLeg = route.legs[i + 1]
                 if (nextLeg !is Route.VectorLeg) return@let
                 // Found in selected clearance
-                for (j in 0 until parentPane.clearanceState.route.legs.size) (parentPane.clearanceState.route.legs[j] as? Route.WaypointLeg)?.also {
-                    if (i + 1 > route.legs.size) return@let
+                for (j in 0 until parentPane.clearanceState.route.legs.size - 1) (parentPane.clearanceState.route.legs[j] as? Route.WaypointLeg)?.also {
                     val actNextLeg = parentPane.clearanceState.route.legs[j + 1]
                     if (actNextLeg is Route.VectorLeg) return@let // Also found in acting clearance, don't remove
                 }
                 // Not found in acting clearance, remove from selected clearance
-                route.legs.removeIndex(i)
+                route.legs.removeIndex(i + 1)
                 afterWptHdgLeg = null
                 return@let
             }

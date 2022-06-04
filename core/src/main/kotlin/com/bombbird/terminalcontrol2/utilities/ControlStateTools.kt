@@ -14,6 +14,7 @@ import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.navigation.Route.*
 import com.bombbird.terminalcontrol2.networking.AircraftControlStateUpdateData
 import ktx.ashley.get
+import ktx.ashley.has
 import ktx.ashley.plusAssign
 import ktx.scene2d.Scene2DSkin
 import kotlin.math.max
@@ -186,14 +187,16 @@ fun getMinMaxOptimalIAS(entity: Entity): Triple<Short, Short, Short> {
     val perf = entity[AircraftInfo.mapper]?.aircraftPerf ?: return Triple(150, 250, 240)
     val altitude = entity[Altitude.mapper] ?: return Triple(150, 250, 240)
     val actingClearance = entity[ClearanceAct.mapper]?.actingClearance?.actingClearance ?: return Triple(150, 250, 240)
-    val lastRestriction = entity[LastRestrictions.mapper] ?: return Triple(150, 250, 240)
     val flightType = entity[FlightType.mapper] ?: return Triple(150, 250, 240)
+    val onApproach = entity.has(LocalizerCaptured.mapper) || entity.has(VisualCaptured.mapper) || entity.has(GlideSlopeCaptured.mapper)
     val takingOff = entity[TakeoffClimb.mapper] != null || entity[TakeoffRoll.mapper] != null
+    val lastRestriction = entity[LastRestrictions.mapper]
     val crossOverAlt = calculateCrossoverAltitude(perf.tripIas, perf.tripMach)
     val below10000ft = altitude.altitudeFt < 10000
     val between10000ftAndCrossover = altitude.altitudeFt >= 10000 && altitude.altitudeFt < crossOverAlt
     val aboveCrossover = altitude.altitudeFt >= crossOverAlt
     val minSpd: Short = when {
+        onApproach -> perf.appSpd
         takingOff || below10000ft -> perf.climbOutSpeed
         between10000ftAndCrossover || aboveCrossover -> (((altitude.altitudeFt - 10000) / (perf.maxAlt - 10000)) * (perf.climbOutSpeed * 2f / 9) + perf.climbOutSpeed * 10f / 9).roundToInt().toShort()
         else -> 160
@@ -219,7 +222,7 @@ fun getMinMaxOptimalIAS(entity: Entity): Triple<Short, Short, Short> {
             }
         }
         // If aircraft is not holding, get restrictions for the SID/STAR
-        if (!holding) holdMaxSpd = lastRestriction.maxSpdKt.let { lastMaxSpd ->
+        if (!holding) holdMaxSpd = lastRestriction?.maxSpdKt.let { lastMaxSpd ->
             when {
                 lastMaxSpd != null && nextRouteMaxSpd != null -> max(lastMaxSpd.toInt(), nextRouteMaxSpd.toInt()).toShort()
                 lastMaxSpd != null -> when (flightType.type) {
@@ -477,6 +480,20 @@ fun getNextMaxAlt(route: Route): Int? {
         if (it.legActive && it.altRestrActive) it.maxAltFt else null
     } ?: continue
     return null
+}
+
+/**
+ * Gets the FAF altitude for the current route, assuming an approach has been cleared
+ * @param route the route to refer to
+ * @return the FAF altitude of the cleared approach
+ */
+fun getFafAltitude(route: Route): Int? {
+    var latestMinAlt: Int? = null
+    for (i in 0 until route.legs.size) (route.legs[i] as? WaypointLeg)?.also {
+        if (it.phase == Leg.APP) it.minAltFt?.let { faf -> latestMinAlt = faf }
+        else if (it.phase == Leg.MISSED_APP) return latestMinAlt
+    }
+    return latestMinAlt
 }
 
 /**

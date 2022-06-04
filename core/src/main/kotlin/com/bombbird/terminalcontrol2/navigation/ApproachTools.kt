@@ -10,6 +10,7 @@ import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.get
 import ktx.math.plus
 import ktx.math.times
+import kotlin.math.max
 import kotlin.math.tan
 
 /** Helper file containing functions for dealing with approaches */
@@ -41,7 +42,8 @@ fun getAppAltAtPos(approach: Entity, posX: Float, posY: Float, gsKt: Float): Flo
         if (vis != null && distPx > nmToPx(VIS_MAX_DIST_NM.toFloat())) return null
         // Add the glide slope offset, or subtract distance covered in 10s at current GS if visual
         val slopeDistPx = distPx + nmToPx(glide?.offsetNm ?: (-gsKt / 360))
-        return pxToFt((slopeDistPx * tan(Math.toRadians((glide?.glideAngle ?: VIS_GLIDE_ANGLE_DEG).toDouble()))).toFloat()) + (appInfo.rwyObj.entity[Altitude.mapper]?.altitudeFt ?: 0f)
+        return max(pxToFt((slopeDistPx * tan(Math.toRadians((glide?.glideAngle ?: VIS_GLIDE_ANGLE_DEG).toDouble()))).toFloat()), -20f) +
+                (appInfo.rwyObj.entity[Altitude.mapper]?.altitudeFt ?: 0f)
     } else if (npa != null) {
         val distNm = pxToNm(distPx)
         for (i in npa.altAtDist.size - 1 downTo 0) if (distNm > npa.altAtDist[i].first) return npa.altAtDist[i].second.toFloat()

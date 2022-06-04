@@ -91,9 +91,15 @@ class GameServer {
             get(2).entity += ActiveTakeoff()
         }
 
+        // Set 28 as active for development
+        airports[1]?.entity?.get(RunwayChildren.mapper)?.rwyMap?.apply {
+            get(1).entity += ActiveLanding()
+            get(1).entity += ActiveTakeoff()
+        }
+
         // Add dummy aircraft
         airports[0]?.entity?.get(RunwayChildren.mapper)?.rwyMap?.get(0)?.entity?.let { rwy -> createDeparture(rwy, this) }
-        // airports[0]?.entity?.let { arpt -> createArrival(arpt, this) }
+        airports[0]?.entity?.let { arpt -> createArrival(arpt, this) }
         appTestArrival(this)
 
         engine.addSystem(PhysicsSystem(1f))

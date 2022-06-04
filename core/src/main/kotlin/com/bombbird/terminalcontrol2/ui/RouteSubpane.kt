@@ -79,6 +79,7 @@ class RouteSubpane {
         var firstDirectSet = false
         var firstAvailableLeg: Route.Leg? = null // The first leg that can be set as selected in case previous direct leg doesn't match any leg
         routeLegsTable.apply {
+            var prevPhase: Byte? = null
             for (i in 0 until route.legs.size) {
                 route.legs[i].also { leg ->
                     val legDisplay = (leg as? Route.WaypointLeg)?.let { wpt -> if (!wpt.legActive) return@also
@@ -98,6 +99,13 @@ class RouteSubpane {
                     (leg as? Route.InitClimbLeg)?.let { if (checkLegChanged(parentPane.clearanceState.route, it)) Triple(true, true, true)
                     else Triple(false, false, false)} ?:
                     Triple(false, false, false)
+                    val legChanged = checkLegChanged(parentPane.clearanceState.route, leg)
+                    if (prevPhase != leg.phase && leg.phase == Route.Leg.MISSED_APP) {
+                        label("Missed approach", "ControlPaneRoute${if (legChanged) "Changed" else ""}")
+                            .cell(colspan = 4, padLeft = 10f, padRight = 10f, preferredHeight = 0.1f * UI_HEIGHT)
+                        row()
+                    }
+                    prevPhase = leg.phase
                     val altRestrDisplay = (leg as? Route.WaypointLeg)?.let { wptLeg ->
                         var restr = wptLeg.maxAltFt?.toString() ?: ""
                         if (wptLeg.maxAltFt != wptLeg.minAltFt) restr += wptLeg.minAltFt?.toString()?.let { minAlt -> "${if (restr.isNotBlank()) "\n" else ""}$minAlt" } ?: ""
@@ -152,7 +160,7 @@ class RouteSubpane {
                         }
                     })
                     val showRestrDisplay = leg is Route.WaypointLeg || leg is Route.InitClimbLeg
-                    label(legDisplay, "ControlPaneRoute${if (checkLegChanged(parentPane.clearanceState.route, leg)) "Changed" else ""}")
+                    label(legDisplay, "ControlPaneRoute${if (legChanged) "Changed" else ""}")
                         .apply { setAlignment(if (showRestrDisplay) Align.center else Align.left) }
                         .cell(growX = true, preferredWidth = 0.2f * parentPane.paneWidth, colspan = if (showRestrDisplay) null else 3, padLeft = if (showRestrDisplay) 0f else 15f)
                     if (showRestrDisplay) label(altRestrDisplay, altRestrStyle).apply { setAlignment(Align.center) }.cell(expandX = true, padLeft = 10f, padRight = 10f)

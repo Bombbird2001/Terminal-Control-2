@@ -44,9 +44,9 @@ class LandingRoll: Component {
  * */
 data class CommandTarget(var targetHdgDeg: Float = 360f, var turnDir: Byte = TURN_DEFAULT, var targetAltFt: Int = 0, var expedite: Boolean = false, var targetIasKt: Short = 0): Component {
     companion object: Mapper<CommandTarget>() {
-        val TURN_DEFAULT: Byte = 0
-        val TURN_LEFT: Byte = -1
-        val TURN_RIGHT: Byte = 1
+        const val TURN_DEFAULT: Byte = 0
+        const val TURN_LEFT: Byte = -1
+        const val TURN_RIGHT: Byte = 1
     }
 }
 

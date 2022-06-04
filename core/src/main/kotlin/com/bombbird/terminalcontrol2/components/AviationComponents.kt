@@ -12,7 +12,7 @@ data class AirportInfo(var arptId: Byte = 0, var icaoCode: String = "", var name
 }
 
 /** Component for tagging runway related information */
-data class RunwayInfo(var rwyId: Byte = 0, var rwyName: String = "", var lengthM: Short = 4000, var displacedThresholdM: Short = 0): Component {
+data class RunwayInfo(var rwyId: Byte = 0, var rwyName: String = "", var lengthM: Short = 4000, var displacedThresholdM: Short = 0, var tower: String = "", var freq: String = ""): Component {
     lateinit var airport: Airport
     companion object: Mapper<RunwayInfo>()
 }
@@ -88,7 +88,7 @@ data class ArrivalAirport(var arptId: Byte = 0): Component {
 }
 
 /** Component for tagging basic approach information */
-data class ApproachInfo(var approachName: String = "", var airportId: Byte = 0, var rwyId: Byte = 0, var towerName: String = "", var frequency: String = ""): Component {
+data class ApproachInfo(var approachName: String = "", var airportId: Byte = 0, var rwyId: Byte = 0): Component {
     lateinit var rwyObj: Airport.Runway
 
     companion object: Mapper<ApproachInfo>()
@@ -122,10 +122,8 @@ data class Minimums(var baroAltFt: Short = 0, var rvrM: Short = 0): Component {
 /**
  * Component for tagging visual approach (one will be created for every runway with their own extended centerline up to
  * 10nm and glide path of 3 degrees)
- *
- * A [Position] component is tagged to mark the location of the touchdown zone
  * */
-class Visual(val position: Position = Position()): Component {
+class Visual : Component {
     companion object: Mapper<Visual>()
 }
 

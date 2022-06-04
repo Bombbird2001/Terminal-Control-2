@@ -149,7 +149,7 @@ fun appTestArrival(gs: GameServer) {
     gs.aircraft.put("SHIBA4", Aircraft("SHIBA4", -250f, -150f, 2000f, "A359", FlightType.ARRIVAL, false).apply {
         entity += ArrivalAirport(0)
         entity[Direction.mapper]?.trackUnitVector?.rotateDeg(-70f)
-        val ias = 220.toShort()
+        val ias = 240.toShort()
         val tas = calculateTASFromIAS(2000f, ias.toFloat())
         entity[Speed.mapper]?.apply {
             speedKts = tas
@@ -164,6 +164,28 @@ fun appTestArrival(gs: GameServer) {
             targetAltFt = clearedAlt
             targetIasKt = ias
             targetHdgDeg = 70f
+        }
+        entity += InitialArrivalSpawn()
+    })
+
+    gs.aircraft.put("SHIBA5", Aircraft("SHIBA5", 650f, 15f, 1800f, "B77W", FlightType.ARRIVAL, false).apply {
+        entity += ArrivalAirport(1)
+        entity[Direction.mapper]?.trackUnitVector?.rotateDeg(110f)
+        val ias = 190.toShort()
+        val tas = calculateTASFromIAS(1800f, ias.toFloat())
+        entity[Speed.mapper]?.apply {
+            speedKts = tas
+            vertSpdFpm = 0f
+        }
+        val clearedAlt = 1800
+        entity += ClearanceAct(ClearanceState.ActingClearance(
+            ClearanceState("", Route(), Route(),
+                250, null, clearedAlt, ias)
+        ))
+        entity[CommandTarget.mapper]?.apply {
+            targetAltFt = clearedAlt
+            targetIasKt = ias
+            targetHdgDeg = 250f
         }
         entity += InitialArrivalSpawn()
     })

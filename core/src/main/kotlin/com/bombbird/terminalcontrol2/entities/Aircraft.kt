@@ -158,7 +158,8 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
         }
     }
 
-    /** Object that contains select [Aircraft] data to be sent over UDP, serialised by Kryo
+    /**
+     * Object that contains select [Aircraft] data to be sent over UDP, serialised by Kryo
      *
      * Variables will use as small a datatype as practically possible to reduce bandwidth
      * */
@@ -230,7 +231,8 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
         }
     }
 
-    /** Object that contains select [Aircraft] data to be sent over TCP, serialised by Kryo
+    /**
+     * Object that contains select [Aircraft] data to be sent over TCP, serialised by Kryo
      *
      * Variables will use as small a datatype as practically possible to reduce bandwidth
      * */

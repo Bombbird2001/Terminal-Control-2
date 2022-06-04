@@ -80,6 +80,7 @@ fun loadWorldData(mainName: String, gameServer: GameServer) {
                 "LOC" -> if (currApp != null) parseAppLocalizer(lineData, currApp)
                 "GS" -> if (currApp != null) parseAppGlideslope(lineData, currApp)
                 "STEPDOWN" -> if (currApp != null) parseAppStepDown(lineData, currApp)
+                "LINEUP" -> if (currApp != null) parseAppLineUp(lineData, currApp)
                 "TRANSITION" -> if (currApp != null) parseApproachTransition(lineData, currApp)
                 "MISSED" -> if (currApp != null) parseApproachMissed(lineData, currApp)
                 "/$currSectorCount" -> currSectorCount = 0
@@ -107,7 +108,11 @@ fun loadWorldData(mainName: String, gameServer: GameServer) {
                             "TRANS_LVL" -> TRANS_LVL = lineData[1].toInt()
                             "MIN_SEP" -> MIN_SEP = lineData[1].toFloat()
                             "MAG_HDG_DEV" -> MAG_HDG_DEV = lineData[1].toFloat()
-                            else -> parseMode = lineData[0]
+                            else -> {
+                                if (lineData[0] in arrayOf("WAYPOINTS", "HOLDS", "MIN_ALT_SECTORS", "SHORELINE", "RWYS", "SECTORS"))
+                                    parseMode = lineData[0]
+                                else if (lineData[0] != "") Gdx.app.log("GameLoader", "Unknown parse mode ${lineData[0]}")
+                            }
                         }
                     }
                 }
@@ -268,7 +273,9 @@ private fun parseRunway(data: List<String>, airport: Airport) {
             RunwayLabel.BEFORE
         }
     }
-    airport.addRunway(id, name, posX, posY, trueHdg, rwyLengthM, displacedThresholdLengthM, elevation, labelPos)
+    val towerCallsign = data[8].replace("-", " ")
+    val towerFreq = data[9]
+    airport.addRunway(id, name, posX, posY, trueHdg, rwyLengthM, displacedThresholdLengthM, elevation, towerCallsign, towerFreq, labelPos)
     airport.setRunwayMapping(name, id)
 }
 
@@ -297,16 +304,14 @@ private fun parseApproach(data: List<String>, airport: Airport): Approach? {
     val posY = nmToPx(pos[1].toFloat())
     val decisionAltitude = data[5].toShort()
     val rvr = data[6].toShort()
-    val towerCallsign = data[7].replace("-", " ")
-    val towerFreq = data[8]
-    val app = Approach(name, arptId, rwyId, posX, posY, decisionAltitude, rvr, towerCallsign, towerFreq, false, dayNight)
+    val app = Approach(name, arptId, rwyId, posX, posY, decisionAltitude, rvr, false, dayNight)
     airport.entity[ApproachChildren.mapper]?.approachMap?.put(name, app)
     return app
 }
 
 /**
  * Parse the given data into localizer data, and adds it to the input approach
- * @param data containing localizer information
+ * @param data the data containing localizer information
  * @param approach the approach to add the localizer to
  * */
 private fun parseAppLocalizer(data: List<String>, approach: Approach) {
@@ -317,7 +322,7 @@ private fun parseAppLocalizer(data: List<String>, approach: Approach) {
 
 /**
  * Parse the given data into glideslope data, and adds it to the input approach
- * @param data containing glideslope information
+ * @param data the data containing glideslope information
  * @param approach the approach to add the glideslope to
  * */
 private fun parseAppGlideslope(data: List<String>, approach: Approach) {
@@ -329,7 +334,7 @@ private fun parseAppGlideslope(data: List<String>, approach: Approach) {
 
 /**
  * Parse the given data into step-down procedure data, and adds it to the input approach
- * @param data containing step-down information
+ * @param data the data containing step-down information
  * @param approach the approach to add the step-down procedure to
  * */
 private fun parseAppStepDown(data: List<String>, approach: Approach) {
@@ -340,6 +345,15 @@ private fun parseAppStepDown(data: List<String>, approach: Approach) {
     }
     steps.sortBy { it.first }
     approach.addStepDown(steps.toTypedArray())
+}
+
+/**
+ * Parse the given data into line-up distance data, and adds it to the input approach
+ * @param data the data containing line-up distance data
+ * @param approach the approach to add the line-up distance to
+ */
+private fun parseAppLineUp(data: List<String>, approach: Approach) {
+    approach.addLineUpDist(data[1].toFloat())
 }
 
 /** Parse the given [data] into the route legs data, and adds it to the supplied [approach]'s [Approach.routeLegs] */

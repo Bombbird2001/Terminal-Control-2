@@ -135,6 +135,7 @@ class UIPane(private val uiStage: Stage) {
         controlObj.resetDirectButton()
         controlObj.updateClearanceMode(userClearanceState.route, userClearanceState.vectorHdg,
             aircraft.entity.has(VisualCaptured.mapper) || aircraft.entity.has(LocalizerCaptured.mapper))
+        controlObj.clearAltSelectBoxChoices()
         controlObj.updateAltSelectBoxChoices(aircraftMaxAlt)
         controlObj.updateApproachSelectBoxChoices(aircraft.entity[ArrivalAirport.mapper]?.arptId)
         controlObj.updateAltSpdAppClearances(userClearanceState.clearedAlt, userClearanceState.clearedIas,

@@ -27,7 +27,7 @@ import kotlin.math.roundToInt
  * [Pronounceable] is implemented to provide adjustments to text for accurate pronunciation by TTS implementations
  * */
 class Approach(name: String, arptId: Byte, runwayId: Byte, posX: Float, posY: Float, decisionAlt: Short, rvr: Short,
-               tower: String, towerFreq: String, onClient: Boolean = true, override val timeRestriction: Byte): UsabilityFilter, Pronounceable {
+               onClient: Boolean = true, override val timeRestriction: Byte): UsabilityFilter, Pronounceable {
     override val pronunciation: String
         get() = "" // TODO implement pronunciation based on approach name (or I might change it to a user specified pronunciation)
     val entity = getEngine(onClient).entity {
@@ -35,8 +35,6 @@ class Approach(name: String, arptId: Byte, runwayId: Byte, posX: Float, posY: Fl
             approachName = name
             airportId = arptId
             rwyId = runwayId
-            towerName = tower
-            frequency = towerFreq
             GAME.gameServer?.airports?.get(arptId)?.entity?.get(RunwayChildren.mapper)?.rwyMap?.get(runwayId)?.let { rwyObj = it }
         }
         with<Position> {
@@ -67,7 +65,6 @@ class Approach(name: String, arptId: Byte, runwayId: Byte, posX: Float, posY: Fl
         val stepDown = entity[StepDown.mapper]
         return SerialisedApproach(
             appInfo.approachName, appInfo.airportId, appInfo.rwyId, pos.x, pos.y,
-            appInfo.towerName, appInfo.frequency,
             timeRestriction,
             transitions.entries().map { SerialisedTransition(it.key, it.value.getSerialisedObject()) }.toTypedArray(),
             routeLegs.getSerialisedObject(),
@@ -87,7 +84,6 @@ class Approach(name: String, arptId: Byte, runwayId: Byte, posX: Float, posY: Fl
             return Approach(
                 serialisedApproach.name, serialisedApproach.arptId, serialisedApproach.rwyId, serialisedApproach.posX, serialisedApproach.posy,
                 0, 0,
-                serialisedApproach.tower, serialisedApproach.towerFreq,
                 timeRestriction = serialisedApproach.timeRestriction
             ).apply {
                 setLegsFromSerialisedObject(serialisedApproach)
@@ -113,7 +109,6 @@ class Approach(name: String, arptId: Byte, runwayId: Byte, posX: Float, posY: Fl
      * This class is abstract and is extended by SerialisedIlsGS and SerialisedIlsLOCOffset
      * */
     class SerialisedApproach(val name: String = "", val arptId: Byte = 0, val rwyId: Byte = 0, val posX: Float = 0f, val posy: Float = 0f,
-                             val tower: String = "", val towerFreq: String = "",
                              val timeRestriction: Byte = 0,
                              val transitions: Array<SerialisedTransition> = arrayOf(),
                              val routeLegs: Route.SerialisedRoute = Route.SerialisedRoute(),
@@ -167,5 +162,13 @@ class Approach(name: String, arptId: Byte, runwayId: Byte, posX: Float, posY: Fl
      * */
     fun addStepDown(steps: Array<Pair<Float, Short>>) {
         entity += StepDown(steps)
+    }
+
+    /**
+     * Adds a line-up distance component for the approach; should be used when the approach is offset from the runway
+     * @param lineUpDist the distance from the runway threshold to start turning the plane towards the runway
+     */
+    fun addLineUpDist(lineUpDist: Float) {
+        entity += LineUpDist(lineUpDist)
     }
 }

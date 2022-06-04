@@ -136,10 +136,19 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
         constZoomStage.addActor(actor)
     }
 
-    /** Instructs [uiPane] to display the control pane for the supplied aircraft */
+    /**
+     * Instructs [uiPane] to display the control pane for the supplied aircraft
+     * @param aircraft the aircraft to display in the UI pane
+     * */
     fun setUISelectedAircraft(aircraft: Aircraft) {
         uiPane.setSelectedAircraft(aircraft)
         selectedAircraft = aircraft
+    }
+
+    /** Deselects the currently selected aircraft in [uiPane] */
+    fun deselectUISelectedAircraft() {
+        uiPane.deselectAircraft()
+        selectedAircraft = null
     }
 
     /** Ensures [radarDisplayStage]'s camera parameters are within limits, then updates the camera (and [shapeRenderer]) */

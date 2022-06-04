@@ -4,11 +4,13 @@ import com.badlogic.ashley.core.Entity
 import com.badlogic.gdx.math.MathUtils
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.GAME
+import com.bombbird.terminalcontrol2.global.MIN_ALT
 import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.get
 import ktx.ashley.has
 import ktx.ashley.plusAssign
 import ktx.ashley.remove
+import kotlin.math.min
 
 /**
  * Clearance class that contains data for player transmitted aircraft clearances
@@ -130,7 +132,7 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
                 entity += AppDecelerateTo190kts()
                 entity += DecelerateToAppSpd()
                 val alt = GAME.gameServer?.airports?.get(entity[ArrivalAirport.mapper]?.arptId)?.entity?.get(Altitude.mapper)?.altitudeFt ?: 0f
-                entity += ContactToTower((alt + MathUtils.random(1100, 1400)).toInt())
+                entity += ContactToTower(min((alt + MathUtils.random(1100, 1500)).toInt(), MIN_ALT - 50))
             } ?: run {
                 entity.remove<AppDecelerateTo190kts>()
                 entity.remove<DecelerateToAppSpd>()

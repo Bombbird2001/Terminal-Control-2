@@ -50,7 +50,7 @@ fun printAirportApproaches(entity: Entity) {
         for (obj in app) {
             val appEntity = obj.value.entity
             val appInfo = appEntity[ApproachInfo.mapper]
-            println("${appInfo?.approachName} ${appInfo?.towerName} ${appInfo?.frequency}")
+            println(appInfo?.approachName)
             println((convertWorldAndRenderDeg(appEntity[Direction.mapper]?.trackUnitVector?.angleDeg() ?: 0f) + 180 + MAG_HDG_DEV).roundToInt().toShort())
             println(appEntity[Localizer.mapper]?.maxDistNm)
             appEntity[GlideSlope.mapper]?.apply {
