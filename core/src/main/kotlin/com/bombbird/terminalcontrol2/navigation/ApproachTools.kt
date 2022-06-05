@@ -76,11 +76,7 @@ fun getTargetPos(approach: Entity, posX: Float, posY: Float): Vector2? {
     val distPx = calculateDistanceBetweenPoints(posX, posY, pos.x, pos.y)
 
     if ((loc != null && distPx < nmToPx(loc.maxDistNm.toFloat())) || (vis != null && distPx < nmToPx(VIS_MAX_DIST_NM.toFloat()))) {
-        val distNmSubtracted = when {
-            pxToNm(distPx) > 10 -> 1.5f
-            pxToNm(distPx) > 4 -> 0.75f
-            else -> 0.25f
-        }
+        val distNmSubtracted = if (pxToNm(distPx) > 10) 1.5f else 0.5f
         val targetDistPx = distPx - nmToPx(distNmSubtracted)
         return Vector2(pos.x, pos.y) + dir.trackUnitVector * targetDistPx
     }

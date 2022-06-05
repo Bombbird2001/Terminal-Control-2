@@ -87,8 +87,8 @@ class GameServer {
         airports[0]?.entity?.get(RunwayChildren.mapper)?.rwyMap?.apply {
             get(0).entity += ActiveLanding()
             get(0).entity += ActiveTakeoff()
-            get(2).entity += ActiveLanding()
-            get(2).entity += ActiveTakeoff()
+            get(1).entity += ActiveLanding()
+            get(1).entity += ActiveTakeoff()
         }
 
         // Set 28 as active for development

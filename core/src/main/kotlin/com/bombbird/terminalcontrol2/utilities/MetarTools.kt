@@ -62,7 +62,7 @@ fun updateAirportMetar(metarJson: String) {
     Moshi.Builder().build().adapter<Map<Byte, MetarResponse>>(type).fromJson(metarJson)?.apply {
         for (entry in entries) {
             entry.value.let {
-            GAME.gameServer?.airports?.get(entry.key)?.entity?.get(MetarInfo.mapper)?.apply {
+                GAME.gameServer?.airports?.get(entry.key)?.entity?.get(MetarInfo.mapper)?.apply {
                     if (rawMetar != it.rawMetar && !(rawMetar == "" && it.rawMetar == null)) letterCode = letterCode?.let {
                         if (it + 1 <= 'Z') it + 1 else 'A'
                     } ?: MathUtils.random(65, 90).toChar()

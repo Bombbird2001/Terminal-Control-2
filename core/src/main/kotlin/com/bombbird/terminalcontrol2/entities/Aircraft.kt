@@ -189,7 +189,8 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                 direction.trackUnitVector.x, direction.trackUnitVector.y,
                 speed.speedKts, speed.vertSpdFpm, speed.angularSpdDps, gs.trackVectorPxps.x, gs.trackVectorPxps.y,
                 cmdTarget.targetHdgDeg.toInt().toShort(), (cmdTarget.targetAltFt / 100f).roundToInt().toShort(), cmdTarget.targetIasKt,
-                has(GlideSlopeCaptured.mapper), has(LocalizerCaptured.mapper), has(VisualCaptured.mapper)
+                has(GlideSlopeCaptured.mapper), has(LocalizerCaptured.mapper),
+                has(VisualCaptured.mapper) || (get(CirclingApproach.mapper)?.phase ?: 0) >= 1
             )
         }
     }
@@ -276,7 +277,8 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                 clearance.minIas, clearance.maxIas, clearance.optimalIas,
                 arrArptId,
                 controllable.sectorId,
-                has(GlideSlopeCaptured.mapper), has(LocalizerCaptured.mapper), has(VisualCaptured.mapper)
+                has(GlideSlopeCaptured.mapper), has(LocalizerCaptured.mapper),
+                has(VisualCaptured.mapper) || (get(CirclingApproach.mapper)?.phase ?: 0) >= 1
             )
         }
     }

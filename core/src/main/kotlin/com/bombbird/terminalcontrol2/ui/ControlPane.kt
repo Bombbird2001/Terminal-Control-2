@@ -261,6 +261,7 @@ class ControlPane {
             } ?: run {
                 isDisabled = true
                 items = GdxArray<String>().apply { add("$TRANS_PREFIX$NO_TRANS_SELECTION") }
+                parentPane.userClearanceState.clearedTrans = null
             }
         }
         modificationInProgress = false

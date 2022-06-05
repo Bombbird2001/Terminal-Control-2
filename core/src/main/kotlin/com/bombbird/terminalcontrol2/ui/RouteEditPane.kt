@@ -97,6 +97,7 @@ class RouteEditPane {
     fun updateEditRouteTable(route: Route) {
         routeEditTable.clear()
         routeEditTable.apply {
+            var prevPhase: Byte? = null
             var lastWptLegIndex = -1
             for (i in route.legs.size - 1 downTo 0) if (route.legs[i] is Route.WaypointLeg) {
                 lastWptLegIndex = i
@@ -130,6 +131,13 @@ class RouteEditPane {
                         else -> "REMOVE"
                     }
                     val legChanged = checkLegChanged(parentPane.clearanceState.route, leg)
+                    if (prevPhase != leg.phase && leg.phase == Route.Leg.MISSED_APP && leg is Route.DiscontinuityLeg) {
+                        label("Missed approach", "ControlPaneRoute${if (legChanged) "Changed" else ""}")
+                            .cell(colspan = 4, padLeft = 10f, padRight = 10f, preferredHeight = 0.1f * UI_HEIGHT)
+                        row()
+                        return@let // Continue to next leg once the missed approach discontinuity leg has been determined
+                    }
+                    prevPhase = leg.phase
                     val restrTriple = (leg as? Route.WaypointLeg)?.let { checkRestrChanged(parentPane.clearanceState.route, it) } ?: Triple(false, false, false)
                     val altRestrChanged = legChanged || restrTriple.first
                     val spdRestrChanged = legChanged || restrTriple.second

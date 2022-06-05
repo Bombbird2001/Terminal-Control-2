@@ -114,6 +114,11 @@ class StepDown(var altAtDist: Array<Pair<Float, Short>> = arrayOf()): Component 
     companion object: Mapper<StepDown>()
 }
 
+/** Component for tagging circling approach information */
+class Circling(var minBreakoutAlt: Int = 0, var maxBreakoutAlt: Int = 0, var breakoutDir: Byte = CommandTarget.TURN_LEFT): Component {
+    companion object: Mapper<Circling>()
+}
+
 /** Component for tagging approach minimums information */
 data class Minimums(var baroAltFt: Short = 0, var rvrM: Short = 0): Component {
     companion object: Mapper<Minimums>()
@@ -123,7 +128,7 @@ data class Minimums(var baroAltFt: Short = 0, var rvrM: Short = 0): Component {
  * Component for tagging visual approach (one will be created for every runway with their own extended centerline up to
  * 10nm and glide path of 3 degrees)
  * */
-class Visual : Component {
+class Visual: Component {
     companion object: Mapper<Visual>()
 }
 

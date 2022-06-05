@@ -3,7 +3,8 @@ package com.bombbird.terminalcontrol2.components
 import com.badlogic.ashley.core.Component
 import ktx.ashley.Mapper
 
-/** Component for tagging takeoff rolling mode
+/**
+ * Component for tagging takeoff rolling mode
  *
  * Aircraft will accelerate at a constant rate [targetAccMps2], rotate at vR
  * */
@@ -11,7 +12,8 @@ data class TakeoffRoll(var targetAccMps2: Float = 2f): Component {
     companion object: Mapper<TakeoffRoll>()
 }
 
-/** Component for tagging initial takeoff climb mode
+/**
+ * Component for tagging initial takeoff climb mode
  *
  * Aircraft will maintain vR + (15 to 20) and climb at max allowed rate till [accelAltFt], where it will accelerate
  * */
@@ -19,7 +21,8 @@ data class TakeoffClimb(var accelAltFt: Float = 1500f): Component {
     companion object: Mapper<TakeoffClimb>()
 }
 
-/** Component for tagging landing mode
+/**
+ * Component for tagging landing mode
  *
  * Aircraft will decelerate at a constant rate till ~45 knots, then decelerate at a reduced rate, then de-spawn at 25-30 knots
  * */
@@ -27,7 +30,8 @@ class LandingRoll: Component {
     companion object: Mapper<LandingRoll>()
 }
 
-/** Component for tagging the basic AI control modes of the aircraft
+/**
+ * Component for tagging the basic AI control modes of the aircraft
  *
  * [targetHdgDeg] is the heading the plane will turn to and maintain
  *
@@ -50,7 +54,8 @@ data class CommandTarget(var targetHdgDeg: Float = 360f, var turnDir: Byte = TUR
     }
 }
 
-/** Component for tagging the vector leg an aircraft is flying
+/**
+ * Component for tagging the vector leg an aircraft is flying
  *
  * [heading] is the heading the aircraft will fly
  *
@@ -62,7 +67,8 @@ data class CommandVector(var heading: Short = 360, var turnDir: Byte = CommandTa
     companion object: Mapper<CommandVector>()
 }
 
-/** Component for tagging the initial climb leg an aircraft is flying
+/**
+ * Component for tagging the initial climb leg an aircraft is flying
  *
  * [heading] is the heading the aircraft will fly
  *
@@ -74,7 +80,8 @@ data class CommandInitClimb(var heading: Short = 360, var minAltFt: Int = 0): Co
     companion object: Mapper<CommandInitClimb>()
 }
 
-/** Component for tagging the waypoint leg an aircraft is flying
+/**
+ * Component for tagging the waypoint leg an aircraft is flying
  *
  * [wptId] is the ID of the waypoint
  *
@@ -92,7 +99,8 @@ data class CommandDirect(var wptId: Short = 0, var maxAltFt: Int? = null, var mi
     companion object: Mapper<CommandDirect>()
 }
 
-/** Component for tagging a holding leg an aircraft is flying
+/**
+ * Component for tagging a holding leg an aircraft is flying
  *
  * This component will persist until the aircraft is no longer in holding mode
  * */

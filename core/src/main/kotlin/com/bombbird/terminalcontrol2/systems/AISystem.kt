@@ -23,7 +23,7 @@ import kotlin.math.*
  * Used only in GameServer
  * */
 class AISystem: EntitySystem() {
-    private val takeoffAccFamily: Family = allOf(Acceleration::class, AircraftInfo::class, TakeoffRoll::class, Speed::class, Direction::class, AffectedByWind::class).get()
+    private val takeoffAccFamily: Family = allOf(Acceleration::class, AircraftInfo::class, TakeoffRoll::class, Speed::class, AffectedByWind::class).get()
     private val takeoffClimbFamily: Family = allOf(Altitude::class, CommandTarget::class, TakeoffClimb::class, ClearanceAct::class, AircraftInfo::class).get()
     private val landingAccFamily: Family = allOf(Acceleration::class, LandingRoll::class, GroundTrack::class).get()
     private val above250Family: Family = allOf(AccelerateToAbove250kts::class, Altitude::class, CommandTarget::class, ClearanceAct::class).get()
@@ -31,7 +31,7 @@ class AISystem: EntitySystem() {
     private val app190Family: Family = allOf(Position::class, AppDecelerateTo190kts::class, CommandTarget::class, ClearanceAct::class)
         .oneOf(VisualCaptured::class, LocalizerCaptured::class, GlideSlopeCaptured::class).get()
     private val minAppSpdFamily: Family = allOf(Position::class, DecelerateToAppSpd::class, CommandTarget::class, ClearanceAct::class, AircraftInfo::class)
-        .oneOf(VisualCaptured::class, LocalizerCaptured::class, GlideSlopeCaptured::class).get()
+        .oneOf(VisualCaptured::class, LocalizerCaptured::class, GlideSlopeCaptured::class).exclude(CirclingApproach::class).get()
     private val initialArrivalFamily: Family = allOf(ClearanceAct::class, InitialArrivalSpawn::class).get()
     private val vectorFamily: Family = allOf(CommandVector::class, CommandTarget::class).get()
     private val initClimbFamily: Family = allOf(CommandInitClimb::class, CommandTarget::class, Altitude::class).get()
@@ -43,11 +43,13 @@ class AISystem: EntitySystem() {
         .oneOf(LocalizerCaptured::class, VisualCaptured::class).exclude(CommandDirect::class).get()
     private val visAppGlideFamily: Family = allOf(CommandTarget::class, Position::class, GroundTrack::class, VisualCaptured::class).get()
     private val stabilisedAppFamily: Family = allOf(Position::class, Altitude::class, IndicatedAirSpeed::class, AircraftInfo::class)
-        .oneOf(GlideSlopeCaptured::class, LocalizerCaptured::class, VisualCaptured::class).get()
+        .oneOf(GlideSlopeCaptured::class, LocalizerCaptured::class, VisualCaptured::class).exclude(CirclingApproach::class).get()
     private val locArmedFamily: Family = allOf(Position::class, Direction::class, IndicatedAirSpeed::class, GroundTrack::class, LocalizerArmed::class).get()
     private val gsArmedFamily: Family = allOf(Position::class, Altitude::class, GlideSlopeArmed::class).get()
     private val stepDownAppFamily: Family = allOf(CommandTarget::class, Position::class, LocalizerCaptured::class, StepDownApproach::class).get()
-    private val checkTouchdownFamily: Family = allOf(Altitude::class, Speed::class, Acceleration::class, Direction::class).oneOf(VisualCaptured::class, GlideSlopeCaptured::class).get()
+    private val circlingAppFamily: Family = allOf(CommandTarget::class, Position::class, Altitude::class, Direction::class, CirclingApproach::class, AircraftInfo::class).get()
+    private val checkTouchdownFamily: Family = allOf(Altitude::class, Speed::class, Acceleration::class, Direction::class)
+        .oneOf(VisualCaptured::class, GlideSlopeCaptured::class).get()
     private val actingClearanceChangedFamily: Family = allOf(CommandTarget::class, ClearanceActChanged::class, ClearanceAct::class).get()
 
     /** Main update function */
@@ -56,6 +58,7 @@ class AISystem: EntitySystem() {
         updateTakeoffClimb()
         updateLandingAcceleration()
         updateCommandTarget()
+        updateApproaches(deltaTime)
         update10000ftSpeed()
         updateInitialArrival()
     }
@@ -69,10 +72,8 @@ class AISystem: EntitySystem() {
                 val alt = get(Altitude.mapper) ?: return@apply
                 val aircraftInfo = get(AircraftInfo.mapper) ?: return@apply
                 val ias = get(IndicatedAirSpeed.mapper) ?: return@apply
-                val dir = get(Direction.mapper) ?: return@apply
-                val wind = get(AffectedByWind.mapper) ?: return@apply
                 ias.iasKt = calculateIASFromTAS(alt.altitudeFt, spd.speedKts)
-                if (ias.iasKt >= aircraftInfo.aircraftPerf.vR + calculateIASFromTAS(alt.altitudeFt, pxpsToKt(wind.windVectorPxps.dot(dir.trackUnitVector)))) {
+                if (ias.iasKt >= aircraftInfo.aircraftPerf.vR) {
                     // Transition to takeoff climb mode
                     remove<TakeoffRoll>()
                     val randomAGL = MathUtils.random(1200, 1800)
@@ -194,7 +195,8 @@ class AISystem: EntitySystem() {
             }
         }
 
-        // Update aircraft to slow down to minimum approach speed at less than 6.4nm from runway threshold
+        // Update aircraft to slow down to minimum approach speed at less than 6.4nm from runway threshold, except if
+        // aircraft is on circling approach
         val minApp = engine.getEntitiesFor(minAppSpdFamily)
         for (i in 0 until minApp.size()) {
             minApp[i]?.apply {
@@ -228,7 +230,7 @@ class AISystem: EntitySystem() {
         }
     }
 
-    /** Update the [CommandTarget] parameters for aircraft */
+    /** Update the [CommandTarget] parameters for aircraft based on the different modes, excluding approaches */
     private fun updateCommandTarget() {
         // Update for vector leg
         val vector = engine.getEntitiesFor(vectorFamily)
@@ -397,6 +399,22 @@ class AISystem: EntitySystem() {
             }
         }
 
+        // Update when the acting clearance has been changed by player action
+        val actingClearances = engine.getEntitiesFor(actingClearanceChangedFamily)
+        for (i in 0 until actingClearances.size()) {
+            actingClearances[i]?.apply {
+                setCommandTargetToNewActingClearance(this)
+                remove<ClearanceActChanged>()
+            }
+        }
+    }
+
+    /**
+     * Updates aircraft AI behaviour for approaches, which will in most cases override behaviour stipulated by the modes
+     * in the [updateCommandTarget] function
+     * @param deltaTime time passed, in seconds, since the last update
+     * */
+    private fun updateApproaches(deltaTime: Float) {
         // Update for localizer/extended centreline captured (if aircraft has captured LOC but yet to capture GS, and still
         // has route legs to follow, continue following route till GS capture; they are excluded from this)
         val appTrackCaptured = engine.getEntitiesFor(appTrackCapFamily)
@@ -422,7 +440,8 @@ class AISystem: EntitySystem() {
                     remove<GlideSlopeArmed>()
                     remove<GlideSlopeCaptured>()
                     remove<StepDownApproach>()
-                    this += VisualCaptured(appEntity[ApproachInfo.mapper]?.rwyObj?.entity?.get(VisualApproach.mapper)?.visual ?: return@let)
+                    remove<CirclingApproach>()
+                    this += VisualCaptured(appEntity[ApproachInfo.mapper]?.rwyObj?.entity?.get(VisualApproach.mapper)?.visual ?: return@let, appEntity)
                 }}
             }
         }
@@ -501,14 +520,86 @@ class AISystem: EntitySystem() {
             }
         }
 
-        // Update stabilized approach status
+        // Update for circling approach
+        val circling = engine.getEntitiesFor(circlingAppFamily)
+        for (i in 0 until circling.size()) {
+            circling[i]?.apply {
+                val pos = get(Position.mapper) ?: return@apply
+                val alt = get(Altitude.mapper) ?: return@apply
+                val dir = get(Direction.mapper) ?: return@apply
+                val cmd = get(CommandTarget.mapper) ?: return@apply
+                val circleApp = get(CirclingApproach.mapper) ?: return@apply
+                val appDir = circleApp.circlingApp[Direction.mapper] ?: return@apply
+                val circleInfo = circleApp.circlingApp[Circling.mapper] ?: return@apply
+                val appInfo = circleApp.circlingApp[ApproachInfo.mapper] ?: return@apply
+                val rwy = appInfo.rwyObj.entity
+                val rwyDir = rwy[Direction.mapper] ?: return@apply
+                val rwyPos = rwy[CustomPosition.mapper] ?: return@apply // Use threshold position for reference
+                when (circleApp.phase.toInt()) {
+                    0 -> if (alt.altitudeFt < circleApp.breakoutAlt &&
+                        (has(LocalizerCaptured.mapper) || has(GlideSlopeCaptured.mapper) || has(StepDownApproach.mapper))) {
+                        // Check for minimums at breakout altitude
+                        val mins = circleApp.circlingApp[Minimums.mapper]
+                        val arptMetar = GAME.gameServer?.airports?.get(appInfo.airportId)?.entity?.get(MetarInfo.mapper)
+                        if (arptMetar != null && mins != null &&
+                            ((arptMetar.visibilityM < mins.rvrM) ||
+                            (arptMetar.ceilingHundredFtAGL ?: Short.MAX_VALUE) * 100 < mins.baroAltFt)) return@apply initiateGoAround(this)
+                        circleApp.phase = 1
+                    }
+                    1 -> {
+                        cmd.targetHdgDeg = (modulateHeading(convertWorldAndRenderDeg(appDir.trackUnitVector.angleDeg()) + MAG_HDG_DEV + 180)
+                                + when (circleInfo.breakoutDir) {
+                            CommandTarget.TURN_LEFT -> -45
+                            CommandTarget.TURN_RIGHT -> 45
+                            else -> {
+                                Gdx.app.log("AISystem", "Unknown circling breakout direction ${circleInfo.breakoutDir}")
+                                -45
+                            }
+                        })
+                        cmd.targetAltFt = circleApp.breakoutAlt - 100
+                        remove<LocalizerArmed>()
+                        remove<LocalizerCaptured>()
+                        remove<GlideSlopeArmed>()
+                        remove<GlideSlopeCaptured>()
+                        remove<StepDownApproach>()
+                        circleApp.phase1Timer -= deltaTime
+                        if (circleApp.phase1Timer < 0) circleApp.phase = 2
+                    }
+                    2 -> {
+                        cmd.targetHdgDeg = modulateHeading(convertWorldAndRenderDeg(rwyDir.trackUnitVector.angleDeg()) + MAG_HDG_DEV + 180)
+                        cmd.targetAltFt = circleApp.breakoutAlt - 100
+                        val toRwy = Vector2(rwyPos.x - pos.x, rwyPos.y - pos.y)
+                        val dotProduct = dir.trackUnitVector.dot(toRwy)
+                        // If aircraft has passed abeam runway, start 50 seconds timer in phase 3
+                        if (dotProduct < 0) circleApp.phase = 3
+                    }
+                    3 -> {
+                        cmd.targetHdgDeg = modulateHeading(convertWorldAndRenderDeg(rwyDir.trackUnitVector.angleDeg()) + MAG_HDG_DEV + 180)
+                        val visApp = rwy[VisualApproach.mapper]?.visual ?: return@apply
+                        cmd.targetAltFt = getAppAltAtPos(visApp, pos.x, pos.y, -pxpsToKt(get(GroundTrack.mapper)?.trackVectorPxps?.len() ?: 0f))?.toInt() ?:
+                        (circleApp.breakoutAlt - 100)
+                        cmd.targetIasKt = get(AircraftInfo.mapper)?.aircraftPerf?.appSpd ?: 135
+                        circleApp.phase3Timer -= deltaTime
+                        // Once 30 seconds has passed, transition to visual captured mode
+                        if (circleApp.phase3Timer < 0) {
+                            remove<CirclingApproach>()
+                            this += VisualCaptured(visApp, circleApp.circlingApp)
+                        }
+                    }
+                }
+            }
+        }
+
+        // Update stabilized approach status, and checks for minimums
         val stabApp = engine.getEntitiesFor(stabilisedAppFamily)
         for (i in 0 until stabApp.size()) {
             stabApp[i]?.apply {
                 val gsApp = get(GlideSlopeCaptured.mapper)?.gsApp
+                val stepDownApp = get(StepDownApproach.mapper)?.stepDownApp
                 val visApp = get(VisualCaptured.mapper)?.visApp
+                val visParentApp = get(VisualCaptured.mapper)?.parentApp
                 val locApp = get(LocalizerCaptured.mapper)?.locApp
-                val appVert = gsApp ?: visApp ?: return@apply
+                val appVert = gsApp ?: stepDownApp ?: visApp ?: return@apply
                 val appLat = locApp ?: visApp ?: return@apply
                 val rwyPos = appVert[ApproachInfo.mapper]?.rwyObj?.entity?.get(CustomPosition.mapper) ?: return@apply
                 val pos = get(Position.mapper) ?: return@apply
@@ -516,11 +607,23 @@ class AISystem: EntitySystem() {
                 val ias = get(IndicatedAirSpeed.mapper) ?: return@apply
                 val perf = get(AircraftInfo.mapper)?.aircraftPerf ?: return@apply
 
-                // Check distance
-                // For visual approach, check for stabilized approach by 1.6nm from threshold
-                // For approach with glide slope, check for stabilized approach by 3.2nm from threshold
                 val distFromRwyPx = calculateDistanceBetweenPoints(pos.x, pos.y, rwyPos.x, rwyPos.y)
-                val stabDistNm = if (gsApp != null) 3.2f else 1.6f
+                val arptMetar = GAME.gameServer?.airports?.get(appLat[ApproachInfo.mapper]?.airportId)?.entity?.get(MetarInfo.mapper) ?: return@apply
+
+                // Check RVR requirement - 100m leeway
+                val rvrRequired = ((visParentApp ?: appLat)[Minimums.mapper]?.rvrM ?: 100) - 100
+                if (pxToM(distFromRwyPx) < rvrRequired) {
+                    if (arptMetar.visibilityM < rvrRequired) return@apply initiateGoAround(this)
+                }
+
+                // Check decision altitude/height requirement
+                val decisionAlt = (visParentApp ?: appVert)[Minimums.mapper]?.baroAltFt ?: 0
+                if (alt.altitudeFt < decisionAlt && (arptMetar.ceilingHundredFtAGL ?: Short.MAX_VALUE) * 100 < decisionAlt) return@apply initiateGoAround(this)
+
+                // Check distance
+                // For visual approach, check for stabilized approach by 1.2nm from threshold
+                // For approach with glide slope, check for stabilized approach by 3.2nm from threshold
+                val stabDistNm = if (gsApp != null) 3.2f else 1.2f
                 if (pxToNm(distFromRwyPx) > stabDistNm) return@apply //  No need to check if aircraft is not yet close enough to the runway
 
                 // Check airspeed
@@ -554,7 +657,7 @@ class AISystem: EntitySystem() {
                 // Check position; only when aircraft is still more than 0.5nm from runway threshold
                 // For visual approach, aircraft position should be within 10 degrees of track to runway
                 // For approach with localizer, aircraft position should be within 1 degree of track to runway
-                val maxAllowableDeviation = if (locApp != null) 1 else 10
+                val maxAllowableDeviation = if (locApp != null) 1 else 20
                 val trackToRwy = getRequiredTrack(pos.x, pos.y, rwyPos.x, rwyPos.y)
                 val appTrack = convertWorldAndRenderDeg(appLat[Direction.mapper]?.trackUnitVector?.angleDeg() ?: return@apply) + 180
                 val deviation = abs(findDeltaHeading(trackToRwy, appTrack, CommandTarget.TURN_DEFAULT))
@@ -587,9 +690,7 @@ class AISystem: EntitySystem() {
                 val rwyEntity = appEntity[ApproachInfo.mapper]?.rwyObj?.entity ?: return@apply
                 val rwyElevation = rwyEntity[Altitude.mapper]?.altitudeFt ?: return@apply
                 if (alt.altitudeFt < rwyElevation + 25) {
-                    remove<VisualCaptured>()
-                    remove<GlideSlopeCaptured>()
-                    remove<LocalizerCaptured>()
+                    removeAllApproachComponents(this)
                     this += LandingRoll()
                     alt.altitudeFt = rwyElevation
                     spd.vertSpdFpm = 0f
@@ -598,15 +699,6 @@ class AISystem: EntitySystem() {
                     acc.dAngularSpdDps2 = 0f
                     dir.trackUnitVector = rwyEntity[Direction.mapper]?.trackUnitVector ?: return@apply
                 }
-            }
-        }
-
-        // Update when the acting clearance has been changed by player action
-        val actingClearances = engine.getEntitiesFor(actingClearanceChangedFamily)
-        for (i in 0 until actingClearances.size()) {
-            actingClearances[i]?.apply {
-                setCommandTargetToNewActingClearance(this)
-                remove<ClearanceActChanged>()
             }
         }
     }
@@ -620,6 +712,7 @@ class AISystem: EntitySystem() {
     private fun setToFirstRouteLeg(entity: Entity) {
         val actingClearance = entity[ClearanceAct.mapper]?.actingClearance?.actingClearance ?: return
         actingClearance.route.legs.apply {
+            val currHold = entity[CommandHold.mapper]
             removeAllAdvancedCommandModes(entity)
             unsetTurnDirection(entity)
             entity += LatestClearanceChanged()
@@ -647,7 +740,13 @@ class AISystem: EntitySystem() {
                         updateWaypointLegRestr(entity)
                         CommandDirect(it.wptId, it.maxAltFt, it.minAltFt, it.maxSpdKt, it.flyOver, it.turnDir)
                     }
-                    is Route.HoldLeg -> CommandHold(it.wptId, it.maxAltFt, it.minAltFt, it.maxSpdKtLower, it.inboundHdg, it.legDist, it.turnDir)
+                    is Route.HoldLeg -> {
+                        // If an existing hold mode exists, and new hold leg does not differ from it in the waypoint,
+                        // inbound heading and direction, re-add the hold mode removed earlier
+                        if (currHold?.wptId == it.wptId && currHold.inboundHdg == it.inboundHdg && currHold.legDir == it.turnDir) currHold
+                        else CommandHold(it.wptId, it.maxAltFt, it.minAltFt, it.maxSpdKtLower, it.inboundHdg, it.legDist, it.turnDir)
+                    }
+                    is Route.DiscontinuityLeg -> return@apply
                     else -> {
                         Gdx.app.log("AISystem", "Unknown leg type ${it::class}")
                         removeIndex(0)
@@ -865,11 +964,7 @@ class AISystem: EntitySystem() {
     private fun initiateGoAround(entity: Entity) {
         entity.apply {
             // Remove all approach components
-            remove<GlideSlopeArmed>()
-            remove<GlideSlopeCaptured>()
-            remove<LocalizerArmed>()
-            remove<LocalizerCaptured>()
-            remove<VisualCaptured>()
+            removeAllApproachComponents(entity)
 
             get(ClearanceAct.mapper)?.actingClearance?.actingClearance?.let {
                 // Set route to first missed approach leg

@@ -33,7 +33,7 @@ object MathToolsTest {
         assertEquals(NM_TO_PX / 1852, mToPx(1))
         assertEquals(NM_TO_PX / 1852, mToPx(1.0f))
         assertEquals(1852 / NM_TO_PX, pxToM(1))
-        assertEquals(1852 / NM_TO_PX, pxToM(1))
+        assertEquals(1852 / NM_TO_PX, pxToM(1.0f))
         assertEquals(NM_TO_PX / 3600, ktToPxps(1))
         assertEquals(NM_TO_PX / 3600, ktToPxps(1.0f))
         assertEquals(3600 / NM_TO_PX, pxpsToKt(1.0f))

@@ -30,7 +30,7 @@ class PhysicsSystem(override val updateTimeS: Float): EntitySystem(), LowFreqUpd
     private val cmdTargetSpdFamily: Family = allOf(AircraftInfo::class, Altitude::class, Speed::class, Acceleration::class, CommandTarget::class).get()
     private val cmdTargetHeadingFamily: Family = allOf(IndicatedAirSpeed::class, Direction::class, Speed::class, Acceleration::class, CommandTarget::class)
         .exclude(TakeoffRoll::class, LandingRoll::class).get()
-    private val glideSlopeCapturedFamily: Family = allOf(Altitude::class, Speed::class, GlideSlopeCaptured::class, ClearanceAct::class).get()
+    private val glideSlopeCapturedFamily: Family = allOf(Altitude::class, Speed::class, GlideSlopeCaptured::class).get()
     private val gsFamily: Family = allOf(Position::class, Altitude::class, GroundTrack::class, Speed::class, Direction::class, Acceleration::class).get()
     private val tasToIasFamily: Family = allOf(Speed::class, IndicatedAirSpeed::class, Altitude::class).exclude(TakeoffRoll::class).get()
     private val accLimitFamily: Family = allOf(Speed::class, Altitude::class, Acceleration::class, AircraftInfo::class).get()
@@ -138,15 +138,10 @@ class PhysicsSystem(override val updateTimeS: Float): EntitySystem(), LowFreqUpd
                 val acc = get(Acceleration.mapper) ?: return@apply
                 val alt = get(Altitude.mapper) ?: return@apply
                 val track = get(GroundTrack.mapper)?.trackVectorPxps ?: return@apply
-                val actingClearance = get(ClearanceAct.mapper)?.actingClearance ?: return@apply
                 alt.altitudeFt = getAppAltAtPos(gsApp, pos.x, pos.y, pxpsToKt(track.len())) ?: return@apply
                 val gsKtComponentToAppTrack = pxpsToKt(track.dot(appTrack))
                 spd.vertSpdFpm = ktToFpm(gsKtComponentToAppTrack * tan(Math.toRadians(glideAngle.toDouble())).toFloat())
                 acc.dVertSpdMps2 = 0f
-                val prevClearedAlt = actingClearance.actingClearance.clearedAlt
-                actingClearance.actingClearance.clearedAlt = 3000 // TODO set to missed approach procedure altitude
-                val pendingClearances = get(PendingClearances.mapper)
-                if (prevClearedAlt != actingClearance.actingClearance.clearedAlt && (pendingClearances == null || pendingClearances.clearanceQueue.isEmpty)) this += LatestClearanceChanged()
             }
         }
 
@@ -187,7 +182,7 @@ class PhysicsSystem(override val updateTimeS: Float): EntitySystem(), LowFreqUpd
 
                 groundTrack.trackVectorPxps = if (takeoffRoll != null || landingRoll != null) {
                     val tailwind = affectedByWind?.windVectorPxps?.dot(dir.trackUnitVector) ?: 0f
-                    dir.trackUnitVector * ktToPxps(max(speed.speedKts + tailwind, 0f))
+                    dir.trackUnitVector * max(ktToPxps(speed.speedKts) + tailwind, 0f)
                 } else {
                     val tasVector = dir.trackUnitVector * ktToPxps(speed.speedKts.toInt())
                     if (affectedByWind != null) tasVector.plusAssign(affectedByWind.windVectorPxps)

@@ -75,7 +75,7 @@ class DecelerateToAppSpd: Component {
  * Component for tagging aircraft that has captured the extended runway centreline and glide path in a visual approach,
  * and will alter aircraft AI behaviour to follow the extended centreline track and glide path
  * */
-class VisualCaptured(val visApp: Entity = Entity()): Component {
+class VisualCaptured(val visApp: Entity = Entity(), val parentApp: Entity = Entity()): Component {
     companion object: Mapper<VisualCaptured>()
 }
 
@@ -119,6 +119,18 @@ class GlideSlopeCaptured(val gsApp: Entity = Entity()): Component {
  * */
 class StepDownApproach(val stepDownApp: Entity = Entity()): Component {
     companion object: Mapper<StepDownApproach>()
+}
+
+/**
+ * Component for tagging aircraft cleared for a circling approach; the aircraft must have captured the localizer, or
+ * captured the glideslope, or be cleared for a step-down approach in order for this component to take effect
+ *
+ * This component will persist until the aircraft is no longer on the approach or is on the final visual segment of the
+ * approach
+ */
+data class CirclingApproach(val circlingApp: Entity = Entity(), var breakoutAlt: Int = 0, var phase: Byte = 0,
+                            var phase1Timer: Float = 70f, var phase3Timer: Float = 50f): Component {
+    companion object: Mapper<CirclingApproach>()
 }
 
 /**

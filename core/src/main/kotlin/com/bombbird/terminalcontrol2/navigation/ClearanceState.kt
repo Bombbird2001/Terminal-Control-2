@@ -128,6 +128,9 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
                 if (app.has(Localizer.mapper)) entity += LocalizerArmed(app)
                 if (app.has(GlideSlope.mapper)) entity += GlideSlopeArmed(app)
                 else if (app.has(StepDown.mapper)) entity += StepDownApproach(app)
+                app[Circling.mapper]?.let { circling ->
+                    entity += CirclingApproach(app, MathUtils.random(circling.minBreakoutAlt, circling.maxBreakoutAlt))
+                }
                 // Visual approach can only be cleared by other approaches
                 entity += AppDecelerateTo190kts()
                 entity += DecelerateToAppSpd()

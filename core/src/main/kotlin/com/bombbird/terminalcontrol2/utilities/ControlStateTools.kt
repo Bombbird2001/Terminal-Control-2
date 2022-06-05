@@ -16,6 +16,7 @@ import com.bombbird.terminalcontrol2.networking.AircraftControlStateUpdateData
 import ktx.ashley.get
 import ktx.ashley.has
 import ktx.ashley.plusAssign
+import ktx.ashley.remove
 import ktx.scene2d.Scene2DSkin
 import kotlin.math.max
 import kotlin.math.min
@@ -515,14 +516,14 @@ fun hasOnlyWaypointLegsTillMissed(startLeg: Leg?, route: Route): Boolean {
 }
 
 /**
- * Removes all the legs until the first missed approach leg is reached
+ * Removes all the legs until the first missed approach leg (excluding the discontinuity leg) is reached
  * @param route the route to remove the legs from
  */
 fun removeAllLegsTillMissed(route: Route) {
-    for (i in 0 until  route.legs.size) if (route.legs[i].phase == Leg.MISSED_APP) {
+    for (i in 0 until  route.legs.size) route.legs[i]?.let { leg -> if (leg.phase == Leg.MISSED_APP && leg !is DiscontinuityLeg) {
         if (i > 0) route.legs.removeRange(0, i - 1)
         return
-    }
+    }}
 }
 
 /**
@@ -540,4 +541,20 @@ fun findMissedApproachAlt(route: Route): Int? {
         (this as? InitClimbLeg)?.minAltFt?.let { return it }
     }
     return null
+}
+
+/**
+ * Removes all approach components from the aircraft
+ * @param aircraft the aircraft entity
+ */
+fun removeAllApproachComponents(aircraft: Entity) {
+    aircraft.apply {
+        remove<GlideSlopeArmed>()
+        remove<GlideSlopeCaptured>()
+        remove<LocalizerArmed>()
+        remove<LocalizerCaptured>()
+        remove<StepDownApproach>()
+        remove<VisualCaptured>()
+        remove<CirclingApproach>()
+    }
 }

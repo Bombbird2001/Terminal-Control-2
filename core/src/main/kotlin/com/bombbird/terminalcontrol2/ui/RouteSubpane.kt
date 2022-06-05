@@ -100,10 +100,11 @@ class RouteSubpane {
                     else Triple(false, false, false)} ?:
                     Triple(false, false, false)
                     val legChanged = checkLegChanged(parentPane.clearanceState.route, leg)
-                    if (prevPhase != leg.phase && leg.phase == Route.Leg.MISSED_APP) {
+                    if (prevPhase != leg.phase && leg.phase == Route.Leg.MISSED_APP && leg is Route.DiscontinuityLeg) {
                         label("Missed approach", "ControlPaneRoute${if (legChanged) "Changed" else ""}")
                             .cell(colspan = 4, padLeft = 10f, padRight = 10f, preferredHeight = 0.1f * UI_HEIGHT)
                         row()
+                        return@also // Continue to next leg once the missed approach discontinuity leg has been determined
                     }
                     prevPhase = leg.phase
                     val altRestrDisplay = (leg as? Route.WaypointLeg)?.let { wptLeg ->

@@ -67,8 +67,12 @@ fun mToPx(m: Float): Float {
 }
 
 /** Convert from pixels to metres */
-fun pxToM(px: Int): Float {
+fun pxToM(px: Float): Float {
     return pxToNm(px) * NM_TO_M
+}
+
+fun pxToM(px: Int): Float {
+    return pxToM(px.toFloat())
 }
 
 /** Convert from metres to nautical miles */

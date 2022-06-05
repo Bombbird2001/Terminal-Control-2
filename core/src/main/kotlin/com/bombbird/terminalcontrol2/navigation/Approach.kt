@@ -171,4 +171,14 @@ class Approach(name: String, arptId: Byte, runwayId: Byte, posX: Float, posY: Fl
     fun addLineUpDist(lineUpDist: Float) {
         entity += LineUpDist(lineUpDist)
     }
+
+    /**
+     * Adds a circling approach component for the approach
+     * @param minBreakoutAlt the minimum altitude for the breakout to be initiated
+     * @param maxBreakoutAlt the maximum altitude for the breakout to be initiated
+     * @param breakoutDir the direction of the breakout (left or right)
+     */
+    fun addCircling(minBreakoutAlt: Int, maxBreakoutAlt: Int, breakoutDir: Byte) {
+        entity += Circling(minBreakoutAlt, maxBreakoutAlt, breakoutDir)
+    }
 }

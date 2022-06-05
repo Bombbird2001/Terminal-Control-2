@@ -81,6 +81,7 @@ fun loadWorldData(mainName: String, gameServer: GameServer) {
                 "GS" -> if (currApp != null) parseAppGlideslope(lineData, currApp)
                 "STEPDOWN" -> if (currApp != null) parseAppStepDown(lineData, currApp)
                 "LINEUP" -> if (currApp != null) parseAppLineUp(lineData, currApp)
+                "CIRCLING" -> if (currApp != null) parseCircling(lineData, currApp)
                 "TRANSITION" -> if (currApp != null) parseApproachTransition(lineData, currApp)
                 "MISSED" -> if (currApp != null) parseApproachMissed(lineData, currApp)
                 "/$currSectorCount" -> currSectorCount = 0
@@ -356,6 +357,25 @@ private fun parseAppLineUp(data: List<String>, approach: Approach) {
     approach.addLineUpDist(data[1].toFloat())
 }
 
+/**
+ * Parse the given data into circling approach data, and adds it to the input approach
+ * @param data the data containing the circling approach data
+ * @param approach the approach to add the circling approach data to
+ */
+private fun parseCircling(data: List<String>, approach: Approach) {
+    val minBreakoutAlt = data[1].toInt()
+    val maxBreakoutAlt = data[2].toInt()
+    val turnDir = when (data[3]) {
+        "LEFT" -> CommandTarget.TURN_LEFT
+        "RIGHT" -> CommandTarget.TURN_RIGHT
+        else -> {
+            Gdx.app.log("GameLoader", "Unknown circling breakout turn direction for ${data[0]}")
+            CommandTarget.TURN_LEFT
+        }
+    }
+    approach.addCircling(minBreakoutAlt, maxBreakoutAlt, turnDir)
+}
+
 /** Parse the given [data] into the route legs data, and adds it to the supplied [approach]'s [Approach.routeLegs] */
 private fun parseApproachRoute(data: List<String>, approach: Approach) {
     if (approach.routeLegs.legs.isNotEmpty()) {
@@ -374,6 +394,7 @@ private fun parseApproachMissed(data: List<String>, approach: Approach) {
     if (approach.missedLegs.legs.isNotEmpty()) {
         Gdx.app.log("GameLoader", "Multiple missed approach procedures for approach: ${approach.entity[ApproachInfo.mapper]?.approachName}")
     }
+    approach.missedLegs.legs.add(Route.DiscontinuityLeg(Route.Leg.MISSED_APP))
     approach.missedLegs.extendRoute(parseLegs(data.subList(1, data.size), Route.Leg.MISSED_APP))
 }
 
