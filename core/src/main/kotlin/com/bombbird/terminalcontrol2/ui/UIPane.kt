@@ -133,14 +133,11 @@ class UIPane(private val uiStage: Stage) {
         userClearanceState.updateUIClearanceState(latestClearance.actingClearance)
         clearanceState.updateUIClearanceState(latestClearance.actingClearance)
         controlObj.resetDirectButton()
-        controlObj.updateClearanceMode(userClearanceState.route, userClearanceState.vectorHdg,
-            aircraft.entity.has(VisualCaptured.mapper) || aircraft.entity.has(LocalizerCaptured.mapper))
-        controlObj.clearAltSelectBoxChoices()
-        controlObj.updateAltSelectBoxChoices(aircraftMaxAlt)
-        controlObj.updateApproachSelectBoxChoices(aircraft.entity[ArrivalAirport.mapper]?.arptId)
         controlObj.updateAltSpdAppClearances(userClearanceState.clearedAlt, userClearanceState.clearedIas,
             userClearanceState.minIas, userClearanceState.maxIas, userClearanceState.optimalIas,
             userClearanceState.clearedApp, userClearanceState.clearedTrans)
+        controlObj.updateClearanceMode(userClearanceState.route, userClearanceState.vectorHdg,
+            aircraft.entity.has(VisualCaptured.mapper) || aircraft.entity.has(LocalizerCaptured.mapper))
         controlObj.setUndoTransmitButtonsUnchanged()
         routeEditObj.setChangeStarDisabled(aircraftArrivalArptId == null)
         controlPane.isVisible = true
@@ -184,7 +181,6 @@ class UIPane(private val uiStage: Stage) {
         mainInfoPane.isVisible = true
         aircraftMaxAlt = null
         aircraftArrivalArptId = null
-        controlObj.clearAltSelectBoxChoices()
     }
 
     /** Helper function to set the UI pane to show [routeEditPane] from [controlPane] */

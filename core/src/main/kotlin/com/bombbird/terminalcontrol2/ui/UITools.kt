@@ -5,11 +5,14 @@ import com.badlogic.gdx.graphics.OrthographicCamera
 import com.badlogic.gdx.graphics.g2d.Batch
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.scenes.scene2d.Actor
+import com.badlogic.gdx.scenes.scene2d.InputEvent
 import com.badlogic.gdx.scenes.scene2d.InputListener
 import com.badlogic.gdx.scenes.scene2d.Stage
 import com.badlogic.gdx.scenes.scene2d.ui.ScrollPane
+import com.badlogic.gdx.scenes.scene2d.ui.SelectBox
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener.ChangeEvent
+import com.badlogic.gdx.scenes.scene2d.utils.ClickListener
 import com.badlogic.gdx.utils.Scaling
 import com.badlogic.gdx.utils.viewport.ScalingViewport
 import com.badlogic.gdx.utils.viewport.Viewport
@@ -68,6 +71,22 @@ inline fun Actor.addChangeListener(crossinline function: (ChangeEvent?, Actor?) 
     addListener(object: ChangeListener() {
         override fun changed(event: ChangeEvent?, actor: Actor?) {
             function(event, actor)
+        }
+    })
+}
+
+/**
+ * Removes the default click listener, and adds a new click listener which stops the click event even if the select
+ * box is disabled to prevent nuisance click through
+ * */
+fun <T> SelectBox<T>.disallowDisabledClickThrough() {
+    removeListener(clickListener)
+    addListener(object : ClickListener() {
+        override fun touchDown(event: InputEvent, x: Float, y: Float, pointer: Int, button: Int): Boolean {
+            if (pointer == 0 && button != 0) return false
+            if (isDisabled) return true
+            if (scrollPane.hasParent()) hideScrollPane() else showScrollPane()
+            return true
         }
     })
 }

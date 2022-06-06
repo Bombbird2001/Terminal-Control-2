@@ -55,7 +55,8 @@ class RouteEditPane {
                     changeStarBox = selectBox<String>("ControlPane") {
                         items = arrayOf("Change STAR", "TNN1B", "TONGA1A", "TONGA1B").toGdxArray()
                         setAlignment(Align.center)
-                        list.setAlignment(Align.center)
+                        list.alignment = Align.center
+                        disallowDisabledClickThrough()
                     }.cell(grow = true, preferredWidth = 0.4f * paneWidth)
                 }.cell(growX = true, height = 0.1f * UI_HEIGHT)
                 row()

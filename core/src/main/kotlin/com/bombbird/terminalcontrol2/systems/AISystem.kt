@@ -622,8 +622,8 @@ class AISystem: EntitySystem() {
 
                 // Check distance
                 // For visual approach, check for stabilized approach by 1.2nm from threshold
-                // For approach with glide slope, check for stabilized approach by 3.2nm from threshold
-                val stabDistNm = if (gsApp != null) 3.2f else 1.2f
+                // For approach with localizer and/or glide slope, check for stabilized approach by 3.2nm from threshold
+                val stabDistNm = if (gsApp != null || locApp != null) 3.2f else 1.2f
                 if (pxToNm(distFromRwyPx) > stabDistNm) return@apply //  No need to check if aircraft is not yet close enough to the runway
 
                 // Check airspeed
@@ -656,9 +656,10 @@ class AISystem: EntitySystem() {
 
                 // Check position; only when aircraft is still more than 0.5nm from runway threshold
                 // For visual approach, aircraft position should be within 10 degrees of track to runway
-                // For approach with localizer, aircraft position should be within 1 degree of track to runway
+                // For approach with localizer, aircraft position should be within 1 degree of track to localizer
                 val maxAllowableDeviation = if (locApp != null) 1 else 20
-                val trackToRwy = getRequiredTrack(pos.x, pos.y, rwyPos.x, rwyPos.y)
+                val locPos = locApp?.get(Position.mapper)
+                val trackToRwy = getRequiredTrack(pos.x, pos.y,  locPos?.x ?: rwyPos.x, locPos?.y ?: rwyPos.y)
                 val appTrack = convertWorldAndRenderDeg(appLat[Direction.mapper]?.trackUnitVector?.angleDeg() ?: return@apply) + 180
                 val deviation = abs(findDeltaHeading(trackToRwy, appTrack, CommandTarget.TURN_DEFAULT))
                 if (pxToNm(distFromRwyPx) > 0.5f && deviation > maxAllowableDeviation) {
@@ -711,20 +712,28 @@ class AISystem: EntitySystem() {
      */
     private fun setToFirstRouteLeg(entity: Entity) {
         val actingClearance = entity[ClearanceAct.mapper]?.actingClearance?.actingClearance ?: return
+        val lastRestrictions = entity[LastRestrictions.mapper] ?: LastRestrictions().apply { entity += this }
+        val cmd = entity[CommandTarget.mapper] ?: return
         actingClearance.route.legs.apply {
             val currHold = entity[CommandHold.mapper]
             removeAllAdvancedCommandModes(entity)
             unsetTurnDirection(entity)
             entity += LatestClearanceChanged()
-            while (size > 0) get(0).let {
+            if (size == 0) {
+                actingClearance.vectorHdg = cmd.targetHdgDeg.roundToInt().toShort()
+                actingClearance.vectorTurnDir = CommandTarget.TURN_DEFAULT
+                cmd.targetAltFt = actingClearance.clearedAlt
+            } else while (size > 0) get(0).let {
                 entity += when (it) {
                     is Route.VectorLeg -> {
                         actingClearance.vectorHdg = it.heading
                         actingClearance.vectorTurnDir = it.turnDir
+                        cmd.targetAltFt = actingClearance.clearedAlt
                         CommandVector(it.heading, it.turnDir)
                     }
                     is Route.InitClimbLeg -> {
-                        (entity[LastRestrictions.mapper] ?: LastRestrictions().also { restr -> entity += restr }).minAltFt = it.minAltFt
+                        lastRestrictions.minAltFt = it.minAltFt
+                        updateLegRestr(entity)
                         CommandInitClimb(it.heading, it.minAltFt)
                     }
                     is Route.WaypointLeg -> {
@@ -732,21 +741,24 @@ class AISystem: EntitySystem() {
                             removeIndex(0)
                             return@let
                         }
-                        (entity[LastRestrictions.mapper] ?: LastRestrictions().also { restr -> entity += restr }).let { restr ->
-                            it.minAltFt?.let { minAltFt -> restr.minAltFt = minAltFt }
-                            it.maxAltFt?.let { maxAltFt -> restr.maxAltFt = maxAltFt }
-                            // it.maxSpdKt?.let { maxSpdKt -> restr.maxSpdKt = maxSpdKt }
-                        }
-                        updateWaypointLegRestr(entity)
+                        updateLegRestr(entity)
                         CommandDirect(it.wptId, it.maxAltFt, it.minAltFt, it.maxSpdKt, it.flyOver, it.turnDir)
                     }
                     is Route.HoldLeg -> {
+                        var alt = actingClearance.clearedAlt
+                        it.minAltFt?.let { minAlt -> alt = max(minAlt, alt) }
+                        it.maxAltFt?.let { maxAlt -> alt = min(maxAlt, alt) }
+                        cmd.targetAltFt = alt
+                        actingClearance.clearedAlt = alt
                         // If an existing hold mode exists, and new hold leg does not differ from it in the waypoint,
                         // inbound heading and direction, re-add the hold mode removed earlier
                         if (currHold?.wptId == it.wptId && currHold.inboundHdg == it.inboundHdg && currHold.legDir == it.turnDir) currHold
                         else CommandHold(it.wptId, it.maxAltFt, it.minAltFt, it.maxSpdKtLower, it.inboundHdg, it.legDist, it.turnDir)
                     }
-                    is Route.DiscontinuityLeg -> return@apply
+                    is Route.DiscontinuityLeg -> {
+                        cmd.targetAltFt = actingClearance.clearedAlt
+                        return@apply
+                    }
                     else -> {
                         Gdx.app.log("AISystem", "Unknown leg type ${it::class}")
                         removeIndex(0)
@@ -764,8 +776,11 @@ class AISystem: EntitySystem() {
      * */
     private fun setToNextRouteLeg(entity: Entity) {
         entity[ClearanceAct.mapper]?.actingClearance?.actingClearance?.route?.legs?.apply { if (size > 0) {
-            val prevWpt = first() as? Route.WaypointLeg
-            prevWpt?.maxSpdKt?.let { maxSpd -> entity[LastRestrictions.mapper]?.maxSpdKt = maxSpd }
+            (first() as? Route.WaypointLeg)?.let { prevWpt -> entity[LastRestrictions.mapper]?.let { restr ->
+                prevWpt.maxSpdKt?.let { maxSpd -> restr.maxSpdKt = maxSpd }
+                prevWpt.minAltFt?.let { minAltFt -> restr.minAltFt = minAltFt }
+                prevWpt.maxAltFt?.let { maxAltFt -> restr.maxAltFt = maxAltFt }
+            }}
             removeIndex(0)
         }}
         setToFirstRouteLeg(entity)
@@ -775,10 +790,11 @@ class AISystem: EntitySystem() {
      * Updates the new command target the aircraft should fly with its current clearance state's altitude clearance and
      * the altitude, speed restrictions along its route
      *
-     * Call this function after the aircraft's next waypoint leg has changed
+     * Call this function after the aircraft's next leg has changed (the last restriction component values will need to
+     * be updated accordingly prior to calling this function to ensure valid results)
      * @param entity the aircraft entity
      * */
-    private fun updateWaypointLegRestr(entity: Entity) {
+    private fun updateLegRestr(entity: Entity) {
         val actingClearance = entity[ClearanceAct.mapper]?.actingClearance?.actingClearance ?: return
         val commandTarget = entity[CommandTarget.mapper] ?: return
         val flightType = entity[FlightType.mapper]
@@ -976,10 +992,17 @@ class AISystem: EntitySystem() {
                 it.clearedTrans = null
                 it.clearedIas = 220
                 get(CommandTarget.mapper)?.targetIasKt = 220
-            }
 
-            // Clear any preceding altitude and speed restrictions since approach route is no longer being used
-            remove<LastRestrictions>()
+                // Clear any preceding altitude and speed restrictions since approach route is no longer being used
+                // Set min altitude to airport elevation, and max speed to 0 if a speed restriction exists in the missed
+                // approach procedure to simulate departure acceleration behaviour
+                (get(LastRestrictions.mapper) ?: LastRestrictions().also { restr -> entity += restr }).let { restr ->
+                    val arptAlt = GAME.gameServer?.airports?.get(get(ArrivalAirport.mapper)?.arptId)?.entity?.get(Altitude.mapper)?.altitudeFt?.roundToInt()
+                    restr.minAltFt = arptAlt
+                    restr.maxAltFt = arptAlt
+                    restr.maxSpdKt = if (getNextMaxSpd(it.route) == null) null else 0
+                }
+            }
 
             // Update clearance states
             entity += ClearanceActChanged()

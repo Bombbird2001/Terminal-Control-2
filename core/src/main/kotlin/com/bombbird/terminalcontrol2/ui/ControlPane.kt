@@ -68,18 +68,30 @@ class ControlPane {
                     routeModeButton = textButton("Route", "ControlPaneSelected").cell(grow = true, preferredWidth = paneWidth / 3).apply {
                         addChangeListener { _, _ ->
                             if (modificationInProgress) return@addChangeListener
+                            if (!isChecked) {
+                                isChecked = true
+                                return@addChangeListener
+                            }
                             setPaneLateralMode(UIPane.MODE_ROUTE)
                         }
                     }
                     holdModeButton = textButton("Hold", "ControlPaneSelected").cell(grow = true, preferredWidth = paneWidth / 3).apply {
                         addChangeListener { _, _ ->
                             if (modificationInProgress) return@addChangeListener
+                            if (!isChecked) {
+                                isChecked = true
+                                return@addChangeListener
+                            }
                             setPaneLateralMode(UIPane.MODE_HOLD)
                         }
                     }
                     vectorModeButton = textButton("Vectors", "ControlPaneSelected").cell(grow = true, preferredWidth = paneWidth / 3).apply {
                         addChangeListener { _, _ ->
                             if (modificationInProgress) return@addChangeListener
+                            if (!isChecked) {
+                                isChecked = true
+                                return@addChangeListener
+                            }
                             setPaneLateralMode(UIPane.MODE_VECTOR)
                         }
                     }
@@ -105,6 +117,7 @@ class ControlPane {
                             updateAltSelectBoxChoices(parentPane.aircraftMaxAlt)
                             updateUndoTransmitButtonStates()
                         }
+                        disallowDisabledClickThrough()
                     }.cell(grow = true, preferredWidth = paneWidth / 2)
                     transitionSelectBox = selectBox<String>("ControlPane").apply {
                         items = GdxArray()
@@ -122,6 +135,7 @@ class ControlPane {
                             updateAltSelectBoxChoices(parentPane.aircraftMaxAlt)
                             updateUndoTransmitButtonStates()
                         }
+                        disallowDisabledClickThrough()
                     }.cell(grow = true, preferredWidth = paneWidth / 2)
                 }.cell(preferredWidth = paneWidth, height = UI_HEIGHT * 0.125f, growX = true)
                 row()
@@ -208,7 +222,7 @@ class ControlPane {
             setPaneLateralMode(UIPane.MODE_VECTOR)
         } else {
             route.legs.apply {
-                if ((size == 1 && first() is Route.HoldLeg) ||
+                if ((size >= 1 && first() is Route.HoldLeg) ||
                     (size >= 2 && first() is Route.WaypointLeg && get(1) is Route.HoldLeg && (first() as? Route.WaypointLeg)?.wptId == (get(1) as? Route.HoldLeg)?.wptId)) {
                     // Hold mode active when the current leg is a hold leg, or when the aircraft is flying towards the waypoint it is cleared to hold at
                     routeModeButton.isChecked = false
@@ -232,7 +246,7 @@ class ControlPane {
      * If the ID provided is null, the boxes will be disabled
      * @param airportId the airport to refer to when selecting approaches that can be cleared
      * */
-    fun updateApproachSelectBoxChoices(airportId: Byte?) {
+    private fun updateApproachSelectBoxChoices(airportId: Byte?) {
         modificationInProgress = true
         GAME.gameClientScreen?.airports?.get(airportId)?.entity?.let { arpt ->
             updateAppTransBoxesDisabled(false)
@@ -252,10 +266,14 @@ class ControlPane {
         modificationInProgress = true
         transitionSelectBox.apply {
             GAME.gameClientScreen?.airports?.get(airportId)?.entity?.get(ApproachChildren.mapper)?.approachMap?.get(selectedApp)?.let { app ->
+                var transFound = false
                 items = GdxArray<String>().also { array ->
-                    app.transitions.keys().map { "$TRANS_PREFIX$it" }.forEach { array.add(it) }
+                    app.transitions.keys().map { "$TRANS_PREFIX$it" }.forEach {
+                        if (it == parentPane.userClearanceState.clearedTrans) transFound = true
+                        array.add(it)
+                    }
                 }
-                if (!selection.isEmpty) parentPane.userClearanceState.clearedTrans = if (selected == "$TRANS_PREFIX$NO_TRANS_SELECTION") null
+                if (!selection.isEmpty && !transFound) parentPane.userClearanceState.clearedTrans = if (selected == "$TRANS_PREFIX$NO_TRANS_SELECTION") null
                 else selected.replace(TRANS_PREFIX, "")
                 isDisabled = false
             } ?: run {
@@ -269,6 +287,9 @@ class ControlPane {
 
     /**
      * Updates [ControlPane.altSelectBox] with the appropriate altitude choices for [MIN_ALT], [MAX_ALT] and [aircraftMaxAlt]
+     *
+     * If the select box was not previously empty, this will also update the user selected cleared altitude to match the
+     * selection in the box in case of any changes made due to the updated list of possible selections
      * @param aircraftMaxAlt the maximum altitude the aircraft can fly at, or null if none provided in which it will be
      * ignored
      * */
@@ -351,7 +372,7 @@ class ControlPane {
     }
 
     /** Clears all the choices in the altitude select box; should be used when deselecting an aircraft */
-    fun clearAltSelectBoxChoices() {
+    private fun clearAltSelectBoxChoices() {
         modificationInProgress = true
         altSelectBox.items = GdxArray()
         modificationInProgress = false
@@ -383,6 +404,11 @@ class ControlPane {
             }
         }
         modificationInProgress = false
+
+        clearAltSelectBoxChoices()
+        updateAltSelectBoxChoices(parentPane.aircraftMaxAlt)
+        updateApproachSelectBoxChoices(parentPane.aircraftArrivalArptId)
+
         altSelectBox.selected = if (clearedAlt >= TRANS_LVL * 100) "FL${clearedAlt / 100}" else clearedAlt.toString()
         spdSelectBox.selected = clearedSpd
         modificationInProgress = true
@@ -391,14 +417,15 @@ class ControlPane {
             // Explicitly set style
             style = Scene2DSkin.defaultSkin[if (parentPane.userClearanceState.clearedApp == parentPane.clearanceState.clearedApp) "ControlPane" else "ControlPaneChanged", SelectBoxStyle::class.java]
         }
+        if (appName != null) updateTransitionSelectBoxChoices(parentPane.aircraftArrivalArptId, appName) else {
+            transitionSelectBox.isDisabled = true
+            transitionSelectBox.items = GdxArray<String>().apply { add("$TRANS_PREFIX$NO_TRANS_SELECTION") }
+        }
+        modificationInProgress = true
         if (appName != null && transName != null) transitionSelectBox.apply {
             selected = "$TRANS_PREFIX$transName"
             // Explicitly set style
             style = Scene2DSkin.defaultSkin[if (parentPane.userClearanceState.clearedTrans == parentPane.clearanceState.clearedTrans) "ControlPane" else "ControlPaneChanged", SelectBoxStyle::class.java]
-        }
-        else {
-            transitionSelectBox.isDisabled = true
-            transitionSelectBox.items = GdxArray<String>().apply { add("$TRANS_PREFIX$NO_TRANS_SELECTION") }
         }
         modificationInProgress = false
     }
@@ -433,6 +460,7 @@ class ControlPane {
                 holdSubpaneObj.isVisible = true
                 vectorSubpaneObj.isVisible = false
                 lateralContainer.actor = holdSubpaneObj.actor
+                // altSelectBox.selected = parentPane.userClearanceState.clearedAlt.let { if (it > TRANS_ALT) "FL${it / 100}" else it.toString() }
                 updateAltSelectBoxChoices(parentPane.aircraftMaxAlt)
                 selectedHoldLeg = getNextHoldLeg(parentPane.userClearanceState.route)
                 if (selectedHoldLeg == null) holdSubpaneObj.updateHoldClearanceState(parentPane.userClearanceState.route)
@@ -553,7 +581,7 @@ class ControlPane {
             }
             currDirectLeg
         }
-        val leg2 = directLeg
+        val leg2 = directLeg ?: if (!parentPane.userClearanceState.route.legs.isEmpty) parentPane.userClearanceState.route.legs.first() else null
         val directChanged = if (leg1 == null && leg2 == null) false else if (leg1 == null || leg2 == null) true else !compareLegEquality(leg1, leg2)
         if (checkClearanceEquality(parentPane.clearanceState, parentPane.userClearanceState) && !directChanged) setUndoTransmitButtonsUnchanged()
         else setUndoTransmitButtonsChanged()
@@ -576,8 +604,8 @@ class ControlPane {
         transitionSelectBox.isDisabled = disabled || appSelectBox.selection.isEmpty || appSelectBox.selected == "Approach"
         if (disabled) {
             // Clear all items if disabled
-            appSelectBox.items = GdxArray<String>().apply { add("Approach") }
-            transitionSelectBox.items = GdxArray<String>().apply { add("Via ...") }
+            appSelectBox.items = GdxArray<String>().apply { add(NO_APP_SELECTION) }
+            transitionSelectBox.items = GdxArray<String>().apply { add("$TRANS_PREFIX$NO_TRANS_SELECTION") }
         }
     }
 }

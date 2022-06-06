@@ -90,7 +90,7 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
     var selectedAircraft: Aircraft? = null
 
     // Networking client
-    val client = Client(CLIENT_WRITE_BUFFER_SIZE, CLIENT_READ_BUFFER_SIZE)
+    private val client = Client(CLIENT_WRITE_BUFFER_SIZE, CLIENT_READ_BUFFER_SIZE)
 
     // Blocking queue to store runnables to be run in the main thread after engine update
     private val pendingRunnablesQueue = ConcurrentLinkedQueue<Runnable>()
@@ -269,7 +269,7 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
         if (count == 2 && !cameraAnimating) initiateCameraAnimation(x, y)
         uiPane.deselectAircraft()
         selectedAircraft = null
-        // Debug.toggleMinAltSectorsOnClick(x, y, unprojectFromRadarCamera, clientEngine)
+        // toggleMinAltSectorsOnClick(x, y, unprojectFromRadarCamera, clientEngine)
         return true
     }
 

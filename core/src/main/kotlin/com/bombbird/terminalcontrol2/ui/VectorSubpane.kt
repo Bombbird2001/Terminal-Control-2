@@ -11,6 +11,7 @@ import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.UI_HEIGHT
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.utilities.addChangeListener
+import com.bombbird.terminalcontrol2.utilities.disallowDisabledClickThrough
 import com.bombbird.terminalcontrol2.utilities.getAfterWptHdgLeg
 import com.bombbird.terminalcontrol2.utilities.modulateHeading
 import ktx.ashley.get
@@ -90,6 +91,7 @@ class VectorSubpane {
                         updateVectorHdgClearanceState(0, parentPane.userClearanceState.route, afterWptHdgLeg)
                         parentControlPane.updateUndoTransmitButtonStates()
                     }
+                    disallowDisabledClickThrough()
                 }.cell(grow = true, preferredWidth = 0.4f * paneWidth)
                 rightButton = textButton("Right", "ControlPaneHdgDir").cell(grow = true, preferredWidth = 0.3f * paneWidth - 10f).apply {
                     addChangeListener { _, _ ->
