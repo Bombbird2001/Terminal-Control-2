@@ -222,7 +222,7 @@ class PhysicsSystem(override val updateTimeS: Float): EntitySystem(), LowFreqUpd
                 val aircraftInfo = get(AircraftInfo.mapper) ?: return@apply
                 val takingOff = has(TakeoffRoll.mapper) || has(LandingRoll.mapper)
                 val takeoffClimb = has(TakeoffClimb.mapper)
-                val approach = has(LocalizerCaptured.mapper) || has(GlideSlopeCaptured.mapper) || has(VisualCaptured.mapper)
+                val approach = has(LocalizerCaptured.mapper) || has(GlideSlopeCaptured.mapper) || has(VisualCaptured.mapper) || (get(CirclingApproach.mapper)?.phase ?: 0) >= 1
 
                 val fixedVs = if (has(GlideSlopeCaptured.mapper)) {
                     spd.vertSpdFpm

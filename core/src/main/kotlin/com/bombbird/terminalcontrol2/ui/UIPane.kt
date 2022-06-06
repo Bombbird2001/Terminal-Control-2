@@ -8,7 +8,6 @@ import com.bombbird.terminalcontrol2.entities.Aircraft
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.utilities.addChangeListener
-import com.bombbird.terminalcontrol2.utilities.byte
 import ktx.ashley.get
 import ktx.ashley.has
 import ktx.graphics.moveTo
@@ -123,7 +122,7 @@ class UIPane(private val uiStage: Stage) {
     fun setSelectedAircraft(aircraft: Aircraft) {
         aircraft.entity.apply {
             val controllable = get(Controllable.mapper) ?: return
-            if (controllable.sectorId != 0.byte) return // TODO Check for player's sector ID
+            if (controllable.sectorId != GAME.gameClientScreen?.playerSector) return
         }
         aircraftMaxAlt = aircraft.entity[AircraftInfo.mapper]?.aircraftPerf?.maxAlt ?: return
         aircraftArrivalArptId = aircraft.entity[ArrivalAirport.mapper]?.arptId
@@ -156,7 +155,7 @@ class UIPane(private val uiStage: Stage) {
     fun updateSelectedAircraft(aircraft: Aircraft) {
         aircraft.entity.apply {
             val controllable = get(Controllable.mapper) ?: return
-            if (controllable.sectorId != 0.byte) return // TODO Check for player's sector ID
+            if (controllable.sectorId != GAME.gameClientScreen?.playerSector) return
         }
         aircraftArrivalArptId = aircraft.entity[ArrivalAirport.mapper]?.arptId
         appTrackCaptured = aircraft.entity.has(VisualCaptured.mapper) || aircraft.entity.has(LocalizerCaptured.mapper)

@@ -16,11 +16,8 @@ import com.bombbird.terminalcontrol2.entities.*
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.graphics.ScreenSize
 import com.bombbird.terminalcontrol2.navigation.ClearanceState
-import com.bombbird.terminalcontrol2.networking.AircraftControlStateUpdateData
+import com.bombbird.terminalcontrol2.networking.*
 import com.bombbird.terminalcontrol2.ui.UIPane
-import com.bombbird.terminalcontrol2.networking.GameServer
-import com.bombbird.terminalcontrol2.networking.handleIncomingRequest
-import com.bombbird.terminalcontrol2.networking.registerClassesToKryo
 import com.bombbird.terminalcontrol2.systems.DataSystem
 import com.bombbird.terminalcontrol2.systems.PhysicsSystemClient
 import com.bombbird.terminalcontrol2.systems.RenderingSystem
@@ -48,7 +45,7 @@ import kotlin.math.min
  *
  * Implements [GestureListener] and [InputProcessor] to handle input/gesture events to it
  * */
-class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProcessor {
+class RadarScreen(private val connectionHost: String): KtxScreen, GestureListener, InputProcessor {
     private val clientEngine = getEngine(true)
     private val radarDisplayStage = safeStage(GAME.batch)
     private val constZoomStage = safeStage(GAME.batch)
@@ -66,6 +63,9 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
     private var targetCenter: Vector2
     private var panRate: ImmutableVector2
 
+    // Game running status
+    private var running = false
+
     // Airport map for access during TCP updates; see GameServer for more details
     val airports = GdxArrayMap<Byte, Airport>(AIRPORT_SIZE)
     val updatedAirportMapping = GdxArrayMap<String, Byte>(AIRPORT_SIZE)
@@ -82,6 +82,7 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
 
     // The current active configuration of polygons
     val sectors = GdxArray<Sector>()
+    var playerSector: Byte = 0
 
     // Aircraft map for access during UDP updates
     val aircraft = GdxArrayMap<String, Aircraft>(AIRCRAFT_SIZE)
@@ -96,7 +97,10 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
     private val pendingRunnablesQueue = ConcurrentLinkedQueue<Runnable>()
 
     init {
-        if (true) GAME.gameServer = GameServer().apply { initiateServer() } // TODO True if single-player or host of multiplayer, false otherwise
+        if (true) { // TODO True if single-player or host of multiplayer, false otherwise
+            GAME.gameServer = GameServer()
+            GAME.gameServer?.initiateServer()
+        }
         registerClassesToKryo(client.kryo)
         client.start()
         client.addListener(object: Listener {
@@ -104,16 +108,8 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
                 handleIncomingRequest(this@RadarScreen, obj)
             }
         })
-        while (true) {
-            try {
-                client.connect(5000, connectionHost, TCP_PORT, UDP_PORT)
-                break
-            } catch (_: IOException) {
-                // Workaround for strange behaviour on some devices where the 5000ms timeout is ignored,
-                // an IOException is thrown instantly as server has not started up
-                Thread.sleep(1000)
-            }
-        }
+        attemptConnectionToServer()
+        running = true
 
         // Default zoom is set so that a full 100nm by 100nm square is visible (2500px x 2500px)
         (radarDisplayStage.camera as OrthographicCamera).apply {
@@ -217,7 +213,8 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT or GL20.GL_DEPTH_BUFFER_BIT or if (Gdx.graphics.bufferFormat.coverageSampling) GL20.GL_COVERAGE_BUFFER_BIT_NV else 0)
 
         runCameraAnimations(delta)
-        clientEngine.update(delta)
+        if (running) clientEngine.update(delta)
+        // TODO pause screen
 
         // Process pending runnables
         while (true) { pendingRunnablesQueue.poll()?.run() ?: break }
@@ -372,6 +369,37 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
     }
 
     /**
+     * Attempt to connect to the server, retrying until success
+     *
+     * If client is already connected, the method will return
+     * */
+    fun attemptConnectionToServer() {
+        if (client.isConnected) return
+        while (true) {
+            try {
+                client.connect(5000, connectionHost, TCP_PORT, UDP_PORT)
+                break
+            } catch (_: IOException) {
+                // Workaround for strange behaviour on some devices where the 5000ms timeout is ignored,
+                // an IOException is thrown instantly as server has not started up
+                Thread.sleep(1000)
+            }
+        }
+    }
+
+    /**
+     * Toggles the game running status
+     *
+     * If the new game running status is false (i.e. pause the game), a pause request is sent to the server which will
+     * check if the number of players is not more than 1 and will pause the game on the server-side as well if that is
+     * the case, otherwise it will continue running the game if more than 1 player is present
+     */
+    fun toggleGameRunningStatus() {
+        running = !running
+        client.sendTCP(GameRunningStatus(running))
+    }
+
+    /**
      * Sends a new player clearance for the aircraft
      * @param callsign the callsign of the aircraft to send the instructions to
      * @param newClearanceState the new clearance to send to the aircraft
@@ -382,7 +410,8 @@ class RadarScreen(connectionHost: String): KtxScreen, GestureListener, InputProc
             newClearanceState.route.getSerialisedObject(), newClearanceState.hiddenLegs.getSerialisedObject(),
             newClearanceState.vectorHdg, newClearanceState.vectorTurnDir, newClearanceState.clearedAlt, newClearanceState.clearedIas,
             newClearanceState.minIas, newClearanceState.maxIas, newClearanceState.optimalIas,
-            newClearanceState.clearedApp, newClearanceState.clearedTrans)
+            newClearanceState.clearedApp, newClearanceState.clearedTrans,
+            playerSector)
         )
     }
 }

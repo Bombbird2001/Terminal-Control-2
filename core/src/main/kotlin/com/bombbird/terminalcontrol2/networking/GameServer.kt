@@ -22,7 +22,9 @@ import ktx.collections.GdxArray
 import ktx.collections.GdxArrayMap
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.thread
+import kotlin.concurrent.withLock
 import kotlin.math.roundToLong
 
 /** Main game server class, responsible for handling all game logic, updates, sending required game data information to clients and handling incoming client inputs */
@@ -37,6 +39,10 @@ class GameServer {
     private val loopRunning = AtomicBoolean(false)
     val gameRunning: Boolean
         get() = loopRunning.get()
+    var gamePaused = false
+    private var lock = ReentrantLock()
+    private val condition = lock.newCondition()
+    val playerNo = 1.byte // TODO Change depending on current number of connected players
     private val server = Server()
     val engine = Engine()
 
@@ -140,16 +146,23 @@ class GameServer {
                 (obj as? AircraftControlStateUpdateData)?.apply {
                     postRunnableAfterEngineUpdate {
                         aircraft[obj.callsign]?.entity?.let {
+                            if (it[Controllable.mapper]?.sectorId != obj.sendingSector) return@postRunnableAfterEngineUpdate
                             addNewClearanceToPendingClearances(it, obj, connection?.returnTripTime ?: 0)
                         }
                     }
+                } ?: (obj as? GameRunningStatus)?.apply {
+                    if (obj.running) {
+                        if (gamePaused) lock.withLock { condition.signal() }
+                        gamePaused = false
+                    }
+                    else if (playerNo <= 1) gamePaused = true
                 }
             }
 
             override fun connected(connection: Connection?) {
                 // TODO Send broadcast message
+                connection?.sendTCP(ClearAllClientData())
                 connection?.sendTCP(InitialAirspaceData(MAG_HDG_DEV, MIN_ALT, MAX_ALT, MIN_SEP, TRANS_ALT, TRANS_LVL))
-                val playerNo = 1.byte // TODO Change depending on current number of connected players
                 connection?.sendTCP(
                     InitialIndividualSectorData(playerNo, sectors[playerNo].toArray().map { it.getSerialisableObject() }.toTypedArray(),
                     primarySector.vertices ?: floatArrayOf()
@@ -178,7 +191,7 @@ class GameServer {
         var slowUpdateSlot = -1L
         var metarUpdateTime = 0
         while (loopRunning.get()) {
-            val currMs = System.currentTimeMillis()
+            var currMs = System.currentTimeMillis()
             if (startTime == -1L) {
                 // Skip this frame since server has just started up
                 startTime = currMs
@@ -208,6 +221,12 @@ class GameServer {
                     metarUpdateTime -= SERVER_METAR_UPDATE_INTERVAL
                 }
             }
+
+            if (gamePaused) lock.withLock {
+                condition.await()
+                currMs = System.currentTimeMillis()
+            }
+
             prevMs = currMs
             // println("$UPDATE_INTERVAL $currMs $startTime")
             val currFrame = (currMs - startTime) * SERVER_UPDATE_RATE / 1000
@@ -301,7 +320,7 @@ class GameServer {
                                               clearedIas: Short, minIas: Short, maxIas: Short, optimalIas: Short,
                                               clearedApp: String?, clearedTrans: String?) {
         server.sendToAllTCP(AircraftControlStateUpdateData(callsign, primaryName, route.getSerialisedObject(), hiddenLegs.getSerialisedObject(),
-            vectorHdg, vectorTurnDir, clearedAlt, clearedIas, minIas, maxIas, optimalIas, clearedApp, clearedTrans))
+            vectorHdg, vectorTurnDir, clearedAlt, clearedIas, minIas, maxIas, optimalIas, clearedApp, clearedTrans, -5))
     }
 
     /**

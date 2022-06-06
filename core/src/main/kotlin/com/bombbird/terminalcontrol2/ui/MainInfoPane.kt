@@ -5,6 +5,7 @@ import com.badlogic.gdx.scenes.scene2d.Actor
 import com.badlogic.gdx.utils.Align
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.CLIENT_SCREEN
+import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.UI_HEIGHT
 import com.bombbird.terminalcontrol2.utilities.addChangeListener
 import com.bombbird.terminalcontrol2.utilities.removeMouseScrollListeners
@@ -28,6 +29,19 @@ fun <S> KWidget<S>.mainInfoPane(paneWidth: Float): KContainer<Actor> {
         setSize(paneWidth, UI_HEIGHT)
         table {
             // debugAll()
+            table {
+                // debugAll()
+                label("Score: Shiba", "Score").cell(align = Align.left, growX = true)
+                row()
+                label("High score: High shiba", "HighScore").cell(padTop = 10f, align = Align.left, growX = true)
+            }.cell(padLeft = 20f, preferredWidth = paneWidth * 0.85f - 50)
+            textButton("||", "Pause").cell(padRight = 30f, preferredWidth = paneWidth * 0.15f, preferredHeight = UI_HEIGHT * 0.1f).addChangeListener { _, _ ->
+                // Can use this button to reconnect to the server LOL since debug breakpoints will cause the client to disconnect from server
+                // GAME.gameClientScreen?.attemptConnectionToServer()
+                // Toggle the running status for the client screen
+                GAME.gameClientScreen?.toggleGameRunningStatus()
+            }
+            row()
             metarScroll = scrollPane("MetarPane") {
                 // debugAll()
                 metarPane = table {
@@ -35,7 +49,7 @@ fun <S> KWidget<S>.mainInfoPane(paneWidth: Float): KContainer<Actor> {
                 }
                 setOverscroll(false, false)
                 removeMouseScrollListeners()
-            }.cell(padTop = 20f, align = Align.top, preferredWidth = paneWidth, preferredHeight = UI_HEIGHT * 0.4f, growX = true)
+            }.cell(padTop = 20f, align = Align.top, preferredWidth = paneWidth, preferredHeight = UI_HEIGHT * 0.4f, growX = true, colspan = 2)
             align(Align.top)
         }
         isVisible = true
@@ -61,7 +75,7 @@ fun updateMetarInformation() {
                     ${airportInfo.icaoCode} - ${metarInfo.letterCode}
                     $rwyDisplay
                     ${metarInfo.rawMetar ?: "Loading METAR..."}
-                    Winds: ${if (metarInfo.windSpeedKt.toInt() == 0) "Calm" else "${if (metarInfo.windHeadingDeg == 0.toShort()) "VRB" else metarInfo.windHeadingDeg}@${metarInfo.windSpeedKt}kt ${if (metarInfo.windGustKt > 0) "gusting to ${metarInfo.windGustKt}kt" else ""}"}
+                    Winds: ${if (metarInfo.windSpeedKt.toInt() == 0) "Calm" else "${if (metarInfo.windHeadingDeg == 0.toShort()) "VRB" else metarInfo.windHeadingDeg}@${metarInfo.windSpeedKt}kt ${if (metarInfo.windGustKt > 0) "gusting ${metarInfo.windGustKt}kt" else ""}"}
                     Visibility: ${if (metarInfo.visibilityM == 9999.toShort()) 10000 else metarInfo.visibilityM}m
                     Ceiling: ${metarInfo.ceilingHundredFtAGL?.let { ceiling -> "${ceiling * 100} feet" } ?: "None"}
                     """.trimIndent() + if (metarInfo.windshear.isNotEmpty()) "\nWindshear: ${metarInfo.windshear}" else ""

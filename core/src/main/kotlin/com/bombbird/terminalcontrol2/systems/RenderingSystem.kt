@@ -153,7 +153,7 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
         for (i in 0 until trajectory.size()) {
             trajectory[i]?.apply {
                 val controllable = get(Controllable.mapper) ?: return@apply
-                if (controllable.sectorId != 0.byte) return@apply // TODO check if is player's sector
+                if (controllable.sectorId != GAME.gameClientScreen?.playerSector) return@apply
                 val rData = get(RadarData.mapper) ?: return@apply
                 val srColor = get(SRColor.mapper) ?: return@apply
                 val wind = get(AffectedByWind.mapper)

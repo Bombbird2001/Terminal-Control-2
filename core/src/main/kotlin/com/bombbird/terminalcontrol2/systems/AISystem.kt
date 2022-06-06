@@ -45,7 +45,7 @@ class AISystem: EntitySystem() {
     private val stabilisedAppFamily: Family = allOf(Position::class, Altitude::class, IndicatedAirSpeed::class, AircraftInfo::class)
         .oneOf(GlideSlopeCaptured::class, LocalizerCaptured::class, VisualCaptured::class).exclude(CirclingApproach::class).get()
     private val locArmedFamily: Family = allOf(Position::class, Direction::class, IndicatedAirSpeed::class, GroundTrack::class, LocalizerArmed::class).get()
-    private val gsArmedFamily: Family = allOf(Position::class, Altitude::class, GlideSlopeArmed::class).get()
+    private val gsArmedFamily: Family = allOf(Position::class, Altitude::class, GlideSlopeArmed::class, LocalizerCaptured::class).get()
     private val stepDownAppFamily: Family = allOf(CommandTarget::class, Position::class, LocalizerCaptured::class, StepDownApproach::class).get()
     private val circlingAppFamily: Family = allOf(CommandTarget::class, Position::class, Altitude::class, Direction::class, CirclingApproach::class, AircraftInfo::class).get()
     private val checkTouchdownFamily: Family = allOf(Altitude::class, Speed::class, Acceleration::class, Direction::class)
@@ -499,7 +499,7 @@ class AISystem: EntitySystem() {
                 val pos = get(Position.mapper) ?: return@apply
                 val alt = get(Altitude.mapper) ?: return@apply
                 val gsApp = get(GlideSlopeArmed.mapper)?.gsApp ?: return@apply
-                // Capture glide slope when within 20 feet and below the max intercept altitude
+                // Capture glide slope when within 20 feet and below the max intercept altitude (and localizer is captured)
                 if (alt.altitudeFt < (gsApp[GlideSlope.mapper]?.maxInterceptAlt ?: return@apply) && abs(alt.altitudeFt - (getAppAltAtPos(gsApp, pos.x, pos.y, 0f) ?: return@apply)) < 20) {
                     remove<GlideSlopeArmed>()
                     remove<CommandDirect>()
@@ -594,7 +594,7 @@ class AISystem: EntitySystem() {
         val stabApp = engine.getEntitiesFor(stabilisedAppFamily)
         for (i in 0 until stabApp.size()) {
             stabApp[i]?.apply {
-                val gsApp = get(GlideSlopeCaptured.mapper)?.gsApp
+                val gsApp = get(GlideSlopeCaptured.mapper)?.gsApp ?: get(GlideSlopeArmed.mapper)?.gsApp
                 val stepDownApp = get(StepDownApproach.mapper)?.stepDownApp
                 val visApp = get(VisualCaptured.mapper)?.visApp
                 val visParentApp = get(VisualCaptured.mapper)?.parentApp

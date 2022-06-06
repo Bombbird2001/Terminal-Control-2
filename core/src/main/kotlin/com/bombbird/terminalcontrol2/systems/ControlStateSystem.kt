@@ -7,10 +7,7 @@ import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.utilities.*
-import ktx.ashley.allOf
-import ktx.ashley.get
-import ktx.ashley.plusAssign
-import ktx.ashley.remove
+import ktx.ashley.*
 
 /**
  * System that is responsible for aircraft control states
@@ -141,6 +138,7 @@ class ControlStateSystem(override val updateTimeS: Float = 0f): EntitySystem(), 
                 val actingClearance = get(ClearanceAct.mapper)?.actingClearance?.actingClearance ?: return@apply
                 val lastRestriction = get(LastRestrictions.mapper) ?: return@apply
                 val pos = get(Position.mapper) ?: return@apply
+                val alt = get(Altitude.mapper) ?: return@apply
                 val dir = get(Direction.mapper) ?: return@apply
                 val gs = get(GroundTrack.mapper) ?: return@apply
                 val acInfo = get(AircraftInfo.mapper) ?: return@apply
@@ -156,7 +154,9 @@ class ControlStateSystem(override val updateTimeS: Float = 0f): EntitySystem(), 
                 val targetWptId = (actingClearance.route.legs.first() as? Route.WaypointLeg)?.wptId ?: return@apply // Skip if next leg is not waypoint
                 val targetPos = GAME.gameServer?.waypoints?.get(targetWptId)?.entity?.get(Position.mapper) ?: return@apply // Skip if waypoint not found or position not present
                 val newGs = getPointTargetTrackAndGS(pos.x, pos.y, targetPos.x, targetPos.y, nextMaxSpd.toFloat(), dir, get(AffectedByWind.mapper)).second
-                val distReqPx = mToPx(calculateAccelerationDistanceRequired(pxpsToKt(gs.trackVectorPxps.len()), newGs, acInfo.minAcc))
+                val approach = has(LocalizerCaptured.mapper) || has(GlideSlopeCaptured.mapper) || has(VisualCaptured.mapper) || (get(CirclingApproach.mapper)?.phase ?: 0) >= 1
+                val distReqPx = mToPx(calculateAccelerationDistanceRequired(pxpsToKt(gs.trackVectorPxps.len()), newGs,
+                    calculateMinAcceleration(acInfo.aircraftPerf, alt.altitudeFt, calculateTASFromIAS(alt.altitudeFt, nextMaxSpd.toFloat()), -500f, approach, takingOff = false, takeoffClimb = false)) + 2000)
                 val deltaX = targetPos.x - pos.x
                 val deltaY = targetPos.y - pos.y
                 if (deltaX * deltaX + deltaY * deltaY < distReqPx * distReqPx) {

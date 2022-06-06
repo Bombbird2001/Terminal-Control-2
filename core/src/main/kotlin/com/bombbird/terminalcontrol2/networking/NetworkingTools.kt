@@ -11,7 +11,6 @@ import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.navigation.SidStar
 import com.bombbird.terminalcontrol2.screens.RadarScreen
 import com.bombbird.terminalcontrol2.ui.updateMetarInformation
-import com.bombbird.terminalcontrol2.utilities.byte
 import com.bombbird.terminalcontrol2.utilities.getAircraftIcon
 import com.esotericsoftware.kryo.Kryo
 import ktx.ashley.get
@@ -30,6 +29,7 @@ fun registerClassesToKryo(kryo: Kryo?) {
         register(FloatArray::class.java)
 
         // Initial load classes
+        register(ClearAllClientData::class.java)
         register(InitialAirspaceData::class.java)
         register(InitialIndividualSectorData::class.java)
         register(InitialAircraftData::class.java)
@@ -105,9 +105,18 @@ fun registerClassesToKryo(kryo: Kryo?) {
         register(AircraftControlStateUpdateData::class.java)
         register(CustomWaypointData::class.java)
         register(RemoveCustomWaypointData::class.java)
+        register(GameRunningStatus::class.java)
 
     } ?: Gdx.app.log("NetworkingTools", "Null kryo passed, unable to register classes")
 }
+
+/**
+ * Class representing a request to the client to clear all currently data, such as objects stored in the game engine
+ *
+ * This should always be sent before initial loading data (those below) to ensure no duplicate objects become present
+ * on the client
+ * */
+class ClearAllClientData
 
 /** Class representing airspace data sent on initial connection, loading of the game on a client */
 data class InitialAirspaceData(val magHdgDev: Float = 0f, val minAlt: Int = 2000, val maxAlt: Int = 20000, val minSep: Float = 3f, val transAlt: Int = 18000, val transLvl: Int = 180)
@@ -156,13 +165,17 @@ data class AircraftControlStateUpdateData(val callsign: String = "", var primary
                                           val vectorHdg: Short? = null, val vectorTurnDir: Byte? = null,
                                           val clearedAlt: Int = 0, val clearedIas: Short = 0,
                                           val minIas: Short = 0, val maxIas: Short = 0, val optimalIas: Short = 0,
-                                          val clearedApp: String? = null, val clearedTrans: String? = null)
+                                          val clearedApp: String? = null, val clearedTrans: String? = null,
+                                          val sendingSector: Byte = -5)
 
 /** Class representing data sent during creation of a new custom waypoint */
 data class CustomWaypointData(val customWpt: Waypoint.SerialisedWaypoint = Waypoint.SerialisedWaypoint())
 
 /** Class representing data sent during removal of a custom waypoint */
 data class RemoveCustomWaypointData(val wptId: Short = -1)
+
+/** Class representing data sent on a client request to pause/run the game */
+data class GameRunningStatus(val running: Boolean = true)
 
 /**
  * Handles an incoming request from the server to client, and performs the appropriate actions
@@ -177,6 +190,15 @@ fun handleIncomingRequest(rs: RadarScreen, obj: Any?) {
             aircraft.forEach {
                 rs.aircraft[it.icaoCallsign]?.apply { updateFromUDPData(it) }
             }
+        } ?: (obj as? ClearAllClientData)?.apply {
+            // Nuke everything
+            rs.sectors.clear()
+            rs.aircraft.clear()
+            rs.airports.clear()
+            rs.waypoints.clear()
+            rs.updatedWaypointMapping.clear()
+            rs.publishedHolds.clear()
+            GAME.engine.removeAllEntities()
         } ?: (obj as? InitialAirspaceData)?.apply {
             MAG_HDG_DEV = magHdgDev
             MIN_ALT = minAlt
@@ -234,7 +256,7 @@ fun handleIncomingRequest(rs: RadarScreen, obj: Any?) {
                 aircraft.entity[Controllable.mapper]?.sectorId = obj.newSector
                 aircraft.entity[RSSprite.mapper]?.drawable = getAircraftIcon(aircraft.entity[FlightType.mapper]?.type ?: return@apply, obj.newSector)
                 if (rs.selectedAircraft == aircraft) {
-                    if (obj.newSector == 0.byte) rs.setUISelectedAircraft(aircraft) // TODO Check for player's sector
+                    if (obj.newSector == rs.playerSector) rs.setUISelectedAircraft(aircraft)
                     else rs.deselectUISelectedAircraft()
                 }
             }

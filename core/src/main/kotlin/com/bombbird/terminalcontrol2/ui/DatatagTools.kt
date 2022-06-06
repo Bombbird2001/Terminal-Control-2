@@ -134,8 +134,8 @@ fun addDatatagInputListeners(datatag: Datatag, aircraft: Aircraft) {
 fun getNewDatatagLabelText(entity: Entity): Array<String> {
     val minimisedDatatag = entity[MinimisedDatatag.mapper]
     val controllable = entity[Controllable.mapper]
-    return if (minimisedDatatag != null || controllable == null || controllable.sectorId == SectorInfo.TOWER || controllable.sectorId == SectorInfo.CENTRE) getMinimisedLabelText(entity)
-    else getExpandedLabelText(entity) // TODO Additional check for whether aircraft is in your sector
+    return if (minimisedDatatag != null || controllable == null || controllable.sectorId != GAME.gameClientScreen?.playerSector) getMinimisedLabelText(entity)
+    else getExpandedLabelText(entity)
 }
 
 /** Gets a nw array of strings for the minimised datatag, based on the player's datatag format */
