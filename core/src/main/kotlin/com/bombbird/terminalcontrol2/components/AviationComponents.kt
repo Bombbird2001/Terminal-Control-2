@@ -1,6 +1,7 @@
 package com.bombbird.terminalcontrol2.components
 
 import com.badlogic.ashley.core.Component
+import com.badlogic.gdx.math.CumulativeDistribution
 import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.entities.Airport
 import com.bombbird.terminalcontrol2.utilities.AircraftTypeData
@@ -28,9 +29,20 @@ class ActiveTakeoff: Component {
 }
 
 /** Component for tagging airport METAR information */
-data class MetarInfo(var realLifeIcao: String = "", var letterCode: Char? = null, var rawMetar: String? = null, var windHeadingDeg: Short = 360, var windSpeedKt: Short = 0, var windGustKt: Short = 0, var visibilityM: Short = 10000, var ceilingHundredFtAGL: Short? = null, var windshear: String = ""): Component {
+data class MetarInfo(var realLifeIcao: String = "", var letterCode: Char? = null, var rawMetar: String? = null,
+                     var windHeadingDeg: Short = 360, var windSpeedKt: Short = 0, var windGustKt: Short = 0,
+                     var visibilityM: Short = 10000, var ceilingHundredFtAGL: Short? = null, var windshear: String = ""): Component {
     val windVectorPx = Vector2()
     companion object: Mapper<MetarInfo>()
+}
+
+/** Component for tagging random weather generation data */
+data class RandomMetarInfo(var windDirDist: CumulativeDistribution<Short> = CumulativeDistribution(),
+                           var windSpdDist: CumulativeDistribution<Short> = CumulativeDistribution(),
+                           var visibilityDist: CumulativeDistribution<Short> = CumulativeDistribution(),
+                           var ceilingDist: CumulativeDistribution<Short> = CumulativeDistribution(),
+                           var windshearLogCoefficients: Pair<Float, Float>? = null): Component {
+    companion object: Mapper<RandomMetarInfo>()
 }
 
 /**
@@ -40,7 +52,7 @@ data class MetarInfo(var realLifeIcao: String = "", var letterCode: Char? = null
  *
  * [sectorId] = -2 -> ACC control
  * */
-data class SectorInfo(var sectorId: Byte = 0, var controllerName: String = "ChangeYourNameLol", var frequency: String = "121.5", var sectorCallsign: String = "Approach"): Component {
+data class SectorInfo(var sectorId: Byte = 0, var controllerName: String = "Shiba Inu", var frequency: String = "121.5", var sectorCallsign: String = "Approach"): Component {
     companion object: Mapper<SectorInfo>() {
         const val TOWER: Byte = -1
         const val CENTRE: Byte = -2

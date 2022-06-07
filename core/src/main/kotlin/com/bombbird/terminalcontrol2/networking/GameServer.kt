@@ -181,6 +181,9 @@ class GameServer {
                 connection?.sendTCP(PublishedHoldData(publishedHolds.values().toArray().map { it.getSerialisableObject() }.toTypedArray()))
                 connection?.sendTCP(MinAltData(minAltSectors.toArray().map { it.getSerialisableObject() }.toTypedArray()))
                 connection?.sendTCP(ShorelineData(shoreline.toArray().map { it.getSerialisableObject() }.toTypedArray()))
+
+                // Send current METAR
+                connection?.sendTCP(MetarData(airports.values().map { it.getSerialisedMetar() }.toTypedArray()))
             }
         })
     }

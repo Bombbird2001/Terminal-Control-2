@@ -1,5 +1,6 @@
 package com.bombbird.terminalcontrol2.networking
 
+import com.badlogic.ashley.core.Entity
 import com.badlogic.gdx.Gdx
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.Secrets
@@ -14,10 +15,14 @@ object HttpRequest {
     private val JSON_MEDIA_TYPE: MediaType = "application/json; charset=utf-8".toMediaType()
     private val client = OkHttpClient()
 
-    /** Sends an HTTP request to the METAR server, with the [reqString] query and [retry] which denotes whether the program
-     * should try another request in case of failure
+    /**
+     * Sends an HTTP request to the METAR server, with the string query and whether the program should try another
+     * request in case of failure
+     * @param reqString the METAR request object in string format
+     * @param airportsForRandom the list of airports to generate random weather for in case of failure
      * */
-    fun sendMetarRequest(reqString: String, retry: Boolean) {
+    fun sendMetarRequest(reqString: String, retry: Boolean, airportsForRandom: List<Entity>) {
+        // return generateRandomWeather(false, airportsForRandom)
         val request = Request.Builder()
             .url(Secrets.GET_METAR_URL)
             .post(reqString.toRequestBody(JSON_MEDIA_TYPE))
@@ -27,8 +32,8 @@ object HttpRequest {
                 Gdx.app.log("HttpRequest", "Request failed")
                 println(e)
                 if (GAME.gameServer?.gameRunning != true) return
-                if (retry) sendMetarRequest(reqString, false)
-                else generateRandomWeather() // Generate offline weather
+                if (retry) sendMetarRequest(reqString, false, airportsForRandom)
+                else generateRandomWeather(true, airportsForRandom) // Generate offline weather
             }
 
             override fun onResponse(call: Call, response: Response) {
@@ -37,11 +42,11 @@ object HttpRequest {
                         Gdx.app.log("HttpRequest", "503 received: trying again")
                         response.close()
                         if (GAME.gameServer?.gameRunning != true) return
-                        sendMetarRequest(reqString, false)
+                        sendMetarRequest(reqString, false, airportsForRandom)
                     } else {
                         // Generate offline weather
                         response.close()
-                        generateRandomWeather()
+                        generateRandomWeather(false, airportsForRandom)
                     }
                 } else {
                     val responseText = response.body?.string()
@@ -49,7 +54,7 @@ object HttpRequest {
 
                     if (responseText == null) {
                         Gdx.app.log("HttpRequest", "Null sendMetarRequest response")
-                        generateRandomWeather()
+                        generateRandomWeather(false, airportsForRandom)
                         return
                     }
 

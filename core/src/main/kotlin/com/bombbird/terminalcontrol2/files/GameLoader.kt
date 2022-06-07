@@ -22,7 +22,7 @@ import ktx.collections.toGdxArray
 fun loadAircraftData() {
     "Data/aircraft.perf".toInternalFile().readString().split("\\r?\\n".toRegex()).toTypedArray().apply {
         for (line in this) {
-            val lineData = line.split(" ")
+            val lineData = line.trim().split(" ")
             val type = lineData[0]
             val wakeCat = lineData[1][0]
             val recat = lineData[2][0]
@@ -56,13 +56,18 @@ fun loadWorldData(mainName: String, gameServer: GameServer) {
         var currSectorCount = 0.byte
         var currApp: Approach? = null
         for (line in this) {
-            val lineData = line.split(" ")
+            val lineData = line.trim().split(" ")
             when (lineData[0]) {
                 "AIRPORT" -> currAirport = parseAirport(lineData, gameServer)
                 "/AIRPORT" -> {
                     currAirport = null
                     currSid = null
                 }
+                "WINDDIR" -> if (currAirport != null) parseWindDir(lineData, currAirport)
+                "WINDSPD" -> if (currAirport != null) parseWindSpd(lineData, currAirport)
+                "VISIBILITY" -> if (currAirport != null) parseVisibility(lineData, currAirport)
+                "CEILING" -> if (currAirport != null) parseCeiling(lineData, currAirport)
+                "WINDSHEAR" -> if (currAirport != null) parseWindshear(lineData, currAirport)
                 "SID" -> currSid = parseSID(lineData, currAirport ?: continue)
                 "/SID" -> currSid = null
                 "STAR" -> currStar = parseSTAR(lineData, currAirport ?: continue)
@@ -199,7 +204,7 @@ private fun parseShoreline(data: List<String>, gameServer: GameServer) {
         polygon.add(nmToPx(pos[0].toFloat()).toInt().toShort())
         polygon.add(nmToPx(pos[1].toFloat()).toInt().toShort())
     }
-    gameServer.shoreline.add(Shoreline(polygon.toShortArray()))
+    gameServer.shoreline.add(Shoreline(polygon.toShortArray(), false))
 }
 
 /** Parse the given [data] into a [PublishedHold], and adds it to [GameServer.shoreline] */
@@ -237,6 +242,7 @@ private fun parseHold(data: List<String>, gameServer: GameServer) {
  * Returns the constructed [Airport]
  * */
 private fun parseAirport(data: List<String>, gameServer: GameServer): Airport {
+    if (data.size != 8) Gdx.app.log("GameLoader", "Airport data has ${data.size} elements instead of 8")
     val id = data[1].toByte()
     val icao = data[2]
     val name = data[3]
@@ -246,7 +252,7 @@ private fun parseAirport(data: List<String>, gameServer: GameServer): Airport {
     val posY = nmToPx(pos[1].toFloat())
     val elevation = data[6].toShort()
     val realLifeIcao = data[7]
-    val arpt = Airport(id, icao, name, ratio, posX, posY, elevation).apply {
+    val arpt = Airport(id, icao, name, ratio, posX, posY, elevation, false).apply {
         setMetarRealLifeIcao(realLifeIcao)
     }
     gameServer.airports.put(id, arpt)
@@ -256,6 +262,7 @@ private fun parseAirport(data: List<String>, gameServer: GameServer): Airport {
 
 /** Parse the given [data] into a runway, and adds it to the supplied [airport] */
 private fun parseRunway(data: List<String>, airport: Airport) {
+    if (data.size != 10) Gdx.app.log("GameLoader", "Windshear data has ${data.size} elements instead of 10")
     val id = data[0].toByte()
     val name = data[1]
     val pos = data[2].split(",")
@@ -285,6 +292,7 @@ private fun parseRunway(data: List<String>, airport: Airport) {
  * Returns the constructed [Approach] or null if an invalid runway is specified
  * */
 private fun parseApproach(data: List<String>, airport: Airport): Approach? {
+    if (data.size != 7) Gdx.app.log("GameLoader", "Approach data has ${data.size} elements instead of 7")
     val name = data[1].replace("-", " ")
     val dayNight = when (data[2]) {
         "DAY_NIGHT" -> UsabilityFilter.DAY_AND_NIGHT
@@ -316,6 +324,7 @@ private fun parseApproach(data: List<String>, airport: Airport): Approach? {
  * @param approach the approach to add the localizer to
  * */
 private fun parseAppLocalizer(data: List<String>, approach: Approach) {
+    if (data.size != 3) Gdx.app.log("GameLoader", "Localizer data has ${data.size} elements instead of 3")
     val heading = data[1].toShort()
     val locDistNm = data[2].toByte()
     approach.addLocalizer(heading, locDistNm)
@@ -327,6 +336,7 @@ private fun parseAppLocalizer(data: List<String>, approach: Approach) {
  * @param approach the approach to add the glideslope to
  * */
 private fun parseAppGlideslope(data: List<String>, approach: Approach) {
+    if (data.size != 4) Gdx.app.log("GameLoader", "Glideslope data has ${data.size} elements instead of 4")
     val angleDeg = data[1].toFloat()
     val offsetNm = data[2].toFloat()
     val maxInterceptAltFt = data[3].toShort()
@@ -354,6 +364,7 @@ private fun parseAppStepDown(data: List<String>, approach: Approach) {
  * @param approach the approach to add the line-up distance to
  */
 private fun parseAppLineUp(data: List<String>, approach: Approach) {
+    if (data.size != 2) Gdx.app.log("GameLoader", "Lineup data has ${data.size} elements instead of 2")
     approach.addLineUpDist(data[1].toFloat())
 }
 
@@ -363,6 +374,7 @@ private fun parseAppLineUp(data: List<String>, approach: Approach) {
  * @param approach the approach to add the circling approach data to
  */
 private fun parseCircling(data: List<String>, approach: Approach) {
+    if (data.size != 4) Gdx.app.log("GameLoader", "Circling data has ${data.size} elements instead of 4")
     val minBreakoutAlt = data[1].toInt()
     val maxBreakoutAlt = data[2].toInt()
     val turnDir = when (data[3]) {
@@ -403,6 +415,7 @@ private fun parseApproachMissed(data: List<String>, approach: Approach) {
  * Returns the constructed [SidStar.SID]
  * */
 private fun parseSID(data: List<String>, airport: Airport): SidStar.SID {
+    if (data.size != 4) Gdx.app.log("GameLoader", "SID data has ${data.size} elements instead of 4")
     val name = data[1]
     val dayNight = when (data[2]) {
         "DAY_NIGHT" -> UsabilityFilter.DAY_AND_NIGHT
@@ -428,11 +441,13 @@ private fun parseSIDRwyRoute(data: List<String>, sid: SidStar.SID) {
     sid.rwyInitialClimbs.put(rwy, initClimb)
 }
 
-/** Parse the given [data] into a [SidStar.STAR], and adds it to the supplied [airport]'s [STARChildren] component
+/**
+ * Parse the given [data] into a [SidStar.STAR], and adds it to the supplied [airport]'s [STARChildren] component
  *
  * Returns the constructed [SidStar.STAR]
  * */
 private fun parseSTAR(data: List<String>, airport: Airport): SidStar.STAR {
+    if (data.size != 4) Gdx.app.log("GameLoader", "STAR data has ${data.size} elements instead of 4")
     val name = data[1]
     val dayNight = when (data[2]) {
         "DAY_NIGHT" -> UsabilityFilter.DAY_AND_NIGHT
@@ -561,5 +576,83 @@ private fun parseLeg(legType: String, data: String, flightPhase: Byte): Route.Le
             if (legType.isNotEmpty()) Gdx.app.log("GameLoader", "Unknown leg type: $legType")
             return null
         }
+    }
+}
+
+/**
+ * Parse the given data into wind direction chances data for the input airport, and adds it to the airport entity's
+ * [RandomMetarInfo] component
+ * @param data the line array containing wind direction cumulative distribution data
+ * @param airport the airport to add the data to
+ * */
+private fun parseWindDir(data: List<String>, airport: Airport) {
+    if (data.size != 38) Gdx.app.log("GameLoader", "Wind direction data has ${data.size} elements instead of 38")
+    airport.entity[RandomMetarInfo.mapper]?.apply {
+        for (i in 1 until data.size) {
+            windDirDist.add((i * 10 - 10).toShort(), data[i].toFloat())
+        }
+        windDirDist.generateNormalized()
+    }
+}
+
+/**
+ * Parse the given data into wind speed chances data for the input airport, and adds it to the airport entity's
+ * [RandomMetarInfo] component
+ * @param data the line array containing wind speed cumulative distribution data
+ * @param airport the airport to add the data to
+ * */
+private fun parseWindSpd(data: List<String>, airport: Airport) {
+    if (data.size < 32) Gdx.app.log("GameLoader", "Wind speed data has only ${data.size} elements; recommended at least 32")
+    airport.entity[RandomMetarInfo.mapper]?.apply {
+        for (i in 1 until data.size) {
+            windSpdDist.add((i - 1).toShort(), data[i].toFloat())
+        }
+        windSpdDist.generateNormalized()
+    }
+}
+
+/**
+ * Parse the given data into visibility chances data for the input airport, and adds it to the airport entity's
+ * [RandomMetarInfo] component
+ * @param data the line array containing visibility cumulative distribution data
+ * @param airport the airport to add the data to
+ * */
+private fun parseVisibility(data: List<String>, airport: Airport) {
+    if (data.size != 21) Gdx.app.log("GameLoader", "Visibility data has ${data.size} elements instead of 21")
+    airport.entity[RandomMetarInfo.mapper]?.apply {
+        for (i in 1 until data.size) {
+            visibilityDist.add((i * 500).toShort(), data[i].toFloat())
+        }
+        visibilityDist.generateNormalized()
+    }
+}
+
+/**
+ * Parse the given data into ceiling chances data for the input airport, and adds it to the airport entity's
+ * [RandomMetarInfo] component
+ * @param data the line array containing ceiling cumulative distribution data
+ * @param airport the airport to add the data to
+ */
+private fun parseCeiling(data: List<String>, airport: Airport) {
+    if (data.size != 16) Gdx.app.log("GameLoader", "Ceiling data has ${data.size} elements instead of 16")
+    airport.entity[RandomMetarInfo.mapper]?.apply {
+        for (i in 1 until data.size) {
+            val hundredFtDist = shortArrayOf(-1, 0, 1, 2, 5, 10, 20, 30, 50, 80, 120, 170, 230, 300, 380)
+            ceilingDist.add(hundredFtDist[i - 1], data[i].toFloat())
+        }
+        ceilingDist.generateNormalized()
+    }
+}
+
+/**
+ * Parse the given data into windshear chance data for the input airport, and adds it to the airport entity's
+ * [RandomMetarInfo] component
+ * @param data the line array containing windshear logistic curve coefficients
+ * @param airport the airport to add the data to
+ * */
+private fun parseWindshear(data: List<String>, airport: Airport) {
+    if (data.size != 3) Gdx.app.log("GameLoader", "Windshear data has ${data.size} elements instead of 3")
+    airport.entity[RandomMetarInfo.mapper]?.apply {
+        windshearLogCoefficients = Pair(data[1].toFloat(), data[2].toFloat())
     }
 }

@@ -38,6 +38,7 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
         with<STARChildren>()
         with<ApproachChildren>()
         with<MetarInfo>()
+        if (!onClient) with<RandomMetarInfo>()
     }
 
     companion object {
