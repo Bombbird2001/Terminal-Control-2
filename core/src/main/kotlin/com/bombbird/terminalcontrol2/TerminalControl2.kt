@@ -7,10 +7,7 @@ import com.badlogic.gdx.math.MathUtils
 import com.bombbird.terminalcontrol2.global.BG_INDEX
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.networking.GameServer
-import com.bombbird.terminalcontrol2.screens.GameLoading
-import com.bombbird.terminalcontrol2.screens.MainMenu
-import com.bombbird.terminalcontrol2.screens.NewGame
-import com.bombbird.terminalcontrol2.screens.RadarScreen
+import com.bombbird.terminalcontrol2.screens.*
 import kotlinx.coroutines.launch
 import ktx.app.KtxGame
 import ktx.app.KtxScreen
@@ -54,6 +51,7 @@ class TerminalControl2 : KtxGame<KtxScreen>(clearScreen = false) {
             addScreen(MainMenu())
             addScreen(NewGame())
             addScreen(GameLoading())
+            addScreen(PauseScreen())
             setScreen<MainMenu>()
         }
 

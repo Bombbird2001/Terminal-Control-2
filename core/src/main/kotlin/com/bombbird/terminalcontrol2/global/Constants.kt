@@ -14,8 +14,9 @@ const val WORLD_WIDTH = 1920f
 const val WORLD_HEIGHT = 1080f
 
 /** Menu button sizes */
-const val BIG_BUTTON_WIDTH = 600f
-const val BIG_BUTTON_HEIGHT = 130f
+const val BUTTON_WIDTH_BIG = 600f
+const val BUTTON_WIDTH_MEDIUM = 250f
+const val BUTTON_HEIGHT_BIG = 130f
 const val BOTTOM_BUTTON_MARGIN = 90f
 
 /** radarScreen defaults */

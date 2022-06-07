@@ -37,15 +37,18 @@ import java.util.concurrent.ConcurrentLinkedQueue
 import kotlin.concurrent.thread
 import kotlin.math.min
 
-/** Main class for the display of the in-game radar screen
+/**
+ * Main class for the display of the in-game radar screen
  *
  * Contains the stage for the actors required in the radar screen
  *
  * Also contains the stage for drawing the UI overlay
  *
  * Implements [GestureListener] and [InputProcessor] to handle input/gesture events to it
+ * @param connectionHost the address of the host server to connect to
+ * @param mainName the main map airport name
  * */
-class RadarScreen(private val connectionHost: String): KtxScreen, GestureListener, InputProcessor {
+class RadarScreen(private val connectionHost: String, mainName: String): KtxScreen, GestureListener, InputProcessor {
     private val clientEngine = getEngine(true)
     private val radarDisplayStage = safeStage(GAME.batch)
     private val constZoomStage = safeStage(GAME.batch)
@@ -99,7 +102,7 @@ class RadarScreen(private val connectionHost: String): KtxScreen, GestureListene
     init {
         if (true) { // TODO True if single-player or host of multiplayer, false otherwise
             GAME.gameServer = GameServer()
-            GAME.gameServer?.initiateServer()
+            GAME.gameServer?.initiateServer(mainName)
         }
         registerClassesToKryo(client.kryo)
         client.start()
@@ -127,7 +130,10 @@ class RadarScreen(private val connectionHost: String): KtxScreen, GestureListene
         clientEngine.addSystem(DataSystem())
     }
 
-    /** Adds an [Actor] to [constZoomStage] */
+    /**
+     * Adds an actor to the constant zoom stage
+     * @param actor the [Actor] to add to [constZoomStage]
+     * */
     fun addToConstZoomStage(actor: Actor) {
         constZoomStage.addActor(actor)
     }
@@ -161,7 +167,10 @@ class RadarScreen(private val connectionHost: String): KtxScreen, GestureListene
         }
     }
 
-    /** Initiates animation of [radarDisplayStage]'s camera to the new position, as well as a new zoom depending on current zoom value */
+    /**
+     * Initiates animation of [radarDisplayStage]'s camera to the new position, as well as a new zoom depending on current
+     * zoom value
+     * */
     private fun initiateCameraAnimation(targetScreenX: Float, targetScreenY: Float) {
         (radarDisplayStage.camera as OrthographicCamera).apply {
             targetZoom = if (zoom > (nmToPx(ZOOM_THRESHOLD_NM) / UI_HEIGHT)) nmToPx(DEFAULT_ZOOM_IN_NM) / UI_HEIGHT
@@ -175,7 +184,10 @@ class RadarScreen(private val connectionHost: String): KtxScreen, GestureListene
         }
     }
 
-    /** Shifts [radarDisplayStage]'s camera by an amount depending on the time passed since last frame, and the zoom, pan rate calculated in [initiateCameraAnimation] */
+    /**
+     * Shifts [radarDisplayStage]'s camera by an amount depending on the time passed since last frame, and the zoom, pan
+     * rate calculated in [initiateCameraAnimation]
+     * */
     private fun runCameraAnimations(delta: Float) {
         if (!cameraAnimating) return
         (radarDisplayStage.camera as OrthographicCamera).apply {
@@ -189,7 +201,10 @@ class RadarScreen(private val connectionHost: String): KtxScreen, GestureListene
         }
     }
 
-    /** Helper function for unprojecting from screen coordinates to camera world coordinates, as unfortunately Camera's unproject function is not accurate in this case */
+    /**
+     * Helper function for unprojecting from screen coordinates to camera world coordinates, as unfortunately Camera's
+     * unproject function is not accurate in this case
+     * */
     private var unprojectFromRadarCamera = fun (screenX: Float, screenY: Float): Vector2 {
         (radarDisplayStage.camera as OrthographicCamera).apply {
             val scaleFactor = UI_HEIGHT / HEIGHT // 1px in screen distance = ?px in world distance (at zoom = 1)
@@ -197,7 +212,10 @@ class RadarScreen(private val connectionHost: String): KtxScreen, GestureListene
         }
     }
 
-    /** Sets [Gdx.input]'s inputProcessors to [inputMultiplexer], which consists of [uiStage], [constZoomStage], [radarDisplayStage], [gestureDetector] and this [RadarScreen] */
+    /**
+     * Sets [Gdx.input]'s inputProcessors to [inputMultiplexer], which consists of [uiStage], [constZoomStage], [radarDisplayStage],
+     * [gestureDetector] and this [RadarScreen]
+     * */
     override fun show() {
         inputMultiplexer.addProcessor(uiStage)
         inputMultiplexer.addProcessor(constZoomStage)
@@ -214,13 +232,15 @@ class RadarScreen(private val connectionHost: String): KtxScreen, GestureListene
 
         runCameraAnimations(delta)
         if (running) clientEngine.update(delta)
-        // TODO pause screen
 
         // Process pending runnables
         while (true) { pendingRunnablesQueue.poll()?.run() ?: break }
     }
 
-    /** Clears and disposes of [radarDisplayStage], [constZoomStage], [uiStage], [shapeRenderer], stops the [client] and [GameServer] if present */
+    /**
+     * Clears and disposes of [radarDisplayStage], [constZoomStage], [uiStage], [shapeRenderer], stops the [client] and
+     * [GameServer] if present
+     * */
     override fun dispose() {
         radarDisplayStage.clear()
         constZoomStage.clear()
@@ -388,15 +408,21 @@ class RadarScreen(private val connectionHost: String): KtxScreen, GestureListene
     }
 
     /**
-     * Toggles the game running status
+     * Pauses the game
      *
-     * If the new game running status is false (i.e. pause the game), a pause request is sent to the server which will
-     * check if the number of players is not more than 1 and will pause the game on the server-side as well if that is
-     * the case, otherwise it will continue running the game if more than 1 player is present
+     * A pause request is sent to the server which will check if the number of players is not more than 1 and will pause
+     * the game on the server-side as well if that is the case, otherwise it will continue running the game if more than
+     * 1 player is present
      */
-    fun toggleGameRunningStatus() {
-        running = !running
-        client.sendTCP(GameRunningStatus(running))
+    fun pauseGame() {
+        client.sendTCP(GameRunningStatus(false))
+        GAME.getScreen<PauseScreen>().radarScreen = this
+        GAME.setScreen<PauseScreen>()
+    }
+
+    /** Resumes the game, and sends a resume game signal to the server */
+    fun resumeGame() {
+        client.sendTCP(GameRunningStatus(true))
     }
 
     /**

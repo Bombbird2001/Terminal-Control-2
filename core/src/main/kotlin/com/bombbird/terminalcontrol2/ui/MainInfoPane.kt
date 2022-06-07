@@ -36,10 +36,8 @@ fun <S> KWidget<S>.mainInfoPane(paneWidth: Float): KContainer<Actor> {
                 label("High score: High shiba", "HighScore").cell(padTop = 10f, align = Align.left, growX = true)
             }.cell(padLeft = 20f, preferredWidth = paneWidth * 0.85f - 50)
             textButton("||", "Pause").cell(padRight = 30f, preferredWidth = paneWidth * 0.15f, preferredHeight = UI_HEIGHT * 0.1f).addChangeListener { _, _ ->
-                // Can use this button to reconnect to the server LOL since debug breakpoints will cause the client to disconnect from server
-                // GAME.gameClientScreen?.attemptConnectionToServer()
-                // Toggle the running status for the client screen
-                GAME.gameClientScreen?.toggleGameRunningStatus()
+                // Pause the client
+                GAME.gameClientScreen?.pauseGame()
             }
             row()
             metarScroll = scrollPane("MetarPane") {

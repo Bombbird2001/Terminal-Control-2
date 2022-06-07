@@ -1,6 +1,7 @@
 package com.bombbird.terminalcontrol2.networking
 
 import com.badlogic.ashley.core.Engine
+import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.math.Polygon
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.*
@@ -27,7 +28,10 @@ import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
 import kotlin.math.roundToLong
 
-/** Main game server class, responsible for handling all game logic, updates, sending required game data information to clients and handling incoming client inputs */
+/**
+ * Main game server class, responsible for handling all game logic, updates, sending required game data information to
+ * clients and handling incoming client inputs
+ * */
 class GameServer {
     companion object {
         const val UPDATE_INTERVAL = 1000.0 / SERVER_UPDATE_RATE
@@ -39,7 +43,7 @@ class GameServer {
     private val loopRunning = AtomicBoolean(false)
     val gameRunning: Boolean
         get() = loopRunning.get()
-    var gamePaused = false
+    private val gamePaused = AtomicBoolean(false)
     private var lock = ReentrantLock()
     private val condition = lock.newCondition()
     val playerNo = 1.byte // TODO Change depending on current number of connected players
@@ -85,9 +89,9 @@ class GameServer {
     private var startTime = -1L
 
     /** Initialises game world */
-    private fun loadGame() {
+    private fun loadGame(mainName: String) {
         loadAircraftData()
-        loadWorldData("TCTP", this)
+        loadWorldData(mainName, this)
 
         // Set 05L, 05R as active for development
         airports[0]?.entity?.get(RunwayChildren.mapper)?.rwyMap?.apply {
@@ -116,11 +120,12 @@ class GameServer {
     }
 
     /** Starts the game loop */
-    fun initiateServer() {
+    fun initiateServer(mainName: String) {
         thread {
-            loadGame()
+            loadGame(mainName)
             startNetworkingServer()
             startTime = -1L
+            Gdx.app.log("GameServer", "Starting game server")
             loopRunning.set(true)
             gameLoop()
             stopNetworkingServer()
@@ -129,6 +134,7 @@ class GameServer {
 
     /** Stops the game loop and exits server */
     fun stopServer() {
+        Gdx.app.log("GameServer", "Stopping game server")
         loopRunning.set(false)
         engine.removeAllEntities()
         engine.removeAllSystems()
@@ -152,10 +158,10 @@ class GameServer {
                     }
                 } ?: (obj as? GameRunningStatus)?.apply {
                     if (obj.running) {
-                        if (gamePaused) lock.withLock { condition.signal() }
-                        gamePaused = false
+                        if (gamePaused.get()) lock.withLock { condition.signal() }
+                        gamePaused.set(false)
                     }
-                    else if (playerNo <= 1) gamePaused = true
+                    else if (playerNo <= 1) gamePaused.set(true)
                 }
             }
 
@@ -222,7 +228,7 @@ class GameServer {
                 }
             }
 
-            if (gamePaused) lock.withLock {
+            if (gamePaused.get()) lock.withLock {
                 condition.await()
                 currMs = System.currentTimeMillis()
             }
@@ -254,7 +260,8 @@ class GameServer {
         while (true) { pendingRunnablesQueue.poll()?.run() ?: break }
     }
 
-    /** Send frequently updated data approximately [SERVER_TO_CLIENT_UPDATE_RATE_FAST] times a second
+    /**
+     * Send frequently updated data approximately [SERVER_TO_CLIENT_UPDATE_RATE_FAST] times a second
      *
      * Aircraft position
      *

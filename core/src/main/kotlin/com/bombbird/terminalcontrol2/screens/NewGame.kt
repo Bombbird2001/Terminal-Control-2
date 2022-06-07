@@ -8,8 +8,8 @@ import ktx.scene2d.*
 
 /** New game screen which extends [BasicUIScreen] */
 class NewGame: BasicUIScreen() {
-    var currSelectedAirport: KTextButton? = null
-    lateinit var start: KTextButton
+    private var currSelectedAirport: KTextButton? = null
+    private lateinit var start: KTextButton
 
     init {
         stage.actors {
@@ -59,7 +59,7 @@ class NewGame: BasicUIScreen() {
                         }.cell(expandY = true).align(Align.top)
                     }.cell(expandY = true, padTop = 65f)
                     row().padTop(100f)
-                    textButton("Back", "Menu").cell(width = BIG_BUTTON_WIDTH, height = BIG_BUTTON_HEIGHT, padBottom = BOTTOM_BUTTON_MARGIN, expandY = true, align = Align.bottom).addChangeListener { _, _ ->
+                    textButton("Back", "Menu").cell(width = BUTTON_WIDTH_BIG, height = BUTTON_HEIGHT_BIG, padBottom = BOTTOM_BUTTON_MARGIN, expandY = true, align = Align.bottom).addChangeListener { _, _ ->
                         GAME.setScreen<MainMenu>()
                     }
                 }

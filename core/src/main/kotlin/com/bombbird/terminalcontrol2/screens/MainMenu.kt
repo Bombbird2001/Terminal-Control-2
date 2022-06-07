@@ -21,13 +21,13 @@ class MainMenu: BasicUIScreen() {
                     iconTexture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear)
                     image(iconTexture).cell(width = 360f, height = 119f, expandY = true, align = Align.top, padTop = 105f)
                     row().padTop(65f)
-                    textButton("New Game", "Menu").cell(width = BIG_BUTTON_WIDTH, height = BIG_BUTTON_HEIGHT).addChangeListener { _, _ ->
+                    textButton("New Game", "Menu").cell(width = BUTTON_WIDTH_BIG, height = BUTTON_HEIGHT_BIG).addChangeListener { _, _ ->
                         GAME.setScreen<NewGame>()
                     }
                     row().padTop(25f)
-                    textButton("Load Game", "Menu").cell(width = BIG_BUTTON_WIDTH, height = BIG_BUTTON_HEIGHT)
+                    textButton("Load Game", "Menu").cell(width = BUTTON_WIDTH_BIG, height = BUTTON_HEIGHT_BIG)
                     row().padTop(130f)
-                    textButton("Quit", "Menu").cell(width = BIG_BUTTON_WIDTH, height = BIG_BUTTON_HEIGHT, padBottom = BOTTOM_BUTTON_MARGIN).addChangeListener { _, _ ->
+                    textButton("Quit", "Menu").cell(width = BUTTON_WIDTH_BIG, height = BUTTON_HEIGHT_BIG, padBottom = BOTTOM_BUTTON_MARGIN).addChangeListener { _, _ ->
                         GAME.dispose()
                         Gdx.app.exit()
                     }
