@@ -5,7 +5,7 @@ import com.badlogic.gdx.utils.Timer
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.UI_HEIGHT
 import com.bombbird.terminalcontrol2.global.UI_WIDTH
-import com.bombbird.terminalcontrol2.utilities.addChangeListener
+import com.bombbird.terminalcontrol2.ui.addChangeListener
 import ktx.scene2d.*
 
 class GameLoading: BasicUIScreen() {

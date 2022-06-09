@@ -1,4 +1,4 @@
-package com.bombbird.terminalcontrol2.utilities
+package com.bombbird.terminalcontrol2.ui
 
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.OrthographicCamera

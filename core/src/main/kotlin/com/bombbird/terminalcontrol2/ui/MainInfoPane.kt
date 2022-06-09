@@ -7,8 +7,6 @@ import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.CLIENT_SCREEN
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.UI_HEIGHT
-import com.bombbird.terminalcontrol2.utilities.addChangeListener
-import com.bombbird.terminalcontrol2.utilities.removeMouseScrollListeners
 import ktx.ashley.get
 import ktx.ashley.has
 import ktx.scene2d.*

@@ -22,7 +22,7 @@ import com.bombbird.terminalcontrol2.systems.DataSystem
 import com.bombbird.terminalcontrol2.systems.PhysicsSystemClient
 import com.bombbird.terminalcontrol2.systems.RenderingSystem
 import com.bombbird.terminalcontrol2.utilities.nmToPx
-import com.bombbird.terminalcontrol2.utilities.safeStage
+import com.bombbird.terminalcontrol2.ui.safeStage
 import com.esotericsoftware.kryonet.Client
 import com.esotericsoftware.kryonet.Connection
 import com.esotericsoftware.kryonet.Listener
@@ -125,7 +125,7 @@ class RadarScreen(private val connectionHost: String, mainName: String): KtxScre
         }
         constZoomStage.camera.moveTo(Vector2())
 
-        clientEngine.addSystem(RenderingSystem(shapeRenderer, radarDisplayStage, constZoomStage, uiStage))
+        clientEngine.addSystem(RenderingSystem(shapeRenderer, radarDisplayStage, constZoomStage, uiStage, uiPane))
         clientEngine.addSystem(PhysicsSystemClient(1f))
         clientEngine.addSystem(DataSystem())
     }

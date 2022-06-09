@@ -6,7 +6,7 @@ import com.badlogic.gdx.graphics.Texture
 import com.badlogic.gdx.scenes.scene2d.Actor
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.graphics.ScreenSize
-import com.bombbird.terminalcontrol2.utilities.safeStage
+import com.bombbird.terminalcontrol2.ui.safeStage
 import ktx.app.KtxScreen
 import ktx.assets.disposeSafely
 import ktx.scene2d.*

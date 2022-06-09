@@ -7,7 +7,6 @@ import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.Aircraft
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.ClearanceState
-import com.bombbird.terminalcontrol2.utilities.addChangeListener
 import ktx.ashley.get
 import ktx.ashley.has
 import ktx.graphics.moveTo
@@ -49,7 +48,7 @@ class UIPane(private val uiStage: Stage) {
     var aircraftMaxAlt: Int? = null
     var aircraftArrivalArptId: Byte? = null
     var appTrackCaptured = false
-    var glidePathCaptured = false
+    // var glidePathCaptured = false
 
     init {
         uiStage.actors {
@@ -127,7 +126,7 @@ class UIPane(private val uiStage: Stage) {
         aircraftMaxAlt = aircraft.entity[AircraftInfo.mapper]?.aircraftPerf?.maxAlt ?: return
         aircraftArrivalArptId = aircraft.entity[ArrivalAirport.mapper]?.arptId
         appTrackCaptured = aircraft.entity.has(VisualCaptured.mapper) || aircraft.entity.has(LocalizerCaptured.mapper)
-        glidePathCaptured = aircraft.entity.has(VisualCaptured.mapper) || aircraft.entity.has(GlideSlopeCaptured.mapper)
+        // glidePathCaptured = aircraft.entity.has(VisualCaptured.mapper) || aircraft.entity.has(GlideSlopeCaptured.mapper)
         val latestClearance = aircraft.entity[ClearanceAct.mapper]?.actingClearance ?: return
         userClearanceState.updateUIClearanceState(latestClearance.actingClearance)
         clearanceState.updateUIClearanceState(latestClearance.actingClearance)
@@ -159,7 +158,7 @@ class UIPane(private val uiStage: Stage) {
         }
         aircraftArrivalArptId = aircraft.entity[ArrivalAirport.mapper]?.arptId
         appTrackCaptured = aircraft.entity.has(VisualCaptured.mapper) || aircraft.entity.has(LocalizerCaptured.mapper)
-        glidePathCaptured = aircraft.entity.has(VisualCaptured.mapper) || aircraft.entity.has(GlideSlopeCaptured.mapper)
+        // glidePathCaptured = aircraft.entity.has(VisualCaptured.mapper) || aircraft.entity.has(GlideSlopeCaptured.mapper)
         val latestClearance = aircraft.entity[ClearanceAct.mapper]?.actingClearance ?: return
         userClearanceState.updateUIClearanceState(latestClearance.actingClearance, clearanceState)
         clearanceState.updateUIClearanceState(latestClearance.actingClearance)
@@ -178,6 +177,8 @@ class UIPane(private val uiStage: Stage) {
         controlPane.isVisible = false
         routeEditPane.isVisible = false
         mainInfoPane.isVisible = true
+        clearanceState.route.legs.clear()
+        userClearanceState.route.legs.clear()
         aircraftMaxAlt = null
         aircraftArrivalArptId = null
     }

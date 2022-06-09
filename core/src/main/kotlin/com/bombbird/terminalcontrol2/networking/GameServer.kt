@@ -349,20 +349,6 @@ class GameServer {
         server.sendToAllTCP(RemoveCustomWaypointData(wptId))
     }
 
-    /** Send non-frequent, event-updated and/or important data
-     *
-     * METAR updates
-     *
-     * Aircraft creation, deletion
-     *
-     * Thunderstorm creation, deletion
-     *
-     * (List not exhaustive)
-     */
-    private fun sendTCPToAll() {
-        // TODO send data
-    }
-
     /**
      * Adds a runnable to be run on the main server thread after the current engine update
      * @param runnable the runnable to add

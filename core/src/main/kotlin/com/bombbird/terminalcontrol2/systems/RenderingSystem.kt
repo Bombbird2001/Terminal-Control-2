@@ -10,7 +10,9 @@ import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.scenes.scene2d.Stage
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.*
+import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.ui.LABEL_PADDING
+import com.bombbird.terminalcontrol2.ui.UIPane
 import com.bombbird.terminalcontrol2.ui.updateDatatagLabelSize
 import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.allOf
@@ -25,7 +27,9 @@ import kotlin.math.sqrt
  *
  * Used only in RadarScreen
  * */
-class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stage: Stage, private val constZoomStage: Stage, private val uiStage: Stage): EntitySystem() {
+class RenderingSystem(private val shapeRenderer: ShapeRenderer,
+                      private val stage: Stage, private val constZoomStage: Stage, private val uiStage: Stage,
+                      private val uiPane: UIPane): EntitySystem() {
     private val lineArrayFamily: Family = allOf(GLineArray::class, SRColor::class).get()
     private val polygonFamily: Family = allOf(GPolygon::class, SRColor::class).exclude(RenderLast::class).get()
     private val polygonLastFamily: Family = allOf(GPolygon::class, SRColor::class, RenderLast::class).get()
@@ -46,7 +50,6 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
         val camZoom = (stage.camera as OrthographicCamera).zoom
         val camX = stage.camera.position.x
         val camY = stage.camera.position.y
-        // println(camZoom)
 
         shapeRenderer.begin(ShapeRenderer.ShapeType.Line)
         shapeRenderer.projectionMatrix = stage.camera.combined
@@ -55,8 +58,6 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
         shapeRenderer.circle(0f, 0f, 1250f)
         shapeRenderer.circle(0f, 0f, 125f)
         shapeRenderer.circle(0f, 0f, 12.5f)
-        // shapeRenderer.circle(-15f, 5f, 5f)
-        // shapeRenderer.circle(10f, -10f, 5f)
 
         // Render lineArrays
         val lineArrays = engine.getEntitiesFor(lineArrayFamily)
@@ -164,6 +165,12 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
             }
         }
 
+        // Render current UI selected aircraft's lateral navigation state, accessed via radarScreen's uiPane
+        GAME.gameClientScreen?.selectedAircraft?.let {
+            val aircraftPos = it.entity[Position.mapper] ?: return@let
+            renderRouteState(aircraftPos.x, aircraftPos.y, uiPane.clearanceState.route, false)
+        }
+
         // Render aircraft trajectory (debug)
 //        val trajectoryFamily = allOf(Position::class, Direction::class, Speed::class, AffectedByWind::class).get()
 //        val trajectory = engine.getEntitiesFor(trajectoryFamily)
@@ -226,7 +233,6 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
         shapeRenderer.end()
 
         GAME.batch.projectionMatrix = stage.camera.combined
-        // println("stage: ${stage.camera.combined}")
         GAME.batch.begin()
         GAME.batch.packedColor = Color.WHITE_FLOAT_BITS // Prevent fading out behaviour during selectBox animations due to tint being changed
 
@@ -337,5 +343,81 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer, private val stag
         // Draw UI pane the last, above all the other elements
         uiStage.act(deltaTime)
         uiStage.draw()
+    }
+
+    /**
+     * Renders the input route for the user to see, color depending on whether it is the cleared route or the newly
+     * selected route that differs from the cleared route
+     * @param posX the x coordinate of the aircraft
+     * @param posY the y coordinate of the aircraft
+     * @param route the route to render
+     * @param differs whether the route differs from the cleared route
+     */
+    private fun renderRouteState(posX: Float, posY: Float, route: Route, differs: Boolean) {
+        shapeRenderer.color = if (differs) Color.YELLOW else Color.WHITE
+        var prevX: Float? = posX
+        var prevY: Float? = posY
+        for (i in 0 until route.legs.size) {
+            route.legs[i]?.let { leg ->
+                val finalPrevX = prevX
+                val finalPrevY = prevY
+                (leg as? Route.VectorLeg)?.apply {
+                    if (finalPrevX != null && finalPrevY != null) renderVector(finalPrevX, finalPrevY, heading, differs)
+                } ?: (leg as? Route.WaypointLeg)?.apply {
+                    if (!legActive) return@let
+                    val wptPos = GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(Position.mapper) ?: return@let
+                    if (finalPrevX != null && finalPrevY != null) shapeRenderer.line(finalPrevX, finalPrevY, wptPos.x, wptPos.y)
+                    prevX = wptPos.x
+                    prevY = wptPos.y
+                } ?: (leg as? Route.DiscontinuityLeg)?.apply {
+                    // Unset prevX, prevY to prevent join in waypoints
+                    prevX = null
+                    prevY = null
+                } ?: (leg as? Route.HoldLeg)?.apply {
+                    val wptPos = GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(Position.mapper) ?: return@let
+                    val wptVec = Vector2(wptPos.x, wptPos.y)
+                    // Render a default 230 knot IAS @ 10000ft, 3 deg/s turn
+                    val tasPxps = ktToPxps(266)
+                    val turnRadPx = (tasPxps / Math.toRadians(3.0)).toFloat()
+                    val inboundLegDistPxps = sqrt(nmToPx(legDist * legDist) - turnRadPx * turnRadPx)
+                    val oppInboundLegVec = Vector2(Vector2.Y).rotateDeg(180f + inboundHdg - MAG_HDG_DEV).scl(inboundLegDistPxps)
+                    val halfAbeamVec = Vector2(oppInboundLegVec).rotate90(turnDir.toInt()).scl(turnRadPx / inboundLegDistPxps)
+                    shapeRenderer.line(wptVec, wptVec + oppInboundLegVec)
+                    shapeRenderer.line(wptVec + halfAbeamVec * 2, wptVec + halfAbeamVec * 2 + oppInboundLegVec)
+
+                    // Draw the top arc
+                    val topArcCentreVec = wptVec + halfAbeamVec
+                    val arcRotateVec = halfAbeamVec * turnDir.toInt() // This vector will always be facing right
+                    var pVec = topArcCentreVec + arcRotateVec
+                    for (j in 0 until 10) {
+                        val nextVec = topArcCentreVec + arcRotateVec.rotateDeg(18f)
+                        shapeRenderer.line(pVec, nextVec)
+                        pVec = nextVec
+                    }
+
+                    // Draw the bottom arc
+                    val bottomArcCentreVec = wptVec + oppInboundLegVec + halfAbeamVec
+                    arcRotateVec.scl(-1f)
+                    pVec = bottomArcCentreVec + arcRotateVec
+                    for (j in 0 until 10) {
+                        val nextVec = bottomArcCentreVec + arcRotateVec.rotateDeg(18f)
+                        shapeRenderer.line(pVec, nextVec)
+                        pVec = nextVec
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Renders the input vector heading line given the starting position of the line and whether it differs from the
+     * clearance status
+     * @param posX the x coordinate of the start of the line
+     * @param posY the y coordinate of the start of the line
+     * @param hdg the heading the line should depict
+     * @param differs whether the vector differs from the clearance state
+     */
+    private fun renderVector(posX: Float, posY: Float, hdg: Short, differs: Boolean) {
+        shapeRenderer.color = if (differs) Color.YELLOW else Color.WHITE
     }
 }

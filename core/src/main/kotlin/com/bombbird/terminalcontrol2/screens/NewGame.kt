@@ -3,7 +3,7 @@ package com.bombbird.terminalcontrol2.screens
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.utils.Align
 import com.bombbird.terminalcontrol2.global.*
-import com.bombbird.terminalcontrol2.utilities.addChangeListener
+import com.bombbird.terminalcontrol2.ui.addChangeListener
 import ktx.scene2d.*
 
 /** New game screen which extends [BasicUIScreen] */

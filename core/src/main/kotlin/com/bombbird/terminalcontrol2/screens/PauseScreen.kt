@@ -1,7 +1,7 @@
 package com.bombbird.terminalcontrol2.screens
 
 import com.bombbird.terminalcontrol2.global.*
-import com.bombbird.terminalcontrol2.utilities.addChangeListener
+import com.bombbird.terminalcontrol2.ui.addChangeListener
 import ktx.assets.disposeSafely
 import ktx.scene2d.actors
 import ktx.scene2d.container

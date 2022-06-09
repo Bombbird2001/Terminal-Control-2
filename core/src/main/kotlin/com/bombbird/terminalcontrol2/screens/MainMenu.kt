@@ -4,7 +4,7 @@ import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.Texture
 import com.badlogic.gdx.utils.Align
 import com.bombbird.terminalcontrol2.global.*
-import com.bombbird.terminalcontrol2.utilities.addChangeListener
+import com.bombbird.terminalcontrol2.ui.addChangeListener
 import ktx.scene2d.*
 
 /** The main menu screen which extends [BasicUIScreen] */
