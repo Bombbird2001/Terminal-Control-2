@@ -38,6 +38,7 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer,
     private val runwayFamily: Family = allOf(RunwayInfo::class, SRColor::class).get()
     private val locFamily: Family = allOf(Position::class, Localizer::class, Direction::class).get()
     private val trajectoryFamily: Family = allOf(RadarData::class, Controllable::class, SRColor::class).get()
+    private val visualFamily: Family = allOf(VisualCaptured::class, RadarData::class).get()
     private val datatagLineFamily: Family = allOf(Datatag::class, RadarData::class).get()
     private val constCircleFamily: Family = allOf(Position::class, GCircle::class, SRColor::class, SRConstantZoomSize::class).get()
     private val rwyLabelFamily: Family = allOf(GenericLabel::class, RunwayInfo::class, RunwayLabel::class).get()
@@ -147,6 +148,16 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer,
                 val posVec = Vector2(pos.x, pos.y)
                 shapeRenderer.color = Color.CYAN
                 shapeRenderer.line(posVec, posVec + dir * nmToPx(loc.maxDistNm.toFloat()))
+            }
+        }
+
+        // Render line from aircraft on visual approach to runway touchdown zone
+        val visual = engine.getEntitiesFor(visualFamily)
+        for (i in 0 until visual.size()) {
+            visual[i]?.apply {
+                val rwyPos = get(VisualCaptured.mapper)?.visApp?.get(Position.mapper) ?: return@apply
+                val rDataPos = get(RadarData.mapper)?.position ?: return@apply
+                shapeRenderer.line(rwyPos.x, rwyPos.y, rDataPos.x, rDataPos.y)
             }
         }
 
@@ -398,10 +409,29 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer,
             prevIndex = null
         }
 
+        /**
+         * Gets the appropriate hold position for the input waypoint ID, including custom hold positions
+         * @param wptId the ID of the hold waypoint
+         * @return the [Position] of the hold, or null if a non-existent ID was provided
+         */
+        fun getHoldPos(wptId: Short): Position? {
+            return if (wptId.toInt() == -1) Position(posX, posY)
+            else GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(Position.mapper)
+        }
+
         for (i in 0 until route.legs.size) {
             route.legs[i]?.let { leg ->
-                // If there are legs before the missed approach segment, stop rendering at the missed approach legs
-                if (i == 0) firstPhase = leg.phase
+                if (i == 0) {
+                    // If there are legs before the missed approach segment, stop rendering at the missed approach legs
+                    firstPhase = leg.phase
+                    if (leg is Route.HoldLeg && (uiPane.directLeg !is Route.WaypointLeg || renderUnchanged)) {
+                        // If currently cleared leg is a hold, and the UI selected direct leg is not a new waypoint or this
+                        // route is not changed
+                        val holdPos = getHoldPos(leg.wptId) ?: return@let
+                        prevX = holdPos.x
+                        prevY = holdPos.y
+                    }
+                }
                 if (leg.phase == Route.Leg.MISSED_APP && leg.phase != firstPhase) return
                 val finalPrevX = prevX
                 val finalPrevY = prevY
@@ -422,8 +452,7 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer,
                     setDisconnect(i)
                 } ?: (leg as? Route.HoldLeg)?.apply {
                     if (!checkChangedStatus(i)) return@let
-                    val wptPos = if (wptId.toInt() == -1) Position(posX, posY)
-                    else GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(Position.mapper) ?: return@let
+                    val wptPos = getHoldPos(wptId) ?: return@let
                     val wptVec = Vector2(wptPos.x, wptPos.y)
                     // Render a default 230 knot IAS @ 10000ft, 3 deg/s turn
                     val tasPxps = ktToPxps(266)

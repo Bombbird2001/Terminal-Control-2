@@ -131,6 +131,12 @@ class RouteSubpane {
                         addChangeListener { _, _ ->
                             if (modificationInProgress) return@addChangeListener
                             modificationInProgress = true
+                            // Only allow player to clear direct to this if it is a waypoint leg; otherwise undo the change
+                            if (leg !is Route.WaypointLeg) {
+                                isChecked = !isChecked
+                                modificationInProgress = false
+                                return@addChangeListener
+                            }
                             if (!isChecked) isChecked = true
                             else {
                                 val prevLegIndex = directLeg?.let {
