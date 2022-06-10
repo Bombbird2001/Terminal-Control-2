@@ -17,6 +17,7 @@ import ktx.ashley.get
 import ktx.ashley.has
 import ktx.ashley.plusAssign
 import ktx.ashley.remove
+import ktx.collections.GdxArray
 import ktx.scene2d.Scene2DSkin
 import kotlin.math.max
 import kotlin.math.min
@@ -86,6 +87,66 @@ fun compareLegEquality(leg1: Leg, leg2: Leg): Boolean {
         leg1 is DiscontinuityLeg && leg2 is DiscontinuityLeg -> true
         else -> false
     }
+}
+
+/**
+ * Checks whether the provided routes have the same route segments (i.e. from one leg to the next)
+ *
+ * Use this function when comparing route clearances whose difference are to be drawn on the radarScreen
+ * @param route1 the first route to compare
+ * @param route2 the second route to compare
+ * @return an array containing the index of the leg(s) in [route2] whose leg segment differs from in [route1]
+ * */
+fun checkRouteSegmentEquality(route1: Route, route2: Route): GdxArray<Int> {
+    route1.legs.let { legs1 -> route2.legs.let { legs2 ->
+        val changedIndices = GdxArray<Int>()
+        var leg2Index = -1
+        var leg2SecondIndex = 0
+        while (leg2SecondIndex < legs2.size) {
+            val firstLeg = if (leg2Index == -1) null else legs2[leg2Index]
+            val secondLeg = legs2[leg2SecondIndex]
+            // If second leg is skipped, increment second counter and continue to next iteration
+            if ((secondLeg as? WaypointLeg)?.legActive == false) {
+                leg2SecondIndex++
+                continue
+            } else if (secondLeg is HoldLeg) {
+                // If second leg is hold leg, check for presence of the same leg in legs1 and add to changed if not present
+                // Increment second counter and continue to next iteration
+                if (checkLegChanged(route1, secondLeg)) changedIndices.add(leg2SecondIndex)
+                leg2SecondIndex++
+                continue
+            }
+            var leg1Index = -1
+            var leg1SecondIndex = 0
+            var found = false
+            while (leg1SecondIndex < legs1.size) {
+                val oldFirstLeg = if (leg1Index == -1) null else legs1[leg1Index]
+                val oldSecondLeg = legs1[leg1SecondIndex]
+                // If second leg is skipped or is hold, increment second counter and continue to next iteration
+                if ((oldSecondLeg as? WaypointLeg)?.legActive == false || oldSecondLeg is HoldLeg) {
+                    leg1SecondIndex++
+                    continue
+                }
+                // Compare the 2 first legs and the 2 second legs; the first legs must either both be null (i.e. aircraft
+                // position) or equal, and the second legs must be equal; if met, found is true and break from this loop
+                if (((firstLeg == null && oldFirstLeg == null) ||
+                        (firstLeg != null && oldFirstLeg != null && compareLegEquality(firstLeg, oldFirstLeg))) &&
+                    compareLegEquality(secondLeg, oldSecondLeg)) {
+                    found = true
+                    break
+                }
+                // Set leg1 index to the second leg1 index, and increment second leg1 index
+                leg1Index = leg1SecondIndex
+                leg1SecondIndex++
+            }
+            // If not found by the end of the leg1 loop, add the leg2 index to list of changed indices
+            if (!found) changedIndices.add(leg2Index)
+            // Set leg2 index to the second leg2 index, and increment second leg2 index
+            leg2Index = leg2SecondIndex
+            leg2SecondIndex++
+        }
+        return changedIndices
+    }}
 }
 
 /**

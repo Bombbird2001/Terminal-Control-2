@@ -199,10 +199,18 @@ fun distanceFromBorder(xBorder: FloatArray, yBorder: FloatArray, x: Float, y: Fl
     return xDist.coerceAtMost(yDist)
 }
 
-/** Calculates the point where the line from a point at a specified track meets a rectangle's border  */
-fun pointsAtBorder(xBorder: FloatArray, yBorder: FloatArray, x: Float, y: Float, direction: Float): FloatArray {
-    val dist = distanceFromBorder(xBorder, yBorder, x, y, direction)
-    return floatArrayOf(x + dist * cos(Math.toRadians(90 - direction.toDouble())).toFloat(), y + dist * sin(Math.toRadians(90 - direction.toDouble())).toFloat())
+/**
+ * Calculates the point where the line from a point at a specified track meets a rectangle's border
+ * @param xBorder an array of 2 floats, the first being the left border's x coordinate and the second being the right border's y coordinate
+ * @param yBorder an array of 2 floats, the first being the bottom border's y coordinate and the second being the top border's y coordinate
+ * @param x the line origin's x coordinate
+ * @param y the line origin's y coordinate
+ * @param track the track direction of the line
+ * @return a float array containing 2 floats denoting the point of intersection between the line and the rectangle borders
+ * */
+fun pointsAtBorder(xBorder: FloatArray, yBorder: FloatArray, x: Float, y: Float, track: Float): FloatArray {
+    val dist = distanceFromBorder(xBorder, yBorder, x, y, track)
+    return floatArrayOf(x + dist * cos(Math.toRadians(90 - track.toDouble())).toFloat(), y + dist * sin(Math.toRadians(90 - track.toDouble())).toFloat())
 }
 
 /** Checks whether integer is within range of 2 integers  */

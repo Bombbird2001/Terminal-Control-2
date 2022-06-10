@@ -19,6 +19,7 @@ import ktx.ashley.allOf
 import ktx.ashley.exclude
 import ktx.ashley.get
 import ktx.ashley.has
+import ktx.collections.GdxArray
 import ktx.math.*
 import kotlin.math.sqrt
 
@@ -167,8 +168,15 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer,
 
         // Render current UI selected aircraft's lateral navigation state, accessed via radarScreen's uiPane
         GAME.gameClientScreen?.selectedAircraft?.let {
-            val aircraftPos = it.entity[Position.mapper] ?: return@let
-            renderRouteState(aircraftPos.x, aircraftPos.y, uiPane.clearanceState.route, false)
+            val aircraftPos = it.entity[RadarData.mapper]?.position ?: return@let
+            val vectorUnchanged = uiPane.clearanceState.vectorHdg == uiPane.userClearanceState.vectorHdg
+            uiPane.clearanceState.vectorHdg?.let { hdg -> renderVector(aircraftPos.x, aircraftPos.y, hdg, false) } ?:
+            run { renderRouteState(aircraftPos.x, aircraftPos.y, uiPane.clearanceState.route, GdxArray(1)) }
+            if (!vectorUnchanged) uiPane.userClearanceState.vectorHdg?.let { newHdg ->
+                // Render new vector if changed and is not null
+                renderVector(aircraftPos.x, aircraftPos.y, newHdg, true)
+            }
+            if (!uiPane.modifiedLegIndices.isEmpty) renderRouteState(aircraftPos.x, aircraftPos.y, uiPane.userClearanceState.route, uiPane.modifiedLegIndices)
         }
 
         // Render aircraft trajectory (debug)
@@ -351,36 +359,79 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer,
      * @param posX the x coordinate of the aircraft
      * @param posY the y coordinate of the aircraft
      * @param route the route to render
-     * @param differs whether the route differs from the cleared route
+     * @param changedLegs the leg indices which differs from the cleared route, and will be rendered in yellow
      */
-    private fun renderRouteState(posX: Float, posY: Float, route: Route, differs: Boolean) {
-        shapeRenderer.color = if (differs) Color.YELLOW else Color.WHITE
+    private fun renderRouteState(posX: Float, posY: Float, route: Route, changedLegs: GdxArray<Int>) {
+        val renderUnchanged = changedLegs.isEmpty
+        shapeRenderer.color = if (renderUnchanged) Color.WHITE else Color.YELLOW
         var prevX: Float? = posX
         var prevY: Float? = posY
+        var prevIndex: Int? = -1
+        var firstPhase = Route.Leg.NORMAL
+
+        /**
+         * Checks whether to render the leg in shapeRenderer; there must either be no changed legs at all or the changed
+         * legs must contain the index of the leg before this leg so that the segment from previous to this leg is rendered
+         * @param lastIndex the index of the leg before this leg
+         */
+        fun checkChangedStatus(lastIndex: Int?): Boolean {
+            return renderUnchanged || changedLegs.contains(lastIndex, false)
+        }
+
+        /**
+         * Disconnects the previous leg to the next leg, used when this leg is a vector or discontinuity leg; however, if
+         * there is a direct leg cleared in [uiPane] that occurs after the discontinuity, then the disconnect will not
+         * happen
+         * @param thisIndex the index of the vector/discontinuity leg
+         */
+        fun setDisconnect(thisIndex: Int) {
+            (uiPane.directLeg as? Route.WaypointLeg)?.also { dct ->
+                for (i in 0 until route.legs.size) { (route.legs[i] as? Route.WaypointLeg)?.let {
+                    if (it.wptId == dct.wptId) {
+                        if (i < thisIndex) return@also
+                        if (i > thisIndex) return
+                    }
+                }}
+            }
+            prevX = null
+            prevY = null
+            prevIndex = null
+        }
+
         for (i in 0 until route.legs.size) {
             route.legs[i]?.let { leg ->
+                // If there are legs before the missed approach segment, stop rendering at the missed approach legs
+                if (i == 0) firstPhase = leg.phase
+                if (leg.phase == Route.Leg.MISSED_APP && leg.phase != firstPhase) return
                 val finalPrevX = prevX
                 val finalPrevY = prevY
                 (leg as? Route.VectorLeg)?.apply {
-                    if (finalPrevX != null && finalPrevY != null) renderVector(finalPrevX, finalPrevY, heading, differs)
+                    if (finalPrevX != null && finalPrevY != null && checkChangedStatus(prevIndex))
+                        renderVector(finalPrevX, finalPrevY, heading, changedLegs.contains(i, false))
+                    setDisconnect(i)
                 } ?: (leg as? Route.WaypointLeg)?.apply {
                     if (!legActive) return@let
                     val wptPos = GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(Position.mapper) ?: return@let
-                    if (finalPrevX != null && finalPrevY != null) shapeRenderer.line(finalPrevX, finalPrevY, wptPos.x, wptPos.y)
+                    if (finalPrevX != null && finalPrevY != null && checkChangedStatus(prevIndex)) {
+                        shapeRenderer.line(finalPrevX, finalPrevY, wptPos.x, wptPos.y)
+                    }
                     prevX = wptPos.x
                     prevY = wptPos.y
+                    prevIndex = i
                 } ?: (leg as? Route.DiscontinuityLeg)?.apply {
-                    // Unset prevX, prevY to prevent join in waypoints
-                    prevX = null
-                    prevY = null
+                    setDisconnect(i)
                 } ?: (leg as? Route.HoldLeg)?.apply {
-                    val wptPos = GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(Position.mapper) ?: return@let
+                    if (!checkChangedStatus(i)) return@let
+                    val wptPos = if (wptId.toInt() == -1) Position(posX, posY)
+                    else GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(Position.mapper) ?: return@let
                     val wptVec = Vector2(wptPos.x, wptPos.y)
                     // Render a default 230 knot IAS @ 10000ft, 3 deg/s turn
                     val tasPxps = ktToPxps(266)
                     val turnRadPx = (tasPxps / Math.toRadians(3.0)).toFloat()
-                    val inboundLegDistPxps = sqrt(nmToPx(legDist * legDist) - turnRadPx * turnRadPx)
-                    val oppInboundLegVec = Vector2(Vector2.Y).rotateDeg(180f + inboundHdg - MAG_HDG_DEV).scl(inboundLegDistPxps)
+                    val legDistPx = nmToPx(legDist.toFloat())
+                    val inboundLegDistPxps = sqrt(legDistPx * legDistPx - turnRadPx * turnRadPx)
+                    val oppInboundLegVec = Vector2(Vector2.Y).rotateDeg(180f - (inboundHdg - MAG_HDG_DEV))
+                        .scl(if (inboundLegDistPxps.isNaN()) 0f else inboundLegDistPxps)
                     val halfAbeamVec = Vector2(oppInboundLegVec).rotate90(turnDir.toInt()).scl(turnRadPx / inboundLegDistPxps)
                     shapeRenderer.line(wptVec, wptVec + oppInboundLegVec)
                     shapeRenderer.line(wptVec + halfAbeamVec * 2, wptVec + halfAbeamVec * 2 + oppInboundLegVec)
@@ -397,7 +448,6 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer,
 
                     // Draw the bottom arc
                     val bottomArcCentreVec = wptVec + oppInboundLegVec + halfAbeamVec
-                    arcRotateVec.scl(-1f)
                     pVec = bottomArcCentreVec + arcRotateVec
                     for (j in 0 until 10) {
                         val nextVec = bottomArcCentreVec + arcRotateVec.rotateDeg(18f)
@@ -419,5 +469,9 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer,
      */
     private fun renderVector(posX: Float, posY: Float, hdg: Short, differs: Boolean) {
         shapeRenderer.color = if (differs) Color.YELLOW else Color.WHITE
+        val sectorBoundingRectangle = GAME.gameClientScreen?.primarySector?.boundingRectangle ?: return
+        val lineEnd = pointsAtBorder(floatArrayOf(sectorBoundingRectangle.x, sectorBoundingRectangle.x  + sectorBoundingRectangle.width),
+            floatArrayOf(sectorBoundingRectangle.y, sectorBoundingRectangle.y + sectorBoundingRectangle.height), posX, posY, hdg - MAG_HDG_DEV)
+        shapeRenderer.line(posX, posY, lineEnd[0], lineEnd[1])
     }
 }

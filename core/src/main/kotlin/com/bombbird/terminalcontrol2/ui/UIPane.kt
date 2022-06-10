@@ -7,8 +7,10 @@ import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.Aircraft
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.ClearanceState
+import com.bombbird.terminalcontrol2.navigation.Route
 import ktx.ashley.get
 import ktx.ashley.has
+import ktx.collections.GdxArray
 import ktx.graphics.moveTo
 import ktx.scene2d.*
 import kotlin.math.max
@@ -44,11 +46,14 @@ class UIPane(private val uiStage: Stage) {
     val clearanceState: ClearanceState = ClearanceState() // Aircraft's current state (without user changes)
     val userClearanceState: ClearanceState = ClearanceState() // User's chosen state
 
-    // Max alt, arrival airport and approach track capture status of the aircraft, for persistence across panes
+    // Max alt, arrival airport, approach track capture status of the aircraft, and clearance modification state, for persistence across panes
     var aircraftMaxAlt: Int? = null
     var aircraftArrivalArptId: Byte? = null
     var appTrackCaptured = false
     // var glidePathCaptured = false
+    var modifiedLegIndices = GdxArray<Int>(5)
+    val directLeg: Route.Leg?
+        get() = controlObj.directLeg
 
     init {
         uiStage.actors {
@@ -119,6 +124,7 @@ class UIPane(private val uiStage: Stage) {
      * @param aircraft the [Aircraft] whose clearance information will be displayed in the pane
      * */
     fun setSelectedAircraft(aircraft: Aircraft) {
+        deselectAircraft()
         aircraft.entity.apply {
             val controllable = get(Controllable.mapper) ?: return
             if (controllable.sectorId != GAME.gameClientScreen?.playerSector) return
@@ -178,7 +184,9 @@ class UIPane(private val uiStage: Stage) {
         routeEditPane.isVisible = false
         mainInfoPane.isVisible = true
         clearanceState.route.legs.clear()
+        clearanceState.vectorHdg = null
         userClearanceState.route.legs.clear()
+        userClearanceState.vectorHdg = null
         aircraftMaxAlt = null
         aircraftArrivalArptId = null
     }

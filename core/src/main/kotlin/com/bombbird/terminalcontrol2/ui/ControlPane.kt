@@ -582,6 +582,7 @@ class ControlPane {
             currDirectLeg
         }
         val leg2 = directLeg ?: if (!parentPane.userClearanceState.route.legs.isEmpty) parentPane.userClearanceState.route.legs.first() else null
+        parentPane.modifiedLegIndices = checkRouteSegmentEquality(parentPane.clearanceState.route, parentPane.userClearanceState.route)
         val directChanged = if (leg1 == null && leg2 == null) false else if (leg1 == null || leg2 == null) true else !compareLegEquality(leg1, leg2)
         if (checkClearanceEquality(parentPane.clearanceState, parentPane.userClearanceState) && !directChanged) setUndoTransmitButtonsUnchanged()
         else setUndoTransmitButtonsChanged()
