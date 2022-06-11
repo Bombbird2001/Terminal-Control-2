@@ -205,13 +205,13 @@ class HoldSubpane {
     fun updateHoldTable(route: Route, selectedHold: Route.HoldLeg?) {
         modificationInProgress = true
         holdSelectBox.items = GdxArray<String>().apply {
-            if (parentPane.clearanceState.route.legs.size > 0) { (parentPane.clearanceState.route.legs[0] as? Route.HoldLeg)?.let {
+            if (parentPane.clearanceState.route.size > 0) { (parentPane.clearanceState.route[0] as? Route.HoldLeg)?.let {
                 add(if (it.wptId.toInt() <= -1) "Present position" else GAME.gameClientScreen?.waypoints?.get(it.wptId)?.entity?.get(
                     WaypointInfo.mapper)?.wptName)
                 return@apply // Only allow the current hold leg in the selection if aircraft is already holding
             }}
             add("Present position")
-            for (i in 0 until route.legs.size) route.legs[i]?.let {
+            for (i in 0 until route.size) route[i].let {
                 if (it is Route.WaypointLeg) GAME.gameClientScreen?.waypoints?.get(it.wptId)?.entity?.get(WaypointInfo.mapper)?.wptName?.also { name -> add(name) }
             }
         }
@@ -286,17 +286,17 @@ class HoldSubpane {
     fun updateHoldClearanceState(route: Route) {
         (selectedHoldLeg?.wptId)?.let {
             // Look for hold legs that are present in the selected clearance but not the acting clearance
-            for (i in 0 until route.legs.size) (route.legs[i] as? Route.HoldLeg)?.apply {
+            for (i in 0 until route.size) (route[i] as? Route.HoldLeg)?.apply {
                 if ((it.toInt() == -1 && wptId.toInt() == -1) || it == wptId) {
                     // Found in selected clearance
-                    for (j in 0 until parentPane.clearanceState.route.legs.size) (parentPane.clearanceState.route.legs[j] as? Route.HoldLeg)?.also { actLeg ->
+                    for (j in 0 until parentPane.clearanceState.route.size) (parentPane.clearanceState.route[j] as? Route.HoldLeg)?.also { actLeg ->
                         if ((it.toInt() == -1 && actLeg.wptId.toInt() == -1) || it == actLeg.wptId) {
                             // Also found in acting clearance, don't remove
                             return@let
                         }
                     }
                     // Not found in acting clearance, remove from selected clearance
-                    route.legs.removeIndex(i)
+                    route.removeIndex(i)
                     selectedHoldLeg = null
                     return@let
                 }
@@ -309,7 +309,7 @@ class HoldSubpane {
             val selectedTurnDir = if (holdLeftButton.isChecked) CommandTarget.TURN_LEFT else CommandTarget.TURN_RIGHT
             if (it != "Present position") {
                 // Find the corresponding hold or waypoint leg in route (until a non waypoint/hold leg is found)
-                route.legs.also { legs -> for (i in 0 until legs.size) legs[i]?.apply {
+                route.also { legs -> for (i in 0 until legs.size) legs[i].apply {
                     // Search for hold leg first
                     if (this is Route.HoldLeg && GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName == it) {
                         // Hold already exists in route, update to selected parameters
@@ -322,7 +322,7 @@ class HoldSubpane {
                 }
 
                     // Hold leg not found, search for waypoint leg instead
-                    for (i in 0 until legs.size) legs[i]?.apply {
+                    for (i in 0 until legs.size) legs[i].apply {
                         if (this is Route.WaypointLeg && GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName == it) {
                             // Add a new hold leg after this waypoint leg (phase will be the same as the parent waypoint leg)
                             val newHold = GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName?.let { name ->
@@ -332,8 +332,8 @@ class HoldSubpane {
                                         pubHold.inboundHdgDeg, pubHold.legDistNm, pubHold.turnDir, phase)
                                 }} ?: Route.HoldLeg(wptId, null, null, 230, 240, selectedInboundHdg, selectedLegDist, selectedTurnDir, phase)
                             // Remove after waypoint heading leg if it exists
-                            if (i + 1 < legs.size && legs[i + 1] is Route.VectorLeg) route.legs.removeIndex(i + 1)
-                            route.legs.insert(i + 1, newHold)
+                            if (i + 1 < legs.size && legs[i + 1] is Route.VectorLeg) route.removeIndex(i + 1)
+                            route.insert(i + 1, newHold)
                             selectedHoldLeg = newHold
                             // If direct leg was previously set to present position hold due to default hold selection, set it back to first leg
                             (directLeg as? Route.HoldLeg)?.let { selectedHold -> if (selectedHold.wptId.toInt() == -1) directLeg = legs[0] }
@@ -344,7 +344,7 @@ class HoldSubpane {
             } else {
                 // Present position hold - create/update custom waypoint
                 // Check if first leg is already present hold position
-                if (route.legs.size >= 1) (route.legs[0] as? Route.HoldLeg)?.apply {
+                if (route.size >= 1) (route[0] as? Route.HoldLeg)?.apply {
                     if (wptId.toInt() == -1) {
                         // First leg is present position hold
                         inboundHdg = selectedInboundHdg
@@ -356,9 +356,9 @@ class HoldSubpane {
                 }
                 // Empty route or first leg is not present position hold leg
                 // Add a new present hold leg as the first leg (phase will be the same as the subsequent leg, or normal if no subsequent legs exist)
-                val phaseToUse = if (route.legs.size > 0) route.legs[0]?.phase ?: Route.Leg.NORMAL else Route.Leg.NORMAL
+                val phaseToUse = if (route.size > 0) route[0].phase else Route.Leg.NORMAL
                 val newHold = Route.HoldLeg(-1, null, null, 230, 240, selectedInboundHdg, selectedLegDist, selectedTurnDir, phaseToUse)
-                route.legs.insert(0, newHold)
+                route.insert(0, newHold)
                 selectedHoldLeg = newHold
                 directLeg = newHold
             }

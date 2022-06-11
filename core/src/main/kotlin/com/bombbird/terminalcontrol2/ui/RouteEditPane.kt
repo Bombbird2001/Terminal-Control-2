@@ -42,13 +42,13 @@ class RouteEditPane {
                 table {
                     textButton("Cancel all\nAlt restr.", "ControlPaneButton").cell(grow = true, preferredWidth = 0.3f * paneWidth).addChangeListener { _, _ ->
                         val route = parentPane.userClearanceState.route
-                        for (i in 0 until route.legs.size) (route.legs[i] as? Route.WaypointLeg)?.apply { if (minAltFt != null || maxAltFt != null) altRestrActive = false }
+                        for (i in 0 until route.size) (route[i] as? Route.WaypointLeg)?.apply { if (minAltFt != null || maxAltFt != null) altRestrActive = false }
                         updateEditRouteTable(route)
                         updateUndoTransmitButtonStates()
                     }
                     textButton("Cancel all\nSpd restr.", "ControlPaneButton").cell(grow = true, preferredWidth = 0.3f * paneWidth).addChangeListener { _, _ ->
                         val route = parentPane.userClearanceState.route
-                        for (i in 0 until route.legs.size) (route.legs[i] as? Route.WaypointLeg)?.apply { if (maxSpdKt != null) spdRestrActive = false }
+                        for (i in 0 until route.size) (route[i] as? Route.WaypointLeg)?.apply { if (maxSpdKt != null) spdRestrActive = false }
                         updateEditRouteTable(route)
                         updateUndoTransmitButtonStates()
                     }
@@ -100,12 +100,12 @@ class RouteEditPane {
         routeEditTable.apply {
             var prevPhase: Byte? = null
             var lastWptLegIndex = -1
-            for (i in route.legs.size - 1 downTo 0) if (route.legs[i] is Route.WaypointLeg) {
+            for (i in route.size - 1 downTo 0) if (route[i] is Route.WaypointLeg) {
                 lastWptLegIndex = i
                 break
             }
-            for (i in 0 until route.legs.size) {
-                route.legs[i].let { leg ->
+            for (i in 0 until route.size) {
+                route[i].let { leg ->
                     val legDisplay = (leg as? Route.WaypointLeg)?.wptId?.let { wptId ->
                         GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName
                     } ?:
@@ -163,18 +163,18 @@ class RouteEditPane {
                             updateUndoTransmitButtonStates()
                         } ?: run { isChecked = false } }
                     }
-                    if (i < lastWptLegIndex || (lastWptLegIndex == -1 && i < route.legs.size - 1)) textButton(skipText, "ControlPaneSelected${if (skippedChanged) "Changed" else ""}").cell(growX = true, preferredWidth = 0.25f * parentPane.paneWidth, height = 0.125f * UI_HEIGHT).apply {
+                    if (i < lastWptLegIndex || (lastWptLegIndex == -1 && i < route.size - 1)) textButton(skipText, "ControlPaneSelected${if (skippedChanged) "Changed" else ""}").cell(growX = true, preferredWidth = 0.25f * parentPane.paneWidth, height = 0.125f * UI_HEIGHT).apply {
                         if ((leg as? Route.WaypointLeg)?.legActive == false) isChecked = true
                         addChangeListener { _, _ -> Gdx.app.postRunnable {
                                 // Set skipped status for waypoint legs
                                 (leg as? Route.WaypointLeg)?.let {
-                                    val legIndex = route.legs.indexOf(it, false)
+                                    val legIndex = route.indexOf(it)
                                     it.legActive = !isChecked
                                     style = Scene2DSkin.defaultSkin[if (style.fontColor == Color.WHITE || style.fontColor == Color(160f / 255, 160f / 255, 160f / 255, 1f)) "ControlPaneSelectedChanged" else "ControlPaneSelected", TextButtonStyle::class.java]
                                     // Remove subsequent leg if it is a vector/hold/init climb
-                                    if (route.legs.size > legIndex + 1) route.legs[legIndex + 1]?.let { nextLeg ->
+                                    if (route.size > legIndex + 1) route[legIndex + 1].let { nextLeg ->
                                         if (nextLeg is Route.HoldLeg || nextLeg is Route.VectorLeg || nextLeg is Route.InitClimbLeg) {
-                                            route.legs.removeIndex(legIndex + 1)
+                                            route.removeIndex(legIndex + 1)
                                             updateEditRouteTable(route)
                                         }
                                     }
@@ -182,7 +182,7 @@ class RouteEditPane {
                                     // Remove the leg if it is a hold/vector/init climb/discontinuity
                                     legLabel.remove()
                                     remove()
-                                    route.legs.removeValue(leg, false)
+                                    route.removeValue(leg)
                                 }
                             updateUndoTransmitButtonStates()
                             }}

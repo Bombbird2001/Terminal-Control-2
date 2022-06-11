@@ -80,8 +80,8 @@ class RouteSubpane {
         var firstAvailableLeg: Route.Leg? = null // The first leg that can be set as selected in case previous direct leg doesn't match any leg
         routeLegsTable.apply {
             var prevPhase: Byte? = null
-            for (i in 0 until route.legs.size) {
-                route.legs[i].also { leg ->
+            for (i in 0 until route.size) {
+                route[i].also { leg ->
                     val legDisplay = (leg as? Route.WaypointLeg)?.let { wpt -> if (!wpt.legActive) return@also
                         GAME.gameClientScreen?.waypoints?.get(wpt.wptId)?.entity?.get(WaypointInfo.mapper)?.wptName } ?:
                     (leg as? Route.VectorLeg)?.let { vec -> "${when (vec.turnDir) {
@@ -142,8 +142,8 @@ class RouteSubpane {
                                 val prevLegIndex = directLeg?.let {
                                     // Find the index of the previously selected leg
                                     var index: Int? = null // Additional variable for finding index as making prevLegIndex a var prevents smart cast in this changing closure below
-                                    for (j in 0 until route.legs.size) {
-                                        if (compareLegEquality(it, route.legs[j])) {
+                                    for (j in 0 until route.size) {
+                                        if (compareLegEquality(it, route[j])) {
                                             index = j
                                             break
                                         }
@@ -153,7 +153,7 @@ class RouteSubpane {
                                 for (j in 0 until directButtonArray.size) {
                                     // Uncheck all buttons except for this one
                                     if (j != i) directButtonArray[j].isChecked = false
-                                    (route.legs[j] as? Route.WaypointLeg)?.let {
+                                    (route[j] as? Route.WaypointLeg)?.let {
                                         if (j < i) it.legActive = false // All legs before are no longer active
                                         else if (j == i) it.legActive = true // This leg is active
                                         else if (prevLegIndex != null && j <= prevLegIndex) it.legActive = true // If a leg was selected previously, set all legs from this to the previous leg as active
@@ -176,7 +176,7 @@ class RouteSubpane {
                 }
             }
         }
-        if (!firstDirectSet && route.legs.size > 0 && directButtonArray.size > 0) {
+        if (!firstDirectSet && route.size > 0 && directButtonArray.size > 0) {
             // No selected leg was found - possibly due reasons such as the first leg being skipped in edit route pane
             // Set selection to the first available leg found earlier (i.e. the first non-skipped leg)
             directLeg = firstAvailableLeg

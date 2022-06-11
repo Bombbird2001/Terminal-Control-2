@@ -56,10 +56,10 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
             actingClearance.routePrimaryName = newClearance.routePrimaryName
 
             actingClearance.route.let { currRoute -> newClearance.route.let { newRoute ->
-                val currRouteLegs = currRoute.legs
-                val newRouteLegs = newRoute.legs
-                val currFirstLeg = if (currRouteLegs.size > 0) currRouteLegs.first() else null
-                val newFirstLeg = if (newRouteLegs.size > 0) newRouteLegs.first() else null
+                // val currRouteLegs = currRoute.legs
+                // val newRouteLegs = newRoute.legs
+                val currFirstLeg = if (currRoute.size > 0) currRoute[0] else null
+                val newFirstLeg = if (newRoute.size > 0) newRoute[0] else null
                 // Remove current present position hold leg if next leg is a different hold leg and is not an uninitialised leg, or not a hold leg
                 if (currFirstLeg is Route.HoldLeg && currFirstLeg.wptId < -1 && (newFirstLeg !is Route.HoldLeg || (newFirstLeg.wptId.toInt() != -1 && newFirstLeg.wptId != currFirstLeg.wptId)))
                     removeCustomHoldWaypoint(currFirstLeg.wptId)
@@ -75,15 +75,15 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
                 if (currFirstLeg != null && newFirstLeg != null) {
                     if (!compareLegEquality(currFirstLeg, newFirstLeg)) {
                         // 3 possible leg conflict scenarios
-                        if (currRouteLegs.size >= 2 && newRouteLegs[1].let { it is Route.HoldLeg && currFirstLeg is Route.WaypointLeg && it.wptId == currFirstLeg.wptId }) {
+                        if (currRoute.size >= 2 && newRoute[1].let { it is Route.HoldLeg && currFirstLeg is Route.WaypointLeg && it.wptId == currFirstLeg.wptId }) {
                             // 1. Aircraft has flown by waypoint, but the new clearance wants it to hold at that waypoint;
                             // clear the current route, and add the new route from the 2nd leg (the hold leg) onwards
-                            newRouteLegs.removeIndex(0)
+                            newRoute.removeIndex(0)
                         } else if (currFirstLeg is Route.WaypointLeg && newFirstLeg is Route.WaypointLeg) {
                             var currDirIndex = -1
                             // Check for whether the new route contains the current direct
-                            for (i in 0 until newRouteLegs.size) {
-                                if (compareLegEquality(currFirstLeg, newRouteLegs[i])) {
+                            for (i in 0 until newRoute.size) {
+                                if (compareLegEquality(currFirstLeg, newRoute[i])) {
                                     currDirIndex = i
                                     break
                                 }
@@ -91,11 +91,11 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
                             if (currDirIndex > 0) {
                                 // 2. Aircraft has flown by waypoint, new clearance is the same route except it still contains
                                 // that waypoint; remove all legs from the new clearance till the current direct
-                                newRouteLegs.removeRange(0, currDirIndex)
+                                newRoute.removeRange(0, currDirIndex)
                             } else {
                                 // 3. Aircraft has flown by waypoint, but the new clearance does not contain the current direct
                                 // (possibly due to player assigning approach transition); remove the first leg from new clearance
-                                newRouteLegs.removeIndex(0)
+                                newRoute.removeIndex(0)
                             }
                         }
                     }
@@ -165,20 +165,20 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
             if (checkRouteEqualityStrict(route, uiClearance.route)) route.setToRouteCopy(latestClearance.route)
             else {
                 var i = 0
-                while (0 <= i && i < route.legs.size) { route.legs[i]?.also { leg ->
+                while (0 <= i && i < route.size) { route[i].also { leg ->
                     (leg as? Route.WaypointLeg)?.let { wptLeg ->
                         // Sanity check - any waypoint legs in the current pane clearance state not in the new clearance
                         // must be removed
                         if (checkLegChanged(latestClearance.route, wptLeg)) {
-                            route.legs.removeIndex(i)
+                            route.removeIndex(i)
                             i--
-                        } else i = route.legs.size // Exit the loop once a matching waypoint has been found from the front
+                        } else i = route.size // Exit the loop once a matching waypoint has been found from the front
                     } ?: ((leg as? Route.HoldLeg) ?: (leg as? Route.VectorLeg))?.let {
                         // Additionally, for hold and after waypoint heading legs, the leg preceding them in the UI state
                         // must be a waypoint and present unless this leg is the first; otherwise, those legs must also be removed
-                        val prevLeg = if (i >= 1) route.legs[i - 1] ?: return@let else return@let
+                        val prevLeg = if (i >= 1) route[i - 1] else return@let
                         if (prevLeg !is Route.WaypointLeg || checkLegChanged(latestClearance.route, prevLeg)) {
-                            route.legs.removeIndex(i)
+                            route.removeIndex(i)
                             i--
                         }
                     }

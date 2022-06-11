@@ -472,8 +472,8 @@ fun calculateArrivalSpawnPoint(route: Route, primarySector: Polygon): Triple<Flo
         originY = pos.y
         if (firstWptLeg.second == 0) {
             var nextWptLeg: Route.WaypointLeg? = null
-            route.legs.apply {
-                for (i in 1 until size) get(i)?.let { nextLeg ->
+            route.apply {
+                for (i in 1 until size) get(i).let { nextLeg ->
                         if (nextLeg is Route.WaypointLeg) {
                             nextWptLeg = nextLeg
                             return@apply
@@ -482,7 +482,7 @@ fun calculateArrivalSpawnPoint(route: Route, primarySector: Polygon): Triple<Flo
             }
             if (nextWptLeg != null) {
                 // If this is the first leg, but subsequent leg is waypoint leg, use the same track as that from first to second leg
-                val destPos = (route.legs[1] as? Route.WaypointLeg)?.let { GAME.gameServer?.waypoints?.get(it.wptId)?.entity?.get(Position.mapper) } ?: Position()
+                val destPos = (route[1] as? Route.WaypointLeg)?.let { GAME.gameServer?.waypoints?.get(it.wptId)?.entity?.get(Position.mapper) } ?: Position()
                 oppSpawnTrack = getRequiredTrack(originX, originY, destPos.x, destPos.y)
                 val trackToUse = Math.toRadians(convertWorldAndRenderDeg(oppSpawnTrack).toDouble())
                 endX = (nmToPx(75) * cos(trackToUse)).toFloat() + pos.x
@@ -498,8 +498,8 @@ fun calculateArrivalSpawnPoint(route: Route, primarySector: Polygon): Triple<Flo
             // Use the leg prior to this waypoint
             var prevWptLeg: Route.WaypointLeg? = null
             var prevVectorLeg: Route.VectorLeg? = null
-            route.legs.apply {
-                for (i in firstWptLeg.second - 1 downTo 0) get(i)?.let { prevLeg ->
+            route.apply {
+                for (i in firstWptLeg.second - 1 downTo 0) get(i).let { prevLeg ->
                     when (prevLeg) {
                         is Route.WaypointLeg -> {
                             prevWptLeg = prevLeg
@@ -537,7 +537,7 @@ fun calculateArrivalSpawnPoint(route: Route, primarySector: Polygon): Triple<Flo
             }
 
             // Remove all previous legs and set the first leg to the first waypoint leg inside the sector
-            route.legs.removeRange(0, firstWptLeg.second - 1)
+            route.removeRange(0, firstWptLeg.second - 1)
         }
     } else {
         // If no waypoint leg in sector, choose a random track towards the center (0, 0)
@@ -565,7 +565,7 @@ fun calculateArrivalSpawnAltitude(aircraft: Entity, airport: Entity, origRoute: 
     val distPxToAlt: Float
     val firstMaxAlt: Float
     var maxStarAlt: Int? = null
-    if (aircraftRoute.legs.isEmpty) {
+    if (aircraftRoute.size == 0) {
         // No legs, select airport position and use airport elevation as closest point with max altitude restriction
         firstMaxAlt = airport[Altitude.mapper]?.altitudeFt ?: 0f
         val airportPos = airport[Position.mapper] ?: Position()
@@ -574,7 +574,7 @@ fun calculateArrivalSpawnAltitude(aircraft: Entity, airport: Entity, origRoute: 
         // Find the closest point with a max altitude restriction
         var cumulativeDistPx = 0f
         var prevPos = Position(posX, posY)
-        aircraftRoute.legs.also { legs ->
+        aircraftRoute.also { legs ->
             for (i in 0 until legs.size) { (legs[i] as? Route.WaypointLeg)?.apply {
                 val thisWptPos = GAME.gameServer?.waypoints?.get(wptId)?.entity?.get(Position.mapper) ?: Position()
                 cumulativeDistPx += calculateDistanceBetweenPoints(prevPos.x, prevPos.y, thisWptPos.x, thisWptPos.y)
@@ -595,8 +595,8 @@ fun calculateArrivalSpawnAltitude(aircraft: Entity, airport: Entity, origRoute: 
         }
 
         // Take into account any STAR max altitude restrictions
-        (aircraftRoute.legs[0] as? Route.WaypointLeg)?.apply {
-            for (i in 0 until origRoute.legs.size) (origRoute.legs[i] as? Route.WaypointLeg)?.let { wpt ->
+        (aircraftRoute[0] as? Route.WaypointLeg)?.apply {
+            for (i in 0 until origRoute.size) (origRoute[i] as? Route.WaypointLeg)?.let { wpt ->
                 if (compareLegEquality(this, wpt)) return@apply // Once the current direct is reached, stop searching for max altitude restrictions
                 val currMaxStarAlt = maxStarAlt // Variable to bypass changing closure error
                 wpt.maxAltFt?.let { maxAlt ->

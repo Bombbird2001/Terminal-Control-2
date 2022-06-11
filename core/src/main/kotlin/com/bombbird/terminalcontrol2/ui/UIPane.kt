@@ -44,16 +44,15 @@ class UIPane(private val uiStage: Stage) {
 
     // Clearance state of the UI pane
     val clearanceState: ClearanceState = ClearanceState() // Aircraft's current state (without user changes)
+    val clearanceRouteSegments: GdxArray<Route.LegSegment> = GdxArray() // The calculated route segments of aircraft's current route state
     val userClearanceState: ClearanceState = ClearanceState() // User's chosen state
+    val userClearanceRouteSegments: GdxArray<Route.LegSegment> = GdxArray() // The calculated route segments of user's chosen route state
 
     // Max alt, arrival airport, approach track capture status of the aircraft, and clearance modification state, for persistence across panes
     var aircraftMaxAlt: Int? = null
     var aircraftArrivalArptId: Byte? = null
     var appTrackCaptured = false
     // var glidePathCaptured = false
-    var modifiedLegIndices = GdxArray<Int>(5)
-    val directLeg: Route.Leg?
-        get() = controlObj.directLeg
 
     init {
         uiStage.actors {
@@ -183,9 +182,11 @@ class UIPane(private val uiStage: Stage) {
         controlPane.isVisible = false
         routeEditPane.isVisible = false
         mainInfoPane.isVisible = true
-        clearanceState.route.legs.clear()
+        clearanceState.route.clear()
+        clearanceRouteSegments.clear()
         clearanceState.vectorHdg = null
-        userClearanceState.route.legs.clear()
+        userClearanceState.route.clear()
+        userClearanceRouteSegments.clear()
         userClearanceState.vectorHdg = null
         aircraftMaxAlt = null
         aircraftArrivalArptId = null

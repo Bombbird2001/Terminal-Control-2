@@ -15,7 +15,6 @@ import com.bombbird.terminalcontrol2.utilities.byte
 import com.bombbird.terminalcontrol2.utilities.nmToPx
 import ktx.ashley.get
 import ktx.assets.toInternalFile
-import ktx.collections.isNotEmpty
 import ktx.collections.toGdxArray
 
 /** Loads the "aircraft.perf" file located in the "Data" subfolder in the assets */
@@ -390,7 +389,7 @@ private fun parseCircling(data: List<String>, approach: Approach) {
 
 /** Parse the given [data] into the route legs data, and adds it to the supplied [approach]'s [Approach.routeLegs] */
 private fun parseApproachRoute(data: List<String>, approach: Approach) {
-    if (approach.routeLegs.legs.isNotEmpty()) {
+    if (approach.routeLegs.size > 0) {
         Gdx.app.log("GameLoader", "Multiple routes for approach: ${approach.entity[ApproachInfo.mapper]?.approachName}")
     }
     approach.routeLegs.extendRoute(parseLegs(data.subList(1, data.size), Route.Leg.APP))
@@ -401,18 +400,23 @@ private fun parseApproachTransition(data: List<String>, approach: Approach) {
     approach.transitions.put(data[1], parseLegs(data.subList(2, data.size), Route.Leg.APP_TRANS))
 }
 
-/** Parse the given [data] into missed approach procedure legs data, and adds it to the supplied [approach]'s [Approach.missedLegs] */
+/**
+ * Parse the given [data] into missed approach procedure legs data, and adds it to the supplied [approach]'s [Approach.missedLegs]
+ * @param data the line array for the missed approach legs
+ * @param approach the [Approach] to add the legs to
+ * */
 private fun parseApproachMissed(data: List<String>, approach: Approach) {
-    if (approach.missedLegs.legs.isNotEmpty()) {
+    if (approach.missedLegs.size > 0) {
         Gdx.app.log("GameLoader", "Multiple missed approach procedures for approach: ${approach.entity[ApproachInfo.mapper]?.approachName}")
     }
-    approach.missedLegs.legs.add(Route.DiscontinuityLeg(Route.Leg.MISSED_APP))
+    approach.missedLegs.add(Route.DiscontinuityLeg(Route.Leg.MISSED_APP))
     approach.missedLegs.extendRoute(parseLegs(data.subList(1, data.size), Route.Leg.MISSED_APP))
 }
 
-/** Parse the given [data] into a [SidStar.SID], and adds it to the supplied [airport]'s [SIDChildren] component
- *
- * Returns the constructed [SidStar.SID]
+/**
+ * Parse the given [data] into a [SidStar.SID], and adds it to the supplied [airport]'s [SIDChildren] component
+ * @param data the line array for the legs
+ * @return the constructed [SidStar.SID]
  * */
 private fun parseSID(data: List<String>, airport: Airport): SidStar.SID {
     if (data.size != 4) Gdx.app.log("GameLoader", "SID data has ${data.size} elements instead of 4")
@@ -443,8 +447,9 @@ private fun parseSIDRwyRoute(data: List<String>, sid: SidStar.SID) {
 
 /**
  * Parse the given [data] into a [SidStar.STAR], and adds it to the supplied [airport]'s [STARChildren] component
- *
- * Returns the constructed [SidStar.STAR]
+ * @param data the line array for the legs
+ * @param airport the airport that this STAR belongs to
+ * @return the constructed [SidStar.STAR]
  * */
 private fun parseSTAR(data: List<String>, airport: Airport): SidStar.STAR {
     if (data.size != 4) Gdx.app.log("GameLoader", "STAR data has ${data.size} elements instead of 4")
@@ -465,7 +470,7 @@ private fun parseSTAR(data: List<String>, airport: Airport): SidStar.STAR {
 }
 
 /**
- * Parse the given [data] runway availability to the STAR, and adds it to the supplied STAR's runway legs
+ * Parse the given [data] into runway availability to the STAR, and adds it to the supplied STAR's runway legs
  *
  * [SidStar.STAR.rwyLegs]'s values will contain an empty route, since this is used only to mark the runways where
  * this STAR can be used
@@ -477,9 +482,13 @@ private fun parseSTARRwyRoute(data: List<String>, star: SidStar.STAR) {
     star.rwyLegs.put(rwy, Route())
 }
 
-/** Parse the given [data] into the route legs data, and adds it to the supplied [sidStar]'s [SidStar.routeLegs] */
+/**
+ * Parse the given [data] into route legs data, and adds it to the supplied [sidStar]'s [SidStar.routeLegs]
+ * @param data the line array for the legs
+ * @param sidStar the [SidStar] to add the legs to
+ * */
 private fun parseSIDSTARRoute(data: List<String>, sidStar: SidStar) {
-    if (sidStar.routeLegs.legs.isNotEmpty()) {
+    if (sidStar.routeLegs.size > 0) {
         Gdx.app.log("GameLoader", "Multiple routes for SID/STAR: ${sidStar.name}")
     }
     sidStar.routeLegs.extendRoute(parseLegs(data.subList(1, data.size), Route.Leg.NORMAL))
@@ -490,15 +499,20 @@ private fun parseSIDSTARinOutboundRoute(data: List<String>, sidStar: SidStar) {
     sidStar.addToInboundOutboundLegs(parseLegs(data.subList(1, data.size), Route.Leg.NORMAL))
 }
 
-/** Parse the given [data], [flightPhase] into an array of legs and returns it */
+/**
+ * Parse the given [data], [flightPhase] into a route and returns it
+ * @param data the line array for the legs
+ * @param flightPhase the phase of flight for this specific set of legs
+ * @return a [Route] containing the legs
+ * */
 private fun parseLegs(data: List<String>, flightPhase: Byte): Route {
-    val legArray = Route()
+    val route = Route()
     var legType = ""
     var dataStream = ""
     for (part in data) {
         when (part) {
             "INITCLIMB", "HDNG", "WYPT", "HOLD" -> {
-                parseLeg(legType, dataStream, flightPhase)?.apply { legArray.legs.add(this) }
+                parseLeg(legType, dataStream, flightPhase)?.apply { route.add(this) }
                 legType = part
                 dataStream = ""
             }
@@ -510,9 +524,9 @@ private fun parseLegs(data: List<String>, flightPhase: Byte): Route {
             }
         }
     }
-    parseLeg(legType, dataStream, flightPhase)?.apply { legArray.legs.add(this) }
+    parseLeg(legType, dataStream, flightPhase)?.apply { route.add(this) }
 
-    return legArray
+    return route
 }
 
 /** Parses a single leg from the given [data], [flightPhase]

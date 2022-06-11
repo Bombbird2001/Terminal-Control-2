@@ -289,8 +289,8 @@ class AISystem: EntitySystem() {
                 val deltaY = wpt.y - pos.y
                 val nextWptLegTrack = findNextWptLegTrackAndDirection(clearanceAct.route) ?: run {
                     // If aircraft is departure, and the next leg is a vector leg and the last leg in the route, turn early as well
-                    if (get(FlightType.mapper)?.type == FlightType.DEPARTURE && clearanceAct.route.legs.size == 2)
-                            (clearanceAct.route.legs[1] as? Route.VectorLeg)?.let { Pair(it.heading.toFloat(), it.turnDir) }
+                    if (get(FlightType.mapper)?.type == FlightType.DEPARTURE && clearanceAct.route.size == 2)
+                            (clearanceAct.route[1] as? Route.VectorLeg)?.let { Pair(it.heading.toFloat(), it.turnDir) }
                     else null
                 }
                 val requiredDist = if (cmdDir.flyOver || nextWptLegTrack == null) 3f
@@ -714,7 +714,7 @@ class AISystem: EntitySystem() {
         val actingClearance = entity[ClearanceAct.mapper]?.actingClearance?.actingClearance ?: return
         val lastRestrictions = entity[LastRestrictions.mapper] ?: LastRestrictions().apply { entity += this }
         val cmd = entity[CommandTarget.mapper] ?: return
-        actingClearance.route.legs.apply {
+        actingClearance.route.apply {
             val currHold = entity[CommandHold.mapper]
             removeAllAdvancedCommandModes(entity)
             unsetTurnDirection(entity)
@@ -775,8 +775,8 @@ class AISystem: EntitySystem() {
      * @param entity the aircraft entity
      * */
     private fun setToNextRouteLeg(entity: Entity) {
-        entity[ClearanceAct.mapper]?.actingClearance?.actingClearance?.route?.legs?.apply { if (size > 0) {
-            (first() as? Route.WaypointLeg)?.let { prevWpt -> entity[LastRestrictions.mapper]?.let { restr ->
+        entity[ClearanceAct.mapper]?.actingClearance?.actingClearance?.route?.apply { if (size > 0) {
+            (get(0) as? Route.WaypointLeg)?.let { prevWpt -> entity[LastRestrictions.mapper]?.let { restr ->
                 prevWpt.maxSpdKt?.let { maxSpd -> restr.maxSpdKt = maxSpd }
                 prevWpt.minAltFt?.let { minAltFt -> restr.minAltFt = minAltFt }
                 prevWpt.maxAltFt?.let { maxAltFt -> restr.maxAltFt = maxAltFt }
@@ -878,7 +878,7 @@ class AISystem: EntitySystem() {
             removeAllAdvancedCommandModes(entity)
             unsetTurnDirection(entity)
             entity += CommandVector(hdg)
-            actingClearance.route.legs.apply {
+            actingClearance.route.apply {
                 while (size > 0) {
                     // Remove any vector legs at the beginning of the route
                     if (get(0) is Route.VectorLeg) removeIndex(0)

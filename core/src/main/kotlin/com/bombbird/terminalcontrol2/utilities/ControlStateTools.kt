@@ -90,66 +90,6 @@ fun compareLegEquality(leg1: Leg, leg2: Leg): Boolean {
 }
 
 /**
- * Checks whether the provided routes have the same route segments (i.e. from one leg to the next)
- *
- * Use this function when comparing route clearances whose difference are to be drawn on the radarScreen
- * @param route1 the first route to compare
- * @param route2 the second route to compare
- * @return an array containing the index of the leg(s) in [route2] whose leg segment differs from in [route1]
- * */
-fun checkRouteSegmentEquality(route1: Route, route2: Route): GdxArray<Int> {
-    route1.legs.let { legs1 -> route2.legs.let { legs2 ->
-        val changedIndices = GdxArray<Int>()
-        var leg2Index = -1
-        var leg2SecondIndex = 0
-        while (leg2SecondIndex < legs2.size) {
-            val firstLeg = if (leg2Index == -1) null else legs2[leg2Index]
-            val secondLeg = legs2[leg2SecondIndex]
-            // If second leg is skipped, increment second counter and continue to next iteration
-            if ((secondLeg as? WaypointLeg)?.legActive == false) {
-                leg2SecondIndex++
-                continue
-            } else if (secondLeg is HoldLeg) {
-                // If second leg is hold leg, check for presence of the same leg in legs1 and add to changed if not present
-                // Increment second counter and continue to next iteration
-                if (checkLegChanged(route1, secondLeg)) changedIndices.add(leg2SecondIndex)
-                leg2SecondIndex++
-                continue
-            }
-            var leg1Index = -1
-            var leg1SecondIndex = 0
-            var found = false
-            while (leg1SecondIndex < legs1.size) {
-                val oldFirstLeg = if (leg1Index == -1) null else legs1[leg1Index]
-                val oldSecondLeg = legs1[leg1SecondIndex]
-                // If second leg is skipped or is hold, increment second counter and continue to next iteration
-                if ((oldSecondLeg as? WaypointLeg)?.legActive == false || oldSecondLeg is HoldLeg) {
-                    leg1SecondIndex++
-                    continue
-                }
-                // Compare the 2 first legs and the 2 second legs; the first legs must either both be null (i.e. aircraft
-                // position) or equal, and the second legs must be equal; if met, found is true and break from this loop
-                if (((firstLeg == null && oldFirstLeg == null) ||
-                        (firstLeg != null && oldFirstLeg != null && compareLegEquality(firstLeg, oldFirstLeg))) &&
-                    compareLegEquality(secondLeg, oldSecondLeg)) {
-                    found = true
-                    break
-                }
-                // Set leg1 index to the second leg1 index, and increment second leg1 index
-                leg1Index = leg1SecondIndex
-                leg1SecondIndex++
-            }
-            // If not found by the end of the leg1 loop, add the leg2 index to list of changed indices
-            if (!found) changedIndices.add(leg2Index)
-            // Set leg2 index to the second leg2 index, and increment second leg2 index
-            leg2Index = leg2SecondIndex
-            leg2SecondIndex++
-        }
-        return changedIndices
-    }}
-}
-
-/**
  * Checks whether the provided routes are equal - route length, and all legs must be strictly equal (including skipped legs,
  * cancelled restrictions for waypoint legs)
  *
@@ -159,7 +99,7 @@ fun checkRouteSegmentEquality(route1: Route, route2: Route): GdxArray<Int> {
  * @return a boolean denoting whether the two routes are strictly equal
  * */
 fun checkRouteEqualityStrict(route1: Route, route2: Route): Boolean {
-    route1.legs.let { legs1 -> route2.legs.let { legs2 ->
+    route1.let { legs1 -> route2.let { legs2 ->
         if (legs1.size != legs2.size) return false
         for (i in 0 until legs1.size) {
             val leg1 = legs1[i]
@@ -183,14 +123,14 @@ fun checkRouteEqualityStrict(route1: Route, route2: Route): Boolean {
  * */
 fun checkLegChanged(route: Route, leg: Leg): Boolean {
     when (leg) {
-        is VectorLeg, is InitClimbLeg, is DiscontinuityLeg -> return !route.legs.contains(leg, false)
+        is VectorLeg, is InitClimbLeg, is DiscontinuityLeg -> return !route.contains(leg)
         is HoldLeg -> {
-            for (i in 0 until route.legs.size) route.legs[i]?.apply { if (this is HoldLeg && (wptId == leg.wptId || (wptId <= -1 && leg.wptId <= -1))) return false }
+            for (i in 0 until route.size) route[i].apply { if (this is HoldLeg && (wptId == leg.wptId || (wptId <= -1 && leg.wptId <= -1))) return false }
             // No legs found with same wpt ID (or no present position hold leg with ID <= -1)
             return true
         }
         is WaypointLeg -> {
-            for (i in 0 until route.legs.size) route.legs[i]?.apply { if (this is WaypointLeg && compareLegEquality(this, leg)) return false }
+            for (i in 0 until route.size) route[i].apply { if (this is WaypointLeg && compareLegEquality(this, leg)) return false }
             // No legs found with same wpt ID, restrictions
             return true
         }
@@ -209,7 +149,7 @@ fun checkLegChanged(route: Route, leg: Leg): Boolean {
  * and [WaypointLeg.legActive] has changed respectively
  * */
 fun checkRestrChanged(route: Route, leg: WaypointLeg): Triple<Boolean, Boolean, Boolean> {
-    for (i in 0 until route.legs.size) route.legs[i]?.apply { if (this is WaypointLeg && compareLegEquality(this, leg)) {
+    for (i in 0 until route.size) route[i].apply { if (this is WaypointLeg && compareLegEquality(this, leg)) {
         return Triple(altRestrActive != leg.altRestrActive, spdRestrActive != leg.spdRestrActive, legActive != leg.legActive)
     }}
     // No legs found with exact same data, return all true
@@ -277,7 +217,7 @@ fun getMinMaxOptimalIAS(entity: Entity): Triple<Short, Short, Short> {
         var holdMaxSpd: Short? = null
         var holding = false
         // Check if aircraft is holding; if so use the max speed for the holding leg
-        actingClearance.route.legs.let {
+        actingClearance.route.let {
             if (it.size > 0) holdMaxSpd = (it[0] as? HoldLeg)?.let { holdLeg ->
                 holding = true
                 if (altitude.altitudeFt > 14050) holdLeg.maxSpdKtHigher else holdLeg.maxSpdKtLower
@@ -322,8 +262,8 @@ fun getMinMaxOptimalIAS(entity: Entity): Triple<Short, Short, Short> {
 fun calculateArrivalSpawnIAS(origStarRoute: Route, aircraftRoute: Route, spawnAlt: Float, aircraftPerf: AircraftTypeData.AircraftPerfData): Short {
     var maxSpd: Short? = null
     // Try to find an existing speed restriction
-    if (aircraftRoute.legs.size > 0) { (aircraftRoute.legs[0] as? WaypointLeg)?.apply {
-        for (i in 0 until origStarRoute.legs.size) { origStarRoute.legs[i]?.let { wpt ->
+    if (aircraftRoute.size > 0) { (aircraftRoute[0] as? WaypointLeg)?.apply {
+        for (i in 0 until origStarRoute.size) { origStarRoute[i].let { wpt ->
             if (compareLegEquality(this, wpt)) return@apply // Stop searching for max speed once current direct is reached
             val currMaxSpd = maxSpd
             maxSpdKt?.let { wptMaxSpd -> if (currMaxSpd == null || wptMaxSpd < currMaxSpd) maxSpd = maxSpdKt }
@@ -387,8 +327,8 @@ fun removeCustomHoldWaypoint(wptId: Short) {
  * @return a Pair, first being the [WaypointLeg], second being the index of the [WaypointLeg], or null if none found
  * */
 fun getFirstWaypointLegInSector(sector: Polygon, route: Route): Pair<WaypointLeg, Int>? {
-    for (i in 0 until route.legs.size) {
-        (route.legs[i] as? WaypointLeg)?.apply {
+    for (i in 0 until route.size) {
+        (route[i] as? WaypointLeg)?.apply {
             val pos = GAME.gameServer?.waypoints?.get(wptId)?.entity?.get(Position.mapper) ?: return@apply
             if (sector.contains(pos.x, pos.y)) return Pair(this, i)
         }
@@ -402,9 +342,9 @@ fun getFirstWaypointLegInSector(sector: Polygon, route: Route): Pair<WaypointLeg
  * @return a Pair, the first being a float denoting the track, the second being a byte representing the turn direction
  * */
 fun findNextWptLegTrackAndDirection(route: Route): Pair<Float, Byte>? {
-    if (route.legs.size < 2) return null
-    (route.legs[0] as? WaypointLeg)?.let { wpt1 ->
-        (route.legs[1] as? WaypointLeg)?.let { wpt2 ->
+    if (route.size < 2) return null
+    (route[0] as? WaypointLeg)?.let { wpt1 ->
+        (route[1] as? WaypointLeg)?.let { wpt2 ->
             val w1 = GAME.gameServer?.waypoints?.get(wpt1.wptId)?.entity?.get(Position.mapper) ?: return null
             val w2 = GAME.gameServer?.waypoints?.get(wpt2.wptId)?.entity?.get(Position.mapper) ?: return null
             return Pair(getRequiredTrack(w1.x, w1.y, w2.x, w2.y), wpt2.turnDir)
@@ -419,9 +359,9 @@ fun findNextWptLegTrackAndDirection(route: Route): Pair<Float, Byte>? {
  * @return a [VectorLeg], or null if no vector leg found
  * */
 fun getAfterWptHdgLeg(wpt: WaypointLeg, route: Route): VectorLeg? {
-    for (i in 0 until route.legs.size) route.legs[i]?.apply {
+    for (i in 0 until route.size) route[i].apply {
         if (compareLegEquality(wpt, this)) {
-            if (route.legs.size > i + 1) (route.legs[i + 1] as? VectorLeg)?.let { return it } ?: return null // If subsequent leg exists and is vector, return it
+            if (route.size > i + 1) (route[i + 1] as? VectorLeg)?.let { return it } ?: return null // If subsequent leg exists and is vector, return it
         }
     }
     return null
@@ -435,9 +375,9 @@ fun getAfterWptHdgLeg(wpt: WaypointLeg, route: Route): VectorLeg? {
  * belongs to, or null if no vector leg found
  * */
 fun getAfterWptHdgLeg(wptName: String, route: Route): Pair<VectorLeg, WaypointLeg>? {
-    for (i in 0 until route.legs.size) (route.legs[i] as? WaypointLeg)?.apply {
+    for (i in 0 until route.size) (route[i] as? WaypointLeg)?.apply {
         if (GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName == wptName) {
-            if (route.legs.size > i + 1) (route.legs[i + 1] as? VectorLeg)?.let { return Pair(it, this) } ?: return null // If subsequent leg exists and is vector, return it
+            if (route.size > i + 1) (route[i + 1] as? VectorLeg)?.let { return Pair(it, this) } ?: return null // If subsequent leg exists and is vector, return it
         }
     }
     return null
@@ -450,9 +390,9 @@ fun getAfterWptHdgLeg(wptName: String, route: Route): Pair<VectorLeg, WaypointLe
  * @return a [WaypointLeg], or null if no vector leg found
  * */
 fun getNextAfterWptHdgLeg(route: Route): WaypointLeg? {
-    if (route.legs.size < 2) return null
-    val firstLeg = route.legs[0]
-    if (firstLeg !is WaypointLeg || route.legs[1] !is VectorLeg) return null
+    if (route.size < 2) return null
+    val firstLeg = route[0]
+    if (firstLeg !is WaypointLeg || route[1] !is VectorLeg) return null
     return firstLeg
 }
 
@@ -463,7 +403,7 @@ fun getNextAfterWptHdgLeg(route: Route): WaypointLeg? {
  * @return a [HoldLeg], or null if no hold legs are found
  * */
 fun getNextHoldLeg(route: Route): HoldLeg? {
-    for (i in 0 until route.legs.size) route.legs[i]?.apply {
+    for (i in 0 until route.size) route[i].apply {
         if (this is HoldLeg) return this
         else if (this !is WaypointLeg) return null
     }
@@ -483,14 +423,14 @@ fun getNextHoldLeg(route: Route): HoldLeg? {
 fun findFirstHoldLegWithID(wptId: Short, route: Route): HoldLeg? {
     if (wptId <= -1) {
         // Searching for present position hold leg - only the first leg should be
-        if (route.legs.size == 0) return null
-        return (route.legs[0] as? HoldLeg)?.let {
+        if (route.size == 0) return null
+        return (route[0] as? HoldLeg)?.let {
             // If the first leg is hold and has a wptId of less than or equal to -1 (present position waypoints have custom IDs less than -1, or -1 if uninitialised)
             if (it.wptId <= -1) it else null
         }
     }
 
-    for (i in 0 until route.legs.size) route.legs[i]?.apply {
+    for (i in 0 until route.size) route[i].apply {
         if (this is HoldLeg && this.wptId == wptId) return this
         else if (this !is WaypointLeg && this !is HoldLeg) return null
     }
@@ -504,7 +444,7 @@ fun findFirstHoldLegWithID(wptId: Short, route: Route): HoldLeg? {
  * @return a [WaypointLeg], or null if no legs with a speed restriction are found
  * */
 fun getNextWaypointWithSpdRestr(route: Route): WaypointLeg? {
-    for (i in 0 until route.legs.size) (route.legs[i] as? WaypointLeg)?.let { if (it.maxSpdKt != null && it.spdRestrActive) return it } ?: return null
+    for (i in 0 until route.size) (route[i] as? WaypointLeg)?.let { if (it.maxSpdKt != null && it.spdRestrActive) return it } ?: return null
     return null
 }
 
@@ -514,7 +454,7 @@ fun getNextWaypointWithSpdRestr(route: Route): WaypointLeg? {
  * @return the max speed, or null if a speed restriction does not exist
  * */
 fun getNextMaxSpd(route: Route): Short? {
-    for (i in 0 until route.legs.size) return (route.legs[i] as? WaypointLeg)?.let {
+    for (i in 0 until route.size) return (route[i] as? WaypointLeg)?.let {
         if (it.legActive && it.spdRestrActive) it.maxSpdKt else null
     } ?: continue
     return null
@@ -526,7 +466,7 @@ fun getNextMaxSpd(route: Route): Short? {
  * @return the minimum altitude, or null if a minimum altitude restriction does not exist
  * */
 fun getNextMinAlt(route: Route): Int? {
-    for (i in 0 until route.legs.size) return (route.legs[i] as? WaypointLeg)?.let {
+    for (i in 0 until route.size) return (route[i] as? WaypointLeg)?.let {
         if (it.legActive && it.altRestrActive) it.minAltFt else null
     } ?: continue
     return null
@@ -538,7 +478,7 @@ fun getNextMinAlt(route: Route): Int? {
  * @return the maximum altitude, or null if a maximum altitude restriction does not exist
  * */
 fun getNextMaxAlt(route: Route): Int? {
-    for (i in 0 until route.legs.size) return (route.legs[i] as? WaypointLeg)?.let {
+    for (i in 0 until route.size) return (route[i] as? WaypointLeg)?.let {
         if (it.legActive && it.altRestrActive) it.maxAltFt else null
     } ?: continue
     return null
@@ -551,7 +491,7 @@ fun getNextMaxAlt(route: Route): Int? {
  */
 fun getFafAltitude(route: Route): Int? {
     var latestMinAlt: Int? = null
-    for (i in 0 until route.legs.size) (route.legs[i] as? WaypointLeg)?.also {
+    for (i in 0 until route.size) (route[i] as? WaypointLeg)?.also {
         if (it.phase == Leg.APP) it.minAltFt?.let { faf -> latestMinAlt = faf }
         else if (it.phase == Leg.MISSED_APP) return latestMinAlt
     }
@@ -567,11 +507,11 @@ fun getFafAltitude(route: Route): Int? {
  */
 fun hasOnlyWaypointLegsTillMissed(startLeg: Leg?, route: Route): Boolean {
     var startFound = startLeg == null
-    for (i in 0 until route.legs.size) {
-        if (startLeg != null) startFound = compareLegEquality(startLeg, route.legs[i])
+    for (i in 0 until route.size) {
+        if (startLeg != null) startFound = compareLegEquality(startLeg, route[i])
         if (!startFound) continue
-        if (route.legs[i].phase == Leg.MISSED_APP) return true
-        if (route.legs[i] !is WaypointLeg) return false
+        if (route[i].phase == Leg.MISSED_APP) return true
+        if (route[i] !is WaypointLeg) return false
     }
     return true
 }
@@ -581,8 +521,8 @@ fun hasOnlyWaypointLegsTillMissed(startLeg: Leg?, route: Route): Boolean {
  * @param route the route to remove the legs from
  */
 fun removeAllLegsTillMissed(route: Route) {
-    for (i in 0 until  route.legs.size) route.legs[i]?.let { leg -> if (leg.phase == Leg.MISSED_APP && leg !is DiscontinuityLeg) {
-        if (i > 0) route.legs.removeRange(0, i - 1)
+    for (i in 0 until  route.size) route[i].let { leg -> if (leg.phase == Leg.MISSED_APP && leg !is DiscontinuityLeg) {
+        if (i > 0) route.removeRange(0, i - 1)
         return
     }}
 }
@@ -596,7 +536,7 @@ fun removeAllLegsTillMissed(route: Route) {
  * @param route the route to find the missed approach altitude in
  */
 fun findMissedApproachAlt(route: Route): Int? {
-    for (i in route.legs.size - 1 downTo 0) route.legs[i]?.apply {
+    for (i in route.size - 1 downTo 0) route[i].apply {
         if (phase != Leg.MISSED_APP) return null
         (this as? WaypointLeg)?.minAltFt?.let { return it } ?:
         (this as? InitClimbLeg)?.minAltFt?.let { return it }
@@ -617,5 +557,54 @@ fun removeAllApproachComponents(aircraft: Entity) {
         remove<StepDownApproach>()
         remove<VisualCaptured>()
         remove<CirclingApproach>()
+    }
+}
+
+/**
+ * Checks whether the segments in the new segment array are present in the original segment array
+ *
+ * If a segment in the new segment array is not present in the original array, its [LegSegment.changed] will be set to
+ * true for rendering purposes
+ * @param originalSegments the original route segment
+ * @param newSegments the new route segment to compare against the original one
+ */
+fun checkRouteSegmentChanged(originalSegments: GdxArray<LegSegment>, newSegments: GdxArray<LegSegment>) {
+    for (i in 0 until newSegments.size) { newSegments[i]?.let {  newSeg ->
+        newSeg.changed = !originalSegments.contains(newSeg, false)
+    }}
+}
+
+/**
+ * Calculates the segments of the input route, and sets the provided route segment array to them
+ * @param route the route to calculate segments for
+ * @param routeSegmentArray the array to set the newly calculate segments to
+ * @param directLeg the currently selected direct leg
+ */
+fun calculateRouteSegments(route: Route, routeSegmentArray: GdxArray<LegSegment>, directLeg: Leg?) {
+    routeSegmentArray.clear()
+    var prevIndex = -1
+    for (i in 0 until route.size) {
+        val leg1 = if (prevIndex == -1) null else route[prevIndex]
+        val leg2 = route[i]
+        var directToWptExists = false
+        // If the first route leg is a waypoint, add a segment from aircraft to waypoint
+        if (leg2 is WaypointLeg && leg2.legActive) {
+            if (((leg1 is DiscontinuityLeg || leg1 is InitClimbLeg || leg1 is HoldLeg) && directLeg != null && compareLegEquality(directLeg, leg2)) || leg1 == null) {
+                routeSegmentArray.add(LegSegment(leg2))
+                directToWptExists = true
+            }
+        }
+        if (leg1 is WaypointLeg && leg2 is WaypointLeg && leg2.legActive) routeSegmentArray.add(LegSegment(leg1, leg2))
+        if (leg2 is HoldLeg) routeSegmentArray.add(LegSegment(leg2))
+        if (leg1 is WaypointLeg && leg2 is VectorLeg) routeSegmentArray.add(LegSegment(leg1, leg2))
+        if (leg1 is HoldLeg && leg2 is WaypointLeg && leg2.legActive) {
+            var prevWptFound = false
+            if (prevIndex > 0) { (route[prevIndex - 1] as? WaypointLeg)?.let {
+                prevWptFound = true
+                routeSegmentArray.add(LegSegment(it, leg2))
+            }}
+            if (!prevWptFound && !directToWptExists) routeSegmentArray.add(LegSegment(leg1, leg2))
+        }
+        if (leg2 !is WaypointLeg || leg2.legActive) prevIndex = i
     }
 }

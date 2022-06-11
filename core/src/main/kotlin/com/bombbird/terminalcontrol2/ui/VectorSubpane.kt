@@ -171,8 +171,8 @@ class VectorSubpane {
         modificationInProgress = true
         afterWaypointSelectBox.items = GdxArray<String>().apply {
             add("Now")
-            for (i in 0 until parentPane.userClearanceState.route.legs.size) {
-                (parentPane.userClearanceState.route.legs[i] as? Route.WaypointLeg)?.let {
+            for (i in 0 until parentPane.userClearanceState.route.size) {
+                (parentPane.userClearanceState.route[i] as? Route.WaypointLeg)?.let {
                     val wptName = GAME.gameClientScreen?.waypoints?.get(it.wptId)?.entity?.get(WaypointInfo.mapper)?.wptName
                     add("After $wptName")
                 }
@@ -222,18 +222,18 @@ class VectorSubpane {
     private fun updateVectorHdgClearanceState(change: Short, route: Route, selectedAftWpt: Route.WaypointLeg?) {
         selectedAftWpt?.let {
             // Look for after waypoint vector legs that are present in the selected clearance but not the acting clearance
-            for (i in 0 until route.legs.size) (route.legs[i] as? Route.WaypointLeg)?.apply {
+            for (i in 0 until route.size) (route[i] as? Route.WaypointLeg)?.apply {
                 // Skip if no vector legs after selected waypoint found
-                if (i + 1 > route.legs.size) return@let
-                val nextLeg = route.legs[i + 1]
+                if (i + 1 > route.size) return@let
+                val nextLeg = route[i + 1]
                 if (nextLeg !is Route.VectorLeg) return@let
                 // Found in selected clearance
-                for (j in 0 until parentPane.clearanceState.route.legs.size - 1) (parentPane.clearanceState.route.legs[j] as? Route.WaypointLeg)?.also {
-                    val actNextLeg = parentPane.clearanceState.route.legs[j + 1]
+                for (j in 0 until parentPane.clearanceState.route.size - 1) (parentPane.clearanceState.route[j] as? Route.WaypointLeg)?.also {
+                    val actNextLeg = parentPane.clearanceState.route[j + 1]
                     if (actNextLeg is Route.VectorLeg) return@let // Also found in acting clearance, don't remove
                 }
                 // Not found in acting clearance, remove from selected clearance
-                route.legs.removeIndex(i + 1)
+                route.removeIndex(i + 1)
                 afterWptHdgLeg = null
                 return@let
             }
@@ -249,11 +249,11 @@ class VectorSubpane {
                     pairFound.first
                 } ?: Route.VectorLeg(vectorLabel.text.toString().toShort()).also { addedLeg ->
                     // If no current after waypoint vector leg exists, add one after the selected waypoint
-                    for (i in 0 until route.legs.size) (route.legs[i] as? Route.WaypointLeg)?.apply {
+                    for (i in 0 until route.size) (route[i] as? Route.WaypointLeg)?.apply {
                         if (GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName == wpt) {
                             // Remove hold leg if it exists
-                            if (i + 1 < route.legs.size && route.legs[i + 1] is Route.HoldLeg) route.legs.removeIndex(i + 1)
-                            route.legs.insert(i + 1, addedLeg)
+                            if (i + 1 < route.size && route[i + 1] is Route.HoldLeg) route.removeIndex(i + 1)
+                            route.insert(i + 1, addedLeg)
                             afterWptHdgLeg = this
                             return@also
                         }

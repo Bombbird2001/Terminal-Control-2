@@ -30,12 +30,15 @@ abstract class SidStar(val name: String,
         inOutboundLegs.add(newLegs)
     }
 
-    /** Sets [routeLegs], [rwyLegs] an [inOutboundLegs] from the supplied [serialisedSidStar]
+    /**
+     * Sets [routeLegs], [rwyLegs] an [inOutboundLegs] from the supplied [serialisedSidStar]
      *
-     * This will clear any existing route data (there should not be any data in the route to begin with, should this function be used)
+     * This will clear any existing route data (there should not be any data in the route to begin with, should this
+     * function be used)
+     * @param serialisedSidStar the [SerialisedSidStar] object to parse leg data from
      * */
     fun setFromSerialisedObject(serialisedSidStar: SerialisedSidStar) {
-        routeLegs.legs.clear()
+        routeLegs.clear()
         rwyLegs.clear()
         inOutboundLegs.clear()
         routeLegs.extendRoute(Route.fromSerialisedObject(serialisedSidStar.routeLegs))
@@ -137,7 +140,7 @@ abstract class SidStar(val name: String,
             }
         }
 
-        val inboundLegs: GdxArray<Route>
+        private val inboundLegs: GdxArray<Route>
             get() = inOutboundLegs
 
         /**

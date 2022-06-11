@@ -180,7 +180,7 @@ private fun getExpandedLabelText(entity: Entity): Array<String> {
     val cmdHdg = cmdTarget.targetHdgDeg.roundToInt()
     val groundSpd = pxpsToKt(groundTrack.trackVectorPxps.len()).roundToInt()
     val clearedLateral = if (entity.has(LocalizerCaptured.mapper)) "LOC" else if (entity.has(VisualCaptured.mapper)) "VIS"
-    else latestClearance?.route?.legs?.let {
+    else latestClearance?.route?.let {
         if (it.size == 0) null else CLIENT_SCREEN?.waypoints?.get((it[0] as? Route.WaypointLeg)?.wptId)
     }?.entity?.get(WaypointInfo.mapper)?.wptName ?: latestClearance?.vectorHdg?.toString() ?: ""
     val sidStar = latestClearance?.routePrimaryName ?: ""

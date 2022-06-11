@@ -175,13 +175,13 @@ class ControlPane {
                     textButton("Handover\n-\nAcknowledge", "ControlPaneButton").cell(grow = true, preferredWidth = paneWidth / 3).isVisible = false
                     transmitButton = textButton("Transmit", "ControlPaneButton").cell(grow = true, preferredWidth = paneWidth / 3).apply {
                         addChangeListener { _, _ -> GAME.gameClientScreen?.let { radarScreen -> radarScreen.selectedAircraft?.let { aircraft ->
-                            val leg1 = if (parentPane.clearanceState.route.legs.size > 0) parentPane.clearanceState.route.legs[0] else null
+                            val leg1 = if (parentPane.clearanceState.route.size > 0) parentPane.clearanceState.route[0] else null
                             val leg2 = directLeg
                             val directChanged = if (leg1 == null && leg2 == null) false else if (leg1 == null || leg2 == null) true else !compareLegEquality(leg1, leg2)
                             // Remove any non waypoint legs before directLeg
                             leg2?.also {
                                 var index = 0
-                                parentPane.userClearanceState.route.legs.apply { while (index < size) {
+                                parentPane.userClearanceState.route.apply { while (index < size) {
                                     val legToCheck = get(index)
                                     if (compareLegEquality(legToCheck, leg2)) return@also // Leg reached
                                     if (legToCheck !is Route.WaypointLeg) {
@@ -214,16 +214,16 @@ class ControlPane {
      * hold waypoint is selected
      * */
     fun updateClearanceMode(route: Route, vectorHdg: Short?, appTrackCaptured: Boolean) {
-        if (vectorHdg != null || (route.legs.isEmpty && appTrackCaptured)) {
+        if (vectorHdg != null || (route.size == 0 && appTrackCaptured)) {
             // Vector mode active or localizer/visual track captured in vector mode (no route legs)
             routeModeButton.isChecked = false
             holdModeButton.isChecked = false
             vectorModeButton.isChecked = true
             setPaneLateralMode(UIPane.MODE_VECTOR)
         } else {
-            route.legs.apply {
-                if ((size >= 1 && first() is Route.HoldLeg) ||
-                    (size >= 2 && first() is Route.WaypointLeg && get(1) is Route.HoldLeg && (first() as? Route.WaypointLeg)?.wptId == (get(1) as? Route.HoldLeg)?.wptId)) {
+            route.apply {
+                if ((size >= 1 && get(0) is Route.HoldLeg) ||
+                    (size >= 2 && get(0) is Route.WaypointLeg && get(1) is Route.HoldLeg && (get(0) as? Route.WaypointLeg)?.wptId == (get(1) as? Route.HoldLeg)?.wptId)) {
                     // Hold mode active when the current leg is a hold leg, or when the aircraft is flying towards the waypoint it is cleared to hold at
                     routeModeButton.isChecked = false
                     holdModeButton.isChecked = true
@@ -320,7 +320,7 @@ class ControlPane {
         val effectiveMaxAlt: Int
         if (parentPane.userClearanceState.clearedApp != null && hasOnlyWaypointLegsTillMissed(directLeg, parentPane.userClearanceState.route)) {
             // Check if aircraft is cleared for the approach with no interruptions (i.e. no discontinuity, vector or hold legs)
-            parentPane.userClearanceState.route.legs.apply {
+            parentPane.userClearanceState.route.apply {
                 // Set to the FAF altitude (i.e. the minimum altitude restriction of the last waypoint)
                 val faf = getFafAltitude(parentPane.userClearanceState.route) ?: run {
                     // If aircraft has flown past last waypoint, use the currently cleared altitude
@@ -410,8 +410,8 @@ class ControlPane {
         updateApproachSelectBoxChoices(parentPane.aircraftArrivalArptId)
 
         altSelectBox.selected = if (clearedAlt >= TRANS_LVL * 100) "FL${clearedAlt / 100}" else clearedAlt.toString()
-        spdSelectBox.selected = clearedSpd
         modificationInProgress = true
+        spdSelectBox.selected = clearedSpd
         appSelectBox.apply {
             selected = appName ?: NO_APP_SELECTION
             // Explicitly set style
@@ -500,24 +500,24 @@ class ControlPane {
         val app = GAME.gameClientScreen?.airports?.get(arptId)?.entity?.get(ApproachChildren.mapper)?.approachMap?.get(appName) ?: return
         val trans = app.transitions[transName] ?: null // Force to nullable Route? type, instead of a Route! type
         // Search for the first leg in the current route that matches the first leg in the transition
-        val matchingIndex = if (transName != "vectors" && (trans?.legs?.size ?: 0) > 0) (trans?.legs?.first() as? Route.WaypointLeg)?.let { firstTransWpt ->
-            parentPane.userClearanceState.route.also { currRoute -> for (i in 0 until currRoute.legs.size) {
-                if (firstTransWpt.wptId == (currRoute.legs[i] as? Route.WaypointLeg)?.wptId) return@let i
+        val matchingIndex = if (transName != "vectors" && (trans?.size ?: 0) > 0) (trans?.get(0) as? Route.WaypointLeg)?.let { firstTransWpt ->
+            parentPane.userClearanceState.route.also { currRoute -> for (i in 0 until currRoute.size) {
+                if (firstTransWpt.wptId == (currRoute[i] as? Route.WaypointLeg)?.wptId) return@let i
                 }}
             null
         } else null
         parentPane.userClearanceState.route.apply {
             if (matchingIndex == null) {
-                legs.add(Route.DiscontinuityLeg(Route.Leg.APP_TRANS))
+                add(Route.DiscontinuityLeg(Route.Leg.APP_TRANS))
                 if (trans != null) extendRouteCopy(trans)
             } else {
                 // Add the legs after the transition waypoint to hidden legs
-                for (i in matchingIndex + 1 until legs.size) parentPane.userClearanceState.hiddenLegs.legs.add(legs[i])
-                if (matchingIndex <= legs.size - 2) legs.removeRange(matchingIndex + 1, legs.size - 1) // Remove them from the current route if waypoints exist after
+                for (i in matchingIndex + 1 until size) parentPane.userClearanceState.hiddenLegs.add(get(i))
+                if (matchingIndex <= size - 2) removeRange(matchingIndex + 1, size - 1) // Remove them from the current route if waypoints exist after
                 if (trans != null) {
                     extendRouteCopy(trans)
                     // Remove the duplicate waypoint
-                    legs.removeIndex(matchingIndex + 1)
+                    removeIndex(matchingIndex + 1)
                 }
             }
             extendRouteCopy(app.routeLegs)
@@ -535,12 +535,12 @@ class ControlPane {
      * @param hiddenLegs the route containing currently hidden legs to add back to the route
      * */
     private fun removeApproachLegs(route: Route, hiddenLegs: Route) {
-        for (i in route.legs.size - 1 downTo 0) {
-            if (route.legs[i].phase == Route.Leg.NORMAL) break // Once a normal leg is encountered, break from loop
-            route.legs.removeIndex(i)
+        for (i in route.size - 1 downTo 0) {
+            if (route[i].phase == Route.Leg.NORMAL) break // Once a normal leg is encountered, break from loop
+            route.removeIndex(i)
         }
         route.extendRoute(hiddenLegs)
-        hiddenLegs.legs.clear()
+        hiddenLegs.clear()
     }
 
     /**
@@ -570,10 +570,10 @@ class ControlPane {
      * state of [UIPane.clearanceState] and [UIPane.userClearanceState]
      * */
     fun updateUndoTransmitButtonStates() {
-        val leg1 = parentPane.clearanceState.route.legs.let {
+        val leg1 = parentPane.clearanceState.route.let {
             var currDirectLeg: Route.Leg? = null // Additional variable for finding current direct leg as making leg1 a var prevents smart cast in this changing closure below
             for (i in 0 until it.size) {
-                it[i]?.apply {
+                it[i].apply {
                     if (this is Route.WaypointLeg && !this.legActive) return@apply // Do not choose a skipped waypoint leg as the current direct
                     currDirectLeg = this
                 }
@@ -581,9 +581,14 @@ class ControlPane {
             }
             currDirectLeg
         }
-        val leg2 = directLeg ?: if (!parentPane.userClearanceState.route.legs.isEmpty) parentPane.userClearanceState.route.legs.first() else null
-        parentPane.modifiedLegIndices = checkRouteSegmentEquality(parentPane.clearanceState.route, parentPane.userClearanceState.route)
-        val directChanged = if (leg1 == null && leg2 == null) false else if (leg1 == null || leg2 == null) true else !compareLegEquality(leg1, leg2)
+        val leg2 = directLeg ?: if (parentPane.userClearanceState.route.size > 0) parentPane.userClearanceState.route[0] else null
+        val defaultDirect = if (parentPane.clearanceState.route.size > 0) parentPane.clearanceState.route[0] else null
+        calculateRouteSegments(parentPane.clearanceState.route, parentPane.clearanceRouteSegments, defaultDirect)
+        calculateRouteSegments(parentPane.userClearanceState.route, parentPane.userClearanceRouteSegments, directLeg)
+        checkRouteSegmentChanged(parentPane.clearanceRouteSegments, parentPane.userClearanceRouteSegments)
+        // Direct changed if the 2 legs are not equal to each other, unless both are hold legs with wptId < 0 (i.e. both are custom hold legs)
+        val directChanged = if ((leg1 == null && leg2 == null) || (leg1 is Route.HoldLeg && leg2 is Route.HoldLeg && leg1.wptId < 0 && leg2.wptId < 0)) false
+        else if (leg1 == null || leg2 == null) true else !compareLegEquality(leg1, leg2)
         if (checkClearanceEquality(parentPane.clearanceState, parentPane.userClearanceState) && !directChanged) setUndoTransmitButtonsUnchanged()
         else setUndoTransmitButtonsChanged()
     }

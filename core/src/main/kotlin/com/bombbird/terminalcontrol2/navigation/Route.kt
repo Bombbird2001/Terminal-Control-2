@@ -3,6 +3,7 @@ package com.bombbird.terminalcontrol2.navigation
 import com.bombbird.terminalcontrol2.components.CommandTarget
 import com.bombbird.terminalcontrol2.components.WaypointInfo
 import com.bombbird.terminalcontrol2.global.GAME
+import com.bombbird.terminalcontrol2.utilities.compareLegEquality
 import ktx.ashley.get
 import ktx.collections.GdxArray
 import ktx.collections.toGdxArray
@@ -16,11 +17,88 @@ class Route() {
         }
     }
 
-    val legs = GdxArray<Leg>(20)
+    val size: Int
+        get() = legs.size
+
+    private val legs = GdxArray<Leg>(20)
 
     /** Secondary constructor for directly de-serialising from [SerialisedRoute] */
     constructor(newLegs: Array<Leg>): this() {
         for (leg in newLegs) legs.add(leg)
+    }
+
+    /**
+     * Wrapper function for getting a leg from the route by its index
+     * @param index the index of the leg to get
+     * @return the leg at the index
+     */
+    operator fun get(index: Int): Leg {
+        return legs[index]
+    }
+
+    /**
+     * Wrapper function for checking if a specific leg exists in the route, identity equality not required
+     * @param leg the leg to check
+     * @return whether the leg exists in the route
+     */
+    fun contains(leg: Leg): Boolean {
+        return legs.contains(leg, false)
+    }
+
+    /**
+     * Wrapper function for finding the index of a specific leg exists in the route, identity equality not required
+     * @param leg the leg to find
+     * @return the index of the leg in the array, or -1 if none found
+     */
+    fun indexOf(leg: Leg): Int {
+        return legs.indexOf(leg, false)
+    }
+
+    /**
+     * Wrapper function for appending a new leg to the back of the route
+     * @param leg the new leg to add to the route
+     */
+    fun add(leg: Leg) {
+        legs.add(leg)
+    }
+
+    /**
+     * Wrapper function for inserting a new leg at the specified index
+     * @param index the index to insert the leg at
+     * @param leg the leg to insert
+     */
+    fun insert(index: Int, leg: Leg) {
+        legs.insert(index, leg)
+    }
+
+    /**
+     * Wrapper function for removing a leg from the route by its index
+     * @param index the index of the leg to remove
+     */
+    fun removeIndex(index: Int) {
+        legs.removeIndex(index)
+    }
+
+    /**
+     * Wrapper function for removing a range of leg from the route from start to end indices, both inclusive
+     * @param startIndex the index of the first leg to remove
+     * @param endIndex the index of the last leg to remove
+     */
+    fun removeRange(startIndex: Int, endIndex: Int) {
+        legs.removeRange(startIndex, endIndex)
+    }
+
+    /**
+     * Wrapper function for removing a leg from the route by its value, identity equality not required
+     * @param leg the leg to remove
+     */
+    fun removeValue(leg: Leg) {
+        legs.removeValue(leg, false)
+    }
+
+    /** Wrapper function for clearing the [legs] array */
+    fun clear() {
+        legs.clear()
     }
 
     /**
@@ -228,6 +306,97 @@ class Route() {
         override fun toString(): String {
             val wptName = GAME.gameServer?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName
             return "$wptId $wptName HDG $inboundHdg LEG $legDist ${if (maxAltFt != null) "B$maxAltFt" else ""} ${if (minAltFt != null) "A$minAltFt" else ""} ${if (maxSpdKtLower != null) "S$maxSpdKtLower" else ""} ${if (maxSpdKtHigher != null) "S$maxSpdKtHigher" else ""}"
+        }
+    }
+
+    /**
+     * Class for storing segments of the route; this is currently used for rendering the aircraft's lateral clearance state
+     * in the UI
+     *
+     * Each instance of segment will store either 1 or 2 legs, with constructors provided only for the following valid
+     * segment configurations:
+     * 1. Aircraft -> Waypoint (null leg1, waypoint leg2)
+     * 2. Waypoint -> waypoint (waypoint leg1, leg2)
+     * 3. Hold (null leg1, hold leg2)
+     * 4. Waypoint -> Vector (waypoint leg1, vector leg2)
+     * 5. Hold -> Waypoint (hold leg1, waypoint leg2)
+     */
+    class LegSegment {
+
+        var leg1: Leg? = null
+        var leg2: Leg? = null
+        var changed = false
+
+        /**
+         * Constructor for Aircraft -> Waypoint segment
+         * @param leg2Wpt the waypoint the aircraft is flying to
+         */
+        constructor(leg2Wpt: WaypointLeg) {
+            leg2  = leg2Wpt
+        }
+
+        /**
+         * Constructor for Waypoint -> Waypoint segment
+         * @param leg1Wpt the first waypoint
+         * @param leg2Wpt the second waypoint
+         */
+        constructor(leg1Wpt: WaypointLeg, leg2Wpt: WaypointLeg) {
+            leg1 = leg1Wpt
+            leg2 = leg2Wpt
+        }
+
+        /**
+         * Constructor for Hold segment
+         * @param leg2Hold the hold leg
+         */
+        constructor(leg2Hold: HoldLeg) {
+            leg2 = leg2Hold
+        }
+
+        /**
+         * Constructor for Waypoint -> Vector segment
+         * @param leg1Wpt the waypoint leg
+         * @param leg2Vec the vector leg
+         */
+        constructor(leg1Wpt: WaypointLeg, leg2Vec: VectorLeg) {
+            leg1 = leg1Wpt
+            leg2 = leg2Vec
+        }
+
+        /**
+         * Constructor for Hold -> Waypoint segment
+         * @param leg1Hold the hold leg
+         * @param leg2Wpt the waypoint leg after the hold
+         */
+        constructor(leg1Hold: HoldLeg, leg2Wpt: WaypointLeg) {
+            leg1 = leg1Hold
+            leg2 = leg2Wpt
+        }
+
+        /**
+         * Overridden [equals] function to compare that the two legs of the segment are equal according to the
+         * [compareLegEquality] function
+         * @param other the other segment to compare this segment to
+         * @return whether the other segment is the same as this segment
+         */
+        override fun equals(other: Any?): Boolean {
+            if (other !is LegSegment) return false
+            val finalLeg1 = leg1
+            val otherLeg1 = other.leg1
+            val finalLeg2 = leg2
+            val otherLeg2 = other.leg2
+            if ((finalLeg1 == null && otherLeg1 != null) || (finalLeg1 != null && otherLeg1 == null)) return false
+            if ((finalLeg2 == null && otherLeg2 != null) || (finalLeg2 != null && otherLeg2 == null)) return false
+            val leg1Equal = (finalLeg1 == null || otherLeg1 == null) || compareLegEquality(finalLeg1, otherLeg1)
+            val leg2Equal = (finalLeg2 == null || otherLeg2 == null) || compareLegEquality(finalLeg2, otherLeg2)
+            return leg1Equal && leg2Equal
+        }
+
+        override fun hashCode(): Int {
+            var result = leg1?.hashCode() ?: 0
+            result = 31 * result + (leg2?.hashCode() ?: 0)
+            result = 31 * result + changed.hashCode()
+            return result
         }
     }
 }

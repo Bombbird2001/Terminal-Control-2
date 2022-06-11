@@ -133,7 +133,7 @@ fun createArrival(airport: Entity, gs: GameServer) {
         val clearedAlt = min(15000, (alt / 1000).toInt() * 1000)
         entity += ClearanceAct(ClearanceState.ActingClearance(
             ClearanceState(randomStar?.name ?: "", starRoute, Route(),
-                if (starRoute.legs.isEmpty) (spawnPos.third + MAG_HDG_DEV).toInt().toShort() else null, null,
+                if (starRoute.size == 0) (spawnPos.third + MAG_HDG_DEV).toInt().toShort() else null, null,
                 clearedAlt, ias)
         ))
         entity[CommandTarget.mapper]?.apply {
