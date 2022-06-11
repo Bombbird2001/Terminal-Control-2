@@ -82,7 +82,7 @@ const val SERVER_METAR_UPDATE_INTERVAL_MINS = 5 // Check for METAR update every 
 
 /** Client buffer sizes */
 const val CLIENT_WRITE_BUFFER_SIZE = 4096
-const val CLIENT_READ_BUFFER_SIZE = 4096
+const val CLIENT_READ_BUFFER_SIZE = 8192
 
 /** Default Gdx collections initial sizes */
 const val AIRPORT_SIZE = 6

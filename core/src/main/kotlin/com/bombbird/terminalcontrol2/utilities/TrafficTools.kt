@@ -2,9 +2,11 @@ package com.bombbird.terminalcontrol2.utilities
 
 import com.badlogic.ashley.core.Entity
 import com.badlogic.gdx.Gdx
+import com.badlogic.gdx.math.CumulativeDistribution
 import com.badlogic.gdx.math.MathUtils
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.Aircraft
+import com.bombbird.terminalcontrol2.entities.Airport
 import com.bombbird.terminalcontrol2.global.MAG_HDG_DEV
 import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.navigation.Route
@@ -13,6 +15,7 @@ import com.bombbird.terminalcontrol2.navigation.UsabilityFilter
 import com.bombbird.terminalcontrol2.networking.GameServer
 import ktx.ashley.get
 import ktx.ashley.has
+import ktx.ashley.hasNot
 import ktx.ashley.plusAssign
 import ktx.collections.GdxArray
 import kotlin.math.max
@@ -210,4 +213,18 @@ fun getAvailableApproaches(airport: Entity): GdxArray<String> {
         }
     }
     return array
+}
+
+/**
+ * Creates an arrival with a randomly selected airport and STAR
+ * @param airports the full list of airports in the game world
+ * @param gs the gameServer to instantiate the aircraft in
+ */
+fun createRandomArrival(airports: GdxArray<Airport>, gs: GameServer) {
+    val airportDist = CumulativeDistribution<Entity>()
+    for (i in 0 until airports.size) { airports[i]?.entity?.apply {
+        if (hasNot(AirportClosed.mapper)) airportDist.add(this, get(AirportInfo.mapper)?.tfcRatio?.toFloat() ?: return@apply)
+    }}
+    airportDist.generateNormalized()
+    createArrival(airportDist.value(), gs)
 }

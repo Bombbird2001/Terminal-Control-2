@@ -99,6 +99,11 @@ data class ArrivalAirport(var arptId: Byte = 0): Component {
     companion object: Mapper<ArrivalAirport>()
 }
 
+/** Component for tagging a closed airport */
+class AirportClosed: Component {
+    companion object: Mapper<AirportClosed>()
+}
+
 /** Component for tagging basic approach information */
 data class ApproachInfo(var approachName: String = "", var airportId: Byte = 0, var rwyId: Byte = 0): Component {
     lateinit var rwyObj: Airport.Runway

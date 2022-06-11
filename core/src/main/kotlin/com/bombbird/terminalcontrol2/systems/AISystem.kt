@@ -163,7 +163,7 @@ class AISystem: EntitySystem() {
                 val alt = get(Altitude.mapper) ?: return@apply
                 val cmd = get(CommandTarget.mapper) ?: return@apply
                 val clearanceAct = get(ClearanceAct.mapper) ?: return@apply
-                if (alt.altitudeFt < 11000 && cmd.targetAltFt < 10000) {
+                if (alt.altitudeFt < 11000 && cmd.targetAltFt <= 10000) {
                     if (cmd.targetIasKt > 240) {
                         cmd.targetIasKt = 240
                         clearanceAct.actingClearance.actingClearance.clearedIas = 240

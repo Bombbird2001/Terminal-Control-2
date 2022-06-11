@@ -539,7 +539,7 @@ private fun parseLeg(legType: String, data: String, flightPhase: Byte): Route.Le
     val aboveAltRegex = " A(-?\\d+) ".toRegex() // Altitude values of at least 1 digit, with "A" as a prefix
     val belowAltRegex = " B(-?\\d+) ".toRegex() // Altitude values of at least 1 digit, with "B" as a prefix
     val spdRegex = " S(\\d{3}) ".toRegex() // Speed values of 3 digits, with "S" as a prefix
-    val wptRegex = " ([A-Z]{3}|[A-Z]{5}) ".toRegex() // Only waypoints with 3 or 5 letters allowed
+    val wptRegex = " ([A-Z]{2}|[A-Z]{3}|[A-Z]{5}) ".toRegex() // Only waypoints with 2, 3 or 5 letters allowed
     val foRegex = " FLYOVER ".toRegex() // For flyover waypoints
     val dirRegex = " (LEFT|RIGHT) ".toRegex() // For forced turn directions
     when (legType) {

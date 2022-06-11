@@ -161,6 +161,19 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer,
             }
         }
 
+        // Render current UI selected aircraft's lateral navigation state, accessed via radarScreen's uiPane
+        GAME.gameClientScreen?.selectedAircraft?.let {
+            val aircraftPos = it.entity[RadarData.mapper]?.position ?: return@let
+            val vectorUnchanged = uiPane.clearanceState.vectorHdg == uiPane.userClearanceState.vectorHdg
+            uiPane.clearanceState.vectorHdg?.let { hdg -> renderVector(aircraftPos.x, aircraftPos.y, hdg, false) } ?:
+            run { renderRouteSegments(aircraftPos.x, aircraftPos.y, uiPane.clearanceRouteSegments) }
+            if (!vectorUnchanged) uiPane.userClearanceState.vectorHdg?.let { newHdg ->
+                // Render new vector if changed and is not null
+                renderVector(aircraftPos.x, aircraftPos.y, newHdg, true)
+            }
+            renderRouteSegments(aircraftPos.x, aircraftPos.y, uiPane.userClearanceRouteSegments)
+        }
+
         // Render trajectory line for controlled aircraft
         val trajectory = engine.getEntitiesFor(trajectoryFamily)
         for (i in 0 until trajectory.size()) {
@@ -175,19 +188,6 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer,
                 shapeRenderer.color = srColor.color
                 shapeRenderer.line(rData.position.x, rData.position.y, rData.position.x + spdVector.x + (windVector?.x ?: 0f), rData.position.y + spdVector.y + (windVector?.y ?: 0f))
             }
-        }
-
-        // Render current UI selected aircraft's lateral navigation state, accessed via radarScreen's uiPane
-        GAME.gameClientScreen?.selectedAircraft?.let {
-            val aircraftPos = it.entity[RadarData.mapper]?.position ?: return@let
-            val vectorUnchanged = uiPane.clearanceState.vectorHdg == uiPane.userClearanceState.vectorHdg
-            uiPane.clearanceState.vectorHdg?.let { hdg -> renderVector(aircraftPos.x, aircraftPos.y, hdg, false) } ?:
-            run { renderRouteSegments(aircraftPos.x, aircraftPos.y, uiPane.clearanceRouteSegments) }
-            if (!vectorUnchanged) uiPane.userClearanceState.vectorHdg?.let { newHdg ->
-                // Render new vector if changed and is not null
-                renderVector(aircraftPos.x, aircraftPos.y, newHdg, true)
-            }
-            renderRouteSegments(aircraftPos.x, aircraftPos.y, uiPane.userClearanceRouteSegments)
         }
 
         // Render aircraft trajectory (debug)
