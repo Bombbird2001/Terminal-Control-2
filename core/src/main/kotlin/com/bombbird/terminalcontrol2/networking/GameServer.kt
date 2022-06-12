@@ -6,6 +6,7 @@ import com.badlogic.gdx.math.Polygon
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.*
 import com.bombbird.terminalcontrol2.files.loadAircraftData
+import com.bombbird.terminalcontrol2.files.loadDisallowedCallsigns
 import com.bombbird.terminalcontrol2.files.loadWorldData
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.ClearanceState
@@ -91,6 +92,7 @@ class GameServer {
     /** Initialises game world */
     private fun loadGame(mainName: String) {
         loadAircraftData()
+        loadDisallowedCallsigns()
         loadWorldData(mainName, this)
 
         // Set 05L, 05R as active for development
@@ -109,7 +111,9 @@ class GameServer {
 
         // Add dummy aircraft
         // airports[0]?.entity?.get(RunwayChildren.mapper)?.rwyMap?.get(0)?.entity?.let { rwy -> createDeparture(rwy, this) }
-        airports[1]?.entity?.get(RunwayChildren.mapper)?.rwyMap?.get(1)?.entity?.let { rwy -> createDeparture(rwy, this) }
+        airports[1]?.entity?.also { arpt ->
+            arpt[RunwayChildren.mapper]?.rwyMap?.get(1)?.entity?.let { rwy -> createRandomDeparture(arpt, rwy, this) }
+        }
         createRandomArrival(airports.values().toArray(), this)
         appTestArrival(this)
 

@@ -12,12 +12,14 @@ import com.bombbird.terminalcontrol2.navigation.UsabilityFilter
 import com.bombbird.terminalcontrol2.networking.GameServer
 import com.bombbird.terminalcontrol2.utilities.AircraftTypeData
 import com.bombbird.terminalcontrol2.utilities.byte
+import com.bombbird.terminalcontrol2.utilities.disallowedCallsigns
 import com.bombbird.terminalcontrol2.utilities.nmToPx
 import ktx.ashley.get
 import ktx.assets.toInternalFile
+import ktx.collections.GdxArray
 import ktx.collections.toGdxArray
 
-/** Loads the "aircraft.perf" file located in the "Data" subfolder in the assets */
+/** Loads the "aircraft.perf" file located in the "Data" subfolder in the assets into aircraft performance map */
 fun loadAircraftData() {
     "Data/aircraft.perf".toInternalFile().readString().split("\\r?\\n".toRegex()).toTypedArray().apply {
         for (line in this) {
@@ -39,9 +41,16 @@ fun loadAircraftData() {
             AircraftTypeData.addAircraftPerf(type, AircraftTypeData.AircraftPerfData(wakeCat, recat,
                 jetThrust, propPower, propArea,
                 minCd0RefArea, maxCdRefArea,
-                maxIas, maxMach, typAppSpd, typVr,
+                maxIas, maxMach, typAppSpd, (typVr - 10).toShort(), // Values given in file is V2, estimate -10 knots for Vr
                 oew, mtow))
         }
+    }
+}
+
+/** Loads the "disallowed.callsign" file located in the "Data" subfolder in the assets into the set of disallowed callsigns */
+fun loadDisallowedCallsigns() {
+    "Data/disallowed.callsign".toInternalFile().readString().split("\\r?\\n".toRegex()).toTypedArray().apply {
+        for (line in this) disallowedCallsigns.add(line.trim())
     }
 }
 
@@ -89,7 +98,10 @@ fun loadWorldData(mainName: String, gameServer: GameServer) {
                 "TRANSITION" -> if (currApp != null) parseApproachTransition(lineData, currApp)
                 "MISSED" -> if (currApp != null) parseApproachMissed(lineData, currApp)
                 "/$currSectorCount" -> currSectorCount = 0
-                "/$parseMode" -> parseMode = ""
+                "/$parseMode" -> {
+                    if (parseMode == "TRAFFIC" && currAirport != null) generateTrafficDistribution(currAirport)
+                    parseMode = ""
+                }
                 else -> {
                     when (parseMode) {
                         "WAYPOINTS" -> parseWaypoint(lineData, gameServer)
@@ -97,6 +109,7 @@ fun loadWorldData(mainName: String, gameServer: GameServer) {
                         "MIN_ALT_SECTORS" -> parseMinAltSector(lineData, gameServer)
                         "SHORELINE" -> parseShoreline(lineData, gameServer)
                         "RWYS" -> parseRunway(lineData, currAirport ?: continue)
+                        "TRAFFIC" -> parseTraffic(lineData, currAirport ?: continue)
                         "SECTORS" -> {
                             if (currSectorCount == 0.byte) currSectorCount = lineData[0].toByte()
                             else parseSector(lineData, currSectorCount, gameServer)
@@ -114,7 +127,7 @@ fun loadWorldData(mainName: String, gameServer: GameServer) {
                             "MIN_SEP" -> MIN_SEP = lineData[1].toFloat()
                             "MAG_HDG_DEV" -> MAG_HDG_DEV = lineData[1].toFloat()
                             else -> {
-                                if (lineData[0] in arrayOf("WAYPOINTS", "HOLDS", "MIN_ALT_SECTORS", "SHORELINE", "RWYS", "SECTORS"))
+                                if (lineData[0] in arrayOf("WAYPOINTS", "HOLDS", "MIN_ALT_SECTORS", "SHORELINE", "RWYS", "SECTORS", "TRAFFIC"))
                                     parseMode = lineData[0]
                                 else if (lineData[0] != "") Gdx.app.log("GameLoader", "Unknown parse mode ${lineData[0]}")
                             }
@@ -669,4 +682,31 @@ private fun parseWindshear(data: List<String>, airport: Airport) {
     airport.entity[RandomMetarInfo.mapper]?.apply {
         windshearLogCoefficients = Pair(data[1].toFloat(), data[2].toFloat())
     }
+}
+
+/**
+ * Parse the given data into traffic chance data for the input airport, and adds it to the airport entity's component
+ * @param data the line array containing traffic cumulative distribution and possible aircraft data
+ * @param airport the airport to add the data to
+ */
+private fun parseTraffic(data: List<String>, airport: Airport) {
+    val private = data[0] == "PRIVATE"
+    if (private && data.size != 4) Gdx.app.log("GameLoader", "Private aircraft data has ${data.size} elements instead of 4")
+    val airline = if (private) data[1] else data[0]
+    val chance = (if (private) data[2] else data[1]).toFloat()
+    val aircraftList = GdxArray<String>()
+    for (i in (if (private) 3 else 2) until data.size) {
+        aircraftList.add(data[i])
+        if (private && aircraftList.size == 1) break
+    }
+
+    airport.entity[RandomAirlineData.mapper]?.airlineDistribution?.add(Triple(airline, private, aircraftList), chance)
+}
+
+/**
+ * Generates the uniform traffic distribution for the input airport; should be called when /TRAFFIC is encountered
+ * @param airport the airport to generate distribution for
+ * */
+private fun generateTrafficDistribution(airport: Airport) {
+    airport.entity[RandomAirlineData.mapper]?.airlineDistribution?.generateNormalized()
 }

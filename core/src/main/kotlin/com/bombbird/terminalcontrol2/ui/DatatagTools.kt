@@ -6,6 +6,7 @@ import com.badlogic.gdx.scenes.scene2d.InputEvent
 import com.badlogic.gdx.scenes.scene2d.ui.ImageButton
 import com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle
 import com.badlogic.gdx.scenes.scene2d.utils.DragListener
+import com.badlogic.gdx.utils.Timer
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.Aircraft
 import com.bombbird.terminalcontrol2.global.CLIENT_SCREEN
@@ -122,18 +123,32 @@ fun addDatatagInputListeners(datatag: Datatag, aircraft: Aircraft) {
                 datatag.dragging = false
                 return@addChangeListener
             }
+            datatag.clicks++
+            if (datatag.clicks >= 2) {
+                val controllable = aircraft.entity[Controllable.mapper]
+                if (controllable != null && controllable.sectorId == GAME.gameClientScreen?.playerSector) datatag.minimised = !datatag.minimised
+                datatag.clicks = 0
+                datatag.tapTimer.clear()
+                Gdx.app.postRunnable { updateDatatagText(datatag, getNewDatatagLabelText(aircraft.entity, datatag.minimised)) }
+            } else datatag.tapTimer.scheduleTask(object : Timer.Task() {
+                override fun run() {
+                    datatag.clicks = 0
+                }
+            }, 0.2f)
             Gdx.app.postRunnable { CLIENT_SCREEN?.setUISelectedAircraft(aircraft) }
         }
     }
 }
 
-/** Gets a new array of strings for the label text, depending on the aircraft's [Controllable] state and whether it
- * has [MinimisedDatatag]
+/**
+ * Gets a new array of strings for the label text, depending on the aircraft's [Controllable] state and whether it
+ * is minimised
+ * @param entity the aircraft to generate the datatag for
+ * @param minimised whether the datatag should be minimised
  * */
-fun getNewDatatagLabelText(entity: Entity): Array<String> {
-    val minimisedDatatag = entity[MinimisedDatatag.mapper]
+fun getNewDatatagLabelText(entity: Entity, minimised: Boolean): Array<String> {
     val controllable = entity[Controllable.mapper]
-    return if (minimisedDatatag != null || controllable == null || controllable.sectorId != GAME.gameClientScreen?.playerSector) getMinimisedLabelText(entity)
+    return if (minimised || controllable == null || controllable.sectorId != GAME.gameClientScreen?.playerSector) getMinimisedLabelText(entity)
     else getExpandedLabelText(entity)
 }
 

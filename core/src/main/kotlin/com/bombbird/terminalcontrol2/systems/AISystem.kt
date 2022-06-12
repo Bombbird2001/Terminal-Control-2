@@ -23,7 +23,8 @@ import kotlin.math.*
  * Used only in GameServer
  * */
 class AISystem: EntitySystem() {
-    private val takeoffAccFamily: Family = allOf(Acceleration::class, AircraftInfo::class, TakeoffRoll::class, Speed::class, AffectedByWind::class).get()
+    private val takeoffAccFamily: Family = allOf(Acceleration::class, AircraftInfo::class, TakeoffRoll::class, Speed::class, AffectedByWind::class)
+        .exclude(WaitingTakeoff::class).get()
     private val takeoffClimbFamily: Family = allOf(Altitude::class, CommandTarget::class, TakeoffClimb::class, ClearanceAct::class, AircraftInfo::class).get()
     private val landingAccFamily: Family = allOf(Acceleration::class, LandingRoll::class, GroundTrack::class).get()
     private val above250Family: Family = allOf(AccelerateToAbove250kts::class, Altitude::class, CommandTarget::class, ClearanceAct::class).get()
@@ -35,12 +36,13 @@ class AISystem: EntitySystem() {
     private val initialArrivalFamily: Family = allOf(ClearanceAct::class, InitialArrivalSpawn::class).get()
     private val vectorFamily: Family = allOf(CommandVector::class, CommandTarget::class).get()
     private val initClimbFamily: Family = allOf(CommandInitClimb::class, CommandTarget::class, Altitude::class).get()
-    private val waypointFamily: Family = allOf(CommandDirect::class, CommandTarget::class, ClearanceAct::class, Position::class, Speed::class, Direction::class, IndicatedAirSpeed::class).get()
+    private val waypointFamily: Family = allOf(CommandDirect::class, CommandTarget::class, ClearanceAct::class,
+        Position::class, Speed::class, Direction::class, GroundTrack::class, IndicatedAirSpeed::class).get()
     private val holdFamily: Family = allOf(CommandHold::class, CommandTarget::class, Position::class, Speed::class, Direction::class).get()
     private val pureVectorFamily: Family = allOf(CommandTarget::class, Direction::class, ClearanceAct::class)
         .exclude(CommandInitClimb::class, CommandDirect::class, CommandHold::class, CommandVector::class).get()
     private val appTrackCapFamily: Family = allOf(CommandTarget::class, ClearanceAct::class, Position::class, Speed::class, Direction::class)
-        .oneOf(LocalizerCaptured::class, VisualCaptured::class).exclude(CommandDirect::class).get()
+        .oneOf(LocalizerCaptured::class, VisualCaptured::class).get()
     private val visAppGlideFamily: Family = allOf(CommandTarget::class, Position::class, GroundTrack::class, VisualCaptured::class).get()
     private val stabilisedAppFamily: Family = allOf(Position::class, Altitude::class, IndicatedAirSpeed::class, AircraftInfo::class)
         .oneOf(GlideSlopeCaptured::class, LocalizerCaptured::class, VisualCaptured::class).exclude(CirclingApproach::class).get()
@@ -276,6 +278,7 @@ class AISystem: EntitySystem() {
                 val spd = get(Speed.mapper) ?: return@apply
                 val dir = get(Direction.mapper) ?: return@apply
                 val ias = get(IndicatedAirSpeed.mapper) ?: return@apply
+                val groundTrack = get(GroundTrack.mapper) ?: return@apply
                 // Calculate required track from aircraft position to waypoint
                 val trackAndGS = getPointTargetTrackAndGS(pos.x, pos.y, wpt.x, wpt.y, spd.speedKts, dir, get(AffectedByWind.mapper))
                 val targetTrack = trackAndGS.first
@@ -295,7 +298,9 @@ class AISystem: EntitySystem() {
                 }
                 val requiredDist = if (cmdDir.flyOver || nextWptLegTrack == null) 3f
                 else findTurnDistance(findDeltaHeading(targetTrack, nextWptLegTrack.first, nextWptLegTrack.second), if (ias.iasKt > 250) 1.5f else 3f, ktToPxps(groundSpeed))
-                if (requiredDist * requiredDist > deltaX * deltaX + deltaY * deltaY) {
+                // If aircraft is within the required distance, or aircraft is within 1nm of the waypoint but is travelling away from it
+                if (requiredDist * requiredDist > deltaX * deltaX + deltaY * deltaY ||
+                    (deltaX * deltaX + deltaY * deltaY < 625 && groundTrack.trackVectorPxps.dot(Vector2(deltaX, deltaY)) < 0)) {
                     remove<CommandDirect>()
                     setToNextRouteLeg(this)
                 }
@@ -415,8 +420,7 @@ class AISystem: EntitySystem() {
      * @param deltaTime time passed, in seconds, since the last update
      * */
     private fun updateApproaches(deltaTime: Float) {
-        // Update for localizer/extended centreline captured (if aircraft has captured LOC but yet to capture GS, and still
-        // has route legs to follow, continue following route till GS capture; they are excluded from this)
+        // Update for localizer/extended centreline captured (this will override waypoint direct behaviour)
         val appTrackCaptured = engine.getEntitiesFor(appTrackCapFamily)
         for (i in 0 until appTrackCaptured.size()) {
             appTrackCaptured[i]?.apply {
@@ -502,7 +506,6 @@ class AISystem: EntitySystem() {
                 // Capture glide slope when within 20 feet and below the max intercept altitude (and localizer is captured)
                 if (alt.altitudeFt < (gsApp[GlideSlope.mapper]?.maxInterceptAlt ?: return@apply) && abs(alt.altitudeFt - (getAppAltAtPos(gsApp, pos.x, pos.y, 0f) ?: return@apply)) < 20) {
                     remove<GlideSlopeArmed>()
-                    remove<CommandDirect>()
                     this += GlideSlopeCaptured(gsApp)
                 }
             }

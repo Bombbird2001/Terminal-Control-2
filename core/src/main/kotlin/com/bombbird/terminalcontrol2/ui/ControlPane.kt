@@ -18,6 +18,11 @@ import kotlin.math.roundToInt
 
 /** Helper object for UI pane's control pane */
 class ControlPane {
+    companion object {
+        const val PANE_ROUTE: Byte = 0
+        const val PANE_HOLD: Byte = 1
+        const val PANE_VECTOR: Byte = 2
+    }
     lateinit var parentPane: UIPane
 
     private lateinit var lateralContainer: KContainer<Actor>
@@ -208,34 +213,62 @@ class ControlPane {
     }
 
     /**
+     * Gets the default pane the control pane should be on given the current clearance state
+     * @param route the clearance route
+     * @param vectorHdg the clearance vector
+     * @param appTrackCaptured whether the aircraft has captured the approach track
+     */
+    private fun getDefaultPaneForClearanceState(route: Route, vectorHdg: Short?, appTrackCaptured: Boolean): Byte {
+        // Vector mode active or localizer/visual track captured in vector mode (no route legs)
+        if (vectorHdg != null || (route.size == 0 && appTrackCaptured)) return PANE_VECTOR
+        route.apply {
+            // Hold mode active when the current leg is a hold leg, or when the aircraft is flying towards the waypoint
+            // it is cleared to hold at
+            if ((size >= 1 && get(0) is Route.HoldLeg) ||
+                (size >= 2 && get(0) is Route.WaypointLeg && get(1) is Route.HoldLeg &&
+                        (get(0) as? Route.WaypointLeg)?.wptId == (get(1) as? Route.HoldLeg)?.wptId)) return PANE_HOLD
+            // Otherwise, use route mode
+            return PANE_ROUTE
+        }
+    }
+
+    /**
      * Updates the style of the clearance mode buttons depending on the aircraft's cleared navigation state
      * @param route the aircraft's latest cleared route
      * @param vectorHdg the aircraft's latest cleared vector heading; is null if aircraft is not being vectored
+     * @param ignoreUserPane whether to ignore the pane the player is currently on and forcefully set the pane
      * hold waypoint is selected
      * */
-    fun updateClearanceMode(route: Route, vectorHdg: Short?, appTrackCaptured: Boolean) {
-        if (vectorHdg != null || (route.size == 0 && appTrackCaptured)) {
-            // Vector mode active or localizer/visual track captured in vector mode (no route legs)
-            routeModeButton.isChecked = false
-            holdModeButton.isChecked = false
-            vectorModeButton.isChecked = true
-            setPaneLateralMode(UIPane.MODE_VECTOR)
-        } else {
-            route.apply {
-                if ((size >= 1 && get(0) is Route.HoldLeg) ||
-                    (size >= 2 && get(0) is Route.WaypointLeg && get(1) is Route.HoldLeg && (get(0) as? Route.WaypointLeg)?.wptId == (get(1) as? Route.HoldLeg)?.wptId)) {
-                    // Hold mode active when the current leg is a hold leg, or when the aircraft is flying towards the waypoint it is cleared to hold at
-                    routeModeButton.isChecked = false
-                    holdModeButton.isChecked = true
-                    vectorModeButton.isChecked = false
-                    setPaneLateralMode(UIPane.MODE_HOLD)
-                } else {
-                    // Otherwise, use route mode
-                    routeModeButton.isChecked = true
-                    holdModeButton.isChecked = false
-                    vectorModeButton.isChecked = false
-                    setPaneLateralMode(UIPane.MODE_ROUTE)
-                }
+    fun updateClearanceMode(route: Route, vectorHdg: Short?, appTrackCaptured: Boolean, ignoreUserPane: Boolean) {
+        val currPane = when {
+            routeModeButton.isChecked -> PANE_ROUTE
+            holdModeButton.isChecked -> PANE_HOLD
+            vectorModeButton.isChecked -> PANE_VECTOR
+            else -> -1
+        }
+        val defaultClearancePane = if (ignoreUserPane) -1
+        else getDefaultPaneForClearanceState(parentPane.clearanceState.route, parentPane.clearanceState.vectorHdg, appTrackCaptured)
+        when (getDefaultPaneForClearanceState(route, vectorHdg, appTrackCaptured)) {
+            PANE_VECTOR -> {
+                if (!ignoreUserPane && defaultClearancePane != currPane) return
+                routeModeButton.isChecked = false
+                holdModeButton.isChecked = false
+                vectorModeButton.isChecked = true
+                setPaneLateralMode(UIPane.MODE_VECTOR)
+            }
+            PANE_HOLD -> {
+                if (!ignoreUserPane && defaultClearancePane != currPane) return
+                routeModeButton.isChecked = false
+                holdModeButton.isChecked = true
+                vectorModeButton.isChecked = false
+                setPaneLateralMode(UIPane.MODE_HOLD)
+            }
+            PANE_ROUTE -> {
+                if (!ignoreUserPane && defaultClearancePane != currPane) return
+                routeModeButton.isChecked = true
+                holdModeButton.isChecked = false
+                vectorModeButton.isChecked = false
+                setPaneLateralMode(UIPane.MODE_ROUTE)
             }
         }
     }
@@ -476,7 +509,9 @@ class ControlPane {
                 vectorSubpaneObj.isVisible = true
                 lateralContainer.actor = vectorSubpaneObj.actor
                 afterWptHdgLeg = getNextAfterWptHdgLeg(parentPane.userClearanceState.route)
-                if (parentPane.userClearanceState.vectorHdg == null && parentPane.clearanceState.vectorHdg == null)
+                // If the aircraft has not been cleared for vector in acting and user clearance, and there isn't an after
+                // waypoint vector leg selected, set the user clearance vector heading to the heading of the aircraft
+                if (parentPane.userClearanceState.vectorHdg == null && parentPane.clearanceState.vectorHdg == null && afterWptHdgLeg == null)
                     parentPane.userClearanceState.vectorHdg = GAME.gameClientScreen?.selectedAircraft?.entity?.get(CommandTarget.mapper)?.targetHdgDeg?.roundToInt()?.toShort() ?: 360
                 else if (parentPane.userClearanceState.vectorHdg == null) parentPane.userClearanceState.vectorHdg = parentPane.clearanceState.vectorHdg
                 vectorSubpaneObj.setHdgElementsDisabled(parentPane.appTrackCaptured)

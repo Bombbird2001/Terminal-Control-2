@@ -48,7 +48,7 @@ class DataSystem: EntitySystem() {
             for (i in 0 until datatagUpdates.size()) {
                 datatagUpdates[i]?.apply {
                     val datatag = get(Datatag.mapper) ?: return@apply
-                    updateDatatagText(datatag, getNewDatatagLabelText(this))
+                    updateDatatagText(datatag, getNewDatatagLabelText(this, datatag.minimised))
                 }
             }
             radarDataTimer -= RADAR_REFRESH_INTERVAL_S

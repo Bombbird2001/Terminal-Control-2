@@ -22,9 +22,12 @@ import kotlin.math.tan
 class PhysicsSystem(override val updateTimeS: Float): EntitySystem(), LowFreqUpdate {
     override var timer = 0f
 
-    private val positionUpdateFamily: Family = allOf(Position::class, Altitude::class, Speed::class, Direction::class).get()
-    private val windAffectedFamily: Family = allOf(AffectedByWind::class, Position::class).exclude(TakeoffRoll::class, LandingRoll::class).get()
-    private val speedUpdateFamily: Family = allOf(Speed::class, Acceleration::class).get()
+    private val positionUpdateFamily: Family = allOf(Position::class, Altitude::class, Speed::class, Direction::class)
+        .exclude(WaitingTakeoff::class).get()
+    private val windAffectedFamily: Family = allOf(AffectedByWind::class, Position::class)
+        .exclude(TakeoffRoll::class, LandingRoll::class).get()
+    private val speedUpdateFamily: Family = allOf(Speed::class, Acceleration::class)
+        .exclude(WaitingTakeoff::class).get()
     private val cmdTargetAltFamily: Family = allOf(AircraftInfo::class, Altitude::class, Speed::class, Acceleration::class, CommandTarget::class)
         .exclude(GlideSlopeCaptured::class, TakeoffRoll::class, LandingRoll::class).get()
     private val cmdTargetSpdFamily: Family = allOf(AircraftInfo::class, Altitude::class, Speed::class, Acceleration::class, CommandTarget::class).get()
@@ -32,7 +35,8 @@ class PhysicsSystem(override val updateTimeS: Float): EntitySystem(), LowFreqUpd
         .exclude(TakeoffRoll::class, LandingRoll::class).get()
     private val glideSlopeCapturedFamily: Family = allOf(Altitude::class, Speed::class, GlideSlopeCaptured::class).get()
     private val gsFamily: Family = allOf(Position::class, Altitude::class, GroundTrack::class, Speed::class, Direction::class, Acceleration::class).get()
-    private val tasToIasFamily: Family = allOf(Speed::class, IndicatedAirSpeed::class, Altitude::class).exclude(TakeoffRoll::class).get()
+    private val tasToIasFamily: Family = allOf(Speed::class, IndicatedAirSpeed::class, Altitude::class)
+        .exclude(TakeoffRoll::class).get()
     private val accLimitFamily: Family = allOf(Speed::class, Altitude::class, Acceleration::class, AircraftInfo::class).get()
     private val affectedByWindFamily: Family = allOf(Position::class, AffectedByWind::class).get()
 

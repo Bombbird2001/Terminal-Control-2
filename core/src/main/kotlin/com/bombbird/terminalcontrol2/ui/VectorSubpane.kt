@@ -10,6 +10,7 @@ import com.bombbird.terminalcontrol2.components.WaypointInfo
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.UI_HEIGHT
 import com.bombbird.terminalcontrol2.navigation.Route
+import com.bombbird.terminalcontrol2.utilities.compareLegEquality
 import com.bombbird.terminalcontrol2.utilities.getAfterWptHdgLeg
 import com.bombbird.terminalcontrol2.utilities.modulateHeading
 import ktx.ashley.get
@@ -214,28 +215,32 @@ class VectorSubpane {
     }
 
     /**
-     * Updates the user clearance vector heading or after waypoint heading with the input delta value, and updates the [vectorLabel] as well
+     * Updates the user clearance vector heading or after waypoint heading with the input delta value, and updates the
+     * [vectorLabel] as well
      * @param change the change in heading that will be added to the user clearance vector heading
      * @param route the route to refer to; should be the aircraft's latest cleared route or user input route
-     * @param selectedAftWpt the currently selected after waypoint leg
+     * @param selectedAftWpt the currently selected after waypoint leg, before the changes from the select box are applied
      * */
     private fun updateVectorHdgClearanceState(change: Short, route: Route, selectedAftWpt: Route.WaypointLeg?) {
         selectedAftWpt?.let {
             // Look for after waypoint vector legs that are present in the selected clearance but not the acting clearance
-            for (i in 0 until route.size) (route[i] as? Route.WaypointLeg)?.apply {
-                // Skip if no vector legs after selected waypoint found
-                if (i + 1 > route.size) return@let
-                val nextLeg = route[i + 1]
-                if (nextLeg !is Route.VectorLeg) return@let
-                // Found in selected clearance
-                for (j in 0 until parentPane.clearanceState.route.size - 1) (parentPane.clearanceState.route[j] as? Route.WaypointLeg)?.also {
-                    val actNextLeg = parentPane.clearanceState.route[j + 1]
-                    if (actNextLeg is Route.VectorLeg) return@let // Also found in acting clearance, don't remove
+            var i = 0
+            while (i < route.size - 1) {
+                (route[i] as? Route.WaypointLeg)?.apply {
+                    // Skip if no vector legs after selected waypoint found
+                    val nextLeg = route[i + 1]
+                    if (nextLeg !is Route.VectorLeg) return@apply
+                    // Found in selected clearance
+                    for (j in 0 until parentPane.clearanceState.route.size - 1) (parentPane.clearanceState.route[j] as? Route.WaypointLeg)?.also {
+                        val actNextLeg = parentPane.clearanceState.route[j + 1]
+                        // Also found in acting clearance, don't remove
+                        if (compareLegEquality(this, it) && actNextLeg is Route.VectorLeg) return@apply
+                    }
+                    // Not found in acting clearance, remove from selected clearance
+                    route.removeIndex(i + 1)
+                    afterWptHdgLeg = null
                 }
-                // Not found in acting clearance, remove from selected clearance
-                route.removeIndex(i + 1)
-                afterWptHdgLeg = null
-                return@let
+                i++
             }
         }
 
@@ -264,7 +269,7 @@ class VectorSubpane {
                     modulateHeading(rectifiedHeading.toFloat()).toInt().toShort()
                 }
             } else {
-                parentPane.userClearanceState.vectorHdg = parentPane.userClearanceState.vectorHdg?.plus(change)?.toShort()?.let {
+                parentPane.userClearanceState.vectorHdg = ((parentPane.userClearanceState.vectorHdg ?: vectorLabel.text.toString().toShort()) + change).toShort().let {
                     val rectifiedHeading = if (change >= 0) (it / 5f).toInt() * 5 else ceil(it / 5f).roundToInt() * 5
                     modulateHeading(rectifiedHeading.toFloat()).toInt().toShort()
                 }

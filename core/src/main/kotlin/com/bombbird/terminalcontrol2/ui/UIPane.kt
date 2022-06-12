@@ -140,7 +140,7 @@ class UIPane(private val uiStage: Stage) {
             userClearanceState.minIas, userClearanceState.maxIas, userClearanceState.optimalIas,
             userClearanceState.clearedApp, userClearanceState.clearedTrans)
         controlObj.updateClearanceMode(userClearanceState.route, userClearanceState.vectorHdg,
-            aircraft.entity.has(VisualCaptured.mapper) || aircraft.entity.has(LocalizerCaptured.mapper))
+            aircraft.entity.has(VisualCaptured.mapper) || aircraft.entity.has(LocalizerCaptured.mapper), true)
         controlObj.setUndoTransmitButtonsUnchanged()
         routeEditObj.setChangeStarDisabled(aircraftArrivalArptId == null)
         controlPane.isVisible = true
@@ -168,7 +168,7 @@ class UIPane(private val uiStage: Stage) {
         userClearanceState.updateUIClearanceState(latestClearance.actingClearance, clearanceState)
         clearanceState.updateUIClearanceState(latestClearance.actingClearance)
         controlObj.updateClearanceMode(userClearanceState.route, userClearanceState.vectorHdg,
-            aircraft.entity.has(VisualCaptured.mapper) || aircraft.entity.has(LocalizerCaptured.mapper))
+            aircraft.entity.has(VisualCaptured.mapper) || aircraft.entity.has(LocalizerCaptured.mapper), false)
         controlObj.updateAltSelectBoxChoices(aircraftMaxAlt)
         controlObj.updateAltSpdAppClearances(userClearanceState.clearedAlt, userClearanceState.clearedIas,
             userClearanceState.minIas, userClearanceState.maxIas, userClearanceState.optimalIas,

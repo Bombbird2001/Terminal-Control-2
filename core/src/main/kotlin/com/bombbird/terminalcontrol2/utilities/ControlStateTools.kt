@@ -384,16 +384,17 @@ fun getAfterWptHdgLeg(wptName: String, route: Route): Pair<VectorLeg, WaypointLe
 }
 
 /**
- * Gets the current direct if there is a vector leg immediately after; if no vector legs exist after the waypoint leg,
- * or current direct is not waypoint leg, null is returned
+ * Gets the next waypoint leg that has a vector leg after it; if none are found, null is returned
  * @param route the route to refer to
  * @return a [WaypointLeg], or null if no vector leg found
  * */
 fun getNextAfterWptHdgLeg(route: Route): WaypointLeg? {
     if (route.size < 2) return null
-    val firstLeg = route[0]
-    if (firstLeg !is WaypointLeg || route[1] !is VectorLeg) return null
-    return firstLeg
+    for (i in 0 until route.size - 1) {
+        val currLeg = route[i]
+        if (currLeg is WaypointLeg && route[i + 1] is VectorLeg) return currLeg
+    }
+    return null
 }
 
 /**
@@ -589,7 +590,7 @@ fun calculateRouteSegments(route: Route, routeSegmentArray: GdxArray<LegSegment>
         var directToWptExists = false
         // If the first route leg is a waypoint, add a segment from aircraft to waypoint
         if (leg2 is WaypointLeg && leg2.legActive) {
-            if (((leg1 is DiscontinuityLeg || leg1 is InitClimbLeg || leg1 is HoldLeg) && directLeg != null && compareLegEquality(directLeg, leg2)) || leg1 == null) {
+            if ((leg1 !is WaypointLeg && directLeg != null && compareLegEquality(directLeg, leg2)) || leg1 == null) {
                 routeSegmentArray.add(LegSegment(leg2))
                 directToWptExists = true
             }

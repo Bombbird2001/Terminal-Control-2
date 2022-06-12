@@ -106,8 +106,12 @@ class RouteEditPane {
             }
             for (i in 0 until route.size) {
                 route[i].let { leg ->
-                    val legDisplay = (leg as? Route.WaypointLeg)?.wptId?.let { wptId ->
-                        GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName
+                    val legDisplay = (leg as? Route.WaypointLeg)?.let { wpt ->
+                        when (wpt.turnDir) {
+                            CommandTarget.TURN_LEFT -> "Turn left\n"
+                            CommandTarget.TURN_RIGHT -> "Turn right\n"
+                            else -> ""
+                        } + GAME.gameClientScreen?.waypoints?.get(wpt.wptId)?.entity?.get(WaypointInfo.mapper)?.wptName
                     } ?:
                     (leg as? Route.VectorLeg)?.let { vec -> "${when (vec.turnDir) {
                         CommandTarget.TURN_LEFT -> "Left "

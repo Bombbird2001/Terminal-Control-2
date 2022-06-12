@@ -28,6 +28,11 @@ data class FlightType(var type: Byte = 0): Component {
     }
 }
 
+/** Component for tagging an aircraft on the ground waiting for takeoff (it won't be rendered or updated) */
+class WaitingTakeoff: Component {
+    companion object: Mapper<WaitingTakeoff>()
+}
+
 /** Component for tagging the [altitudeFt] when an aircraft should switch from tower to approach/departure */
 data class ContactFromTower(var altitudeFt: Int = 0): Component {
     companion object: Mapper<ContactFromTower>()

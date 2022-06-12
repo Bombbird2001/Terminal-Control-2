@@ -7,6 +7,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.Label
 import com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle
 import com.badlogic.gdx.scenes.scene2d.utils.BaseDrawable
 import com.badlogic.gdx.scenes.scene2d.utils.Drawable
+import com.badlogic.gdx.utils.Timer
 import ktx.ashley.Mapper
 import ktx.math.ImmutableVector2
 import ktx.scene2d.Scene2DSkin
@@ -30,7 +31,8 @@ class GenericLabel(var xOffset: Float = 0f, var yOffset: Float = 0f): Component 
     }
 }
 
-/** Component for additional label positioning info to a runway
+/**
+ * Component for additional label positioning info to a runway
  *
  * [positionToRunway] = 0 -> before the runway threshold
  *
@@ -63,22 +65,22 @@ data class SRColor(var color: Color = Color()): Component {
     companion object: Mapper<SRColor>()
 }
 
-/** Component for tagging entities that should be rendered the last (when compared to entities of the same family -
- * this does not ensure the entity is literally rendered above every single other entity; behaviour for the required
+/**
+ * Component for tagging entities that should be rendered the last (when compared to entities of the same family -
+ * this by itself does not ensure the entity is rendered above every single other entity; behaviour for the required
  * family must also be implemented in RenderingSystem)
  * */
 class RenderLast: Component {
     companion object: Mapper<RenderLast>()
 }
 
-/** Component for tagging labels that do not need to be shown
- * (by default, all [GenericLabel]s are rendered)
- * */
+/** Component for tagging labels that do not need to be shown (by default, all [GenericLabel]s are rendered) */
 class HideLabel: Component {
     companion object: Mapper<HideLabel>()
 }
 
-/** Component for rendering a datatag with position offsets on radarScreen
+/**
+ * Component for rendering a datatag with position offsets on radarScreen
  *
  * Use functions in DatatagTools to update text/style/spacing of underlying imageButton and label
  *
@@ -86,15 +88,12 @@ class HideLabel: Component {
  * */
 class Datatag(var xOffset: Float = 0f, var yOffset: Float = 0f, var minimised: Boolean = false, var lineSpacing: Short = 4): Component {
     var dragging = false
+    var clicks = 0
+    val tapTimer = Timer()
     val imgButton: ImageButton = ImageButton(Scene2DSkin.defaultSkin, "DatatagGreenNoBG")
     val clickSpot: ImageButton = ImageButton(Scene2DSkin.defaultSkin, "DatatagNoBG")
     val labelArray: Array<Label> = arrayOf(Label("", Scene2DSkin.defaultSkin, "Datatag"), Label("", Scene2DSkin.defaultSkin, "Datatag"),
                                            Label("", Scene2DSkin.defaultSkin, "Datatag"), Label("", Scene2DSkin.defaultSkin, "Datatag"))
     var smallLabelFont = false
     companion object: Mapper<Datatag>()
-}
-
-/** Component for tagging datatags that should display minimised information */
-class MinimisedDatatag: Component {
-    companion object: Mapper<MinimisedDatatag>()
 }

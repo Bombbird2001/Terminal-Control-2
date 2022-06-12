@@ -4,6 +4,7 @@ import com.badlogic.ashley.core.Entity
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.math.CumulativeDistribution
 import com.badlogic.gdx.math.MathUtils
+import com.badlogic.gdx.utils.Timer
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.Aircraft
 import com.bombbird.terminalcontrol2.entities.Airport
@@ -13,71 +14,80 @@ import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.navigation.SidStar
 import com.bombbird.terminalcontrol2.navigation.UsabilityFilter
 import com.bombbird.terminalcontrol2.networking.GameServer
-import ktx.ashley.get
-import ktx.ashley.has
-import ktx.ashley.hasNot
-import ktx.ashley.plusAssign
+import ktx.ashley.*
 import ktx.collections.GdxArray
+import ktx.collections.GdxSet
 import kotlin.math.max
 import kotlin.math.min
 
-/**
- * Chooses a random SID from all SIDs available for the input runway
- *
- * This also takes into account any noise restrictions
- * @param rwy the runway to use
- * @return the [SidStar.SID] chosen
- * */
-private fun randomSid(rwy: Entity): SidStar.SID? {
-    val currentTime = UsabilityFilter.DAY_ONLY // TODO change depending on whether night operations are active
-    val availableSids = GdxArray<SidStar.SID>()
-    val rwyName = rwy[RunwayInfo.mapper]?.rwyName
-    rwy[RunwayInfo.mapper]?.airport?.entity?.get(SIDChildren.mapper)?.sidMap?.values()?.forEach { sid ->
-        // Add to list of eligible SIDs if both runway and time restriction checks passes
-        if (!sid.rwyInitialClimbs.containsKey(rwyName)) return@forEach
-        if (sid.timeRestriction != UsabilityFilter.DAY_AND_NIGHT && sid.timeRestriction != currentTime) return@forEach
-        availableSids.add(sid)
-    }
+val disallowedCallsigns = GdxSet<String>()
 
-    if (availableSids.isEmpty) {
-        Gdx.app.log("TrafficTools", "No SID available for runway $rwyName")
-        return null
+/**
+ * Creates an arrival with a randomly selected airport and STAR
+ * @param airports the full list of airports in the game world
+ * @param gs the gameServer to instantiate the aircraft in
+ */
+fun createRandomArrival(airports: GdxArray<Airport>, gs: GameServer) {
+    val airportDist = CumulativeDistribution<Entity>()
+    for (i in 0 until airports.size) { airports[i]?.entity?.apply {
+        if (hasNot(ArrivalClosed.mapper)) airportDist.add(this, get(AirportInfo.mapper)?.tfcRatio?.toFloat() ?: return@apply)
+    }}
+    airportDist.generateNormalized()
+    val arpt = if (airportDist.size() == 0) return else airportDist.value()
+    val spawnData = generateRandomTrafficForAirport(arpt) ?: return
+    val callsign = generateRandomCallsign(spawnData.first, spawnData.second, gs) ?: return
+    // Choose random aircraft type from the array of possible aircraft
+    val icaoType = spawnData.third.random() ?: run {
+        Gdx.app.log("TrafficTools", "No aircraft available for ${spawnData.first} in ${arpt[AirportInfo.mapper]?.icaoCode}")
+        "B77W"
     }
-    return availableSids.random()
+    createArrival(callsign, icaoType, arpt, gs)
 }
 
 /**
- * Creates a new departure aircraft on the input runway
- * @param rwy the runway the departure aircraft will be using
+ * Creates a new arrival aircraft with the input data
+ * @param callsign the callsign of the aircraft
+ * @param icaoType the ICAO aircraft type
+ * @param airport the airport the arrival is flying into
  * @param gs the gameServer to instantiate the aircraft in
  * */
-fun createDeparture(rwy: Entity, gs: GameServer) {
-    val rwyPos = rwy[Position.mapper]
-    val rwyDir = rwy[Direction.mapper]
+fun createArrival(callsign: String, icaoType: String, airport: Entity, gs: GameServer) {
+    if (gs.aircraft.containsKey(callsign)) {
+        Gdx.app.log("TrafficTools", "Aircraft with callsign $callsign already exists")
+        return
+    }
+    val randomStar = randomStar(airport)
+    val starRoute = randomStar?.getRandomSTARRouteForRunway() ?: Route()
+    val origStarRoute = Route().apply { setToRouteCopy(starRoute) }
+    val spawnPos = calculateArrivalSpawnPoint(starRoute, gs.primarySector)
 
-    val rwyAlt = rwy[Altitude.mapper]?.altitudeFt ?: 0f
-    gs.aircraft.put("SHIBA2", Aircraft("SHIBA2", rwyPos?.x ?: 10f, rwyPos?.y ?: -10f, rwyAlt, "DH8D", FlightType.DEPARTURE, false).apply {
-        entity[Direction.mapper]?.trackUnitVector?.rotateDeg((rwyDir?.trackUnitVector?.angleDeg() ?: 0f) - 90) // Runway heading
-        // Calculate headwind component for takeoff
-        val tailwind = rwyDir?.let { dir -> entity[Position.mapper]?.let { pos ->
-            val wind = getClosestAirportWindVector(pos.x, pos.y)
-            calculateIASFromTAS(rwyAlt, pxpsToKt(wind.dot(dir.trackUnitVector)))
-        }} ?: 0f
-        entity[Speed.mapper]?.speedKts = -tailwind
-        val acPerf = entity[AircraftInfo.mapper]?.aircraftPerf ?: return@apply
-        entity += TakeoffRoll(max(1.5f, calculateRequiredAcceleration(0, calculateTASFromIAS(rwyAlt, acPerf.vR + tailwind).toInt().toShort(), ((rwy[RunwayInfo.mapper]?.lengthM ?: 3800) - 1000) * MathUtils.random(0.75f, 1f))))
-        val sid = randomSid(rwy)
-        val rwyName = rwy[RunwayInfo.mapper]?.rwyName ?: ""
-        val initClimb = sid?.rwyInitialClimbs?.get(rwyName) ?: 3000
-        entity += ClearanceAct(ClearanceState.ActingClearance(
-                ClearanceState(sid?.name ?: "", sid?.getRandomSIDRouteForRunway(rwyName) ?: Route(), Route(),
-            null, null, initClimb, acPerf.climbOutSpeed)
-            ))
-        entity[CommandTarget.mapper]?.apply {
-            targetAltFt = initClimb
-            targetIasKt = acPerf.climbOutSpeed
-            targetHdgDeg = convertWorldAndRenderDeg(rwyDir?.trackUnitVector?.angleDeg() ?: 90f) + MAG_HDG_DEV
+    gs.aircraft.put(callsign, Aircraft(callsign, spawnPos.first, spawnPos.second, 0f, icaoType, FlightType.ARRIVAL, false).apply {
+        entity += ArrivalAirport(airport[AirportInfo.mapper]?.arptId ?: 0)
+        val alt = calculateArrivalSpawnAltitude(entity, airport, origStarRoute, spawnPos.first, spawnPos.second, starRoute)
+        entity[Altitude.mapper]?.altitudeFt = alt
+        entity[Direction.mapper]?.trackUnitVector?.rotateDeg(-spawnPos.third - 180)
+        val aircraftPerf = entity[AircraftInfo.mapper]?.aircraftPerf ?: AircraftTypeData.AircraftPerfData()
+        val ias = calculateArrivalSpawnIAS(origStarRoute, starRoute, alt, aircraftPerf)
+        val tas = calculateTASFromIAS(alt, ias.toFloat())
+        val clearedAlt = min(15000, (alt / 1000).toInt() * 1000)
+        entity[Speed.mapper]?.apply {
+            speedKts = tas
+            // Set to vertical speed required to reach cleared altitude in 10 seconds, capped by the minimum vertical speed
+            val minVertSpd = calculateMinVerticalSpd(aircraftPerf, alt, tas, 0f, approachExpedite = false, takingOff = false, takeoffClimb = false)
+            vertSpdFpm = max(minVertSpd, (clearedAlt - alt) * 6)
         }
+        entity += ClearanceAct(ClearanceState.ActingClearance(
+            ClearanceState(randomStar?.name ?: "", starRoute, Route(),
+                if (starRoute.size == 0) (spawnPos.third + MAG_HDG_DEV).toInt().toShort() else null, null,
+                clearedAlt, ias)
+        ))
+        entity[CommandTarget.mapper]?.apply {
+            targetAltFt = clearedAlt
+            targetIasKt = ias
+            targetHdgDeg = modulateHeading(spawnPos.third + 180)
+        }
+        entity += InitialArrivalSpawn()
+        if (alt > 10000) entity += DecelerateTo240kts()
     })
 }
 
@@ -108,45 +118,6 @@ private fun randomStar(airport: Entity): SidStar.STAR? {
         return null
     }
     return availableStars.random()
-}
-
-/**
- * Creates a new arrival aircraft for the input arrival
- * @param airport the airport the arrival is flying into
- * @param gs the gameServer to instantiate the aircraft in
- * */
-fun createArrival(airport: Entity, gs: GameServer) {
-    val randomStar = randomStar(airport)
-    val starRoute = randomStar?.getRandomSTARRouteForRunway() ?: Route()
-    val origStarRoute = Route().apply { setToRouteCopy(starRoute) }
-    val spawnPos = calculateArrivalSpawnPoint(starRoute, gs.primarySector)
-
-    gs.aircraft.put("SHIBA3", Aircraft("SHIBA3", spawnPos.first, spawnPos.second, 0f, "B77W", FlightType.ARRIVAL, false).apply {
-        entity += ArrivalAirport(airport[AirportInfo.mapper]?.arptId ?: 0)
-        val alt = calculateArrivalSpawnAltitude(entity, airport, origStarRoute, spawnPos.first, spawnPos.second, starRoute)
-        entity[Altitude.mapper]?.altitudeFt = alt
-        entity[Direction.mapper]?.trackUnitVector?.rotateDeg(-spawnPos.third - 180)
-        val aircraftPerf = entity[AircraftInfo.mapper]?.aircraftPerf ?: AircraftTypeData.AircraftPerfData()
-        val ias = calculateArrivalSpawnIAS(origStarRoute, starRoute, alt, aircraftPerf)
-        val tas = calculateTASFromIAS(alt, ias.toFloat())
-        entity[Speed.mapper]?.apply {
-            speedKts = tas
-            vertSpdFpm = calculateMinVerticalSpd(aircraftPerf, alt, tas, 0f, approachExpedite = false, takingOff = false, takeoffClimb = false)
-        }
-        val clearedAlt = min(15000, (alt / 1000).toInt() * 1000)
-        entity += ClearanceAct(ClearanceState.ActingClearance(
-            ClearanceState(randomStar?.name ?: "", starRoute, Route(),
-                if (starRoute.size == 0) (spawnPos.third + MAG_HDG_DEV).toInt().toShort() else null, null,
-                clearedAlt, ias)
-        ))
-        entity[CommandTarget.mapper]?.apply {
-            targetAltFt = clearedAlt
-            targetIasKt = ias
-            targetHdgDeg = modulateHeading(spawnPos.third + 180)
-        }
-        entity += InitialArrivalSpawn()
-        if (alt > 10000) entity += DecelerateTo240kts()
-    })
 }
 
 fun appTestArrival(gs: GameServer) {
@@ -196,6 +167,137 @@ fun appTestArrival(gs: GameServer) {
 }
 
 /**
+ * Creates a new departure aircraft with the input data
+ * @param airport the airport the departure is flying from
+ * @param rwy the runway the departure is departing from
+ * @param gs the gameServer to instantiate the aircraft in
+ * */
+fun createRandomDeparture(airport: Entity, rwy: Entity, gs: GameServer) {
+    val spawnData = generateRandomTrafficForAirport(airport) ?: return
+    val callsign = generateRandomCallsign(spawnData.first, spawnData.second, gs) ?: return
+    // Choose random aircraft type from the array of possible aircraft
+    val icaoType = spawnData.third.random() ?: run {
+        Gdx.app.log("TrafficTools", "No aircraft available for ${spawnData.first} in ${airport[AirportInfo.mapper]?.icaoCode}")
+        "B77W"
+    }
+    createDeparture(callsign, icaoType, rwy, gs)
+}
+
+/**
+ * Creates a new departure aircraft on the input runway
+ * @param callsign the callsign of the aircraft
+ * @param icaoType the ICAO aircraft type
+ * @param rwy the runway the departure aircraft will be using
+ * @param gs the gameServer to instantiate the aircraft in
+ * */
+fun createDeparture(callsign: String, icaoType: String, rwy: Entity, gs: GameServer) {
+    val rwyPos = rwy[Position.mapper]
+    val rwyDir = rwy[Direction.mapper]
+
+    val rwyAlt = rwy[Altitude.mapper]?.altitudeFt ?: 0f
+    gs.aircraft.put(callsign, Aircraft(callsign, rwyPos?.x ?: 10f, rwyPos?.y ?: -10f, rwyAlt, icaoType, FlightType.DEPARTURE, false).apply {
+        entity[Direction.mapper]?.trackUnitVector?.rotateDeg((rwyDir?.trackUnitVector?.angleDeg() ?: 0f) - 90) // Runway heading
+        // Calculate headwind component for takeoff
+        val tailwind = rwyDir?.let { dir -> entity[Position.mapper]?.let { pos ->
+            val wind = getClosestAirportWindVector(pos.x, pos.y)
+            calculateIASFromTAS(rwyAlt, pxpsToKt(wind.dot(dir.trackUnitVector)))
+        }} ?: 0f
+        entity[Speed.mapper]?.speedKts = -tailwind
+        val acPerf = entity[AircraftInfo.mapper]?.aircraftPerf ?: return@apply
+        entity += WaitingTakeoff()
+        entity += TakeoffRoll(max(1.5f, calculateRequiredAcceleration(0, calculateTASFromIAS(rwyAlt, acPerf.vR + tailwind).toInt().toShort(), ((rwy[RunwayInfo.mapper]?.lengthM ?: 3800) - 1000) * MathUtils.random(0.75f, 1f))))
+        val sid = randomSid(rwy)
+        val rwyName = rwy[RunwayInfo.mapper]?.rwyName ?: ""
+        val initClimb = sid?.rwyInitialClimbs?.get(rwyName) ?: 3000
+        entity += ClearanceAct(ClearanceState.ActingClearance(
+            ClearanceState(sid?.name ?: "", sid?.getRandomSIDRouteForRunway(rwyName) ?: Route(), Route(),
+                null, null, initClimb, acPerf.climbOutSpeed)
+        ))
+        entity[CommandTarget.mapper]?.apply {
+            targetAltFt = initClimb
+            targetIasKt = acPerf.climbOutSpeed
+            targetHdgDeg = convertWorldAndRenderDeg(rwyDir?.trackUnitVector?.angleDeg() ?: 90f) + MAG_HDG_DEV
+        }
+        Timer.schedule(object : Timer.Task() {
+            override fun run() {
+                gs.postRunnableAfterEngineUpdate {
+                    entity.remove<WaitingTakeoff>()
+                }
+            }
+        }, 5f)
+    })
+}
+
+/**
+ * Chooses a random SID from all SIDs available for the input runway
+ *
+ * This also takes into account any noise restrictions
+ * @param rwy the runway to use
+ * @return the [SidStar.SID] chosen
+ * */
+private fun randomSid(rwy: Entity): SidStar.SID? {
+    val currentTime = UsabilityFilter.DAY_ONLY // TODO change depending on whether night operations are active
+    val availableSids = GdxArray<SidStar.SID>()
+    val rwyName = rwy[RunwayInfo.mapper]?.rwyName
+    rwy[RunwayInfo.mapper]?.airport?.entity?.get(SIDChildren.mapper)?.sidMap?.values()?.forEach { sid ->
+        // Add to list of eligible SIDs if both runway and time restriction checks passes
+        if (!sid.rwyInitialClimbs.containsKey(rwyName)) return@forEach
+        if (sid.timeRestriction != UsabilityFilter.DAY_AND_NIGHT && sid.timeRestriction != currentTime) return@forEach
+        availableSids.add(sid)
+    }
+
+    if (availableSids.isEmpty) {
+        Gdx.app.log("TrafficTools", "No SID available for runway $rwyName")
+        return null
+    }
+    return availableSids.random()
+}
+
+/**
+ * Chooses a random set of traffic data to be used for aircraft generation
+ * @param airport the airport to generate traffic for
+ * @return a triple, the first being the ICAO code of the airline/registration of private aircraft, second being whether
+ * the aircraft is a private aircraft, third being the possible aircraft types that can be chosen
+ */
+private fun generateRandomTrafficForAirport(airport: Entity): Triple<String, Boolean, GdxArray<String>>? {
+    return airport[RandomAirlineData.mapper]?.airlineDistribution?.let { dist ->
+        if (dist.size() == 0) {
+            Gdx.app.log("TrafficTools", "No airlines available for ${airport[AirportInfo.mapper]?.arptId} ${airport[AirportInfo.mapper]?.icaoCode}")
+            null
+        } else dist.value()
+    }
+}
+
+/**
+ * Generates a callsign for the input airline
+ * @param airline the 3-letter ICAO code of the airline, or the full registration of the aircraft if it is a private
+ * aircraft
+ * @param private whether the aircraft is a private aircraft
+ * @param gs the gameServer in which to check for duplicate callsigns
+ * */
+private fun generateRandomCallsign(airline: String, private: Boolean, gs: GameServer): String? {
+    return if (private) {
+        // Check if private aircraft already exists
+        if (gs.aircraft.containsKey(airline)) null else airline
+    } else {
+        // Generate random number between 1 - 9999
+        var flightNo: Int
+        var loopCount = 0
+        do {
+            // If no suitable callsign found after 30 tries, return from this function (something is wrong)
+            if (loopCount > 30) {
+                Gdx.app.log("TrafficTools", "Failed to generate random callsign in time for $airline, aircraft will not be created")
+                return null
+            }
+            flightNo = if (MathUtils.randomBoolean(0.1f)) MathUtils.random(1000, 9999) else MathUtils.random(1, 999)
+            loopCount++
+            // Check if it already exists, or is a disallowed callsign
+        } while (gs.aircraft.containsKey(airline + flightNo) || disallowedCallsigns.contains(airline + flightNo))
+        airline + flightNo
+    }
+}
+
+/**
  * Gets all available approaches for the input airport
  * @param airport the airport to use
  * @return a [GdxArray] of strings containing the eligible approach names
@@ -213,18 +315,4 @@ fun getAvailableApproaches(airport: Entity): GdxArray<String> {
         }
     }
     return array
-}
-
-/**
- * Creates an arrival with a randomly selected airport and STAR
- * @param airports the full list of airports in the game world
- * @param gs the gameServer to instantiate the aircraft in
- */
-fun createRandomArrival(airports: GdxArray<Airport>, gs: GameServer) {
-    val airportDist = CumulativeDistribution<Entity>()
-    for (i in 0 until airports.size) { airports[i]?.entity?.apply {
-        if (hasNot(AirportClosed.mapper)) airportDist.add(this, get(AirportInfo.mapper)?.tfcRatio?.toFloat() ?: return@apply)
-    }}
-    airportDist.generateNormalized()
-    createArrival(airportDist.value(), gs)
 }

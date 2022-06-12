@@ -159,8 +159,8 @@ class ControlStateSystem(override val updateTimeS: Float = 0f): EntitySystem(), 
                     calculateMinAcceleration(acInfo.aircraftPerf, alt.altitudeFt, calculateTASFromIAS(alt.altitudeFt, nextMaxSpd.toFloat()), -500f, approach, takingOff = false, takeoffClimb = false)) + 2000)
                 val deltaX = targetPos.x - pos.x
                 val deltaY = targetPos.y - pos.y
-                if (deltaX * deltaX + deltaY * deltaY < distReqPx * distReqPx) {
-                    lastRestriction.maxSpdKt = nextMaxSpd
+                if (deltaX * deltaX + deltaY * deltaY < distReqPx * distReqPx) { // TODO use DTG instead of directly calculating distance based on position
+                    // lastRestriction.maxSpdKt = nextMaxSpd
                     if (actingClearance.clearedIas > nextMaxSpd) cmdTarget.targetIasKt = nextMaxSpd
                     val prevMaxIas = actingClearance.maxIas
                     val prevClearedIas = actingClearance.clearedIas

@@ -6,6 +6,7 @@ import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.entities.Airport
 import com.bombbird.terminalcontrol2.utilities.AircraftTypeData
 import ktx.ashley.Mapper
+import ktx.collections.GdxArray
 
 /** Component for tagging airport related information */
 data class AirportInfo(var arptId: Byte = 0, var icaoCode: String = "", var name: String = "", var tfcRatio: Byte = 1): Component {
@@ -99,9 +100,19 @@ data class ArrivalAirport(var arptId: Byte = 0): Component {
     companion object: Mapper<ArrivalAirport>()
 }
 
-/** Component for tagging a closed airport */
-class AirportClosed: Component {
-    companion object: Mapper<AirportClosed>()
+/** Component for tagging a closed airport for arrivals */
+class ArrivalClosed: Component {
+    companion object: Mapper<ArrivalClosed>()
+}
+
+/** Component for tagging a closed airport for departures */
+class DepartureClosed: Component {
+    companion object: Mapper<DepartureClosed>()
+}
+
+/** Component for tagging traffic distribution at an airport */
+data class RandomAirlineData(val airlineDistribution: CumulativeDistribution<Triple<String, Boolean, GdxArray<String>>> = CumulativeDistribution()): Component {
+    companion object: Mapper<RandomAirlineData>()
 }
 
 /** Component for tagging basic approach information */

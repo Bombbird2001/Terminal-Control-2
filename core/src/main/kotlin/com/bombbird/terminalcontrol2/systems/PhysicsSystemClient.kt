@@ -17,9 +17,12 @@ import ktx.math.times
 class PhysicsSystemClient(override val updateTimeS: Float): EntitySystem(), LowFreqUpdate {
     override var timer = 0f
 
-    private val positionUpdateFamily: Family = allOf(Position::class, Altitude::class, Speed::class, Direction::class).get()
-    private val windAffectedFamily: Family = allOf(AffectedByWind::class, Position::class).get()
-    private val tasToIasFamily: Family = allOf(Speed::class, IndicatedAirSpeed::class, Altitude::class).exclude(TakeoffRoll::class).get()
+    private val positionUpdateFamily: Family = allOf(Position::class, Altitude::class, Speed::class, Direction::class)
+        .exclude(WaitingTakeoff::class).get()
+    private val windAffectedFamily: Family = allOf(AffectedByWind::class, Position::class)
+        .exclude(TakeoffRoll::class, LandingRoll::class).get()
+    private val tasToIasFamily: Family = allOf(Speed::class, IndicatedAirSpeed::class, Altitude::class)
+        .exclude(TakeoffRoll::class).get()
     private val affectedByWindFamily: Family = allOf(Position::class, AffectedByWind::class).get()
 
     /** Main update function, for values that need to be updated frequently

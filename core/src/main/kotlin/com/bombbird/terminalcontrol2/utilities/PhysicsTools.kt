@@ -109,9 +109,11 @@ fun calculateMaxJetThrust(thrustNSLISA: Int, pressure: Float, temperature: Float
  * @return the maximum propeller thrust, in newtons, that can be delivered by the propeller engines
  * */
 fun calculateMaxPropThrust(propPowerWSLISA: Int, propArea: Float, tasKt: Float, pressure: Float, temperature: Float): Float {
-    val density = calculateAirDensity(pressure, temperature)
-    val tasMps = ktToMps(tasKt)
-    return sqrt(2 * propArea * density * tasMps * (2 * propArea * density * tasMps * tasMps * tasMps + propPowerWSLISA)) - 2 * propArea * density * tasMps * tasMps
+    // val density = calculateAirDensity(pressure, temperature)
+    // Minimum 10 knots TAS to simulate air movement due to pressure difference even when aircraft's TAS is 0
+    val tasMps = ktToMps(max(tasKt, 10f))
+    // return sqrt(2 * propArea * density * tasMps * (2 * propArea * density * tasMps * tasMps * tasMps + propPowerWSLISA)) - 2 * propArea * density * tasMps * tasMps
+    return propPowerWSLISA / 2 / tasMps
 }
 
 /**

@@ -80,8 +80,8 @@ object AircraftTypeData {
      * */
     class AircraftPerfData(val wakeCategory: Char = 'H', val recat: Char = 'B',
                            val thrustNSLISA: Int? = 1026000, val propPowerWSLISA: Int? = null, val propArea: Float? = null,
-                           val minCd0TimesRefArea: Float = 6.552f, val maxCdTimesRefArea: Float = 43.68f,
-                           val maxIas: Short = 340, val maxMach: Float = 0.89f, private val typApp: Short = 148, private val typVr: Short = 165,
+                           val minCd0TimesRefArea: Float = 6.552f, val maxCdTimesRefArea: Float = 41.496f,
+                           val maxIas: Short = 340, val maxMach: Float = 0.89f, private val typApp: Short = 149, private val typVr: Short = 158,
                            private val operatingEmptyWeightKg: Int = 167829, private val maxTakeoffWeightKg: Int = 351533, flightType: Byte = FlightType.ARRIVAL) {
 
         var appSpd: Short
