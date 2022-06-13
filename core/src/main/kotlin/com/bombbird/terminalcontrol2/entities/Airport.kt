@@ -158,7 +158,7 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
 
     /** Runway class that creates a runway entity with the required components on instantiation */
     class Runway(parentAirport: Airport, id: Byte, name: String, posX: Float, posY: Float, trueHdg: Float,
-                 runwayLengthM: Short, displacedM: Short, elevation: Short, labelPos: Byte,
+                 runwayLengthM: Short, displacedM: Short, intersectionM: Short, elevation: Short, labelPos: Byte,
                  towerName: String, towerFreq: String, onClient: Boolean = true) {
         val entity = getEngine(onClient).entity {
             with<Position> {
@@ -180,6 +180,7 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
                 lengthM = runwayLengthM
                 airport = parentAirport
                 displacedThresholdM = displacedM
+                intersectionTakeoffM = intersectionM
                 tower = towerName
                 freq = towerFreq
             }
@@ -223,7 +224,7 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
                     serialisedRunway.x, serialisedRunway.y,
                     serialisedRunway.trueHdg,
                     serialisedRunway.lengthM,
-                    serialisedRunway.displacedM,
+                    serialisedRunway.displacedM, serialisedRunway.intersectionM,
                     serialisedRunway.altitude,
                     serialisedRunway.rwyLabelPos,
                     serialisedRunway.towerName, serialisedRunway.towerFreq
@@ -238,7 +239,8 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
         class SerialisedRunway(val x: Float = 0f, val y: Float = 0f,
                                val altitude: Short = 0,
                                val trueHdg: Float = 0f,
-                               val rwyId: Byte = -1, val rwyName: String = "", val lengthM: Short = 0, val displacedM: Short = 0,
+                               val rwyId: Byte = -1, val rwyName: String = "", val lengthM: Short = 0,
+                               val displacedM: Short = 0, val intersectionM: Short = 0,
                                val rwyLabelPos: Byte = 0,
                                val towerName: String = "", val towerFreq: String = "",
                                val landing: Boolean = false, val takeoff: Boolean = false)
@@ -257,7 +259,8 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
                     position.x, position.y,
                     altitude.altitudeFt.toInt().toShort(),
                     convertWorldAndRenderDeg(direction.trackUnitVector.angleDeg()),
-                    rwyInfo.rwyId, rwyInfo.rwyName, rwyInfo.lengthM, rwyInfo.displacedThresholdM,
+                    rwyInfo.rwyId, rwyInfo.rwyName, rwyInfo.lengthM,
+                    rwyInfo.displacedThresholdM, rwyInfo.intersectionTakeoffM,
                     rwyLabel.positionToRunway,
                     rwyInfo.tower, rwyInfo.freq,
                     landing, takeoff
@@ -268,15 +271,19 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
 
     /** Creates a runway entity with the required components, and adds it to airport component's runway map */
     fun addRunway(id: Byte, name: String, posX: Float, posY: Float, trueHdg: Float,
-                  runwayLengthM: Short, displacedThresholdM: Short, elevation: Short,
+                  runwayLengthM: Short, displacedThresholdM: Short, intersectionTakeoffM: Short, elevation: Short,
                   towerName: String, towerFreq: String, labelPos: Byte) {
-        Runway(this, id, name, posX, posY, trueHdg, runwayLengthM, displacedThresholdM, elevation, labelPos, towerName, towerFreq, false).also { rwy ->
+        Runway(this, id, name, posX, posY, trueHdg, runwayLengthM, displacedThresholdM, intersectionTakeoffM,
+            elevation, labelPos, towerName, towerFreq, false).also { rwy ->
             entity[RunwayChildren.mapper]?.rwyMap?.put(id, rwy)
         }
     }
 
-    /** Maps the given runway name to a certain ID - this method should be used only when loading runways from
-     *  internal game files, and not during save file loads since they may contain old runways with the same name (runway added/renamed/etc.) leading to incorrect mappings */
+    /**
+     * Maps the given runway name to a certain ID - this method should be used only when loading runways from
+     * internal game files, and not during save file loads since they may contain old runways with the same name
+     * (runway added/renamed/etc.) leading to incorrect mappings
+     * */
     fun setRunwayMapping(rwyName: String, rwyId: Byte) {
         entity[RunwayChildren.mapper]?.updatedRwyMapping?.put(rwyName, rwyId)
     }

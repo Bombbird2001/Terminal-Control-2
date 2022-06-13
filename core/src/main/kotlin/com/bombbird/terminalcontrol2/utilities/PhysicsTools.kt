@@ -167,7 +167,7 @@ fun calculateParasiticDrag(cdTimesRefArea: Float, densityKgpm3: Float, tasKt: Fl
  * an angle of attack of 9 degrees (it is assumed that at low speeds, pilots will utilise flaps and slats to help reduce
  * the angle of attack, hence it is capped at 9 degrees instead)
  * @param maxIasKt the aircraft's max IAS, in knots, which will be assumed to be the speed at which the aircraft will attain an angle
- * of attack of 2.5 degrees
+ * of attack of 2 degrees
  * @param thrustN the thrust, in newtons, produced by the engine which will be taken into account for calculations of the
  * vertical component of forces acting on the aircraft
  * @param altitudeFt the altitude, in feet, of the aircraft
@@ -179,9 +179,9 @@ fun calculateParasiticDrag(cdTimesRefArea: Float, densityKgpm3: Float, tasKt: Fl
  * */
 fun calculateInducedDrag(massKg: Int, vRKt: Short, maxIasKt: Short, thrustN: Float, altitudeFt: Float, tasKt: Float, takeoffClimb: Boolean): Float {
     val iasKt = calculateIASFromTAS(altitudeFt, tasKt)
-    val minAoa = 2.5
+    val minAoa = 2.0
     val maxAoa = 9.0
-    val aoaDegUncorrected = MathUtils.clamp(minAoa + ((maxIasKt - iasKt) / (maxIasKt - vRKt)).pow(3) * (maxAoa - minAoa), minAoa, maxAoa)
+    val aoaDegUncorrected = MathUtils.clamp(minAoa + ((maxIasKt - iasKt) / (maxIasKt - vRKt)).pow(2) * (maxAoa - minAoa), minAoa, maxAoa)
     val aoaDeg = if (takeoffClimb) min(7.0, aoaDegUncorrected) else aoaDegUncorrected
     return ((massKg * GRAVITY_ACCELERATION_MPS2 - thrustN * sin(Math.toRadians(aoaDeg))) * tan(Math.toRadians(aoaDeg))).toFloat()
 }

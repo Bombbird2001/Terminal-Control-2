@@ -19,6 +19,50 @@ import ktx.assets.toInternalFile
 import ktx.collections.GdxArray
 import ktx.collections.toGdxArray
 
+private const val WORLD_MIN_ALT = "MIN_ALT"
+private const val WORLD_MAX_ALT = "MAX_ALT"
+private const val WORLD_INTER_ALT = "INTERMEDIATE_ALTS"
+private const val WORLD_TRANS_ALT = "TRANS_ALT"
+private const val WORLD_TRANS_LVL = "TRANS_LVL"
+private const val WORLD_MIN_SEP = "MIN_SEP"
+private const val WORLD_MAG_HDG_DEV = "MAG_HDG_DEV"
+private const val WORLD_WAYPOINTS = "WAYPOINTS"
+private const val WORLD_HOLDS = "HOLDS"
+private const val WORLD_MIN_ALT_SECTORS = "MIN_ALT_SECTORS"
+private const val WORLD_SECTORS = "SECTORS"
+private const val WORLD_SHORELINE = "SHORELINE"
+private const val AIRPORT_OBJ = "AIRPORT"
+private const val AIRPORT_RWYS = "RWYS"
+private const val AIRPORT_WIND_DIR = "WINDDIR"
+private const val AIRPORT_WIND_SPD = "WINDSPD"
+private const val AIRPORT_VIS = "VISIBILITY"
+private const val AIRPORT_CEIL = "CEILING"
+private const val AIRPORT_WS = "WINDSHEAR"
+private const val AIRPORT_TFC = "TRAFFIC"
+private const val AIRPORT_DEP_PARALLEL = "DEPENDENT_PARALLEL"
+private const val AIRPORT_DEP_OPP = "DEPENDENT_OPPOSITE"
+private const val AIRPORT_CROSSING = "CROSSING"
+private const val AIRPORT_APP_NOZ = "APP_NOZ"
+private const val AIRPORT_DEP_NOZ = "DEP_NOZ"
+private const val AIRPORT_RWY_CONFIG_OBJ = "CONFIG"
+private const val RWY_CONFIG_DEP = "DEP"
+private const val RWY_CONFIG_ARR = "ARR"
+private const val RWY_CONFIG_NTZ = "NTZ"
+private const val SID_OBJ = "SID"
+private const val STAR_OBJ = "STAR"
+private const val SID_STAR_RWY = "RWY"
+private const val SID_STAR_APP_ROUTE = "ROUTE"
+private const val SID_OUTBOUND = "OUTBOUND"
+private const val STAR_INBOUND = "INBOUND"
+private const val APCH_OBJ = "APCH"
+private const val APCH_LOC = "LOC"
+private const val APCH_GS = "GS"
+private const val APCH_STEPDOWN = "STEPDOWN"
+private const val APCH_LINEUP = "LINEUP"
+private const val APCH_CIRCLING = "CIRCLING"
+private const val APCH_TRANS = "TRANSITION"
+private const val APCH_MISSED = "MISSED"
+
 /** Loads the "aircraft.perf" file located in the "Data" subfolder in the assets into aircraft performance map */
 fun loadAircraftData() {
     "Data/aircraft.perf".toInternalFile().readString().split("\\r?\\n".toRegex()).toTypedArray().apply {
@@ -66,68 +110,81 @@ fun loadWorldData(mainName: String, gameServer: GameServer) {
         for (line in this) {
             val lineData = line.trim().split(" ")
             when (lineData[0]) {
-                "AIRPORT" -> currAirport = parseAirport(lineData, gameServer)
-                "/AIRPORT" -> {
+                AIRPORT_OBJ -> currAirport = parseAirport(lineData, gameServer)
+                "/$AIRPORT_OBJ" -> {
                     currAirport = null
                     currSid = null
                 }
-                "WINDDIR" -> if (currAirport != null) parseWindDir(lineData, currAirport)
-                "WINDSPD" -> if (currAirport != null) parseWindSpd(lineData, currAirport)
-                "VISIBILITY" -> if (currAirport != null) parseVisibility(lineData, currAirport)
-                "CEILING" -> if (currAirport != null) parseCeiling(lineData, currAirport)
-                "WINDSHEAR" -> if (currAirport != null) parseWindshear(lineData, currAirport)
-                "SID" -> currSid = parseSID(lineData, currAirport ?: continue)
-                "/SID" -> currSid = null
-                "STAR" -> currStar = parseSTAR(lineData, currAirport ?: continue)
-                "/STAR" -> currStar = null
-                "RWY" -> if (currSid != null) parseSIDRwyRoute(lineData, currSid) else if (currStar != null) parseSTARRwyRoute(lineData, currStar)
-                "ROUTE" -> {
+                AIRPORT_WIND_DIR -> if (currAirport != null) parseWindDir(lineData, currAirport)
+                AIRPORT_WIND_SPD -> if (currAirport != null) parseWindSpd(lineData, currAirport)
+                AIRPORT_VIS -> if (currAirport != null) parseVisibility(lineData, currAirport)
+                AIRPORT_CEIL -> if (currAirport != null) parseCeiling(lineData, currAirport)
+                AIRPORT_WS -> if (currAirport != null) parseWindshear(lineData, currAirport)
+                AIRPORT_RWY_CONFIG_OBJ -> 0
+                "/$AIRPORT_RWY_CONFIG_OBJ" -> 0
+                RWY_CONFIG_DEP -> 0
+                RWY_CONFIG_ARR -> 0
+                RWY_CONFIG_NTZ -> 0
+                SID_OBJ -> currSid = parseSID(lineData, currAirport ?: continue)
+                "/$SID_OBJ" -> currSid = null
+                STAR_OBJ -> currStar = parseSTAR(lineData, currAirport ?: continue)
+                "/$STAR_OBJ" -> currStar = null
+                SID_STAR_RWY -> if (currSid != null) parseSIDRwyRoute(lineData, currSid) else if (currStar != null) parseSTARRwyRoute(lineData, currStar)
+                SID_STAR_APP_ROUTE -> {
                     if (currSid != null) parseSIDSTARRoute(lineData, currSid)
                     else if (currStar != null) parseSIDSTARRoute(lineData, currStar)
                     else if (currApp != null) parseApproachRoute(lineData, currApp)
                 }
-                "OUTBOUND" -> if (currSid != null) parseSIDSTARinOutboundRoute(lineData, currSid)
-                "INBOUND" -> if (currStar != null) parseSIDSTARinOutboundRoute(lineData, currStar)
-                "APCH" -> currApp = parseApproach(lineData, currAirport ?: continue)
-                "/APCH" -> currApp = null
-                "LOC" -> if (currApp != null) parseAppLocalizer(lineData, currApp)
-                "GS" -> if (currApp != null) parseAppGlideslope(lineData, currApp)
-                "STEPDOWN" -> if (currApp != null) parseAppStepDown(lineData, currApp)
-                "LINEUP" -> if (currApp != null) parseAppLineUp(lineData, currApp)
-                "CIRCLING" -> if (currApp != null) parseCircling(lineData, currApp)
-                "TRANSITION" -> if (currApp != null) parseApproachTransition(lineData, currApp)
-                "MISSED" -> if (currApp != null) parseApproachMissed(lineData, currApp)
+                SID_OUTBOUND -> if (currSid != null) parseSIDSTARinOutboundRoute(lineData, currSid)
+                STAR_INBOUND -> if (currStar != null) parseSIDSTARinOutboundRoute(lineData, currStar)
+                APCH_OBJ -> currApp = parseApproach(lineData, currAirport ?: continue)
+                "/$APCH_OBJ" -> currApp = null
+                APCH_LOC -> if (currApp != null) parseAppLocalizer(lineData, currApp)
+                APCH_GS -> if (currApp != null) parseAppGlideslope(lineData, currApp)
+                APCH_STEPDOWN -> if (currApp != null) parseAppStepDown(lineData, currApp)
+                APCH_LINEUP -> if (currApp != null) parseAppLineUp(lineData, currApp)
+                APCH_CIRCLING -> if (currApp != null) parseCircling(lineData, currApp)
+                APCH_TRANS -> if (currApp != null) parseApproachTransition(lineData, currApp)
+                APCH_MISSED -> if (currApp != null) parseApproachMissed(lineData, currApp)
                 "/$currSectorCount" -> currSectorCount = 0
                 "/$parseMode" -> {
-                    if (parseMode == "TRAFFIC" && currAirport != null) generateTrafficDistribution(currAirport)
+                    if (parseMode == AIRPORT_TFC && currAirport != null) generateTrafficDistribution(currAirport)
                     parseMode = ""
                 }
                 else -> {
                     when (parseMode) {
-                        "WAYPOINTS" -> parseWaypoint(lineData, gameServer)
-                        "HOLDS" -> parseHold(lineData, gameServer)
-                        "MIN_ALT_SECTORS" -> parseMinAltSector(lineData, gameServer)
-                        "SHORELINE" -> parseShoreline(lineData, gameServer)
-                        "RWYS" -> parseRunway(lineData, currAirport ?: continue)
-                        "TRAFFIC" -> parseTraffic(lineData, currAirport ?: continue)
-                        "SECTORS" -> {
+                        WORLD_WAYPOINTS -> parseWaypoint(lineData, gameServer)
+                        WORLD_HOLDS -> parseHold(lineData, gameServer)
+                        WORLD_MIN_ALT_SECTORS -> parseMinAltSector(lineData, gameServer)
+                        WORLD_SHORELINE -> parseShoreline(lineData, gameServer)
+                        AIRPORT_RWYS -> parseRunway(lineData, currAirport ?: continue)
+                        AIRPORT_TFC -> parseTraffic(lineData, currAirport ?: continue)
+                        AIRPORT_DEP_PARALLEL -> 0
+                        AIRPORT_DEP_OPP -> 0
+                        AIRPORT_CROSSING -> 0
+                        AIRPORT_APP_NOZ -> 0
+                        AIRPORT_DEP_NOZ -> 0
+                        WORLD_SECTORS -> {
                             if (currSectorCount == 0.byte) currSectorCount = lineData[0].toByte()
                             else parseSector(lineData, currSectorCount, gameServer)
                         }
                         "" -> when (lineData[0]) {
-                            "MIN_ALT" -> MIN_ALT = lineData[1].toInt()
-                            "MAX_ALT" -> MAX_ALT = lineData[1].toInt()
-                            "INTERMEDIATE_ALTS" -> INTERMEDIATE_ALTS.apply {
+                            WORLD_MIN_ALT -> MIN_ALT = lineData[1].toInt()
+                            WORLD_MAX_ALT -> MAX_ALT = lineData[1].toInt()
+                            WORLD_INTER_ALT -> INTERMEDIATE_ALTS.apply {
                                 clear()
                                 addAll(lineData.subList(1, lineData.size).map { it.toInt() }.toGdxArray())
                                 sort()
                             }
-                            "TRANS_ALT" -> TRANS_ALT = lineData[1].toInt()
-                            "TRANS_LVL" -> TRANS_LVL = lineData[1].toInt()
-                            "MIN_SEP" -> MIN_SEP = lineData[1].toFloat()
-                            "MAG_HDG_DEV" -> MAG_HDG_DEV = lineData[1].toFloat()
+                            WORLD_TRANS_ALT -> TRANS_ALT = lineData[1].toInt()
+                            WORLD_TRANS_LVL -> TRANS_LVL = lineData[1].toInt()
+                            WORLD_MIN_SEP -> MIN_SEP = lineData[1].toFloat()
+                            WORLD_MAG_HDG_DEV -> MAG_HDG_DEV = lineData[1].toFloat()
                             else -> {
-                                if (lineData[0] in arrayOf("WAYPOINTS", "HOLDS", "MIN_ALT_SECTORS", "SHORELINE", "RWYS", "SECTORS", "TRAFFIC"))
+                                if (lineData[0] in arrayOf(
+                                        WORLD_WAYPOINTS, WORLD_HOLDS, WORLD_MIN_ALT_SECTORS, WORLD_SHORELINE, AIRPORT_RWYS,
+                                        WORLD_SECTORS, AIRPORT_TFC, AIRPORT_DEP_PARALLEL, AIRPORT_DEP_OPP, AIRPORT_CROSSING,
+                                        AIRPORT_APP_NOZ, AIRPORT_DEP_NOZ))
                                     parseMode = lineData[0]
                                 else if (lineData[0] != "") Gdx.app.log("GameLoader", "Unknown parse mode ${lineData[0]}")
                             }
@@ -274,7 +331,7 @@ private fun parseAirport(data: List<String>, gameServer: GameServer): Airport {
 
 /** Parse the given [data] into a runway, and adds it to the supplied [airport] */
 private fun parseRunway(data: List<String>, airport: Airport) {
-    if (data.size != 10) Gdx.app.log("GameLoader", "Windshear data has ${data.size} elements instead of 10")
+    if (data.size != 11) Gdx.app.log("GameLoader", "Windshear data has ${data.size} elements instead of 11")
     val id = data[0].toByte()
     val name = data[1]
     val pos = data[2].split(",")
@@ -283,8 +340,9 @@ private fun parseRunway(data: List<String>, airport: Airport) {
     val trueHdg = data[3].toFloat()
     val rwyLengthM = data[4].toShort()
     val displacedThresholdLengthM = data[5].toShort()
-    val elevation = data[6].toShort()
-    val labelPos = when (data[7]) {
+    val intersectionTakeoffLengthM = data[6].toShort()
+    val elevation = data[7].toShort()
+    val labelPos = when (data[8]) {
         "LABEL_BEFORE" -> RunwayLabel.BEFORE
         "LABEL_RIGHT" -> RunwayLabel.RIGHT
         "LABEL_LEFT" -> RunwayLabel.LEFT
@@ -293,9 +351,10 @@ private fun parseRunway(data: List<String>, airport: Airport) {
             RunwayLabel.BEFORE
         }
     }
-    val towerCallsign = data[8].replace("-", " ")
-    val towerFreq = data[9]
-    airport.addRunway(id, name, posX, posY, trueHdg, rwyLengthM, displacedThresholdLengthM, elevation, towerCallsign, towerFreq, labelPos)
+    val towerCallsign = data[9].replace("-", " ")
+    val towerFreq = data[10]
+    airport.addRunway(id, name, posX, posY, trueHdg, rwyLengthM, displacedThresholdLengthM, intersectionTakeoffLengthM,
+        elevation, towerCallsign, towerFreq, labelPos)
     airport.setRunwayMapping(name, id)
 }
 

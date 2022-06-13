@@ -14,7 +14,9 @@ data class AirportInfo(var arptId: Byte = 0, var icaoCode: String = "", var name
 }
 
 /** Component for tagging runway related information */
-data class RunwayInfo(var rwyId: Byte = 0, var rwyName: String = "", var lengthM: Short = 4000, var displacedThresholdM: Short = 0, var tower: String = "", var freq: String = ""): Component {
+data class RunwayInfo(var rwyId: Byte = 0, var rwyName: String = "", var lengthM: Short = 4000,
+                      var displacedThresholdM: Short = 0, var intersectionTakeoffM: Short = 0,
+                      var tower: String = "", var freq: String = ""): Component {
     lateinit var airport: Airport
     companion object: Mapper<RunwayInfo>()
 }
