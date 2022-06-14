@@ -6,6 +6,7 @@ import com.bombbird.terminalcontrol2.entities.Airport
 import com.bombbird.terminalcontrol2.navigation.Approach
 import com.bombbird.terminalcontrol2.navigation.SidStar
 import ktx.ashley.Mapper
+import ktx.collections.GdxArray
 import ktx.collections.GdxArrayMap
 
 /** Component to keep track of an airport's runways (for O(1) access) as well as the mapping runway names to the most updated ID (for backwards compatibility) */
@@ -31,4 +32,24 @@ data class ApproachChildren(val approachMap: GdxArrayMap<String, Approach> = Gdx
 /** Component to keep track of a runway's default generated visual approach */
 data class VisualApproach(val visual: Entity = Entity()): Component {
     companion object: Mapper<VisualApproach>()
+}
+
+/** Component to keep track of a runway's opposite runway */
+data class OppositeRunway(val oppRwy: Entity = Entity()): Component {
+    companion object: Mapper<OppositeRunway>()
+}
+
+/** Component to keep track of the list of opposite runways that a runway is dependent on */
+data class DependentOppositeRunway(val depOppRwys: GdxArray<Entity> = GdxArray(4)): Component {
+    companion object: Mapper<DependentOppositeRunway>()
+}
+
+/** Component to keep track of the list of non-opposite runways that a runway is dependent on */
+data class DependentParallelRunway(val depParRwys: GdxArray<Entity> = GdxArray(4)): Component {
+    companion object: Mapper<DependentParallelRunway>()
+}
+
+/** Component to keep track of the list of runways that a runway has crossings with */
+data class CrossingRunway(val crossRwys: GdxArray<Entity> = GdxArray(3)): Component {
+    companion object: Mapper<CrossingRunway>()
 }

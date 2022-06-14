@@ -15,6 +15,7 @@ import com.bombbird.terminalcontrol2.utilities.byte
 import com.bombbird.terminalcontrol2.utilities.disallowedCallsigns
 import com.bombbird.terminalcontrol2.utilities.nmToPx
 import ktx.ashley.get
+import ktx.ashley.plusAssign
 import ktx.assets.toInternalFile
 import ktx.collections.GdxArray
 import ktx.collections.toGdxArray
@@ -149,6 +150,7 @@ fun loadWorldData(mainName: String, gameServer: GameServer) {
                 "/$currSectorCount" -> currSectorCount = 0
                 "/$parseMode" -> {
                     if (parseMode == AIRPORT_TFC && currAirport != null) generateTrafficDistribution(currAirport)
+                    if (parseMode == AIRPORT_RWYS && currAirport != null) currAirport.assignOppositeRunways()
                     parseMode = ""
                 }
                 else -> {
@@ -159,9 +161,9 @@ fun loadWorldData(mainName: String, gameServer: GameServer) {
                         WORLD_SHORELINE -> parseShoreline(lineData, gameServer)
                         AIRPORT_RWYS -> parseRunway(lineData, currAirport ?: continue)
                         AIRPORT_TFC -> parseTraffic(lineData, currAirport ?: continue)
-                        AIRPORT_DEP_PARALLEL -> 0
-                        AIRPORT_DEP_OPP -> 0
-                        AIRPORT_CROSSING -> 0
+                        AIRPORT_DEP_PARALLEL -> parseDependentParallelRunways(lineData, currAirport ?: continue)
+                        AIRPORT_DEP_OPP -> parseDependentOppositeRunways(lineData, currAirport ?: continue)
+                        AIRPORT_CROSSING -> parseCrossingRunways(lineData, currAirport ?: continue)
                         AIRPORT_APP_NOZ -> 0
                         AIRPORT_DEP_NOZ -> 0
                         WORLD_SECTORS -> {
@@ -331,7 +333,7 @@ private fun parseAirport(data: List<String>, gameServer: GameServer): Airport {
 
 /** Parse the given [data] into a runway, and adds it to the supplied [airport] */
 private fun parseRunway(data: List<String>, airport: Airport) {
-    if (data.size != 11) Gdx.app.log("GameLoader", "Windshear data has ${data.size} elements instead of 11")
+    if (data.size != 11) Gdx.app.log("GameLoader", "Runway data has ${data.size} elements instead of 11")
     val id = data[0].toByte()
     val name = data[1]
     val pos = data[2].split(",")
@@ -358,9 +360,70 @@ private fun parseRunway(data: List<String>, airport: Airport) {
     airport.setRunwayMapping(name, id)
 }
 
-/** Parse the given [data] into an [Approach], and adds it to the supplied [airport]'s [ApproachChildren] component
- *
- * Returns the constructed [Approach] or null if an invalid runway is specified
+/**
+ * Parse the given data into dependent parallel runway data, and adds the dependent runways to the runway entity's
+ * [DependentParallelRunway] component
+ * @param data the line array of dependent parallel runway data
+ * @param airport the airport to apply this to
+ */
+private fun parseDependentParallelRunways(data: List<String>, airport: Airport) {
+    if (data.size != 2) Gdx.app.log("GameLoader", "Dependent parallel runway data has ${data.size} elements instead of 2")
+    val rwy1 = airport.getRunway(data[0])?.entity ?: return logMissingRunway(data[0])
+    val rwy2 = airport.getRunway(data[1])?.entity ?: return logMissingRunway(data[1])
+    (rwy1[DependentParallelRunway.mapper] ?: DependentParallelRunway().apply { rwy1 += this }).depParRwys.add(rwy2)
+    (rwy2[DependentParallelRunway.mapper] ?: DependentParallelRunway().apply { rwy2 += this }).depParRwys.add(rwy1)
+}
+
+/**
+ * Parse the given data into dependent opposite runway data, and adds the dependent runways to the runway entity's
+ * [DependentOppositeRunway] component
+ * @param data the line array of dependent opposite runway data
+ * @param airport the airport to apply this to
+ */
+private fun parseDependentOppositeRunways(data: List<String>, airport: Airport) {
+    if (data.size != 2) Gdx.app.log("GameLoader", "Dependent opposite runway data has ${data.size} elements instead of 2")
+    val rwy1 = airport.getRunway(data[0])?.entity ?: return logMissingRunway(data[0])
+    val rwy2 = airport.getRunway(data[1])?.entity ?: return logMissingRunway(data[1])
+    (rwy1[DependentOppositeRunway.mapper] ?: DependentOppositeRunway().apply { rwy1 += this }).depOppRwys.add(rwy2)
+    (rwy2[DependentOppositeRunway.mapper] ?: DependentOppositeRunway().apply { rwy2 += this }).depOppRwys.add(rwy1)
+}
+
+/**
+ * Parse the given data into crossing runway data, and adds the crossing runways to the runway entity's
+ * [CrossingRunway] component
+ * @param data the line array of crossing runway data
+ * @param airport the airport to apply this to
+ */
+private fun parseCrossingRunways(data: List<String>, airport: Airport) {
+    if (data.size != 2) Gdx.app.log("GameLoader", "Crossing runway data has ${data.size} elements instead of 2")
+    val rwy1 = airport.getRunway(data[0])?.entity ?: return logMissingRunway(data[0])
+    val rwy2 = airport.getRunway(data[1])?.entity ?: return logMissingRunway(data[1])
+    (rwy1[CrossingRunway.mapper] ?: CrossingRunway().apply { rwy1 += this }).crossRwys.add(rwy2)
+    (rwy2[CrossingRunway.mapper] ?: CrossingRunway().apply { rwy2 += this }).crossRwys.add(rwy1)
+}
+
+/**
+ * Parse the given data into approach NOZ data, and adds it to the corresponding runway's [ApproachNOZ] component
+ * @param data the line array of approach NOZ data
+ * @param airport the airport that the parent runway belongs to
+ */
+private fun parseApproachNOZ(data: List<String>, airport: Airport) {
+    if (data.size != 5) Gdx.app.log("GameLoader", "Approach NOZ data has ${data.size} elements instead of 5")
+    val name = data[0]
+    val pos = data[1].split(",")
+    val posX = nmToPx(pos[0].toFloat())
+    val posY = nmToPx(pos[1].toFloat())
+    val hdg = data[2].toShort()
+    val width = data[3].toFloat()
+    val length = data[4].toFloat()
+    Zones.ApproachNormalOperatingZone(posX, posY, hdg, width, length)
+}
+
+/**
+ * Parse the given data into an [Approach], and adds it to the supplied [airport]'s [ApproachChildren] component
+ * @param data the line array of approach data
+ * @param airport the airport to add the approach to
+ * @return the constructed [Approach] or null if an invalid runway is specified
  * */
 private fun parseApproach(data: List<String>, airport: Airport): Approach? {
     if (data.size != 7) Gdx.app.log("GameLoader", "Approach data has ${data.size} elements instead of 7")
@@ -768,4 +831,13 @@ private fun parseTraffic(data: List<String>, airport: Airport) {
  * */
 private fun generateTrafficDistribution(airport: Airport) {
     airport.entity[RandomAirlineData.mapper]?.airlineDistribution?.generateNormalized()
+}
+
+/**
+ * Logs a missing runway message to the console, which may occur when dependent runway information is put before the
+ * airport's runway data, or might just be a typo
+ * @param rwyName name of the missing runway
+ */
+private fun logMissingRunway(rwyName: String) {
+    Gdx.app.log("GameLoader", "Missing runway $rwyName: Did you try to access it before creating it in the data file?")
 }

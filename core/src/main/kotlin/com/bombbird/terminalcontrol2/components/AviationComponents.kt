@@ -1,6 +1,7 @@
 package com.bombbird.terminalcontrol2.components
 
 import com.badlogic.ashley.core.Component
+import com.badlogic.ashley.core.Entity
 import com.badlogic.gdx.math.CumulativeDistribution
 import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.entities.Airport
@@ -160,6 +161,16 @@ data class Minimums(var baroAltFt: Short = 0, var rvrM: Short = 0): Component {
  * */
 class Visual: Component {
     companion object: Mapper<Visual>()
+}
+
+/** Component for tagging the approach NOZ for a runway */
+data class ApproachNOZ(var appNoz: Entity = Entity()): Component {
+    companion object: Mapper<ApproachNOZ>()
+}
+
+/** Component for tagging the departure NOZ for a runway */
+data class DepartureNOZ(var depNoz: Entity = Entity()): Component {
+    companion object: Mapper<ApproachNOZ>()
 }
 
 class Emergency: Component {

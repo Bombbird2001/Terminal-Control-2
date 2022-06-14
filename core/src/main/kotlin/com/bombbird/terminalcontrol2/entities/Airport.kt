@@ -288,6 +288,44 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
         entity[RunwayChildren.mapper]?.updatedRwyMapping?.put(rwyName, rwyId)
     }
 
+    /**
+     * Gets the runway given its name
+     *
+     * Note that this will use the latest updated runway name to ID mapping, hence old runways with the same name as new
+     * runways will not be returned
+     * @param rwyName the name of the runway
+     * @return the [Runway], or null if none found
+     */
+    fun getRunway(rwyName: String): Runway? {
+        val rwyNameMap = entity[RunwayChildren.mapper]?.updatedRwyMapping ?: return null
+        val rwyIdMap = entity[RunwayChildren.mapper]?.rwyMap ?: return null
+        return rwyIdMap[rwyNameMap[rwyName]]
+    }
+
+    /** Maps all the runways to their opposite counterparts, and adds it as a relational component */
+    fun assignOppositeRunways() {
+        entity[RunwayChildren.mapper]?.rwyMap?.values()?.forEach { it.entity.apply {
+            val rwyName = get(RunwayInfo.mapper)?.rwyName ?: return@forEach
+            val oppRwyName = if (charArrayOf('L', 'C', 'R').contains(rwyName.last())) {
+                var letter = rwyName.last()
+                var number = rwyName.substring(0, rwyName.length - 1).toInt()
+                letter = when (letter) {
+                    'L' -> 'R'
+                    'R' -> 'L'
+                    else -> letter
+                }
+                number += 18
+                if (number > 36) number -= 36
+                "$number$letter"
+            } else {
+                var number = rwyName.toInt() + 18
+                if (number > 36) number -= 36
+                number.toString()
+            }
+            this += OppositeRunway(getRunway(oppRwyName)?.entity ?: return@forEach)
+        }}
+    }
+
     /** Sets [MetarInfo.realLifeIcao] for the airport, only needed for the game server */
     fun setMetarRealLifeIcao(realLifeIcao: String) {
         entity[MetarInfo.mapper]?.realLifeIcao = realLifeIcao
