@@ -10,6 +10,7 @@ import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.navigation.SidStar
 import com.bombbird.terminalcontrol2.navigation.UsabilityFilter
 import com.bombbird.terminalcontrol2.networking.GameServer
+import com.bombbird.terminalcontrol2.traffic.RunwayConfiguration
 import com.bombbird.terminalcontrol2.utilities.AircraftTypeData
 import com.bombbird.terminalcontrol2.utilities.byte
 import com.bombbird.terminalcontrol2.utilities.disallowedCallsigns
@@ -108,6 +109,7 @@ fun loadWorldData(mainName: String, gameServer: GameServer) {
         var currStar: SidStar.STAR? = null
         var currSectorCount = 0.byte
         var currApp: Approach? = null
+        var currRwyConfig: RunwayConfiguration? = null
         for (line in this) {
             val lineData = line.trim().split(" ")
             when (lineData[0]) {
@@ -121,11 +123,14 @@ fun loadWorldData(mainName: String, gameServer: GameServer) {
                 AIRPORT_VIS -> if (currAirport != null) parseVisibility(lineData, currAirport)
                 AIRPORT_CEIL -> if (currAirport != null) parseCeiling(lineData, currAirport)
                 AIRPORT_WS -> if (currAirport != null) parseWindshear(lineData, currAirport)
-                AIRPORT_RWY_CONFIG_OBJ -> 0
-                "/$AIRPORT_RWY_CONFIG_OBJ" -> 0
-                RWY_CONFIG_DEP -> 0
-                RWY_CONFIG_ARR -> 0
-                RWY_CONFIG_NTZ -> 0
+                AIRPORT_RWY_CONFIG_OBJ -> {
+                    currRwyConfig = RunwayConfiguration()
+                    if (currAirport != null) currAirport.entity[RunwayConfigurationChildren.mapper]?.rwyConfigs?.add(currRwyConfig)
+                }
+                "/$AIRPORT_RWY_CONFIG_OBJ" -> currRwyConfig = null
+                RWY_CONFIG_DEP -> if (currAirport != null && currRwyConfig != null) parseRwyConfigRunways(lineData, currAirport, currRwyConfig, true)
+                RWY_CONFIG_ARR -> if (currAirport != null && currRwyConfig != null) parseRwyConfigRunways(lineData, currAirport, currRwyConfig, false)
+                RWY_CONFIG_NTZ -> if (currRwyConfig != null) parseRwyConfigNTZ(lineData, currRwyConfig)
                 SID_OBJ -> currSid = parseSID(lineData, currAirport ?: continue)
                 "/$SID_OBJ" -> currSid = null
                 STAR_OBJ -> currStar = parseSTAR(lineData, currAirport ?: continue)
@@ -164,8 +169,8 @@ fun loadWorldData(mainName: String, gameServer: GameServer) {
                         AIRPORT_DEP_PARALLEL -> parseDependentParallelRunways(lineData, currAirport ?: continue)
                         AIRPORT_DEP_OPP -> parseDependentOppositeRunways(lineData, currAirport ?: continue)
                         AIRPORT_CROSSING -> parseCrossingRunways(lineData, currAirport ?: continue)
-                        AIRPORT_APP_NOZ -> 0
-                        AIRPORT_DEP_NOZ -> 0
+                        AIRPORT_APP_NOZ -> parseApproachNOZ(lineData, currAirport ?: continue)
+                        AIRPORT_DEP_NOZ -> parseDepartureNOZ(lineData, currAirport ?: continue)
                         WORLD_SECTORS -> {
                             if (currSectorCount == 0.byte) currSectorCount = lineData[0].toByte()
                             else parseSector(lineData, currSectorCount, gameServer)
@@ -416,7 +421,54 @@ private fun parseApproachNOZ(data: List<String>, airport: Airport) {
     val hdg = data[2].toShort()
     val width = data[3].toFloat()
     val length = data[4].toFloat()
-    Zones.ApproachNormalOperatingZone(posX, posY, hdg, width, length)
+    airport.getRunway(name)?.entity?.plusAssign(ApproachNOZ(ApproachNormalOperatingZone(posX, posY, hdg, width, length, false)))
+}
+
+/**
+ * Parse the given data into departure NOZ data, and adds it to the corresponding runway's [DepartureNOZ] component
+ * @param data the line array of approach NOZ data
+ * @param airport the airport that the parent runway belongs to
+ */
+private fun parseDepartureNOZ(data: List<String>, airport: Airport) {
+    if (data.size != 5) Gdx.app.log("GameLoader", "Departure NOZ data has ${data.size} elements instead of 5")
+    val name = data[0]
+    val pos = data[1].split(",")
+    val posX = nmToPx(pos[0].toFloat())
+    val posY = nmToPx(pos[1].toFloat())
+    val hdg = data[2].toShort()
+    val width = data[3].toFloat()
+    val length = data[4].toFloat()
+    airport.getRunway(name)?.entity?.plusAssign(DepartureNOZ(DepartureNormalOperatingZone(posX, posY, hdg, width, length, false)))
+}
+
+/**
+ * Parse the given data into runway data, and adds it to the runway configuration's arrival/departure runway array
+ * @param data the line array of runways
+ * @param airport the airport the current runway configuration belongs to
+ * @param currRwyConfig the current runway configuration
+ * @param dep whether to add the runways to departure or arrival runways
+ */
+private fun parseRwyConfigRunways(data: List<String>, airport: Airport, currRwyConfig: RunwayConfiguration, dep: Boolean) {
+    for (i in 1 until data.size) { airport.getRunway(data[i])?.apply {
+        if (dep) currRwyConfig.depRwys.add(this)
+        else currRwyConfig.arrRwys.add(this)
+    }}
+}
+
+/**
+ * Parse the given data into NTZ data, and adds it to the runway configuration's NTZ array
+ * @param data the line array of NTZ data
+ * @param currRwyConfig the current runway configuration
+ */
+private fun parseRwyConfigNTZ(data: List<String>, currRwyConfig: RunwayConfiguration) {
+    if (data.size != 5) Gdx.app.log("GameLoader", "NTZ data has ${data.size} elements instead of 5")
+    val pos = data[1].split(",")
+    val posX = nmToPx(pos[0].toFloat())
+    val posY = nmToPx(pos[1].toFloat())
+    val hdg = data[2].toShort()
+    val width = data[3].toFloat()
+    val length = data[4].toFloat()
+    currRwyConfig.ntzs.add(NoTransgressionZone(posX, posY, hdg, width, length, false))
 }
 
 /**

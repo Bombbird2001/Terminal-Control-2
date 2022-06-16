@@ -14,10 +14,7 @@ import com.squareup.moshi.Types
 import ktx.ashley.get
 import ktx.ashley.has
 import java.time.LocalTime
-import kotlin.math.exp
-import kotlin.math.max
-import kotlin.math.pow
-import kotlin.math.roundToInt
+import kotlin.math.*
 
 /** Helper functions and classes for dealing with METAR shenanigans */
 
@@ -69,8 +66,8 @@ fun updateAirportMetar(metarJson: String) {
     val type = Types.newParameterizedType(Map::class.java, Byte::class.javaObjectType, MetarResponse::class.java)
     Moshi.Builder().build().adapter<Map<Byte, MetarResponse>>(type).fromJson(metarJson)?.apply {
         for (entry in entries) {
-            entry.value.let {
-                GAME.gameServer?.airports?.get(entry.key)?.entity?.get(MetarInfo.mapper)?.apply {
+            entry.value.let { GAME.gameServer?.airports?.get(entry.key)?.entity?.also { arpt ->
+                arpt[MetarInfo.mapper]?.apply {
                     if (rawMetar != it.rawMetar && !(rawMetar == "" && it.rawMetar == null)) letterCode = letterCode?.let {
                         if (it + 1 <= 'Z') it + 1 else 'A'
                     } ?: MathUtils.random(65, 90).toChar()
@@ -83,8 +80,10 @@ fun updateAirportMetar(metarJson: String) {
                     ceilingHundredFtAGL = it.ceilingFtAGL
                     windshear = it.windshear ?: ""
                     updateWindVector(windVectorPx, windHeadingDeg, windSpeedKt)
+                    updateRunwayWindComponents(arpt)
+                    calculateRunwayConfigScores(arpt)
                 }
-            }
+            }}
         }
         GAME.gameServer?.sendMetarTCPToAll()
     }
@@ -154,6 +153,8 @@ fun generateRandomWeather(basedOnCurrent: Boolean, airports: List<Entity>) {
         } ?: MathUtils.random(65, 90).toChar()
 
         updateWindVector(currMetar.windVectorPx, currMetar.windHeadingDeg, currMetar.windSpeedKt)
+        updateRunwayWindComponents(arpt)
+        calculateRunwayConfigScores(arpt)
         val temp = (worldTemp + MathUtils.random(-2, 2)).toByte()
         val dewPoint = (temp + worldDewDelta).toByte()
         val qnh = (worldQnh + (if (MathUtils.randomBoolean()) 0 else -1)).toShort()
@@ -262,6 +263,35 @@ fun updateWindVector(vec: Vector2, windDeg: Short, windSpdKt: Short) {
     vec.x = 0f
     vec.rotateDeg(-(windDeg + 180 - MAG_HDG_DEV))
     vec.scl(ktToPxps(windSpdKt.toInt()))
+}
+
+/**
+ * Updates the tailwind, crosswind components of all the runways of the airport
+ *
+ * Call after the airport's wind velocity vector has changed
+ * @param airport the airport entity to update
+ */
+fun updateRunwayWindComponents(airport: Entity) {
+    val windVectorPxps = airport[MetarInfo.mapper]?.windVectorPx ?: return
+    airport[RunwayChildren.mapper]?.rwyMap?.values()?.forEach {
+        val dir = it.entity[Direction.mapper] ?: return@forEach
+        it.entity[RunwayWindComponents.mapper]?.apply {
+            tailwindKt = pxpsToKt(windVectorPxps.dot(dir.trackUnitVector))
+            crosswindKt = pxpsToKt(abs(windVectorPxps.crs(dir.trackUnitVector)))
+        }
+    }
+}
+
+/**
+ * Updates the scores for all the runway configurations of the airport
+ *
+ * Call after the airport's wind velocity vector has changed, and the runway wind components have been updated
+ * @param airport the airport entity to update
+ */
+fun calculateRunwayConfigScores(airport: Entity) {
+    airport[RunwayConfigurationChildren.mapper]?.rwyConfigs?.apply {
+        for (i in 0 until size) { get(i)?.calculateScores() }
+    }
 }
 
 /** Given the position ([x], [y]), find the closest airport and returns the wind vector of it (each dimension in px) */

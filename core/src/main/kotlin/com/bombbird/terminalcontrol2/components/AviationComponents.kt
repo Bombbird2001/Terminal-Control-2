@@ -1,10 +1,12 @@
 package com.bombbird.terminalcontrol2.components
 
 import com.badlogic.ashley.core.Component
-import com.badlogic.ashley.core.Entity
 import com.badlogic.gdx.math.CumulativeDistribution
 import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.entities.Airport
+import com.bombbird.terminalcontrol2.entities.ApproachNormalOperatingZone
+import com.bombbird.terminalcontrol2.entities.DepartureNormalOperatingZone
+import com.bombbird.terminalcontrol2.traffic.RunwayConfiguration
 import com.bombbird.terminalcontrol2.utilities.AircraftTypeData
 import ktx.ashley.Mapper
 import ktx.collections.GdxArray
@@ -38,6 +40,11 @@ data class MetarInfo(var realLifeIcao: String = "", var letterCode: Char? = null
                      var visibilityM: Short = 10000, var ceilingHundredFtAGL: Short? = null, var windshear: String = ""): Component {
     val windVectorPx = Vector2()
     companion object: Mapper<MetarInfo>()
+}
+
+/** Component for tagging runway tailwind, crosswind component data */
+data class RunwayWindComponents(var tailwindKt: Float = 0f, var crosswindKt: Float = 0f): Component {
+    companion object: Mapper<RunwayWindComponents>()
 }
 
 /** Component for tagging random weather generation data */
@@ -82,7 +89,7 @@ data class PublishedHoldInfo(var wptId: Short = 0, var maxAltFt: Int? = null, va
                              var maxSpdKtLower: Short = 230, var maxSpdKtHigher: Short = 240, var inboundHdgDeg: Short = 360, var legDistNm: Byte = 5,
                              var turnDir: Byte = CommandTarget.TURN_RIGHT): Component {
      companion object: Mapper<PublishedHoldInfo>()
- }
+}
 
 /**
  * Component for tagging aircraft specific information
@@ -164,13 +171,18 @@ class Visual: Component {
 }
 
 /** Component for tagging the approach NOZ for a runway */
-data class ApproachNOZ(var appNoz: Entity = Entity()): Component {
+data class ApproachNOZ(var appNoz: ApproachNormalOperatingZone): Component {
     companion object: Mapper<ApproachNOZ>()
 }
 
 /** Component for tagging the departure NOZ for a runway */
-data class DepartureNOZ(var depNoz: Entity = Entity()): Component {
-    companion object: Mapper<ApproachNOZ>()
+data class DepartureNOZ(var depNoz: DepartureNormalOperatingZone): Component {
+    companion object: Mapper<DepartureNOZ>()
+}
+
+/** Component for tagging the active runway configuration of an airport */
+data class ActiveRunwayConfig(var rwyConfig: RunwayConfiguration = RunwayConfiguration()): Component {
+    companion object: Mapper<ActiveRunwayConfig>()
 }
 
 class Emergency: Component {

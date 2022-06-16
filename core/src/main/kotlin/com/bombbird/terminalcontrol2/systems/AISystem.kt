@@ -604,7 +604,8 @@ class AISystem: EntitySystem() {
                 val locApp = get(LocalizerCaptured.mapper)?.locApp
                 val appVert = gsApp ?: stepDownApp ?: visApp ?: return@apply
                 val appLat = locApp ?: visApp ?: return@apply
-                val rwyPos = appVert[ApproachInfo.mapper]?.rwyObj?.entity?.get(CustomPosition.mapper) ?: return@apply
+                val rwyObj = appVert[ApproachInfo.mapper]?.rwyObj?.entity ?: return@apply
+                val rwyPos = rwyObj[CustomPosition.mapper] ?: return@apply
                 val pos = get(Position.mapper) ?: return@apply
                 val alt = get(Altitude.mapper) ?: return@apply
                 val ias = get(IndicatedAirSpeed.mapper) ?: return@apply
@@ -671,13 +672,9 @@ class AISystem: EntitySystem() {
                 }
 
                 // Check wind
-                // For all approaches, tailwind should be maximum 15 knots, crosswind should be maximum 25 knots
-                get(AffectedByWind.mapper)?.let {
-                    val oppAppTrack = appLat[Direction.mapper]?.trackUnitVector ?: return@let
-                    val tailwindPxps = -it.windVectorPxps.dot(oppAppTrack)
-                    if (pxpsToKt(tailwindPxps) > 15) return@apply initiateGoAround(this)
-                    val crosswindPxps = abs(it.windVectorPxps.crs(oppAppTrack))
-                    if (pxpsToKt(crosswindPxps) > 25) return@apply initiateGoAround(this)
+                // For all approaches, runway tailwind should be maximum 15 knots, crosswind should be maximum 25 knots
+                rwyObj[RunwayWindComponents.mapper]?.let {
+                    if (it.tailwindKt > 15 || it.crosswindKt > 25) return@apply initiateGoAround(this)
                 }
             }
         }

@@ -39,6 +39,8 @@ fun registerClassesToKryo(kryo: Kryo?) {
         register(PublishedHoldData::class.java)
         register(MinAltData::class.java)
         register(ShorelineData::class.java)
+        register(ApproachZoneData::class.java)
+        register(DepartureZoneData::class.java)
         register(Array<Sector.SerialisedSector>::class.java)
         register(Sector.SerialisedSector::class.java)
         register(Array<Aircraft.SerialisedAircraft>::class.java)
@@ -47,6 +49,8 @@ fun registerClassesToKryo(kryo: Kryo?) {
         register(Airport.SerialisedAirport::class.java)
         register(Array<Airport.Runway.SerialisedRunway>::class.java)
         register(Airport.Runway.SerialisedRunway::class.java)
+        register(ApproachNormalOperatingZone.SerialisedApproachNOZ::class.java)
+        register(DepartureNormalOperatingZone.SerialisedDepartureNOZ::class.java)
         register(Array<Airport.SerialisedRunwayMapping>::class.java)
         register(Airport.SerialisedRunwayMapping::class.java)
         register(Array<Waypoint.SerialisedWaypoint>::class.java)
@@ -148,6 +152,12 @@ class MinAltData(val minAltSectors: Array<MinAltSector.SerialisedMinAltSector> =
 /** Class representing shoreline data sent on initial connection, loading of the game on a client */
 class ShorelineData(val shoreline: Array<Shoreline.SerialisedShoreline> = arrayOf())
 
+/** Class representing approach NOZ data sent on initial connection, loading of the game on a client */
+class ApproachZoneData(val approachZone: Array<ApproachNormalOperatingZone.SerialisedApproachNOZ> = arrayOf())
+
+/** Class representing departure NOZ data sent on initial connection, loading of the game on a client */
+class DepartureZoneData(val departureZone: Array<DepartureNormalOperatingZone.SerialisedDepartureNOZ> = arrayOf())
+
 /** Class representing the data to be sent during METAR updates */
 class MetarData(val metars: Array<Airport.SerialisedMetar> = arrayOf())
 
@@ -246,6 +256,10 @@ fun handleIncomingRequest(rs: RadarScreen, obj: Any?) {
             MinAltSector.fromSerialisedObject(it)
         } ?: (obj as? ShorelineData)?.shoreline?.onEach {
             Shoreline.fromSerialisedObject(it)
+        } ?: (obj as? ApproachZoneData)?.approachZone?.onEach {
+            ApproachNormalOperatingZone.fromSerialisedObject(it)
+        } ?: (obj as? DepartureZoneData)?.departureZone?.onEach {
+            DepartureNormalOperatingZone.fromSerialisedObject(it)
         } ?: (obj as? MetarData)?.apply {
             metars.forEach {
                 rs.airports[it.arptId]?.updateFromSerialisedMetar(it)

@@ -8,9 +8,7 @@ import com.bombbird.terminalcontrol2.entities.Airport.Runway.SerialisedRunway
 import com.bombbird.terminalcontrol2.global.getEngine
 import com.bombbird.terminalcontrol2.navigation.Approach
 import com.bombbird.terminalcontrol2.navigation.SidStar
-import com.bombbird.terminalcontrol2.utilities.convertWorldAndRenderDeg
-import com.bombbird.terminalcontrol2.utilities.mToPx
-import com.bombbird.terminalcontrol2.utilities.updateWindVector
+import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.entity
 import ktx.ashley.get
 import ktx.ashley.plusAssign
@@ -37,7 +35,9 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
         with<SIDChildren>()
         with<STARChildren>()
         with<ApproachChildren>()
+        with<RunwayConfigurationChildren>()
         with<MetarInfo>()
+        with<ActiveRunwayConfig>()
         if (!onClient) {
             with<RandomMetarInfo>()
             with<RandomAirlineData>()
@@ -150,6 +150,8 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
             ceilingHundredFtAGL = serialisedMetar.ceilingFtAGL
             windshear = serialisedMetar.windshear
             updateWindVector(windVectorPx, windHeadingDeg, windSpeedKt)
+            updateRunwayWindComponents(entity)
+            calculateRunwayConfigScores(entity)
         }
     }
 
@@ -231,6 +233,8 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
                 ).apply {
                     if (serialisedRunway.landing) entity += ActiveLanding()
                     if (serialisedRunway.takeoff) entity += ActiveTakeoff()
+                    serialisedRunway.approachNOZ?.let { entity += ApproachNOZ(ApproachNormalOperatingZone.fromSerialisedObject(it)) }
+                    serialisedRunway.departureNOZ?.let { entity += DepartureNOZ(DepartureNormalOperatingZone.fromSerialisedObject(it)) }
                 }
             }
         }
@@ -243,7 +247,9 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
                                val displacedM: Short = 0, val intersectionM: Short = 0,
                                val rwyLabelPos: Byte = 0,
                                val towerName: String = "", val towerFreq: String = "",
-                               val landing: Boolean = false, val takeoff: Boolean = false)
+                               val landing: Boolean = false, val takeoff: Boolean = false,
+                               val approachNOZ: ApproachNormalOperatingZone.SerialisedApproachNOZ? = null,
+                               val departureNOZ: DepartureNormalOperatingZone.SerialisedDepartureNOZ? = null)
 
         /** Gets a [SerialisedRunway] from current state */
         fun getSerialisableObject(): SerialisedRunway {
@@ -255,6 +261,8 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
                 val rwyLabel = get(RunwayLabel.mapper) ?: return SerialisedRunway()
                 val landing = get(ActiveLanding.mapper) != null
                 val takeoff = get(ActiveTakeoff.mapper) != null
+                val approachNOZ = get(ApproachNOZ.mapper)
+                val departureNOZ = get(DepartureNOZ.mapper)
                 return SerialisedRunway(
                     position.x, position.y,
                     altitude.altitudeFt.toInt().toShort(),
@@ -263,7 +271,8 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
                     rwyInfo.displacedThresholdM, rwyInfo.intersectionTakeoffM,
                     rwyLabel.positionToRunway,
                     rwyInfo.tower, rwyInfo.freq,
-                    landing, takeoff
+                    landing, takeoff,
+                    approachNOZ?.appNoz?.getSerialisableObject(), departureNOZ?.depNoz?.getSerialisableObject()
                 )
             }
         }
