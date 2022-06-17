@@ -14,6 +14,9 @@ import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.systems.AISystem
 import com.bombbird.terminalcontrol2.systems.ControlStateSystem
 import com.bombbird.terminalcontrol2.systems.PhysicsSystem
+import com.bombbird.terminalcontrol2.traffic.appTestArrival
+import com.bombbird.terminalcontrol2.traffic.createRandomArrival
+import com.bombbird.terminalcontrol2.traffic.createRandomDeparture
 import com.bombbird.terminalcontrol2.utilities.*
 import com.esotericsoftware.kryonet.Connection
 import com.esotericsoftware.kryonet.Listener
