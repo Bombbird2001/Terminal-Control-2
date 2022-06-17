@@ -9,11 +9,14 @@ import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.UI_HEIGHT
 import ktx.ashley.get
 import ktx.ashley.has
+import ktx.collections.GdxArray
 import ktx.scene2d.*
 
 lateinit var metarScroll: KScrollPane
 lateinit var metarPane: KTableWidget
-val metarExpandSet = HashSet<String>()
+val metarExpandArray = GdxArray<String>()
+
+lateinit var paneTable: KTableWidget
 
 /**
  * @param paneWidth will be used as the reference width of the UI pane when initialising the container
@@ -45,7 +48,18 @@ fun <S> KWidget<S>.mainInfoPane(paneWidth: Float): KContainer<Actor> {
                 }
                 setOverscroll(false, false)
                 removeMouseScrollListeners()
-            }.cell(padTop = 20f, align = Align.top, preferredWidth = paneWidth, preferredHeight = UI_HEIGHT * 0.4f, growX = true, colspan = 2)
+            }.cell(padTop = 20f, padBottom = 15f, align = Align.top, preferredWidth = paneWidth, preferredHeight = UI_HEIGHT * 0.4f, growX = true, colspan = 2)
+            row()
+            table {
+                textButton("Communications", "MenuPaneCategory").cell(preferredWidth = 0.3f * paneWidth, growY = true)
+                textButton("Status", "MenuPaneCategory").cell(preferredWidth = 0.15f * paneWidth, growY = true)
+            }.cell(align = Align.left, colspan = 2)
+            row()
+            scrollPane("MenuPane") {
+                paneTable = table {
+                    label(" ", "HighScore")
+                }
+            }.cell(align = Align.top, preferredWidth = paneWidth, grow = true, colspan = 2)
             align(Align.top)
         }
         isVisible = true
@@ -76,32 +90,68 @@ fun updateMetarInformation() {
                     Ceiling: ${if (metarInfo.rawMetar?.contains("CAVOK") == true) "CAVOK"
                     else metarInfo.ceilingHundredFtAGL?.let { ceiling -> "${ceiling * 100} feet" } ?: "None"}
                     """.trimIndent() + if (metarInfo.windshear.isNotEmpty()) "\nWindshear: ${metarInfo.windshear}" else ""
-            val linkedButton = metarPane.textButton(if (metarExpandSet.contains(airportInfo.icaoCode)) expandedText else text, "Metar").apply {
+            val linkedButton = metarPane.textButton(if (metarExpandArray.contains(airportInfo.icaoCode, false)) expandedText else text, "Metar").apply {
                 label.setAlignment(Align.left)
                 label.wrap = true
                 cell(growX = true, padLeft = 20f, padRight = 10f, padTop = if (padTop) 30f else 0f, align = Align.left)
             }
-            metarPane.textButton(if (metarExpandSet.contains(airportInfo.icaoCode)) "-" else "+", "MetarExpand").apply {
-                cell(height = 50f, width = 50f, padLeft = 10f, padRight = 20f, padTop = if (padTop) 30f else 0f, align = Align.topRight)
-                addChangeListener { _, _ ->
-                    if (metarExpandSet.contains(airportInfo.icaoCode)) {
-                        // Expanded, hide it
-                        this@apply.label.setText("+")
-                        linkedButton.label.setText(text)
-                        metarExpandSet.remove(airportInfo.icaoCode)
-                    } else {
-                        // Hidden, expand it
-                        this@apply.label.setText("-")
-                        linkedButton.label.setText(expandedText)
-                        metarExpandSet.add(airportInfo.icaoCode)
+            metarPane.table {
+                // debugAll()
+                textButton(if (metarExpandArray.contains(airportInfo.icaoCode, false)) "-" else "+", "MetarExpand").apply {
+                    addChangeListener { _, _ ->
+                        if (metarExpandArray.contains(airportInfo.icaoCode)) {
+                            // Expanded, hide it
+                            this@apply.label.setText("+")
+                            linkedButton.label.setText(text)
+                            metarExpandArray.removeValue(airportInfo.icaoCode, false)
+                        } else {
+                            // Hidden, expand it
+                            this@apply.label.setText("-")
+                            linkedButton.label.setText(expandedText)
+                            metarExpandArray.add(airportInfo.icaoCode)
+                        }
                     }
-                }
+                }.cell(height = 50f, width = 50f, padLeft = 10f, padRight = 20f, align = Align.topRight)
+                row()
+                imageButton("RunwayConfig").apply {
+                    addChangeListener { _, _ ->
+                        // TODO Runway config UI in comms pane
+                        paneTable.clear()
+                        paneTable.label("Select runway configuration", "MenuPaneRunwayConfigLabel").cell(colspan = 2, padTop = 20f)
+                        paneTable.row()
+                        val configs = airport.entity[RunwayConfigurationChildren.mapper]?.rwyConfigs ?: return@addChangeListener
+                        paneTable.table configTable@ {
+                            for (i in 0 until configs.size) {
+                                val arrRwys = configs[i].arrRwys
+                                val depRwys = configs[i].depRwys
+                                val sb = StringBuilder("Departure runway${if (depRwys.size > 1) "s" else ""}: ")
+                                for (j in 0 until depRwys.size) {
+                                    sb.append(depRwys[j].entity[RunwayInfo.mapper]?.rwyName)
+                                    if (j < depRwys.size - 1) sb.append(", ")
+                                }
+                                sb.append("\nArrival runway${if (arrRwys.size > 1) "s" else ""}: ")
+                                for (j in 0 until arrRwys.size) {
+                                    sb.append(arrRwys[j].entity[RunwayInfo.mapper]?.rwyName)
+                                    if (j < arrRwys.size - 1) sb.append(", ")
+                                }
+                                this@configTable.textButton(sb.toString(), "MenuPaneRunwayConfiguration").cell(padLeft = 10f, padTop = 10f, growX = true)
+                                row()
+                            }
+                        }.cell(growX = true)
+                        paneTable.table {
+                            textButton("Confirm\nrunway\nchange", "MenuPaneRunwayChange")
+                        }.cell(width = 0.2f * paneTable.width, align = Align.right, padRight = 20f, growY = true)
+                    }
+                }.cell(height = 75f, width = 50f, padLeft = 10f, padRight = 20f, padTop = 10f, align = Align.topRight)
+                align(Align.top)
+                cell(growY = true)
+                padTop(if (padTop) 30f else 0f)
             }
             metarPane.row()
             padTop = true
         }
     }
-    metarPane.padBottom(20f)
+    metarPane.padBottom(35f)
 }
 
 /**

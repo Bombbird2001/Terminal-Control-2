@@ -8,6 +8,7 @@ import com.bombbird.terminalcontrol2.entities.Airport.Runway.SerialisedRunway
 import com.bombbird.terminalcontrol2.global.getEngine
 import com.bombbird.terminalcontrol2.navigation.Approach
 import com.bombbird.terminalcontrol2.navigation.SidStar
+import com.bombbird.terminalcontrol2.traffic.RunwayConfiguration
 import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.entity
 import ktx.ashley.get
@@ -81,6 +82,12 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
                             approachMap.put(sApp.name, Approach.fromSerialisedObject(sApp))
                         }
                     }
+                    get(RunwayConfigurationChildren.mapper)?.apply {
+                        rwyConfigs.clear()
+                        for (sConfig in serialisedAirport.rwyConfigs) {
+                            rwyConfigs.add(RunwayConfiguration.fromSerialisedObject(sConfig, get(RunwayChildren.mapper)?.rwyMap ?: continue))
+                        }
+                    }
                 }
                 arpt.updateFromSerialisedMetar(serialisedAirport.metar)
             }
@@ -96,6 +103,7 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
                             val sids: Array<SidStar.SID.SerialisedSID> = arrayOf(),
                             val stars: Array<SidStar.STAR.SerialisedSTAR> = arrayOf(),
                             val approaches: Array<Approach.SerialisedApproach> = arrayOf(),
+                            val rwyConfigs: Array<RunwayConfiguration.SerialisedRwyConfig> = arrayOf(),
                             val metar: SerialisedMetar = SerialisedMetar()
     )
 
@@ -109,6 +117,7 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
             val sids = get(SIDChildren.mapper) ?: return SerialisedAirport()
             val stars = get(STARChildren.mapper) ?: return SerialisedAirport()
             val approaches = get(ApproachChildren.mapper) ?: return SerialisedAirport()
+            val rwyConfigs = get(RunwayConfigurationChildren.mapper) ?: return SerialisedAirport()
             return SerialisedAirport(
                 position.x, position.y,
                 altitude.altitudeFt.toInt().toShort(),
@@ -118,6 +127,7 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
                 sids.sidMap.map { it.value.getSerialisedObject() }.toTypedArray(),
                 stars.starMap.map { it.value.getSerialisedObject() }.toTypedArray(),
                 approaches.approachMap.map { it.value.getSerialisableObject() }.toTypedArray(),
+                rwyConfigs.rwyConfigs.map { it.getSerialisedObject() }.toTypedArray(),
                 getSerialisedMetar()
             )
         }

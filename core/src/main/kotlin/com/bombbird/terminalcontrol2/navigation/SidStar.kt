@@ -2,6 +2,7 @@ package com.bombbird.terminalcontrol2.navigation
 
 import com.badlogic.gdx.Gdx
 import com.bombbird.terminalcontrol2.utilities.Pronounceable
+import com.bombbird.terminalcontrol2.utilities.UsabilityFilter
 import ktx.collections.GdxArray
 import ktx.collections.GdxArrayMap
 

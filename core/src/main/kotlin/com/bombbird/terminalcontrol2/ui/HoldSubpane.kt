@@ -91,6 +91,7 @@ class HoldSubpane {
                             selectedHoldLeg?.let {
                                 setHoldAsPublished(it)
                                 updateHoldTable(parentPane.userClearanceState.route, selectedHoldLeg)
+                                parentControlPane.updateUndoTransmitButtonStates()
                             }
                             modificationInProgress = false
                         } else holdAsPublishedButton.isChecked = true

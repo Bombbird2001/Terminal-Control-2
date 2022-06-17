@@ -6,6 +6,7 @@ import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.MAG_HDG_DEV
 import com.bombbird.terminalcontrol2.global.getEngine
 import com.bombbird.terminalcontrol2.utilities.Pronounceable
+import com.bombbird.terminalcontrol2.utilities.UsabilityFilter
 import com.bombbird.terminalcontrol2.utilities.convertWorldAndRenderDeg
 import ktx.ashley.entity
 import ktx.ashley.get

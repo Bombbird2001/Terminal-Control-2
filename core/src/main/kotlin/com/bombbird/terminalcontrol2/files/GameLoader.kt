@@ -8,12 +8,12 @@ import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.Approach
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.navigation.SidStar
-import com.bombbird.terminalcontrol2.navigation.UsabilityFilter
+import com.bombbird.terminalcontrol2.utilities.UsabilityFilter
 import com.bombbird.terminalcontrol2.networking.GameServer
 import com.bombbird.terminalcontrol2.traffic.RunwayConfiguration
 import com.bombbird.terminalcontrol2.utilities.AircraftTypeData
 import com.bombbird.terminalcontrol2.utilities.byte
-import com.bombbird.terminalcontrol2.utilities.disallowedCallsigns
+import com.bombbird.terminalcontrol2.traffic.disallowedCallsigns
 import com.bombbird.terminalcontrol2.utilities.nmToPx
 import ktx.ashley.get
 import ktx.ashley.plusAssign
@@ -64,6 +64,9 @@ private const val APCH_LINEUP = "LINEUP"
 private const val APCH_CIRCLING = "CIRCLING"
 private const val APCH_TRANS = "TRANSITION"
 private const val APCH_MISSED = "MISSED"
+private const val DAY_NIGHT = "DAY_NIGHT"
+private const val DAY_ONLY = "DAY_ONLY"
+private const val NIGHT_ONLY = "NIGHT_ONLY"
 
 /** Loads the "aircraft.perf" file located in the "Data" subfolder in the assets into aircraft performance map */
 fun loadAircraftData() {
@@ -123,10 +126,7 @@ fun loadWorldData(mainName: String, gameServer: GameServer) {
                 AIRPORT_VIS -> if (currAirport != null) parseVisibility(lineData, currAirport)
                 AIRPORT_CEIL -> if (currAirport != null) parseCeiling(lineData, currAirport)
                 AIRPORT_WS -> if (currAirport != null) parseWindshear(lineData, currAirport)
-                AIRPORT_RWY_CONFIG_OBJ -> {
-                    currRwyConfig = RunwayConfiguration()
-                    if (currAirport != null) currAirport.entity[RunwayConfigurationChildren.mapper]?.rwyConfigs?.add(currRwyConfig)
-                }
+                AIRPORT_RWY_CONFIG_OBJ -> if (currAirport != null) currRwyConfig = parseRunwayConfiguration(lineData, currAirport)
                 "/$AIRPORT_RWY_CONFIG_OBJ" -> currRwyConfig = null
                 RWY_CONFIG_DEP -> if (currAirport != null && currRwyConfig != null) parseRwyConfigRunways(lineData, currAirport, currRwyConfig, true)
                 RWY_CONFIG_ARR -> if (currAirport != null && currRwyConfig != null) parseRwyConfigRunways(lineData, currAirport, currRwyConfig, false)
@@ -442,6 +442,26 @@ private fun parseDepartureNOZ(data: List<String>, airport: Airport) {
 }
 
 /**
+ * Parse the given data into a [RunwayConfiguration], and adds it to the supplied [airport]'s [RunwayConfigurationChildren]
+ * component
+ * @param data the line array of runway configuration data
+ * @param airport the airport to add the runway configuration to
+ * @return the constructed [RunwayConfiguration]
+ * */
+private fun parseRunwayConfiguration(data: List<String>, airport: Airport): RunwayConfiguration {
+    val dayNight = when (data[1]) {
+        DAY_NIGHT -> UsabilityFilter.DAY_AND_NIGHT
+        DAY_ONLY -> UsabilityFilter.DAY_ONLY
+        NIGHT_ONLY -> UsabilityFilter.NIGHT_ONLY
+        else -> {
+            Gdx.app.log("GameLoader", "Unknown dayNight for runway configuration")
+            UsabilityFilter.DAY_AND_NIGHT
+        }
+    }
+    return RunwayConfiguration(dayNight).apply { airport.entity[RunwayConfigurationChildren.mapper]?.rwyConfigs?.add(this) }
+}
+
+/**
  * Parse the given data into runway data, and adds it to the runway configuration's arrival/departure runway array
  * @param data the line array of runways
  * @param airport the airport the current runway configuration belongs to
@@ -481,9 +501,9 @@ private fun parseApproach(data: List<String>, airport: Airport): Approach? {
     if (data.size != 7) Gdx.app.log("GameLoader", "Approach data has ${data.size} elements instead of 7")
     val name = data[1].replace("-", " ")
     val dayNight = when (data[2]) {
-        "DAY_NIGHT" -> UsabilityFilter.DAY_AND_NIGHT
-        "DAY_ONLY" -> UsabilityFilter.DAY_ONLY
-        "NIGHT_ONLY" -> UsabilityFilter.NIGHT_ONLY
+        DAY_NIGHT -> UsabilityFilter.DAY_AND_NIGHT
+        DAY_ONLY -> UsabilityFilter.DAY_ONLY
+        NIGHT_ONLY -> UsabilityFilter.NIGHT_ONLY
         else -> {
             Gdx.app.log("GameLoader", "Unknown dayNight for SID $name: ${data[2]}")
             UsabilityFilter.DAY_AND_NIGHT
@@ -609,9 +629,9 @@ private fun parseSID(data: List<String>, airport: Airport): SidStar.SID {
     if (data.size != 4) Gdx.app.log("GameLoader", "SID data has ${data.size} elements instead of 4")
     val name = data[1]
     val dayNight = when (data[2]) {
-        "DAY_NIGHT" -> UsabilityFilter.DAY_AND_NIGHT
-        "DAY_ONLY" -> UsabilityFilter.DAY_ONLY
-        "NIGHT_ONLY" -> UsabilityFilter.NIGHT_ONLY
+        DAY_NIGHT -> UsabilityFilter.DAY_AND_NIGHT
+        DAY_ONLY -> UsabilityFilter.DAY_ONLY
+        NIGHT_ONLY -> UsabilityFilter.NIGHT_ONLY
         else -> {
             Gdx.app.log("GameLoader", "Unknown dayNight for SID $name: ${data[2]}")
             UsabilityFilter.DAY_AND_NIGHT
@@ -642,9 +662,9 @@ private fun parseSTAR(data: List<String>, airport: Airport): SidStar.STAR {
     if (data.size != 4) Gdx.app.log("GameLoader", "STAR data has ${data.size} elements instead of 4")
     val name = data[1]
     val dayNight = when (data[2]) {
-        "DAY_NIGHT" -> UsabilityFilter.DAY_AND_NIGHT
-        "DAY_ONLY" -> UsabilityFilter.DAY_ONLY
-        "NIGHT_ONLY" -> UsabilityFilter.NIGHT_ONLY
+        DAY_NIGHT -> UsabilityFilter.DAY_AND_NIGHT
+        DAY_ONLY -> UsabilityFilter.DAY_ONLY
+        NIGHT_ONLY -> UsabilityFilter.NIGHT_ONLY
         else -> {
             Gdx.app.log("GameLoader", "Unknown dayNight for SID $name: ${data[2]}")
             UsabilityFilter.DAY_AND_NIGHT

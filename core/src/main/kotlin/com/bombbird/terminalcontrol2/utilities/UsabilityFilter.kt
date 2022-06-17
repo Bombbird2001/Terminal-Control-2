@@ -1,4 +1,4 @@
-package com.bombbird.terminalcontrol2.navigation
+package com.bombbird.terminalcontrol2.utilities
 
 /** Helper interface that contains data and functions to determine whether a SID, STAR or approach is valid for use
  * under the given conditions */

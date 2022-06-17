@@ -10,6 +10,7 @@ import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.navigation.SidStar
 import com.bombbird.terminalcontrol2.screens.RadarScreen
+import com.bombbird.terminalcontrol2.traffic.RunwayConfiguration
 import com.bombbird.terminalcontrol2.ui.updateMetarInformation
 import com.bombbird.terminalcontrol2.utilities.getAircraftIcon
 import com.esotericsoftware.kryo.Kryo
@@ -27,6 +28,7 @@ fun registerClassesToKryo(kryo: Kryo?) {
         register(Vector2::class.java)
         register(ShortArray::class.java)
         register(FloatArray::class.java)
+        register(ByteArray::class.java)
 
         // Initial load classes
         register(ClearAllClientData::class.java)
@@ -54,6 +56,10 @@ fun registerClassesToKryo(kryo: Kryo?) {
         register(Array<Airport.SerialisedRunwayMapping>::class.java)
         register(Airport.SerialisedRunwayMapping::class.java)
         register(Array<Waypoint.SerialisedWaypoint>::class.java)
+        register(RunwayConfiguration.SerialisedRwyConfig::class.java)
+        register(Array<RunwayConfiguration.SerialisedRwyConfig>::class.java)
+        register(NoTransgressionZone.SerialisedNTZ::class.java)
+        register(Array<NoTransgressionZone.SerialisedNTZ>::class.java)
         register(Waypoint.SerialisedWaypoint::class.java)
         register(Array<Waypoint.SerialisedWaypointMapping>::class.java)
         register(Waypoint.SerialisedWaypointMapping::class.java)

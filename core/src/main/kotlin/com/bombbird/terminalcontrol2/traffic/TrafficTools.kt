@@ -1,4 +1,4 @@
-package com.bombbird.terminalcontrol2.utilities
+package com.bombbird.terminalcontrol2.traffic
 
 import com.badlogic.ashley.core.Entity
 import com.badlogic.gdx.Gdx
@@ -12,8 +12,8 @@ import com.bombbird.terminalcontrol2.global.MAG_HDG_DEV
 import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.navigation.SidStar
-import com.bombbird.terminalcontrol2.navigation.UsabilityFilter
 import com.bombbird.terminalcontrol2.networking.GameServer
+import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.*
 import ktx.collections.GdxArray
 import ktx.collections.GdxSet
