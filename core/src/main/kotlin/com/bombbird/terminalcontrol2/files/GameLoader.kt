@@ -449,7 +449,8 @@ private fun parseDepartureNOZ(data: List<String>, airport: Airport) {
  * @return the constructed [RunwayConfiguration]
  * */
 private fun parseRunwayConfiguration(data: List<String>, airport: Airport): RunwayConfiguration {
-    val dayNight = when (data[1]) {
+    val id = data[1].toByte()
+    val dayNight = when (data[2]) {
         DAY_NIGHT -> UsabilityFilter.DAY_AND_NIGHT
         DAY_ONLY -> UsabilityFilter.DAY_ONLY
         NIGHT_ONLY -> UsabilityFilter.NIGHT_ONLY
@@ -458,7 +459,7 @@ private fun parseRunwayConfiguration(data: List<String>, airport: Airport): Runw
             UsabilityFilter.DAY_AND_NIGHT
         }
     }
-    return RunwayConfiguration(dayNight).apply { airport.entity[RunwayConfigurationChildren.mapper]?.rwyConfigs?.add(this) }
+    return RunwayConfiguration(id, dayNight).apply { airport.entity[RunwayConfigurationChildren.mapper]?.rwyConfigs?.put(id, this) }
 }
 
 /**

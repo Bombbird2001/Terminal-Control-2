@@ -15,10 +15,7 @@ import com.bombbird.terminalcontrol2.ui.LABEL_PADDING
 import com.bombbird.terminalcontrol2.ui.UIPane
 import com.bombbird.terminalcontrol2.ui.updateDatatagLabelSize
 import com.bombbird.terminalcontrol2.utilities.*
-import ktx.ashley.allOf
-import ktx.ashley.exclude
-import ktx.ashley.get
-import ktx.ashley.has
+import ktx.ashley.*
 import ktx.collections.GdxArray
 import ktx.math.*
 import kotlin.math.sqrt
@@ -31,14 +28,16 @@ import kotlin.math.sqrt
 class RenderingSystem(private val shapeRenderer: ShapeRenderer,
                       private val stage: Stage, private val constZoomStage: Stage, private val uiStage: Stage,
                       private val uiPane: UIPane): EntitySystem() {
-    private val lineArrayFamily: Family = allOf(GLineArray::class, SRColor::class).get()
+    private val lineArrayFamily: Family = allOf(GLineArray::class, SRColor::class)
+        .exclude(DoNotRender::class.java).get()
     private val polygonFamily: Family = allOf(GPolygon::class, SRColor::class)
-        .exclude(RenderLast::class).get()
-    private val polygonLastFamily: Family = allOf(GPolygon::class, SRColor::class, RenderLast::class).get()
+        .exclude(RenderLast::class, DoNotRender::class).get()
+    private val polygonLastFamily: Family = allOf(GPolygon::class, SRColor::class, RenderLast::class)
+        .exclude(DoNotRender::class).get()
     private val circleFamily: Family = allOf(Position::class, GCircle::class, SRColor::class)
-        .exclude(SRConstantZoomSize::class).get()
+        .exclude(SRConstantZoomSize::class, DoNotRender::class).get()
     private val runwayFamily: Family = allOf(RunwayInfo::class, SRColor::class).get()
-    private val locFamily: Family = allOf(Position::class, Localizer::class, Direction::class).get()
+    private val locFamily: Family = allOf(Position::class, Localizer::class, Direction::class, ApproachInfo::class).get()
     private val trajectoryFamily: Family = allOf(RadarData::class, Controllable::class, SRColor::class)
         .exclude(WaitingTakeoff::class).get()
     private val visualFamily: Family = allOf(VisualCaptured::class, RadarData::class).get()
@@ -129,19 +128,6 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer,
                 rect.height = rwyWidthPx
                 shapeRenderer.color = srColor.color
                 shapeRenderer.rect(pos.x, pos.y - rect.height / 2, 0f, rect.height / 2, rect.width, rect.height, 1f, 1f, deg.trackUnitVector.angleDeg())
-
-                if (!has(ActiveLanding.mapper)) return@apply
-                // Render extended centreline (21nm)
-                shapeRenderer.color = Color.CYAN
-                val startPos = Vector2(pos.x, pos.y) - deg.trackUnitVector * nmToPx(1)
-                val perpendicularVector = Vector2(deg.trackUnitVector).rotate90(-1).scl(nmToPx(0.4f))
-                for (j in 1..21 step 2) {
-                    if (j % 5 == 0) shapeRenderer.line(startPos - perpendicularVector, startPos + perpendicularVector)
-                    val endPos = startPos - deg.trackUnitVector * nmToPx(1)
-                    shapeRenderer.line(startPos, endPos)
-                    if ((j + 1) % 5 == 0) shapeRenderer.line(endPos - perpendicularVector, endPos + perpendicularVector)
-                    startPos.minusAssign(deg.trackUnitVector * nmToPx(2))
-                }
             }
         }
 
@@ -152,9 +138,18 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer,
                 val pos = get(Position.mapper) ?: return@apply
                 val loc = get(Localizer.mapper) ?: return@apply
                 val dir = get(Direction.mapper)?.trackUnitVector ?: return@apply
-                val posVec = Vector2(pos.x, pos.y)
+                val appInfo = get(ApproachInfo.mapper) ?: return@apply
+                if (appInfo.rwyObj.entity.hasNot(ActiveLanding.mapper)) return@apply
                 shapeRenderer.color = Color.CYAN
-                shapeRenderer.line(posVec, posVec + dir * nmToPx(loc.maxDistNm.toFloat()))
+                val startPos = Vector2(pos.x, pos.y) + dir * nmToPx(1)
+                val perpendicularVector = Vector2(dir).rotate90(-1).scl(nmToPx(0.4f))
+                for (j in 1..loc.maxDistNm step 2) {
+                    if (j % 5 == 0) shapeRenderer.line(startPos - perpendicularVector, startPos + perpendicularVector)
+                    val endPos = startPos + dir * nmToPx(1)
+                    shapeRenderer.line(startPos, endPos)
+                    if ((j + 1) % 5 == 0) shapeRenderer.line(endPos - perpendicularVector, endPos + perpendicularVector)
+                    startPos.plusAssign(dir * nmToPx(2))
+                }
             }
         }
 

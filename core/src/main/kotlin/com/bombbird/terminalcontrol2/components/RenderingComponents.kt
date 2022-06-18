@@ -44,9 +44,9 @@ data class RunwayLabel(var positionToRunway: Byte = 0): Component {
     var dirUnitVector = ImmutableVector2(0f, 0f)
     var dirSet = false
     companion object: Mapper<RunwayLabel>() {
-        val BEFORE: Byte = 0
-        val RIGHT: Byte = 1
-        val LEFT: Byte = -1
+        const val BEFORE: Byte = 0
+        const val RIGHT: Byte = 1
+        const val LEFT: Byte = -1
     }
 }
 
@@ -72,6 +72,11 @@ data class SRColor(var color: Color = Color()): Component {
  * */
 class RenderLast: Component {
     companion object: Mapper<RenderLast>()
+}
+
+/** Component for tagging generic shapes that should not be rendered for whatever reason */
+class DoNotRender: Component {
+    companion object: Mapper<DoNotRender>()
 }
 
 /** Component for tagging labels that do not need to be shown (by default, all [GenericLabel]s are rendered) */

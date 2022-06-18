@@ -15,7 +15,7 @@ import ktx.collections.toGdxArray
  *
  * A score will be calculated for each runway configuration depending on wind conditions
  * */
-class RunwayConfiguration(override val timeRestriction: Byte = UsabilityFilter.DAY_AND_NIGHT): Comparable<RunwayConfiguration>, UsabilityFilter {
+class RunwayConfiguration(val id: Byte, override val timeRestriction: Byte): Comparable<RunwayConfiguration>, UsabilityFilter {
     val depRwys: GdxArray<Airport.Runway> = GdxArray(5)
     val arrRwys: GdxArray<Airport.Runway> = GdxArray(5)
     val ntzs: GdxArray<NoTransgressionZone> = GdxArray(5)
@@ -59,7 +59,7 @@ class RunwayConfiguration(override val timeRestriction: Byte = UsabilityFilter.D
          * @return a newly created [RunwayConfiguration] object
          * */
         fun fromSerialisedObject(serialisedRwyConfig: SerialisedRwyConfig, rwyMap: GdxArrayMap<Byte, Airport.Runway>): RunwayConfiguration {
-            return RunwayConfiguration(serialisedRwyConfig.timeRestriction).apply {
+            return RunwayConfiguration(serialisedRwyConfig.id, serialisedRwyConfig.timeRestriction).apply {
                 depRwys.addAll(serialisedRwyConfig.depRwys.map { rwyMap[it] }.filterNotNull().toGdxArray())
                 arrRwys.addAll(serialisedRwyConfig.arrRwys.map { rwyMap[it] }.filterNotNull().toGdxArray())
                 ntzs.addAll(serialisedRwyConfig.ntzs.map { NoTransgressionZone.fromSerialisedObject(it) }.toGdxArray())
@@ -83,13 +83,15 @@ class RunwayConfiguration(override val timeRestriction: Byte = UsabilityFilter.D
     /** Gets a [SerialisedRwyConfig] from current state */
     fun getSerialisedObject(): SerialisedRwyConfig {
         return SerialisedRwyConfig(
+            id,
             arrRwys.mapNotNull { it.entity[RunwayInfo.mapper]?.rwyId }.toByteArray(),
             depRwys.mapNotNull { it.entity[RunwayInfo.mapper]?.rwyId }.toByteArray(),
             ntzs.map { it.getSerialisableObject() }.toTypedArray(), timeRestriction)
     }
 
     /** Object that contains [RunwayConfiguration] data to be serialised by Kryo */
-    class SerialisedRwyConfig(val arrRwys: ByteArray = byteArrayOf(), val depRwys: ByteArray = byteArrayOf(),
+    class SerialisedRwyConfig(val id: Byte = 0,
+                              val arrRwys: ByteArray = byteArrayOf(), val depRwys: ByteArray = byteArrayOf(),
                               val ntzs: Array<NoTransgressionZone.SerialisedNTZ> = arrayOf(),
                               val timeRestriction: Byte = UsabilityFilter.DAY_AND_NIGHT)
 }

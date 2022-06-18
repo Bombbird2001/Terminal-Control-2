@@ -2,10 +2,7 @@ package com.bombbird.terminalcontrol2.entities
 
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.math.Vector2
-import com.bombbird.terminalcontrol2.components.Direction
-import com.bombbird.terminalcontrol2.components.GPolygon
-import com.bombbird.terminalcontrol2.components.Position
-import com.bombbird.terminalcontrol2.components.SRColor
+import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.MAG_HDG_DEV
 import com.bombbird.terminalcontrol2.global.getEngine
 import com.bombbird.terminalcontrol2.utilities.convertWorldAndRenderDeg
@@ -31,8 +28,11 @@ class ApproachNormalOperatingZone(posX: Float, posY: Float, appHdg: Short, priva
                 posX - halfWidthVec.x + lengthVec.x, posY - halfWidthVec.y + lengthVec.y,
                 posX - halfWidthVec.x, posY - halfWidthVec.y)
         }
-        if (onClient) with<SRColor> {
-            color = Color.GREEN
+        if (onClient) {
+            with<SRColor> {
+                color = Color.GREEN
+            }
+            with<DoNotRender>()
         }
     }
 
@@ -81,8 +81,11 @@ class DepartureNormalOperatingZone(posX: Float, posY: Float, appHdg: Short, priv
                 posX - halfWidthVec.x + lengthVec.x, posY - halfWidthVec.y + lengthVec.y,
                 posX - halfWidthVec.x, posY - halfWidthVec.y)
         }
-        if (onClient) with<SRColor> {
-            color = Color.CYAN
+        if (onClient) {
+            with<SRColor> {
+                color = Color.CYAN
+            }
+            with<DoNotRender>()
         }
     }
 

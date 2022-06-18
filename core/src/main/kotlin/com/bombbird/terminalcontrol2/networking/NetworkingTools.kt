@@ -11,7 +11,7 @@ import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.navigation.SidStar
 import com.bombbird.terminalcontrol2.screens.RadarScreen
 import com.bombbird.terminalcontrol2.traffic.RunwayConfiguration
-import com.bombbird.terminalcontrol2.ui.updateMetarInformation
+import com.bombbird.terminalcontrol2.ui.updateAtisInformation
 import com.bombbird.terminalcontrol2.utilities.getAircraftIcon
 import com.esotericsoftware.kryo.Kryo
 import ktx.ashley.get
@@ -41,8 +41,6 @@ fun registerClassesToKryo(kryo: Kryo?) {
         register(PublishedHoldData::class.java)
         register(MinAltData::class.java)
         register(ShorelineData::class.java)
-        register(ApproachZoneData::class.java)
-        register(DepartureZoneData::class.java)
         register(Array<Sector.SerialisedSector>::class.java)
         register(Sector.SerialisedSector::class.java)
         register(Array<Aircraft.SerialisedAircraft>::class.java)
@@ -116,6 +114,8 @@ fun registerClassesToKryo(kryo: Kryo?) {
         register(CustomWaypointData::class.java)
         register(RemoveCustomWaypointData::class.java)
         register(GameRunningStatus::class.java)
+        register(PendingRunwayUpdateData::class.java)
+        register(ActiveRunwayUpdateData::class.java)
 
     } ?: Gdx.app.log("NetworkingTools", "Null kryo passed, unable to register classes")
 }
@@ -158,12 +158,6 @@ class MinAltData(val minAltSectors: Array<MinAltSector.SerialisedMinAltSector> =
 /** Class representing shoreline data sent on initial connection, loading of the game on a client */
 class ShorelineData(val shoreline: Array<Shoreline.SerialisedShoreline> = arrayOf())
 
-/** Class representing approach NOZ data sent on initial connection, loading of the game on a client */
-class ApproachZoneData(val approachZone: Array<ApproachNormalOperatingZone.SerialisedApproachNOZ> = arrayOf())
-
-/** Class representing departure NOZ data sent on initial connection, loading of the game on a client */
-class DepartureZoneData(val departureZone: Array<DepartureNormalOperatingZone.SerialisedDepartureNOZ> = arrayOf())
-
 /** Class representing the data to be sent during METAR updates */
 class MetarData(val metars: Array<Airport.SerialisedMetar> = arrayOf())
 
@@ -189,6 +183,12 @@ data class CustomWaypointData(val customWpt: Waypoint.SerialisedWaypoint = Waypo
 
 /** Class representing data sent during removal of a custom waypoint */
 data class RemoveCustomWaypointData(val wptId: Short = -1)
+
+/** Class representing data sent during setting/un-setting of a pending runway change */
+data class PendingRunwayUpdateData(val airportId: Byte = 0, val configId: Byte? = null)
+
+/** Class representing data sent during a runway change */
+data class ActiveRunwayUpdateData(val airportId: Byte = 0, val configId: Byte = 0)
 
 /** Class representing data sent on a client request to pause/run the game */
 data class GameRunningStatus(val running: Boolean = true)
@@ -242,7 +242,7 @@ fun handleIncomingRequest(rs: RadarScreen, obj: Any?) {
                     // printAirportApproaches(entity)
                 }
             }
-            updateMetarInformation()
+            updateAtisInformation()
         } ?: (obj as? WaypointData)?.waypoints?.onEach {
             Waypoint.fromSerialisedObject(it).apply {
                 entity[WaypointInfo.mapper]?.wptId?.let { id ->
@@ -262,15 +262,11 @@ fun handleIncomingRequest(rs: RadarScreen, obj: Any?) {
             MinAltSector.fromSerialisedObject(it)
         } ?: (obj as? ShorelineData)?.shoreline?.onEach {
             Shoreline.fromSerialisedObject(it)
-        } ?: (obj as? ApproachZoneData)?.approachZone?.onEach {
-            ApproachNormalOperatingZone.fromSerialisedObject(it)
-        } ?: (obj as? DepartureZoneData)?.departureZone?.onEach {
-            DepartureNormalOperatingZone.fromSerialisedObject(it)
         } ?: (obj as? MetarData)?.apply {
             metars.forEach {
                 rs.airports[it.arptId]?.updateFromSerialisedMetar(it)
             }
-            updateMetarInformation()
+            updateAtisInformation()
         } ?: (obj as? AircraftSectorUpdateData)?.apply {
             rs.aircraft[obj.callsign]?.let { aircraft ->
                 aircraft.entity[Controllable.mapper]?.sectorId = obj.newSector
@@ -305,6 +301,11 @@ fun handleIncomingRequest(rs: RadarScreen, obj: Any?) {
             }
             rs.waypoints[wptId]?.let { getEngine(true).removeEntity(it.entity) }
             rs.waypoints.remove(wptId)
+        } ?: (obj as? PendingRunwayUpdateData)?.apply {
+            rs.airports[obj.airportId]?.pendingRunwayConfig(obj.configId)
+        } ?: (obj as? ActiveRunwayUpdateData)?.apply {
+            rs.airports[obj.airportId]?.activateRunwayConfig(obj.configId)
+            updateAtisInformation()
         }
     }
 }

@@ -9,11 +9,9 @@ import com.bombbird.terminalcontrol2.global.getEngine
 import com.bombbird.terminalcontrol2.navigation.Approach
 import com.bombbird.terminalcontrol2.navigation.SidStar
 import com.bombbird.terminalcontrol2.traffic.RunwayConfiguration
+import com.bombbird.terminalcontrol2.ui.checkUpdateRunwayPaneState
 import com.bombbird.terminalcontrol2.utilities.*
-import ktx.ashley.entity
-import ktx.ashley.get
-import ktx.ashley.plusAssign
-import ktx.ashley.with
+import ktx.ashley.*
 import ktx.math.times
 
 /** Airport class that creates an airport entity with the required components on instantiation */
@@ -38,7 +36,6 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
         with<ApproachChildren>()
         with<RunwayConfigurationChildren>()
         with<MetarInfo>()
-        with<ActiveRunwayConfig>()
         if (!onClient) {
             with<RandomMetarInfo>()
             with<RandomAirlineData>()
@@ -85,7 +82,7 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
                     get(RunwayConfigurationChildren.mapper)?.apply {
                         rwyConfigs.clear()
                         for (sConfig in serialisedAirport.rwyConfigs) {
-                            rwyConfigs.add(RunwayConfiguration.fromSerialisedObject(sConfig, get(RunwayChildren.mapper)?.rwyMap ?: continue))
+                            rwyConfigs.put(sConfig.id, RunwayConfiguration.fromSerialisedObject(sConfig, get(RunwayChildren.mapper)?.rwyMap ?: continue))
                         }
                     }
                 }
@@ -127,7 +124,7 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
                 sids.sidMap.map { it.value.getSerialisedObject() }.toTypedArray(),
                 stars.starMap.map { it.value.getSerialisedObject() }.toTypedArray(),
                 approaches.approachMap.map { it.value.getSerialisableObject() }.toTypedArray(),
-                rwyConfigs.rwyConfigs.map { it.getSerialisedObject() }.toTypedArray(),
+                rwyConfigs.rwyConfigs.map { it.value.getSerialisedObject() }.toTypedArray(),
                 getSerialisedMetar()
             )
         }
@@ -211,6 +208,7 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
                 visual += Direction(Vector2(Vector2.Y).rotateDeg(180 - trueHdg))
                 visual += Visual()
             }
+            with<RunwayWindComponents>()
             with<SRColor> {
                 color = Color.WHITE
             }
@@ -348,5 +346,52 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
     /** Sets [MetarInfo.realLifeIcao] for the airport, only needed for the game server */
     fun setMetarRealLifeIcao(realLifeIcao: String) {
         entity[MetarInfo.mapper]?.realLifeIcao = realLifeIcao
+    }
+
+    /**
+     * Activates a new runway configuration, replacing the current active one
+     * @param newConfigId the ID of the new config to use
+     */
+    fun activateRunwayConfig(newConfigId: Byte) {
+        val currId = entity[ActiveRunwayConfig.mapper]?.configId
+        if (currId == newConfigId) return
+        entity += ActiveRunwayConfig(newConfigId)
+        entity[RunwayConfigurationChildren.mapper]?.rwyConfigs?.get(newConfigId)?.apply {
+            val rwyMap = entity[RunwayChildren.mapper]?.rwyMap ?: return@apply
+            rwyMap.values().forEach {
+                // Clear all current runways
+                it.entity.let { rwy ->
+                    rwy.remove<ActiveLanding>()
+                    rwy.remove<ActiveTakeoff>()
+                    rwy[ApproachNOZ.mapper]?.appNoz?.entity?.plusAssign(DoNotRender())
+                    rwy[DepartureNOZ.mapper]?.depNoz?.entity?.plusAssign(DoNotRender())
+                }
+            }
+            for (i in 0 until arrRwys.size) {
+                rwyMap[arrRwys[i]?.entity?.get(RunwayInfo.mapper)?.rwyId]?.entity?.let { rwy ->
+                    rwy += ActiveLanding()
+                    rwy[ApproachNOZ.mapper]?.appNoz?.entity?.remove<DoNotRender>()
+                }
+            }
+            for (i in 0 until depRwys.size) {
+                rwyMap[depRwys[i]?.entity?.get(RunwayInfo.mapper)?.rwyId]?.entity?.let {  rwy ->
+                    rwy += ActiveTakeoff()
+                    rwy[DepartureNOZ.mapper]?.depNoz?.entity?.remove<DoNotRender>()
+                }
+            }
+        }
+        checkUpdateRunwayPaneState(this)
+    }
+
+    /**
+     * Sets a runway configuration to be pending
+     * @param pendingConfigId the ID of the pending config, or null if cancelling a pending config change
+     */
+    fun pendingRunwayConfig(pendingConfigId: Byte?) {
+        val currPendingId = entity[PendingRunwayConfig.mapper]?.pendingId
+        if (currPendingId == pendingConfigId) return
+        if (pendingConfigId == null) entity.remove<PendingRunwayConfig>()
+        else entity += PendingRunwayConfig(pendingConfigId, 300f)
+        checkUpdateRunwayPaneState(this)
     }
 }

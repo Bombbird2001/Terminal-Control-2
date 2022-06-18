@@ -14,6 +14,7 @@ import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.systems.AISystem
 import com.bombbird.terminalcontrol2.systems.ControlStateSystem
 import com.bombbird.terminalcontrol2.systems.PhysicsSystem
+import com.bombbird.terminalcontrol2.systems.TrafficSystem
 import com.bombbird.terminalcontrol2.traffic.appTestArrival
 import com.bombbird.terminalcontrol2.traffic.createRandomArrival
 import com.bombbird.terminalcontrol2.traffic.createRandomDeparture
@@ -22,7 +23,6 @@ import com.esotericsoftware.kryonet.Connection
 import com.esotericsoftware.kryonet.Listener
 import com.esotericsoftware.kryonet.Server
 import ktx.ashley.get
-import ktx.ashley.plusAssign
 import ktx.collections.GdxArray
 import ktx.collections.GdxArrayMap
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -49,7 +49,9 @@ class GameServer {
         get() = loopRunning.get()
     private val gamePaused = AtomicBoolean(false)
     private var lock = ReentrantLock()
-    private val condition = lock.newCondition()
+    private val pauseCondition = lock.newCondition()
+    private val loadingWeather = AtomicBoolean(true)
+    private val initialWeatherCondition = lock.newCondition()
     val playerNo = 1.byte // TODO Change depending on current number of connected players
     private val server = Server()
     val engine = Engine()
@@ -98,18 +100,14 @@ class GameServer {
         loadDisallowedCallsigns()
         loadWorldData(mainName, this)
 
-        // Set 05L, 05R as active for development
-        airports[0]?.entity?.get(RunwayChildren.mapper)?.rwyMap?.apply {
-            get(0).entity += ActiveLanding()
-            get(0).entity += ActiveTakeoff()
-            get(1).entity += ActiveLanding()
-            get(1).entity += ActiveTakeoff()
-        }
+        engine.addSystem(PhysicsSystem(1f))
+        engine.addSystem(AISystem())
+        engine.addSystem(ControlStateSystem(1f))
+        engine.addSystem(TrafficSystem(1f))
 
-        // Set 28 as active for development
-        airports[1]?.entity?.get(RunwayChildren.mapper)?.rwyMap?.apply {
-            get(1).entity += ActiveLanding()
-            get(1).entity += ActiveTakeoff()
+        if (loadingWeather.get()) lock.withLock {
+            requestAllMetar()
+            initialWeatherCondition.await()
         }
 
         // Add dummy aircraft
@@ -119,12 +117,6 @@ class GameServer {
         }
         createRandomArrival(airports.values().toArray(), this)
         appTestArrival(this)
-
-        engine.addSystem(PhysicsSystem(1f))
-        engine.addSystem(AISystem())
-        engine.addSystem(ControlStateSystem(1f))
-
-        requestAllMetar()
     }
 
     /** Starts the game loop */
@@ -166,7 +158,7 @@ class GameServer {
                     }
                 } ?: (obj as? GameRunningStatus)?.apply {
                     if (obj.running) {
-                        if (gamePaused.get()) lock.withLock { condition.signal() }
+                        if (gamePaused.get()) lock.withLock { pauseCondition.signal() }
                         gamePaused.set(false)
                     }
                     else if (playerNo <= 1) gamePaused.set(true)
@@ -192,6 +184,13 @@ class GameServer {
 
                 // Send current METAR
                 connection?.sendTCP(MetarData(airports.values().map { it.getSerialisedMetar() }.toTypedArray()))
+
+                // Send runway configs
+                airports.values().forEach {
+                    val arptId = it.entity[AirportInfo.mapper]?.arptId ?: return@forEach
+                    connection?.sendTCP(ActiveRunwayUpdateData(arptId, it.entity[ActiveRunwayConfig.mapper]?.configId ?: return@forEach))
+                    connection?.sendTCP(PendingRunwayUpdateData(arptId, it.entity[PendingRunwayConfig.mapper]?.pendingId))
+                }
             }
         })
     }
@@ -240,7 +239,7 @@ class GameServer {
             }
 
             if (gamePaused.get()) lock.withLock {
-                condition.await()
+                pauseCondition.await()
                 currMs = System.currentTimeMillis()
             }
 
@@ -295,6 +294,14 @@ class GameServer {
     private fun sendSlowUDPToAll() {
         // TODO send data
         // println("Slow UDP sent, time passed since program start: ${(System.currentTimeMillis() - startTime) / 1000f}s")
+    }
+
+    /** Notifies the main server thread that the METAR has been loaded and to proceed with starting the server */
+    fun notifyWeatherLoaded() {
+        if (loadingWeather.get()) lock.withLock {
+            loadingWeather.set(false)
+            initialWeatherCondition.signal()
+        }
     }
 
     /** Send non-frequent METAR updates */
@@ -355,6 +362,22 @@ class GameServer {
      * */
     fun sendCustomWaypointRemovalToAll(wptId: Short) {
         server.sendToAllTCP(RemoveCustomWaypointData(wptId))
+    }
+
+    /**
+     * Sends a message to clients to inform them of a pending runway configuration update
+     * @param configId the new ID of the pending configuration, or null if the pending change is cancelled
+     */
+    fun sendPendingRunwayUpdateToAll(airportId: Byte, configId: Byte?) {
+        server.sendToAllTCP(PendingRunwayUpdateData(airportId, configId))
+    }
+
+    /**
+     * Sends a message to clients to inform them of the active runway configuration update
+     * @param configId the new ID of the active configuration
+     */
+    fun sendActiveRunwayUpdateToAll(airportId: Byte, configId: Byte) {
+        server.sendToAllTCP(ActiveRunwayUpdateData(airportId, configId))
     }
 
     /**

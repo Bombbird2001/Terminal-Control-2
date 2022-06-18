@@ -31,7 +31,7 @@ data class ApproachChildren(val approachMap: GdxArrayMap<String, Approach> = Gdx
 }
 
 /** Component to keep track of an airport's available runway configurations */
-data class RunwayConfigurationChildren(val rwyConfigs: GdxArray<RunwayConfiguration> = GdxArray()): Component {
+data class RunwayConfigurationChildren(val rwyConfigs: GdxArrayMap<Byte, RunwayConfiguration> = GdxArrayMap()): Component {
     companion object: Mapper<RunwayConfigurationChildren>()
 }
 

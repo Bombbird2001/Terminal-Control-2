@@ -8,11 +8,14 @@ import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.MAG_HDG_DEV
 import com.bombbird.terminalcontrol2.global.Secrets
 import com.bombbird.terminalcontrol2.networking.HttpRequest
+import com.bombbird.terminalcontrol2.traffic.RunwayConfiguration
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
 import ktx.ashley.get
 import ktx.ashley.has
+import ktx.ashley.plusAssign
+import ktx.ashley.remove
 import java.time.LocalTime
 import kotlin.math.*
 
@@ -82,10 +85,14 @@ fun updateAirportMetar(metarJson: String) {
                     updateWindVector(windVectorPx, windHeadingDeg, windSpeedKt)
                     updateRunwayWindComponents(arpt)
                     calculateRunwayConfigScores(arpt)
+                    checkRunwayConfigSelection(arpt)
                 }
             }}
         }
-        GAME.gameServer?.sendMetarTCPToAll()
+        GAME.gameServer?.apply {
+            notifyWeatherLoaded()
+            sendMetarTCPToAll()
+        }
     }
 }
 
@@ -155,6 +162,7 @@ fun generateRandomWeather(basedOnCurrent: Boolean, airports: List<Entity>) {
         updateWindVector(currMetar.windVectorPx, currMetar.windHeadingDeg, currMetar.windSpeedKt)
         updateRunwayWindComponents(arpt)
         calculateRunwayConfigScores(arpt)
+        checkRunwayConfigSelection(arpt)
         val temp = (worldTemp + MathUtils.random(-2, 2)).toByte()
         val dewPoint = (temp + worldDewDelta).toByte()
         val qnh = (worldQnh + (if (MathUtils.randomBoolean()) 0 else -1)).toShort()
@@ -162,7 +170,10 @@ fun generateRandomWeather(basedOnCurrent: Boolean, airports: List<Entity>) {
             currMetar.visibilityM, currMetar.ceilingHundredFtAGL, temp, dewPoint, qnh, currMetar.windshear)
     }
 
-    GAME.gameServer?.sendMetarTCPToAll()
+    GAME.gameServer?.apply {
+        notifyWeatherLoaded()
+        sendMetarTCPToAll()
+    }
 }
 
 /**
@@ -290,7 +301,38 @@ fun updateRunwayWindComponents(airport: Entity) {
  */
 fun calculateRunwayConfigScores(airport: Entity) {
     airport[RunwayConfigurationChildren.mapper]?.rwyConfigs?.apply {
-        for (i in 0 until size) { get(i)?.calculateScores() }
+        for (config in values()) { config.calculateScores() }
+    }
+}
+
+/**
+ * Checks the selected runway configuration of the airport, and updates it if needed; call this only on server-side, as
+ * client-side is not in charge of doing so and will receive a request from the server instead to reflect the changes
+ *
+ * Call after the airport's runway configuration scores have been updated
+ * @param airport the airport entity to update
+ */
+fun checkRunwayConfigSelection(airport: Entity) {
+    val arptId = airport[AirportInfo.mapper]?.arptId ?: return
+    val configs = airport[RunwayConfigurationChildren.mapper]?.rwyConfigs ?: return
+    val activeConfig: RunwayConfiguration? = configs[airport[ActiveRunwayConfig.mapper]?.configId]
+    val pendingConfig: RunwayConfiguration? = configs[airport[PendingRunwayConfig.mapper]?.pendingId]
+    val idealConfig = airport[RunwayConfigurationChildren.mapper]?.rwyConfigs?.values()?.filterNotNull()?.toTypedArray()?.sortedArray()?.last()
+    if ((activeConfig == null || activeConfig.rwyAvailabilityScore == 0) && idealConfig != null && idealConfig.id != activeConfig?.id) {
+        if (activeConfig == null) {
+            // If no active current config, set the most ideal choice directly
+            GAME.gameServer?.airports?.get(arptId)?.activateRunwayConfig(idealConfig.id)
+            GAME.gameServer?.sendActiveRunwayUpdateToAll(arptId, idealConfig.id)
+        } else {
+            // If another alternative that is better than the current non-runway available config is present, set pending
+            // runway selection to that
+            airport += PendingRunwayConfig(idealConfig.id, 300f)
+            GAME.gameServer?.sendPendingRunwayUpdateToAll(arptId, idealConfig.id)
+        }
+    } else if ((activeConfig != null && activeConfig.rwyAvailabilityScore > 0) && pendingConfig != null) {
+        // Active config is ok for current configuration, but there is a pending runway change - cancel it
+        airport.remove<PendingRunwayConfig>()
+        GAME.gameServer?.sendPendingRunwayUpdateToAll(arptId, null)
     }
 }
 

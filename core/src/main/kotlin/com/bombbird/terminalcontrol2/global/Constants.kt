@@ -58,7 +58,7 @@ val AVAIL_AIRPORTS = GdxArray<String>(arrayOf("TCTP", "TCWS", "TCTT", "TCBB", "T
 /** Application platform type */
 val APP_TYPE = Gdx.app.type
 
-        /** The current game instance (can be modified, but don't), client engine, and server engine (if [TerminalControl2.gameServer] exists, else throws a [RuntimeException] when accessed) */
+/** The current game instance (can be modified, but don't), client engine, and server engine (if [TerminalControl2.gameServer] exists, else throws a [RuntimeException] when accessed) */
 lateinit var GAME: TerminalControl2
 private val CLIENT_ENGINE: Engine
     get() = GAME.engine

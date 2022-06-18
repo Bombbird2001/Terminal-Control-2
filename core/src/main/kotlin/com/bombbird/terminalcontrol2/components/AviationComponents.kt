@@ -6,7 +6,6 @@ import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.entities.Airport
 import com.bombbird.terminalcontrol2.entities.ApproachNormalOperatingZone
 import com.bombbird.terminalcontrol2.entities.DepartureNormalOperatingZone
-import com.bombbird.terminalcontrol2.traffic.RunwayConfiguration
 import com.bombbird.terminalcontrol2.utilities.AircraftTypeData
 import ktx.ashley.Mapper
 import ktx.collections.GdxArray
@@ -181,8 +180,13 @@ data class DepartureNOZ(var depNoz: DepartureNormalOperatingZone): Component {
 }
 
 /** Component for tagging the active runway configuration of an airport */
-data class ActiveRunwayConfig(var rwyConfig: RunwayConfiguration = RunwayConfiguration()): Component {
+data class ActiveRunwayConfig(var configId: Byte = 0): Component {
     companion object: Mapper<ActiveRunwayConfig>()
+}
+
+/** Component for tagging a pending runway configuration change for an airport */
+data class PendingRunwayConfig(var pendingId: Byte = 0, var timeRemaining: Float = 0f): Component {
+    companion object: Mapper<PendingRunwayConfig>()
 }
 
 class Emergency: Component {

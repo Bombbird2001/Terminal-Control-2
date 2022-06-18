@@ -13,7 +13,8 @@ import ktx.math.times
 import kotlin.math.max
 import kotlin.math.tan
 
-/** Main physics update system, which handles physics aspects such as displacement, velocity, acceleration, etc.
+/**
+ * Main physics update system, which handles physics aspects such as displacement, velocity, acceleration, etc.
  *
  * I love physics
  *
@@ -40,7 +41,8 @@ class PhysicsSystem(override val updateTimeS: Float): EntitySystem(), LowFreqUpd
     private val accLimitFamily: Family = allOf(Speed::class, Altitude::class, Acceleration::class, AircraftInfo::class).get()
     private val affectedByWindFamily: Family = allOf(Position::class, AffectedByWind::class).get()
 
-    /** Main update function, for values that need to be updated frequently
+    /**
+     * Main update function, for values that need to be updated frequently
      *
      * For values that can be updated less frequently and are not dependent on [deltaTime], put in [lowFreqUpdate]
      * */
