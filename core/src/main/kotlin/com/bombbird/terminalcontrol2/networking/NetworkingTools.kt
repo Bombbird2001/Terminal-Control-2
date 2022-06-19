@@ -109,6 +109,7 @@ fun registerClassesToKryo(kryo: Kryo?) {
 
         // Miscellaneous event triggered updated classes
         register(AircraftSectorUpdateData::class.java)
+        register(AircraftSpawnData::class.java)
         register(AircraftDespawnData::class.java)
         register(AircraftControlStateUpdateData::class.java)
         register(CustomWaypointData::class.java)
@@ -166,6 +167,9 @@ class FastUDPData(val aircraft: Array<Aircraft.SerialisedAircraftUDP> = arrayOf(
 
 /** Class representing data sent during aircraft sector update */
 data class AircraftSectorUpdateData(val callsign: String = "", val newSector: Byte = 0)
+
+/** Class representing sent when an aircraft spawns in the game */
+data class AircraftSpawnData(val newAircraft: Aircraft.SerialisedAircraft = Aircraft.SerialisedAircraft())
 
 /** Class representing de-spawn data sent when an aircraft is removed from the game */
 data class AircraftDespawnData(val callsign: String = "")
@@ -274,6 +278,12 @@ fun handleIncomingRequest(rs: RadarScreen, obj: Any?) {
                 if (rs.selectedAircraft == aircraft) {
                     if (obj.newSector == rs.playerSector) rs.setUISelectedAircraft(aircraft)
                     else rs.deselectUISelectedAircraft()
+                }
+            }
+        } ?: (obj as? AircraftSpawnData)?.apply {
+            Aircraft.fromSerialisedObject(newAircraft).apply {
+                entity[AircraftInfo.mapper]?.icaoCallsign?.let { callsign ->
+                    rs.aircraft.put(callsign, this)
                 }
             }
         } ?: (obj as? AircraftDespawnData)?.apply {

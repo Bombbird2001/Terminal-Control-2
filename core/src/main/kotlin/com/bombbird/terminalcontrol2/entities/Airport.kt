@@ -356,28 +356,32 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
         val currId = entity[ActiveRunwayConfig.mapper]?.configId
         if (currId == newConfigId) return
         entity += ActiveRunwayConfig(newConfigId)
-        entity[RunwayConfigurationChildren.mapper]?.rwyConfigs?.get(newConfigId)?.apply {
-            val rwyMap = entity[RunwayChildren.mapper]?.rwyMap ?: return@apply
-            rwyMap.values().forEach {
-                // Clear all current runways
-                it.entity.let { rwy ->
-                    rwy.remove<ActiveLanding>()
-                    rwy.remove<ActiveTakeoff>()
-                    rwy[ApproachNOZ.mapper]?.appNoz?.entity?.plusAssign(DoNotRender())
-                    rwy[DepartureNOZ.mapper]?.depNoz?.entity?.plusAssign(DoNotRender())
+        entity[RunwayConfigurationChildren.mapper]?.rwyConfigs?.values()?.forEach {
+            if (it.id != newConfigId) it.setNTZVisibility(false)
+            else {
+                val rwyMap = entity[RunwayChildren.mapper]?.rwyMap ?: return@forEach
+                rwyMap.values().forEach { rwyObj ->
+                    // Clear all current runways
+                    rwyObj.entity.let { rwy ->
+                        rwy.remove<ActiveLanding>()
+                        rwy.remove<ActiveTakeoff>()
+                        rwy[ApproachNOZ.mapper]?.appNoz?.entity?.plusAssign(DoNotRender())
+                        rwy[DepartureNOZ.mapper]?.depNoz?.entity?.plusAssign(DoNotRender())
+                    }
                 }
-            }
-            for (i in 0 until arrRwys.size) {
-                rwyMap[arrRwys[i]?.entity?.get(RunwayInfo.mapper)?.rwyId]?.entity?.let { rwy ->
-                    rwy += ActiveLanding()
-                    rwy[ApproachNOZ.mapper]?.appNoz?.entity?.remove<DoNotRender>()
+                for (i in 0 until it.arrRwys.size) {
+                    rwyMap[it.arrRwys[i]?.entity?.get(RunwayInfo.mapper)?.rwyId]?.entity?.let { rwy ->
+                        rwy += ActiveLanding()
+                        rwy[ApproachNOZ.mapper]?.appNoz?.entity?.remove<DoNotRender>()
+                    }
                 }
-            }
-            for (i in 0 until depRwys.size) {
-                rwyMap[depRwys[i]?.entity?.get(RunwayInfo.mapper)?.rwyId]?.entity?.let {  rwy ->
-                    rwy += ActiveTakeoff()
-                    rwy[DepartureNOZ.mapper]?.depNoz?.entity?.remove<DoNotRender>()
+                for (i in 0 until it.depRwys.size) {
+                    rwyMap[it.depRwys[i]?.entity?.get(RunwayInfo.mapper)?.rwyId]?.entity?.let {  rwy ->
+                        rwy += ActiveTakeoff()
+                        rwy[DepartureNOZ.mapper]?.depNoz?.entity?.remove<DoNotRender>()
+                    }
                 }
+                it.setNTZVisibility(true)
             }
         }
         checkUpdateRunwayPaneState(this)

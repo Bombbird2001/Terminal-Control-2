@@ -4,6 +4,7 @@ import com.badlogic.ashley.core.Entity
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.math.CumulativeDistribution
 import com.badlogic.gdx.math.MathUtils
+import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.utils.Timer
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.Aircraft
@@ -17,10 +18,24 @@ import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.*
 import ktx.collections.GdxArray
 import ktx.collections.GdxSet
+import ktx.math.plus
+import ktx.math.times
 import kotlin.math.max
 import kotlin.math.min
 
 val disallowedCallsigns = GdxSet<String>()
+
+/**
+ * Class for storing traffic modes for the game
+ *
+ * [ARRIVALS_TO_CONTROL] will instruct the game server to spawn arrivals to maintain an arrival count
+ *
+ * [FLOW_RATE] will instruct the game server to spawn arrivals at a set rate
+ */
+object TrafficMode {
+    const val ARRIVALS_TO_CONTROL: Byte = 0
+    const val FLOW_RATE: Byte = 1
+}
 
 /**
  * Creates an arrival with a randomly selected airport and STAR
@@ -88,6 +103,7 @@ fun createArrival(callsign: String, icaoType: String, airport: Entity, gs: GameS
         }
         entity += InitialArrivalSpawn()
         if (alt > 10000) entity += DecelerateTo240kts()
+        gs.sendAircraftSpawn(this)
     })
 }
 
@@ -190,15 +206,18 @@ fun createRandomDeparture(airport: Entity, rwy: Entity, gs: GameServer) {
  * @param rwy the runway the departure aircraft will be using
  * @param gs the gameServer to instantiate the aircraft in
  * */
-fun createDeparture(callsign: String, icaoType: String, rwy: Entity, gs: GameServer) {
-    val rwyPos = rwy[Position.mapper]
-    val rwyDir = rwy[Direction.mapper]
+private fun createDeparture(callsign: String, icaoType: String, rwy: Entity, gs: GameServer) {
+    val rwyPos = rwy[Position.mapper] ?: return
+    val rwyDir = rwy[Direction.mapper] ?: return
 
-    val rwyAlt = rwy[Altitude.mapper]?.altitudeFt ?: 0f
-    gs.aircraft.put(callsign, Aircraft(callsign, rwyPos?.x ?: 10f, rwyPos?.y ?: -10f, rwyAlt, icaoType, FlightType.DEPARTURE, false).apply {
-        entity[Direction.mapper]?.trackUnitVector?.rotateDeg((rwyDir?.trackUnitVector?.angleDeg() ?: 0f) - 90) // Runway heading
+    val rwyAlt = rwy[Altitude.mapper]?.altitudeFt ?: return
+    val rwyInfo = rwy[RunwayInfo.mapper] ?: return
+    val rwyTakeoffPosLength = rwyInfo.intersectionTakeoffM
+    val spawnPos = Vector2(rwyPos.x, rwyPos.y) + rwyDir.trackUnitVector * mToPx(rwyTakeoffPosLength.toFloat())
+    gs.aircraft.put(callsign, Aircraft(callsign, spawnPos.x, spawnPos.y, rwyAlt, icaoType, FlightType.DEPARTURE, false).apply {
+        entity[Direction.mapper]?.trackUnitVector?.rotateDeg(rwyDir.trackUnitVector.angleDeg() - 90) // Runway heading
         // Calculate headwind component for takeoff
-        val tailwind = rwyDir?.let { dir -> entity[Position.mapper]?.let { pos ->
+        val tailwind = rwyDir.let { dir -> entity[Position.mapper]?.let { pos ->
             val wind = getClosestAirportWindVector(pos.x, pos.y)
             calculateIASFromTAS(rwyAlt, pxpsToKt(wind.dot(dir.trackUnitVector)))
         }} ?: 0f
@@ -216,7 +235,7 @@ fun createDeparture(callsign: String, icaoType: String, rwy: Entity, gs: GameSer
         entity[CommandTarget.mapper]?.apply {
             targetAltFt = initClimb
             targetIasKt = acPerf.climbOutSpeed
-            targetHdgDeg = convertWorldAndRenderDeg(rwyDir?.trackUnitVector?.angleDeg() ?: 90f) + MAG_HDG_DEV
+            targetHdgDeg = convertWorldAndRenderDeg(rwyDir.trackUnitVector.angleDeg()) + MAG_HDG_DEV
         }
         Timer.schedule(object : Timer.Task() {
             override fun run() {

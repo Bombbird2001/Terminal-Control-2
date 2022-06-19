@@ -159,7 +159,7 @@ class RouteSubpane {
                                     }
                                 }
                                 directLeg = leg // Update the new direct leg to this
-                                parentControlPane.updateAltSelectBoxChoices(parentPane.aircraftMaxAlt)
+                                parentControlPane.updateAltSelectBoxChoices(parentPane.aircraftMaxAlt, parentPane.userClearanceState)
                             }
                             modificationInProgress = false
                             parentControlPane.updateUndoTransmitButtonStates()

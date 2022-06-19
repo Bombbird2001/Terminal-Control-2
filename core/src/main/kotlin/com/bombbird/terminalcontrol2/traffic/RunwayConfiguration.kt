@@ -1,11 +1,14 @@
 package com.bombbird.terminalcontrol2.traffic
 
+import com.bombbird.terminalcontrol2.components.DoNotRender
 import com.bombbird.terminalcontrol2.components.RunwayInfo
 import com.bombbird.terminalcontrol2.components.RunwayWindComponents
 import com.bombbird.terminalcontrol2.entities.Airport
 import com.bombbird.terminalcontrol2.entities.NoTransgressionZone
 import com.bombbird.terminalcontrol2.utilities.UsabilityFilter
 import ktx.ashley.get
+import ktx.ashley.plusAssign
+import ktx.ashley.remove
 import ktx.collections.GdxArray
 import ktx.collections.GdxArrayMap
 import ktx.collections.toGdxArray
@@ -49,6 +52,19 @@ class RunwayConfiguration(val id: Byte, override val timeRestriction: Byte): Com
         }}
 
         rwyAvailabilityScore = depAvailable * arrAvailable
+    }
+
+    /**
+     * Sets whether to show or hide the NTZs for this configuration
+     * @param show whether to show or hide the NTZs
+     */
+    fun setNTZVisibility(show: Boolean) {
+        for (i in 0 until ntzs.size) {
+            ntzs[i]?.entity?.apply {
+                if (show) remove<DoNotRender>()
+                else this += DoNotRender()
+            }
+        }
     }
 
     companion object {

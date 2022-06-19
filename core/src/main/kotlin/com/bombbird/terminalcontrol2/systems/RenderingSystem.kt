@@ -219,6 +219,7 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer,
         for (i in 0 until datatagLines.size()) {
             datatagLines[i]?.apply {
                 val datatag = get(Datatag.mapper) ?: return@apply
+                if (!datatag.initialPosSet) return@apply
                 val radarData = get(RadarData.mapper) ?: return@apply
                 val radarX = (radarData.position.x - camX) / camZoom
                 val radarY = (radarData.position.y - camY) / camZoom
@@ -340,6 +341,7 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer,
                 else if (datatag.smallLabelFont && camZoom <= DATATAG_ZOOM_THRESHOLD) updateDatatagLabelSize(datatag, false)
                 val leftX = (radarData.position.x - camX) / camZoom + datatag.xOffset
                 val bottomY = (radarData.position.y - camY) / camZoom + datatag.yOffset
+                datatag.initialPosSet = true
                 datatag.imgButton.apply {
                     setPosition(leftX, bottomY)
                     draw(GAME.batch, 1f)

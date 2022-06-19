@@ -15,8 +15,8 @@ import com.bombbird.terminalcontrol2.systems.AISystem
 import com.bombbird.terminalcontrol2.systems.ControlStateSystem
 import com.bombbird.terminalcontrol2.systems.PhysicsSystem
 import com.bombbird.terminalcontrol2.systems.TrafficSystem
+import com.bombbird.terminalcontrol2.traffic.TrafficMode
 import com.bombbird.terminalcontrol2.traffic.appTestArrival
-import com.bombbird.terminalcontrol2.traffic.createRandomArrival
 import com.bombbird.terminalcontrol2.traffic.createRandomDeparture
 import com.bombbird.terminalcontrol2.utilities.*
 import com.esotericsoftware.kryonet.Connection
@@ -64,31 +64,40 @@ class GameServer {
     val minAltSectors = GdxArray<MinAltSector>()
     val shoreline = GdxArray<Shoreline>()
 
-    /** Maps [AirportInfo.arptId] (instead of [AirportInfo.icaoCode]) to the airport for backwards compatibility (in case of airport ICAO code reassignments;
+    /**
+     * Maps [AirportInfo.arptId] (instead of [AirportInfo.icaoCode]) to the airport for backwards compatibility (in case of airport ICAO code reassignments;
      * Old airport is still available as a separate entity even with the same ICAO code as the new airport)
      * */
     val airports = GdxArrayMap<Byte, Airport>(AIRPORT_SIZE)
 
-    /** Maps [AirportInfo.icaoCode] to the most updated [AirportInfo.arptId];
+    /**
+     * Maps [AirportInfo.icaoCode] to the most updated [AirportInfo.arptId];
      * The new airport with the ICAO code will be chosen instead of the old one after an ICAO code reassignment
      * */
     val updatedAirportMapping = GdxArrayMap<String, Byte>(AIRPORT_SIZE)
 
-    /** Maps [WaypointInfo.wptId] (instead of [WaypointInfo.wptName]) to the waypoint for backwards compatibility (in case waypoint position is moved;
+    /**
+     * Maps [WaypointInfo.wptId] (instead of [WaypointInfo.wptName]) to the waypoint for backwards compatibility (in case waypoint position is moved;
      * old waypoint is still available as a separate entity even with the same name as the new waypoint)
      * */
     val waypoints = HashMap<Short, Waypoint>()
 
-    /** Maps [WaypointInfo.wptName] to the most updated [WaypointInfo.wptId];
+    /**
+     * Maps [WaypointInfo.wptName] to the most updated [WaypointInfo.wptId];
      * The new waypoint with the name will be chosen instead of the old one after the waypoint has "shifted"
      * */
     val updatedWaypointMapping = HashMap<String, Short>()
 
-    /** Maps [WaypointInfo.wptName] to the [PublishedHold]
+    /**
+     * Maps [WaypointInfo.wptName] to the [PublishedHold]
      *
      * This map will map to the most updated published hold, since old holding legs are stored individually with the waypoint ID in the aircraft's [ClearanceState.route]
      * */
     val publishedHolds = GdxArrayMap<String, PublishedHold>(PUBLISHED_HOLD_SIZE)
+
+    var arrivalSpawnTimerS = 0f
+    var planesToControl = 6f
+    var trafficMode = TrafficMode.ARRIVALS_TO_CONTROL
 
     // var timeCounter = 0f
     // var frames = 0
@@ -111,11 +120,13 @@ class GameServer {
         }
 
         // Add dummy aircraft
-        // airports[0]?.entity?.get(RunwayChildren.mapper)?.rwyMap?.get(0)?.entity?.let { rwy -> createDeparture(rwy, this) }
+        airports[0]?.entity?.also {  arpt ->
+            arpt[RunwayChildren.mapper]?.rwyMap?.get(0)?.entity?.let { rwy -> createRandomDeparture(arpt, rwy, this) }
+        }
         airports[1]?.entity?.also { arpt ->
             arpt[RunwayChildren.mapper]?.rwyMap?.get(1)?.entity?.let { rwy -> createRandomDeparture(arpt, rwy, this) }
         }
-        createRandomArrival(airports.values().toArray(), this)
+        // createRandomArrival(airports.values().toArray(), this)
         appTestArrival(this)
     }
 
@@ -316,6 +327,14 @@ class GameServer {
      * */
     fun sendAircraftSectorUpdateTCPToAll(callsign: String, newSector: Byte) {
         server.sendToAllTCP(AircraftSectorUpdateData(callsign, newSector))
+    }
+
+    /**
+     * Sends aircraft spawn data
+     * @param aircraft the aircraft that spawned
+     * */
+    fun sendAircraftSpawn(aircraft: Aircraft) {
+        server.sendToAllTCP(AircraftSpawnData(aircraft.getSerialisableObject()))
     }
 
     /**

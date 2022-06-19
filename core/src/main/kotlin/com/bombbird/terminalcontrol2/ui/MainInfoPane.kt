@@ -33,11 +33,10 @@ lateinit var buttonTable: KTableWidget
 lateinit var commsButton: KTextButton
 lateinit var statusButton: KTextButton
 
-lateinit var confirmRwyChangeButton: KTextButton
-lateinit var cancelRwyChangeButton: KTextButton
 val airportRwyConfigMap = GdxArrayMap<Byte, KTableWidget>(AIRPORT_SIZE)
 val airportRwySettingButtonMap = GdxArrayMap<Byte, KImageButton>(AIRPORT_SIZE)
 val airportRwyConfigButtonsMap = GdxArrayMap<Byte, GdxArray<KTextButton>>(AIRPORT_SIZE)
+val airportRwyConfigConfirmCancelMap = GdxArrayMap<Byte, Pair<KTextButton, KTextButton>>(AIRPORT_SIZE)
 var buttonsBeingModified = false
 var selectedArptId: Byte? = null
 
@@ -181,7 +180,11 @@ fun updateAtisInformation() {
                 row()
                 airportRwySettingButtonMap[arptId] = imageButton("RunwayConfig").apply {
                     addChangeListener { _, _ ->
+                        buttonsBeingModified = true
                         setPaneToAirportRwyConfig(airport)
+                        commsButton.isChecked = false
+                        statusButton.isChecked = false
+                        buttonsBeingModified = false
                     }
                 }.cell(height = 75f, width = 50f, padLeft = 10f, padRight = 20f, padTop = 10f, align = Align.topRight)
                 align(Align.top)
@@ -283,7 +286,7 @@ fun setPaneToAirportRwyConfig(airport: Airport) {
         }.cell(preferredWidth = 0.6f * paneContainer.width, preferredHeight = paneContainer.height, align = Align.left, growY = true)
         table {
             // debugAll()
-            confirmRwyChangeButton = textButton("Confirm\nrunway\nchange", "MenuPaneRunwayChange").cell(padRight = 20f, padBottom = 20f, growX = true).apply {
+            val cfmButton = textButton("Confirm\nrunway\nchange", "MenuPaneRunwayChange").cell(padRight = 20f, padBottom = 20f, growX = true).apply {
                 addChangeListener { _, _ ->
                     // Send the update request, ID has been stored in the name field of the button
                     val configIdToUse = if (name != null) name.toByte() else return@addChangeListener
@@ -298,13 +301,14 @@ fun setPaneToAirportRwyConfig(airport: Airport) {
                 }
             }
             row()
-            cancelRwyChangeButton = textButton("Cancel", "MenuPaneRunwayChange").cell(padRight = 20f, growX = true).apply {
+            val cancelButton = textButton("Cancel", "MenuPaneRunwayChange").cell(padRight = 20f, growX = true).apply {
                 addChangeListener { _, _ ->
                     // Reset to the current state
                     setAirportRunwayConfigState(airport.entity)
                 }
             }
             setBackground("ListBackground")
+            airportRwyConfigConfirmCancelMap[arptId] = Pair(cfmButton, cancelButton)
         }.cell(preferredWidth = 0.4f * paneContainer.width, align = Align.right, growY = true)
         setFillParent(true)
     }
@@ -344,9 +348,11 @@ private fun updateConfigButtonStates(arptId: Byte, currConfigId: Byte?, selected
 }
 
 private fun updateConfirmCancelButtons(airport: Entity) {
-    confirmRwyChangeButton.name = null
-    confirmRwyChangeButton.style = Scene2DSkin.defaultSkin["MenuPaneRunwayChange", TextButtonStyle::class.java]
     val arptId = airport[AirportInfo.mapper]?.arptId ?: return
+    val cfmButton = airportRwyConfigConfirmCancelMap[arptId]?.first ?: return
+    val cancelButton = airportRwyConfigConfirmCancelMap[arptId]?.second ?: return
+    cfmButton.name = null
+    cfmButton.style = Scene2DSkin.defaultSkin["MenuPaneRunwayChange", TextButtonStyle::class.java]
     val activeId = airport[ActiveRunwayConfig.mapper]?.configId
     val pendingId = airport[PendingRunwayConfig.mapper]?.pendingId
 
@@ -358,19 +364,19 @@ private fun updateConfirmCancelButtons(airport: Entity) {
 
     val selectedConfig = airport[RunwayConfigurationChildren.mapper]?.rwyConfigs?.get(selectedId)
     // Only show this button if selected ID is different from active ID
-    confirmRwyChangeButton.isVisible = selectedId != activeId && selectedConfig != null
+    cfmButton.isVisible = selectedId != activeId && selectedConfig != null
     // Only show this button if selected ID is different from active ID, and the selected ID is not equal to the ID of any pending runway changes
-    cancelRwyChangeButton.isVisible = selectedId != activeId && selectedId != pendingId && selectedConfig != null
+    cancelButton.isVisible = selectedId != activeId && selectedId != pendingId && selectedConfig != null
     if (selectedConfig != null) {
         val currTime = UsabilityFilter.DAY_ONLY // TODO Change depending on time of day
-        confirmRwyChangeButton.setText(when {
+        cfmButton.setText(when {
             selectedConfig.rwyAvailabilityScore == 0 -> "Not allowed\ndue to winds"
             selectedConfig.timeRestriction == UsabilityFilter.DAY_ONLY && currTime == UsabilityFilter.NIGHT_ONLY -> "Only used\nin day"
             selectedConfig.timeRestriction == UsabilityFilter.NIGHT_ONLY && currTime == UsabilityFilter.DAY_ONLY -> "Only used\nat night"
             GAME.gameServer == null -> "Only host\ncan change\nrunway"
             else -> {
-                confirmRwyChangeButton.name = selectedId?.toString()
-                confirmRwyChangeButton.style = Scene2DSkin.defaultSkin["MenuPaneRunwayChangeAllowed", TextButtonStyle::class.java]
+                cfmButton.name = selectedId?.toString()
+                cfmButton.style = Scene2DSkin.defaultSkin["MenuPaneRunwayChangeAllowed", TextButtonStyle::class.java]
                 "Confirm\nrunway\nchange"
             }
         })

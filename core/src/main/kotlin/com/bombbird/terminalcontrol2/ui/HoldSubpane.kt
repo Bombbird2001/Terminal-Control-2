@@ -78,7 +78,7 @@ class HoldSubpane {
                         // Update the hold legs in route when selected hold leg changes
                         updateHoldClearanceState(parentPane.userClearanceState.route)
                         updateHoldTable(parentPane.userClearanceState.route, selectedHoldLeg)
-                        parentControlPane.updateAltSelectBoxChoices(parentPane.aircraftMaxAlt)
+                        parentControlPane.updateAltSelectBoxChoices(parentPane.aircraftMaxAlt, parentPane.userClearanceState)
                         parentControlPane.updateUndoTransmitButtonStates()
                     }
                 }.cell(grow = true, preferredWidth = 0.4f * paneWidth, padRight = 10f)

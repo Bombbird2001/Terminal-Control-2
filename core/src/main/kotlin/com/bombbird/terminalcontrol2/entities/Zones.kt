@@ -142,6 +142,7 @@ class NoTransgressionZone(posX: Float, posY: Float, appHdg: Short, private val w
             with<SRColor> {
                 color = Color.RED
             }
+            with<DoNotRender>()
         }
     }
 

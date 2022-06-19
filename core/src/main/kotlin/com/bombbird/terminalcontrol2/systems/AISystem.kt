@@ -477,7 +477,10 @@ class AISystem: EntitySystem() {
                 val locTrack = locApp[Direction.mapper]?.trackUnitVector ?: return@apply
                 val locCourseHdg = convertWorldAndRenderDeg(locTrack.angleDeg()) + 180 - MAG_HDG_DEV
 
-                // Check whether aircraft is in the ILS arc - 35 deg at <= 10 nm and 10 deg at > 10nm
+                // Check whether aircraft is heading away from the LOC
+                if (dir.trackUnitVector.dot(locTrack) > 0) return@apply
+
+                // Check whether aircraft is in the LOC arc - 35 deg at <= 10 nm and 10 deg at > 10nm
                 if (!isInsideLocArc(locApp, pos.x, pos.y, LOC_INNER_ARC_ANGLE_DEG, LOC_INNER_ARC_DIST_NM) &&
                     !isInsideLocArc(locApp, pos.x, pos.y, LOC_OUTER_ARC_ANGLE_DEG, locApp[Localizer.mapper]?.maxDistNm ?: return@apply)) return@apply
 
@@ -856,6 +859,7 @@ class AISystem: EntitySystem() {
         // the event of player clearing speed restriction the acting max speed is already set to maxSpd) it, update it to the new optimal speed
         if (actingClearance.clearedIas == actingClearance.maxIas && maxSpd >= actingClearance.maxIas) commandTarget.targetIasKt = optimalSpd
         else if (actingClearance.clearedIas > maxSpd) commandTarget.targetIasKt = maxSpd // If currently cleared IAS exceeds max speed restriction
+        else commandTarget.targetIasKt = actingClearance.clearedIas // Else just set to the cleared IAS
         val prevMaxIas = actingClearance.maxIas
         val prevClearedIas = actingClearance.clearedIas
         actingClearance.maxIas = maxSpd
