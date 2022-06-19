@@ -135,6 +135,9 @@ class AISystem: EntitySystem() {
                             points = MathUtils.clamp(points, 0.15f, 0.5f)
                             it.planesToControl = MathUtils.clamp(it.planesToControl + points, 4f, MAX_ARRIVALS.toFloat())
                         }
+                        it.score += 1
+                        if (it.score > it.highScore) it.highScore = it.score
+                        it.sendScoreUpdate()
                     }
                 }
             }

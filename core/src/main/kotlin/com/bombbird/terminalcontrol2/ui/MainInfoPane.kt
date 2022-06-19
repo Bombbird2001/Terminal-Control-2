@@ -3,6 +3,7 @@ package com.bombbird.terminalcontrol2.ui
 import com.badlogic.ashley.core.Entity
 import com.badlogic.gdx.scenes.scene2d.Actor
 import com.badlogic.gdx.scenes.scene2d.ui.ImageButton.ImageButtonStyle
+import com.badlogic.gdx.scenes.scene2d.ui.Label
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton.TextButtonStyle
 import com.badlogic.gdx.utils.Align
 import com.bombbird.terminalcontrol2.components.*
@@ -18,6 +19,9 @@ import ktx.collections.GdxArray
 import ktx.collections.GdxArrayMap
 import ktx.collections.set
 import ktx.scene2d.*
+
+lateinit var scoreLabel: Label
+lateinit var highScoreLabel: Label
 
 lateinit var metarScroll: KScrollPane
 lateinit var metarPane: KTableWidget
@@ -54,9 +58,9 @@ fun <S> KWidget<S>.mainInfoPane(paneWidth: Float): KContainer<Actor> {
             // debugAll()
             table {
                 // debugAll()
-                label("Score: Shiba", "Score").cell(align = Align.left, growX = true)
+                scoreLabel = label("Score: Shiba", "Score").cell(align = Align.left, growX = true)
                 row()
-                label("High score: High shiba", "HighScore").cell(padTop = 10f, align = Align.left, growX = true)
+                highScoreLabel = label("High score: High shiba", "HighScore").cell(padTop = 10f, align = Align.left, growX = true)
             }.cell(padLeft = 20f, preferredWidth = paneWidth * 0.85f - 50)
             textButton("||", "Pause").cell(padRight = 30f, preferredWidth = paneWidth * 0.15f, height = UI_HEIGHT * 0.1f).addChangeListener { _, _ ->
                 // Pause the client
@@ -128,6 +132,16 @@ fun <S> KWidget<S>.mainInfoPane(paneWidth: Float): KContainer<Actor> {
         }
         isVisible = true
     }
+}
+
+/**
+ * Updates the score display labels with the new score data
+ * @param newScore the new score
+ * @param newHighScore the new high score
+ */
+fun updateScoreDisplay(newScore: Int, newHighScore: Int) {
+    scoreLabel.setText("Score: $newScore")
+    highScoreLabel.setText("High score: $newHighScore")
 }
 
 /** Updates the ATIS pane displays (for new METAR/runway information) */

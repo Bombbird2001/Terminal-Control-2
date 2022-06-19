@@ -547,6 +547,43 @@ fun findMissedApproachAlt(route: Route): Int? {
 }
 
 /**
+ * Calculates the distance, in pixels, on the route given aircraft position, and the starting and ending legs
+ * @param aircraftPos the position of the aircraft; if null, will ignore position of the aircraft and calculate only between
+ * the two provided legs
+ * @param startLeg the leg to start calculating from
+ * @param endLeg the leg to stop the calculation
+ * @param route the route to use for the calculation
+ * @return the distance to go on the route, in pixels
+ */
+fun calculateDistToGo(aircraftPos: Position?, startLeg: Leg, endLeg: Leg, route: Route): Float {
+    var cumulativeDist = 0f
+    var prevX = aircraftPos?.x
+    var prevY = aircraftPos?.y
+    var foundStart = false
+    for (i in 0 until route.size) { route[i].let { leg ->
+        if (!foundStart && compareLegEquality(startLeg, leg)) {
+            // Start leg has just been found
+            foundStart = true
+        }
+        if (foundStart) (leg as? WaypointLeg)?.apply {
+            val wptPos = GAME.gameServer?.waypoints?.get(wptId)?.entity?.get(Position.mapper) ?: return@apply
+            val finalX = prevX
+            val finalY = prevY
+            if (finalX != null && finalY != null) {
+                cumulativeDist += calculateDistanceBetweenPoints(finalX, finalY, wptPos.x, wptPos.y)
+            }
+            prevX = wptPos.x
+            prevY = wptPos.y
+        }
+        if (foundStart && compareLegEquality(endLeg, leg)) {
+            // End leg reached, return distance
+            return cumulativeDist
+        }
+    }}
+    return cumulativeDist
+}
+
+/**
  * Removes all approach components from the aircraft
  * @param aircraft the aircraft entity
  */

@@ -99,6 +99,9 @@ class GameServer {
     var planesToControl = 6f
     var trafficMode = TrafficMode.ARRIVALS_TO_CONTROL
 
+    var score = 0
+    var highScore = 0
+
     // var timeCounter = 0f
     // var frames = 0
     private var startTime = -1L
@@ -202,6 +205,9 @@ class GameServer {
                     connection?.sendTCP(ActiveRunwayUpdateData(arptId, it.entity[ActiveRunwayConfig.mapper]?.configId ?: return@forEach))
                     connection?.sendTCP(PendingRunwayUpdateData(arptId, it.entity[PendingRunwayConfig.mapper]?.pendingId))
                 }
+
+                // Send score data
+                connection?.sendTCP(ScoreData(score, highScore))
             }
         })
     }
@@ -286,8 +292,6 @@ class GameServer {
      *
      * Aircraft position
      *
-     * Aircraft navigation
-     *
      * (List not exhaustive)
      * */
     private fun sendFastUDPToAll() {
@@ -296,7 +300,8 @@ class GameServer {
         server.sendToAllUDP(FastUDPData(aircraft.values().map { it.getSerialisableObjectUDP() }.toTypedArray()))
     }
 
-    /** Send not so frequently updated data approximately [SERVER_TO_CLIENT_UPDATE_RATE_SLOW] times a second
+    /**
+     * Send not so frequently updated data approximately [SERVER_TO_CLIENT_UPDATE_RATE_SLOW] times a second
      *
      * Thunderstorm cells
      *
@@ -397,6 +402,11 @@ class GameServer {
      */
     fun sendActiveRunwayUpdateToAll(airportId: Byte, configId: Byte) {
         server.sendToAllTCP(ActiveRunwayUpdateData(airportId, configId))
+    }
+
+    /** Sends a message to clients to inform them of a change in scores */
+    fun sendScoreUpdate() {
+        server.sendToAllTCP(ScoreData(score, highScore))
     }
 
     /**

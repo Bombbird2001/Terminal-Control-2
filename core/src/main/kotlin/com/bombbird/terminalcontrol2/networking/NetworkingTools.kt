@@ -12,6 +12,7 @@ import com.bombbird.terminalcontrol2.navigation.SidStar
 import com.bombbird.terminalcontrol2.screens.RadarScreen
 import com.bombbird.terminalcontrol2.traffic.RunwayConfiguration
 import com.bombbird.terminalcontrol2.ui.updateAtisInformation
+import com.bombbird.terminalcontrol2.ui.updateScoreDisplay
 import com.bombbird.terminalcontrol2.utilities.getAircraftIcon
 import com.esotericsoftware.kryo.Kryo
 import ktx.ashley.get
@@ -117,6 +118,7 @@ fun registerClassesToKryo(kryo: Kryo?) {
         register(GameRunningStatus::class.java)
         register(PendingRunwayUpdateData::class.java)
         register(ActiveRunwayUpdateData::class.java)
+        register(ScoreData::class.java)
 
     } ?: Gdx.app.log("NetworkingTools", "Null kryo passed, unable to register classes")
 }
@@ -193,6 +195,9 @@ data class PendingRunwayUpdateData(val airportId: Byte = 0, val configId: Byte? 
 
 /** Class representing data sent during a runway change */
 data class ActiveRunwayUpdateData(val airportId: Byte = 0, val configId: Byte = 0)
+
+/** Class representing data sent when the score is updated */
+data class ScoreData(val score: Int = 0, val highScore: Int = 0)
 
 /** Class representing data sent on a client request to pause/run the game */
 data class GameRunningStatus(val running: Boolean = true)
@@ -316,6 +321,8 @@ fun handleIncomingRequest(rs: RadarScreen, obj: Any?) {
         } ?: (obj as? ActiveRunwayUpdateData)?.apply {
             rs.airports[obj.airportId]?.activateRunwayConfig(obj.configId)
             updateAtisInformation()
+        } ?: (obj as? ScoreData)?.apply {
+            updateScoreDisplay(obj.score, obj.highScore)
         }
     }
 }

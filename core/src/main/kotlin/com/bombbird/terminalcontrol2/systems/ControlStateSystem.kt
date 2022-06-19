@@ -145,8 +145,10 @@ class ControlStateSystem(override val updateTimeS: Float = 0f): EntitySystem(), 
                 val cmdTarget = get(CommandTarget.mapper) ?: return@apply
                 if (actingClearance.vectorHdg != null) return@apply // If aircraft is being vectored, this check is not needed
 
-                // Get the first upcoming waypoint with a speed restriction
-                val nextRestrWpt = getNextWaypointWithSpdRestr(actingClearance.route) ?: return@apply // If no waypoints with speed restriction, this check is not needed
+                // If no waypoints in route, this check is not needed
+                val nextLeg = if (actingClearance.route.size > 0) actingClearance.route[0] else return@apply
+                // Get the first upcoming waypoint with a speed restriction; if no waypoints with speed restriction, this check is not needed
+                val nextRestrWpt = getNextWaypointWithSpdRestr(actingClearance.route) ?: return@apply
                 val nextMaxSpd = nextRestrWpt.maxSpdKt ?: return@apply // This value shouldn't be null in the first place, but just in case
                 val currMaxSpd = lastRestriction.maxSpdKt
                 if (currMaxSpd != null && currMaxSpd <= nextMaxSpd) return@apply // Not required if next max speed is not lower than current max speed
@@ -155,11 +157,12 @@ class ControlStateSystem(override val updateTimeS: Float = 0f): EntitySystem(), 
                 val targetPos = GAME.gameServer?.waypoints?.get(targetWptId)?.entity?.get(Position.mapper) ?: return@apply // Skip if waypoint not found or position not present
                 val newGs = getPointTargetTrackAndGS(pos.x, pos.y, targetPos.x, targetPos.y, nextMaxSpd.toFloat(), dir, get(AffectedByWind.mapper)).second
                 val approach = has(LocalizerCaptured.mapper) || has(GlideSlopeCaptured.mapper) || has(VisualCaptured.mapper) || (get(CirclingApproach.mapper)?.phase ?: 0) >= 1
+                // Calculate distance needed to decelerate to the speed restriction, plus a 2km leeway
                 val distReqPx = mToPx(calculateAccelerationDistanceRequired(pxpsToKt(gs.trackVectorPxps.len()), newGs,
                     calculateMinAcceleration(acInfo.aircraftPerf, alt.altitudeFt, calculateTASFromIAS(alt.altitudeFt, nextMaxSpd.toFloat()), -500f, approach, takingOff = false, takeoffClimb = false)) + 2000)
-                val deltaX = targetPos.x - pos.x
-                val deltaY = targetPos.y - pos.y
-                if (deltaX * deltaX + deltaY * deltaY < distReqPx * distReqPx) { // TODO use DTG instead of directly calculating distance based on position
+                // Calculate distance remaining on route from the waypoint with speed restriction
+                val distToGoPx = calculateDistToGo(pos, nextLeg, nextRestrWpt, actingClearance.route)
+                if (distToGoPx < distReqPx) {
                     // lastRestriction.maxSpdKt = nextMaxSpd
                     if (actingClearance.clearedIas > nextMaxSpd) cmdTarget.targetIasKt = nextMaxSpd
                     val prevMaxIas = actingClearance.maxIas
