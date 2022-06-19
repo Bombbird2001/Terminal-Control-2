@@ -505,6 +505,7 @@ class ControlPane {
                 lateralContainer.actor = holdSubpaneObj.actor
                 // altSelectBox.selected = parentPane.userClearanceState.clearedAlt.let { if (it > TRANS_ALT) "FL${it / 100}" else it.toString() }
                 updateAltSelectBoxChoices(parentPane.aircraftMaxAlt, parentPane.userClearanceState)
+                parentPane.userClearanceState.vectorHdg = null
                 selectedHoldLeg = getNextHoldLeg(parentPane.userClearanceState.route)
                 if (selectedHoldLeg == null) holdSubpaneObj.updateHoldClearanceState(parentPane.userClearanceState.route)
                 holdSubpaneObj.updateHoldTable(parentPane.userClearanceState.route, selectedHoldLeg)

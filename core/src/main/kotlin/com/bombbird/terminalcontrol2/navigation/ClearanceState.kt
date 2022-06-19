@@ -72,12 +72,18 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
                 if (currFirstLeg is Route.HoldLeg && currFirstLeg.wptId < -1 && newFirstLeg is Route.HoldLeg && newFirstLeg.wptId.toInt() == -1)
                     newFirstLeg.wptId = currFirstLeg.wptId
 
+                // Aircraft has flown by its last waypoint, but the new clearance wants it to hold at that waypoint;
+                // clear the current route, and add the new route from the 2nd leg (the hold leg) onwards
+                if (currFirstLeg == null && newFirstLeg != null && newRoute.size >= 2 && newRoute[1] is Route.HoldLeg)
+                    newRoute.removeIndex(0)
+
                 if (currFirstLeg != null && newFirstLeg != null) {
                     if (!compareLegEquality(currFirstLeg, newFirstLeg)) {
                         // 3 possible leg conflict scenarios
-                        if (currRoute.size >= 2 && newRoute[1].let { it is Route.HoldLeg && currFirstLeg is Route.WaypointLeg && it.wptId == currFirstLeg.wptId }) {
+                        if (newRoute.size >= 3 && newRoute[1] is Route.HoldLeg && compareLegEquality(newRoute[2], currFirstLeg)) {
                             // 1. Aircraft has flown by waypoint, but the new clearance wants it to hold at that waypoint;
                             // clear the current route, and add the new route from the 2nd leg (the hold leg) onwards
+                            // Only works if there is a waypoint after the new hold leg
                             newRoute.removeIndex(0)
                         } else if (currFirstLeg is Route.WaypointLeg && newFirstLeg is Route.WaypointLeg) {
                             var currDirIndex = -1
@@ -91,7 +97,7 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
                             if (currDirIndex > 0) {
                                 // 2. Aircraft has flown by waypoint, new clearance is the same route except it still contains
                                 // that waypoint; remove all legs from the new clearance till the current direct
-                                newRoute.removeRange(0, currDirIndex)
+                                newRoute.removeRange(0, currDirIndex - 1)
                             } else {
                                 // 3. Aircraft has flown by waypoint, but the new clearance does not contain the current direct
                                 // (possibly due to player assigning approach transition); remove the first leg from new clearance

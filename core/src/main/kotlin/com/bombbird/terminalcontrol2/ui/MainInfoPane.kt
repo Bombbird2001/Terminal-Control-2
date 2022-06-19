@@ -286,7 +286,7 @@ fun setPaneToAirportRwyConfig(airport: Airport) {
         }.cell(preferredWidth = 0.6f * paneContainer.width, preferredHeight = paneContainer.height, align = Align.left, growY = true)
         table {
             // debugAll()
-            val cfmButton = textButton("Confirm\nrunway\nchange", "MenuPaneRunwayChange").cell(padRight = 20f, padBottom = 20f, growX = true).apply {
+            val cfmButton = textButton("Already\nactive", "MenuPaneRunwayChange").cell(padRight = 20f, padBottom = 20f, growX = true).apply {
                 addChangeListener { _, _ ->
                     // Send the update request, ID has been stored in the name field of the button
                     val configIdToUse = if (name != null) name.toByte() else return@addChangeListener
@@ -299,12 +299,15 @@ fun setPaneToAirportRwyConfig(airport: Airport) {
                         }
                     }
                 }
+                isVisible = false
             }
             row()
-            val cancelButton = textButton("Cancel", "MenuPaneRunwayChange").cell(padRight = 20f, growX = true).apply {
+            val cancelButton = textButton("Close\nPane", "MenuPaneRunwayChange").cell(padRight = 20f, growX = true).apply {
+                name = "Close" // When this is getting initialized, it will always start of with the active runway config
                 addChangeListener { _, _ ->
                     // Reset to the current state
-                    setAirportRunwayConfigState(airport.entity)
+                    if (name == "") setAirportRunwayConfigState(airport.entity)
+                    else if (name == "Close") commsButton.isChecked = true
                 }
             }
             setBackground("ListBackground")
@@ -366,18 +369,20 @@ private fun updateConfirmCancelButtons(airport: Entity) {
     // Only show this button if selected ID is different from active ID
     cfmButton.isVisible = selectedId != activeId && selectedConfig != null
     // Only show this button if selected ID is different from active ID, and the selected ID is not equal to the ID of any pending runway changes
-    cancelButton.isVisible = selectedId != activeId && selectedId != pendingId && selectedConfig != null
+    val cancel = selectedId != activeId && selectedId != pendingId && selectedConfig != null
+    cancelButton.name = if (cancel) "" else "Close"
+    cancelButton.setText(if (cancel) "Cancel" else "Close\npane")
     if (selectedConfig != null) {
         val currTime = UsabilityFilter.DAY_ONLY // TODO Change depending on time of day
         cfmButton.setText(when {
             selectedConfig.rwyAvailabilityScore == 0 -> "Not allowed\ndue to winds"
-            selectedConfig.timeRestriction == UsabilityFilter.DAY_ONLY && currTime == UsabilityFilter.NIGHT_ONLY -> "Only used\nin day"
-            selectedConfig.timeRestriction == UsabilityFilter.NIGHT_ONLY && currTime == UsabilityFilter.DAY_ONLY -> "Only used\nat night"
+            selectedConfig.timeRestriction == UsabilityFilter.DAY_ONLY && currTime == UsabilityFilter.NIGHT_ONLY -> "Only allowed\nin day"
+            selectedConfig.timeRestriction == UsabilityFilter.NIGHT_ONLY && currTime == UsabilityFilter.DAY_ONLY -> "Only allowed\nat night"
             GAME.gameServer == null -> "Only host\ncan change\nrunway"
             else -> {
                 cfmButton.name = selectedId?.toString()
                 cfmButton.style = Scene2DSkin.defaultSkin["MenuPaneRunwayChangeAllowed", TextButtonStyle::class.java]
-                "Confirm\nrunway\nchange"
+                if (selectedId == activeId) "Already\nactive" else "Confirm\nrunway\nchange"
             }
         })
 

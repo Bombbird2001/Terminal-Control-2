@@ -79,6 +79,7 @@ class VectorSubpane {
                             run { parentPane.userClearanceState.vectorTurnDir = CommandTarget.TURN_DEFAULT }
                         }
                         updateVectorTable(parentPane.userClearanceState.route, parentPane.userClearanceState.vectorHdg, parentPane.userClearanceState.vectorTurnDir)
+                        parentControlPane.updateUndoTransmitButtonStates()
                         modificationInProgress = false
                     }
                 }
@@ -105,6 +106,7 @@ class VectorSubpane {
                             run { parentPane.userClearanceState.vectorTurnDir = CommandTarget.TURN_DEFAULT }
                         }
                         updateVectorTable(parentPane.userClearanceState.route, parentPane.userClearanceState.vectorHdg, parentPane.userClearanceState.vectorTurnDir)
+                        parentControlPane.updateUndoTransmitButtonStates()
                         modificationInProgress = false
                     }
                 }

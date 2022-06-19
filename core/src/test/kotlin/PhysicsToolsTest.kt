@@ -66,10 +66,10 @@ object PhysicsToolsTest {
         assertEquals(5610f, calculateMaxJetThrust(17000, 30130.09f, 229.444f), 100f)
 
         // Delta set at 5th significant figure
-        assertEquals(77261.88f, calculateMaxPropThrust(7562000, 26.40509f, 50f, 101325f, 288.15f), 1f)
-        assertEquals(30162.31f, calculateMaxPropThrust(7562000, 26.40509f, 240f, 101325f, 288.15f), 1f)
-        assertEquals(62192.316f, calculateMaxPropThrust(7562000, 26.40509f, 50f, 46563f, 248.526f), 1f)
-        assertEquals(29779.682f, calculateMaxPropThrust(7562000, 26.40509f, 240f, 46563f, 248.526f), 1f)
+        assertEquals(146993.52f, calculateMaxPropThrust(7562000, 26.40509f, 50f, 101325f, 288.15f), 1f)
+        assertEquals(30623.65f, calculateMaxPropThrust(7562000, 26.40509f, 240f, 101325f, 288.15f), 1f)
+        assertEquals(146993.52f, calculateMaxPropThrust(7562000, 26.40509f, 50f, 46563f, 248.526f), 1f)
+        assertEquals(30623.65f, calculateMaxPropThrust(7562000, 26.40509f, 240f, 46563f, 248.526f), 1f)
     }
 
     @Test
@@ -80,7 +80,7 @@ object PhysicsToolsTest {
         assertEquals(11951.374f, calculateParasiticDrag(1.28f, 1.225f, 240f), 1f)
         assertEquals(6797.322f, calculateParasiticDrag(6.552f, 1.225f, 80f), 0.1f)
         assertEquals(50658.08f, calculateParasiticDrag(6.552f, 0.36518f, 400f), 1f)
-        assertEquals(165686.36f, calculateInducedDrag(351533, 160, 340, 300000f, 37000f, 488f, false), 10f)
+        assertEquals(169407.3f, calculateInducedDrag(351533, 160, 340, 300000f, 37000f, 488f, false), 10f)
         assertEquals(274022f, calculateInducedDrag(240000, 175, 340, 1000000f, 1000f, 178f, true), 10f)
     }
 
@@ -168,7 +168,7 @@ object PhysicsToolsTest {
             tripMach = 0.85f
             vR = 170
         }
-        assertEquals(37000, calculateMaxAlt(aircraftPerfData))
+        assertEquals(36000, calculateMaxAlt(aircraftPerfData))
         aircraftPerfData.apply {
             massKg = 310000
             tripMach = 0.843f

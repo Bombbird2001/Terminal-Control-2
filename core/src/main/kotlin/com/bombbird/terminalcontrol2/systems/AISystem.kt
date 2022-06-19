@@ -882,7 +882,7 @@ class AISystem: EntitySystem() {
             // Cleared vector heading
             removeAllAdvancedCommandModes(entity)
             unsetTurnDirection(entity)
-            entity += CommandVector(hdg)
+            entity += CommandVector(hdg, actingClearance.vectorTurnDir ?: CommandTarget.TURN_DEFAULT)
             actingClearance.route.apply {
                 while (size > 0) {
                     // Remove any vector legs at the beginning of the route
