@@ -28,6 +28,7 @@ private const val WORLD_TRANS_ALT = "TRANS_ALT"
 private const val WORLD_TRANS_LVL = "TRANS_LVL"
 private const val WORLD_MIN_SEP = "MIN_SEP"
 private const val WORLD_MAG_HDG_DEV = "MAG_HDG_DEV"
+private const val WORLD_MAX_ARRIVALS = "MAX_ARRIVALS"
 private const val WORLD_WAYPOINTS = "WAYPOINTS"
 private const val WORLD_HOLDS = "HOLDS"
 private const val WORLD_MIN_ALT_SECTORS = "MIN_ALT_SECTORS"
@@ -187,6 +188,7 @@ fun loadWorldData(mainName: String, gameServer: GameServer) {
                             WORLD_TRANS_LVL -> TRANS_LVL = lineData[1].toInt()
                             WORLD_MIN_SEP -> MIN_SEP = lineData[1].toFloat()
                             WORLD_MAG_HDG_DEV -> MAG_HDG_DEV = lineData[1].toFloat()
+                            WORLD_MAX_ARRIVALS -> MAX_ARRIVALS = lineData[1].toByte()
                             else -> {
                                 if (lineData[0] in arrayOf(
                                         WORLD_WAYPOINTS, WORLD_HOLDS, WORLD_MIN_ALT_SECTORS, WORLD_SHORELINE, AIRPORT_RWYS,

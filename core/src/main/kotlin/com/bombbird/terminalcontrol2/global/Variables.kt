@@ -38,4 +38,7 @@ var TRANS_LVL = 180
 var RADAR_REFRESH_INTERVAL_S = 0.5f
 
 /** Datatag style to use */
-var DATATAG_STYLE_ID = 0
+var DATATAG_STYLE_ID: Byte = 0
+
+/** Max arrival count for this map */
+var MAX_ARRIVALS: Byte = 20

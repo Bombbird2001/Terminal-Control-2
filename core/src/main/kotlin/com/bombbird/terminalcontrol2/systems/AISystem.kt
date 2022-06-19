@@ -10,6 +10,7 @@ import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.*
+import com.bombbird.terminalcontrol2.traffic.TrafficMode
 import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.*
 import ktx.math.plusAssign
@@ -129,6 +130,11 @@ class AISystem: EntitySystem() {
                         val callsign = get(AircraftInfo.mapper)?.icaoCallsign ?: return@let
                         it.aircraft.removeKey(callsign) // Remove from aircraft map
                         it.sendAircraftDespawn(callsign) // Send removal data to all clients
+                        if (it.trafficMode == TrafficMode.ARRIVALS_TO_CONTROL) {
+                            var points = 0.6f - it.planesToControl / 30
+                            points = MathUtils.clamp(points, 0.15f, 0.5f)
+                            it.planesToControl = MathUtils.clamp(it.planesToControl + points, 4f, MAX_ARRIVALS.toFloat())
+                        }
                     }
                 }
             }
