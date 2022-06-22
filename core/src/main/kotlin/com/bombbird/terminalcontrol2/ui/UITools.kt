@@ -8,16 +8,21 @@ import com.badlogic.gdx.scenes.scene2d.Actor
 import com.badlogic.gdx.scenes.scene2d.InputEvent
 import com.badlogic.gdx.scenes.scene2d.InputListener
 import com.badlogic.gdx.scenes.scene2d.Stage
+import com.badlogic.gdx.scenes.scene2d.ui.Label
 import com.badlogic.gdx.scenes.scene2d.ui.ScrollPane
 import com.badlogic.gdx.scenes.scene2d.ui.SelectBox
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener.ChangeEvent
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener
+import com.badlogic.gdx.utils.Align
 import com.badlogic.gdx.utils.Scaling
 import com.badlogic.gdx.utils.viewport.ScalingViewport
 import com.badlogic.gdx.utils.viewport.Viewport
+import com.bombbird.terminalcontrol2.global.BUTTON_HEIGHT_BIG
+import com.bombbird.terminalcontrol2.global.BUTTON_WIDTH_BIG
 import com.bombbird.terminalcontrol2.global.WORLD_HEIGHT
 import com.bombbird.terminalcontrol2.global.WORLD_WIDTH
+import ktx.scene2d.*
 
 /**
  * A thread safe implementation of [Stage]
@@ -89,4 +94,27 @@ fun <T> SelectBox<T>.disallowDisabledClickThrough() {
             return true
         }
     })
+}
+
+@Scene2dDsl
+/**
+ * Constructs and returns a default label for settings pages' options
+ * @param text the text to display
+ * */
+fun KTableWidget.defaultSettingsLabel(text: String): Label {
+    return label(text, "SettingsOption").cell(width = BUTTON_WIDTH_BIG / 3, height = BUTTON_HEIGHT_BIG / 1.5f, padRight = 30f).apply {
+        setAlignment(Align.right)
+    }
+}
+
+@Scene2dDsl
+/** Constructs and returns a default select box for settings pages */
+fun <T> KTableWidget.defaultSettingsSelectBox(): KSelectBox<T> {
+    return selectBox<T>("Settings").cell(width = BUTTON_WIDTH_BIG / 2, height = BUTTON_HEIGHT_BIG / 1.5f)
+}
+
+@Scene2dDsl
+/** Creates a new row with default spacing for settings pane */
+fun KTableWidget.newSettingsRow() {
+    row().padTop(30f)
 }
