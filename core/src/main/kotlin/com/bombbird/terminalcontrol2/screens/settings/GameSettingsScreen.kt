@@ -4,8 +4,10 @@ import com.badlogic.gdx.utils.Align
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.screens.BasicUIScreen
 import com.bombbird.terminalcontrol2.ui.*
+import com.bombbird.terminalcontrol2.utilities.byte
 import ktx.scene2d.*
 
+/** Settings screen for game-specific settings */
 class GameSettingsScreen: BasicUIScreen() {
     init {
         stage.actors {
@@ -13,7 +15,7 @@ class GameSettingsScreen: BasicUIScreen() {
                 fill()
                 setSize(UI_WIDTH, UI_HEIGHT)
                 table unused@{
-                    label("These settings are specific to the current game", "SettingsHeader").cell(padTop = 70f)
+                    label("These settings are specific to the current game", "SettingsHeader").cell(padTop = 70f, colspan = 2)
                     row().padTop(50f)
                     scrollPane("SettingsPane") {
                         table {
@@ -26,42 +28,32 @@ class GameSettingsScreen: BasicUIScreen() {
                                 setItems("Off", "Low", "Medium", "High")
                             }
                             newSettingsRow()
-                            defaultSettingsLabel("Aircraft trail:")
+                            defaultSettingsLabel("Storms:")
                             defaultSettingsSelectBox<String>().apply {
-                                setItems("Off", "60 sec", "90 sec", "All")
+                                setItems("Off", "Low", "Medium", "High", "Nightmare")
                             }
-                            defaultSettingsLabel("Show trail for uncontrolled aircraft:")
-                            defaultSettingsSelectBox<String>().apply {
-                                setItems("Never", "When selected", "Always")
-                            }
-                            newSettingsRow()
-                            defaultSettingsLabel("Range rings interval:")
-                            defaultSettingsSelectBox<String>().apply {
-                                setItems("Off", "5 nm", "10 nm", "15 nm", "20 nm")
-                            }
-                            defaultSettingsLabel("MVA sector altitude:")
-                            defaultSettingsSelectBox<String>().apply {
-                                setItems("Hide", "Show")
+                            if (GAME.gameServer?.playerNo == 1.byte) {
+                                defaultSettingsLabel("Game speed:")
+                                defaultSettingsSelectBox<String>().apply {
+                                    setItems("1x", "2x", "4x", "8x")
+                                }
                             }
                             newSettingsRow()
-                            defaultSettingsLabel("ILS display:")
+                            defaultSettingsLabel("Night mode:")
                             defaultSettingsSelectBox<String>().apply {
-                                setItems("Realistic", "Simple")
+                                setItems("Off", "On")
                             }
-                            defaultSettingsLabel("Colour style:")
-                            defaultSettingsSelectBox<String>().apply {
-                                setItems("More colourful", "More standardised")
-                            }
-                            newSettingsRow()
-                            defaultSettingsLabel("Show distance to go:")
-                            defaultSettingsSelectBox<String>().apply {
-                                setItems("Never", "Arrivals only", "All aircraft")
-                            }
+                            defaultSettingsLabel("Active from:")
                         }
                         setOverscroll(false, false)
-                    }.cell(growY = true)
+                    }.cell(growY = true, padRight = 100f)
+                    table {
+                        textButton("Manage traffic", "SettingsSubpane").cell(width = BUTTON_WIDTH_BIG / 2f, height = BUTTON_HEIGHT_BIG )
+                        row().padTop(50f)
+                        textButton("Custom aircraft", "SettingsSubpane").cell(width = BUTTON_WIDTH_BIG / 2f, height = BUTTON_HEIGHT_BIG)
+                    }
                     row().padTop(50f)
-                    textButton("Back", "Menu").cell(width = BUTTON_WIDTH_BIG, height = BUTTON_HEIGHT_BIG, padBottom = BOTTOM_BUTTON_MARGIN, align = Align.bottom).addChangeListener { _, _ ->
+                    textButton("Back", "Menu").cell(width = BUTTON_WIDTH_BIG, height = BUTTON_HEIGHT_BIG, padBottom = BOTTOM_BUTTON_MARGIN, align = Align.bottom, colspan = 2).addChangeListener { _, _ ->
                         GAME.setScreen<MainSettingsScreen>()
                     }
                 }

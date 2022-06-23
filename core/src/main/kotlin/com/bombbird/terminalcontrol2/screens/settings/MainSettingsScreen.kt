@@ -30,10 +30,8 @@ class MainSettingsScreen(prevScreen: KtxScreen): BasicUIScreen() {
                     }
                     textButton("Display", "MainSettings").apply {
                         addChangeListener { _, _ ->
-                            addChangeListener { _, _ ->
-                                if (!GAME.containsScreen<DisplaySettingsScreen>()) GAME.addScreen(DisplaySettingsScreen())
-                                GAME.setScreen<DisplaySettingsScreen>()
-                            }
+                            if (!GAME.containsScreen<DisplaySettingsScreen>()) GAME.addScreen(DisplaySettingsScreen())
+                            GAME.setScreen<DisplaySettingsScreen>()
                         }
                     }.cell(width = BUTTON_WIDTH_BIG, height = BUTTON_HEIGHT_BIG, padRight = 40f)
                     textButton("Datatag", "MainSettings").apply {
@@ -44,12 +42,14 @@ class MainSettingsScreen(prevScreen: KtxScreen): BasicUIScreen() {
                     row().padTop(30f)
                     textButton("Alerts", "MainSettings").apply {
                         addChangeListener { _, _ ->
-                            // TODO Go to alerts settings screen
+                            if (!GAME.containsScreen<AlertSettingsScreen>()) GAME.addScreen(AlertSettingsScreen())
+                            GAME.setScreen<AlertSettingsScreen>()
                         }
                     }.cell(width = BUTTON_WIDTH_BIG, height = BUTTON_HEIGHT_BIG, padRight = 40f)
                     textButton("Sounds", "MainSettings").apply {
                         addChangeListener { _, _ ->
-                            // TODO Go to sound settings screen
+                            if (!GAME.containsScreen<SoundSettingsScreen>()) GAME.addScreen(SoundSettingsScreen())
+                            GAME.setScreen<SoundSettingsScreen>()
                         }
                     }.cell(width = BUTTON_WIDTH_BIG, height = BUTTON_HEIGHT_BIG)
                     row()

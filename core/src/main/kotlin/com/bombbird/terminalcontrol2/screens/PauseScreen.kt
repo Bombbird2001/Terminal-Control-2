@@ -1,6 +1,7 @@
 package com.bombbird.terminalcontrol2.screens
 
 import com.bombbird.terminalcontrol2.global.*
+import com.bombbird.terminalcontrol2.screens.settings.GameSettingsScreen
 import com.bombbird.terminalcontrol2.screens.settings.MainSettingsScreen
 import com.bombbird.terminalcontrol2.ui.addChangeListener
 import ktx.assets.disposeSafely
@@ -42,6 +43,7 @@ class PauseScreen: BasicUIScreen() {
                             GAME.removeScreen<RadarScreen>()
                             radarScreen = null
                             GAME.removeScreen<MainSettingsScreen>()
+                            GAME.removeScreen<GameSettingsScreen>()
                         }
                 }
             }

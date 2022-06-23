@@ -111,7 +111,10 @@ fun KTableWidget.defaultSettingsLabel(text: String): Label {
 @Scene2dDsl
 /** Constructs and returns a default select box for settings pages */
 fun <T> KTableWidget.defaultSettingsSelectBox(): KSelectBox<T> {
-    return selectBox<T>("Settings").cell(width = BUTTON_WIDTH_BIG / 2, height = BUTTON_HEIGHT_BIG / 1.5f)
+    return selectBox<T>("Settings").apply {
+        list.alignment = Align.center
+        setAlignment(Align.center)
+    }.cell(width = BUTTON_WIDTH_BIG / 2, height = BUTTON_HEIGHT_BIG / 1.5f)
 }
 
 @Scene2dDsl
