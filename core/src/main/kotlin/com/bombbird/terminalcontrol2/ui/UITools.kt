@@ -102,8 +102,9 @@ fun <T> SelectBox<T>.disallowDisabledClickThrough() {
  * @param text the text to display
  * */
 fun KTableWidget.defaultSettingsLabel(text: String): Label {
-    return label(text, "SettingsOption").cell(width = BUTTON_WIDTH_BIG / 3, height = BUTTON_HEIGHT_BIG / 1.5f, padRight = 30f).apply {
+    return label(text, "SettingsOption").cell(width = BUTTON_WIDTH_BIG / 2, height = BUTTON_HEIGHT_BIG / 1.5f, padRight = 30f).apply {
         setAlignment(Align.right)
+        wrap = true
     }
 }
 

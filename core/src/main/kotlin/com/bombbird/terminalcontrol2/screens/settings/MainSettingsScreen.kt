@@ -30,7 +30,10 @@ class MainSettingsScreen(prevScreen: KtxScreen): BasicUIScreen() {
                     }
                     textButton("Display", "MainSettings").apply {
                         addChangeListener { _, _ ->
-                            // TODO Go to display settings screen
+                            addChangeListener { _, _ ->
+                                if (!GAME.containsScreen<DisplaySettingsScreen>()) GAME.addScreen(DisplaySettingsScreen())
+                                GAME.setScreen<DisplaySettingsScreen>()
+                            }
                         }
                     }.cell(width = BUTTON_WIDTH_BIG, height = BUTTON_HEIGHT_BIG, padRight = 40f)
                     textButton("Datatag", "MainSettings").apply {

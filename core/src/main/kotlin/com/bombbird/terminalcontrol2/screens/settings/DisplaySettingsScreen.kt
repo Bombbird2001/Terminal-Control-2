@@ -3,27 +3,29 @@ package com.bombbird.terminalcontrol2.screens.settings
 import com.badlogic.gdx.utils.Align
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.screens.BasicUIScreen
-import com.bombbird.terminalcontrol2.ui.*
+import com.bombbird.terminalcontrol2.ui.addChangeListener
+import com.bombbird.terminalcontrol2.ui.defaultSettingsLabel
+import com.bombbird.terminalcontrol2.ui.defaultSettingsSelectBox
+import com.bombbird.terminalcontrol2.ui.newSettingsRow
 import ktx.scene2d.*
 
-class GameSettingsScreen: BasicUIScreen() {
+/** Settings screen for display settings */
+class DisplaySettingsScreen: BasicUIScreen() {
     init {
         stage.actors {
             container = container {
                 fill()
                 setSize(UI_WIDTH, UI_HEIGHT)
                 table unused@{
-                    label("These settings are specific to the current game", "SettingsHeader").cell(padTop = 70f)
-                    row().padTop(50f)
                     scrollPane("SettingsPane") {
                         table {
-                            defaultSettingsLabel("Weather:")
+                            defaultSettingsLabel("Trajectory line duration:")
                             defaultSettingsSelectBox<String>().apply {
-                                setItems("Live weather", "Random weather", "Custom weather")
+                                setItems("Off", "30 sec", "60 sec", "90 sec", "120 sec")
                             }
-                            defaultSettingsLabel("Emergencies:")
+                            defaultSettingsLabel("Radar sweep:")
                             defaultSettingsSelectBox<String>().apply {
-                                setItems("Off", "Low", "Medium", "High")
+                                setItems("0.5 sec", "1 sec", "2 sec", "4 sec", "10 sec") // TODO Incremental unlocks
                             }
                             newSettingsRow()
                             defaultSettingsLabel("Aircraft trail:")
@@ -59,7 +61,7 @@ class GameSettingsScreen: BasicUIScreen() {
                             }
                         }
                         setOverscroll(false, false)
-                    }.cell(growY = true)
+                    }.cell(growY = true, padTop = 70f)
                     row().padTop(50f)
                     textButton("Back", "Menu").cell(width = BUTTON_WIDTH_BIG, height = BUTTON_HEIGHT_BIG, padBottom = BOTTOM_BUTTON_MARGIN, align = Align.bottom).addChangeListener { _, _ ->
                         GAME.setScreen<MainSettingsScreen>()
