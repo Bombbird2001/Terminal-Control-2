@@ -1,15 +1,23 @@
 package com.bombbird.terminalcontrol2.screens.settings
 
+import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.utils.Align
 import com.bombbird.terminalcontrol2.global.*
-import com.bombbird.terminalcontrol2.screens.BasicUIScreen
 import com.bombbird.terminalcontrol2.ui.addChangeListener
 import com.bombbird.terminalcontrol2.ui.defaultSettingsLabel
 import com.bombbird.terminalcontrol2.ui.defaultSettingsSelectBox
 import ktx.scene2d.*
 
 /** Settings screen for sound settings */
-class SoundSettingsScreen: BasicUIScreen() {
+class SoundSettingsScreen: BaseSettingsScreen() {
+    companion object {
+        private const val SOUND_EFFECTS = "Sound effects only"
+        private const val PILOT_VOICES = "Pilot voices"
+    }
+
+    private val commsSelectBox: KSelectBox<String>
+    private val alertsSelectBox: KSelectBox<String>
+
     init {
         stage.actors {
             container = container {
@@ -19,21 +27,61 @@ class SoundSettingsScreen: BasicUIScreen() {
                     scrollPane("SettingsPane") {
                         table {
                             defaultSettingsLabel("Communications:")
-                            defaultSettingsSelectBox<String>().apply {
-                                setItems("Off", "Sound effects only", "Pilot voices")
+                            commsSelectBox = defaultSettingsSelectBox<String>().apply {
+                                setItems(OFF, SOUND_EFFECTS, PILOT_VOICES)
                             }
                             defaultSettingsLabel("Alerts:")
-                            defaultSettingsSelectBox<String>().apply {
-                                setItems("Off", "On")
+                            alertsSelectBox = defaultSettingsSelectBox<String>().apply {
+                                setItems(OFF, ON)
                             }
                         }
                     }.cell(growY = true, padTop = 70f)
                     row().padTop(50f)
-                    textButton("Back", "Menu").cell(width = BUTTON_WIDTH_BIG, height = BUTTON_HEIGHT_BIG, padBottom = BOTTOM_BUTTON_MARGIN, align = Align.bottom).addChangeListener { _, _ ->
-                        GAME.setScreen<MainSettingsScreen>()
+                    table {
+                        textButton("Cancel", "Menu").cell(width = BUTTON_WIDTH_BIG / 2, height = BUTTON_HEIGHT_BIG, padBottom = BOTTOM_BUTTON_MARGIN, padRight = 100f, align = Align.bottom).addChangeListener { _, _ ->
+                            GAME.setScreen<MainSettingsScreen>()
+                        }
+                        textButton("Confirm", "Menu").cell(width = BUTTON_WIDTH_BIG / 2, height = BUTTON_HEIGHT_BIG, padBottom = BOTTOM_BUTTON_MARGIN, align = Align.bottom).addChangeListener { _, _ ->
+                            updateClientSettings()
+                            GAME.setScreen<MainSettingsScreen>()
+                        }
                     }
                 }
             }
         }
+    }
+
+    /**
+     * Overrides the base [BaseSettingsScreen.setToCurrentClientSettings] function; will take the relevant sound settings
+     * and set the select box choices based on them
+     */
+    override fun setToCurrentClientSettings() {
+        commsSelectBox.selected = when (COMMUNICATIONS_SOUND) {
+            COMMS_OFF -> OFF
+            COMMS_SOUND_EFFECTS -> SOUND_EFFECTS
+            COMMS_PILOT_VOICES -> PILOT_VOICES
+            else -> {
+                Gdx.app.log("SoundSettingsScreen", "Unknown communication voice setting $COMMUNICATIONS_SOUND")
+                PILOT_VOICES
+            }
+        }
+        alertsSelectBox.selected = if (ALERT_SOUND_ON) ON else OFF
+    }
+
+    /**
+     * Overrides the base [BaseSettingsScreen.setToCurrentClientSettings] function; will take the select box choices
+     * and set the relevant sound settings based on them
+     */
+    override fun updateClientSettings() {
+        COMMUNICATIONS_SOUND = when (commsSelectBox.selected) {
+            OFF -> COMMS_OFF
+            SOUND_EFFECTS -> COMMS_SOUND_EFFECTS
+            PILOT_VOICES -> COMMS_PILOT_VOICES
+            else -> {
+                Gdx.app.log("SoundSettingsScreen", "Unknown communication voice selection ${commsSelectBox.selected}")
+                COMMS_PILOT_VOICES
+            }
+        }
+        ALERT_SOUND_ON = alertsSelectBox.selected != OFF
     }
 }

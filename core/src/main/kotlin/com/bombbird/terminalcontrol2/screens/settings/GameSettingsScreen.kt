@@ -8,6 +8,7 @@ import com.bombbird.terminalcontrol2.utilities.byte
 import ktx.scene2d.*
 
 /** Settings screen for game-specific settings */
+// TODO Inherit BaseSettingsScreen
 class GameSettingsScreen: BasicUIScreen() {
     init {
         stage.actors {

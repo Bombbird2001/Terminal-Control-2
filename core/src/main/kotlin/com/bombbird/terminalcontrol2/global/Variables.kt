@@ -3,6 +3,15 @@ package com.bombbird.terminalcontrol2.global
 import ktx.collections.GdxArray
 
 /** Global variables for use, can be modified */
+const val UNCONTROLLED_AIRCRAFT_TRAIL_OFF: Byte = 0
+const val UNCONTROLLED_AIRCRAFT_TRAIL_SELECTED: Byte = 1
+const val UNCONTROLLED_AIRCRAFT_TRAIL_SHOW: Byte = 2
+const val SHOW_DIST_TO_GO_HIDE: Byte = 3
+const val SHOW_DIST_TO_GO_ARRIVALS: Byte = 4
+const val SHOW_DIST_TO_GO_ALL: Byte = 5
+const val COMMS_OFF: Byte = 6
+const val COMMS_SOUND_EFFECTS: Byte = 7
+const val COMMS_PILOT_VOICES: Byte = 8
 
 /** Screen size retrieved with Gdx.graphics */
 var WIDTH = 0f
@@ -34,11 +43,28 @@ var MIN_SEP = 3f
 var TRANS_ALT = 18000
 var TRANS_LVL = 180
 
-/** Radar refresh rate */
-var RADAR_REFRESH_INTERVAL_S = 0.5f
-
 /** Datatag style to use */
 var DATATAG_STYLE_ID: Byte = 0
 
 /** Max arrival count for this map */
 var MAX_ARRIVALS: Byte = 20
+
+/** Display settings */
+var TRAJECTORY_DURATION_S = 90
+var RADAR_REFRESH_INTERVAL_S = 2f
+var TRAIL_DURATION_S = Int.MAX_VALUE
+var SHOW_UNCONTROLLED_AIRCRAFT_TRAIL = UNCONTROLLED_AIRCRAFT_TRAIL_SELECTED
+var RANGE_RING_INTERVAL_NM = 0
+var SHOW_MVA_ALTITUDE = true
+var REALISTIC_ILS_DISPLAY = true
+var COLOURFUL_STYLE = true
+var SHOW_DIST_TO_GO = SHOW_DIST_TO_GO_ALL
+
+/** Sound settings */
+var COMMUNICATIONS_SOUND = COMMS_PILOT_VOICES
+var ALERT_SOUND_ON = true
+
+/** Advanced trajectory alert settings */
+var ADV_TRAJECTORY_DURATION_S = 0
+var APW_DURATION_S = 0
+var STCA_DURATION_S = 0
