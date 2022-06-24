@@ -38,10 +38,10 @@ class SoundSettingsScreen: BaseSettingsScreen() {
                     }.cell(growY = true, padTop = 70f)
                     row().padTop(50f)
                     table {
-                        textButton("Cancel", "Menu").cell(width = BUTTON_WIDTH_BIG / 2, height = BUTTON_HEIGHT_BIG, padBottom = BOTTOM_BUTTON_MARGIN, padRight = 100f, align = Align.bottom).addChangeListener { _, _ ->
+                        textButton("Cancel", "Menu").cell(width = BUTTON_WIDTH_BIG / 1.5f, height = BUTTON_HEIGHT_BIG, padBottom = BOTTOM_BUTTON_MARGIN, padRight = 100f, align = Align.bottom).addChangeListener { _, _ ->
                             GAME.setScreen<MainSettingsScreen>()
                         }
-                        textButton("Confirm", "Menu").cell(width = BUTTON_WIDTH_BIG / 2, height = BUTTON_HEIGHT_BIG, padBottom = BOTTOM_BUTTON_MARGIN, align = Align.bottom).addChangeListener { _, _ ->
+                        textButton("Confirm", "Menu").cell(width = BUTTON_WIDTH_BIG / 1.5f, height = BUTTON_HEIGHT_BIG, padBottom = BOTTOM_BUTTON_MARGIN, align = Align.bottom).addChangeListener { _, _ ->
                             updateClientSettings()
                             GAME.setScreen<MainSettingsScreen>()
                         }
