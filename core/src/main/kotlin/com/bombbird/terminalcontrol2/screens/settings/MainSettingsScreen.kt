@@ -23,6 +23,7 @@ class MainSettingsScreen(prevScreen: KtxScreen): BasicUIScreen() {
                         textButton("Game settings", "MainSettings").apply {
                             addChangeListener { _, _ ->
                                 if (!GAME.containsScreen<GameSettingsScreen>()) GAME.addScreen(GameSettingsScreen())
+                                GAME.getScreen<GameSettingsScreen>().setToCurrentGameSettings()
                                 GAME.setScreen<GameSettingsScreen>()
                             }
                         }.cell(width = BUTTON_WIDTH_BIG, height = BUTTON_HEIGHT_BIG, colspan = 2, padTop = 150f)

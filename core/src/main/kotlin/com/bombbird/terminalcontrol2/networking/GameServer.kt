@@ -42,6 +42,19 @@ class GameServer {
         const val SERVER_TO_CLIENT_UPDATE_INTERVAL_FAST = 1000.0 / SERVER_TO_CLIENT_UPDATE_RATE_FAST
         const val SERVER_TO_CLIENT_UPDATE_INTERVAL_SLOW = 1000.0 / SERVER_TO_CLIENT_UPDATE_RATE_SLOW
         const val SERVER_METAR_UPDATE_INTERVAL = SERVER_METAR_UPDATE_INTERVAL_MINS * 60 * 1000
+
+        const val WEATHER_LIVE = 0
+        const val WEATHER_RANDOM = 1
+        const val WEATHER_STATIC = 2
+        const val EMERGENCY_OFF = 3
+        const val EMERGENCY_LOW = 4
+        const val EMERGENCY_MEDIUM = 5
+        const val EMERGENCY_HIGH = 6
+        const val STORMS_OFF = 7
+        const val STORMS_LOW = 8
+        const val STORMS_MEDIUM = 9
+        const val STORMS_HIGH = 10
+        const val STORMS_NIGHTMARE = 11
     }
 
     private val loopRunning = AtomicBoolean(false)
@@ -101,6 +114,14 @@ class GameServer {
 
     var score = 0
     var highScore = 0
+
+    /** Game specific settings */
+    var weatherMode = WEATHER_LIVE
+    var emergencyRate = EMERGENCY_LOW
+    var stormsDensity = STORMS_OFF
+    var gameSpeed = 1
+    var nightModeStart = -1
+    var nightModeEnd = -1
 
     // var timeCounter = 0f
     // var frames = 0

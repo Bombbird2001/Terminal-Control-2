@@ -18,10 +18,7 @@ import com.badlogic.gdx.utils.Align
 import com.badlogic.gdx.utils.Scaling
 import com.badlogic.gdx.utils.viewport.ScalingViewport
 import com.badlogic.gdx.utils.viewport.Viewport
-import com.bombbird.terminalcontrol2.global.BUTTON_HEIGHT_BIG
-import com.bombbird.terminalcontrol2.global.BUTTON_WIDTH_BIG
-import com.bombbird.terminalcontrol2.global.WORLD_HEIGHT
-import com.bombbird.terminalcontrol2.global.WORLD_WIDTH
+import com.bombbird.terminalcontrol2.global.*
 import ktx.scene2d.*
 
 /**
@@ -115,6 +112,15 @@ fun <T> KTableWidget.defaultSettingsSelectBox(): KSelectBox<T> {
         list.alignment = Align.center
         setAlignment(Align.center)
     }.cell(width = BUTTON_WIDTH_BIG / 2, height = BUTTON_HEIGHT_BIG / 1.5f)
+}
+
+@Scene2dDsl
+/** Constructs and returns a default select box for time settings for night mode */
+fun <T> KTableWidget.nightModeTimeSelectBox(): KSelectBox<T> {
+    return selectBox<T>("Settings").apply {
+        list.alignment = Align.center
+        setAlignment(Align.center)
+    }.cell(width = 100f, height = BUTTON_HEIGHT_BIG / 1.5f, padRight = 20f)
 }
 
 @Scene2dDsl
