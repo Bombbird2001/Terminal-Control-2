@@ -39,7 +39,8 @@ data class MetarRequest(
 /** Requests METAR for all airports in the current gameServer instance */
 fun requestAllMetar() {
     val randomWeatherAirportList = ArrayList<Entity>()
-    val randomUpdateNeeded = LocalTime.now().minute % 30 < 5 // || true // TODO check if is a new game that has not yet requested/generated METAR
+    // Check if is a new game that has not yet requested/generated METAR, or the minute of requesting is from 0-4 or 30-34
+    val randomUpdateNeeded = GAME.gameServer?.initialisingWeather?.get() == true || LocalTime.now().minute % 30 < 5
     val metarRequest = MetarRequest(Secrets.GET_METAR_PW, ArrayList<MetarRequest.MetarMapper>().apply {
         (GAME.gameServer?.airports?.values() ?: return).forEach { arpt ->
             val realIcao = arpt.entity[MetarInfo.mapper]?.realLifeIcao ?: return@forEach

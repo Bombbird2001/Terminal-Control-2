@@ -63,7 +63,7 @@ class GameServer {
     private val gamePaused = AtomicBoolean(false)
     private var lock = ReentrantLock()
     private val pauseCondition = lock.newCondition()
-    private val loadingWeather = AtomicBoolean(true)
+    val initialisingWeather = AtomicBoolean(true)
     private val initialWeatherCondition = lock.newCondition()
     val playerNo = 1.byte // TODO Change depending on current number of connected players
     private val server = Server()
@@ -138,7 +138,7 @@ class GameServer {
         engine.addSystem(ControlStateSystem(1f))
         engine.addSystem(TrafficSystem(1f))
 
-        if (loadingWeather.get()) lock.withLock {
+        if (initialisingWeather.get()) lock.withLock {
             requestAllMetar()
             initialWeatherCondition.await()
         }
@@ -333,10 +333,10 @@ class GameServer {
         // println("Slow UDP sent, time passed since program start: ${(System.currentTimeMillis() - startTime) / 1000f}s")
     }
 
-    /** Notifies the main server thread that the METAR has been loaded and to proceed with starting the server */
+    /** Notifies the main server thread that the initial METAR has been loaded and to proceed with starting the server */
     fun notifyWeatherLoaded() {
-        if (loadingWeather.get()) lock.withLock {
-            loadingWeather.set(false)
+        if (initialisingWeather.get()) lock.withLock {
+            initialisingWeather.set(false)
             initialWeatherCondition.signal()
         }
     }

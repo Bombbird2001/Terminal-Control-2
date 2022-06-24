@@ -115,7 +115,6 @@ fun createArrival(callsign: String, icaoType: String, airport: Entity, gs: GameS
  * @return the [SidStar.STAR] chosen
  * */
 private fun randomStar(airport: Entity): SidStar.STAR? {
-    val currentTime = UsabilityFilter.DAY_ONLY // TODO change depending on whether night operations are active
     val availableStars = GdxArray<SidStar.STAR>()
     val runwaysAvailable = HashSet<String>()
     airport[RunwayChildren.mapper]?.rwyMap?.values()?.forEach { rwy ->
@@ -125,7 +124,7 @@ private fun randomStar(airport: Entity): SidStar.STAR? {
     airport[STARChildren.mapper]?.starMap?.values()?.forEach { star ->
         // Add to list of eligible STARs if both runway and time restriction checks passes
         if ((star.rwyLegs.keys() intersect  runwaysAvailable).isEmpty()) return@forEach
-        if (star.timeRestriction != UsabilityFilter.DAY_AND_NIGHT && star.timeRestriction != currentTime) return@forEach
+        if (!star.isUsableForDayNight()) return@forEach
         availableStars.add(star)
     }
 
@@ -255,13 +254,12 @@ private fun createDeparture(callsign: String, icaoType: String, rwy: Entity, gs:
  * @return the [SidStar.SID] chosen
  * */
 private fun randomSid(rwy: Entity): SidStar.SID? {
-    val currentTime = UsabilityFilter.DAY_ONLY // TODO change depending on whether night operations are active
     val availableSids = GdxArray<SidStar.SID>()
     val rwyName = rwy[RunwayInfo.mapper]?.rwyName
     rwy[RunwayInfo.mapper]?.airport?.entity?.get(SIDChildren.mapper)?.sidMap?.values()?.forEach { sid ->
         // Add to list of eligible SIDs if both runway and time restriction checks passes
         if (!sid.rwyInitialClimbs.containsKey(rwyName)) return@forEach
-        if (sid.timeRestriction != UsabilityFilter.DAY_AND_NIGHT && sid.timeRestriction != currentTime) return@forEach
+        if (!sid.isUsableForDayNight()) return@forEach
         availableSids.add(sid)
     }
 
@@ -322,14 +320,13 @@ private fun generateRandomCallsign(airline: String, private: Boolean, gs: GameSe
  * @return a [GdxArray] of strings containing the eligible approach names
  * */
 fun getAvailableApproaches(airport: Entity): GdxArray<String> {
-    val currentTime = UsabilityFilter.DAY_ONLY // TODO change depending on whether night operations are active
     val array = GdxArray<String>().apply { add("Approach") }
     val rwys = airport[RunwayChildren.mapper]?.rwyMap ?: return array
     airport[ApproachChildren.mapper]?.approachMap?.values()?.forEach { app ->
         app.entity[ApproachInfo.mapper]?.also {
             // Add to list of eligible approaches if its runway is active for landings and time restriction checks passes
             if (rwys[it.rwyId]?.entity?.get(ActiveLanding.mapper) == null) return@forEach
-            if (app.timeRestriction != UsabilityFilter.DAY_AND_NIGHT && app.timeRestriction != currentTime) return@forEach
+            if (!app.isUsableForDayNight()) return@forEach
             array.add(it.approachName)
         }
     }
