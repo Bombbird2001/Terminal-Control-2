@@ -6,6 +6,7 @@ import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.math.Polygon
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.GAME
+import com.bombbird.terminalcontrol2.global.MAG_HDG_DEV
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.navigation.SidStar
 import ktx.ashley.get
@@ -526,7 +527,7 @@ fun calculateArrivalSpawnPoint(route: Route, primarySector: Polygon): Triple<Flo
                 oppSpawnTrack = getRequiredTrack(originX, originY, endX, endY)
             } else if (finalPrevVectorLeg != null) {
                 // If a previous vector leg exists
-                oppSpawnTrack = finalPrevVectorLeg.heading.toFloat() + 180
+                oppSpawnTrack = finalPrevVectorLeg.heading.toFloat() + 180 - MAG_HDG_DEV
                 val trackToUse = Math.toRadians(convertWorldAndRenderDeg(oppSpawnTrack).toDouble())
                 endX = (nmToPx(75) * cos(trackToUse)).toFloat() + pos.x
                 endY = (nmToPx(75) * sin(trackToUse)).toFloat() + pos.y

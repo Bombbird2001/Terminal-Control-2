@@ -30,6 +30,7 @@ class GameLoading(createServer: Boolean): BasicUIScreen() {
                                         GAME.gameClientScreen = RadarScreen(if (createServer) "127.0.0.1" else Secrets.TEST_IP_ADDRESS, "TCTP", createServer).apply {
                                             GAME.addScreen(this)
                                             GAME.setScreen<RadarScreen>()
+                                            GAME.removeScreen<GameLoading>()
                                         }
                                     }
                                 }, 0.35f)

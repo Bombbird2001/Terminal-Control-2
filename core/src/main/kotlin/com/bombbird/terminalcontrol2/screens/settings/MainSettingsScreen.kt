@@ -19,6 +19,7 @@ class MainSettingsScreen(prevScreen: KtxScreen): BasicUIScreen() {
                 fill()
                 setSize(UI_WIDTH, UI_HEIGHT)
                 table {
+                    row().padTop(150f)
                     if (GAME.gameServer != null) {
                         textButton("Game settings", "MainSettings").apply {
                             addChangeListener { _, _ ->
@@ -26,14 +27,14 @@ class MainSettingsScreen(prevScreen: KtxScreen): BasicUIScreen() {
                                 GAME.getScreen<GameSettingsScreen>().setToCurrentGameSettings()
                                 GAME.setScreen<GameSettingsScreen>()
                             }
-                        }.cell(width = BUTTON_WIDTH_BIG, height = BUTTON_HEIGHT_BIG, colspan = 2, padTop = 150f)
+                        }.cell(width = BUTTON_WIDTH_BIG, height = BUTTON_HEIGHT_BIG, colspan = 2)
                         row().padTop(30f)
                     }
                     textButton("Display", "MainSettings").apply {
                         addChangeListener { _, _ ->
-                            if (!GAME.containsScreen<DisplaySettingsScreen>()) GAME.addScreen(DisplaySettingsScreen())
-                            GAME.getScreen<DisplaySettingsScreen>().setToCurrentClientSettings()
-                            GAME.setScreen<DisplaySettingsScreen>()
+                            if (!GAME.containsScreen<DisplaySettings>()) GAME.addScreen(DisplaySettings())
+                            GAME.getScreen<DisplaySettings>().setToCurrentClientSettings()
+                            GAME.setScreen<DisplaySettings>()
                         }
                     }.cell(width = BUTTON_WIDTH_BIG, height = BUTTON_HEIGHT_BIG, padRight = 40f)
                     textButton("Datatag", "MainSettings").apply {
@@ -44,20 +45,20 @@ class MainSettingsScreen(prevScreen: KtxScreen): BasicUIScreen() {
                     row().padTop(30f)
                     textButton("Alerts", "MainSettings").apply {
                         addChangeListener { _, _ ->
-                            if (!GAME.containsScreen<AlertSettingsScreen>()) GAME.addScreen(AlertSettingsScreen())
-                            GAME.getScreen<AlertSettingsScreen>().setToCurrentClientSettings()
-                            GAME.setScreen<AlertSettingsScreen>()
+                            if (!GAME.containsScreen<AlertSettings>()) GAME.addScreen(AlertSettings())
+                            GAME.getScreen<AlertSettings>().setToCurrentClientSettings()
+                            GAME.setScreen<AlertSettings>()
                         }
                     }.cell(width = BUTTON_WIDTH_BIG, height = BUTTON_HEIGHT_BIG, padRight = 40f)
                     textButton("Sounds", "MainSettings").apply {
                         addChangeListener { _, _ ->
-                            if (!GAME.containsScreen<SoundSettingsScreen>()) GAME.addScreen(SoundSettingsScreen())
-                            GAME.getScreen<SoundSettingsScreen>().setToCurrentClientSettings()
-                            GAME.setScreen<SoundSettingsScreen>()
+                            if (!GAME.containsScreen<SoundSettings>()) GAME.addScreen(SoundSettings())
+                            GAME.getScreen<SoundSettings>().setToCurrentClientSettings()
+                            GAME.setScreen<SoundSettings>()
                         }
                     }.cell(width = BUTTON_WIDTH_BIG, height = BUTTON_HEIGHT_BIG)
-                    row()
-                    textButton("Back", "Menu").cell(width = BUTTON_WIDTH_BIG, height = BUTTON_HEIGHT_BIG, colspan = 2, padBottom = BOTTOM_BUTTON_MARGIN, expandY = true, align = Align.bottom).addChangeListener { _, _ ->
+                    row().padTop(130f)
+                    textButton("Back", "Menu").cell(width = BUTTON_WIDTH_BIG, height = BUTTON_HEIGHT_BIG, colspan = 2, expandY = true, padBottom = BOTTOM_BUTTON_MARGIN, align = Align.bottom).addChangeListener { _, _ ->
                         GAME.setScreen(prevScreen::class.java)
                     }
                 }

@@ -3,7 +3,7 @@ package com.bombbird.terminalcontrol2.screens.settings
 import com.bombbird.terminalcontrol2.screens.BasicUIScreen
 
 /** Abstract base class for the sub-setting screens; should not be instantiated directly */
-abstract class BaseSettingsScreen: BasicUIScreen() {
+abstract class BaseSettings: BasicUIScreen() {
     companion object {
         const val OFF = "Off"
         const val ON = "On"

@@ -9,7 +9,7 @@ import com.bombbird.terminalcontrol2.ui.defaultSettingsSelectBox
 import ktx.scene2d.*
 
 /** Settings screen for sound settings */
-class SoundSettingsScreen: BaseSettingsScreen() {
+class SoundSettings: BaseSettings() {
     companion object {
         private const val SOUND_EFFECTS = "Sound effects only"
         private const val PILOT_VOICES = "Pilot voices"
@@ -52,7 +52,7 @@ class SoundSettingsScreen: BaseSettingsScreen() {
     }
 
     /**
-     * Overrides the base [BaseSettingsScreen.setToCurrentClientSettings] function; will take the relevant sound settings
+     * Overrides the base [BaseSettings.setToCurrentClientSettings] function; will take the relevant sound settings
      * and set the select box choices based on them
      */
     override fun setToCurrentClientSettings() {
@@ -69,7 +69,7 @@ class SoundSettingsScreen: BaseSettingsScreen() {
     }
 
     /**
-     * Overrides the base [BaseSettingsScreen.setToCurrentClientSettings] function; will take the select box choices
+     * Overrides the base [BaseSettings.setToCurrentClientSettings] function; will take the select box choices
      * and set the relevant sound settings based on them
      */
     override fun updateClientSettings() {

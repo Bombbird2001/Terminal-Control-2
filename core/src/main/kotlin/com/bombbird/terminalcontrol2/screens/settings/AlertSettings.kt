@@ -9,7 +9,7 @@ import com.bombbird.terminalcontrol2.ui.newSettingsRow
 import ktx.scene2d.*
 
 /** Settings screen for alert settings */
-class AlertSettingsScreen: BaseSettingsScreen() {
+class AlertSettings: BaseSettings() {
     private val trajectorySelectBox: KSelectBox<String>
     private val apwSelectBox: KSelectBox<String>
     private val stcaSelectBox: KSelectBox<String>
@@ -54,7 +54,7 @@ class AlertSettingsScreen: BaseSettingsScreen() {
     }
 
     /**
-     * Overrides the base [BaseSettingsScreen.setToCurrentClientSettings] function; will take the relevant alert settings
+     * Overrides the base [BaseSettings.setToCurrentClientSettings] function; will take the relevant alert settings
      * and set the select box choices based on them
      */
     override fun setToCurrentClientSettings() {
@@ -64,7 +64,7 @@ class AlertSettingsScreen: BaseSettingsScreen() {
     }
 
     /**
-     * Overrides the base [BaseSettingsScreen.setToCurrentClientSettings] function; will take the select box choices
+     * Overrides the base [BaseSettings.setToCurrentClientSettings] function; will take the select box choices
      * and set the relevant alert settings based on them
      */
     override fun updateClientSettings() {

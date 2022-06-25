@@ -11,6 +11,7 @@ import com.bombbird.terminalcontrol2.global.getEngine
 import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.ui.addDatatagInputListeners
+import com.bombbird.terminalcontrol2.ui.getNewDatatagLabelText
 import com.bombbird.terminalcontrol2.ui.updateDatatagStyle
 import com.bombbird.terminalcontrol2.ui.updateDatatagText
 import com.bombbird.terminalcontrol2.utilities.AircraftTypeData
@@ -151,6 +152,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                     if (serialisedAircraft.locCap) this += LocalizerCaptured()
                     if (serialisedAircraft.visCap) this += VisualCaptured()
                     if (serialisedAircraft.waitingTakeoff) this += WaitingTakeoff()
+                    get(Datatag.mapper)?.let { updateDatatagText(it, getNewDatatagLabelText(this, it.minimised))}
                 }
             }
         }
