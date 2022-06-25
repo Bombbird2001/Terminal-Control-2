@@ -19,7 +19,7 @@ interface UsabilityFilter {
          * */
         fun isNight(): Boolean {
             GAME.gameServer?.apply {
-                if (nightModeStart == -1 && nightModeEnd == -1) return true
+                if (nightModeStart == -1 && nightModeEnd == -1) return false
                 if (nightModeStart == nightModeEnd) return true
                 val timeNow = LocalTime.now()
                 val timeValue = timeNow.hour * 100 + timeNow.minute

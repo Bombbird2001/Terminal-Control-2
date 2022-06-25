@@ -33,7 +33,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
         with<AircraftInfo> {
             icaoCallsign = callsign
             icaoType = icaoAircraftType
-            aircraftPerf = AircraftTypeData.getAircraftPerf(icaoAircraftType, flightType)
+            if (!onClient) aircraftPerf = AircraftTypeData.getAircraftPerf(icaoAircraftType, flightType)
         }
         with<Direction> {
             trackUnitVector = Vector2(Vector2.Y)
@@ -127,6 +127,11 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                     get(GroundTrack.mapper)?.apply {
                         trackVectorPxps.x = serialisedAircraft.trackX
                         trackVectorPxps.y = serialisedAircraft.trackY
+                    }
+                    get(CommandTarget.mapper)?.apply {
+                        targetHdgDeg = serialisedAircraft.targetHdgDeg.toFloat()
+                        targetAltFt = serialisedAircraft.targetAltFt * 100
+                        targetIasKt = serialisedAircraft.targetIasKt
                     }
                     get(RadarData.mapper)?.apply {
                         position.x = serialisedAircraft.x
@@ -248,6 +253,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                              val directionX: Float = 0f, val directionY: Float = 0f,
                              val speedKts: Float = 0f, val vertSpdFpm: Float = 0f, val angularSpdDps: Float = 0f,
                              val trackX: Float = 0f, val trackY: Float = 0f,
+                             val targetHdgDeg: Short = 0, val targetAltFt: Short = 0, val targetIasKt: Short = 0,
                              val flightType: Byte = 0,
                              val routePrimaryName: String = "", val commandRoute: Route.SerialisedRoute = Route.SerialisedRoute(), val commandHiddenLegs: Route.SerialisedRoute = Route.SerialisedRoute(),
                              val vectorHdg: Short? = null, val vectorTurnDir: Byte? = null, val commandAlt: Int = 0, val clearedIas: Short = 0, // Vector HDG will be null if aircraft is flying route
@@ -267,6 +273,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
             val direction = get(Direction.mapper) ?: return SerialisedAircraft()
             val speed = get(Speed.mapper) ?: return SerialisedAircraft()
             val gs = get(GroundTrack.mapper) ?: return SerialisedAircraft()
+            val cmdTarget = get(CommandTarget.mapper) ?: return SerialisedAircraft()
             val flightType = get(FlightType.mapper) ?: return SerialisedAircraft()
             val clearance = get(PendingClearances.mapper)?.clearanceQueue?.last()?.clearanceState ?: get(ClearanceAct.mapper)?.actingClearance?.actingClearance ?: return SerialisedAircraft()
             val arrArptId = get(ArrivalAirport.mapper)?.arptId
@@ -277,6 +284,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                 acInfo.icaoCallsign, acInfo.icaoType, acInfo.aircraftPerf.maxAlt,
                 direction.trackUnitVector.x, direction.trackUnitVector.y,
                 speed.speedKts, speed.vertSpdFpm, speed.angularSpdDps, gs.trackVectorPxps.x, gs.trackVectorPxps.y,
+                cmdTarget.targetHdgDeg.toInt().toShort(), (cmdTarget.targetAltFt / 100f).roundToInt().toShort(), cmdTarget.targetIasKt,
                 flightType.type,
                 clearance.routePrimaryName, clearance.route.getSerialisedObject(), clearance.hiddenLegs.getSerialisedObject(),
                 clearance.vectorHdg, clearance.vectorTurnDir, clearance.clearedAlt, clearance.clearedIas,

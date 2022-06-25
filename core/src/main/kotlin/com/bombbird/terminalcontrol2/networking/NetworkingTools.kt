@@ -11,7 +11,9 @@ import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.navigation.SidStar
 import com.bombbird.terminalcontrol2.screens.RadarScreen
 import com.bombbird.terminalcontrol2.traffic.RunwayConfiguration
+import com.bombbird.terminalcontrol2.ui.getNewDatatagLabelText
 import com.bombbird.terminalcontrol2.ui.updateAtisInformation
+import com.bombbird.terminalcontrol2.ui.updateDatatagText
 import com.bombbird.terminalcontrol2.ui.updateScoreDisplay
 import com.bombbird.terminalcontrol2.utilities.getAircraftIcon
 import com.esotericsoftware.kryo.Kryo
@@ -284,6 +286,7 @@ fun handleIncomingRequest(rs: RadarScreen, obj: Any?) {
             rs.aircraft[obj.callsign]?.let { aircraft ->
                 aircraft.entity[Controllable.mapper]?.sectorId = obj.newSector
                 aircraft.entity[RSSprite.mapper]?.drawable = getAircraftIcon(aircraft.entity[FlightType.mapper]?.type ?: return@apply, obj.newSector)
+                aircraft.entity[Datatag.mapper]?.let { updateDatatagText(it, getNewDatatagLabelText(aircraft.entity, it.minimised)) }
                 if (rs.selectedAircraft == aircraft) {
                     if (obj.newSector == rs.playerSector) rs.setUISelectedAircraft(aircraft)
                     else rs.deselectUISelectedAircraft()
@@ -305,6 +308,7 @@ fun handleIncomingRequest(rs: RadarScreen, obj: Any?) {
                         ClearanceState(obj.primaryName, Route.fromSerialisedObject(obj.route), Route.fromSerialisedObject(obj.hiddenLegs),
                             obj.vectorHdg, obj.vectorTurnDir, obj.clearedAlt,
                             obj.clearedIas, obj.minIas, obj.maxIas, obj.optimalIas, obj.clearedApp, obj.clearedTrans)))
+                aircraft.entity[Datatag.mapper]?.let { updateDatatagText(it, getNewDatatagLabelText(aircraft.entity, it.minimised)) }
                 if (rs.selectedAircraft == aircraft) rs.uiPane.updateSelectedAircraft(aircraft)
             }
         } ?: (obj as? CustomWaypointData)?.apply {
