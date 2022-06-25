@@ -2,7 +2,6 @@ package com.bombbird.terminalcontrol2.navigation
 
 import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
-import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.MAG_HDG_DEV
 import com.bombbird.terminalcontrol2.global.getEngine
 import com.bombbird.terminalcontrol2.utilities.Pronounceable
@@ -37,7 +36,6 @@ class Approach(name: String, arptId: Byte, runwayId: Byte, posX: Float, posY: Fl
             approachName = name
             airportId = arptId
             rwyId = runwayId
-            GAME.gameServer?.airports?.get(arptId)?.entity?.get(RunwayChildren.mapper)?.rwyMap?.get(runwayId)?.let { rwyObj = it }
         }
         with<Position> {
             x = posX

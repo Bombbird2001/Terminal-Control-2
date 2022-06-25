@@ -50,7 +50,6 @@ class TerminalControl2 : KtxGame<KtxScreen>(clearScreen = false) {
 
             addScreen(MainMenu())
             addScreen(NewGame())
-            addScreen(GameLoading())
             addScreen(PauseScreen())
             setScreen<MainMenu>()
         }

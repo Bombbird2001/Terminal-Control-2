@@ -3,12 +3,13 @@ package com.bombbird.terminalcontrol2.screens
 import com.badlogic.gdx.scenes.scene2d.ui.ProgressBar
 import com.badlogic.gdx.utils.Timer
 import com.bombbird.terminalcontrol2.global.GAME
+import com.bombbird.terminalcontrol2.global.Secrets
 import com.bombbird.terminalcontrol2.global.UI_HEIGHT
 import com.bombbird.terminalcontrol2.global.UI_WIDTH
 import com.bombbird.terminalcontrol2.ui.addChangeListener
 import ktx.scene2d.*
 
-class GameLoading: BasicUIScreen() {
+class GameLoading(createServer: Boolean): BasicUIScreen() {
     var pBar: ProgressBar
 
     init {
@@ -26,7 +27,7 @@ class GameLoading: BasicUIScreen() {
                             if (this@apply.percent >= 1) {
                                 Timer.schedule(object: Timer.Task() {
                                     override fun run() {
-                                        GAME.gameClientScreen = RadarScreen("127.0.0.1", "TCTP").apply {
+                                        GAME.gameClientScreen = RadarScreen(if (createServer) "127.0.0.1" else Secrets.TEST_IP_ADDRESS, "TCTP", createServer).apply {
                                             GAME.addScreen(this)
                                             GAME.setScreen<RadarScreen>()
                                         }

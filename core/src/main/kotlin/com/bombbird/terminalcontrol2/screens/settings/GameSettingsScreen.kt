@@ -18,7 +18,6 @@ import com.bombbird.terminalcontrol2.networking.GameServer.Companion.WEATHER_RAN
 import com.bombbird.terminalcontrol2.networking.GameServer.Companion.WEATHER_STATIC
 import com.bombbird.terminalcontrol2.screens.BasicUIScreen
 import com.bombbird.terminalcontrol2.ui.*
-import com.bombbird.terminalcontrol2.utilities.byte
 import ktx.collections.GdxArray
 import ktx.scene2d.*
 
@@ -71,7 +70,7 @@ class GameSettingsScreen: BasicUIScreen() {
                             stormSelectBox = defaultSettingsSelectBox<String>().apply {
                                 setItems(OFF, LOW, MEDIUM, HIGH, NIGHTMARE)
                             }
-                            if (GAME.gameServer?.playerNo == 1.byte) {
+                            if (GAME.gameServer?.playerNo?.get() == 1) {
                                 defaultSettingsLabel("Game speed:")
                                 gameSpeedSelectBox = defaultSettingsSelectBox<String>().apply {
                                     setItems("1x", "2x", "4x", "8x")
@@ -162,7 +161,7 @@ class GameSettingsScreen: BasicUIScreen() {
                     OFF
                 }
             }
-            if (playerNo > 1) gameSpeedSelectBox?.selected = "1x"
+            if (playerNo.get() > 1) gameSpeedSelectBox?.selected = "1x"
             else gameSpeedSelectBox?.selected = "${gameSpeed}x"
             nightModeSelectBox.selected = if (nightModeStart == -1 || nightModeEnd == -1) OFF else ON
             setNightModeTimeElementsVisibility(nightModeStart != -1 && nightModeEnd != -1)
@@ -218,7 +217,7 @@ class GameSettingsScreen: BasicUIScreen() {
                     STORMS_OFF
                 }
             }
-            gameSpeed = if (playerNo > 1) 1
+            gameSpeed = if (playerNo.get() > 1) 1
             else gameSpeedSelectBox?.selected?.replace("x", "")?.toInt() ?: 1
             nightModeStart = if (nightModeSelectBox.selected == ON) {
                 nightModeStartHourSelectBox.selected.toInt() * 100 + nightModeStartMinSelectBox.selected.toInt()

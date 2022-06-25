@@ -21,7 +21,7 @@ class Sector(id: Byte, ctrlName: String, freq: String, callsign: String, sectorB
         with<GPolygon> {
             vertices = sectorBoundary.map { it.toFloat() }.toFloatArray()
         }
-        with<SRColor> {
+        if (onClient) with<SRColor> {
             color = Color.WHITE
         }
     }

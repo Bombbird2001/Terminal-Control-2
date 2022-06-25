@@ -27,6 +27,7 @@ import ktx.collections.GdxArray
 import ktx.collections.GdxArrayMap
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
@@ -65,7 +66,7 @@ class GameServer {
     private val pauseCondition = lock.newCondition()
     val initialisingWeather = AtomicBoolean(true)
     private val initialWeatherCondition = lock.newCondition()
-    val playerNo = 1.byte // TODO Change depending on current number of connected players
+    var playerNo = AtomicInteger(0)
     private val server = Server()
     val engine = Engine()
 
@@ -182,8 +183,12 @@ class GameServer {
         server.bind(TCP_PORT, UDP_PORT)
         server.start()
         server.addListener(object: Listener {
+            /**
+             * Called when the server receives a TCP/UDP request from a client
+             * @param connection the incoming connection
+             * @param obj the serialised network object
+             */
             override fun received(connection: Connection?, obj: Any?) {
-                // TODO Handle receive requests
                 (obj as? AircraftControlStateUpdateData)?.apply {
                     postRunnableAfterEngineUpdate {
                         aircraft[obj.callsign]?.entity?.let {
@@ -196,16 +201,20 @@ class GameServer {
                         if (gamePaused.get()) lock.withLock { pauseCondition.signal() }
                         gamePaused.set(false)
                     }
-                    else if (playerNo <= 1) gamePaused.set(true)
+                    else if (playerNo.get() <= 1) gamePaused.set(true)
                 }
             }
 
+            /**
+             * Called when a client connects to the server
+             * @param connection the incoming connection
+             */
             override fun connected(connection: Connection?) {
-                // TODO Send broadcast message
                 connection?.sendTCP(ClearAllClientData())
                 connection?.sendTCP(InitialAirspaceData(MAG_HDG_DEV, MIN_ALT, MAX_ALT, MIN_SEP, TRANS_ALT, TRANS_LVL))
-                connection?.sendTCP(
-                    InitialIndividualSectorData(playerNo, sectors[playerNo].toArray().map { it.getSerialisableObject() }.toTypedArray(),
+                val currPlayerNo = playerNo.incrementAndGet().toByte()
+                server.sendToAllTCP(
+                    InitialIndividualSectorData(currPlayerNo, sectors[currPlayerNo].toArray().map { it.getSerialisableObject() }.toTypedArray(),
                     primarySector.vertices ?: floatArrayOf()
                 ))
                 connection?.sendTCP(InitialAircraftData(aircraft.values().toArray().map { it.getSerialisableObject() }.toTypedArray()))
@@ -229,6 +238,18 @@ class GameServer {
 
                 // Send score data
                 connection?.sendTCP(ScoreData(score, highScore))
+            }
+
+            /**
+             * Called when a client disconnects
+             * @param connection the disconnecting client
+             */
+            override fun disconnected(connection: Connection?) {
+                val newPlayerNo = playerNo.decrementAndGet().toByte()
+                if (newPlayerNo > 0) server.sendToAllTCP(
+                    InitialIndividualSectorData(newPlayerNo, sectors[newPlayerNo].toArray().map { it.getSerialisableObject() }.toTypedArray(),
+                        primarySector.vertices ?: floatArrayOf()
+                ))
             }
         })
     }

@@ -6,8 +6,10 @@ import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.entities.Airport
 import com.bombbird.terminalcontrol2.entities.ApproachNormalOperatingZone
 import com.bombbird.terminalcontrol2.entities.DepartureNormalOperatingZone
+import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.utilities.AircraftTypeData
 import ktx.ashley.Mapper
+import ktx.ashley.get
 import ktx.collections.GdxArray
 
 /** Component for tagging airport related information */
@@ -126,7 +128,10 @@ data class RandomAirlineData(val airlineDistribution: CumulativeDistribution<Tri
 
 /** Component for tagging basic approach information */
 data class ApproachInfo(var approachName: String = "", var airportId: Byte = 0, var rwyId: Byte = 0): Component {
-    lateinit var rwyObj: Airport.Runway
+    val rwyObj: Airport.Runway by lazy {
+        (GAME.gameServer?.airports ?: GAME.gameClientScreen?.airports)?.get(airportId)?.entity?.get(RunwayChildren.mapper)?.rwyMap?.get(rwyId) ?:
+        throw NullPointerException("No runway with ID $rwyId found in airport with ID $airportId")
+    }
 
     companion object: Mapper<ApproachInfo>()
 }

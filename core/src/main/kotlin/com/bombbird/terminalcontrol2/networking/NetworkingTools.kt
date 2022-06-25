@@ -15,6 +15,7 @@ import com.bombbird.terminalcontrol2.ui.updateAtisInformation
 import com.bombbird.terminalcontrol2.ui.updateScoreDisplay
 import com.bombbird.terminalcontrol2.utilities.getAircraftIcon
 import com.esotericsoftware.kryo.Kryo
+import ktx.ashley.allOf
 import ktx.ashley.get
 import ktx.ashley.plusAssign
 
@@ -232,6 +233,9 @@ fun handleIncomingRequest(rs: RadarScreen, obj: Any?) {
             TRANS_ALT = transAlt
             TRANS_LVL = transLvl
         } ?: (obj as? InitialIndividualSectorData)?.apply {
+            // Remove all existing sector mapping and entities
+            rs.sectors.clear()
+            GAME.engine.removeAllEntities(allOf(SectorInfo::class).get())
             sectors.onEach { sector -> rs.sectors.add(Sector.fromSerialisedObject(sector)) }
             rs.primarySector.vertices = primarySector
         } ?: (obj as? InitialAircraftData)?.aircraft?.onEach {

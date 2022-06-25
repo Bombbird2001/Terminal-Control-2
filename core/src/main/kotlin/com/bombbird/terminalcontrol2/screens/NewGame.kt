@@ -51,6 +51,7 @@ class NewGame: BasicUIScreen() {
                                     if (currSelectedAirport == null) Gdx.app.log("NewGame", "Start button pressed when airport selected is null")
                                     else {
                                         //TODO Call loading function
+                                        GAME.addScreen(GameLoading(currSelectedAirport?.text?.toString() == "TCTP"))
                                         GAME.setScreen<GameLoading>()
                                     }
                                     event?.handle()

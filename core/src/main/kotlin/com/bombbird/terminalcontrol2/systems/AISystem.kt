@@ -500,8 +500,8 @@ class AISystem: EntitySystem() {
                 // Calculate distance between aircraft and waypoint and check if aircraft should move to next leg
                 val deltaX = intersectionPoint.x - pos.x
                 val deltaY = intersectionPoint.y - pos.y
-                val requiredDist = findTurnDistance(findDeltaHeading(convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()),
-                    locCourseHdg, CommandTarget.TURN_DEFAULT), if (ias.iasKt > 250) 1.5f else 3f, groundTrack.trackVectorPxps.len())
+                val requiredDist = max(5f, findTurnDistance(findDeltaHeading(convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()),
+                    locCourseHdg, CommandTarget.TURN_DEFAULT), if (ias.iasKt > 250) 1.5f else 3f, groundTrack.trackVectorPxps.len()))
                 if (requiredDist * requiredDist > deltaX * deltaX + deltaY * deltaY) {
                     remove<LocalizerArmed>()
                     this += LocalizerCaptured(locApp)

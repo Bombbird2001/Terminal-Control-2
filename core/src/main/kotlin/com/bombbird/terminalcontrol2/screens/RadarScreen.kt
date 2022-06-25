@@ -48,7 +48,7 @@ import kotlin.math.min
  * @param connectionHost the address of the host server to connect to
  * @param mainName the main map airport name
  * */
-class RadarScreen(private val connectionHost: String, mainName: String): KtxScreen, GestureListener, InputProcessor {
+class RadarScreen(private val connectionHost: String, mainName: String, createServer: Boolean): KtxScreen, GestureListener, InputProcessor {
     private val clientEngine = getEngine(true)
     private val radarDisplayStage = safeStage(GAME.batch)
     private val constZoomStage = safeStage(GAME.batch)
@@ -100,7 +100,7 @@ class RadarScreen(private val connectionHost: String, mainName: String): KtxScre
     private val pendingRunnablesQueue = ConcurrentLinkedQueue<Runnable>()
 
     init {
-        if (true) { // TODO True if single-player or host of multiplayer, false otherwise
+        if (createServer) {
             GAME.gameServer = GameServer()
             GAME.gameServer?.initiateServer(mainName)
         }

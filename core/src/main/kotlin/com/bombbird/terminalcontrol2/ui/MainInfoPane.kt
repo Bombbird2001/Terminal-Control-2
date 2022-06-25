@@ -387,11 +387,11 @@ private fun updateConfirmCancelButtons(airport: Entity) {
     cancelButton.name = if (cancel) "" else "Close"
     cancelButton.setText(if (cancel) "Cancel" else "Close\npane")
     if (selectedConfig != null) {
-        val currTime = UsabilityFilter.DAY_ONLY // TODO Change depending on time of day
+        val isNight = UsabilityFilter.isNight()
         cfmButton.setText(when {
             selectedConfig.rwyAvailabilityScore == 0 -> "Not allowed\ndue to winds"
-            selectedConfig.timeRestriction == UsabilityFilter.DAY_ONLY && currTime == UsabilityFilter.NIGHT_ONLY -> "Only allowed\nin day"
-            selectedConfig.timeRestriction == UsabilityFilter.NIGHT_ONLY && currTime == UsabilityFilter.DAY_ONLY -> "Only allowed\nat night"
+            selectedConfig.timeRestriction == UsabilityFilter.DAY_ONLY && isNight -> "Only allowed\nin day"
+            selectedConfig.timeRestriction == UsabilityFilter.NIGHT_ONLY && !isNight -> "Only allowed\nat night"
             GAME.gameServer == null -> "Only host\ncan change\nrunway"
             else -> {
                 cfmButton.name = selectedId?.toString()
