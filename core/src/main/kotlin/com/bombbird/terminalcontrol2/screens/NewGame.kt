@@ -30,7 +30,7 @@ class NewGame: BasicUIScreen() {
                                             if (currSelectedAirport != this@apply) {
                                                 currSelectedAirport?.isChecked = false
                                                 currSelectedAirport = this@apply
-                                                //TODO Update placeholder text
+                                                // TODO Update placeholder text
                                             } else currSelectedAirport = null
                                             if (this@NewGame::start.isInitialized) start.isVisible = currSelectedAirport != null
                                             event?.handle()

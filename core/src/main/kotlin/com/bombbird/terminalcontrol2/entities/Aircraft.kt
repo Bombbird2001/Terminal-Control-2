@@ -6,6 +6,8 @@ import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable
 import com.bombbird.terminalcontrol2.components.*
+import com.bombbird.terminalcontrol2.global.ARRIVAL_BLUE
+import com.bombbird.terminalcontrol2.global.DEPARTURE_GREEN
 import com.bombbird.terminalcontrol2.global.MAX_ALT
 import com.bombbird.terminalcontrol2.global.getEngine
 import com.bombbird.terminalcontrol2.navigation.ClearanceState
@@ -53,7 +55,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                 position.y = posY
             }
             with<Datatag> {
-                updateDatatagStyle(this, flightType)
+                updateDatatagStyle(this, flightType, false)
                 updateDatatagText(this, arrayOf("Test line 1", "Test line 2", "", "Test line 3"))
                 addDatatagInputListeners(this, this@Aircraft)
                 xOffset = -imgButton.width / 2
@@ -71,9 +73,9 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
             }
             with<SRColor> {
                 color = when (flightType) {
-                    FlightType.ARRIVAL -> Color(0f, 0.702f, 1f, 1f)
-                    FlightType.DEPARTURE -> Color(0.067f, 1f, 0f, 1f)
-                    else -> Color(1f, 1f, 1f, 0f)
+                    FlightType.ARRIVAL -> ARRIVAL_BLUE
+                    FlightType.DEPARTURE -> DEPARTURE_GREEN
+                    else -> Color.WHITE
                 }
             }
         }

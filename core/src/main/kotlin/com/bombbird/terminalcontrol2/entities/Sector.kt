@@ -2,8 +2,11 @@ package com.bombbird.terminalcontrol2.entities
 
 import com.badlogic.gdx.graphics.Color
 import com.bombbird.terminalcontrol2.components.GPolygon
+import com.bombbird.terminalcontrol2.components.RenderLast
 import com.bombbird.terminalcontrol2.components.SRColor
 import com.bombbird.terminalcontrol2.components.SectorInfo
+import com.bombbird.terminalcontrol2.global.GAME
+import com.bombbird.terminalcontrol2.global.SECTOR_GREEN
 import com.bombbird.terminalcontrol2.global.getEngine
 import ktx.ashley.entity
 import ktx.ashley.get
@@ -21,8 +24,12 @@ class Sector(id: Byte, ctrlName: String, freq: String, callsign: String, sectorB
         with<GPolygon> {
             vertices = sectorBoundary.map { it.toFloat() }.toFloatArray()
         }
-        if (onClient) with<SRColor> {
-            color = Color.WHITE
+        if (onClient) {
+            val mySector = GAME.gameClientScreen?.playerSector == id
+            with<SRColor> {
+                color = if (mySector) Color.WHITE else SECTOR_GREEN
+            }
+            if (mySector) with<RenderLast>()
         }
     }
 

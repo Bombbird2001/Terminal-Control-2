@@ -18,6 +18,8 @@ import ktx.ashley.allOf
 import ktx.ashley.get
 import ktx.ashley.plusAssign
 
+private val sectorFamily = allOf(SectorInfo::class).get()
+
 /**
  * Registers all the required classes into the input Kryo
  * @param kryo the [Kryo] instance to register classes to
@@ -34,7 +36,7 @@ fun registerClassesToKryo(kryo: Kryo?) {
         // Initial load classes
         register(ClearAllClientData::class.java)
         register(InitialAirspaceData::class.java)
-        register(InitialIndividualSectorData::class.java)
+        register(IndividualSectorData::class.java)
         register(InitialAircraftData::class.java)
         register(AirportData::class.java)
         register(WaypointData::class.java)
@@ -134,11 +136,8 @@ class ClearAllClientData
 /** Class representing airspace data sent on initial connection, loading of the game on a client */
 data class InitialAirspaceData(val magHdgDev: Float = 0f, val minAlt: Int = 2000, val maxAlt: Int = 20000, val minSep: Float = 3f, val transAlt: Int = 18000, val transLvl: Int = 180)
 
-/** Class representing fata for all the sector configurations sent on initial connection, loading of the game on a client */
-class InitialSectorData(val configSectors: Array<InitialIndividualSectorData> = arrayOf(), val primarySector: FloatArray)
-
-/** Class representing sector data sent on initial connection, loading of the game on a client */
-class InitialIndividualSectorData(val playerNo: Byte = 0, val sectors: Array<Sector.SerialisedSector> = arrayOf(), val primarySector: FloatArray = floatArrayOf())
+/** Class representing sector data sent on new player connections, disconnections */
+class IndividualSectorData(val assignedSectorId: Byte = 0, val sectors: Array<Sector.SerialisedSector> = arrayOf(), val primarySector: FloatArray = floatArrayOf())
 
 /** Class representing aircraft data sent on initial connection, loading of the game on a client */
 class InitialAircraftData(val aircraft: Array<Aircraft.SerialisedAircraft> = arrayOf())
@@ -231,10 +230,11 @@ fun handleIncomingRequest(rs: RadarScreen, obj: Any?) {
             MIN_SEP = minSep
             TRANS_ALT = transAlt
             TRANS_LVL = transLvl
-        } ?: (obj as? InitialIndividualSectorData)?.apply {
+        } ?: (obj as? IndividualSectorData)?.apply {
             // Remove all existing sector mapping and entities
             rs.sectors.clear()
-            GAME.engine.removeAllEntities(allOf(SectorInfo::class).get())
+            GAME.engine.removeAllEntities(sectorFamily)
+            rs.playerSector = obj.assignedSectorId
             sectors.onEach { sector -> rs.sectors.add(Sector.fromSerialisedObject(sector)) }
             rs.primarySector.vertices = primarySector
         } ?: (obj as? InitialAircraftData)?.aircraft?.onEach {

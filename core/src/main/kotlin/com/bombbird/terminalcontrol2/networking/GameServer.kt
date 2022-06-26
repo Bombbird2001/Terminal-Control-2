@@ -109,6 +109,9 @@ class GameServer {
      * */
     val publishedHolds = GdxArrayMap<String, PublishedHold>(PUBLISHED_HOLD_SIZE)
 
+    /** Maps [Connection] to [SectorInfo.sectorId] */
+    val sectorMap = GdxArrayMap<Connection, Byte>(PLAYER_SIZE)
+
     var arrivalSpawnTimerS = 0f
     var planesToControl = 6f
     var trafficMode = TrafficMode.ARRIVALS_TO_CONTROL
@@ -213,10 +216,7 @@ class GameServer {
                 connection?.sendTCP(ClearAllClientData())
                 connection?.sendTCP(InitialAirspaceData(MAG_HDG_DEV, MIN_ALT, MAX_ALT, MIN_SEP, TRANS_ALT, TRANS_LVL))
                 val currPlayerNo = playerNo.incrementAndGet().toByte()
-                server.sendToAllTCP(
-                    InitialIndividualSectorData(currPlayerNo, sectors[currPlayerNo].toArray().map { it.getSerialisableObject() }.toTypedArray(),
-                    primarySector.vertices ?: floatArrayOf()
-                ))
+                assignSectorsToPlayers(server.connections, sectorMap, currPlayerNo, sectors)
                 connection?.sendTCP(InitialAircraftData(aircraft.values().toArray().map { it.getSerialisableObject() }.toTypedArray()))
                 connection?.sendTCP(AirportData(airports.values().toArray().map { it.getSerialisableObject() }.toTypedArray()))
                 val wptArray = waypoints.values.toTypedArray()
@@ -230,7 +230,7 @@ class GameServer {
                 connection?.sendTCP(MetarData(airports.values().map { it.getSerialisedMetar() }.toTypedArray()))
 
                 // Send runway configs
-                airports.values().forEach {
+                airports.values().toArray().forEach {
                     val arptId = it.entity[AirportInfo.mapper]?.arptId ?: return@forEach
                     connection?.sendTCP(ActiveRunwayUpdateData(arptId, it.entity[ActiveRunwayConfig.mapper]?.configId ?: return@forEach))
                     connection?.sendTCP(PendingRunwayUpdateData(arptId, it.entity[PendingRunwayConfig.mapper]?.pendingId))
@@ -246,10 +246,8 @@ class GameServer {
              */
             override fun disconnected(connection: Connection?) {
                 val newPlayerNo = playerNo.decrementAndGet().toByte()
-                if (newPlayerNo > 0) server.sendToAllTCP(
-                    InitialIndividualSectorData(newPlayerNo, sectors[newPlayerNo].toArray().map { it.getSerialisableObject() }.toTypedArray(),
-                        primarySector.vertices ?: floatArrayOf()
-                ))
+                sectorMap.removeKey(connection)
+                if (newPlayerNo > 0) assignSectorsToPlayers(server.connections, sectorMap, newPlayerNo, sectors)
             }
         })
     }
@@ -337,7 +335,6 @@ class GameServer {
      * (List not exhaustive)
      * */
     private fun sendFastUDPToAll() {
-        // TODO send data
         // println("Fast UDP sent, time passed since program start: ${(System.currentTimeMillis() - startTime) / 1000f}s")
         server.sendToAllUDP(FastUDPData(aircraft.values().map { it.getSerialisableObjectUDP() }.toTypedArray()))
     }
@@ -350,7 +347,6 @@ class GameServer {
      * (List not exhaustive)
      * */
     private fun sendSlowUDPToAll() {
-        // TODO send data
         // println("Slow UDP sent, time passed since program start: ${(System.currentTimeMillis() - startTime) / 1000f}s")
     }
 
@@ -374,6 +370,16 @@ class GameServer {
      * */
     fun sendAircraftSectorUpdateTCPToAll(callsign: String, newSector: Byte) {
         server.sendToAllTCP(AircraftSectorUpdateData(callsign, newSector))
+    }
+
+    /**
+     * Sends data to assign each player's individual sector
+     * @param connection the specific connection to send to
+     * @param newId the new sector ID assigned to this connection
+     * @param newSectorArray the new sector configuration to use
+     */
+    fun sendIndividualSectorUpdateTCP(connection: Connection, newId: Byte, newSectorArray: Array<Sector.SerialisedSector>) {
+        connection.sendTCP(IndividualSectorData(newId, newSectorArray, primarySector.vertices ?: floatArrayOf()))
     }
 
     /**

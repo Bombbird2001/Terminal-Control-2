@@ -61,7 +61,7 @@ class SoundSettings: BaseSettings() {
             COMMS_SOUND_EFFECTS -> SOUND_EFFECTS
             COMMS_PILOT_VOICES -> PILOT_VOICES
             else -> {
-                Gdx.app.log("SoundSettingsScreen", "Unknown communication voice setting $COMMUNICATIONS_SOUND")
+                Gdx.app.log("SoundSettings", "Unknown communication voice setting $COMMUNICATIONS_SOUND")
                 PILOT_VOICES
             }
         }
@@ -78,7 +78,7 @@ class SoundSettings: BaseSettings() {
             SOUND_EFFECTS -> COMMS_SOUND_EFFECTS
             PILOT_VOICES -> COMMS_PILOT_VOICES
             else -> {
-                Gdx.app.log("SoundSettingsScreen", "Unknown communication voice selection ${commsSelectBox.selected}")
+                Gdx.app.log("SoundSettings", "Unknown communication voice selection ${commsSelectBox.selected}")
                 COMMS_PILOT_VOICES
             }
         }

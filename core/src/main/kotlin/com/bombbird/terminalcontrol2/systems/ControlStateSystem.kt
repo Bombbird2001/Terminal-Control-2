@@ -3,11 +3,14 @@ package com.bombbird.terminalcontrol2.systems
 import com.badlogic.ashley.core.EntitySystem
 import com.badlogic.ashley.core.Family
 import com.badlogic.gdx.math.Polygon
+import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.*
+import ktx.math.plus
+import ktx.math.times
 
 /**
  * System that is responsible for aircraft control states
@@ -18,12 +21,14 @@ class ControlStateSystem(override val updateTimeS: Float = 0f): EntitySystem(), 
     override var timer = 0f
 
     private val latestClearanceChangedFamily: Family = allOf(LatestClearanceChanged::class, AircraftInfo::class, ClearanceAct::class).get()
-    private val contactFromTowerFamily: Family = allOf(Altitude::class, Position::class, ContactFromTower::class, Controllable::class).get()
+    private val contactFromTowerFamily: Family = allOf(Altitude::class, Position::class, ContactFromTower::class, GroundTrack::class, Controllable::class).get()
     private val contactToTowerFamily: Family = allOf(Altitude::class, ContactToTower::class, Controllable::class).get()
     private val pendingFamily: Family = allOf(PendingClearances::class, ClearanceAct::class).get()
     private val minMaxOptIasFamily: Family = allOf(AircraftInfo::class, Altitude::class, ClearanceAct::class, CommandTarget::class).get()
     private val spdRestrFamily: Family = allOf(ClearanceAct::class, LastRestrictions::class, Position::class, Direction::class, GroundTrack::class, AircraftInfo::class, CommandTarget::class).get()
-    private val contactFromCentreFamily: Family = allOf(Altitude::class, Position::class, ContactFromCentre::class, Controllable::class).get()
+    private val contactFromCentreFamily: Family = allOf(Altitude::class, Position::class, ContactFromCentre::class, GroundTrack::class, Controllable::class).get()
+    private val contactToCentreFamily: Family = allOf(Altitude::class, Position::class, ContactToCentre::class).get()
+    private val checkSectorFamily: Family = allOf(Position::class, GroundTrack::class, Controllable::class).get()
 
     /** Main update function */
     override fun update(deltaTime: Float) {
@@ -45,37 +50,6 @@ class ControlStateSystem(override val updateTimeS: Float = 0f): EntitySystem(), 
                     }
                 }
                 entity.remove<LatestClearanceChanged>()
-            }
-        }
-
-        // Aircraft that are expected to switch from tower to approach/departure
-        val contactFromTower = engine.getEntitiesFor(contactFromTowerFamily)
-        for (i in 0 until contactFromTower.size()) {
-            contactFromTower[i]?.apply {
-                val alt = get(Altitude.mapper) ?: return@apply
-                val pos = get(Position.mapper) ?: return@apply
-                val contact = get(ContactFromTower.mapper) ?: return@apply
-                val controllable = get(Controllable.mapper) ?: return@apply
-                if (alt.altitudeFt > contact.altitudeFt) {
-                    controllable.sectorId = getSectorForPosition(pos.x, pos.y) ?: return@apply
-                    get(AircraftInfo.mapper)?.icaoCallsign?.let { callsign -> GAME.gameServer?.sendAircraftSectorUpdateTCPToAll(callsign, controllable.sectorId) }
-                    remove<ContactFromTower>()
-                }
-            }
-        }
-
-        // Aircraft that are expected to switch from approach to tower
-        val contactToTower = engine.getEntitiesFor(contactToTowerFamily)
-        for (i in 0 until contactToTower.size()) {
-            contactToTower[i]?.apply {
-                val alt = get(Altitude.mapper) ?: return@apply
-                val contact = get(ContactToTower.mapper) ?: return@apply
-                val controllable = get(Controllable.mapper) ?: return@apply
-                if (alt.altitudeFt < contact.altitudeFt) {
-                    controllable.sectorId = SectorInfo.TOWER
-                    get(AircraftInfo.mapper)?.icaoCallsign?.let { callsign -> GAME.gameServer?.sendAircraftSectorUpdateTCPToAll(callsign, controllable.sectorId) }
-                    remove<ContactToTower>()
-                }
             }
         }
 
@@ -178,6 +152,39 @@ class ControlStateSystem(override val updateTimeS: Float = 0f): EntitySystem(), 
             }
         }
 
+        // Aircraft that are expected to switch from tower to approach/departure
+        val contactFromTower = engine.getEntitiesFor(contactFromTowerFamily)
+        for (i in 0 until contactFromTower.size()) {
+            contactFromTower[i]?.apply {
+                val alt = get(Altitude.mapper) ?: return@apply
+                val pos = get(Position.mapper) ?: return@apply
+                val contact = get(ContactFromTower.mapper) ?: return@apply
+                val controllable = get(Controllable.mapper) ?: return@apply
+                val track = get(GroundTrack.mapper) ?: return@apply
+                if (alt.altitudeFt > contact.altitudeFt) {
+                    val extrapolated = Vector2(pos.x, pos.y) + track.trackVectorPxps * 20
+                    controllable.sectorId = getSectorForPosition(extrapolated.x, extrapolated.y) ?: return@apply
+                    get(AircraftInfo.mapper)?.icaoCallsign?.let { callsign -> GAME.gameServer?.sendAircraftSectorUpdateTCPToAll(callsign, controllable.sectorId) }
+                    remove<ContactFromTower>()
+                }
+            }
+        }
+
+        // Aircraft that are expected to switch from approach to tower
+        val contactToTower = engine.getEntitiesFor(contactToTowerFamily)
+        for (i in 0 until contactToTower.size()) {
+            contactToTower[i]?.apply {
+                val alt = get(Altitude.mapper) ?: return@apply
+                val contact = get(ContactToTower.mapper) ?: return@apply
+                val controllable = get(Controllable.mapper) ?: return@apply
+                if (alt.altitudeFt < contact.altitudeFt) {
+                    controllable.sectorId = SectorInfo.TOWER
+                    get(AircraftInfo.mapper)?.icaoCallsign?.let { callsign -> GAME.gameServer?.sendAircraftSectorUpdateTCPToAll(callsign, controllable.sectorId) }
+                    remove<ContactToTower>()
+                }
+            }
+        }
+
         // Aircraft that are expected to switch from centre to approach/departure
         val contactFromCentre = engine.getEntitiesFor(contactFromCentreFamily)
         for (i in 0 until contactFromCentre.size()) {
@@ -186,11 +193,45 @@ class ControlStateSystem(override val updateTimeS: Float = 0f): EntitySystem(), 
                 val pos = get(Position.mapper) ?: return@apply
                 val contact = get(ContactFromCentre.mapper) ?: return@apply
                 val controllable = get(Controllable.mapper) ?: return@apply
+                val track = get(GroundTrack.mapper) ?: return@apply
                 if (alt.altitudeFt < contact.altitudeFt) {
-                    controllable.sectorId = getSectorForPosition(pos.x, pos.y) ?: return@apply
+                    val extrapolated = Vector2(pos.x, pos.y) + track.trackVectorPxps * 20
+                    controllable.sectorId = getSectorForPosition(extrapolated.x, extrapolated.y) ?: return@apply
                     get(AircraftInfo.mapper)?.icaoCallsign?.let { callsign -> GAME.gameServer?.sendAircraftSectorUpdateTCPToAll(callsign, controllable.sectorId) }
                     remove<ContactFromCentre>()
-                    return@apply
+                }
+            }
+        }
+
+        // Aircraft that are expected to switch from approach/departure to centre
+        val contactToCentre = engine.getEntitiesFor(contactToCentreFamily)
+        for (i in 0 until contactToCentre.size()) {
+            contactToCentre[i]?.apply {
+                val alt = get(Altitude.mapper) ?: return@apply
+                val pos = get(Position.mapper) ?: return@apply
+                val contact = get(ContactFromCentre.mapper) ?: return@apply
+                val controllable = get(Controllable.mapper) ?: return@apply
+                if (alt.altitudeFt > contact.altitudeFt || getSectorForPosition(pos.x, pos.y) == null) {
+                    controllable.sectorId = SectorInfo.CENTRE
+                    get(AircraftInfo.mapper)?.icaoCallsign?.let { callsign -> GAME.gameServer?.sendAircraftSectorUpdateTCPToAll(callsign, controllable.sectorId) }
+                    remove<ContactFromCentre>()
+                }
+            }
+        }
+
+        // Checking of whether aircraft is still in player's sector; if not switch it other player's sector
+        val checkSector = engine.getEntitiesFor(checkSectorFamily)
+        for (i in 0 until checkSector.size()) {
+            checkSector[i]?.apply {
+                val pos = get(Position.mapper) ?: return@apply
+                val controllable = get(Controllable.mapper) ?: return@apply
+                val track = get(GroundTrack.mapper) ?: return@apply
+                if (controllable.sectorId == SectorInfo.TOWER || controllable.sectorId == SectorInfo.CENTRE) return@apply
+                val expectedSector = getSectorForPosition(pos.x, pos.y)
+                if (expectedSector != null && expectedSector != controllable.sectorId) {
+                    val extrapolated = Vector2(pos.x, pos.y) + track.trackVectorPxps * 20
+                    controllable.sectorId = getSectorForPosition(extrapolated.x, extrapolated.y) ?: expectedSector
+                    get(AircraftInfo.mapper)?.icaoCallsign?.let { callsign -> GAME.gameServer?.sendAircraftSectorUpdateTCPToAll(callsign, controllable.sectorId) }
                 }
             }
         }
@@ -203,10 +244,12 @@ class ControlStateSystem(override val updateTimeS: Float = 0f): EntitySystem(), 
      * @return the sector ID of the sector the aircraft is in, or null if none found
      */
     private fun getSectorForPosition(posX: Float, posY: Float): Byte? {
-        GAME.gameServer?.sectors?.get(1.byte)?.also { allSectors ->
-            for (j in 0 until allSectors.size) allSectors[j]?.let { sector ->
-                if (Polygon(sector.entity[GPolygon.mapper]?.vertices ?: floatArrayOf(0f, 1f, 1f, 0f, -1f, 0f)).contains(posX, posY)) {
-                    return sector.entity[SectorInfo.mapper]?.sectorId ?: return@let
+        GAME.gameServer?.apply {
+            sectors.get(playerNo.get().toByte())?.also { allSectors ->
+                for (j in 0 until allSectors.size) allSectors[j]?.let { sector ->
+                    if (Polygon(sector.entity[GPolygon.mapper]?.vertices ?: floatArrayOf(0f, 1f, 1f, 0f, -1f, 0f)).contains(posX, posY)) {
+                        return sector.entity[SectorInfo.mapper]?.sectorId ?: return@let
+                    }
                 }
             }
         }

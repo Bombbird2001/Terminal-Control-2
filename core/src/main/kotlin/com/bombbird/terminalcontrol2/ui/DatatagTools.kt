@@ -9,9 +9,7 @@ import com.badlogic.gdx.scenes.scene2d.utils.DragListener
 import com.badlogic.gdx.utils.Timer
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.Aircraft
-import com.bombbird.terminalcontrol2.global.CLIENT_SCREEN
-import com.bombbird.terminalcontrol2.global.GAME
-import com.bombbird.terminalcontrol2.global.MAG_HDG_DEV
+import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.utilities.convertWorldAndRenderDeg
 import com.bombbird.terminalcontrol2.utilities.modulateHeading
@@ -53,17 +51,19 @@ fun updateDatatagText(datatag: Datatag, newText: Array<String>) {
 }
 
 /** Updates the style for the background [Datatag.imgButton] */
-fun updateDatatagStyle(datatag: Datatag, flightType: Byte) {
-    val noBG = if (true) "NoBG" else "" // TODO change depending on datatag display setting
-    datatag.imgButton.style = Scene2DSkin.defaultSkin.get(when (flightType) {
-        FlightType.DEPARTURE -> "DatatagGreen$noBG"
-        FlightType.ARRIVAL -> "DatatagBlue$noBG"
-        FlightType.EN_ROUTE -> "DatatagGray$noBG"
+fun updateDatatagStyle(datatag: Datatag, flightType: Byte, selected: Boolean) {
+    val background = if ((selected && DATATAG_BACKGROUND != DATATAG_BACKGROUND_OFF) || (DATATAG_BACKGROUND == DATATAG_BACKGROUND_ALWAYS)) "" else "NoBG"
+    val showBorder = ((selected && DATATAG_BORDER != DATATAG_BORDER_OFF) || (DATATAG_BORDER == DATATAG_BORDER_ALWAYS))
+    val colour = if (showBorder) when (flightType) {
+        FlightType.DEPARTURE -> "Green"
+        FlightType.ARRIVAL -> "Blue"
+        FlightType.EN_ROUTE -> "Gray"
         else -> {
             Gdx.app.log("Datatag", "Unknown flight type $flightType")
-            "DatatagNoBG"
+            ""
         }
-    }, ImageButton.ImageButtonStyle::class.java)
+    } else ""
+    datatag.imgButton.style = Scene2DSkin.defaultSkin.get("Datatag${colour}${background}", ImageButton.ImageButtonStyle::class.java)
 }
 
 /** Updates the label style to use smaller fonts when radar is zoomed out */
@@ -76,9 +76,11 @@ fun updateDatatagLabelSize(datatag: Datatag, smaller: Boolean) {
     datatag.smallLabelFont = smaller
 }
 
-/** Updates the spacing, in px, between each line label */
-fun updateDatatagLineSpacing(datatag: Datatag, newSpacing: Short) {
-    datatag.lineSpacing = newSpacing
+/**
+ * Updates the spacing, in px, between each line label to the new global set datatag spacing
+ * @param datatag the datatag to update
+ * */
+fun updateDatatagLineSpacing(datatag: Datatag) {
     updateDatatagSize(datatag)
 }
 
@@ -95,7 +97,7 @@ private fun updateDatatagSize(datatag: Datatag) {
             firstLabel = false
             continue
         }
-        height += datatag.lineSpacing
+        height += DATATAG_ROW_SPACING_PX
     }
     val changeInWidth = maxWidth + LABEL_PADDING * 2 - datatag.clickSpot.width
     val changeInHeight = height + LABEL_PADDING * 2 - datatag.clickSpot.height

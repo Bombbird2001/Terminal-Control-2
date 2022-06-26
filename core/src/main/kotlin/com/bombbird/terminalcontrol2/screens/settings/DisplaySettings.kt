@@ -14,8 +14,6 @@ class DisplaySettings: BaseSettings() {
     companion object {
         private const val ALL = "All"
         private const val NM_SUFFIX = " nm"
-        private const val WHEN_SELECTED = "When selected"
-        private const val ALWAYS = "Always"
         private const val ILS_SIMPLE = "Simple"
         private const val ILS_REALISTIC = "Realistic"
         private const val MORE_COLOURFUL = "More colourful"
@@ -118,7 +116,7 @@ class DisplaySettings: BaseSettings() {
             UNCONTROLLED_AIRCRAFT_TRAIL_SELECTED -> WHEN_SELECTED
             UNCONTROLLED_AIRCRAFT_TRAIL_SHOW -> ALWAYS
             else -> {
-                Gdx.app.log("DisplaySettingsScreen", "Unknown uncontrolled aircraft trail setting $SHOW_UNCONTROLLED_AIRCRAFT_TRAIL")
+                Gdx.app.log("DisplaySettings", "Unknown uncontrolled aircraft trail setting $SHOW_UNCONTROLLED_AIRCRAFT_TRAIL")
                 WHEN_SELECTED
             }
         }
@@ -131,7 +129,7 @@ class DisplaySettings: BaseSettings() {
             SHOW_DIST_TO_GO_ARRIVALS -> ARRIVALS_ONLY
             SHOW_DIST_TO_GO_ALL -> ALL_AIRCRAFT
             else -> {
-                Gdx.app.log("DisplaySettingsScreen", "Unknown dist to go display setting $SHOW_DIST_TO_GO")
+                Gdx.app.log("DisplaySettings", "Unknown dist to go display setting $SHOW_DIST_TO_GO")
                 ALL_AIRCRAFT
             }
         }
@@ -156,7 +154,7 @@ class DisplaySettings: BaseSettings() {
             WHEN_SELECTED -> UNCONTROLLED_AIRCRAFT_TRAIL_SELECTED
             ALWAYS -> UNCONTROLLED_AIRCRAFT_TRAIL_SHOW
             else -> {
-                Gdx.app.log("DisplaySettingsScreen", "Unknown uncontrolled aircraft trail selection ${uncontrolledTrailSelectBox.selected}")
+                Gdx.app.log("DisplaySettings", "Unknown uncontrolled aircraft trail selection ${uncontrolledTrailSelectBox.selected}")
                 UNCONTROLLED_AIRCRAFT_TRAIL_SELECTED
             }
         }
@@ -169,7 +167,7 @@ class DisplaySettings: BaseSettings() {
             ARRIVALS_ONLY -> SHOW_DIST_TO_GO_ARRIVALS
             ALL_AIRCRAFT -> SHOW_DIST_TO_GO_ALL
             else -> {
-                Gdx.app.log("DisplaySettingsScreen", "Unknown dist to go selection ${distToGoSelectBox.selected}")
+                Gdx.app.log("DisplaySettings", "Unknown dist to go selection ${distToGoSelectBox.selected}")
                 SHOW_DIST_TO_GO_ALL
             }
         }

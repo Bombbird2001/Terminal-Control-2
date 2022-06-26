@@ -7,6 +7,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.TextButton.TextButtonStyle
 import com.badlogic.gdx.utils.Align
 import com.bombbird.terminalcontrol2.components.CommandTarget
 import com.bombbird.terminalcontrol2.components.WaypointInfo
+import com.bombbird.terminalcontrol2.global.CHANGED_YELLOW
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.UI_HEIGHT
 import com.bombbird.terminalcontrol2.navigation.Route
@@ -174,7 +175,7 @@ class RouteEditPane {
                                 (leg as? Route.WaypointLeg)?.let {
                                     val legIndex = route.indexOf(it)
                                     it.legActive = !isChecked
-                                    style = Scene2DSkin.defaultSkin[if (style.fontColor == Color.WHITE || style.fontColor == Color(160f / 255, 160f / 255, 160f / 255, 1f)) "ControlPaneSelectedChanged" else "ControlPaneSelected", TextButtonStyle::class.java]
+                                    style = Scene2DSkin.defaultSkin[if (style.fontColor == Color.WHITE || style.fontColor == CHANGED_YELLOW) "ControlPaneSelectedChanged" else "ControlPaneSelected", TextButtonStyle::class.java]
                                     // Remove subsequent leg if it is a vector/hold/init climb
                                     if (route.size > legIndex + 1) route[legIndex + 1].let { nextLeg ->
                                         if (nextLeg is Route.HoldLeg || nextLeg is Route.VectorLeg || nextLeg is Route.InitClimbLeg) {

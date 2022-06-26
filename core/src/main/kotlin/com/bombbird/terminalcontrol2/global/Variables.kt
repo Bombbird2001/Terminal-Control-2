@@ -12,6 +12,12 @@ const val SHOW_DIST_TO_GO_ALL: Byte = 5
 const val COMMS_OFF: Byte = 6
 const val COMMS_SOUND_EFFECTS: Byte = 7
 const val COMMS_PILOT_VOICES: Byte = 8
+const val DATATAG_BACKGROUND_OFF: Byte = 9
+const val DATATAG_BACKGROUND_SELECTED: Byte = 10
+const val DATATAG_BACKGROUND_ALWAYS: Byte = 11
+const val DATATAG_BORDER_OFF: Byte = 12
+const val DATATAG_BORDER_SELECTED: Byte = 13
+const val DATATAG_BORDER_ALWAYS: Byte = 14
 
 /** Screen size retrieved with Gdx.graphics */
 var WIDTH = 0f
@@ -43,9 +49,6 @@ var MIN_SEP = 3f
 var TRANS_ALT = 18000
 var TRANS_LVL = 180
 
-/** Datatag style to use */
-var DATATAG_STYLE_ID: Byte = 0
-
 /** Max arrival count for this map */
 var MAX_ARRIVALS: Byte = 20
 
@@ -59,6 +62,12 @@ var SHOW_MVA_ALTITUDE = true
 var REALISTIC_ILS_DISPLAY = true
 var COLOURFUL_STYLE = true
 var SHOW_DIST_TO_GO = SHOW_DIST_TO_GO_ALL
+
+/** Datatag settings */
+var DATATAG_STYLE_ID: Byte = 0
+var DATATAG_BACKGROUND: Byte = DATATAG_BACKGROUND_ALWAYS
+var DATATAG_BORDER: Byte = DATATAG_BORDER_ALWAYS
+var DATATAG_ROW_SPACING_PX: Byte = 4
 
 /** Sound settings */
 var COMMUNICATIONS_SOUND = COMMS_PILOT_VOICES

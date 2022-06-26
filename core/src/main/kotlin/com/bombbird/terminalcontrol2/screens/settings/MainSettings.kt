@@ -39,7 +39,9 @@ class MainSettings(prevScreen: KtxScreen): BasicUIScreen() {
                     }.cell(width = BUTTON_WIDTH_BIG, height = BUTTON_HEIGHT_BIG, padRight = 40f)
                     textButton("Datatag", "MainSettings").apply {
                         addChangeListener { _, _ ->
-                            // TODO Go to datatag settings screen
+                            if (!GAME.containsScreen<DatatagSettings>()) GAME.addScreen(DatatagSettings())
+                            GAME.getScreen<DatatagSettings>().setToCurrentClientSettings()
+                            GAME.setScreen<DatatagSettings>()
                         }
                     }.cell(width = BUTTON_WIDTH_BIG, height = BUTTON_HEIGHT_BIG)
                     row().padTop(30f)

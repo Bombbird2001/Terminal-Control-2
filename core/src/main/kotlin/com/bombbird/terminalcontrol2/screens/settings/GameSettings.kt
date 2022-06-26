@@ -145,7 +145,7 @@ class GameSettings: BasicUIScreen() {
                 WEATHER_RANDOM -> RANDOM_WEATHER
                 WEATHER_STATIC -> SET_CUSTOM_WEATHER
                 else -> {
-                    Gdx.app.log("GameSettingsScreen", "Unknown weather mode setting $weatherMode")
+                    Gdx.app.log("GameSettings", "Unknown weather mode setting $weatherMode")
                     LIVE_WEATHER
                 }
             }
@@ -155,7 +155,7 @@ class GameSettings: BasicUIScreen() {
                 EMERGENCY_MEDIUM -> MEDIUM
                 EMERGENCY_HIGH -> HIGH
                 else -> {
-                    Gdx.app.log("GameSettingsScreen", "Unknown emergency rate setting $weatherMode")
+                    Gdx.app.log("GameSettings", "Unknown emergency rate setting $weatherMode")
                     LOW
                 }
             }
@@ -166,7 +166,7 @@ class GameSettings: BasicUIScreen() {
                 STORMS_HIGH -> HIGH
                 STORMS_NIGHTMARE -> NIGHTMARE
                 else -> {
-                    Gdx.app.log("GameSettingsScreen", "Unknown storm density setting $weatherMode")
+                    Gdx.app.log("GameSettings", "Unknown storm density setting $weatherMode")
                     OFF
                 }
             }
@@ -201,7 +201,7 @@ class GameSettings: BasicUIScreen() {
                 RANDOM_WEATHER -> WEATHER_RANDOM
                 STATIC_WEATHER -> WEATHER_STATIC
                 else -> {
-                    Gdx.app.log("GameSettingsScreen", "Unknown weather mode selection ${weatherSelectBox.selected}")
+                    Gdx.app.log("GameSettings", "Unknown weather mode selection ${weatherSelectBox.selected}")
                     WEATHER_LIVE
                 }
             }
@@ -211,7 +211,7 @@ class GameSettings: BasicUIScreen() {
                 MEDIUM -> EMERGENCY_MEDIUM
                 HIGH -> EMERGENCY_HIGH
                 else -> {
-                    Gdx.app.log("GameSettingsScreen", "Unknown emergency rate selection ${emergencySelectBox.selected}")
+                    Gdx.app.log("GameSettings", "Unknown emergency rate selection ${emergencySelectBox.selected}")
                     EMERGENCY_LOW
                 }
             }
@@ -222,7 +222,7 @@ class GameSettings: BasicUIScreen() {
                 HIGH -> STORMS_HIGH
                 NIGHTMARE -> STORMS_NIGHTMARE
                 else -> {
-                    Gdx.app.log("GameSettingsScreen", "Unknown storm density selection ${stormSelectBox.selected}")
+                    Gdx.app.log("GameSettings", "Unknown storm density selection ${stormSelectBox.selected}")
                     STORMS_OFF
                 }
             }

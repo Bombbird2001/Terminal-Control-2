@@ -12,6 +12,8 @@ import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.math.Polygon
 import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.scenes.scene2d.Actor
+import com.bombbird.terminalcontrol2.components.Datatag
+import com.bombbird.terminalcontrol2.components.FlightType
 import com.bombbird.terminalcontrol2.entities.*
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.graphics.ScreenSize
@@ -23,10 +25,14 @@ import com.bombbird.terminalcontrol2.systems.PhysicsSystemClient
 import com.bombbird.terminalcontrol2.systems.RenderingSystem
 import com.bombbird.terminalcontrol2.utilities.nmToPx
 import com.bombbird.terminalcontrol2.ui.safeStage
+import com.bombbird.terminalcontrol2.ui.updateDatatagLineSpacing
+import com.bombbird.terminalcontrol2.ui.updateDatatagStyle
 import com.esotericsoftware.kryonet.Client
 import com.esotericsoftware.kryonet.Connection
 import com.esotericsoftware.kryonet.Listener
 import ktx.app.KtxScreen
+import ktx.ashley.allOf
+import ktx.ashley.get
 import ktx.assets.disposeSafely
 import ktx.collections.GdxArray
 import ktx.collections.GdxArrayMap
@@ -65,13 +71,14 @@ class RadarScreen(private val connectionHost: String, mainName: String, createSe
     private var zoomRate = 0f
     private var targetCenter: Vector2
     private var panRate: ImmutableVector2
+    private var prevInitDist = 0f
+    private var prevZoom = 1f
 
     // Game running status
     private var running = false
 
     // Airport map for access during TCP updates; see GameServer for more details
     val airports = GdxArrayMap<Byte, Airport>(AIRPORT_SIZE)
-    val updatedAirportMapping = GdxArrayMap<String, Byte>(AIRPORT_SIZE)
 
     // Waypoint map for access; see GameServer for more details
     val waypoints = HashMap<Short, Waypoint>()
@@ -90,8 +97,11 @@ class RadarScreen(private val connectionHost: String, mainName: String, createSe
     // Aircraft map for access during UDP updates
     val aircraft = GdxArrayMap<String, Aircraft>(AIRCRAFT_SIZE)
 
-    // Selected aircraft:
+    // Selected aircraft
     var selectedAircraft: Aircraft? = null
+
+    // Datatag family for updating styles
+    private val datatagFamily = allOf(Datatag::class, FlightType::class).get()
 
     // Networking client
     private val client = Client(CLIENT_WRITE_BUFFER_SIZE, CLIENT_READ_BUFFER_SIZE)
@@ -145,11 +155,21 @@ class RadarScreen(private val connectionHost: String, mainName: String, createSe
     fun setUISelectedAircraft(aircraft: Aircraft) {
         uiPane.setSelectedAircraft(aircraft)
         selectedAircraft = aircraft
+        aircraft.entity.apply {
+            val datatag = get(Datatag.mapper) ?: return@apply
+            val flightType = get(FlightType.mapper) ?: return@apply
+            updateDatatagStyle(datatag, flightType.type, true)
+        }
     }
 
     /** Deselects the currently selected aircraft in [uiPane] */
     fun deselectUISelectedAircraft() {
         uiPane.deselectAircraft()
+        selectedAircraft?.entity?.apply {
+            val datatag = get(Datatag.mapper) ?: return@apply
+            val flightType = get(FlightType.mapper) ?: return@apply
+            updateDatatagStyle(datatag, flightType.type, false)
+        }
         selectedAircraft = null
     }
 
@@ -194,8 +214,8 @@ class RadarScreen(private val connectionHost: String, mainName: String, createSe
             if ((zoomRate < 0 && zoom > targetZoom) || (zoomRate > 0 && zoom < targetZoom)) {
                 val neededDelta = min((targetZoom - zoom) / zoomRate, delta)
                 zoom += zoomRate * neededDelta
-                val actlPanRate = panRate.times(neededDelta)
-                translate(actlPanRate.x, actlPanRate.y)
+                val actualPanRate = panRate.times(neededDelta)
+                translate(actualPanRate.x, actualPanRate.y)
                 clampUpdateCamera(0f)
             } else cameraAnimating = false
         }
@@ -209,6 +229,19 @@ class RadarScreen(private val connectionHost: String, mainName: String, createSe
         (radarDisplayStage.camera as OrthographicCamera).apply {
             val scaleFactor = UI_HEIGHT / HEIGHT // 1px in screen distance = ?px in world distance (at zoom = 1)
             return Vector2((screenX - WIDTH / 2) * zoom * scaleFactor + position.x, (HEIGHT / 2 - screenY) * zoom * scaleFactor + position.y)
+        }
+    }
+
+    /** Updates all the datatag styles to match the current datatag settings; call after datatag settings has been changed */
+    fun updateAllDatatagStyles() {
+        val datatags = clientEngine.getEntitiesFor(datatagFamily)
+        for (i in 0 until datatags.size()) {
+            datatags[i]?.apply {
+                val datatag = get(Datatag.mapper) ?: return@apply
+                val flightType = get(FlightType.mapper) ?: return@apply
+                updateDatatagStyle(datatag, flightType.type, false)
+                updateDatatagLineSpacing(datatag)
+            }
         }
     }
 
@@ -284,8 +317,7 @@ class RadarScreen(private val connectionHost: String, mainName: String, createSe
     /** Implements [GestureListener.tap], used to unselect an aircraft, and to test for double taps for zooming */
     override fun tap(x: Float, y: Float, count: Int, button: Int): Boolean {
         if (count == 2 && !cameraAnimating) initiateCameraAnimation(x, y)
-        uiPane.deselectAircraft()
-        selectedAircraft = null
+        deselectUISelectedAircraft()
         // toggleMinAltSectorsOnClick(x, y, unprojectFromRadarCamera, clientEngine)
         return true
     }
@@ -316,7 +348,14 @@ class RadarScreen(private val connectionHost: String, mainName: String, createSe
 
     /** Implements [GestureListener.zoom], changes camera zoom on pinch (mobile) */
     override fun zoom(initialDistance: Float, distance: Float): Boolean {
-        // TODO Camera zoom
+        if (initialDistance != prevInitDist) {
+            prevInitDist = initialDistance
+            prevZoom = (radarDisplayStage.camera as OrthographicCamera).zoom
+        }
+        (radarDisplayStage.camera as OrthographicCamera).apply {
+            val ratio = initialDistance / distance
+            clampUpdateCamera(prevZoom * ratio - zoom)
+        }
         return true
     }
 
@@ -393,7 +432,7 @@ class RadarScreen(private val connectionHost: String, mainName: String, createSe
      *
      * If client is already connected, the method will return
      * */
-    fun attemptConnectionToServer() {
+    private fun attemptConnectionToServer() {
         if (client.isConnected) return
         while (true) {
             try {

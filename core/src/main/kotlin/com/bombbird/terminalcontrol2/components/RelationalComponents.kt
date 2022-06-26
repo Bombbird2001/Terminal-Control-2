@@ -10,22 +10,22 @@ import ktx.ashley.Mapper
 import ktx.collections.GdxArray
 import ktx.collections.GdxArrayMap
 
-/** Component to keep track of an airport's runways (for O(1) access) as well as the mapping runway names to the most updated ID (for backwards compatibility) */
+/** Component to keep track of an airport's runways as well as the mapping runway names to the most updated ID (for backwards compatibility) */
 data class RunwayChildren(val rwyMap: GdxArrayMap<Byte, Airport.Runway> = GdxArrayMap(), val updatedRwyMapping: GdxArrayMap<String, Byte> = GdxArrayMap()): Component {
     companion object: Mapper<RunwayChildren>()
 }
 
-/** Component to keep track of an airport's SIDs (for O(1) access) */
+/** Component to keep track of an airport's SIDs */
 data class SIDChildren(val sidMap: GdxArrayMap<String, SidStar.SID> = GdxArrayMap()): Component {
     companion object: Mapper<SIDChildren>()
 }
 
-/** Component to keep track of an airport's STARs (for O(1) access) */
+/** Component to keep track of an airport's STARs */
 data class STARChildren(val starMap: GdxArrayMap<String, SidStar.STAR> = GdxArrayMap()): Component {
     companion object: Mapper<STARChildren>()
 }
 
-/** Component to keep track of an airport's approaches (for O(1) access) */
+/** Component to keep track of an airport's approaches */
 data class ApproachChildren(val approachMap: GdxArrayMap<String, Approach> = GdxArrayMap()): Component {
     companion object: Mapper<ApproachChildren>()
 }

@@ -8,6 +8,8 @@ abstract class BaseSettings: BasicUIScreen() {
         const val OFF = "Off"
         const val ON = "On"
         const val SECONDS_SUFFIX = " sec"
+        const val WHEN_SELECTED = "When selected"
+        const val ALWAYS = "Always"
     }
 
     /**

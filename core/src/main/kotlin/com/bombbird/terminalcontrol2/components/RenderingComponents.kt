@@ -91,7 +91,7 @@ class HideLabel: Component {
  *
  * This component will have [ConstantZoomSize] properties applied to it
  * */
-class Datatag(var xOffset: Float = 0f, var yOffset: Float = 0f, var minimised: Boolean = false, var lineSpacing: Short = 4): Component {
+class Datatag(var xOffset: Float = 0f, var yOffset: Float = 0f, var minimised: Boolean = false): Component {
     var dragging = false
     var clicks = 0
     val tapTimer = Timer()

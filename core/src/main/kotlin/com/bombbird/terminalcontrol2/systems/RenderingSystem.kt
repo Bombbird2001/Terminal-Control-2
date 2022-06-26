@@ -353,7 +353,7 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer,
                         if (label.text.isNullOrEmpty()) return@let
                         label.setPosition(leftX + LABEL_PADDING, labelY)
                         label.draw(GAME.batch, 1f)
-                        labelY += (label.height + datatag.lineSpacing)
+                        labelY += (label.height + DATATAG_ROW_SPACING_PX)
                     }
                 }
             }
