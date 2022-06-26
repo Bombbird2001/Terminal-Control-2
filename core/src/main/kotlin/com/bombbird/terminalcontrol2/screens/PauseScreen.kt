@@ -1,8 +1,9 @@
 package com.bombbird.terminalcontrol2.screens
 
 import com.bombbird.terminalcontrol2.global.*
-import com.bombbird.terminalcontrol2.screens.settings.GameSettingsScreen
-import com.bombbird.terminalcontrol2.screens.settings.MainSettingsScreen
+import com.bombbird.terminalcontrol2.screens.settings.CustomWeatherSettings
+import com.bombbird.terminalcontrol2.screens.settings.GameSettings
+import com.bombbird.terminalcontrol2.screens.settings.MainSettings
 import com.bombbird.terminalcontrol2.ui.addChangeListener
 import ktx.assets.disposeSafely
 import ktx.scene2d.actors
@@ -29,8 +30,8 @@ class PauseScreen: BasicUIScreen() {
                         }
                     textButton("Settings", "PauseScreen").cell(padRight = 20f, width = BUTTON_WIDTH_MEDIUM, height = BUTTON_HEIGHT_BIG)
                         .addChangeListener { _, _ ->
-                            if (!GAME.containsScreen<MainSettingsScreen>()) GAME.addScreen(MainSettingsScreen(this@PauseScreen))
-                            GAME.setScreen<MainSettingsScreen>()
+                            if (!GAME.containsScreen<MainSettings>()) GAME.addScreen(MainSettings(this@PauseScreen))
+                            GAME.setScreen<MainSettings>()
                         }
                     textButton("Save & Quit", "PauseScreen").cell(width = BUTTON_WIDTH_MEDIUM, height = BUTTON_HEIGHT_BIG)
                         .addChangeListener { _, _ ->
@@ -42,8 +43,9 @@ class PauseScreen: BasicUIScreen() {
                             radarScreen?.disposeSafely()
                             GAME.removeScreen<RadarScreen>()
                             radarScreen = null
-                            GAME.removeScreen<MainSettingsScreen>()
-                            GAME.removeScreen<GameSettingsScreen>()
+                            GAME.removeScreen<MainSettings>()
+                            GAME.removeScreen<GameSettings>()
+                            GAME.removeScreen<CustomWeatherSettings>()
                         }
                 }
             }

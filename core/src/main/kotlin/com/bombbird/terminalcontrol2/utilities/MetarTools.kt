@@ -7,6 +7,9 @@ import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.MAG_HDG_DEV
 import com.bombbird.terminalcontrol2.global.Secrets
+import com.bombbird.terminalcontrol2.networking.GameServer.Companion.WEATHER_LIVE
+import com.bombbird.terminalcontrol2.networking.GameServer.Companion.WEATHER_RANDOM
+import com.bombbird.terminalcontrol2.networking.GameServer.Companion.WEATHER_STATIC
 import com.bombbird.terminalcontrol2.networking.HttpRequest
 import com.bombbird.terminalcontrol2.traffic.RunwayConfiguration
 import com.squareup.moshi.JsonClass
@@ -38,18 +41,25 @@ data class MetarRequest(
 
 /** Requests METAR for all airports in the current gameServer instance */
 fun requestAllMetar() {
-    val randomWeatherAirportList = ArrayList<Entity>()
+    // No need to update for static weather
+    val weatherMode = GAME.gameServer?.weatherMode ?: return
+    if (weatherMode == WEATHER_STATIC) return
+
     // Check if is a new game that has not yet requested/generated METAR, or the minute of requesting is from 0-4 or 30-34
-    val randomUpdateNeeded = GAME.gameServer?.initialisingWeather?.get() == true || LocalTime.now().minute % 30 < 5
-    val metarRequest = MetarRequest(Secrets.GET_METAR_PW, ArrayList<MetarRequest.MetarMapper>().apply {
+    val randomUpdateNeeded = GAME.gameServer?.initialisingWeather?.get() == true || (LocalTime.now().minute % 30 < 5)
+    val randomWeatherAirportList = ArrayList<Entity>()
+    val metarRequestList = ArrayList<MetarRequest.MetarMapper>().apply {
         (GAME.gameServer?.airports?.values() ?: return).forEach { arpt ->
             val realIcao = arpt.entity[MetarInfo.mapper]?.realLifeIcao ?: return@forEach
             val icao = arpt.entity[AirportInfo.mapper]?.arptId ?: return@forEach
             add(MetarRequest.MetarMapper(realIcao, icao))
             if (randomUpdateNeeded) randomWeatherAirportList.add(arpt.entity)
         }
-    })
-    HttpRequest.sendMetarRequest(Moshi.Builder().build().adapter(MetarRequest::class.java).toJson(metarRequest), true, randomWeatherAirportList)
+    }
+    if (weatherMode == WEATHER_LIVE) {
+        val metarRequest = MetarRequest(Secrets.GET_METAR_PW, metarRequestList)
+        HttpRequest.sendMetarRequest(Moshi.Builder().build().adapter(MetarRequest::class.java).toJson(metarRequest), true, randomWeatherAirportList)
+    } else if (weatherMode == WEATHER_RANDOM) generateRandomWeather(true, randomWeatherAirportList)
 }
 
 /** Helper class that specifies the JSON format of METAR responses from the server */
@@ -72,7 +82,7 @@ fun updateAirportMetar(metarJson: String) {
         for (entry in entries) {
             entry.value.let { GAME.gameServer?.airports?.get(entry.key)?.entity?.also { arpt ->
                 arpt[MetarInfo.mapper]?.apply {
-                    if (rawMetar != it.rawMetar && !(rawMetar == "" && it.rawMetar == null)) letterCode = letterCode?.let {
+                    if (rawMetar != it.rawMetar) letterCode = letterCode?.let {
                         if (it + 1 <= 'Z') it + 1 else 'A'
                     } ?: MathUtils.random(65, 90).toChar()
                     realLifeIcao = it.realLifeIcao
@@ -109,6 +119,8 @@ fun generateRandomWeather(basedOnCurrent: Boolean, airports: List<Entity>) {
     val worldTemp = MathUtils.random(20, 35)
     val worldDewDelta = -MathUtils.random(2, 8)
     val worldQnh = MathUtils.random(1005, 1019)
+    // basedOnCurrent must be true, and game must have already initialized weather to be able to use it to generate weather
+    val checkedBaseOnCurrent = basedOnCurrent && GAME.gameServer?.initialisingWeather?.get() == false
 
     for (arpt in airports) {
         val currMetar = arpt[MetarInfo.mapper] ?: continue
@@ -128,7 +140,7 @@ fun generateRandomWeather(basedOnCurrent: Boolean, airports: List<Entity>) {
         }
 
         currMetar.visibilityM = randomWeather.visibilityDist.value() ?: 10000
-        if (basedOnCurrent) {
+        if (checkedBaseOnCurrent) {
             if (newWindDir.toInt() != 0) {
                 // Change wind direction only if new wind direction is not variable
                 val deltaWindDir = findDeltaHeading(currMetar.windHeadingDeg.toFloat(), newWindDir.toFloat(), CommandTarget.TURN_DEFAULT)
@@ -174,6 +186,40 @@ fun generateRandomWeather(basedOnCurrent: Boolean, airports: List<Entity>) {
     GAME.gameServer?.apply {
         notifyWeatherLoaded()
         sendMetarTCPToAll()
+    }
+}
+
+/**
+ * Sets static weather for the airport; note that the client TCP update must be sent manually
+ * @param arpt the airport entity to set the weather for
+ * @param windHdg the heading, in degrees, of the wind
+ * @param windSpd the speed, in knots, of the wind
+ * @param visibility the visibility, in metres
+ * @param ceilingHundredFt the ceiling, in hundreds of feet
+ * @param worldTemp the world temperature, in Celsius
+ * @param worldDewDelta the world dew point in comparison to [worldTemp], in Celsius
+ * @param worldQnh the world QNH, in hectopascals
+ * */
+fun setAirportStaticWeather(arpt: Entity, windHdg: Short, windSpd: Short, visibility: Short, ceilingHundredFt: Short?, worldTemp: Int, worldDewDelta: Int, worldQnh: Int) {
+    arpt[MetarInfo.mapper]?.apply {
+        windHeadingDeg = windHdg
+        windSpeedKt = windSpd
+        windGustKt = 0
+        visibilityM = visibility
+        ceilingHundredFtAGL = ceilingHundredFt
+        windshear = ""
+        val temp = (worldTemp + MathUtils.random(-2, 2)).toByte()
+        val dewPoint = (temp + worldDewDelta).toByte()
+        val qnh = (worldQnh + (if (MathUtils.randomBoolean()) 0 else -1)).toShort()
+        val prevMetar = rawMetar
+        rawMetar = generateRawMetar(windHeadingDeg, windSpeedKt, windGustKt, visibilityM, ceilingHundredFtAGL, temp, dewPoint, qnh, windshear)
+        if (rawMetar != prevMetar) letterCode = letterCode?.let {
+            if (it + 1 <= 'Z') it + 1 else 'A'
+        } ?: MathUtils.random(65, 90).toChar()
+        updateWindVector(windVectorPx, windHeadingDeg, windSpeedKt)
+        updateRunwayWindComponents(arpt)
+        calculateRunwayConfigScores(arpt)
+        checkRunwayConfigSelection(arpt)
     }
 }
 
@@ -265,7 +311,12 @@ private fun generateRawMetar(windDir: Short, windSpd: Short, windGust: Short, vi
     return sb.toString()
 }
 
-/** Updates the given [vec] with the new [windDeg] and [windSpdKt], each dimension in px */
+/**
+ * Updates the given wind vector with the new wind heading and speed
+ * @param vec the wind vector to update (in pixels per second)
+ * @param windDeg the heading, in degrees, of the wind
+ * @param windSpdKt the speed, in knots, of the wind
+ * */
 fun updateWindVector(vec: Vector2, windDeg: Short, windSpdKt: Short) {
     if (windDeg == 0.toShort()) {
         vec.setZero()
@@ -325,7 +376,7 @@ fun checkRunwayConfigSelection(airport: Entity) {
             GAME.gameServer?.airports?.get(arptId)?.activateRunwayConfig(idealConfig.id)
             GAME.gameServer?.sendActiveRunwayUpdateToAll(arptId, idealConfig.id)
         } else {
-            // If another alternative that is better than the current non-runway available config is present, set pending
+            // If another alternative that is better than the current no-runway available config is present, set pending
             // runway selection to that
             airport += PendingRunwayConfig(idealConfig.id, 300f)
             GAME.gameServer?.sendPendingRunwayUpdateToAll(arptId, idealConfig.id)

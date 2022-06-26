@@ -11,10 +11,7 @@ import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.navigation.SidStar
 import com.bombbird.terminalcontrol2.screens.RadarScreen
 import com.bombbird.terminalcontrol2.traffic.RunwayConfiguration
-import com.bombbird.terminalcontrol2.ui.getNewDatatagLabelText
-import com.bombbird.terminalcontrol2.ui.updateAtisInformation
-import com.bombbird.terminalcontrol2.ui.updateDatatagText
-import com.bombbird.terminalcontrol2.ui.updateScoreDisplay
+import com.bombbird.terminalcontrol2.ui.*
 import com.bombbird.terminalcontrol2.utilities.getAircraftIcon
 import com.esotericsoftware.kryo.Kryo
 import ktx.ashley.allOf
@@ -257,7 +254,8 @@ fun handleIncomingRequest(rs: RadarScreen, obj: Any?) {
                     // printAirportApproaches(entity)
                 }
             }
-            updateAtisInformation()
+            initializeAtisDisplay()
+            initializeAirportRwyConfigPanes()
         } ?: (obj as? WaypointData)?.waypoints?.onEach {
             Waypoint.fromSerialisedObject(it).apply {
                 entity[WaypointInfo.mapper]?.wptId?.let { id ->
@@ -325,7 +323,7 @@ fun handleIncomingRequest(rs: RadarScreen, obj: Any?) {
             rs.waypoints[wptId]?.let { getEngine(true).removeEntity(it.entity) }
             rs.waypoints.remove(wptId)
         } ?: (obj as? PendingRunwayUpdateData)?.apply {
-            rs.airports[obj.airportId]?.pendingRunwayConfig(obj.configId)
+            rs.airports[obj.airportId]?.pendingRunwayConfigClient(obj.configId)
         } ?: (obj as? ActiveRunwayUpdateData)?.apply {
             rs.airports[obj.airportId]?.activateRunwayConfig(obj.configId)
             updateAtisInformation()

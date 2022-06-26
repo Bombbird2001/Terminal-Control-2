@@ -72,6 +72,7 @@ class TrafficSystem(override val updateTimeS: Float): EntitySystem(), LowFreqUpd
                     val arpt = GAME.gameServer?.airports?.get(arptInfo.arptId) ?: return@apply
                     if (config.rwyAvailabilityScore == 0) return@apply
                     arpt.activateRunwayConfig(config.id)
+                    GAME.gameServer?.sendPendingRunwayUpdateToAll(arptInfo.arptId, null)
                     GAME.gameServer?.sendActiveRunwayUpdateToAll(arptInfo.arptId, config.id)
                 }
             }

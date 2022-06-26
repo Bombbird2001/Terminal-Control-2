@@ -115,12 +115,21 @@ fun <T> KTableWidget.defaultSettingsSelectBox(): KSelectBox<T> {
 }
 
 @Scene2dDsl
-/** Constructs and returns a default select box for time settings for night mode */
-fun <T> KTableWidget.nightModeTimeSelectBox(): KSelectBox<T> {
+/** Constructs and returns a default medium select box for settings pages */
+fun <T> KTableWidget.defaultSettingsSelectBoxMedium(): KSelectBox<T> {
     return selectBox<T>("Settings").apply {
         list.alignment = Align.center
         setAlignment(Align.center)
-    }.cell(width = 100f, height = BUTTON_HEIGHT_BIG / 1.5f, padRight = 20f)
+    }.cell(width = BUTTON_WIDTH_BIG / 4, height = BUTTON_HEIGHT_BIG / 1.5f)
+}
+
+@Scene2dDsl
+/** Constructs and returns a default small select box for settings pages */
+fun <T> KTableWidget.defaultSettingsSelectBoxSmall(): KSelectBox<T> {
+    return selectBox<T>("Settings").apply {
+        list.alignment = Align.center
+        setAlignment(Align.center)
+    }.cell(width = 100f, height = BUTTON_HEIGHT_BIG / 1.5f, padRight = 10f)
 }
 
 @Scene2dDsl

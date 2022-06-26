@@ -88,11 +88,11 @@ class DisplaySettings: BaseSettings() {
                     row().padTop(50f)
                     table {
                         textButton("Cancel", "Menu").cell(width = BUTTON_WIDTH_BIG / 1.5f, height = BUTTON_HEIGHT_BIG, padBottom = BOTTOM_BUTTON_MARGIN, padRight = 100f, align = Align.bottom).addChangeListener { _, _ ->
-                            GAME.setScreen<MainSettingsScreen>()
+                            GAME.setScreen<MainSettings>()
                         }
                         textButton("Confirm", "Menu").cell(width = BUTTON_WIDTH_BIG / 1.5f, height = BUTTON_HEIGHT_BIG, padBottom = BOTTOM_BUTTON_MARGIN, align = Align.bottom).addChangeListener { _, _ ->
                             updateClientSettings()
-                            GAME.setScreen<MainSettingsScreen>()
+                            GAME.setScreen<MainSettings>()
                         }
                     }
                 }

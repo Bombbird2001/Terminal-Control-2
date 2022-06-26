@@ -11,7 +11,7 @@ import ktx.scene2d.table
 import ktx.scene2d.textButton
 
 /** The parent settings screen that allows the user to select the subcategory of settings they wish to modify */
-class MainSettingsScreen(prevScreen: KtxScreen): BasicUIScreen() {
+class MainSettings(prevScreen: KtxScreen): BasicUIScreen() {
     init {
         stage.actors {
             // UI Container
@@ -23,9 +23,9 @@ class MainSettingsScreen(prevScreen: KtxScreen): BasicUIScreen() {
                     if (GAME.gameServer != null) {
                         textButton("Game settings", "MainSettings").apply {
                             addChangeListener { _, _ ->
-                                if (!GAME.containsScreen<GameSettingsScreen>()) GAME.addScreen(GameSettingsScreen())
-                                GAME.getScreen<GameSettingsScreen>().setToCurrentGameSettings()
-                                GAME.setScreen<GameSettingsScreen>()
+                                if (!GAME.containsScreen<GameSettings>()) GAME.addScreen(GameSettings())
+                                GAME.getScreen<GameSettings>().setToCurrentGameSettings()
+                                GAME.setScreen<GameSettings>()
                             }
                         }.cell(width = BUTTON_WIDTH_BIG, height = BUTTON_HEIGHT_BIG, colspan = 2)
                         row().padTop(30f)

@@ -9,7 +9,7 @@ import com.bombbird.terminalcontrol2.global.getEngine
 import com.bombbird.terminalcontrol2.navigation.Approach
 import com.bombbird.terminalcontrol2.navigation.SidStar
 import com.bombbird.terminalcontrol2.traffic.RunwayConfiguration
-import com.bombbird.terminalcontrol2.ui.checkUpdateRunwayPaneState
+import com.bombbird.terminalcontrol2.ui.setAirportRunwayConfigPaneState
 import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.*
 import ktx.math.times
@@ -384,18 +384,17 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
                 it.setNTZVisibility(true)
             }
         }
-        checkUpdateRunwayPaneState(this)
+        setAirportRunwayConfigPaneState(entity)
     }
 
     /**
-     * Sets a runway configuration to be pending
+     * Sets a runway configuration to be pending on client side; will update the UI as necessary
      * @param pendingConfigId the ID of the pending config, or null if cancelling a pending config change
      */
-    fun pendingRunwayConfig(pendingConfigId: Byte?) {
+    fun pendingRunwayConfigClient(pendingConfigId: Byte?) {
         val currPendingId = entity[PendingRunwayConfig.mapper]?.pendingId
-        if (currPendingId == pendingConfigId) return
         if (pendingConfigId == null) entity.remove<PendingRunwayConfig>()
-        else entity += PendingRunwayConfig(pendingConfigId, 300f)
-        checkUpdateRunwayPaneState(this)
+        else if (currPendingId != pendingConfigId) entity += PendingRunwayConfig(pendingConfigId, 300f)
+        setAirportRunwayConfigPaneState(entity)
     }
 }

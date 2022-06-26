@@ -22,11 +22,12 @@ import ktx.collections.GdxArray
 import ktx.scene2d.*
 
 /** Settings screen for game-specific settings */
-class GameSettingsScreen: BasicUIScreen() {
+class GameSettings: BasicUIScreen() {
     companion object {
         private const val LIVE_WEATHER = "Live weather"
         private const val RANDOM_WEATHER = "Random weather"
-        private const val CUSTOM_WEATHER = "Custom weather"
+        private const val STATIC_WEATHER = "Static weather"
+        private const val SET_CUSTOM_WEATHER = "Set custom weather..."
         private const val OFF = "Off"
         private const val ON = "On"
         private const val LOW = "Low"
@@ -59,7 +60,15 @@ class GameSettingsScreen: BasicUIScreen() {
                         table {
                             defaultSettingsLabel("Weather:")
                             weatherSelectBox = defaultSettingsSelectBox<String>().apply {
-                                setItems(LIVE_WEATHER, RANDOM_WEATHER, CUSTOM_WEATHER)
+                                setItems(LIVE_WEATHER, RANDOM_WEATHER, STATIC_WEATHER, SET_CUSTOM_WEATHER)
+                                addChangeListener { _, _ ->
+                                    if (selected == SET_CUSTOM_WEATHER) {
+                                        if (!GAME.containsScreen<CustomWeatherSettings>()) GAME.addScreen(CustomWeatherSettings())
+                                        GAME.getScreen<CustomWeatherSettings>().updateWeatherSelections()
+                                        GAME.setScreen<CustomWeatherSettings>()
+                                        selected = STATIC_WEATHER
+                                    }
+                                }
                             }
                             defaultSettingsLabel("Emergencies:")
                             emergencySelectBox = defaultSettingsSelectBox<String>().apply {
@@ -87,21 +96,21 @@ class GameSettingsScreen: BasicUIScreen() {
                             newSettingsRow()
                             nightModeTimeLabel = defaultSettingsLabel("Active from:")
                             table {
-                                nightModeStartHourSelectBox = nightModeTimeSelectBox<String>().apply {
+                                nightModeStartHourSelectBox = defaultSettingsSelectBoxSmall<String>().apply {
                                     val newArray = GdxArray<String>(24)
                                     for (i in 0..23) newArray.add(if (i < 10) "0$i" else i.toString())
                                     setItems(newArray)
                                 }
-                                nightModeStartMinSelectBox = nightModeTimeSelectBox<String>().apply {
+                                nightModeStartMinSelectBox = defaultSettingsSelectBoxSmall<String>().apply {
                                     setItems("00", "15", "30", "45")
                                 }
                                 nightModeTimeToLabel = label("to", "SettingsOption").cell(padRight = 20f)
-                                nightModeEndHourSelectBox = nightModeTimeSelectBox<String>().apply {
+                                nightModeEndHourSelectBox = defaultSettingsSelectBoxSmall<String>().apply {
                                     val newArray = GdxArray<String>(24)
                                     for (i in 0..23) newArray.add(if (i < 10) "0$i" else i.toString())
                                     setItems(newArray)
                                 }
-                                nightModeEndMinSelectBox = nightModeTimeSelectBox<String>().apply {
+                                nightModeEndMinSelectBox = defaultSettingsSelectBoxSmall<String>().apply {
                                     setItems("00", "15", "30", "45")
                                 }
                             }.cell(height = BUTTON_HEIGHT_BIG / 1.5f, align = Align.left, colspan = 3)
@@ -116,11 +125,11 @@ class GameSettingsScreen: BasicUIScreen() {
                     row().padTop(50f)
                     table {
                         textButton("Cancel", "Menu").cell(width = BUTTON_WIDTH_BIG / 1.5f, height = BUTTON_HEIGHT_BIG, padBottom = BOTTOM_BUTTON_MARGIN, padRight = 100f, align = Align.bottom).addChangeListener { _, _ ->
-                            GAME.setScreen<MainSettingsScreen>()
+                            GAME.setScreen<MainSettings>()
                         }
                         textButton("Confirm", "Menu").cell(width = BUTTON_WIDTH_BIG / 1.5f, height = BUTTON_HEIGHT_BIG, padBottom = BOTTOM_BUTTON_MARGIN, align = Align.bottom).addChangeListener { _, _ ->
                             updateCurrentGameSettings()
-                            GAME.setScreen<MainSettingsScreen>()
+                            GAME.setScreen<MainSettings>()
                         }
                     }.cell(colspan = 2)
                 }
@@ -134,7 +143,7 @@ class GameSettingsScreen: BasicUIScreen() {
             weatherSelectBox.selected = when (weatherMode) {
                 WEATHER_LIVE -> LIVE_WEATHER
                 WEATHER_RANDOM -> RANDOM_WEATHER
-                WEATHER_STATIC -> CUSTOM_WEATHER
+                WEATHER_STATIC -> SET_CUSTOM_WEATHER
                 else -> {
                     Gdx.app.log("GameSettingsScreen", "Unknown weather mode setting $weatherMode")
                     LIVE_WEATHER
@@ -190,7 +199,7 @@ class GameSettingsScreen: BasicUIScreen() {
             weatherMode = when (weatherSelectBox.selected) {
                 LIVE_WEATHER -> WEATHER_LIVE
                 RANDOM_WEATHER -> WEATHER_RANDOM
-                CUSTOM_WEATHER -> WEATHER_STATIC
+                STATIC_WEATHER -> WEATHER_STATIC
                 else -> {
                     Gdx.app.log("GameSettingsScreen", "Unknown weather mode selection ${weatherSelectBox.selected}")
                     WEATHER_LIVE

@@ -25,7 +25,7 @@ lateinit var highScoreLabel: Label
 
 lateinit var metarScroll: KScrollPane
 lateinit var metarPane: KTableWidget
-val metarExpandArray = GdxArray<String>(AIRPORT_SIZE)
+val metarExpandArray = GdxArray<Byte>(AIRPORT_SIZE)
 
 lateinit var paneContainer: KContainer<Actor>
 
@@ -36,6 +36,9 @@ lateinit var statusTable: KTableWidget
 lateinit var buttonTable: KTableWidget
 lateinit var commsButton: KTextButton
 lateinit var statusButton: KTextButton
+
+val airportAtisButtonMap = GdxArrayMap<Byte, Pair<KTextButton, KTextButton>>(AIRPORT_SIZE)
+val airportAtisMap = GdxArrayMap<Byte, Pair<String, String>>(AIRPORT_SIZE)
 
 val airportRwyConfigMap = GdxArrayMap<Byte, KTableWidget>(AIRPORT_SIZE)
 val airportRwySettingButtonMap = GdxArrayMap<Byte, KImageButton>(AIRPORT_SIZE)
@@ -144,53 +147,37 @@ fun updateScoreDisplay(newScore: Int, newHighScore: Int) {
     highScoreLabel.setText("High score: $newHighScore")
 }
 
-/** Updates the ATIS pane displays (for new METAR/runway information) */
-fun updateAtisInformation() {
+/** Initialises the ATIS pane displays for all airports */
+fun initializeAtisDisplay() {
     metarPane.clear()
     CLIENT_SCREEN?.let {
         var padTop = false
         for (airport in it.airports.values()) {
-            val airportInfo = airport.entity[AirportInfo.mapper] ?: continue
-            val metarInfo = airport.entity[MetarInfo.mapper] ?: continue
             val arptId = airport.entity[AirportInfo.mapper]?.arptId ?: continue
-            val rwyDisplay = getRunwayInformationDisplay(airport.entity)
-            val text =
-                """
-                    ${airportInfo.icaoCode} - ${metarInfo.letterCode}
-                    $rwyDisplay
-                    ${metarInfo.rawMetar ?: "Loading METAR..."}
-                    """.trimIndent()
-            val expandedText = """
-                    ${airportInfo.icaoCode} - ${metarInfo.letterCode}
-                    $rwyDisplay
-                    ${metarInfo.rawMetar ?: "Loading METAR..."}
-                    Winds: ${if (metarInfo.windSpeedKt.toInt() == 0) "Calm" else "${if (metarInfo.windHeadingDeg == 0.toShort()) "VRB" else metarInfo.windHeadingDeg}@${metarInfo.windSpeedKt}kt ${if (metarInfo.windGustKt > 0) "gusting ${metarInfo.windGustKt}kt" else ""}"}
-                    Visibility: ${if (metarInfo.visibilityM == 9999.toShort()) 10000 else metarInfo.visibilityM}m
-                    Ceiling: ${if (metarInfo.rawMetar?.contains("CAVOK") == true) "CAVOK"
-                    else metarInfo.ceilingHundredFtAGL?.let { ceiling -> "${ceiling * 100} feet" } ?: "None"}
-                    """.trimIndent() + if (metarInfo.windshear.isNotEmpty()) "\nWindshear: ${metarInfo.windshear}" else ""
-            val linkedButton = metarPane.textButton(if (metarExpandArray.contains(airportInfo.icaoCode, false)) expandedText else text, "Metar").apply {
+            val linkedButton = metarPane.textButton("", "Metar").apply {
                 label.setAlignment(Align.left)
                 label.wrap = true
                 cell(growX = true, padLeft = 20f, padRight = 10f, padTop = if (padTop) 30f else 0f, align = Align.left)
             }
             metarPane.table {
                 // debugAll()
-                textButton(if (metarExpandArray.contains(airportInfo.icaoCode, false)) "-" else "+", "MetarExpand").apply {
+                 val expandButton = textButton(if (metarExpandArray.contains(arptId, false)) "-" else "+", "MetarExpand").apply {
                     addChangeListener { _, _ ->
-                        if (metarExpandArray.contains(airportInfo.icaoCode)) {
+                        val texts = airportAtisMap[arptId] ?: Pair("", "")
+                        if (metarExpandArray.contains(arptId)) {
                             // Expanded, hide it
                             this@apply.label.setText("+")
-                            linkedButton.label.setText(text)
-                            metarExpandArray.removeValue(airportInfo.icaoCode, false)
+                            linkedButton.label.setText(texts.first)
+                            metarExpandArray.removeValue(arptId, false)
                         } else {
                             // Hidden, expand it
                             this@apply.label.setText("-")
-                            linkedButton.label.setText(expandedText)
-                            metarExpandArray.add(airportInfo.icaoCode)
+                            linkedButton.label.setText(texts.second)
+                            metarExpandArray.add(arptId)
                         }
                     }
                 }.cell(height = 50f, width = 50f, padLeft = 10f, padRight = 20f, align = Align.topRight)
+                airportAtisButtonMap[arptId] = Pair(linkedButton, expandButton)
                 row()
                 airportRwySettingButtonMap[arptId] = imageButton("RunwayConfig").apply {
                     addChangeListener { _, _ ->
@@ -210,6 +197,33 @@ fun updateAtisInformation() {
         }
     }
     metarPane.padBottom(35f)
+}
+
+/** Updates the ATIS pane display label (for new METAR/runway information change) for all airports */
+fun updateAtisInformation() {
+    CLIENT_SCREEN?.let {
+        for (airport in it.airports.values()) {
+            val airportInfo = airport.entity[AirportInfo.mapper] ?: continue
+            val metarInfo = airport.entity[MetarInfo.mapper] ?: continue
+            val rwyDisplay = getRunwayInformationDisplay(airport.entity)
+            val text = """
+                    ${airportInfo.icaoCode} - ${metarInfo.letterCode}
+                    $rwyDisplay
+                    ${metarInfo.rawMetar ?: "Loading METAR..."}
+                    """.trimIndent()
+            val expandedText = """
+                    ${airportInfo.icaoCode} - ${metarInfo.letterCode}
+                    $rwyDisplay
+                    ${metarInfo.rawMetar ?: "Loading METAR..."}
+                    Winds: ${if (metarInfo.windSpeedKt.toInt() == 0) "Calm" else "${if (metarInfo.windHeadingDeg == 0.toShort()) "VRB" else metarInfo.windHeadingDeg}@${metarInfo.windSpeedKt}kt ${if (metarInfo.windGustKt > 0) "gusting ${metarInfo.windGustKt}kt" else ""}"}
+                    Visibility: ${if (metarInfo.visibilityM >= 9999.toShort()) 10000 else metarInfo.visibilityM}m
+                    Ceiling: ${if (metarInfo.rawMetar?.contains("CAVOK") == true) "CAVOK"
+            else metarInfo.ceilingHundredFtAGL?.let { ceiling -> "${ceiling * 100} feet" } ?: "None"}
+                    """.trimIndent() + if (metarInfo.windshear.isNotEmpty()) "\nWindshear: ${metarInfo.windshear}" else ""
+            airportAtisMap[airportInfo.arptId] = Pair(text, expandedText)
+            airportAtisButtonMap[airportInfo.arptId]?.first?.setText(if (metarExpandArray.contains(airportInfo.arptId, false)) expandedText else text)
+        }
+    }
 }
 
 /**
@@ -236,6 +250,96 @@ fun getRunwayInformationDisplay(airport: Entity): String {
     return "$dep      $arr"
 }
 
+/** Initializes the runway configuration panes for all the airports */
+fun initializeAirportRwyConfigPanes() {
+    for (airport in GAME.gameClientScreen?.airports?.values() ?: return) {
+        val arptId = airport.entity[AirportInfo.mapper]?.arptId ?: return
+        paneContainer.actor = null
+        val newTable = paneContainer.table {
+            // debugAll()
+            val configs = airport.entity[RunwayConfigurationChildren.mapper]?.rwyConfigs ?: return
+            table {
+                label("Select runway configuration", "MenuPaneRunwayConfigLabel")
+                cell(colspan = 2, padBottom = 15f)
+            }.cell(growX = true)
+            row()
+            scrollPane("MenuPane") {
+                table configTable@ {
+                    // debugAll()
+                    val buttonArray = GdxArray<KTextButton>()
+                    for (config in configs.values()) {
+                        val arrRwys = config.arrRwys
+                        val depRwys = config.depRwys
+                        val sb = StringBuilder()
+                        if (config.timeRestriction == UsabilityFilter.DAY_ONLY) sb.append("Day only\n")
+                        else if (config.timeRestriction == UsabilityFilter.NIGHT_ONLY) sb.append("Night only\n")
+                        sb.append("DEP: ")
+                        for (j in 0 until depRwys.size) {
+                            sb.append(depRwys[j].entity[RunwayInfo.mapper]?.rwyName)
+                            if (j < depRwys.size - 1) sb.append(", ")
+                        }
+                        sb.append("\nARR: ")
+                        for (j in 0 until arrRwys.size) {
+                            sb.append(arrRwys[j].entity[RunwayInfo.mapper]?.rwyName)
+                            if (j < arrRwys.size - 1) sb.append(", ")
+                        }
+                        buttonArray.add(this@configTable.textButton(sb.toString(), "MenuPaneRunwayConfiguration").apply {
+                            isChecked = airport.entity[ActiveRunwayConfig.mapper]?.configId == config.id
+                            name = config.id.toString()
+                            addChangeListener { _, _ ->
+                                if (buttonsBeingModified) return@addChangeListener
+                                buttonsBeingModified = true
+                                for (i in 0 until buttonArray.size) buttonArray[i].isChecked = false
+                                isChecked = true
+                                updateConfigButtonStates(arptId, airport.entity[ActiveRunwayConfig.mapper]?.configId, config.id)
+                                updateConfirmCancelButtons(airport.entity)
+                                buttonsBeingModified = false
+                            }
+                        }.cell(padLeft = 5f, padTop = 5f, padBottom = 5f, padRight = 20f, growX = true))
+                        row()
+                    }
+                    airportRwyConfigButtonsMap[arptId] = buttonArray
+                    align(Align.topLeft)
+                }
+                setOverscroll(false, false)
+                removeMouseScrollListeners()
+            }.cell(preferredWidth = 0.6f * paneContainer.width, preferredHeight = paneContainer.height, align = Align.left, growY = true)
+            table {
+                // debugAll()
+                val cfmButton = textButton("Already\nactive", "MenuPaneRunwayChange").cell(padRight = 20f, padBottom = 20f, growX = true).apply {
+                    addChangeListener { _, _ ->
+                        // Send the update request, ID has been stored in the name field of the button
+                        val configIdToUse = if (name != null) name.toByte() else return@addChangeListener
+                        GAME.gameServer?.also { server ->
+                            server.airports[arptId]?.let { arpt ->
+                                if ((arpt.entity[RunwayConfigurationChildren.mapper]?.rwyConfigs?.get(configIdToUse)?.rwyAvailabilityScore ?: return@addChangeListener) == 0)
+                                    return@addChangeListener
+                                arpt.activateRunwayConfig(configIdToUse)
+                                server.sendActiveRunwayUpdateToAll(arptId, configIdToUse)
+                            }
+                        }
+                    }
+                    isVisible = false
+                }
+                row()
+                val cancelButton = textButton("Close\nPane", "MenuPaneRunwayChange").cell(padRight = 20f, growX = true).apply {
+                    name = "Close" // When this is getting initialized, it will always start of with the active runway config
+                    addChangeListener { _, _ ->
+                        // Reset to the current state
+                        if (name == "") setAirportRunwayConfigPaneState(airport.entity)
+                        else if (name == "Close") commsButton.isChecked = true
+                    }
+                }
+                setBackground("ListBackground")
+                airportRwyConfigConfirmCancelMap[arptId] = Pair(cfmButton, cancelButton)
+            }.cell(preferredWidth = 0.4f * paneContainer.width, align = Align.right, growY = true)
+            setFillParent(true)
+        }
+        airportRwyConfigMap[arptId] = newTable
+    }
+    paneContainer.actor = commsOuterTable
+}
+
 /**
  * Updates the main info pane to display runway configuration selections
  * @param airport the airport to display runway configurations for
@@ -245,104 +349,22 @@ fun setPaneToAirportRwyConfig(airport: Airport) {
     selectedArptId = arptId
     airportRwyConfigMap[arptId]?.let {
         paneContainer.actor = it
-        setAirportRunwayConfigState(airport.entity)
+        setAirportRunwayConfigPaneState(airport.entity)
         return
     }
-    paneContainer.actor = null
-    val newTable = paneContainer.table {
-        // debugAll()
-        val configs = airport.entity[RunwayConfigurationChildren.mapper]?.rwyConfigs ?: return
-        table {
-            label("Select runway configuration", "MenuPaneRunwayConfigLabel")
-            cell(colspan = 2, padBottom = 15f)
-        }.cell(growX = true)
-        row()
-        scrollPane("MenuPane") {
-            table configTable@ {
-                // debugAll()
-                val buttonArray = GdxArray<KTextButton>()
-                for (config in configs.values()) {
-                    val arrRwys = config.arrRwys
-                    val depRwys = config.depRwys
-                    val sb = StringBuilder()
-                    if (config.timeRestriction == UsabilityFilter.DAY_ONLY) sb.append("Day only\n")
-                    else if (config.timeRestriction == UsabilityFilter.NIGHT_ONLY) sb.append("Night only\n")
-                    sb.append("DEP: ")
-                    for (j in 0 until depRwys.size) {
-                        sb.append(depRwys[j].entity[RunwayInfo.mapper]?.rwyName)
-                        if (j < depRwys.size - 1) sb.append(", ")
-                    }
-                    sb.append("\nARR: ")
-                    for (j in 0 until arrRwys.size) {
-                        sb.append(arrRwys[j].entity[RunwayInfo.mapper]?.rwyName)
-                        if (j < arrRwys.size - 1) sb.append(", ")
-                    }
-                    buttonArray.add(this@configTable.textButton(sb.toString(), "MenuPaneRunwayConfiguration").apply {
-                        isChecked = airport.entity[ActiveRunwayConfig.mapper]?.configId == config.id
-                        name = config.id.toString()
-                        addChangeListener { _, _ ->
-                            if (buttonsBeingModified) return@addChangeListener
-                            buttonsBeingModified = true
-                            for (i in 0 until buttonArray.size) buttonArray[i].isChecked = false
-                            isChecked = true
-                            updateConfigButtonStates(arptId, airport.entity[ActiveRunwayConfig.mapper]?.configId, config.id)
-                            updateConfirmCancelButtons(airport.entity)
-                            buttonsBeingModified = false
-                        }
-                    }.cell(padLeft = 5f, padTop = 5f, padBottom = 5f, padRight = 20f, growX = true))
-                    row()
-                }
-                airportRwyConfigButtonsMap[arptId] = buttonArray
-                align(Align.topLeft)
-            }
-            setOverscroll(false, false)
-            removeMouseScrollListeners()
-        }.cell(preferredWidth = 0.6f * paneContainer.width, preferredHeight = paneContainer.height, align = Align.left, growY = true)
-        table {
-            // debugAll()
-            val cfmButton = textButton("Already\nactive", "MenuPaneRunwayChange").cell(padRight = 20f, padBottom = 20f, growX = true).apply {
-                addChangeListener { _, _ ->
-                    // Send the update request, ID has been stored in the name field of the button
-                    val configIdToUse = if (name != null) name.toByte() else return@addChangeListener
-                    GAME.gameServer?.also { server ->
-                        server.airports[arptId]?.let { arpt ->
-                            if ((arpt.entity[RunwayConfigurationChildren.mapper]?.rwyConfigs?.get(configIdToUse)?.rwyAvailabilityScore ?: return@addChangeListener) == 0)
-                                return@addChangeListener
-                            arpt.activateRunwayConfig(configIdToUse)
-                            server.sendActiveRunwayUpdateToAll(arptId, configIdToUse)
-                        }
-                    }
-                }
-                isVisible = false
-            }
-            row()
-            val cancelButton = textButton("Close\nPane", "MenuPaneRunwayChange").cell(padRight = 20f, growX = true).apply {
-                name = "Close" // When this is getting initialized, it will always start of with the active runway config
-                addChangeListener { _, _ ->
-                    // Reset to the current state
-                    if (name == "") setAirportRunwayConfigState(airport.entity)
-                    else if (name == "Close") commsButton.isChecked = true
-                }
-            }
-            setBackground("ListBackground")
-            airportRwyConfigConfirmCancelMap[arptId] = Pair(cfmButton, cancelButton)
-        }.cell(preferredWidth = 0.4f * paneContainer.width, align = Align.right, growY = true)
-        setFillParent(true)
-    }
-    airportRwyConfigMap[arptId] = newTable
 }
 
 /**
  * Updates the UI to reflect the current runway configuration state
  * @param airport the airport entity to update for
  * */
-fun setAirportRunwayConfigState(airport: Entity) {
+fun setAirportRunwayConfigPaneState(airport: Entity) {
     val arptId = airport[AirportInfo.mapper]?.arptId ?: return
     val activeId = airport[ActiveRunwayConfig.mapper]?.configId
     val pendingId = airport[PendingRunwayConfig.mapper]?.pendingId
     airportRwySettingButtonMap[arptId]?.style = Scene2DSkin.defaultSkin["RunwayConfig${if (pendingId != null) "Pending" else ""}", ImageButtonStyle::class.java]
     airportRwyConfigButtonsMap[arptId]?.apply { for (i in 0 until size) { get(i).let { button ->
-        button.isChecked = button.name.toByte() == activeId
+        button.isChecked = button.name.toByte() == (pendingId ?: activeId)
     }}}
     updateConfigButtonStates(arptId, activeId, pendingId)
     updateConfirmCancelButtons(airport)
@@ -400,17 +422,5 @@ private fun updateConfirmCancelButtons(airport: Entity) {
             }
         })
 
-    }
-}
-
-/**
- * Updates the active selected runway configuration pane if the input airport matches
- *
- * Call when the airport runway configuration has changed
- */
-fun checkUpdateRunwayPaneState(airport: Airport) {
-    selectedArptId.let {
-        if (airport.entity[AirportInfo.mapper]?.arptId == it)
-            setAirportRunwayConfigState(airport.entity)
     }
 }
