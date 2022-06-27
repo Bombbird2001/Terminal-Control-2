@@ -46,7 +46,7 @@ class GameLoading(createServer: Boolean): BasicUIScreen() {
     override fun show() {
         super.show()
 
-        pBar.value = 0f
+        pBar.value = 0.05f
         Timer.schedule(object: Timer.Task() {
             override fun run() {
                 pBar.value = 0.5f

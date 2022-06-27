@@ -16,13 +16,12 @@ import com.bombbird.terminalcontrol2.networking.GameServer.Companion.STORMS_OFF
 import com.bombbird.terminalcontrol2.networking.GameServer.Companion.WEATHER_LIVE
 import com.bombbird.terminalcontrol2.networking.GameServer.Companion.WEATHER_RANDOM
 import com.bombbird.terminalcontrol2.networking.GameServer.Companion.WEATHER_STATIC
-import com.bombbird.terminalcontrol2.screens.BasicUIScreen
 import com.bombbird.terminalcontrol2.ui.*
 import ktx.collections.GdxArray
 import ktx.scene2d.*
 
 /** Settings screen for game-specific settings */
-class GameSettings: BasicUIScreen() {
+class GameSettings: BaseGameSettings() {
     companion object {
         private const val LIVE_WEATHER = "Live weather"
         private const val RANDOM_WEATHER = "Random weather"
@@ -64,7 +63,7 @@ class GameSettings: BasicUIScreen() {
                                 addChangeListener { _, _ ->
                                     if (selected == SET_CUSTOM_WEATHER) {
                                         if (!GAME.containsScreen<CustomWeatherSettings>()) GAME.addScreen(CustomWeatherSettings())
-                                        GAME.getScreen<CustomWeatherSettings>().updateWeatherSelections()
+                                        GAME.getScreen<CustomWeatherSettings>().setToCurrentGameSettings()
                                         GAME.setScreen<CustomWeatherSettings>()
                                         selected = STATIC_WEATHER
                                     }
@@ -118,7 +117,11 @@ class GameSettings: BasicUIScreen() {
                         setOverscroll(false, false)
                     }.cell(growY = true, padRight = 100f)
                     table {
-                        textButton("Manage traffic", "SettingsSubpane").cell(width = BUTTON_WIDTH_BIG / 2f, height = BUTTON_HEIGHT_BIG )
+                        textButton("Manage traffic", "SettingsSubpane").cell(width = BUTTON_WIDTH_BIG / 2f, height = BUTTON_HEIGHT_BIG ).addChangeListener { _, _ ->
+                            if (!GAME.containsScreen<TrafficSettings>()) GAME.addScreen(TrafficSettings())
+                            GAME.getScreen<TrafficSettings>().setToCurrentGameSettings()
+                            GAME.setScreen<TrafficSettings>()
+                        }
                         row().padTop(50f)
                         textButton("Custom aircraft", "SettingsSubpane").cell(width = BUTTON_WIDTH_BIG / 2f, height = BUTTON_HEIGHT_BIG)
                     }
@@ -138,7 +141,7 @@ class GameSettings: BasicUIScreen() {
     }
 
     /** Takes the settings specific to the current game and set the select box choices based on them */
-    fun setToCurrentGameSettings() {
+    override fun setToCurrentGameSettings() {
         GAME.gameServer?.apply {
             weatherSelectBox.selected = when (weatherMode) {
                 WEATHER_LIVE -> LIVE_WEATHER
@@ -194,7 +197,7 @@ class GameSettings: BasicUIScreen() {
     }
 
     /** Takes the select box choices and sets the settings specific to the current game */
-    private fun updateCurrentGameSettings() {
+    override fun updateCurrentGameSettings() {
         GAME.gameServer?.apply {
             weatherMode = when (weatherSelectBox.selected) {
                 LIVE_WEATHER -> WEATHER_LIVE

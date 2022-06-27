@@ -7,7 +7,6 @@ import com.bombbird.terminalcontrol2.components.AirportInfo
 import com.bombbird.terminalcontrol2.components.MetarInfo
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.networking.GameServer.Companion.WEATHER_STATIC
-import com.bombbird.terminalcontrol2.screens.BasicUIScreen
 import com.bombbird.terminalcontrol2.ui.addChangeListener
 import com.bombbird.terminalcontrol2.ui.defaultSettingsSelectBoxMedium
 import com.bombbird.terminalcontrol2.ui.defaultSettingsSelectBoxSmall
@@ -21,9 +20,9 @@ import ktx.scene2d.*
 import kotlin.math.min
 
 /** Settings screen for custom weather settings */
-class CustomWeatherSettings: BasicUIScreen() {
-    private val airportWindSelectBoxes: GdxMap<String, Array<SelectBox<Byte>>> = GdxMap(AIRPORT_SIZE)
-    private val airportVisibilityCeilingSelectBoxes: GdxMap<String, Pair<SelectBox<String>, SelectBox<String>>> = GdxMap(AIRPORT_SIZE)
+class CustomWeatherSettings: BaseGameSettings() {
+    private val airportWindSelectBoxes: GdxMap<Byte, Array<SelectBox<Byte>>> = GdxMap(AIRPORT_SIZE)
+    private val airportVisibilityCeilingSelectBoxes: GdxMap<Byte, Pair<SelectBox<String>, SelectBox<String>>> = GdxMap(AIRPORT_SIZE)
     private val ceilingSelections = GdxArray<String>(arrayOf("None", "0", "100", "200", "500", "1000", "2000", "3000", "5000", "8000", "12000", "17000", "23000", "30000", "38000"))
 
     init {
@@ -57,7 +56,7 @@ class CustomWeatherSettings: BasicUIScreen() {
                                         setItems(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
                                     }
                                     label("kts", "SettingsOption").cell(height = BUTTON_HEIGHT_BIG / 1.5f, padLeft = 10f, padRight = 70f)
-                                    airportWindSelectBoxes[arptInfo.icaoCode] = arrayOf(hdgBox1, hdgBox2, hdgBox3, hdgBox4, hdgBox5)
+                                    airportWindSelectBoxes[arptInfo.arptId] = arrayOf(hdgBox1, hdgBox2, hdgBox3, hdgBox4, hdgBox5)
                                     label("Visibility:", "SettingsOption").cell(height = BUTTON_HEIGHT_BIG / 1.5f, padRight = 20f)
                                     val visBox = defaultSettingsSelectBoxMedium<String>().apply {
                                         val visArray = GdxArray<String>()
@@ -71,7 +70,7 @@ class CustomWeatherSettings: BasicUIScreen() {
                                         setItems(ceilingSelections)
                                     }
                                     label("ft AGL", "SettingsOption").cell(height = BUTTON_HEIGHT_BIG / 1.5f, padLeft = 10f)
-                                    airportVisibilityCeilingSelectBoxes[arptInfo.icaoCode] = Pair(visBox, ceilingBox)
+                                    airportVisibilityCeilingSelectBoxes[arptInfo.arptId] = Pair(visBox, ceilingBox)
                                 }
                             }}
                         }
@@ -82,7 +81,7 @@ class CustomWeatherSettings: BasicUIScreen() {
                             GAME.setScreen<GameSettings>()
                         }
                         textButton("Confirm", "Menu").cell(width = BUTTON_WIDTH_BIG / 1.5f, height = BUTTON_HEIGHT_BIG, padBottom = BOTTOM_BUTTON_MARGIN, align = Align.bottom).addChangeListener { _, _ ->
-                            updateGameWeatherSettings()
+                            updateCurrentGameSettings()
                             GAME.setScreen<GameSettings>()
                         }
                     }
@@ -92,24 +91,24 @@ class CustomWeatherSettings: BasicUIScreen() {
     }
 
     /** Updates the weather information from the current game airports to the selections */
-    fun updateWeatherSelections() {
+    override fun setToCurrentGameSettings() {
         GAME.gameServer?.apply {
             airports.values().forEach {
                 val arptInfo = it.entity[AirportInfo.mapper] ?: return@forEach
                 val metarInfo = it.entity[MetarInfo.mapper] ?: return@forEach
 
                 // Set the wind first
-                val windBoxes = airportWindSelectBoxes[arptInfo.icaoCode] ?: return@forEach
+                val windBoxes = airportWindSelectBoxes[arptInfo.arptId] ?: return@forEach
                 val windHdg = metarInfo.windHeadingDeg
                 val windSpd = min(metarInfo.windSpeedKt.toInt(), 49)
                 windBoxes[0].selected = (windHdg / 100).toByte()
                 windBoxes[1].selected = ((windHdg / 10) % 10).toByte()
                 windBoxes[2].selected = (windHdg % 10).toByte()
-                modulateWindHdgChoices(arptInfo.icaoCode)
+                modulateWindHdgChoices(arptInfo.arptId)
                 windBoxes[3].selected = (windSpd / 10).toByte()
                 windBoxes[4].selected = (windSpd % 10).toByte()
 
-                val visCeilBoxes = airportVisibilityCeilingSelectBoxes[arptInfo.icaoCode] ?: return@forEach
+                val visCeilBoxes = airportVisibilityCeilingSelectBoxes[arptInfo.arptId] ?: return@forEach
                 // Set the visibility
                 visCeilBoxes.first.selected = if (metarInfo.visibilityM >= 9999) ">9999" else metarInfo.visibilityM.toString()
                 val correctedCeiling = metarInfo.ceilingHundredFtAGL?.let { ceil ->
@@ -124,18 +123,18 @@ class CustomWeatherSettings: BasicUIScreen() {
     }
 
     /** Takes the select box choices and sets the static weather to the current game's airports */
-    private fun updateGameWeatherSettings() {
+    override fun updateCurrentGameSettings() {
         GAME.gameServer?.apply {
             weatherMode = WEATHER_STATIC
             airports.values().forEach {
                 val arptInfo = it.entity[AirportInfo.mapper] ?: return@forEach
 
                 // Set the wind heading and speed
-                val windBoxes = airportWindSelectBoxes[arptInfo.icaoCode] ?: return@forEach
+                val windBoxes = airportWindSelectBoxes[arptInfo.arptId] ?: return@forEach
                 val windHdg = (windBoxes[0].selected * 100 + windBoxes[1].selected * 10 + windBoxes[2].selected).toShort()
                 val windSpd = (windBoxes[3].selected * 10 + windBoxes[4].selected).toShort()
 
-                val visCeilBoxes = airportVisibilityCeilingSelectBoxes[arptInfo.icaoCode] ?: return@forEach
+                val visCeilBoxes = airportVisibilityCeilingSelectBoxes[arptInfo.arptId] ?: return@forEach
                 // Set the visibility
                 val vis = if (visCeilBoxes.first.selected == ">9999") 10000 else visCeilBoxes.first.selected.toShort()
 
@@ -152,9 +151,12 @@ class CustomWeatherSettings: BasicUIScreen() {
         }
     }
 
-    /** Modulates the choices for the 2nd and 3rd select boxes with the currently selected values */
-    private fun modulateWindHdgChoices(arptIcao: String) {
-        airportWindSelectBoxes[arptIcao]?.apply {
+    /**
+     * Modulates the choices for the 2nd and 3rd select boxes with the currently selected values
+     * @param arptId ID of the airport to modulate
+     * */
+    private fun modulateWindHdgChoices(arptId: Byte) {
+        airportWindSelectBoxes[arptId]?.apply {
             if (get(0).selected == 3.byte) {
                 get(1).setItems(0, 1, 2, 3, 4, 5, 6)
                 if (get(1).selected == 6.byte) get(2).setItems(0)

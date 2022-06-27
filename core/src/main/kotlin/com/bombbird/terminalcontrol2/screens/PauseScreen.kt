@@ -4,6 +4,7 @@ import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.screens.settings.CustomWeatherSettings
 import com.bombbird.terminalcontrol2.screens.settings.GameSettings
 import com.bombbird.terminalcontrol2.screens.settings.MainSettings
+import com.bombbird.terminalcontrol2.screens.settings.TrafficSettings
 import com.bombbird.terminalcontrol2.ui.addChangeListener
 import ktx.assets.disposeSafely
 import ktx.scene2d.actors
@@ -46,6 +47,7 @@ class PauseScreen: BasicUIScreen() {
                             GAME.removeScreen<MainSettings>()
                             GAME.removeScreen<GameSettings>()
                             GAME.removeScreen<CustomWeatherSettings>()
+                            GAME.removeScreen<TrafficSettings>()
                         }
                 }
             }

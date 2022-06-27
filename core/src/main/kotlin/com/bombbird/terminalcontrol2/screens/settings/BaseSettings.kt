@@ -2,7 +2,7 @@ package com.bombbird.terminalcontrol2.screens.settings
 
 import com.bombbird.terminalcontrol2.screens.BasicUIScreen
 
-/** Abstract base class for the sub-setting screens; should not be instantiated directly */
+/** Abstract base class for the sub-setting screens (global client-side settings); should not be instantiated directly */
 abstract class BaseSettings: BasicUIScreen() {
     companion object {
         const val OFF = "Off"
@@ -20,7 +20,7 @@ abstract class BaseSettings: BasicUIScreen() {
 
     /**
      * Abstract function that should be implemented to take the relevant selections from the settings screen elements
-     * and sets the global variables from them
+     * and sets the relevant global variables from them
      * */
     abstract fun updateClientSettings()
 }
