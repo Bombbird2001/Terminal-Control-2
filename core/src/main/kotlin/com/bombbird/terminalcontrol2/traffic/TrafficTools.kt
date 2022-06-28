@@ -10,6 +10,7 @@ import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.Aircraft
 import com.bombbird.terminalcontrol2.entities.Airport
 import com.bombbird.terminalcontrol2.global.MAG_HDG_DEV
+import com.bombbird.terminalcontrol2.global.MAX_ALT
 import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.navigation.SidStar
@@ -20,21 +21,27 @@ import ktx.collections.GdxArray
 import ktx.collections.GdxSet
 import ktx.math.plus
 import ktx.math.times
+import kotlin.math.ceil
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.roundToInt
 
 val disallowedCallsigns = GdxSet<String>()
 
 /**
  * Class for storing traffic modes for the game
  *
+ * [NORMAL] is [ARRIVALS_TO_CONTROL] except landing planes successfully will gradually raise the count, while separation
+ * conflicts will decrease the count
+ *
  * [ARRIVALS_TO_CONTROL] will instruct the game server to spawn arrivals to maintain an arrival count
  *
  * [FLOW_RATE] will instruct the game server to spawn arrivals at a set rate
  */
 object TrafficMode {
-    const val ARRIVALS_TO_CONTROL: Byte = 0
-    const val FLOW_RATE: Byte = 1
+    const val NORMAL: Byte = 0
+    const val ARRIVALS_TO_CONTROL: Byte = 1
+    const val FLOW_RATE: Byte = 2
 }
 
 /**
@@ -80,16 +87,21 @@ fun createArrival(callsign: String, icaoType: String, airport: Entity, gs: GameS
         entity += ArrivalAirport(airport[AirportInfo.mapper]?.arptId ?: 0)
         val alt = calculateArrivalSpawnAltitude(entity, airport, origStarRoute, spawnPos.first, spawnPos.second, starRoute)
         entity[Altitude.mapper]?.altitudeFt = alt
-        entity[Direction.mapper]?.trackUnitVector?.rotateDeg(-spawnPos.third - 180)
+        val dir = (entity[Direction.mapper] ?: Direction()).apply { trackUnitVector.rotateDeg(-spawnPos.third - 180) }
         val aircraftPerf = entity[AircraftInfo.mapper]?.aircraftPerf ?: AircraftTypeData.AircraftPerfData()
         val ias = calculateArrivalSpawnIAS(origStarRoute, starRoute, alt, aircraftPerf)
         val tas = calculateTASFromIAS(alt, ias.toFloat())
-        val clearedAlt = min(15000, (alt / 1000).toInt() * 1000)
-        entity[Speed.mapper]?.apply {
+        val clearedAlt = min((ceil(MAX_ALT / 1000f).roundToInt() - 1) * 1000, (alt / 1000).toInt() * 1000)
+        val speed = (entity[Speed.mapper] ?: Speed()).apply {
             speedKts = tas
             // Set to vertical speed required to reach cleared altitude in 10 seconds, capped by the minimum vertical speed
             val minVertSpd = calculateMinVerticalSpd(aircraftPerf, alt, tas, 0f, approachExpedite = false, takingOff = false, takeoffClimb = false)
             vertSpdFpm = max(minVertSpd, (clearedAlt - alt) * 6)
+        }
+        val affectedByWind = (entity[AffectedByWind.mapper] ?: AffectedByWind()).apply { getClosestAirportWindVector(spawnPos.first, spawnPos.second) }
+        entity[GroundTrack.mapper]?.apply {
+            val tasVector = dir.trackUnitVector * ktToPxps(speed.speedKts.toInt())
+            trackVectorPxps = tasVector + affectedByWind.windVectorPxps
         }
         entity += ClearanceAct(ClearanceState.ActingClearance(
             ClearanceState(randomStar?.name ?: "", starRoute, Route(),

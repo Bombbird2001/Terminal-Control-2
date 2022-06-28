@@ -274,7 +274,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
             val acInfo = get(AircraftInfo.mapper) ?: return SerialisedAircraft()
             val direction = get(Direction.mapper) ?: return SerialisedAircraft()
             val speed = get(Speed.mapper) ?: return SerialisedAircraft()
-            val gs = get(GroundTrack.mapper) ?: return SerialisedAircraft()
+            val track = get(GroundTrack.mapper) ?: return SerialisedAircraft()
             val cmdTarget = get(CommandTarget.mapper) ?: return SerialisedAircraft()
             val flightType = get(FlightType.mapper) ?: return SerialisedAircraft()
             val clearance = get(PendingClearances.mapper)?.clearanceQueue?.last()?.clearanceState ?: get(ClearanceAct.mapper)?.actingClearance?.actingClearance ?: return SerialisedAircraft()
@@ -285,7 +285,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                 altitude.altitudeFt,
                 acInfo.icaoCallsign, acInfo.icaoType, acInfo.aircraftPerf.maxAlt,
                 direction.trackUnitVector.x, direction.trackUnitVector.y,
-                speed.speedKts, speed.vertSpdFpm, speed.angularSpdDps, gs.trackVectorPxps.x, gs.trackVectorPxps.y,
+                speed.speedKts, speed.vertSpdFpm, speed.angularSpdDps, track.trackVectorPxps.x, track.trackVectorPxps.y,
                 cmdTarget.targetHdgDeg.toInt().toShort(), (cmdTarget.targetAltFt / 100f).roundToInt().toShort(), cmdTarget.targetIasKt,
                 flightType.type,
                 clearance.routePrimaryName, clearance.route.getSerialisedObject(), clearance.hiddenLegs.getSerialisedObject(),

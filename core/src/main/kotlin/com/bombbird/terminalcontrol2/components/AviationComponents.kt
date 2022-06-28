@@ -117,8 +117,8 @@ class ArrivalClosed: Component {
 }
 
 /** Component for tagging a closed airport for departures */
-class DepartureClosed: Component {
-    companion object: Mapper<DepartureClosed>()
+data class DepartureInfo(var closed: Boolean = false, var backlog: Int = -10): Component {
+    companion object: Mapper<DepartureInfo>()
 }
 
 /** Component for tagging traffic distribution at an airport */

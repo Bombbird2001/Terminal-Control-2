@@ -43,15 +43,19 @@ class TrafficSystem(override val updateTimeS: Float): EntitySystem(), LowFreqUpd
             arrivalSpawnTimerS -= updateTimeS
             if (arrivalSpawnTimerS < 0) {
                 when (trafficMode) {
-                    TrafficMode.ARRIVALS_TO_CONTROL -> {
+                    TrafficMode.NORMAL, TrafficMode.ARRIVALS_TO_CONTROL -> {
                         val arrivalCount = engine.getEntitiesFor(arrivalFamily).filter { it[FlightType.mapper]?.type == FlightType.ARRIVAL }.size
                         // Min 50sec for >= 4 planes diff, max 80sec for <= 1 plane diff
-                        arrivalSpawnTimerS = 90f - 10 * (planesToControl - arrivalCount)
+                        arrivalSpawnTimerS = 90f - 10 * (trafficValue - arrivalCount)
                         arrivalSpawnTimerS = MathUtils.clamp(arrivalSpawnTimerS, 50f, 80f)
-                        if (arrivalCount >= planesToControl.toInt()) return
+                        if (arrivalCount >= trafficValue.toInt()) return
                     }
                     TrafficMode.FLOW_RATE -> {
-                        // TODO Implement flow rate spawning
+                        arrivalSpawnTimerS = -previousArrivalOffsetS // Subtract the additional (or less) time before spawning previous aircraft
+                        val defaultRate = 3600f / trafficValue
+                        arrivalSpawnTimerS += defaultRate // Add the constant rate timing
+                        previousArrivalOffsetS = defaultRate * MathUtils.random(-0.1f, 0.1f)
+                        arrivalSpawnTimerS += previousArrivalOffsetS
                     }
                     else -> Gdx.app.log("TrafficSystem", "Invalid traffic mode $trafficMode")
                 }

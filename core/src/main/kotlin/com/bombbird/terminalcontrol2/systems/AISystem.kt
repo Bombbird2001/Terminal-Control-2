@@ -130,10 +130,10 @@ class AISystem: EntitySystem() {
                         val callsign = get(AircraftInfo.mapper)?.icaoCallsign ?: return@let
                         it.aircraft.removeKey(callsign) // Remove from aircraft map
                         it.sendAircraftDespawn(callsign) // Send removal data to all clients
-                        if (it.trafficMode == TrafficMode.ARRIVALS_TO_CONTROL) {
-                            var points = 0.6f - it.planesToControl / 30
+                        if (it.trafficMode == TrafficMode.NORMAL) {
+                            var points = 0.6f - it.trafficValue / 30
                             points = MathUtils.clamp(points, 0.15f, 0.5f)
-                            it.planesToControl = MathUtils.clamp(it.planesToControl + points, 4f, MAX_ARRIVALS.toFloat())
+                            it.trafficValue = MathUtils.clamp(it.trafficValue + points, 4f, MAX_ARRIVALS.toFloat())
                         }
                         it.score += 1
                         if (it.score > it.highScore) it.highScore = it.score

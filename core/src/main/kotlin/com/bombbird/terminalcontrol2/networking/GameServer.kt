@@ -113,8 +113,9 @@ class GameServer {
     val sectorMap = GdxArrayMap<Connection, Byte>(PLAYER_SIZE)
 
     var arrivalSpawnTimerS = 0f
-    var planesToControl = 6f
-    var trafficMode = TrafficMode.ARRIVALS_TO_CONTROL
+    var previousArrivalOffsetS = 0f
+    var trafficValue = 6f
+    var trafficMode = TrafficMode.NORMAL
 
     var score = 0
     var highScore = 0

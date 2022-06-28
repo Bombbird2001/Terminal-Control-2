@@ -26,6 +26,8 @@ class MainMenu: BasicUIScreen() {
                     }
                     row().padTop(25f)
                     textButton("Load Game", "Menu").cell(width = BUTTON_WIDTH_BIG, height = BUTTON_HEIGHT_BIG)
+                    row().padTop(25f)
+                    textButton("Join Game", "Menu").cell(width = BUTTON_WIDTH_BIG, height = BUTTON_HEIGHT_BIG)
                     row().padTop(130f)
                     textButton("Quit", "Menu").cell(width = BUTTON_WIDTH_BIG, height = BUTTON_HEIGHT_BIG, padBottom = BOTTOM_BUTTON_MARGIN).addChangeListener { _, _ ->
                         GAME.dispose()

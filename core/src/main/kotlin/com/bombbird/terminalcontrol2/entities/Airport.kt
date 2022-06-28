@@ -39,6 +39,7 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
         if (!onClient) {
             with<RandomMetarInfo>()
             with<RandomAirlineData>()
+            with<DepartureInfo>()
         }
     }
 
