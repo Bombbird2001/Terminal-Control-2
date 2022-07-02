@@ -91,20 +91,10 @@ class JoinGame: BasicUIScreen() {
         lanGamesTable.apply {
             clear()
             for (i in 0 until addressData.size) { addressData[i]?.let { game ->
-                if (game.second.size != 9) return@let
-                var players: Byte? = null
-                var airport = ""
-                var pos = 0
-                while (pos < game.second.size - 1) {
-                    if (pos == 0) {
-                        players = game.second[0]
-                        pos++
-                    } else {
-                        airport += Char(game.second[pos] * 255 + game.second[pos + 1])
-                        pos += 2
-                    }
-                }
-                textButton("$airport - $players player${if (players == null || players > 1) "s" else ""}          ${game.first}          Join", "JoinGameAirport").addChangeListener { _, _ ->
+                val decodedData = decodePacketData(game.second) ?: return@let
+                val players = decodedData.first
+                val airport = decodedData.second
+                textButton("$airport - $players player${if (players > 1) "s" else ""}          ${game.first}          Join", "JoinGameAirport").addChangeListener { _, _ ->
                     GAME.addScreen(GameLoading(game.first, null))
                     GAME.setScreen<GameLoading>()
                 }
@@ -121,5 +111,29 @@ class JoinGame: BasicUIScreen() {
 
         // Don't wait for the search to complete, so use a non-default dispatcher (I love KtxAsync)
         KtxAsync.launch(Dispatchers.IO) { searchLanGames() }
+    }
+
+    /**
+     * Decodes the byte array into player count and airport name data
+     * @param byteArray the byte array received from the server
+     * @return a pair, the first being a byte that represents the current number of players in game, the second being a
+     * string that represents the current game world's main airport; returns null if the byte array length does not match
+     * */
+    private fun decodePacketData(byteArray: ByteArray): Pair<Byte, String>? {
+        if (byteArray.size != 9) return null
+        var players: Byte = -1
+        var airport = ""
+        var pos = 0
+        while (pos < byteArray.size - 1) {
+            if (pos == 0) {
+                players = byteArray[0]
+                pos++
+            } else {
+                airport += Char(byteArray[pos] * 255 + byteArray[pos + 1])
+                pos += 2
+            }
+        }
+
+        return Pair(players, airport)
     }
 }

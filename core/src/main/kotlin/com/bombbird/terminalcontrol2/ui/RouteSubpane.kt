@@ -7,7 +7,9 @@ import com.bombbird.terminalcontrol2.components.WaypointInfo
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.UI_HEIGHT
 import com.bombbird.terminalcontrol2.navigation.Route
-import com.bombbird.terminalcontrol2.utilities.*
+import com.bombbird.terminalcontrol2.navigation.checkLegChanged
+import com.bombbird.terminalcontrol2.navigation.checkRestrChanged
+import com.bombbird.terminalcontrol2.navigation.compareLegEquality
 import ktx.ashley.get
 import ktx.collections.GdxArray
 import ktx.scene2d.*

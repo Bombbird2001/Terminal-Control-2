@@ -7,6 +7,8 @@ import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.navigation.Route
+import com.bombbird.terminalcontrol2.navigation.calculateDistToGo
+import com.bombbird.terminalcontrol2.navigation.getNextWaypointWithSpdRestr
 import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.*
 import ktx.math.plus

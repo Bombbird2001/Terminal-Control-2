@@ -64,10 +64,12 @@ class UIPane(private val uiStage: Stage) {
             mainInfoPane = mainInfoPane(paneWidth)
             controlPane = controlObj.controlPane(this@UIPane, this, paneWidth) {
                 routeEditObj.updateEditRouteTable(userClearanceState.route)
+                routeEditObj.updateChangeStarOptions(aircraftArrivalArptId)
                 routeEditObj.updateUndoTransmitButtonStates()
                 setToEditRoutePane()
             }
             routeEditPane = routeEditObj.routeEditPane(this@UIPane, this, paneWidth) {
+                if (userClearanceState.routePrimaryName != clearanceState.routePrimaryName) controlObj.directLeg = userClearanceState.route[0]
                 controlObj.updateRouteTable(userClearanceState.route)
                 controlObj.updateUndoTransmitButtonStates()
                 setToControlPane()

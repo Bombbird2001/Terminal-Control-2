@@ -3,7 +3,6 @@ package com.bombbird.terminalcontrol2.navigation
 import com.bombbird.terminalcontrol2.components.CommandTarget
 import com.bombbird.terminalcontrol2.components.WaypointInfo
 import com.bombbird.terminalcontrol2.global.GAME
-import com.bombbird.terminalcontrol2.utilities.compareLegEquality
 import ktx.ashley.get
 import ktx.collections.GdxArray
 import ktx.collections.toGdxArray

@@ -20,13 +20,13 @@ class MainMenu: BasicUIScreen() {
                     val iconTexture = GAME.assetStorage.get<Texture>("Images/MainMenuIcon.png")
                     iconTexture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear)
                     image(iconTexture).cell(width = 360f, height = 119f, expandY = true, align = Align.top, padTop = 105f)
-                    row().padTop(65f)
+                    row().padTop(55f)
                     textButton("New Game", "Menu").cell(width = BUTTON_WIDTH_BIG, height = BUTTON_HEIGHT_BIG).addChangeListener { _, _ ->
                         GAME.setScreen<NewGame>()
                     }
-                    row().padTop(25f)
+                    row().padTop(15f)
                     textButton("Load Game", "Menu").cell(width = BUTTON_WIDTH_BIG, height = BUTTON_HEIGHT_BIG)
-                    row().padTop(25f)
+                    row().padTop(15f)
                     textButton("Join Game", "Menu").cell(width = BUTTON_WIDTH_BIG, height = BUTTON_HEIGHT_BIG).addChangeListener { _, _ ->
                         GAME.setScreen<JoinGame>()
                     }

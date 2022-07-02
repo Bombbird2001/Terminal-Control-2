@@ -7,8 +7,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.TextButton.TextButtonStyle
 import com.badlogic.gdx.utils.Align
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.*
-import com.bombbird.terminalcontrol2.navigation.ClearanceState
-import com.bombbird.terminalcontrol2.navigation.Route
+import com.bombbird.terminalcontrol2.navigation.*
 import com.bombbird.terminalcontrol2.traffic.getAvailableApproaches
 import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.get
@@ -120,7 +119,9 @@ class ControlPane {
                             val transName = if (transitionSelectBox.selected == "$TRANS_PREFIX$NO_TRANS_SELECTION") null
                             else transitionSelectBox.selected.replace(TRANS_PREFIX, "")
                             transitionSelectBox.style = Scene2DSkin.defaultSkin[if (parentPane.userClearanceState.clearedTrans == parentPane.clearanceState.clearedTrans) "ControlPane" else "ControlPaneChanged", SelectBoxStyle::class.java]
-                            updateApproachRoute(parentPane.aircraftArrivalArptId, appName, transName)
+                            updateApproachRoute(parentPane.userClearanceState.route, parentPane.userClearanceState.hiddenLegs,
+                                parentPane.aircraftArrivalArptId, appName, transName)
+                            updateRouteTable(parentPane.userClearanceState.route)
                             updateAltSelectBoxChoices(parentPane.aircraftMaxAlt, parentPane.userClearanceState)
                             updateUndoTransmitButtonStates()
                         }
@@ -138,7 +139,9 @@ class ControlPane {
                             parentPane.userClearanceState.clearedTrans = transName
                             style = Scene2DSkin.defaultSkin[if (parentPane.userClearanceState.clearedTrans == parentPane.clearanceState.clearedTrans) "ControlPane" else "ControlPaneChanged", SelectBoxStyle::class.java]
                             val appName = if (appSelectBox.selected == NO_APP_SELECTION) null else appSelectBox.selected
-                            updateApproachRoute(parentPane.aircraftArrivalArptId, appName, transName)
+                            updateApproachRoute(parentPane.userClearanceState.route, parentPane.userClearanceState.hiddenLegs,
+                                parentPane.aircraftArrivalArptId, appName, transName)
+                            updateRouteTable(parentPane.userClearanceState.route)
                             updateAltSelectBoxChoices(parentPane.aircraftMaxAlt, parentPane.userClearanceState)
                             updateUndoTransmitButtonStates()
                         }
@@ -532,61 +535,6 @@ class ControlPane {
             else -> Gdx.app.log("UIPane", "Unknown lateral mode $mode")
         }
         modificationInProgress = false
-    }
-
-    /**
-     * Updates the route to include the input approach and transition given the arrival airport
-     * @param arptId the ID of the arrival airport
-     * @param appName the name of the approach, or null if none cleared
-     * @param transName the name of the approach transition, or null if no approach cleared
-     * */
-    private fun updateApproachRoute(arptId: Byte?, appName: String?, transName: String?) {
-        removeApproachLegs(parentPane.userClearanceState.route, parentPane.userClearanceState.hiddenLegs)
-        if (arptId == null || appName == null || transName == null) return updateRouteTable(parentPane.userClearanceState.route)
-        val app = GAME.gameClientScreen?.airports?.get(arptId)?.entity?.get(ApproachChildren.mapper)?.approachMap?.get(appName) ?: return
-        val trans = app.transitions[transName] ?: null // Force to nullable Route? type, instead of a Route! type
-        // Search for the first leg in the current route that matches the first leg in the transition
-        val matchingIndex = if (transName != "vectors" && (trans?.size ?: 0) > 0) (trans?.get(0) as? Route.WaypointLeg)?.let { firstTransWpt ->
-            parentPane.userClearanceState.route.also { currRoute -> for (i in 0 until currRoute.size) {
-                if (firstTransWpt.wptId == (currRoute[i] as? Route.WaypointLeg)?.wptId) return@let i
-                }}
-            null
-        } else null
-        parentPane.userClearanceState.route.apply {
-            if (matchingIndex == null) {
-                add(Route.DiscontinuityLeg(Route.Leg.APP_TRANS))
-                if (trans != null) extendRouteCopy(trans)
-            } else {
-                // Add the legs after the transition waypoint to hidden legs
-                for (i in matchingIndex + 1 until size) parentPane.userClearanceState.hiddenLegs.add(get(i))
-                if (matchingIndex <= size - 2) removeRange(matchingIndex + 1, size - 1) // Remove them from the current route if waypoints exist after
-                if (trans != null) {
-                    extendRouteCopy(trans)
-                    // Remove the duplicate waypoint
-                    removeIndex(matchingIndex + 1)
-                }
-            }
-            extendRouteCopy(app.routeLegs)
-            extendRouteCopy(app.missedLegs)
-            updateRouteTable(parentPane.userClearanceState.route)
-        }
-    }
-
-    /**
-     * Remove the current approach, approach transition, missed approach legs from route, and adds all the hidden route
-     * legs back
-     *
-     * Also clears the hidden leg route
-     * @param route the route to remove approach legs from
-     * @param hiddenLegs the route containing currently hidden legs to add back to the route
-     * */
-    private fun removeApproachLegs(route: Route, hiddenLegs: Route) {
-        for (i in route.size - 1 downTo 0) {
-            if (route[i].phase == Route.Leg.NORMAL) break // Once a normal leg is encountered, break from loop
-            route.removeIndex(i)
-        }
-        route.extendRoute(hiddenLegs)
-        hiddenLegs.clear()
     }
 
     /**

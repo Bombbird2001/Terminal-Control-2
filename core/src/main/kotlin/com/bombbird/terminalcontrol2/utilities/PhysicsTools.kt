@@ -9,6 +9,8 @@ import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.MAG_HDG_DEV
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.navigation.SidStar
+import com.bombbird.terminalcontrol2.navigation.compareLegEquality
+import com.bombbird.terminalcontrol2.navigation.getFirstWaypointLegInSector
 import ktx.ashley.get
 import kotlin.math.*
 

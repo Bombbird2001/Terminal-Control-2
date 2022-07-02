@@ -6,12 +6,12 @@ import com.badlogic.gdx.scenes.scene2d.Actor
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton.TextButtonStyle
 import com.badlogic.gdx.utils.Align
 import com.bombbird.terminalcontrol2.components.CommandTarget
+import com.bombbird.terminalcontrol2.components.STARChildren
 import com.bombbird.terminalcontrol2.components.WaypointInfo
 import com.bombbird.terminalcontrol2.global.CHANGED_YELLOW
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.UI_HEIGHT
-import com.bombbird.terminalcontrol2.navigation.Route
-import com.bombbird.terminalcontrol2.utilities.*
+import com.bombbird.terminalcontrol2.navigation.*
 import ktx.ashley.get
 import ktx.collections.toGdxArray
 import ktx.scene2d.*
@@ -54,10 +54,19 @@ class RouteEditPane {
                         updateUndoTransmitButtonStates()
                     }
                     changeStarBox = selectBox<String>("ControlPane") {
-                        items = arrayOf("Change STAR", "TNN1B", "TONGA1A", "TONGA1B").toGdxArray()
+                        setItems("Change STAR")
                         setAlignment(Align.center)
                         list.alignment = Align.center
                         disallowDisabledClickThrough()
+                        addChangeListener { _, _ ->
+                            if (selected == "Change STAR") return@addChangeListener
+                            if (selected == parentPane.userClearanceState.routePrimaryName) return@addChangeListener
+                            updateNewStarSelection(parentPane.userClearanceState.route, parentPane.userClearanceState.hiddenLegs,
+                                parentPane.userClearanceState.clearedApp, parentPane.userClearanceState.clearedTrans,
+                                parentPane.aircraftArrivalArptId, selected)
+                            updateEditRouteTable(parentPane.userClearanceState.route)
+                            updateUndoTransmitButtonStates()
+                        }
                     }.cell(grow = true, preferredWidth = 0.4f * paneWidth)
                 }.cell(growX = true, height = 0.1f * UI_HEIGHT)
                 row()
@@ -76,6 +85,7 @@ class RouteEditPane {
                             // Reset the user clearance route to that of the default clearance
                             parentPane.userClearanceState.route.setToRouteCopy(parentPane.clearanceState.route)
                             parentPane.userClearanceState.hiddenLegs.setToRouteCopy(parentPane.clearanceState.hiddenLegs)
+                            changeStarBox.selected = "Change STAR"
                             updateEditRouteTable(parentPane.userClearanceState.route)
                             setUndoConfirmButtonsUnchanged()
                         }
@@ -196,6 +206,45 @@ class RouteEditPane {
                 }
             }
         }
+    }
+
+    /**
+     * Updates the options available in the Change STAR select box
+     * @param arptId the ID of the airport to get the STARs for
+     * */
+    fun updateChangeStarOptions(arptId: Byte?) {
+        val arptStars = GAME.gameServer?.airports?.get(arptId)?.entity?.get(STARChildren.mapper)?.starMap
+        if (arptStars == null) {
+            changeStarBox.setItems("Change STAR")
+            return
+        }
+        val sortedStars = arptStars.map { it.key }.sorted().toGdxArray()
+        sortedStars.insert(0, "Change STAR")
+        changeStarBox.items = sortedStars
+        changeStarBox.selectedIndex = 0
+    }
+
+    /**
+     * Updates the route given the newly chosen STAR; all current legs will be removed and the new STAR legs added, and
+     * the approach and/or transition legs will be re-added based on the current selection
+     *
+     * The route will start with a discontinuity
+     * @param route the route to edit
+     * @param hiddenLegs the clearance's hidden legs
+     * @param clearedApp the cleared approach name
+     * @param clearedTrans the cleared transition name
+     * @param arptId the airport ID to get the new STAR from
+     * @param newStar the name of the new STAR to clear
+     */
+    private fun updateNewStarSelection(route: Route, hiddenLegs: Route, clearedApp: String?, clearedTrans: String?, arptId: Byte?, newStar: String) {
+        if (newStar == "Change STAR" || arptId == null) return
+        val star = GAME.gameClientScreen?.airports?.get(arptId)?.entity?.get(STARChildren.mapper)?.starMap?.get(newStar) ?: return
+        parentPane.userClearanceState.routePrimaryName = newStar
+        route.clear()
+        hiddenLegs.clear()
+        route.add(Route.DiscontinuityLeg())
+        route.extendRouteCopy(star.routeLegs)
+        updateApproachRoute(route, hiddenLegs, arptId, clearedApp, clearedTrans)
     }
 
     /**
