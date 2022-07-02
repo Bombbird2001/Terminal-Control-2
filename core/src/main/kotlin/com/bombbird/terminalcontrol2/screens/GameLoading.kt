@@ -3,13 +3,18 @@ package com.bombbird.terminalcontrol2.screens
 import com.badlogic.gdx.scenes.scene2d.ui.ProgressBar
 import com.badlogic.gdx.utils.Timer
 import com.bombbird.terminalcontrol2.global.GAME
-import com.bombbird.terminalcontrol2.global.Secrets
 import com.bombbird.terminalcontrol2.global.UI_HEIGHT
 import com.bombbird.terminalcontrol2.global.UI_WIDTH
 import com.bombbird.terminalcontrol2.ui.addChangeListener
 import ktx.scene2d.*
 
-class GameLoading(createServer: Boolean): BasicUIScreen() {
+/**
+ * The screen shown when loading the game
+ * @param hostAddress the address of the host server; set to 127.0.0.1 if opening the game as a host
+ * @param airportToHost the main airport name being hosted; needed only if opening the game as a host, otherwise set to
+ * null
+ */
+class GameLoading(hostAddress: String, airportToHost: String?): BasicUIScreen() {
     var pBar: ProgressBar
 
     init {
@@ -27,7 +32,7 @@ class GameLoading(createServer: Boolean): BasicUIScreen() {
                             if (this@apply.percent >= 1) {
                                 Timer.schedule(object: Timer.Task() {
                                     override fun run() {
-                                        GAME.gameClientScreen = RadarScreen(if (createServer) "127.0.0.1" else Secrets.TEST_IP_ADDRESS, "TCTP", createServer).apply {
+                                        GAME.gameClientScreen = RadarScreen(hostAddress, airportToHost).apply {
                                             GAME.addScreen(this)
                                             GAME.setScreen<RadarScreen>()
                                             GAME.removeScreen<GameLoading>()
@@ -43,6 +48,7 @@ class GameLoading(createServer: Boolean): BasicUIScreen() {
         }
     }
 
+    /** Schedule the progress bar value animation when the screen is shown */
     override fun show() {
         super.show()
 

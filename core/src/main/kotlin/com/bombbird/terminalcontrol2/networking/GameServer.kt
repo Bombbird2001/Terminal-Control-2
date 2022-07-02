@@ -72,6 +72,7 @@ class GameServer {
 
     // Blocking queue to store runnables to be run in the main thread after engine update
     private val pendingRunnablesQueue = ConcurrentLinkedQueue<Runnable>()
+    var mainName = "----"
     val primarySector = Polygon() // The primary TMA sector polygon without being split up into sub-sectors
     val sectors =  GdxArrayMap<Byte, GdxArray<Sector>>(SECTOR_COUNT_SIZE) // Sector configuration for different player number
     val aircraft = GdxArrayMap<String, Aircraft>(AIRCRAFT_SIZE)
@@ -134,6 +135,7 @@ class GameServer {
 
     /** Initialises game world */
     private fun loadGame(mainName: String) {
+        this.mainName = mainName
         loadAircraftData()
         loadDisallowedCallsigns()
         loadWorldData(mainName, this)
@@ -184,6 +186,7 @@ class GameServer {
     private fun startNetworkingServer() {
         // Log.set(Log.LEVEL_DEBUG)
         registerClassesToKryo(server.kryo)
+        server.setDiscoveryHandler(GameServerDiscoveryHandler(this))
         server.bind(TCP_PORT, UDP_PORT)
         server.start()
         server.addListener(object: Listener {

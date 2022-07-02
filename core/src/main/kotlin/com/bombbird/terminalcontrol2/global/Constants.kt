@@ -74,6 +74,9 @@ fun getEngine(onClient: Boolean): Engine {
     return if (onClient) CLIENT_ENGINE else SERVER_ENGINE
 }
 
+/** Constant addresses */
+const val LOCALHOST = "127.0.0.1"
+
 /** Server target refresh rates (in Hz) */
 const val SERVER_UPDATE_RATE = 60 // Server game loop
 const val SERVER_TO_CLIENT_UPDATE_RATE_FAST = 20 // Frequently updated data such as aircraft position, navigation, etc.

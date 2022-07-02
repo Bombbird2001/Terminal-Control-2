@@ -5,9 +5,13 @@ import com.badlogic.gdx.graphics.Texture
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.math.MathUtils
 import com.bombbird.terminalcontrol2.global.BG_INDEX
+import com.bombbird.terminalcontrol2.global.CLIENT_READ_BUFFER_SIZE
+import com.bombbird.terminalcontrol2.global.CLIENT_WRITE_BUFFER_SIZE
 import com.bombbird.terminalcontrol2.global.GAME
+import com.bombbird.terminalcontrol2.networking.GameClientDiscoveryHandler
 import com.bombbird.terminalcontrol2.networking.GameServer
 import com.bombbird.terminalcontrol2.screens.*
+import com.esotericsoftware.kryonet.Client
 import kotlinx.coroutines.launch
 import ktx.app.KtxGame
 import ktx.app.KtxScreen
@@ -27,6 +31,10 @@ class TerminalControl2 : KtxGame<KtxScreen>(clearScreen = false) {
     val assetStorage = AssetStorage()
     var gameServer: GameServer? = null
     var gameClientScreen: RadarScreen? = null
+    val gameClientDiscoveryHandler = GameClientDiscoveryHandler()
+    var gameClient = Client(CLIENT_WRITE_BUFFER_SIZE, CLIENT_READ_BUFFER_SIZE).apply {
+        setDiscoveryHandler(gameClientDiscoveryHandler)
+    }
 
     /**
      * Overrides [KtxGame.create] to also initiate [KtxAsync], and load assets using [AssetStorage]
@@ -50,6 +58,7 @@ class TerminalControl2 : KtxGame<KtxScreen>(clearScreen = false) {
 
             addScreen(MainMenu())
             addScreen(NewGame())
+            addScreen(JoinGame())
             addScreen(PauseScreen())
             setScreen<MainMenu>()
         }
@@ -62,5 +71,6 @@ class TerminalControl2 : KtxGame<KtxScreen>(clearScreen = false) {
         super.dispose()
         batch.disposeSafely()
         assetStorage.disposeSafely()
+        gameClient.dispose()
     }
 }

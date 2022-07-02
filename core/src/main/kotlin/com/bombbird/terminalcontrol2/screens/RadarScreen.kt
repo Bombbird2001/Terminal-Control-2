@@ -27,7 +27,6 @@ import com.bombbird.terminalcontrol2.utilities.nmToPx
 import com.bombbird.terminalcontrol2.ui.safeStage
 import com.bombbird.terminalcontrol2.ui.updateDatatagLineSpacing
 import com.bombbird.terminalcontrol2.ui.updateDatatagStyle
-import com.esotericsoftware.kryonet.Client
 import com.esotericsoftware.kryonet.Connection
 import com.esotericsoftware.kryonet.Listener
 import ktx.app.KtxScreen
@@ -52,9 +51,9 @@ import kotlin.math.min
  *
  * Implements [GestureListener] and [InputProcessor] to handle input/gesture events to it
  * @param connectionHost the address of the host server to connect to
- * @param mainName the main map airport name
+ * @param airportToHost the main map airport name to be hosted; must be null if not hosting the server
  * */
-class RadarScreen(private val connectionHost: String, mainName: String, createServer: Boolean): KtxScreen, GestureListener, InputProcessor {
+class RadarScreen(private val connectionHost: String, airportToHost: String?): KtxScreen, GestureListener, InputProcessor {
     private val clientEngine = getEngine(true)
     private val radarDisplayStage = safeStage(GAME.batch)
     private val constZoomStage = safeStage(GAME.batch)
@@ -104,15 +103,15 @@ class RadarScreen(private val connectionHost: String, mainName: String, createSe
     private val datatagFamily = allOf(Datatag::class, FlightType::class).get()
 
     // Networking client
-    private val client = Client(CLIENT_WRITE_BUFFER_SIZE, CLIENT_READ_BUFFER_SIZE)
+    private val client = GAME.gameClient
 
     // Blocking queue to store runnables to be run in the main thread after engine update
     private val pendingRunnablesQueue = ConcurrentLinkedQueue<Runnable>()
 
     init {
-        if (createServer) {
+        if (airportToHost != null) {
             GAME.gameServer = GameServer()
-            GAME.gameServer?.initiateServer(mainName)
+            GAME.gameServer?.initiateServer(airportToHost)
         }
         registerClassesToKryo(client.kryo)
         client.start()
