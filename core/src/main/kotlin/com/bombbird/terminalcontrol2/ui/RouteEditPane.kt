@@ -45,12 +45,14 @@ class RouteEditPane {
                         val route = parentPane.userClearanceState.route
                         for (i in 0 until route.size) (route[i] as? Route.WaypointLeg)?.apply { if (minAltFt != null || maxAltFt != null) altRestrActive = false }
                         updateEditRouteTable(route)
+                        updateRouteLegSegments(parentPane.userClearanceState.route)
                         updateUndoTransmitButtonStates()
                     }
                     textButton("Cancel all\nSpd restr.", "ControlPaneButton").cell(grow = true, preferredWidth = 0.3f * paneWidth).addChangeListener { _, _ ->
                         val route = parentPane.userClearanceState.route
                         for (i in 0 until route.size) (route[i] as? Route.WaypointLeg)?.apply { if (maxSpdKt != null) spdRestrActive = false }
                         updateEditRouteTable(route)
+                        updateRouteLegSegments(parentPane.userClearanceState.route)
                         updateUndoTransmitButtonStates()
                     }
                     changeStarBox = selectBox<String>("ControlPane") {
@@ -65,6 +67,7 @@ class RouteEditPane {
                                 parentPane.userClearanceState.clearedApp, parentPane.userClearanceState.clearedTrans,
                                 parentPane.aircraftArrivalArptId, selected)
                             updateEditRouteTable(parentPane.userClearanceState.route)
+                            updateRouteLegSegments(parentPane.userClearanceState.route)
                             updateUndoTransmitButtonStates()
                         }
                     }.cell(grow = true, preferredWidth = 0.4f * paneWidth)
@@ -181,26 +184,27 @@ class RouteEditPane {
                     if (i < lastWptLegIndex || (lastWptLegIndex == -1 && i < route.size - 1)) textButton(skipText, "ControlPaneSelected${if (skippedChanged) "Changed" else ""}").cell(growX = true, preferredWidth = 0.25f * parentPane.paneWidth, height = 0.125f * UI_HEIGHT).apply {
                         if ((leg as? Route.WaypointLeg)?.legActive == false) isChecked = true
                         addChangeListener { _, _ -> Gdx.app.postRunnable {
-                                // Set skipped status for waypoint legs
-                                (leg as? Route.WaypointLeg)?.let {
-                                    val legIndex = route.indexOf(it)
-                                    it.legActive = !isChecked
-                                    style = Scene2DSkin.defaultSkin[if (style.fontColor == Color.WHITE || style.fontColor == CHANGED_YELLOW) "ControlPaneSelectedChanged" else "ControlPaneSelected", TextButtonStyle::class.java]
-                                    // Remove subsequent leg if it is a vector/hold/init climb
-                                    if (route.size > legIndex + 1) route[legIndex + 1].let { nextLeg ->
-                                        if (nextLeg is Route.HoldLeg || nextLeg is Route.VectorLeg || nextLeg is Route.InitClimbLeg) {
-                                            route.removeIndex(legIndex + 1)
-                                            updateEditRouteTable(route)
-                                        }
+                            // Set skipped status for waypoint legs
+                            (leg as? Route.WaypointLeg)?.let {
+                                val legIndex = route.indexOf(it)
+                                it.legActive = !isChecked
+                                style = Scene2DSkin.defaultSkin[if (style.fontColor == Color.WHITE || style.fontColor == CHANGED_YELLOW) "ControlPaneSelectedChanged" else "ControlPaneSelected", TextButtonStyle::class.java]
+                                // Remove subsequent leg if it is a vector/hold/init climb
+                                if (route.size > legIndex + 1) route[legIndex + 1].let { nextLeg ->
+                                    if (nextLeg is Route.HoldLeg || nextLeg is Route.VectorLeg || nextLeg is Route.InitClimbLeg) {
+                                        route.removeIndex(legIndex + 1)
+                                        updateEditRouteTable(route)
                                     }
-                                } ?: run {
-                                    // Remove the leg if it is a hold/vector/init climb/discontinuity
-                                    legLabel.remove()
-                                    remove()
-                                    route.removeValue(leg)
                                 }
+                            } ?: run {
+                                // Remove the leg if it is a hold/vector/init climb/discontinuity
+                                legLabel.remove()
+                                remove()
+                                route.removeValue(leg)
+                            }
+                            updateRouteLegSegments(parentPane.userClearanceState.route)
                             updateUndoTransmitButtonStates()
-                            }}
+                        }}
                     }
                     row()
                 }
@@ -245,6 +249,15 @@ class RouteEditPane {
         route.add(Route.DiscontinuityLeg())
         route.extendRouteCopy(star.routeLegs)
         updateApproachRoute(route, hiddenLegs, arptId, clearedApp, clearedTrans)
+    }
+
+    /**
+     * Updates the route leg segments and compares differences in order for changes to be reflected on the radar screen
+     * @param route the route
+     */
+    private fun updateRouteLegSegments(route: Route) {
+        calculateRouteSegments(route, parentPane.userClearanceRouteSegments, if (route.size > 0) route[0] else null)
+        checkRouteSegmentChanged(parentPane.clearanceRouteSegments, parentPane.userClearanceRouteSegments)
     }
 
     /**

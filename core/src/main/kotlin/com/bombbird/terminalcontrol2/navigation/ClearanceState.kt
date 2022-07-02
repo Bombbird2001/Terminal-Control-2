@@ -167,31 +167,34 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
         uiClearance?.also {
             // Default clearance provided - compare this clearance against it and update the properties conditionally
             // For most of the variables, update if no change has been made compared to the original aircraft clearance state
-            if (routePrimaryName == uiClearance.routePrimaryName) routePrimaryName = latestClearance.routePrimaryName
-            if (checkRouteEqualityStrict(route, uiClearance.route)) route.setToRouteCopy(latestClearance.route)
-            else {
-                var i = 0
-                while (0 <= i && i < route.size) { route[i].also { leg ->
-                    (leg as? Route.WaypointLeg)?.let { wptLeg ->
-                        // Sanity check - any waypoint legs in the current pane clearance state not in the new clearance
-                        // must be removed
-                        if (checkLegChanged(latestClearance.route, wptLeg)) {
-                            route.removeIndex(i)
-                            i--
-                        } else i = route.size // Exit the loop once a matching waypoint has been found from the front
-                    } ?: ((leg as? Route.HoldLeg) ?: (leg as? Route.VectorLeg))?.let {
-                        // Additionally, for hold and after waypoint heading legs, the leg preceding them in the UI state
-                        // must be a waypoint and present unless this leg is the first; otherwise, those legs must also be removed
-                        val prevLeg = if (i >= 1) route[i - 1] else return@let
-                        if (prevLeg !is Route.WaypointLeg || checkLegChanged(latestClearance.route, prevLeg)) {
-                            route.removeIndex(i)
-                            i--
+            if (routePrimaryName == uiClearance.routePrimaryName) {
+                routePrimaryName = latestClearance.routePrimaryName
+                // If primary route has changed, don't bother doing sanity check on route
+                if (checkRouteEqualityStrict(route, uiClearance.route)) route.setToRouteCopy(latestClearance.route)
+                else {
+                    var i = 0
+                    while (0 <= i && i < route.size) { route[i].also { leg ->
+                        (leg as? Route.WaypointLeg)?.let { wptLeg ->
+                            // Sanity check - any waypoint legs in the current pane clearance state not in the new clearance
+                            // must be removed
+                            if (checkLegChanged(latestClearance.route, wptLeg)) {
+                                route.removeIndex(i)
+                                i--
+                            } else i = route.size // Exit the loop once a matching waypoint has been found from the front
+                        } ?: ((leg as? Route.HoldLeg) ?: (leg as? Route.VectorLeg))?.let {
+                            // Additionally, for hold and after waypoint heading legs, the leg preceding them in the UI state
+                            // must be a waypoint and present unless this leg is the first; otherwise, those legs must also be removed
+                            val prevLeg = if (i >= 1) route[i - 1] else return@let
+                            if (prevLeg !is Route.WaypointLeg || checkLegChanged(latestClearance.route, prevLeg)) {
+                                route.removeIndex(i)
+                                i--
+                            }
                         }
-                    }
-                    i++
-                }}
+                        i++
+                    }}
+                }
+                if (checkRouteEqualityStrict(hiddenLegs, uiClearance.hiddenLegs)) hiddenLegs.setToRouteCopy(latestClearance.hiddenLegs)
             }
-            if (checkRouteEqualityStrict(hiddenLegs, uiClearance.hiddenLegs)) hiddenLegs.setToRouteCopy(latestClearance.hiddenLegs)
             if (vectorHdg == uiClearance.vectorHdg) {
                 vectorHdg = latestClearance.vectorHdg
                 // If user has not changed both the heading and the turn direction, set to new turn direction
