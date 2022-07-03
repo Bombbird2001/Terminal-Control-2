@@ -193,5 +193,8 @@ fun removeAllApproachComponents(aircraft: Entity) {
         remove<StepDownApproach>()
         remove<VisualCaptured>()
         remove<CirclingApproach>()
+        remove<AppDecelerateTo190kts>()
+        remove<DecelerateToAppSpd>()
+        remove<ContactToTower>()
     }
 }

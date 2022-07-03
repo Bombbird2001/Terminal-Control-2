@@ -1007,6 +1007,7 @@ class AISystem: EntitySystem() {
                 it.clearedIas = 220
                 get(CommandTarget.mapper)?.targetIasKt = 220
 
+                setAllMissedLegsToNormal(it.route)
                 // Clear any preceding altitude and speed restrictions since approach route is no longer being used
                 // Set min altitude to airport elevation, and max speed to 0 if a speed restriction exists in the missed
                 // approach procedure to simulate departure acceleration behaviour

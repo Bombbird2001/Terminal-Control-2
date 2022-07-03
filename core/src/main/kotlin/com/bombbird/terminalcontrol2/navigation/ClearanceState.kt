@@ -9,7 +9,6 @@ import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.get
 import ktx.ashley.has
 import ktx.ashley.plusAssign
-import ktx.ashley.remove
 import kotlin.math.min
 
 /**
@@ -54,10 +53,10 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
          * */
         fun updateClearanceAct(newClearance: ClearanceState, entity: Entity) {
             actingClearance.routePrimaryName = newClearance.routePrimaryName
+            val appChanged = newClearance.clearedApp != actingClearance.clearedApp
+            val transChanged = newClearance.clearedTrans != actingClearance.clearedTrans
 
             actingClearance.route.let { currRoute -> newClearance.route.let { newRoute ->
-                // val currRouteLegs = currRoute.legs
-                // val newRouteLegs = newRoute.legs
                 val currFirstLeg = if (currRoute.size > 0) currRoute[0] else null
                 val newFirstLeg = if (newRoute.size > 0) newRoute[0] else null
                 // Remove current present position hold leg if next leg is a different hold leg and is not an uninitialised leg, or not a hold leg
@@ -95,13 +94,41 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
                                 }
                             }
                             if (currDirIndex > 0) {
-                                // 2. Aircraft has flown by waypoint, new clearance is the same route except it still contains
-                                // that waypoint; remove all legs from the new clearance till the current direct
-                                newRoute.removeRange(0, currDirIndex - 1)
+                                // 2. Aircraft has been cleared a new approach or transition, new clearance contains leg(s)
+                                // from the existing approach/transition but legs prior to that should not be removed
+                                val adjustedCurrDir = if (transChanged) {
+                                    var newDirIndex = currDirIndex
+                                    for (i in 0 until currDirIndex) {
+                                        if (newRoute[i].phase == Route.Leg.APP_TRANS) {
+                                            newDirIndex = i
+                                            break
+                                        }
+                                    }
+                                    newDirIndex
+                                } else if (appChanged) {
+                                    var newDirIndex = currDirIndex
+                                    for (i in 0 until currDirIndex) {
+                                        if (newRoute[i].phase == Route.Leg.APP) {
+                                            newDirIndex = i
+                                            break
+                                        }
+                                    }
+                                    newDirIndex
+                                } else {
+                                    // 3. Aircraft has flown by waypoint, new clearance is the same route except it still contains
+                                    // that waypoint; remove all legs from the new clearance till the current direct
+                                    currDirIndex
+                                }
+
+                                if (adjustedCurrDir > 0) newRoute.removeRange(0, adjustedCurrDir - 1)
                             } else {
-                                // 3. Aircraft has flown by waypoint, but the new clearance does not contain the current direct
-                                // (possibly due to player assigning approach transition); remove the first leg from new clearance
-                                newRoute.removeIndex(0)
+                                // 4. Aircraft has flown by waypoint, but the new clearance does not contain the current
+                                // direct (possibly due to player assigning approach transition); remove the first leg
+                                // from new clearance if the current direct is a normal phase leg
+                                // 4a. The current direct leg may be an approach/transition phase if the aircraft has
+                                // been cleared from vectors, in this case do not remove the first leg since the aircraft
+                                // has not passed by it
+                                if (currFirstLeg.phase == Route.Leg.NORMAL) newRoute.removeIndex(0)
                             }
                         }
                     }
@@ -130,6 +157,9 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
             actingClearance.optimalIas = newClearance.optimalIas
             actingClearance.clearedApp = newClearance.clearedApp
             newClearance.clearedApp?.let {
+                // If the approach has been changed, remove all current approach components to allow aircraft to
+                // re-establish on new approach
+                if (appChanged) removeAllApproachComponents(entity)
                 val app = GAME.gameServer?.airports?.get(entity[ArrivalAirport.mapper]?.arptId)?.entity?.get(ApproachChildren.mapper)?.approachMap?.get(it)?.entity ?: return@let
                 if (app.has(Localizer.mapper)) entity += LocalizerArmed(app)
                 if (app.has(GlideSlope.mapper)) entity += GlideSlopeArmed(app)
@@ -142,10 +172,6 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
                 entity += DecelerateToAppSpd()
                 val alt = GAME.gameServer?.airports?.get(entity[ArrivalAirport.mapper]?.arptId)?.entity?.get(Altitude.mapper)?.altitudeFt ?: 0f
                 entity += ContactToTower(min((alt + MathUtils.random(1100, 1500)).toInt(), MIN_ALT - 50))
-            } ?: run {
-                entity.remove<AppDecelerateTo190kts>()
-                entity.remove<DecelerateToAppSpd>()
-                entity.remove<ContactToTower>()
             }
             actingClearance.clearedTrans = newClearance.clearedTrans
         }

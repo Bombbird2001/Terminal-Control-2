@@ -162,7 +162,7 @@ class Route() {
      * specifies which part of the flight the leg is part of
      * */
     abstract class Leg {
-        abstract val phase: Byte
+        abstract var phase: Byte
 
         /** Abstract function for implementation - makes a copy of the leg and returns it */
         abstract fun copyLeg(): Leg
@@ -183,7 +183,7 @@ class Route() {
     data class WaypointLeg(val wptId: Short, val maxAltFt: Int?, val minAltFt: Int?, val maxSpdKt: Short?,
                       var legActive: Boolean, var altRestrActive: Boolean, var spdRestrActive: Boolean,
                       val flyOver: Boolean = false, val turnDir: Byte = CommandTarget.TURN_DEFAULT,
-                      override val phase: Byte = NORMAL
+                      override var phase: Byte = NORMAL
     ): Leg() {
         /** Secondary constructor using the name of a waypoint instead of its ID - use only when loading from internal game files */
         constructor(wptName: String, maxAltFt: Int?, minAltFt: Int?, maxSpdKt: Short?,
@@ -217,7 +217,7 @@ class Route() {
      *
      * Optional declaration of [phase]
      * */
-    data class VectorLeg(var heading: Short, var turnDir: Byte = CommandTarget.TURN_DEFAULT, override val phase: Byte = NORMAL): Leg() {
+    data class VectorLeg(var heading: Short, var turnDir: Byte = CommandTarget.TURN_DEFAULT, override var phase: Byte = NORMAL): Leg() {
 
         // No-arg constructor for Kryo serialisation
         constructor(): this(360)
@@ -237,7 +237,7 @@ class Route() {
     }
 
     /** Defines an initial climb leg with the [heading] to fly, and the minimum altitude after which the aircraft will continue to the next leg */
-    data class InitClimbLeg(val heading: Short, val minAltFt: Int, override val phase: Byte = NORMAL): Leg() {
+    data class InitClimbLeg(val heading: Short, val minAltFt: Int, override var phase: Byte = NORMAL): Leg() {
 
         // No-arg constructor for Kryo serialisation
         constructor(): this(360, 0)
@@ -263,7 +263,7 @@ class Route() {
      *
      * Optional declaration of [phase]
      * */
-    data class DiscontinuityLeg(override val phase: Byte = NORMAL): Leg() {
+    data class DiscontinuityLeg(override var phase: Byte = NORMAL): Leg() {
 
         /**
          * Makes a copy of this discontinuity leg and returns it
@@ -282,7 +282,7 @@ class Route() {
      * Optional declaration of [phase]
      * */
     data class HoldLeg(var wptId: Short, var maxAltFt: Int?, var minAltFt: Int?, var maxSpdKtLower: Short?, var maxSpdKtHigher: Short?,
-                       var inboundHdg: Short, var legDist: Byte, var turnDir: Byte, override val phase: Byte = NORMAL): Leg() {
+                       var inboundHdg: Short, var legDist: Byte, var turnDir: Byte, override var phase: Byte = NORMAL): Leg() {
 
         // No-arg constructor for Kryo serialisation
         constructor(): this(0, null, null, 230, 240, 360, 5, CommandTarget.TURN_RIGHT)

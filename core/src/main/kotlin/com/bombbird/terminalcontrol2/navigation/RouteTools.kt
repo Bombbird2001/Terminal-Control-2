@@ -360,6 +360,17 @@ fun removeAllLegsTillMissed(route: Route) {
 }
 
 /**
+ * Sets all the missed approach legs to normal legs; this is called after the aircraft initiates a go around so subsequent
+ * approach clearances will not have conflicting missed approach leg clearances
+ * @param route the route to update the missed approach legs in
+ */
+fun setAllMissedLegsToNormal(route: Route) {
+    for (i in 0 until route.size) route[i].let { leg -> if (leg.phase == Leg.MISSED_APP)
+        leg.phase = Leg.NORMAL
+    }
+}
+
+/**
  * Finds the missed approach altitude for the current route
  *
  * The altitude will be the last missed approach waypoint minimum altitude restriction or init climb altitude

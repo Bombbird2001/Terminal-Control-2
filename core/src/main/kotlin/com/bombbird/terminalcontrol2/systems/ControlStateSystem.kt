@@ -128,6 +128,7 @@ class ControlStateSystem(override val updateTimeS: Float = 0f): EntitySystem(), 
                 val nextMaxSpd = nextRestrWpt.maxSpdKt ?: return@apply // This value shouldn't be null in the first place, but just in case
                 val currMaxSpd = lastRestriction.maxSpdKt
                 if (currMaxSpd != null && currMaxSpd <= nextMaxSpd) return@apply // Not required if next max speed is not lower than current max speed
+                if (actingClearance.clearedIas <= nextMaxSpd) return@apply // Not required if next max speed is not lower than current cleared IAS
                 // Physics - check distance needed to slow down from current speed to speed restriction
                 val targetWptId = (actingClearance.route[0] as? Route.WaypointLeg)?.wptId ?: return@apply // Skip if next leg is not waypoint
                 val targetPos = GAME.gameServer?.waypoints?.get(targetWptId)?.entity?.get(Position.mapper) ?: return@apply // Skip if waypoint not found or position not present

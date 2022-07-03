@@ -103,15 +103,22 @@ fun createArrival(callsign: String, icaoType: String, airport: Entity, gs: GameS
             val tasVector = dir.trackUnitVector * ktToPxps(speed.speedKts.toInt())
             trackVectorPxps = tasVector + affectedByWind.windVectorPxps
         }
-        entity += ClearanceAct(ClearanceState.ActingClearance(
+        val clearanceAct = ClearanceAct(ClearanceState.ActingClearance(
             ClearanceState(randomStar?.name ?: "", starRoute, Route(),
                 if (starRoute.size == 0) (spawnPos.third + MAG_HDG_DEV).toInt().toShort() else null, null,
                 clearedAlt, ias)
         ))
+        entity += clearanceAct
         entity[CommandTarget.mapper]?.apply {
             targetAltFt = clearedAlt
             targetIasKt = ias
             targetHdgDeg = modulateHeading(spawnPos.third + 180)
+        }
+        val spds = getMinMaxOptimalIAS(entity)
+        clearanceAct.actingClearance.actingClearance.apply {
+            minIas = spds.first
+            maxIas = spds.second
+            optimalIas = spds.third
         }
         entity += InitialArrivalSpawn()
         if (alt > 10000) entity += DecelerateTo240kts()

@@ -101,7 +101,7 @@ object AircraftTypeData {
             appSpd = (typApp * (1 + 0.19f * (loadFactor - 0.5f))).roundToInt().toShort()
             vR = (typVr * (1 + 0.19f * (loadFactor - 0.5f))).roundToInt().toShort()
             climbOutSpeed = (vR + MathUtils.random(5, 10)).toShort()
-            tripIas = (maxIas * MathUtils.random(0.9f, 0.985f)).roundToInt().toShort()
+            tripIas = (maxIas * MathUtils.random(0.9f, 0.97f)).roundToInt().toShort()
             tripMach = maxMach * MathUtils.random(0.915f, 0.945f)
             massKg = (operatingEmptyWeightKg + (maxTakeoffWeightKg - operatingEmptyWeightKg) * loadFactor).roundToInt()
             maxAlt = calculateMaxAlt(this)

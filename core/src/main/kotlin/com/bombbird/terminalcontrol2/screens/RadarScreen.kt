@@ -38,6 +38,7 @@ import ktx.collections.GdxArrayMap
 import ktx.graphics.moveTo
 import ktx.math.ImmutableVector2
 import java.io.IOException
+import java.nio.channels.ClosedSelectorException
 import java.util.concurrent.ConcurrentLinkedQueue
 import kotlin.concurrent.thread
 import kotlin.math.min
@@ -287,7 +288,11 @@ class RadarScreen(private val connectionHost: String, airportToHost: String?): K
         clientEngine.removeAllSystems()
 
         thread {
-            client.stop()
+            try {
+                client.stop()
+            } catch (e: ClosedSelectorException) {
+                Gdx.app.log("RadarScreen", "Client channel selector already closed before disposal")
+            }
             GAME.gameServer?.stopServer()
         }
     }
@@ -461,6 +466,7 @@ class RadarScreen(private val connectionHost: String, airportToHost: String?): K
     /** Resumes the game, and sends a resume game signal to the server */
     fun resumeGame() {
         client.sendTCP(GameRunningStatus(true))
+        if (!client.isConnected) client.reconnect()
     }
 
     /**
