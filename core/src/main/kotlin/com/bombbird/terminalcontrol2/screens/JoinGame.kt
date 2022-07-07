@@ -81,7 +81,7 @@ class JoinGame: BasicUIScreen() {
         Gdx.app.postRunnable { setSearchingGames() }
         addressData.clear()
         GAME.gameClientDiscoveryHandler.onDiscoveredHostDataMap = addressData
-        GAME.gameClient.discoverHosts(UDP_PORT, 5000)
+        GAME.gameClient.discoverHosts(UDP_PORT, 2000)
         Gdx.app.postRunnable { showFoundGames() }
     }
 

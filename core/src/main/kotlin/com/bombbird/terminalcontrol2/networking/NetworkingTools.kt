@@ -17,6 +17,7 @@ import com.esotericsoftware.kryo.Kryo
 import ktx.ashley.allOf
 import ktx.ashley.get
 import ktx.ashley.plusAssign
+import java.util.*
 
 private val sectorFamily = allOf(SectorInfo::class).get()
 
@@ -34,6 +35,8 @@ fun registerClassesToKryo(kryo: Kryo?) {
         register(ByteArray::class.java)
 
         // Initial load classes
+        register(RequestClientUUID::class.java)
+        register(ClientUUIDData::class.java)
         register(ClearAllClientData::class.java)
         register(InitialAirspaceData::class.java)
         register(IndividualSectorData::class.java)
@@ -126,6 +129,17 @@ fun registerClassesToKryo(kryo: Kryo?) {
 }
 
 /**
+ * Class representing a request to the client to send its UUID to the server
+ *
+ * This will always be sent by the server on initial client connection, and a reply by the client (see below [ClientUUIDData])
+ * must be received in order for the server to send the client initialisation data
+ * */
+class RequestClientUUID
+
+/** Class representing response to the above UUID request, containing the UUID of the client */
+data class ClientUUIDData(val uuid: String? = null)
+
+/**
  * Class representing a request to the client to clear all currently data, such as objects stored in the game engine
  *
  * This should always be sent before initial loading data (those below) to ensure no duplicate objects become present
@@ -167,7 +181,7 @@ class MetarData(val metars: Array<Airport.SerialisedMetar> = arrayOf())
 class FastUDPData(val aircraft: Array<Aircraft.SerialisedAircraftUDP> = arrayOf())
 
 /** Class representing data sent during aircraft sector update */
-data class AircraftSectorUpdateData(val callsign: String = "", val newSector: Byte = 0)
+data class AircraftSectorUpdateData(val callsign: String = "", val newSector: Byte = 0, val newUUID: String? = null)
 
 /** Class representing sent when an aircraft spawns in the game */
 data class AircraftSpawnData(val newAircraft: Aircraft.SerialisedAircraft = Aircraft.SerialisedAircraft())
@@ -254,8 +268,10 @@ fun handleIncomingRequest(rs: RadarScreen, obj: Any?) {
                     // printAirportApproaches(entity)
                 }
             }
-            initializeAtisDisplay()
-            initializeAirportRwyConfigPanes()
+            GAME.gameClientScreen?.uiPane?.mainInfoObj?.let {
+                it.initializeAtisDisplay()
+                it.initializeAirportRwyConfigPanes()
+            }
         } ?: (obj as? WaypointData)?.waypoints?.onEach {
             Waypoint.fromSerialisedObject(it).apply {
                 entity[WaypointInfo.mapper]?.wptId?.let { id ->
@@ -279,12 +295,18 @@ fun handleIncomingRequest(rs: RadarScreen, obj: Any?) {
             metars.forEach {
                 rs.airports[it.arptId]?.updateFromSerialisedMetar(it)
             }
-            updateAtisInformation()
+            GAME.gameClientScreen?.uiPane?.mainInfoObj?.updateAtisInformation()
         } ?: (obj as? AircraftSectorUpdateData)?.apply {
             rs.aircraft[obj.callsign]?.let { aircraft ->
-                aircraft.entity[Controllable.mapper]?.sectorId = obj.newSector
+                val controllable = aircraft.entity[Controllable.mapper] ?: return@apply
+                controllable.sectorId = obj.newSector
                 aircraft.entity[RSSprite.mapper]?.drawable = getAircraftIcon(aircraft.entity[FlightType.mapper]?.type ?: return@apply, obj.newSector)
                 aircraft.entity[Datatag.mapper]?.let { updateDatatagText(it, getNewDatatagLabelText(aircraft.entity, it.minimised)) }
+                if (obj.newSector == rs.playerSector && controllable.controllerUUID.toString() != obj.newUUID && obj.newUUID == uuid.toString()) {
+                    // Send message only if aircraft is in player's sector, old UUID is not the player's UUID and the new UUID is the player's UUID
+                    GAME.gameClientScreen?.uiPane?.commsPane?.initialContact(aircraft.entity)
+                }
+                controllable.controllerUUID = obj.newUUID?.let { UUID.fromString(it) }
                 if (rs.selectedAircraft == aircraft) {
                     if (obj.newSector == rs.playerSector) rs.setUISelectedAircraft(aircraft)
                     else rs.deselectUISelectedAircraft()
@@ -326,9 +348,9 @@ fun handleIncomingRequest(rs: RadarScreen, obj: Any?) {
             rs.airports[obj.airportId]?.pendingRunwayConfigClient(obj.configId)
         } ?: (obj as? ActiveRunwayUpdateData)?.apply {
             rs.airports[obj.airportId]?.activateRunwayConfig(obj.configId)
-            updateAtisInformation()
+            GAME.gameClientScreen?.uiPane?.mainInfoObj?.updateAtisInformation()
         } ?: (obj as? ScoreData)?.apply {
-            updateScoreDisplay(obj.score, obj.highScore)
+            GAME.gameClientScreen?.uiPane?.mainInfoObj?.updateScoreDisplay(obj.score, obj.highScore)
         }
     }
 }

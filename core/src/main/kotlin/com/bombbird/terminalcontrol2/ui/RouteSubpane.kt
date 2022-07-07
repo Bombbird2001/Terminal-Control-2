@@ -84,7 +84,7 @@ class RouteSubpane {
             var prevPhase: Byte? = null
             for (i in 0 until route.size) {
                 route[i].also { leg ->
-                    val legDisplay = (leg as? Route.WaypointLeg)?.let { wpt -> if (!wpt.legActive) return@also
+                    val legDisplay = (leg as? Route.WaypointLeg)?.let { wpt -> if (!wpt.legActive && firstDirectSet) return@also
                         when (wpt.turnDir) {
                             CommandTarget.TURN_LEFT -> "Turn left\n"
                             CommandTarget.TURN_RIGHT -> "Turn right\n"

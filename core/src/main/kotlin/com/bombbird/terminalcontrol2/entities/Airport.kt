@@ -5,11 +5,11 @@ import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.Airport.Runway.SerialisedRunway
+import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.getEngine
 import com.bombbird.terminalcontrol2.navigation.Approach
 import com.bombbird.terminalcontrol2.navigation.SidStar
 import com.bombbird.terminalcontrol2.traffic.RunwayConfiguration
-import com.bombbird.terminalcontrol2.ui.setAirportRunwayConfigPaneState
 import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.*
 import ktx.math.times
@@ -385,7 +385,7 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
                 it.setNTZVisibility(true)
             }
         }
-        setAirportRunwayConfigPaneState(entity)
+        GAME.gameClientScreen?.uiPane?.mainInfoObj?.setAirportRunwayConfigPaneState(entity)
     }
 
     /**
@@ -396,6 +396,6 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
         val currPendingId = entity[PendingRunwayConfig.mapper]?.pendingId
         if (pendingConfigId == null) entity.remove<PendingRunwayConfig>()
         else if (currPendingId != pendingConfigId) entity += PendingRunwayConfig(pendingConfigId, 300f)
-        setAirportRunwayConfigPaneState(entity)
+        GAME.gameClientScreen?.uiPane?.mainInfoObj?.setAirportRunwayConfigPaneState(entity)
     }
 }

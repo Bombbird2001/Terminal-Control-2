@@ -25,6 +25,7 @@ import com.esotericsoftware.kryonet.Server
 import ktx.ashley.get
 import ktx.collections.GdxArray
 import ktx.collections.GdxArrayMap
+import java.util.UUID
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
@@ -113,6 +114,12 @@ class GameServer {
     /** Maps [Connection] to [SectorInfo.sectorId] */
     val sectorMap = GdxArrayMap<Connection, Byte>(PLAYER_SIZE)
 
+    /** Maps [Connection] to [UUID] */
+    val connectionUUIDMap = GdxArrayMap<Connection, UUID>(PLAYER_SIZE)
+
+    /** Maps [SectorInfo.sectorId] to [UUID] */
+    val sectorUUIDMap = GdxArrayMap<Byte, UUID>(PLAYER_SIZE)
+
     var arrivalSpawnTimerS = 0f
     var previousArrivalOffsetS = 0f
     var trafficValue = 6f
@@ -195,12 +202,12 @@ class GameServer {
              * @param connection the incoming connection
              * @param obj the serialised network object
              */
-            override fun received(connection: Connection?, obj: Any?) {
+            override fun received(connection: Connection, obj: Any?) {
                 (obj as? AircraftControlStateUpdateData)?.apply {
                     postRunnableAfterEngineUpdate {
                         aircraft[obj.callsign]?.entity?.let {
                             if (it[Controllable.mapper]?.sectorId != obj.sendingSector) return@postRunnableAfterEngineUpdate
-                            addNewClearanceToPendingClearances(it, obj, connection?.returnTripTime ?: 0)
+                            addNewClearanceToPendingClearances(it, obj, connection.returnTripTime)
                         }
                     }
                 } ?: (obj as? GameRunningStatus)?.apply {
@@ -209,6 +216,40 @@ class GameServer {
                         gamePaused.set(false)
                     }
                     else if (playerNo.get() <= 1) gamePaused.set(true)
+                } ?: (obj as? ClientUUIDData)?.apply {
+                    // If the UUID is null or the map already contains the UUID, do not send the data
+                    if (uuid == null) return
+                    val uuidObj = UUID.fromString(uuid)
+                    if (connectionUUIDMap.containsValue(uuidObj, false)) return
+                    val currPlayerNo = playerNo.incrementAndGet().toByte()
+                    postRunnableAfterEngineUpdate {
+                        // Get data only after engine has completed this update to prevent threading issues
+                        connectionUUIDMap.put(connection, uuidObj)
+                        connection.sendTCP(ClearAllClientData())
+                        connection.sendTCP(InitialAirspaceData(MAG_HDG_DEV, MIN_ALT, MAX_ALT, MIN_SEP, TRANS_ALT, TRANS_LVL))
+                        assignSectorsToPlayers(server.connections, sectorMap, connectionUUIDMap, sectorUUIDMap, currPlayerNo, sectors)
+                        connection.sendTCP(InitialAircraftData(aircraft.values().toArray().map { it.getSerialisableObject() }.toTypedArray()))
+                        connection.sendTCP(AirportData(airports.values().toArray().map { it.getSerialisableObject() }.toTypedArray()))
+                        val wptArray = waypoints.values.toTypedArray()
+                        connection.sendTCP(WaypointData(wptArray.map { it.getSerialisableObject() }.toTypedArray()))
+                        connection.sendTCP(WaypointMappingData(wptArray.map { it.getMappingSerialisableObject() }.toTypedArray()))
+                        connection.sendTCP(PublishedHoldData(publishedHolds.values().toArray().map { it.getSerialisableObject() }.toTypedArray()))
+                        connection.sendTCP(MinAltData(minAltSectors.toArray().map { it.getSerialisableObject() }.toTypedArray()))
+                        connection.sendTCP(ShorelineData(shoreline.toArray().map { it.getSerialisableObject() }.toTypedArray()))
+
+                        // Send current METAR
+                        connection.sendTCP(MetarData(airports.values().map { it.getSerialisedMetar() }.toTypedArray()))
+
+                        // Send runway configs
+                        airports.values().toArray().forEach {
+                            val arptId = it.entity[AirportInfo.mapper]?.arptId ?: return@forEach
+                            connection.sendTCP(ActiveRunwayUpdateData(arptId, it.entity[ActiveRunwayConfig.mapper]?.configId ?: return@forEach))
+                            connection.sendTCP(PendingRunwayUpdateData(arptId, it.entity[PendingRunwayConfig.mapper]?.pendingId))
+                        }
+
+                        // Send score data
+                        connection.sendTCP(ScoreData(score, highScore))
+                    }
                 }
             }
 
@@ -216,32 +257,8 @@ class GameServer {
              * Called when a client connects to the server
              * @param connection the incoming connection
              */
-            override fun connected(connection: Connection?) {
-                connection?.sendTCP(ClearAllClientData())
-                connection?.sendTCP(InitialAirspaceData(MAG_HDG_DEV, MIN_ALT, MAX_ALT, MIN_SEP, TRANS_ALT, TRANS_LVL))
-                val currPlayerNo = playerNo.incrementAndGet().toByte()
-                assignSectorsToPlayers(server.connections, sectorMap, currPlayerNo, sectors)
-                connection?.sendTCP(InitialAircraftData(aircraft.values().toArray().map { it.getSerialisableObject() }.toTypedArray()))
-                connection?.sendTCP(AirportData(airports.values().toArray().map { it.getSerialisableObject() }.toTypedArray()))
-                val wptArray = waypoints.values.toTypedArray()
-                connection?.sendTCP(WaypointData(wptArray.map { it.getSerialisableObject() }.toTypedArray()))
-                connection?.sendTCP(WaypointMappingData(wptArray.map { it.getMappingSerialisableObject() }.toTypedArray()))
-                connection?.sendTCP(PublishedHoldData(publishedHolds.values().toArray().map { it.getSerialisableObject() }.toTypedArray()))
-                connection?.sendTCP(MinAltData(minAltSectors.toArray().map { it.getSerialisableObject() }.toTypedArray()))
-                connection?.sendTCP(ShorelineData(shoreline.toArray().map { it.getSerialisableObject() }.toTypedArray()))
-
-                // Send current METAR
-                connection?.sendTCP(MetarData(airports.values().map { it.getSerialisedMetar() }.toTypedArray()))
-
-                // Send runway configs
-                airports.values().toArray().forEach {
-                    val arptId = it.entity[AirportInfo.mapper]?.arptId ?: return@forEach
-                    connection?.sendTCP(ActiveRunwayUpdateData(arptId, it.entity[ActiveRunwayConfig.mapper]?.configId ?: return@forEach))
-                    connection?.sendTCP(PendingRunwayUpdateData(arptId, it.entity[PendingRunwayConfig.mapper]?.pendingId))
-                }
-
-                // Send score data
-                connection?.sendTCP(ScoreData(score, highScore))
+            override fun connected(connection: Connection) {
+                connection.sendTCP(RequestClientUUID())
             }
 
             /**
@@ -250,8 +267,13 @@ class GameServer {
              */
             override fun disconnected(connection: Connection?) {
                 val newPlayerNo = playerNo.decrementAndGet().toByte()
-                sectorMap.removeKey(connection)
-                if (newPlayerNo > 0) assignSectorsToPlayers(server.connections, sectorMap, newPlayerNo, sectors)
+                postRunnableAfterEngineUpdate {
+                    // Remove entries only after this engine update to prevent threading issues
+                    sectorUUIDMap.removeKey(sectorMap[connection])
+                    sectorMap.removeKey(connection)
+                    connectionUUIDMap.removeKey(connection)
+                    if (newPlayerNo > 0) assignSectorsToPlayers(server.connections, sectorMap, connectionUUIDMap, sectorUUIDMap, newPlayerNo, sectors)
+                }
             }
         })
     }
@@ -371,9 +393,11 @@ class GameServer {
      * Sends aircraft control state sector updates
      * @param callsign the callsign of the aircraft to update
      * @param newSector the new sector that the aircraft is under control of
+     * @param newUUID the UUID of the new player the aircraft is under control of
      * */
-    fun sendAircraftSectorUpdateTCPToAll(callsign: String, newSector: Byte) {
-        server.sendToAllTCP(AircraftSectorUpdateData(callsign, newSector))
+    fun sendAircraftSectorUpdateTCPToAll(callsign: String, newSector: Byte, newUUID: String?) {
+        if (newUUID == null) return
+        server.sendToAllTCP(AircraftSectorUpdateData(callsign, newSector, newUUID))
     }
 
     /**

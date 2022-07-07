@@ -4,10 +4,7 @@ import com.badlogic.ashley.core.Engine
 import com.badlogic.gdx.graphics.Texture
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.math.MathUtils
-import com.bombbird.terminalcontrol2.global.BG_INDEX
-import com.bombbird.terminalcontrol2.global.CLIENT_READ_BUFFER_SIZE
-import com.bombbird.terminalcontrol2.global.CLIENT_WRITE_BUFFER_SIZE
-import com.bombbird.terminalcontrol2.global.GAME
+import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.networking.GameClientDiscoveryHandler
 import com.bombbird.terminalcontrol2.networking.GameServer
 import com.bombbird.terminalcontrol2.screens.*
@@ -19,6 +16,7 @@ import ktx.assets.async.AssetStorage
 import ktx.assets.disposeSafely
 import ktx.async.KtxAsync
 import ktx.scene2d.*
+import java.util.*
 
 /**
  * Main game class, extending the [KtxGame] class
@@ -64,6 +62,7 @@ class TerminalControl2 : KtxGame<KtxScreen>(clearScreen = false) {
         }
 
         BG_INDEX = MathUtils.random(1, 8)
+        uuid = UUID.randomUUID()
     }
 
     /** Overrides [KtxGame.dispose] to also dispose of [batch] and [assetStorage] */

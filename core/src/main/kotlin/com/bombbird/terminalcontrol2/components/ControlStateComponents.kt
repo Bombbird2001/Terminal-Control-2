@@ -5,9 +5,10 @@ import com.badlogic.ashley.core.Entity
 import com.badlogic.gdx.utils.Queue
 import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import ktx.ashley.Mapper
+import java.util.UUID
 
 /** Component for tagging sector control information */
-data class Controllable(var sectorId: Byte = 0): Component {
+data class Controllable(var sectorId: Byte = 0, var controllerUUID: UUID? = null): Component {
     companion object: Mapper<Controllable>()
 }
 

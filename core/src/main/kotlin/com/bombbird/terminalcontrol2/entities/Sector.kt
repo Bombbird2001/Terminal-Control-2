@@ -13,13 +13,13 @@ import ktx.ashley.get
 import ktx.ashley.with
 
 /** Sector class that creates a sector entity with the required components on instantiation */
-class Sector(id: Byte, ctrlName: String, freq: String, callsign: String, sectorBoundary: ShortArray, onClient: Boolean = true) {
+class Sector(id: Byte, freq: String, arrCallsign: String, depCallsign: String, sectorBoundary: ShortArray, onClient: Boolean = true) {
     val entity = getEngine(onClient).entity {
         with<SectorInfo> {
             sectorId = id
-            controllerName = ctrlName
             frequency = freq
-            sectorCallsign = callsign
+            arrivalCallsign = arrCallsign
+            departureCallsign = depCallsign
         }
         with<GPolygon> {
             vertices = sectorBoundary.map { it.toFloat() }.toFloatArray()
@@ -37,8 +37,7 @@ class Sector(id: Byte, ctrlName: String, freq: String, callsign: String, sectorB
         /** De-serialises a [SerialisedSector] and creates a new [Sector] object from it */
         fun fromSerialisedObject(serialisedSector: SerialisedSector): Sector {
             return Sector(
-                serialisedSector.sectorId,
-                serialisedSector.controllerName, serialisedSector.frequency, serialisedSector.callsign,
+                serialisedSector.sectorId, serialisedSector.frequency, serialisedSector.appCallsign, serialisedSector.depCallsign,
                 serialisedSector.vertices
             )
         }
@@ -46,7 +45,7 @@ class Sector(id: Byte, ctrlName: String, freq: String, callsign: String, sectorB
 
     /** Object that contains [Sector] data to be serialised by Kryo */
     class SerialisedSector(val sectorId: Byte = -3,
-                           val controllerName: String = "", val frequency: String = "", val callsign: String = "",
+                           val frequency: String = "", val appCallsign: String = "", val depCallsign: String = "",
                            val vertices: ShortArray = shortArrayOf()
     )
 
@@ -57,7 +56,7 @@ class Sector(id: Byte, ctrlName: String, freq: String, callsign: String, sectorB
             val polygon = get(GPolygon.mapper) ?: return SerialisedSector()
             return SerialisedSector(
                 sectorInfo.sectorId,
-                sectorInfo.controllerName, sectorInfo.frequency, sectorInfo.sectorCallsign,
+                sectorInfo.frequency, sectorInfo.arrivalCallsign, sectorInfo.departureCallsign,
                 polygon.vertices.map { it.toInt().toShort() }.toShortArray()
             )
         }

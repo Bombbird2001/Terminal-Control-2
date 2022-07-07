@@ -93,6 +93,7 @@ const val AIRCRAFT_SIZE = 35
 const val SECTOR_COUNT_SIZE = 5
 const val PUBLISHED_HOLD_SIZE = 30
 const val PLAYER_SIZE = 6
+const val CONVO_SIZE = 16
 
 /** Zoom threshold to switch between small and large datatag fonts */
 const val DATATAG_ZOOM_THRESHOLD = 1f

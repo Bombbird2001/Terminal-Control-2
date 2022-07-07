@@ -223,18 +223,19 @@ private fun parseWaypoint(data: List<String>, gameServer: GameServer) {
  * @param gameServer the [GameServer] to add this sector to
  * */
 private fun parseSector(data: List<String>, currSectorCount: Byte, gameServer: GameServer) {
-    val id = data[0].toByte()
-    val freq = data[1]
-    val callsign = data[2]
+    val id = if (!gameServer.sectors.containsKey(currSectorCount)) 0.byte else gameServer.sectors[currSectorCount].size.toByte()
+    val freq = data[0]
+    val arrCallsign = data[1]
+    val depCallsign = data[2]
     val polygon = ArrayList<Short>()
     for (i in 3 until data.size) {
         val pos = data[i].split(",")
         polygon.add(nmToPx(pos[0].toFloat()).toInt().toShort())
         polygon.add(nmToPx(pos[1].toFloat()).toInt().toShort())
     }
-    val sector = Sector(id, "", freq, callsign, polygon.toShortArray(), onClient = false)
+    val sector = Sector(id, freq, arrCallsign, depCallsign, polygon.toShortArray(), onClient = false)
     if (currSectorCount == 1.byte) gameServer.primarySector.vertices = polygon.map { it.toFloat() }.toFloatArray()
-    if (!gameServer.sectors.containsKey(currSectorCount)) gameServer.sectors.put(currSectorCount, Array<Sector>().apply { add(sector) })
+    if (id == 0.byte) gameServer.sectors.put(currSectorCount, Array<Sector>().apply { add(sector) })
     else gameServer.sectors[currSectorCount].add(sector)
 }
 

@@ -64,7 +64,8 @@ data class RandomMetarInfo(var windDirDist: CumulativeDistribution<Short> = Cumu
  *
  * [sectorId] = -2 -> ACC control
  * */
-data class SectorInfo(var sectorId: Byte = 0, var controllerName: String = "Shiba Inu", var frequency: String = "121.5", var sectorCallsign: String = "Approach"): Component {
+data class SectorInfo(var sectorId: Byte = 0, var frequency: String = "121.5",
+                      var arrivalCallsign: String = "Approach", var departureCallsign: String = "Departure"): Component {
     companion object: Mapper<SectorInfo>() {
         const val TOWER: Byte = -1
         const val CENTRE: Byte = -2

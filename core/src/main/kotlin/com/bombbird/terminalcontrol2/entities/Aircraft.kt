@@ -20,6 +20,7 @@ import com.bombbird.terminalcontrol2.utilities.AircraftTypeData
 import com.bombbird.terminalcontrol2.utilities.getAircraftIcon
 import ktx.ashley.*
 import ktx.scene2d.Scene2DSkin
+import java.util.*
 import kotlin.math.roundToInt
 
 /** Aircraft class that creates an aircraft entity with the required components on instantiation */
@@ -153,6 +154,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                     serialisedAircraft.arrivalArptId?.let { this += ArrivalAirport(it) }
                     get(Controllable.mapper)?.apply {
                         sectorId = serialisedAircraft.controlSectorId
+                        controllerUUID = serialisedAircraft.controllerUUID?.let { UUID.fromString(it) }
                     }
                     get(RSSprite.mapper)?.drawable = getAircraftIcon(serialisedAircraft.flightType, serialisedAircraft.controlSectorId)
                     if (serialisedAircraft.gsCap) this += GlideSlopeCaptured()
@@ -261,7 +263,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                              val vectorHdg: Short? = null, val vectorTurnDir: Byte? = null, val commandAlt: Int = 0, val clearedIas: Short = 0, // Vector HDG will be null if aircraft is flying route
                              val minIas: Short = 0, val maxIas: Short = 0, val optimalIas: Short = 0,
                              val arrivalArptId: Byte? = null,
-                             val controlSectorId: Byte = 0,
+                             val controlSectorId: Byte = 0, val controllerUUID: String? = null,
                              val gsCap: Boolean = false, val locCap: Boolean = false, val visCap: Boolean = false,
                              val waitingTakeoff: Boolean = false
     )
@@ -292,7 +294,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                 clearance.vectorHdg, clearance.vectorTurnDir, clearance.clearedAlt, clearance.clearedIas,
                 clearance.minIas, clearance.maxIas, clearance.optimalIas,
                 arrArptId,
-                controllable.sectorId,
+                controllable.sectorId, controllable.controllerUUID?.toString(),
                 has(GlideSlopeCaptured.mapper), has(LocalizerCaptured.mapper),
                 has(VisualCaptured.mapper) || (get(CirclingApproach.mapper)?.phase ?: 0) >= 1,
                 has(WaitingTakeoff.mapper)

@@ -1,6 +1,7 @@
 package com.bombbird.terminalcontrol2.global
 
 import ktx.collections.GdxArray
+import java.util.UUID
 
 /** Global variables for use, can be modified */
 const val UNCONTROLLED_AIRCRAFT_TRAIL_OFF: Byte = 0
@@ -77,3 +78,6 @@ var ALERT_SOUND_ON = true
 var ADV_TRAJECTORY_DURATION_S = 0
 var APW_DURATION_S = 0
 var STCA_DURATION_S = 0
+
+/** Player UUID */
+lateinit var uuid: UUID

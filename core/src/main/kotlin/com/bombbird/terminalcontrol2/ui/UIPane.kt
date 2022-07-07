@@ -32,7 +32,10 @@ class UIPane(private val uiStage: Stage) {
         get() = max(UI_WIDTH * 0.28f, 400f)
 
     // Main pane (when no aircraft selected)
+    val mainInfoObj = MainInfoPane()
     private val mainInfoPane: KContainer<Actor>
+    val commsPane: CommsPane
+        get() = mainInfoObj.commsPaneObj
 
     // Control pane (when aircraft is selected)
     private val controlObj = ControlPane()
@@ -61,7 +64,7 @@ class UIPane(private val uiStage: Stage) {
                 setSize(paneWidth, UI_HEIGHT)
                 addChangeListener { event, _ -> event?.handle() } // Catch mis-clicks to prevent hiding the UI pane
             }
-            mainInfoPane = mainInfoPane(paneWidth)
+            mainInfoPane = mainInfoObj.mainInfoPane(this, paneWidth)
             controlPane = controlObj.controlPane(this@UIPane, this, paneWidth) {
                 routeEditObj.updateEditRouteTable(userClearanceState.route)
                 routeEditObj.updateChangeStarOptions(aircraftArrivalArptId)

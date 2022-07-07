@@ -117,8 +117,10 @@ class RadarScreen(private val connectionHost: String, airportToHost: String?): K
         registerClassesToKryo(client.kryo)
         client.start()
         client.addListener(object: Listener {
-            override fun received(connection: Connection?, obj: Any?) {
-                handleIncomingRequest(this@RadarScreen, obj)
+            override fun received(connection: Connection, obj: Any?) {
+                (obj as? RequestClientUUID)?.apply {
+                    connection.sendTCP(ClientUUIDData(uuid.toString()))
+                } ?: handleIncomingRequest(this@RadarScreen, obj)
             }
         })
         attemptConnectionToServer()

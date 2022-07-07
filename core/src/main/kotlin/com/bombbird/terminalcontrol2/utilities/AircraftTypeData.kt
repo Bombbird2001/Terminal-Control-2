@@ -78,11 +78,24 @@ object AircraftTypeData {
      *
      * @param flightType the type of the flight, used for load factor calculation purposes
      * */
-    class AircraftPerfData(val wakeCategory: Char = 'H', val recat: Char = 'B',
+    class AircraftPerfData(val wakeCategory: Char = WAKE_HEAVY, val recat: Char = RECAT_B,
                            val thrustNSLISA: Int? = 1026000, val propPowerWSLISA: Int? = null, val propArea: Float? = null,
                            val minCd0TimesRefArea: Float = 6.552f, val maxCdTimesRefArea: Float = 41.496f,
                            val maxIas: Short = 340, val maxMach: Float = 0.89f, private val typApp: Short = 149, private val typVr: Short = 158,
                            private val operatingEmptyWeightKg: Int = 167829, private val maxTakeoffWeightKg: Int = 351533, flightType: Byte = FlightType.ARRIVAL) {
+
+        companion object {
+            const val WAKE_SUPER = 'J'
+            const val WAKE_HEAVY = 'H'
+            const val WAKE_MEDIUM = 'M'
+            const val WAKE_LIGHT = 'L'
+            const val RECAT_A = 'A'
+            const val RECAT_B = 'B'
+            const val RECAT_C = 'C'
+            const val RECAT_D = 'D'
+            const val RECAT_E = 'E'
+            const val RECAT_F = 'F'
+        }
 
         var appSpd: Short
         var vR: Short
