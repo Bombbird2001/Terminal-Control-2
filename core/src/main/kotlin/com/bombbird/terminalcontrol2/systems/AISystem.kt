@@ -72,6 +72,7 @@ class AISystem: EntitySystem() {
         val takeoffAcc = engine.getEntitiesFor(takeoffAccFamily)
         for (i in 0 until takeoffAcc.size()) {
             takeoffAcc[i]?.apply {
+                val takeoffRoll = get(TakeoffRoll.mapper) ?: return@apply
                 val spd = get(Speed.mapper) ?: return@apply
                 val alt = get(Altitude.mapper) ?: return@apply
                 val aircraftInfo = get(AircraftInfo.mapper) ?: return@apply
@@ -80,6 +81,7 @@ class AISystem: EntitySystem() {
                 if (ias.iasKt >= aircraftInfo.aircraftPerf.vR) {
                     // Transition to takeoff climb mode
                     remove<TakeoffRoll>()
+                    takeoffRoll.rwy.remove<RunwayOccupied>()
                     val randomAGL = MathUtils.random(1200, 1800)
                     val accelAlt = alt.altitudeFt + randomAGL
                     this += TakeoffClimb(accelAlt)
@@ -89,7 +91,6 @@ class AISystem: EntitySystem() {
                     return@apply
                 }
                 val acc = get(Acceleration.mapper) ?: return@apply
-                val takeoffRoll = get(TakeoffRoll.mapper) ?: return@apply
                 acc.dSpeedMps2 = min(takeoffRoll.targetAccMps2, aircraftInfo.maxAcc)
             }
         }
@@ -127,6 +128,8 @@ class AISystem: EntitySystem() {
                 if (gsKt < 35) {
                     engine.removeEntity(this)
                     GAME.gameServer?.let {
+                        val landingRoll = get(LandingRoll.mapper) ?: return@let
+                        landingRoll.rwy.remove<RunwayOccupied>() // Remove runway occupied status
                         val callsign = get(AircraftInfo.mapper)?.icaoCallsign ?: return@let
                         it.aircraft.removeKey(callsign) // Remove from aircraft map
                         it.sendAircraftDespawn(callsign) // Send removal data to all clients
@@ -706,6 +709,7 @@ class AISystem: EntitySystem() {
                 if (alt.altitudeFt < rwyElevation + 25) {
                     removeAllApproachComponents(this)
                     this += LandingRoll(rwyEntity)
+                    rwyEntity += RunwayOccupied()
                     alt.altitudeFt = rwyElevation
                     spd.vertSpdFpm = 0f
                     spd.angularSpdDps = 0f

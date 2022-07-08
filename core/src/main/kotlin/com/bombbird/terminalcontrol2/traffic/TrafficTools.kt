@@ -5,10 +5,10 @@ import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.math.CumulativeDistribution
 import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.math.Vector2
-import com.badlogic.gdx.utils.Timer
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.Aircraft
 import com.bombbird.terminalcontrol2.entities.Airport
+import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.MAG_HDG_DEV
 import com.bombbird.terminalcontrol2.global.MAX_ALT
 import com.bombbird.terminalcontrol2.navigation.ClearanceState
@@ -201,12 +201,11 @@ fun appTestArrival(gs: GameServer) {
 }
 
 /**
- * Creates a new departure aircraft with the input data
+ * Creates a new departure aircraft with the input data, but not cleared for takeoff
  * @param airport the airport the departure is flying from
- * @param rwy the runway the departure is departing from
  * @param gs the gameServer to instantiate the aircraft in
  * */
-fun createRandomDeparture(airport: Entity, rwy: Entity, gs: GameServer) {
+fun createRandomDeparture(airport: Entity, gs: GameServer) {
     val spawnData = generateRandomTrafficForAirport(airport) ?: return
     val callsign = generateRandomCallsign(spawnData.first, spawnData.second, gs) ?: return
     // Choose random aircraft type from the array of possible aircraft
@@ -214,17 +213,18 @@ fun createRandomDeparture(airport: Entity, rwy: Entity, gs: GameServer) {
         Gdx.app.log("TrafficTools", "No aircraft available for ${spawnData.first} in ${airport[AirportInfo.mapper]?.icaoCode}")
         "B77W"
     }
-    createDeparture(callsign, icaoType, rwy, gs)
+    gs.aircraft.put(callsign, Aircraft(callsign, 0f, 0f, 0f, icaoType, FlightType.DEPARTURE, false).apply {
+        entity += WaitingTakeoff()
+        airport += AirportNextDeparture(entity)
+    })
 }
 
 /**
- * Creates a new departure aircraft on the input runway
- * @param callsign the callsign of the aircraft
- * @param icaoType the ICAO aircraft type
- * @param rwy the runway the departure aircraft will be using
- * @param gs the gameServer to instantiate the aircraft in
- * */
-private fun createDeparture(callsign: String, icaoType: String, rwy: Entity, gs: GameServer) {
+ * CLears an aircraft for takeoff from a runway, setting its takeoff parameters
+ * @param aircraft the aircraft to clear for takeoff
+ * @param rwy the runway the aircraft is cleared to takeoff from
+ */
+fun clearForTakeoff(aircraft: Entity, rwy: Entity) {
     val rwyPos = rwy[Position.mapper] ?: return
     val rwyDir = rwy[Direction.mapper] ?: return
 
@@ -232,40 +232,42 @@ private fun createDeparture(callsign: String, icaoType: String, rwy: Entity, gs:
     val rwyInfo = rwy[RunwayInfo.mapper] ?: return
     val rwyTakeoffPosLength = rwyInfo.intersectionTakeoffM
     val spawnPos = Vector2(rwyPos.x, rwyPos.y) + rwyDir.trackUnitVector * mToPx(rwyTakeoffPosLength.toFloat())
-    gs.aircraft.put(callsign, Aircraft(callsign, spawnPos.x, spawnPos.y, rwyAlt, icaoType, FlightType.DEPARTURE, false).apply {
-        entity[Direction.mapper]?.trackUnitVector?.rotateDeg(rwyDir.trackUnitVector.angleDeg() - 90) // Runway heading
+    aircraft.apply {
+        // Set to runway position
+        val pos = get(Position.mapper)?.also {
+            it.x = spawnPos.x
+            it.y = spawnPos.y
+        } ?: return
+        // Set to runway track
+        get(Direction.mapper)?.trackUnitVector?.rotateDeg(rwyDir.trackUnitVector.angleDeg() - 90) // Runway heading
         // Calculate headwind component for takeoff
-        val tailwind = rwyDir.let { dir -> entity[Position.mapper]?.let { pos ->
+        val tailwind = rwyDir.let { dir ->
             val wind = getClosestAirportWindVector(pos.x, pos.y)
             calculateIASFromTAS(rwyAlt, pxpsToKt(wind.dot(dir.trackUnitVector)))
-        }} ?: 0f
-        entity[Speed.mapper]?.speedKts = -tailwind
-        val acPerf = entity[AircraftInfo.mapper]?.aircraftPerf ?: return@apply
-        entity += WaitingTakeoff()
-        entity += TakeoffRoll(max(1.5f,
+        }
+        get(Speed.mapper)?.speedKts = -tailwind
+        // Calculate required acceleration
+        val acPerf = get(AircraftInfo.mapper)?.aircraftPerf ?: return@apply
+        this += TakeoffRoll(max(1.5f,
             calculateRequiredAcceleration(0, calculateTASFromIAS(rwyAlt, acPerf.vR + tailwind).toInt().toShort(),
                 ((rwy[RunwayInfo.mapper]?.lengthM ?: 3800) - 1000) * MathUtils.random(0.75f, 1f))), rwy)
+        // Set initial clearance state
         val sid = randomSid(rwy)
         val rwyName = rwy[RunwayInfo.mapper]?.rwyName ?: ""
         val initClimb = sid?.rwyInitialClimbs?.get(rwyName) ?: 3000
-        entity += ClearanceAct(ClearanceState.ActingClearance(
+        this += ClearanceAct(ClearanceState.ActingClearance(
             ClearanceState(sid?.name ?: "", sid?.getRandomSIDRouteForRunway(rwyName) ?: Route(), Route(),
                 null, null, initClimb, acPerf.climbOutSpeed)
         ))
-        entity[CommandTarget.mapper]?.apply {
-            targetAltFt = initClimb
-            targetIasKt = acPerf.climbOutSpeed
-            targetHdgDeg = convertWorldAndRenderDeg(rwyDir.trackUnitVector.angleDeg()) + MAG_HDG_DEV
+        get(CommandTarget.mapper)?.let {
+            it.targetAltFt = initClimb
+            it.targetIasKt = acPerf.climbOutSpeed
+            it.targetHdgDeg = convertWorldAndRenderDeg(rwyDir.trackUnitVector.angleDeg()) + MAG_HDG_DEV
         }
-        Timer.schedule(object : Timer.Task() {
-            override fun run() {
-                gs.postRunnableAfterEngineUpdate {
-                    // TODO Move logic to traffic system
-                    entity.remove<WaitingTakeoff>()
-                }
-            }
-        }, 5f)
-    })
+        // Set runway as occupied
+        rwy += RunwayOccupied()
+        remove<WaitingTakeoff>()
+    }
 }
 
 /**
@@ -353,4 +355,203 @@ fun getAvailableApproaches(airport: Entity): GdxArray<String> {
         }
     }
     return array
+}
+
+/**
+ * Object for storing wake category and RECAT separation matrices
+ *
+ * 2 2D arrays are stored for each separation standard - one for takeoff timing separation, and the other for distance
+ * separation
+ */
+object WakeMatrix {
+    private val RECAT_DEP_TIME: Array<IntArray> = arrayOf(
+        intArrayOf(0, 100, 120, 140, 160, 180), // Cat A leader
+        intArrayOf(0, 0, 0, 100, 120, 140),     // Cat B leader
+        intArrayOf(0, 0, 0, 80, 100, 120),      // Cat C leader
+        intArrayOf(0, 0, 0, 0, 0, 120),         // Cat D leader
+        intArrayOf(0, 0, 0, 0, 0, 100),         // Cat E leader
+        intArrayOf(0, 0, 0, 0, 0, 80)           // Cat F leader
+    )
+
+    private val RECAT_DIST: Array<ByteArray> = arrayOf(
+        byteArrayOf(3, 4, 5, 5, 6, 8), // Cat A leader
+        byteArrayOf(0, 3, 4, 4, 5, 7), // Cat B leader
+        byteArrayOf(0, 0, 3, 3, 4, 6), // Cat C leader
+        byteArrayOf(0, 0, 0, 0, 0, 5), // Cat D leader
+        byteArrayOf(0, 0, 0, 0, 0, 4), // Cat E leader
+        byteArrayOf(0, 0, 0, 0, 0, 3), // Cat F leader
+    )
+
+    private val WAKE_DEP_TIME: Array<IntArray> = arrayOf(
+        intArrayOf(0, 120, 180, 240), // Super leader
+        intArrayOf(0, 0, 120, 180),   // Heavy leader
+        intArrayOf(0, 0, 0, 180),     // Medium leader
+        intArrayOf(0, 0, 0, 0)        // Light leader
+    )
+
+    private val WAKE_DIST: Array<ByteArray> = arrayOf(
+        byteArrayOf(0, 5, 7, 8), // Super leader
+        byteArrayOf(0, 4, 5, 6), // Heavy leader
+        byteArrayOf(0, 0, 0, 5), // Medium leader
+        byteArrayOf(0, 0, 0, 0)  // Light leader
+    )
+
+    /**
+     * Gets the index of the input RECAT or wake category for use in the wake separation matrix
+     * @param recat the RECAT category
+     * @param wake the wake category
+     * @return index of the RECAT/wake category to access the matrix
+     */
+    private fun getWakeRecatIndex(wake: Char, recat: Char): Int {
+        val gs = GAME.gameServer ?: return 0
+        return if (gs.useRecat) recat - 'A'
+        else when (wake) {
+            'J' -> 0
+            'H' -> 1
+            'M' -> 2
+            'L' -> 3
+            else -> {
+                Gdx.app.log("TrafficTools", "Unknown wake category $wake")
+                1
+            }
+        }
+    }
+
+    /**
+     * Gets the distance required between the leader and follower aircraft, based on the relevant separation standard
+     * @param leaderWake the wake category of the aircraft in front
+     * @param leaderRECAT the RECAT category of the aircraft in front
+     * @param followerWake the wake category of the aircraft behind
+     * @param followerRECAT the RECAT category of the aircraft behind
+     */
+    fun getDistanceRequired(leaderWake: Char, leaderRECAT: Char, followerWake: Char, followerRECAT: Char): Byte {
+        val gs = GAME.gameServer ?: return 0
+        val leaderIndex = getWakeRecatIndex(leaderWake, leaderRECAT)
+        val followerIndex = getWakeRecatIndex(followerWake, followerRECAT)
+        return if (gs.useRecat) RECAT_DIST[leaderIndex][followerIndex] else WAKE_DIST[leaderIndex][followerIndex]
+    }
+
+    /**
+     * Gets the time required between the leader and follower aircraft for departures, based on the relevant separation
+     * standard
+     * @param leaderWake the wake category of the aircraft that landed/departed previously
+     * @param leaderRECAT the RECAT category of the aircraft that landed/departed previously
+     * @param followerWake the wake category of the aircraft departing behind
+     * @param followerRECAT the RECAT category of the aircraft departing behind
+     */
+    fun getTimeRequired(leaderWake: Char, leaderRECAT: Char, followerWake: Char, followerRECAT: Char): Int {
+        val gs = GAME.gameServer ?: return 0
+        val leaderIndex = getWakeRecatIndex(leaderWake, leaderRECAT)
+        val followerIndex = getWakeRecatIndex(followerWake, followerRECAT)
+        return if (gs.useRecat) RECAT_DEP_TIME[leaderIndex][followerIndex] else WAKE_DEP_TIME[leaderIndex][followerIndex]
+    }
+}
+
+/**
+ * Calculates the distance, in pixels, the aircraft is from the runway threshold
+ * @param aircraft the aircraft
+ * @param rwy the runway
+ * @return distance from the threshold
+ */
+fun calculateDistFromThreshold(aircraft: Entity, rwy: Entity): Float {
+    val rwyPos  = rwy[Position.mapper] ?: return Float.MAX_VALUE
+    val pos = aircraft[Position.mapper] ?: return Float.MAX_VALUE
+    return calculateDistanceBetweenPoints(rwyPos.x, rwyPos.y, pos.x, pos.y)
+}
+
+/**
+ * Calculates the time required, in seconds, to reach the runway threshold at the aircraft's current ground speed,
+ * capped at 200 knots
+ * @param aircraft the aircraft
+ * @param rwy the runway
+ * @return estimated time to reach runway threshold, or [Float.MAX_VALUE] if the time cannot be estimated
+ */
+fun calculateTimeToThreshold(aircraft: Entity, rwy: Entity): Float {
+    val distPx = calculateDistFromThreshold(aircraft, rwy)
+    val gsPxps = aircraft[GroundTrack.mapper]?.trackVectorPxps?.len() ?: return Float.MAX_VALUE
+    return distPx / gsPxps
+}
+
+/**
+ * Checks the traffic for the input runway
+ * @param rwy the runway to check traffic for
+ * @return whether this runway is clear for departure
+ */
+fun checkSameRunwayTraffic(rwy: Entity): Boolean {
+    val airport = rwy[RunwayInfo.mapper]?.airport ?: return false
+    val nextDeparture = airport.entity[AirportNextDeparture.mapper]?.aircraft?.get(AircraftInfo.mapper)?.aircraftPerf ?: return false
+    val prevDeparture = airport.entity[RunwayPreviousDeparture.mapper]
+    val prevArrival = airport.entity[RunwayPreviousArrival.mapper]
+    val nextArrival = airport.entity[RunwayNextArrival.mapper]
+    // Check if runway is occupied
+    if (rwy.has(RunwayOccupied.mapper)) return false
+    // Check previous departure time required
+    if (prevDeparture != null && WakeMatrix.getTimeRequired(prevDeparture.wakeCat, prevDeparture.recat,
+            nextDeparture.wakeCategory, nextDeparture.recat) > prevDeparture.timeSinceDepartureS) return false
+    // Check previous arrival time required
+    if (prevArrival != null && WakeMatrix.getTimeRequired(prevArrival.wakeCat, prevArrival.recat,
+            nextDeparture.wakeCategory, nextDeparture.recat) > prevArrival.timeSinceTouchdownS) return false
+    // Check time from touchdown - minimum 60s
+    if (nextArrival != null && calculateTimeToThreshold(nextArrival.aircraft, rwy) < 60) return false
+    return true
+}
+
+/**
+ * Checks the traffic for the opposite runway
+ * @param rwy the opposite runway
+ * @return whether the opposite runway is clear for departure from original runway
+ */
+fun checkOppRunwayTraffic(rwy: Entity): Boolean {
+    val airport = rwy[RunwayInfo.mapper]?.airport ?: return false
+    val nextDeparture = airport.entity[AirportNextDeparture.mapper]?.aircraft?.get(AircraftInfo.mapper)?.aircraftPerf ?: return false
+    val prevDeparture = airport.entity[RunwayPreviousDeparture.mapper]
+    val prevArrival = airport.entity[RunwayPreviousArrival.mapper]
+    val nextArrival = airport.entity[RunwayNextArrival.mapper]
+    // Check if runway is occupied
+    if (rwy.has(RunwayOccupied.mapper)) return false
+    // Check previous departure time required
+    if (prevDeparture != null && WakeMatrix.getTimeRequired(prevDeparture.wakeCat, prevDeparture.recat,
+            nextDeparture.wakeCategory, nextDeparture.recat) > prevDeparture.timeSinceDepartureS) return false
+    // Check previous arrival time required
+    if (prevArrival != null && WakeMatrix.getTimeRequired(prevArrival.wakeCat, prevArrival.recat,
+            nextDeparture.wakeCategory, nextDeparture.recat) > prevArrival.timeSinceTouchdownS) return false
+    // Check distance from touchdown - minimum 20nm away
+    if (nextArrival != null && calculateDistFromThreshold(nextArrival.aircraft, rwy) < nmToPx(20)) return false
+    return true
+}
+
+/**
+ * Checks the traffic for a dependent parallel runway
+ * @param rwy the dependent parallel runway
+ * @return whether the dependent parallel runway is clear for departure from original runway
+ */
+fun checkDependentParallelRunwayTraffic(rwy: Entity): Boolean {
+    val airport = rwy[RunwayInfo.mapper]?.airport ?: return false
+    val nextArrival = airport.entity[RunwayNextArrival.mapper]
+    // Check time from touchdown - minimum 60s
+    if (nextArrival != null && calculateTimeToThreshold(nextArrival.aircraft, rwy) < 60) return false
+    return true
+}
+
+/**
+ * Checks the traffic for a dependent opposite runway
+ * @param rwy the dependent opposite runway
+ * @return whether the dependent opposite runway is clear for departure from original runway
+ */
+fun checkDependentOppositeRunwayTraffic(rwy: Entity): Boolean {
+    val airport = rwy[RunwayInfo.mapper]?.airport ?: return false
+    val nextArrival = airport.entity[RunwayNextArrival.mapper]
+    // Check distance from touchdown - minimum 20nm away
+    if (nextArrival != null && calculateDistFromThreshold(nextArrival.aircraft, rwy) < nmToPx(20)) return false
+    return true
+}
+
+fun checkCrossingRunwayTraffic(rwy: Entity): Boolean {
+    val airport = rwy[RunwayInfo.mapper]?.airport ?: return false
+    val nextArrival = airport.entity[RunwayNextArrival.mapper]
+    // Check if runway is occupied
+    if (rwy.has(RunwayOccupied.mapper)) return false
+    // Check time from touchdown - minimum 30s
+    if (nextArrival != null && calculateTimeToThreshold(nextArrival.aircraft, rwy) < 30) return false
+    return true
 }

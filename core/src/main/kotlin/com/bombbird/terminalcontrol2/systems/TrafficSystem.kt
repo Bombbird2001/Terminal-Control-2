@@ -5,10 +5,10 @@ import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.math.MathUtils
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.GAME
-import com.bombbird.terminalcontrol2.traffic.TrafficMode
-import com.bombbird.terminalcontrol2.traffic.createRandomArrival
+import com.bombbird.terminalcontrol2.traffic.*
 import ktx.ashley.allOf
 import ktx.ashley.get
+import ktx.ashley.hasNot
 import ktx.ashley.remove
 
 /**
@@ -21,6 +21,7 @@ class TrafficSystem(override val updateTimeS: Float): EntitySystem(), LowFreqUpd
 
     private val pendingRunwayChangeFamily = allOf(PendingRunwayConfig::class, AirportInfo::class, RunwayConfigurationChildren::class).get()
     private val arrivalFamily = allOf(AircraftInfo::class, ArrivalAirport::class).get()
+    private val runwayTakeoffFamily = allOf(RunwayInfo::class).get()
 
     /**
      * Main update function, for values that need to be updated frequently
@@ -79,6 +80,31 @@ class TrafficSystem(override val updateTimeS: Float): EntitySystem(), LowFreqUpd
                     GAME.gameServer?.sendPendingRunwayUpdateToAll(arptInfo.arptId, null)
                     GAME.gameServer?.sendActiveRunwayUpdateToAll(arptInfo.arptId, config.id)
                 }
+            }
+        }
+
+        val runwayTakeoff = engine.getEntitiesFor(runwayTakeoffFamily)
+        for (i in 0 until runwayTakeoff.size()) {
+            runwayTakeoff[i]?.apply {
+                val airport = get(RunwayInfo.mapper)?.airport ?: return@apply
+                if (airport.entity.hasNot(AirportNextDeparture.mapper))
+                if (!checkSameRunwayTraffic(this)) return@apply
+                get(OppositeRunway.mapper)?.let { if (!checkOppRunwayTraffic(it.oppRwy)) return@apply }
+                get(DependentParallelRunway.mapper)?.let {
+                    for (j in 0 until it.depParRwys.size)
+                        if (!checkDependentParallelRunwayTraffic(it.depParRwys[j])) return@apply
+                }
+                get(DependentOppositeRunway.mapper)?.let {
+                    for (j in 0 until it.depOppRwys.size)
+                        if (!checkDependentOppositeRunwayTraffic(it.depOppRwys[j])) return@apply
+                }
+                get(CrossingRunway.mapper)?.let {
+                    for (j in 0 until it.crossRwys.size)
+                        if (!checkCrossingRunwayTraffic(it.crossRwys[j])) return@apply
+                }
+                // TODO Check for departure backlog and whether next departure timer is up
+                // All related runway checks passed - clear next departure for takeoff
+                airport.entity[AirportNextDeparture.mapper]?.let { clearForTakeoff(it.aircraft, this) }
             }
         }
     }

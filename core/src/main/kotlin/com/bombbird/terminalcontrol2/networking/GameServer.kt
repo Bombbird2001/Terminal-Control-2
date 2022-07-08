@@ -135,6 +135,7 @@ class GameServer {
     var gameSpeed = 1
     var nightModeStart = -1
     var nightModeEnd = -1
+    var useRecat = true
 
     // var timeCounter = 0f
     // var frames = 0
@@ -158,12 +159,8 @@ class GameServer {
         }
 
         // Add dummy aircraft
-        airports[0]?.entity?.also {  arpt ->
-            arpt[RunwayChildren.mapper]?.rwyMap?.get(0)?.entity?.let { rwy -> createRandomDeparture(arpt, rwy, this) }
-        }
-        airports[1]?.entity?.also { arpt ->
-            arpt[RunwayChildren.mapper]?.rwyMap?.get(1)?.entity?.let { rwy -> createRandomDeparture(arpt, rwy, this) }
-        }
+        airports[0]?.entity?.also { arpt -> createRandomDeparture(arpt, this) }
+        airports[1]?.entity?.also { arpt -> createRandomDeparture(arpt, this) }
         // createRandomArrival(airports.values().toArray(), this)
         appTestArrival(this)
     }

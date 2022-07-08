@@ -236,9 +236,6 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
                     updateText(name)
                 }
                 with<ConstantZoomSize>()
-            } else {
-                with<PreviousDeparture>()
-                with<RunwayNextArrival>()
             }
         }
 

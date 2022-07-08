@@ -55,10 +55,21 @@ data class DepartureInfo(var closed: Boolean = false, var backlog: Int = -10): C
     companion object: Mapper<DepartureInfo>()
 }
 
-/** Component for tagging the information of a previous departure aircraft */
-data class PreviousDeparture(var timeSinceDepartureS: Float = 240f, var wakeCat: Char = AircraftTypeData.AircraftPerfData.WAKE_MEDIUM,
-                             var recat: Char = AircraftTypeData.AircraftPerfData.RECAT_D): Component {
-    companion object: Mapper<PreviousDeparture>()
+/** Component for tagging the next departure aircraft entity of the airport */
+data class AirportNextDeparture(var aircraft: Entity): Component {
+    companion object: Mapper<AirportNextDeparture>()
+}
+
+/** Component for tagging the information of a previous arrival aircraft of the runway */
+data class RunwayPreviousArrival(var timeSinceTouchdownS: Float = 0f, var wakeCat: Char = AircraftTypeData.AircraftPerfData.WAKE_MEDIUM,
+                                 var recat: Char = AircraftTypeData.AircraftPerfData.RECAT_D): Component {
+    companion object: Mapper<RunwayPreviousArrival>()
+}
+
+/** Component for tagging the information of a previous departure aircraft of the runway */
+data class RunwayPreviousDeparture(var timeSinceDepartureS: Float = 0f, var wakeCat: Char = AircraftTypeData.AircraftPerfData.WAKE_MEDIUM,
+                                   var recat: Char = AircraftTypeData.AircraftPerfData.RECAT_D): Component {
+    companion object: Mapper<RunwayPreviousDeparture>()
 }
 
 /** Component for tagging if a runway is occupied by an aircraft */
@@ -67,6 +78,6 @@ class RunwayOccupied: Component {
 }
 
 /** Component for tagging the aircraft closest to landing on the runway */
-data class RunwayNextArrival(var aircraft: Entity? = null): Component {
+data class RunwayNextArrival(var aircraft: Entity = Entity()): Component {
     companion object: Mapper<RunwayNextArrival>()
 }
