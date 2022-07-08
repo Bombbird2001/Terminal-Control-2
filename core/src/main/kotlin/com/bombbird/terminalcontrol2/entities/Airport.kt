@@ -15,7 +15,8 @@ import ktx.ashley.*
 import ktx.math.times
 
 /** Airport class that creates an airport entity with the required components on instantiation */
-class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX: Float, posY: Float, elevation: Short, onClient: Boolean = true) {
+class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX: Float, posY: Float, elevation: Short,
+              onClient: Boolean = true): SerialisableEntity<Airport.SerialisedAirport> {
     val entity = getEngine(onClient).entity {
         with<Position> {
             x = posX
@@ -105,17 +106,26 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
                             val metar: SerialisedMetar = SerialisedMetar()
     )
 
+    /**
+     * Returns a default empty [SerialisedAirport] due to missing component, and logs a message to the console
+     * @param missingComponent the missing aircraft component
+     */
+    override fun emptySerialisableObject(missingComponent: String): SerialisedAirport {
+        Gdx.app.log("Airport", "Empty serialised airport returned due to missing $missingComponent component")
+        return SerialisedAirport()
+    }
+
     /** Gets a [SerialisedAirport] from current state */
-    fun getSerialisableObject(): SerialisedAirport {
+    override fun getSerialisableObject(): SerialisedAirport {
         entity.apply {
-            val position = get(Position.mapper) ?: return SerialisedAirport()
-            val altitude = get(Altitude.mapper) ?: return SerialisedAirport()
-            val arptInfo = get(AirportInfo.mapper) ?: return SerialisedAirport()
-            val rwys = get(RunwayChildren.mapper) ?: return SerialisedAirport()
-            val sids = get(SIDChildren.mapper) ?: return SerialisedAirport()
-            val stars = get(STARChildren.mapper) ?: return SerialisedAirport()
-            val approaches = get(ApproachChildren.mapper) ?: return SerialisedAirport()
-            val rwyConfigs = get(RunwayConfigurationChildren.mapper) ?: return SerialisedAirport()
+            val position = get(Position.mapper) ?: return emptySerialisableObject("Position")
+            val altitude = get(Altitude.mapper) ?: return emptySerialisableObject("Altitude")
+            val arptInfo = get(AirportInfo.mapper) ?: return emptySerialisableObject("AirportInfo")
+            val rwys = get(RunwayChildren.mapper) ?: return emptySerialisableObject("RunwayChildren")
+            val sids = get(SIDChildren.mapper) ?: return emptySerialisableObject("SIDChildren")
+            val stars = get(STARChildren.mapper) ?: return emptySerialisableObject("STARChildren")
+            val approaches = get(ApproachChildren.mapper) ?: return emptySerialisableObject("ApproachChildren")
+            val rwyConfigs = get(RunwayConfigurationChildren.mapper) ?: return emptySerialisableObject("RunwayConfigurationChildren")
             return SerialisedAirport(
                 position.x, position.y,
                 altitude.altitudeFt.toInt().toShort(),
@@ -169,7 +179,7 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
     /** Runway class that creates a runway entity with the required components on instantiation */
     class Runway(parentAirport: Airport, id: Byte, name: String, posX: Float, posY: Float, trueHdg: Float,
                  runwayLengthM: Short, displacedM: Short, intersectionM: Short, elevation: Short, labelPos: Byte,
-                 towerName: String, towerFreq: String, onClient: Boolean = true) {
+                 towerName: String, towerFreq: String, onClient: Boolean = true): SerialisableEntity<SerialisedRunway> {
         val entity = getEngine(onClient).entity {
             with<Position> {
                 x = posX
@@ -180,9 +190,6 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
             }
             with<Direction> {
                 trackUnitVector = Vector2(Vector2.Y).rotateDeg(-trueHdg)
-            }
-            with<GRect> {
-                width = mToPx(runwayLengthM.toInt())
             }
             with<RunwayInfo> {
                 rwyId = id
@@ -210,13 +217,6 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
                 visual += Visual()
             }
             with<RunwayWindComponents>()
-            with<SRColor> {
-                color = Color.WHITE
-            }
-            with<GenericLabel> {
-                updateStyle("Runway")
-                updateText(name)
-            }
             with<RunwayLabel> {
                 if (labelPos in RunwayLabel.LEFT..RunwayLabel.RIGHT) positionToRunway = labelPos
                 else {
@@ -224,7 +224,22 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
                     Gdx.app.log("Runway", "Invalid labelPos $labelPos set, using default value 0")
                 }
             }
-            with<ConstantZoomSize>()
+            if (onClient) {
+                with<SRColor> {
+                    color = Color.WHITE
+                }
+                with<GRect> {
+                    width = mToPx(runwayLengthM.toInt())
+                }
+                with<GenericLabel> {
+                    updateStyle("Runway")
+                    updateText(name)
+                }
+                with<ConstantZoomSize>()
+            } else {
+                with<PreviousDeparture>()
+                with<RunwayNextArrival>()
+            }
         }
 
         companion object {
@@ -260,14 +275,23 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
                                val approachNOZ: ApproachNormalOperatingZone.SerialisedApproachNOZ? = null,
                                val departureNOZ: DepartureNormalOperatingZone.SerialisedDepartureNOZ? = null)
 
+        /**
+         * Returns a default empty [SerialisedRunway] due to missing component, and logs a message to the console
+         * @param missingComponent the missing aircraft component
+         */
+        override fun emptySerialisableObject(missingComponent: String): SerialisedRunway {
+            Gdx.app.log("Airport", "Empty serialised runway returned due to missing $missingComponent component")
+            return SerialisedRunway()
+        }
+
         /** Gets a [SerialisedRunway] from current state */
-        fun getSerialisableObject(): SerialisedRunway {
+        override fun getSerialisableObject(): SerialisedRunway {
             entity.apply {
-                val position = get(Position.mapper) ?: return SerialisedRunway()
-                val altitude = get(Altitude.mapper) ?: return SerialisedRunway()
-                val direction = get(Direction.mapper) ?: return SerialisedRunway()
-                val rwyInfo = get(RunwayInfo.mapper) ?: return SerialisedRunway()
-                val rwyLabel = get(RunwayLabel.mapper) ?: return SerialisedRunway()
+                val position = get(Position.mapper) ?: return emptySerialisableObject("Position")
+                val altitude = get(Altitude.mapper) ?: return emptySerialisableObject("Altitude")
+                val direction = get(Direction.mapper) ?: return emptySerialisableObject("Direction")
+                val rwyInfo = get(RunwayInfo.mapper) ?: return emptySerialisableObject("RunwayInfo")
+                val rwyLabel = get(RunwayLabel.mapper) ?: return emptySerialisableObject("RunwayLabel")
                 val landing = get(ActiveLanding.mapper) != null
                 val takeoff = get(ActiveTakeoff.mapper) != null
                 val approachNOZ = get(ApproachNOZ.mapper)

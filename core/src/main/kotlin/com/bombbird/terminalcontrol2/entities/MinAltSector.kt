@@ -1,5 +1,6 @@
 package com.bombbird.terminalcontrol2.entities
 
+import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.math.GeometryUtils
 import com.badlogic.gdx.math.Vector2
@@ -11,7 +12,8 @@ import ktx.ashley.with
 import kotlin.math.roundToInt
 
 /** Sector class that creates a sector entity with the required components for implementing an MVA or restricted area */
-class MinAltSector(minAlt: Int?, polygonBoundary: ShortArray?, circleX: Short = 0, circleY: Short = 0, radiusBoundary: Float = 0f, labelX: Short? = null, labelY: Short? = null, restr: Boolean, onClient: Boolean = true) {
+class MinAltSector(minAlt: Int?, polygonBoundary: ShortArray?, circleX: Short = 0, circleY: Short = 0, radiusBoundary: Float = 0f,
+                   labelX: Short? = null, labelY: Short? = null, restr: Boolean, onClient: Boolean = true): SerialisableEntity<MinAltSector.SerialisedMinAltSector> {
     val entity = getEngine(onClient).entity {
         with<MinAltSectorInfo> {
             minAltFt = minAlt
@@ -47,10 +49,10 @@ class MinAltSector(minAlt: Int?, polygonBoundary: ShortArray?, circleX: Short = 
                 y = circleY.toFloat()
             }
         }
-        with<SRColor> {
-            color = if (restr) Color.ORANGE else Color.GRAY
-        }
         if (onClient) {
+            with<SRColor> {
+                color = if (restr) Color.ORANGE else Color.GRAY
+            }
             with<GenericLabel> {
                 updateStyle(if (restr) "MinAltSectorRestr" else "MinAltSector")
                 updateText(if (minAlt == null) "UNL" else (minAlt / 100f).roundToInt().toString())
@@ -82,11 +84,20 @@ class MinAltSector(minAlt: Int?, polygonBoundary: ShortArray?, circleX: Short = 
                                  val restr: Boolean = false
     )
 
+    /**
+     * Returns a default empty [SerialisedMinAltSector] due to missing component, and logs a message to the console
+     * @param missingComponent the missing aircraft component
+     */
+    override fun emptySerialisableObject(missingComponent: String): SerialisedMinAltSector {
+        Gdx.app.log("MinAltSector", "Empty serialised minAltSector returned due to missing $missingComponent component")
+        return SerialisedMinAltSector()
+    }
+
     /** Gets a [SerialisedMinAltSector] from current state */
-    fun getSerialisableObject(): SerialisedMinAltSector {
+    override fun getSerialisableObject(): SerialisedMinAltSector {
         entity.apply {
-            val sectorInfo = get(MinAltSectorInfo.mapper) ?: return SerialisedMinAltSector()
-            val pos = get(Position.mapper) ?: return SerialisedMinAltSector()
+            val sectorInfo = get(MinAltSectorInfo.mapper) ?: return emptySerialisableObject("SectorInfo")
+            val pos = get(Position.mapper) ?: return emptySerialisableObject("Position")
             val polygon = get(GPolygon.mapper)
             val circle = get(GCircle.mapper)
             val customPos = get(CustomPosition.mapper)

@@ -1,5 +1,6 @@
 package com.bombbird.terminalcontrol2.entities
 
+import com.badlogic.gdx.Gdx
 import com.bombbird.terminalcontrol2.components.CommandTarget
 import com.bombbird.terminalcontrol2.components.PublishedHoldInfo
 import com.bombbird.terminalcontrol2.global.getEngine
@@ -10,7 +11,7 @@ import ktx.ashley.with
 /** Hold class that creates a published hold entity with the required components on instantiation */
 class PublishedHold(id: Short, maxAlt: Int?, minAlt: Int?,
                     maxSpdLower: Short, maxSpdHigher: Short, inboundHdg: Short, legDist: Byte,
-                    dir: Byte, onClient: Boolean = true) {
+                    dir: Byte, onClient: Boolean = true): SerialisableEntity<PublishedHold.SerialisedPublishedHold> {
     val entity = getEngine(onClient).entity {
         with<PublishedHoldInfo> {
             wptId = id
@@ -41,8 +42,17 @@ class PublishedHold(id: Short, maxAlt: Int?, minAlt: Int?,
                                   val dir: Byte = CommandTarget.TURN_RIGHT
     )
 
+    /**
+     * Returns a default empty [SerialisedPublishedHold] due to missing component, and logs a message to the console
+     * @param missingComponent the missing aircraft component
+     */
+    override fun emptySerialisableObject(missingComponent: String): SerialisedPublishedHold {
+        Gdx.app.log("PublishedHold", "Empty serialised publishedHold returned due to missing $missingComponent component")
+        return SerialisedPublishedHold()
+    }
+
     /** Gets a [SerialisedPublishedHold] from current state */
-    fun getSerialisableObject(): SerialisedPublishedHold {
+    override fun getSerialisableObject(): SerialisedPublishedHold {
         entity.apply {
             val holdInfo = get(PublishedHoldInfo.mapper) ?: return SerialisedPublishedHold()
             return SerialisedPublishedHold(

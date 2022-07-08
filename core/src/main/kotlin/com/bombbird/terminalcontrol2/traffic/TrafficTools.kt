@@ -242,7 +242,9 @@ private fun createDeparture(callsign: String, icaoType: String, rwy: Entity, gs:
         entity[Speed.mapper]?.speedKts = -tailwind
         val acPerf = entity[AircraftInfo.mapper]?.aircraftPerf ?: return@apply
         entity += WaitingTakeoff()
-        entity += TakeoffRoll(max(1.5f, calculateRequiredAcceleration(0, calculateTASFromIAS(rwyAlt, acPerf.vR + tailwind).toInt().toShort(), ((rwy[RunwayInfo.mapper]?.lengthM ?: 3800) - 1000) * MathUtils.random(0.75f, 1f))))
+        entity += TakeoffRoll(max(1.5f,
+            calculateRequiredAcceleration(0, calculateTASFromIAS(rwyAlt, acPerf.vR + tailwind).toInt().toShort(),
+                ((rwy[RunwayInfo.mapper]?.lengthM ?: 3800) - 1000) * MathUtils.random(0.75f, 1f))), rwy)
         val sid = randomSid(rwy)
         val rwyName = rwy[RunwayInfo.mapper]?.rwyName ?: ""
         val initClimb = sid?.rwyInitialClimbs?.get(rwyName) ?: 3000
@@ -258,6 +260,7 @@ private fun createDeparture(callsign: String, icaoType: String, rwy: Entity, gs:
         Timer.schedule(object : Timer.Task() {
             override fun run() {
                 gs.postRunnableAfterEngineUpdate {
+                    // TODO Move logic to traffic system
                     entity.remove<WaitingTakeoff>()
                 }
             }

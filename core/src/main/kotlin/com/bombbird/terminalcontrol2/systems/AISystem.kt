@@ -705,7 +705,7 @@ class AISystem: EntitySystem() {
                 val rwyElevation = rwyEntity[Altitude.mapper]?.altitudeFt ?: return@apply
                 if (alt.altitudeFt < rwyElevation + 25) {
                     removeAllApproachComponents(this)
-                    this += LandingRoll()
+                    this += LandingRoll(rwyEntity)
                     alt.altitudeFt = rwyElevation
                     spd.vertSpdFpm = 0f
                     spd.angularSpdDps = 0f

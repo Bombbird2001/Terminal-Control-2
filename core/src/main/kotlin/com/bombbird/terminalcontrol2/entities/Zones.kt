@@ -1,5 +1,6 @@
 package com.bombbird.terminalcontrol2.entities
 
+import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
@@ -11,7 +12,8 @@ import ktx.ashley.*
 import kotlin.math.roundToInt
 
 /** Class for storing a runway's approach NOZ information */
-class ApproachNormalOperatingZone(posX: Float, posY: Float, appHdg: Short, private val widthNm: Float, private val lengthNm: Float, onClient: Boolean = true) {
+class ApproachNormalOperatingZone(posX: Float, posY: Float, appHdg: Short, private val widthNm: Float, private val lengthNm: Float,
+                                  onClient: Boolean = true):SerialisableEntity<ApproachNormalOperatingZone.SerialisedApproachNOZ> {
     val entity = getEngine(onClient).entity {
         with<Position> {
             x = posX
@@ -36,11 +38,20 @@ class ApproachNormalOperatingZone(posX: Float, posY: Float, appHdg: Short, priva
         }
     }
 
+    /**
+     * Returns a default empty [SerialisedApproachNOZ] due to missing component, and logs a message to the console
+     * @param missingComponent the missing aircraft component
+     */
+    override fun emptySerialisableObject(missingComponent: String): SerialisedApproachNOZ {
+        Gdx.app.log("Zones", "Empty serialised approachNOZ returned due to missing $missingComponent component")
+        return SerialisedApproachNOZ()
+    }
+
     /** Gets a [SerialisedApproachNOZ] from current state */
-    fun getSerialisableObject(): SerialisedApproachNOZ {
+    override fun getSerialisableObject(): SerialisedApproachNOZ {
         entity.apply {
-            val pos = get(Position.mapper) ?: return SerialisedApproachNOZ()
-            val dir = get(Direction.mapper) ?: return SerialisedApproachNOZ()
+            val pos = get(Position.mapper) ?: return emptySerialisableObject("Position")
+            val dir = get(Direction.mapper) ?: return emptySerialisableObject("Direction")
             val appHdg = convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()) + 180 + MAG_HDG_DEV
             return SerialisedApproachNOZ(pos.x, pos.y, appHdg.roundToInt().toShort(), widthNm, lengthNm)
         }
@@ -64,7 +75,8 @@ class ApproachNormalOperatingZone(posX: Float, posY: Float, appHdg: Short, priva
 }
 
 /** Class for storing a runway's departure NOZ information */
-class DepartureNormalOperatingZone(posX: Float, posY: Float, appHdg: Short, private val widthNm: Float, private val lengthNm: Float, onClient: Boolean = true) {
+class DepartureNormalOperatingZone(posX: Float, posY: Float, appHdg: Short, private val widthNm: Float, private val lengthNm: Float,
+                                   onClient: Boolean = true): SerialisableEntity<DepartureNormalOperatingZone.SerialisedDepartureNOZ> {
     val entity = getEngine(onClient).entity {
         with<Position> {
             x = posX
@@ -89,11 +101,20 @@ class DepartureNormalOperatingZone(posX: Float, posY: Float, appHdg: Short, priv
         }
     }
 
+    /**
+     * Returns a default empty [SerialisedDepartureNOZ] due to missing component, and logs a message to the console
+     * @param missingComponent the missing aircraft component
+     */
+    override fun emptySerialisableObject(missingComponent: String): SerialisedDepartureNOZ {
+        Gdx.app.log("Zones", "Empty serialised departureNOZ returned due to missing $missingComponent component")
+        return SerialisedDepartureNOZ()
+    }
+
     /** Gets a [SerialisedDepartureNOZ] from current state */
-    fun getSerialisableObject(): SerialisedDepartureNOZ {
+    override fun getSerialisableObject(): SerialisedDepartureNOZ {
         entity.apply {
-            val pos = get(Position.mapper) ?: return SerialisedDepartureNOZ()
-            val dir = get(Direction.mapper) ?: return SerialisedDepartureNOZ()
+            val pos = get(Position.mapper) ?: return emptySerialisableObject("Position")
+            val dir = get(Direction.mapper) ?: return emptySerialisableObject("Direction")
             val appHdg = convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()) + MAG_HDG_DEV
             return SerialisedDepartureNOZ(pos.x, pos.y, appHdg.roundToInt().toShort(), widthNm, lengthNm)
         }
@@ -121,7 +142,8 @@ class DepartureNormalOperatingZone(posX: Float, posY: Float, appHdg: Short, priv
  *
  * Note that NTZs are purely for aesthetic purposes and will not handle any sort of logic or positional checking
  * */
-class NoTransgressionZone(posX: Float, posY: Float, appHdg: Short, private val widthNm: Float, private val lengthNm: Float, onClient: Boolean = true) {
+class NoTransgressionZone(posX: Float, posY: Float, appHdg: Short, private val widthNm: Float, private val lengthNm: Float,
+                          onClient: Boolean = true): SerialisableEntity<NoTransgressionZone.SerialisedNTZ> {
     val entity = getEngine(onClient).entity {
         with<Position> {
             x = posX
@@ -146,8 +168,17 @@ class NoTransgressionZone(posX: Float, posY: Float, appHdg: Short, private val w
         }
     }
 
+    /**
+     * Returns a default empty [SerialisedNTZ] due to missing component, and logs a message to the console
+     * @param missingComponent the missing aircraft component
+     */
+    override fun emptySerialisableObject(missingComponent: String): SerialisedNTZ {
+        Gdx.app.log("Zones", "Empty serialised NTZ returned due to missing $missingComponent component")
+        return SerialisedNTZ()
+    }
+
     /** Gets a [SerialisedNTZ] from current state */
-    fun getSerialisableObject(): SerialisedNTZ {
+    override fun getSerialisableObject(): SerialisedNTZ {
         entity.apply {
             val pos = get(Position.mapper) ?: return SerialisedNTZ()
             val dir = get(Direction.mapper) ?: return SerialisedNTZ()

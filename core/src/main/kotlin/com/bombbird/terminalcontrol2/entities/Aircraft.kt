@@ -24,7 +24,8 @@ import java.util.*
 import kotlin.math.roundToInt
 
 /** Aircraft class that creates an aircraft entity with the required components on instantiation */
-class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircraftType: String, flightType: Byte, onClient: Boolean = true) {
+class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float,icaoAircraftType: String, flightType: Byte,
+               onClient: Boolean = true): SerialisableEntity<Aircraft.SerialisedAircraft> {
     val entity = getEngine(onClient).entity {
         with<Position> {
             x = posX
@@ -268,20 +269,31 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                              val waitingTakeoff: Boolean = false
     )
 
+    /**
+     * Returns a default empty [SerialisedAircraft] due to missing component, and logs a message to the console
+     * @param missingComponent the missing aircraft component
+     */
+    override fun emptySerialisableObject(missingComponent: String): SerialisedAircraft {
+        Gdx.app.log("Aircraft", "Empty serialised aircraft returned due to missing $missingComponent component")
+        return SerialisedAircraft()
+    }
+
     /** Gets a [SerialisedAircraft] from current state */
-    fun getSerialisableObject(): SerialisedAircraft {
+    override fun getSerialisableObject(): SerialisedAircraft {
         entity.apply {
-            val position = get(Position.mapper) ?: return SerialisedAircraft()
-            val altitude = get(Altitude.mapper) ?: return SerialisedAircraft()
-            val acInfo = get(AircraftInfo.mapper) ?: return SerialisedAircraft()
-            val direction = get(Direction.mapper) ?: return SerialisedAircraft()
-            val speed = get(Speed.mapper) ?: return SerialisedAircraft()
-            val track = get(GroundTrack.mapper) ?: return SerialisedAircraft()
-            val cmdTarget = get(CommandTarget.mapper) ?: return SerialisedAircraft()
-            val flightType = get(FlightType.mapper) ?: return SerialisedAircraft()
-            val clearance = get(PendingClearances.mapper)?.clearanceQueue?.last()?.clearanceState ?: get(ClearanceAct.mapper)?.actingClearance?.actingClearance ?: return SerialisedAircraft()
+            val position = get(Position.mapper) ?: return emptySerialisableObject("Position")
+            val altitude = get(Altitude.mapper) ?: return emptySerialisableObject("Altitude")
+            val acInfo = get(AircraftInfo.mapper) ?: return emptySerialisableObject("AircraftInfo")
+            val direction = get(Direction.mapper) ?: return emptySerialisableObject("Direction")
+            val speed = get(Speed.mapper) ?: return emptySerialisableObject("Speed")
+            val track = get(GroundTrack.mapper) ?: return emptySerialisableObject("GroundTrack")
+            val cmdTarget = get(CommandTarget.mapper) ?: return emptySerialisableObject("CommandTarget")
+            val flightType = get(FlightType.mapper) ?: return emptySerialisableObject("FlightType")
+            val clearance = get(PendingClearances.mapper)?.clearanceQueue?.last()?.clearanceState ?:
+            get(ClearanceAct.mapper)?.actingClearance?.actingClearance ?:
+            return emptySerialisableObject("PendingClearances")
             val arrArptId = get(ArrivalAirport.mapper)?.arptId
-            val controllable = get(Controllable.mapper) ?: return SerialisedAircraft()
+            val controllable = get(Controllable.mapper) ?: return emptySerialisableObject("Controllable")
             return SerialisedAircraft(
                 position.x, position.y,
                 altitude.altitudeFt,

@@ -1,5 +1,6 @@
 package com.bombbird.terminalcontrol2.entities
 
+import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.Color
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.getEngine
@@ -8,7 +9,7 @@ import ktx.ashley.get
 import ktx.ashley.with
 
 /** Waypoint class that creates a waypoint entity with the required components on instantiation */
-class Waypoint(id: Short, name: String, posX: Short, posY: Short, onClient: Boolean = true) {
+class Waypoint(id: Short, name: String, posX: Short, posY: Short, onClient: Boolean = true): SerialisableEntity<Waypoint.SerialisedWaypoint> {
     val entity = getEngine(onClient).entity {
         with<WaypointInfo> {
             wptId = id
@@ -51,11 +52,20 @@ class Waypoint(id: Short, name: String, posX: Short, posY: Short, onClient: Bool
                              val posX: Short = 0, val posY: Short = 0
     )
 
+    /**
+     * Returns a default empty [SerialisedWaypoint] due to missing component, and logs a message to the console
+     * @param missingComponent the missing aircraft component
+     */
+    override fun emptySerialisableObject(missingComponent: String): SerialisedWaypoint {
+        Gdx.app.log("Waypoint", "Empty serialised waypoint returned due to missing $missingComponent component")
+        return SerialisedWaypoint()
+    }
+
     /** Gets a [SerialisedWaypoint] from current state */
-    fun getSerialisableObject(): SerialisedWaypoint {
+    override fun getSerialisableObject(): SerialisedWaypoint {
         entity.apply {
-            val wptInfo = get(WaypointInfo.mapper) ?: return SerialisedWaypoint()
-            val pos = get(Position.mapper) ?: return SerialisedWaypoint()
+            val wptInfo = get(WaypointInfo.mapper) ?: return emptySerialisableObject("WaypointInfo")
+            val pos = get(Position.mapper) ?: return emptySerialisableObject("Position")
             return SerialisedWaypoint(
                 wptInfo.wptId, wptInfo.wptName,
                 pos.x.toInt().toShort(), pos.y.toInt().toShort()

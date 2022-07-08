@@ -1,6 +1,7 @@
 package com.bombbird.terminalcontrol2.components
 
 import com.badlogic.ashley.core.Component
+import com.badlogic.ashley.core.Entity
 import ktx.ashley.Mapper
 
 /**
@@ -8,7 +9,7 @@ import ktx.ashley.Mapper
  *
  * Aircraft will accelerate at a constant rate [targetAccMps2], rotate at vR
  * */
-data class TakeoffRoll(var targetAccMps2: Float = 2f): Component {
+data class TakeoffRoll(var targetAccMps2: Float = 2f, var rwy: Entity = Entity()): Component {
     companion object: Mapper<TakeoffRoll>()
 }
 
@@ -26,7 +27,7 @@ data class TakeoffClimb(var accelAltFt: Float = 1500f): Component {
  *
  * Aircraft will decelerate at a constant rate till ~45 knots, then decelerate at a reduced rate, then de-spawn at 25-30 knots
  * */
-class LandingRoll: Component {
+data class LandingRoll(var rwy: Entity = Entity()): Component {
     companion object: Mapper<LandingRoll>()
 }
 
@@ -121,4 +122,54 @@ class CommandCDA: Component {
  * */
 data class LastRestrictions(var minAltFt: Int? = null, var maxAltFt: Int? = null, var maxSpdKt: Short? = null): Component {
     companion object: Mapper<LastRestrictions>()
+}
+
+/**
+ * Component for tagging aircraft that has captured the extended runway centreline and glide path in a visual approach,
+ * and will alter aircraft AI behaviour to follow the extended centreline track and glide path
+ * */
+class VisualCaptured(val visApp: Entity = Entity(), val parentApp: Entity = Entity()): Component {
+    companion object: Mapper<VisualCaptured>()
+}
+
+/**
+ * Component for tagging aircraft that have been cleared for an approach with a localizer component
+ *
+ * The aircraft will monitor its position relative to the approach position origin and capture it when within range
+ * */
+class LocalizerArmed(val locApp: Entity = Entity()): Component {
+    companion object: Mapper<LocalizerArmed>()
+}
+
+/**
+ * Component for tagging aircraft that has captured the localizer, and will alter aircraft AI behaviour to follow the
+ * localizer track
+ * */
+class LocalizerCaptured(val locApp: Entity = Entity()): Component {
+    companion object: Mapper<LocalizerCaptured>()
+}
+
+/**
+ * Component for tagging aircraft that have been cleared for an approach with a glide slope component
+ *
+ * The aircraft will monitor its altitude and capture it when it reaches the appropriate altitude
+ */
+class GlideSlopeArmed(val gsApp: Entity = Entity()): Component {
+    companion object: Mapper<GlideSlopeArmed>()
+}
+
+/**
+ * Component for tagging aircraft that has captured the glide slope, and will alter aircraft AI, physics behaviour to follow
+ * the glide slope strictly
+ * */
+class GlideSlopeCaptured(val gsApp: Entity = Entity()): Component {
+    companion object: Mapper<GlideSlopeCaptured>()
+}
+
+/**
+ * Component for tagging aircraft that have been cleared for a non-precision step down approach, and will alter aircraft
+ * AI behaviour to follow the step-down altitudes if the localizer is captured
+ * */
+class StepDownApproach(val stepDownApp: Entity = Entity()): Component {
+    companion object: Mapper<StepDownApproach>()
 }

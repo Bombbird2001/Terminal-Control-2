@@ -78,56 +78,6 @@ class DecelerateToAppSpd: Component {
 }
 
 /**
- * Component for tagging aircraft that has captured the extended runway centreline and glide path in a visual approach,
- * and will alter aircraft AI behaviour to follow the extended centreline track and glide path
- * */
-class VisualCaptured(val visApp: Entity = Entity(), val parentApp: Entity = Entity()): Component {
-    companion object: Mapper<VisualCaptured>()
-}
-
-/**
- * Component for tagging aircraft that have been cleared for an approach with a localizer component
- *
- * The aircraft will monitor its position relative to the approach position origin and capture it when within range
- * */
-class LocalizerArmed(val locApp: Entity = Entity()): Component {
-    companion object: Mapper<LocalizerArmed>()
-}
-
-/**
- * Component for tagging aircraft that has captured the localizer, and will alter aircraft AI behaviour to follow the
- * localizer track
- * */
-class LocalizerCaptured(val locApp: Entity = Entity()): Component {
-    companion object: Mapper<LocalizerCaptured>()
-}
-
-/**
- * Component for tagging aircraft that have been cleared for an approach with a glide slope component
- *
- * The aircraft will monitor its altitude and capture it when it reaches the appropriate altitude
- */
-class GlideSlopeArmed(val gsApp: Entity = Entity()): Component {
-    companion object: Mapper<GlideSlopeArmed>()
-}
-
-/**
- * Component for tagging aircraft that has captured the glide slope, and will alter aircraft AI, physics behaviour to follow
- * the glide slope strictly
- * */
-class GlideSlopeCaptured(val gsApp: Entity = Entity()): Component {
-    companion object: Mapper<GlideSlopeCaptured>()
-}
-
-/**
- * Component for tagging aircraft that have been cleared for a non-precision step down approach, and will alter aircraft
- * AI behaviour to follow the step-down altitudes if the localizer is captured
- * */
-class StepDownApproach(val stepDownApp: Entity = Entity()): Component {
-    companion object: Mapper<StepDownApproach>()
-}
-
-/**
  * Component for tagging aircraft cleared for a circling approach; the aircraft must have captured the localizer, or
  * captured the glideslope, or be cleared for a step-down approach in order for this component to take effect
  *
