@@ -33,7 +33,7 @@ class PhysicsSystem(override val updateTimeS: Float): EntitySystem(), LowFreqUpd
         .exclude(GlideSlopeCaptured::class, TakeoffRoll::class, LandingRoll::class).get()
     private val cmdTargetSpdFamily: Family = allOf(AircraftInfo::class, Altitude::class, Speed::class, Acceleration::class, CommandTarget::class).get()
     private val cmdTargetHeadingFamily: Family = allOf(IndicatedAirSpeed::class, Direction::class, Speed::class, Acceleration::class, CommandTarget::class)
-        .exclude(TakeoffRoll::class, LandingRoll::class).get()
+        .exclude(TakeoffRoll::class, LandingRoll::class, WaitingTakeoff::class).get()
     private val glideSlopeCapturedFamily: Family = allOf(Altitude::class, Speed::class, GlideSlopeCaptured::class).get()
     private val gsFamily: Family = allOf(Position::class, Altitude::class, GroundTrack::class, Speed::class, Direction::class, Acceleration::class).get()
     private val tasToIasFamily: Family = allOf(Speed::class, IndicatedAirSpeed::class, Altitude::class)
@@ -226,7 +226,7 @@ class PhysicsSystem(override val updateTimeS: Float): EntitySystem(), LowFreqUpd
                 val alt = get(Altitude.mapper) ?: return@apply
                 val acc = get(Acceleration.mapper) ?: return@apply
                 val aircraftInfo = get(AircraftInfo.mapper) ?: return@apply
-                val takingOff = has(TakeoffRoll.mapper) || has(LandingRoll.mapper)
+                val takingOff = has(TakeoffRoll.mapper) || has(LandingRoll.mapper) || has(WaitingTakeoff.mapper)
                 val takeoffClimb = has(TakeoffClimb.mapper)
                 val approach = has(LocalizerCaptured.mapper) || has(GlideSlopeCaptured.mapper) || has(VisualCaptured.mapper) || (get(CirclingApproach.mapper)?.phase ?: 0) >= 1
 

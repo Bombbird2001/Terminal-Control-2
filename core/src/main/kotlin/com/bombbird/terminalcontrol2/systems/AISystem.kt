@@ -128,8 +128,21 @@ class AISystem: EntitySystem() {
                 if (gsKt < 35) {
                     engine.removeEntity(this)
                     GAME.gameServer?.let {
-                        val landingRoll = get(LandingRoll.mapper) ?: return@let
-                        landingRoll.rwy.remove<RunwayOccupied>() // Remove runway occupied status
+                        get(LandingRoll.mapper)?.rwy?.let { landingRwy ->
+                            landingRwy[RunwayNextArrival.mapper]?.also { nextArr ->
+                                // If the closest aircraft is this aircraft, remove it
+                                val nextArrCallsign = nextArr.aircraft[AircraftInfo.mapper]?.icaoCallsign ?: return@also
+                                if (nextArrCallsign == get(AircraftInfo.mapper)?.icaoCallsign) landingRwy.remove<RunwayNextArrival>()
+                            }
+                            landingRwy.remove<RunwayOccupied>() // Remove runway occupied status
+                            (landingRwy[RunwayPreviousArrival.mapper] ?: RunwayPreviousArrival().apply { landingRwy += this }).also { prevArr ->
+                                val aircraftPerf = get(AircraftInfo.mapper)?.aircraftPerf ?: return@also
+                                prevArr.wakeCat = aircraftPerf.wakeCategory
+                                prevArr.recat = aircraftPerf.recat
+                                prevArr.timeSinceTouchdownS = 0f
+                            }
+                        }
+
                         val callsign = get(AircraftInfo.mapper)?.icaoCallsign ?: return@let
                         it.aircraft.removeKey(callsign) // Remove from aircraft map
                         it.sendAircraftDespawn(callsign) // Send removal data to all clients

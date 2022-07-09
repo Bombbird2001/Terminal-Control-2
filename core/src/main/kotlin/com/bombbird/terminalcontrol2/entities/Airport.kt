@@ -211,7 +211,7 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
             with<VisualApproach> {
                 val totalDisplacementM = displacedM + 150 // TDZ is 150m after the threshold (with displacement if any)
                 val displacementVector = Vector2(Vector2.Y).rotateDeg(-trueHdg) * mToPx(totalDisplacementM)
-                visual += ApproachInfo("VIS $name", parentAirport.entity[AirportInfo.mapper]?.arptId ?: 0)
+                visual += ApproachInfo("VIS $name", parentAirport.entity[AirportInfo.mapper]?.arptId ?: 0, id)
                 visual += Position(posX + displacementVector.x, posY + displacementVector.y)
                 visual += Direction(Vector2(Vector2.Y).rotateDeg(180 - trueHdg))
                 visual += Visual()

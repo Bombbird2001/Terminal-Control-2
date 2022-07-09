@@ -15,6 +15,7 @@ import com.badlogic.gdx.scenes.scene2d.Actor
 import com.bombbird.terminalcontrol2.components.Datatag
 import com.bombbird.terminalcontrol2.components.FlightType
 import com.bombbird.terminalcontrol2.entities.*
+import com.bombbird.terminalcontrol2.files.loadAircraftData
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.graphics.ScreenSize
 import com.bombbird.terminalcontrol2.navigation.ClearanceState
@@ -27,8 +28,6 @@ import com.bombbird.terminalcontrol2.utilities.nmToPx
 import com.bombbird.terminalcontrol2.ui.safeStage
 import com.bombbird.terminalcontrol2.ui.updateDatatagLineSpacing
 import com.bombbird.terminalcontrol2.ui.updateDatatagStyle
-import com.esotericsoftware.kryonet.Connection
-import com.esotericsoftware.kryonet.Listener
 import ktx.app.KtxScreen
 import ktx.ashley.allOf
 import ktx.ashley.get
@@ -113,16 +112,12 @@ class RadarScreen(private val connectionHost: String, airportToHost: String?): K
         if (airportToHost != null) {
             GAME.gameServer = GameServer()
             GAME.gameServer?.initiateServer(airportToHost)
+        } else {
+            // Aircraft data must be loaded on client side as well
+            loadAircraftData()
         }
         registerClassesToKryo(client.kryo)
         client.start()
-        client.addListener(object: Listener {
-            override fun received(connection: Connection, obj: Any?) {
-                (obj as? RequestClientUUID)?.apply {
-                    connection.sendTCP(ClientUUIDData(uuid.toString()))
-                } ?: handleIncomingRequest(this@RadarScreen, obj)
-            }
-        })
         attemptConnectionToServer()
         running = true
 

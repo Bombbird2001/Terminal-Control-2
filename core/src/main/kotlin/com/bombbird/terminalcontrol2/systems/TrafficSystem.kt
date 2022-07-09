@@ -6,10 +6,8 @@ import com.badlogic.gdx.math.MathUtils
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.traffic.*
-import ktx.ashley.allOf
-import ktx.ashley.get
-import ktx.ashley.hasNot
-import ktx.ashley.remove
+import com.bombbird.terminalcontrol2.utilities.calculateDistanceBetweenPoints
+import ktx.ashley.*
 
 /**
  * System for handling traffic matters, such as spawning of aircraft, checking of separation, runway states
@@ -22,6 +20,8 @@ class TrafficSystem(override val updateTimeS: Float): EntitySystem(), LowFreqUpd
     private val pendingRunwayChangeFamily = allOf(PendingRunwayConfig::class, AirportInfo::class, RunwayConfigurationChildren::class).get()
     private val arrivalFamily = allOf(AircraftInfo::class, ArrivalAirport::class).get()
     private val runwayTakeoffFamily = allOf(RunwayInfo::class).get()
+    private val airportTimingFamily = allOf(AirportInfo::class, DepartureInfo::class).get()
+    private val closestArrivalFamily = allOf(Position::class, AircraftInfo::class).oneOf(LocalizerCaptured::class, GlideSlopeCaptured::class, VisualCaptured::class).get()
 
     /**
      * Main update function, for values that need to be updated frequently
@@ -64,6 +64,7 @@ class TrafficSystem(override val updateTimeS: Float): EntitySystem(), LowFreqUpd
             }
         }
 
+        // Update pending runway change timer
         val pendingRunway = engine.getEntitiesFor(pendingRunwayChangeFamily)
         for (i in 0 until pendingRunway.size()) {
             pendingRunway[i]?.apply {
@@ -83,11 +84,44 @@ class TrafficSystem(override val updateTimeS: Float): EntitySystem(), LowFreqUpd
             }
         }
 
+        // Airport departure backlog timer
+        val airportDeparture = engine.getEntitiesFor(airportTimingFamily)
+        for (i in 0 until airportDeparture.size()) {
+            airportDeparture[i]?.apply {
+                get(DepartureInfo.mapper)?.let { it.prevDepTimeS += 1 }
+            }
+        }
+
+        // Departure spawning timer
         val runwayTakeoff = engine.getEntitiesFor(runwayTakeoffFamily)
         for (i in 0 until runwayTakeoff.size()) {
             runwayTakeoff[i]?.apply {
+                // First increment the previous departure and arrival timers if present
+                get(RunwayPreviousDeparture.mapper)?.let { it.timeSinceDepartureS += 1 }
+                get(RunwayPreviousArrival.mapper)?.let { it.timeSinceTouchdownS += 1 }
+
+                // Airport checks - departure timer
                 val airport = get(RunwayInfo.mapper)?.airport ?: return@apply
-                if (airport.entity.hasNot(AirportNextDeparture.mapper))
+                // Create random departure if airport does not have one queued
+                val depInfo = airport.entity[DepartureInfo.mapper] ?: return@apply
+                if (depInfo.closed) {
+                    // Closed for departures - remove any existing next departure from the airport
+                    val nextDepCallsign = airport.entity[AirportNextDeparture.mapper]?.aircraft?.get(AircraftInfo.mapper)?.icaoCallsign
+                    if (nextDepCallsign != null) {
+                        airport.entity.remove<AirportNextDeparture>()
+                        GAME.gameServer?.aircraft?.removeKey(nextDepCallsign)
+                    }
+                    return@apply
+                }
+                // Otherwise, generate a new next departure if not present
+                else if (airport.entity.hasNot(AirportNextDeparture.mapper)) createRandomDeparture(airport.entity, GAME.gameServer ?: return@apply)
+                val nextDep = airport.entity[AirportNextDeparture.mapper] ?: return@apply
+                // If the next departure is not ready yet, skip
+                if (depInfo.prevDepTimeS < calculateTimeToNextDeparture(depInfo.backlog)) return@apply
+
+                // Runway checks
+                // Check self and all related runways
+                if (hasNot(ActiveTakeoff.mapper)) return@apply // Not active for departures
                 if (!checkSameRunwayTraffic(this)) return@apply
                 get(OppositeRunway.mapper)?.let { if (!checkOppRunwayTraffic(it.oppRwy)) return@apply }
                 get(DependentParallelRunway.mapper)?.let {
@@ -102,9 +136,30 @@ class TrafficSystem(override val updateTimeS: Float): EntitySystem(), LowFreqUpd
                     for (j in 0 until it.crossRwys.size)
                         if (!checkCrossingRunwayTraffic(it.crossRwys[j])) return@apply
                 }
-                // TODO Check for departure backlog and whether next departure timer is up
-                // All related runway checks passed - clear next departure for takeoff
-                airport.entity[AirportNextDeparture.mapper]?.let { clearForTakeoff(it.aircraft, this) }
+
+                // All related checks passed - clear next departure for takeoff
+                clearForTakeoff(nextDep.aircraft, this)
+            }
+        }
+
+        // Closest arrival to runway checker
+        val closestRunwayArrival = engine.getEntitiesFor(closestArrivalFamily)
+        for (i in 0 until closestRunwayArrival.size()) {
+            closestRunwayArrival[i]?.apply {
+                val approach = get(LocalizerCaptured.mapper)?.locApp ?: get(GlideSlopeCaptured.mapper)?.gsApp ?:
+                get(VisualCaptured.mapper)?.visApp ?: return@apply
+                val rwyObj = approach[ApproachInfo.mapper]?.rwyObj?.entity ?: return@apply
+                val rwyThrPos = rwyObj[CustomPosition.mapper] ?: return@apply
+                val pos = get(Position.mapper) ?: return@apply
+                val distPx = calculateDistanceBetweenPoints(pos.x, pos.y, rwyThrPos.x, rwyThrPos.y)
+                // If no next arrival has been determined yet, add this arrival
+                if (rwyObj.hasNot(RunwayNextArrival.mapper)) rwyObj += RunwayNextArrival(this, distPx)
+                else rwyObj[RunwayNextArrival.mapper]?.let {
+                    if (distPx < it.distFromThrPx) {
+                        it.aircraft = this
+                        it.distFromThrPx = distPx
+                    }
+                }
             }
         }
     }

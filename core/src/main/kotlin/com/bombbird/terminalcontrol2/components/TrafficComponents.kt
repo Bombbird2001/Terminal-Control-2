@@ -51,12 +51,12 @@ class ArrivalClosed: Component {
 }
 
 /** Component for tagging a closed airport for departures */
-data class DepartureInfo(var closed: Boolean = false, var backlog: Int = -10): Component {
+data class DepartureInfo(var closed: Boolean = false, var backlog: Int = 0, var prevDepTimeS: Float = 999f): Component {
     companion object: Mapper<DepartureInfo>()
 }
 
 /** Component for tagging the next departure aircraft entity of the airport */
-data class AirportNextDeparture(var aircraft: Entity): Component {
+data class AirportNextDeparture(var aircraft: Entity = Entity()): Component {
     companion object: Mapper<AirportNextDeparture>()
 }
 
@@ -78,6 +78,6 @@ class RunwayOccupied: Component {
 }
 
 /** Component for tagging the aircraft closest to landing on the runway */
-data class RunwayNextArrival(var aircraft: Entity = Entity()): Component {
+data class RunwayNextArrival(var aircraft: Entity = Entity(), var distFromThrPx: Float = 0f): Component {
     companion object: Mapper<RunwayNextArrival>()
 }

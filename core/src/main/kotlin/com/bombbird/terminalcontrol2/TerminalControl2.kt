@@ -5,10 +5,11 @@ import com.badlogic.gdx.graphics.Texture
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.math.MathUtils
 import com.bombbird.terminalcontrol2.global.*
-import com.bombbird.terminalcontrol2.networking.GameClientDiscoveryHandler
-import com.bombbird.terminalcontrol2.networking.GameServer
+import com.bombbird.terminalcontrol2.networking.*
 import com.bombbird.terminalcontrol2.screens.*
 import com.esotericsoftware.kryonet.Client
+import com.esotericsoftware.kryonet.Connection
+import com.esotericsoftware.kryonet.Listener
 import kotlinx.coroutines.launch
 import ktx.app.KtxGame
 import ktx.app.KtxScreen
@@ -32,6 +33,13 @@ class TerminalControl2 : KtxGame<KtxScreen>(clearScreen = false) {
     val gameClientDiscoveryHandler = GameClientDiscoveryHandler()
     var gameClient = Client(CLIENT_WRITE_BUFFER_SIZE, CLIENT_READ_BUFFER_SIZE).apply {
         setDiscoveryHandler(gameClientDiscoveryHandler)
+        addListener(object: Listener {
+            override fun received(connection: Connection, obj: Any?) {
+                (obj as? RequestClientUUID)?.apply {
+                    connection.sendTCP(ClientUUIDData(uuid.toString()))
+                } ?: handleIncomingRequest(gameClientScreen ?: return, obj)
+            }
+        })
     }
 
     /**

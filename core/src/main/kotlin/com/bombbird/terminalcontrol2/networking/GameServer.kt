@@ -17,7 +17,6 @@ import com.bombbird.terminalcontrol2.systems.PhysicsSystem
 import com.bombbird.terminalcontrol2.systems.TrafficSystem
 import com.bombbird.terminalcontrol2.traffic.TrafficMode
 import com.bombbird.terminalcontrol2.traffic.appTestArrival
-import com.bombbird.terminalcontrol2.traffic.createRandomDeparture
 import com.bombbird.terminalcontrol2.utilities.*
 import com.esotericsoftware.kryonet.Connection
 import com.esotericsoftware.kryonet.Listener
@@ -158,10 +157,6 @@ class GameServer {
             initialWeatherCondition.await()
         }
 
-        // Add dummy aircraft
-        airports[0]?.entity?.also { arpt -> createRandomDeparture(arpt, this) }
-        airports[1]?.entity?.also { arpt -> createRandomDeparture(arpt, this) }
-        // createRandomArrival(airports.values().toArray(), this)
         appTestArrival(this)
     }
 
@@ -390,10 +385,9 @@ class GameServer {
      * Sends aircraft control state sector updates
      * @param callsign the callsign of the aircraft to update
      * @param newSector the new sector that the aircraft is under control of
-     * @param newUUID the UUID of the new player the aircraft is under control of
+     * @param newUUID the UUID of the new player the aircraft is under control of, or null if tower/ACC
      * */
     fun sendAircraftSectorUpdateTCPToAll(callsign: String, newSector: Byte, newUUID: String?) {
-        if (newUUID == null) return
         server.sendToAllTCP(AircraftSectorUpdateData(callsign, newSector, newUUID))
     }
 

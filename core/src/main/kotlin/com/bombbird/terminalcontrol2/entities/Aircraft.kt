@@ -12,6 +12,8 @@ import com.bombbird.terminalcontrol2.global.MAX_ALT
 import com.bombbird.terminalcontrol2.global.getEngine
 import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.navigation.Route
+import com.bombbird.terminalcontrol2.systems.updateAircraftDatatagText
+import com.bombbird.terminalcontrol2.systems.updateAircraftRadarData
 import com.bombbird.terminalcontrol2.ui.addDatatagInputListeners
 import com.bombbird.terminalcontrol2.ui.getNewDatatagLabelText
 import com.bombbird.terminalcontrol2.ui.updateDatatagStyle
@@ -37,7 +39,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float,icaoAircra
         with<AircraftInfo> {
             icaoCallsign = callsign
             icaoType = icaoAircraftType
-            if (!onClient) aircraftPerf = AircraftTypeData.getAircraftPerf(icaoAircraftType, flightType)
+            aircraftPerf = AircraftTypeData.getAircraftPerf(icaoAircraftType, flightType)
         }
         with<Direction> {
             trackUnitVector = Vector2(Vector2.Y)
@@ -243,7 +245,14 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float,icaoAircra
             if (data.visCap) this += VisualCaptured()
             else remove<VisualCaptured>()
             if (data.waitingTakeoff) this += WaitingTakeoff()
-            else remove<WaitingTakeoff>()
+            else {
+                if (has(WaitingTakeoff.mapper)) {
+                    // Was waiting takeoff, but now isn't: update radar data and datatag
+                    updateAircraftRadarData(this)
+                    updateAircraftDatatagText(this)
+                }
+                remove<WaitingTakeoff>()
+            }
         }
     }
 
