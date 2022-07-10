@@ -7,6 +7,8 @@ import com.badlogic.gdx.math.Polygon
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.MAG_HDG_DEV
+import com.bombbird.terminalcontrol2.global.TRANS_ALT
+import com.bombbird.terminalcontrol2.global.TRANS_LVL
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.navigation.SidStar
 import com.bombbird.terminalcontrol2.navigation.compareLegEquality
@@ -645,5 +647,6 @@ fun calculateArrivalSpawnAltitude(aircraft: Entity, airport: Entity, origRoute: 
     currStepAlt -= mToFt(tasMpsAtTop * tasMpsAtTop / 2 / GRAVITY_ACCELERATION_MPS2)
     currStepAlt = min(currStepAlt, aircraftPerf.maxAlt.toFloat())
     val finalMaxStarAlt = maxStarAlt // Another final variable to bypass changing closure error
-    return if (finalMaxStarAlt == null) currStepAlt else min(currStepAlt, finalMaxStarAlt.toFloat())
+    val spawnAlt = if (finalMaxStarAlt == null) currStepAlt else min(currStepAlt, finalMaxStarAlt.toFloat())
+    return if (spawnAlt > TRANS_ALT && spawnAlt < TRANS_LVL * 100) TRANS_ALT.toFloat() else spawnAlt
 }

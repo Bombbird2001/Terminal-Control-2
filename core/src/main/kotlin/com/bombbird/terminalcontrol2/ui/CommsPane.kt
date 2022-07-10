@@ -182,17 +182,15 @@ class CommsPane {
         } else ""
 
         val preFinalMsg = "$yourCallsign $randomGreeting, ${acInfo.icaoCallsign} $aircraftWake $withYou, $altitudeAction $starSid$inbound$atis"
-        Gdx.app.postRunnable {
-            addMessage(removeExtraCharacters(preFinalMsg), when (flightType.type) {
-                FlightType.ARRIVAL -> ARRIVAL
-                FlightType.DEPARTURE -> DEPARTURE
-                FlightType.EN_ROUTE -> OTHERS
-                else -> {
-                    Gdx.app.log("CommsPane", "Unknown flight type ${flightType.type}")
-                    OTHERS
-                }
-            })
-        }
+        addMessage(removeExtraCharacters(preFinalMsg), when (flightType.type) {
+            FlightType.ARRIVAL -> ARRIVAL
+            FlightType.DEPARTURE -> DEPARTURE
+            FlightType.EN_ROUTE -> OTHERS
+            else -> {
+                Gdx.app.log("CommsPane", "Unknown flight type ${flightType.type}")
+                OTHERS
+            }
+        })
     }
 
     /**

@@ -1,5 +1,6 @@
 package com.bombbird.terminalcontrol2.ui
 
+import com.badlogic.ashley.core.Entity
 import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.scenes.scene2d.Actor
 import com.badlogic.gdx.scenes.scene2d.Stage
@@ -51,6 +52,8 @@ class UIPane(private val uiStage: Stage) {
     val userClearanceState: ClearanceState = ClearanceState() // User's chosen state
     val userClearanceRouteSegments: GdxArray<Route.LegSegment> = GdxArray() // The calculated route segments of user's chosen route state
 
+    // Selected aircraft
+    var selAircraft: Aircraft? = null
     // Max alt, arrival airport, approach track capture status of the aircraft, and clearance modification state, for persistence across panes
     var aircraftMaxAlt: Int? = null
     var aircraftArrivalArptId: Byte? = null
@@ -129,6 +132,7 @@ class UIPane(private val uiStage: Stage) {
      * */
     fun setSelectedAircraft(aircraft: Aircraft) {
         deselectAircraft()
+        selAircraft = aircraft
         aircraft.entity.apply {
             val controllable = get(Controllable.mapper) ?: return
             if (controllable.sectorId != GAME.gameClientScreen?.playerSector) return
@@ -148,6 +152,7 @@ class UIPane(private val uiStage: Stage) {
         controlObj.updateClearanceMode(userClearanceState.route, userClearanceState.vectorHdg,
             aircraft.entity.has(VisualCaptured.mapper) || aircraft.entity.has(LocalizerCaptured.mapper), true)
         controlObj.setUndoTransmitButtonsUnchanged()
+        controlObj.updateHandoverAcknowledgeButton(aircraft.entity.has(CanBeHandedOver.mapper), aircraft.entity.has(ContactNotification.mapper))
         routeEditObj.setChangeStarDisabled(aircraftArrivalArptId == null)
         controlPane.isVisible = true
         routeEditPane.isVisible = false
@@ -181,11 +186,13 @@ class UIPane(private val uiStage: Stage) {
             userClearanceState.clearedApp, userClearanceState.clearedTrans)
         controlObj.updateChangedStates(userClearanceState, clearanceState)
         controlObj.updateUndoTransmitButtonStates()
+        controlObj.updateHandoverAcknowledgeButton(aircraft.entity.has(CanBeHandedOver.mapper), aircraft.entity.has(ContactNotification.mapper))
         routeEditObj.setChangeStarDisabled(aircraftArrivalArptId == null)
     }
 
     /** Unset the selected UI aircraft */
     fun deselectAircraft() {
+        selAircraft = null
         controlPane.isVisible = false
         routeEditPane.isVisible = false
         mainInfoPane.isVisible = true
@@ -209,5 +216,17 @@ class UIPane(private val uiStage: Stage) {
     private fun setToControlPane() {
         routeEditPane.isVisible = false
         controlPane.isVisible = true
+    }
+
+    /**
+     * Updates the state of the handover/acknowledge button state depending on aircraft components
+     *
+     * If the input aircraft does not match the selected aircraft, the function will return
+     * @param aircraft the aircraft to check
+     */
+    fun updateHandoverAckButtonState(aircraft: Entity) {
+        val callsign = aircraft[AircraftInfo.mapper]?.icaoCallsign ?: return
+        if (callsign != selAircraft?.entity?.get(AircraftInfo.mapper)?.icaoCallsign) return
+        controlObj.updateHandoverAcknowledgeButton(aircraft.has(CanBeHandedOver.mapper), aircraft.has(ContactNotification.mapper))
     }
 }

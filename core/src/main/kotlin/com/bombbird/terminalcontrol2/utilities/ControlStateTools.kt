@@ -3,9 +3,12 @@ package com.bombbird.terminalcontrol2.utilities
 import com.badlogic.ashley.core.Entity
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.math.MathUtils
+import com.badlogic.gdx.math.Polygon
+import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable
 import com.badlogic.gdx.utils.Queue
 import com.bombbird.terminalcontrol2.components.*
+import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.navigation.*
 import com.bombbird.terminalcontrol2.navigation.Route.*
 import com.bombbird.terminalcontrol2.networking.AircraftControlStateUpdateData
@@ -197,4 +200,38 @@ fun removeAllApproachComponents(aircraft: Entity) {
         remove<DecelerateToAppSpd>()
         remove<ContactToTower>()
     }
+}
+
+/**
+ * Gets the appropriate sector the aircraft is in
+ * @param posX the x coordinate of the aircraft position
+ * @param posY the y coordinate of the aircraft position
+ * @return the sector ID of the sector the aircraft is in, or null if none found
+ */
+fun getSectorForPosition(posX: Float, posY: Float): Byte? {
+    GAME.gameServer?.apply {
+        sectors.get(playerNo.get().toByte())?.also { allSectors ->
+            for (j in 0 until allSectors.size) allSectors[j]?.let { sector ->
+                if (Polygon(sector.entity[GPolygon.mapper]?.vertices ?: floatArrayOf(0f, 1f, 1f, 0f, -1f, 0f)).contains(posX, posY)) {
+                    return sector.entity[SectorInfo.mapper]?.sectorId ?: return@let
+                }
+            }
+        }
+    }
+
+    return null
+}
+
+/**
+ * Gets the appropriate sector for the extrapolated position based on current position and ground track, given the time
+ * to extrapolate
+ * @param posX the x coordinate of the aircraft position
+ * @param posY the y coordinate of the aircraft position
+ * @param track the ground track vector, in pixels per second in each dimension
+ * @param extrapolateTime the time, in seconds, to extrapolate the current aircraft position
+ */
+fun getSectorForExtrapolatedPosition(posX: Float, posY: Float, track: Vector2, extrapolateTime: Float): Byte? {
+    val newX = posX + track.x * extrapolateTime
+    val newY = posY + track.y * extrapolateTime
+    return getSectorForPosition(newX, newY)
 }

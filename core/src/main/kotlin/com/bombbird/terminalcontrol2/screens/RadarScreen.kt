@@ -20,6 +20,7 @@ import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.graphics.ScreenSize
 import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.networking.*
+import com.bombbird.terminalcontrol2.systems.ControlStateSystemIntervalClient
 import com.bombbird.terminalcontrol2.ui.UIPane
 import com.bombbird.terminalcontrol2.systems.DataSystem
 import com.bombbird.terminalcontrol2.systems.PhysicsSystemClient
@@ -135,6 +136,7 @@ class RadarScreen(private val connectionHost: String, airportToHost: String?): K
         clientEngine.addSystem(RenderingSystem(shapeRenderer, radarDisplayStage, constZoomStage, uiStage, uiPane))
         clientEngine.addSystem(PhysicsSystemClient(1f))
         clientEngine.addSystem(DataSystem())
+        clientEngine.addSystem(ControlStateSystemIntervalClient())
     }
 
     /**
@@ -480,5 +482,14 @@ class RadarScreen(private val connectionHost: String, airportToHost: String?): K
             newClearanceState.clearedApp, newClearanceState.clearedTrans,
             playerSector)
         )
+    }
+
+    /**
+     * Sends an aircraft handover request to the server
+     * @param callsign the callsign of the aircraft to hand over
+     * @param newSector the ID of the new sector to hand over to
+     */
+    fun sendAircraftHandOverRequest(callsign: String, newSector: Byte) {
+        client.sendTCP(HandoverRequest(callsign, newSector))
     }
 }

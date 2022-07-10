@@ -52,6 +52,9 @@ const val NO_APP_SELECTION = "Approach"
 const val TRANS_PREFIX = "Via "
 const val NO_TRANS_SELECTION = "..."
 
+/** Control state constants */
+const val TRACK_EXTRAPOLATE_TIME_S = 30f
+
 /** List of available airports (can be modified, but don't) */
 val AVAIL_AIRPORTS = GdxArray<String>(arrayOf("TCTP", "TCWS", "TCTT", "TCBB", "TCHH", "TCBD", "TCMD", "TCPG"))
 

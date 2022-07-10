@@ -31,7 +31,7 @@ object HttpRequest {
             override fun onFailure(call: Call, e: IOException) {
                 Gdx.app.log("HttpRequest", "Request failed")
                 println(e)
-                if (GAME.gameServer?.gameRunning != true) return
+                if (!checkGameServerRunningStatus()) return
                 if (retry) sendMetarRequest(reqString, false, airportsForRandom)
                 else generateRandomWeather(true, airportsForRandom) // Generate offline weather
             }
@@ -41,7 +41,7 @@ object HttpRequest {
                     if (response.code == 503 && retry) {
                         Gdx.app.log("HttpRequest", "503 received: trying again")
                         response.close()
-                        if (GAME.gameServer?.gameRunning != true) return
+                        if (!checkGameServerRunningStatus()) return
                         sendMetarRequest(reqString, false, airportsForRandom)
                     } else {
                         // Generate offline weather
@@ -63,5 +63,13 @@ object HttpRequest {
                 }
             }
         })
+    }
+
+    /**
+     * Checks whether the status of the game server allows for a retry in case of failure to retrieve METAR
+     * @return true if the game server is running or initialising the weather, else false
+     */
+    private fun checkGameServerRunningStatus(): Boolean {
+        return GAME.gameServer?.let { it.gameRunning || it.initialisingWeather.get() } ?: false
     }
 }

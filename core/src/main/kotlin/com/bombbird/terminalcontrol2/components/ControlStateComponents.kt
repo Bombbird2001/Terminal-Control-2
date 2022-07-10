@@ -130,3 +130,19 @@ class ClearanceActChanged: Component {
 class InitialArrivalSpawn: Component {
     companion object: Mapper<InitialArrivalSpawn>()
 }
+
+/**
+ * Component for tagging aircraft that has just contacted the player, which will enable the acknowledge button as well
+ * as the datatag flashing to notify the player; this will be used only on client
+ * */
+class ContactNotification: Component {
+    companion object: Mapper<ContactNotification>()
+}
+
+/**
+ * Component for tagging aircraft that can be handed over to the next sector, including tower and ACC; this component will
+ * enable the handover button
+ */
+data class CanBeHandedOver(val nextSector: Byte): Component {
+    companion object: Mapper<CanBeHandedOver>()
+}

@@ -46,7 +46,7 @@ class AISystem: EntitySystem() {
     private val appTrackCapFamily: Family = allOf(CommandTarget::class, ClearanceAct::class, Position::class, Speed::class, Direction::class)
         .oneOf(LocalizerCaptured::class, VisualCaptured::class).get()
     private val visAppGlideFamily: Family = allOf(CommandTarget::class, Position::class, GroundTrack::class, VisualCaptured::class).get()
-    private val stabilisedAppFamily: Family = allOf(Position::class, Altitude::class, IndicatedAirSpeed::class, AircraftInfo::class)
+    private val checkGoAroundFamily: Family = allOf(Position::class, Altitude::class, IndicatedAirSpeed::class, AircraftInfo::class)
         .oneOf(GlideSlopeCaptured::class, LocalizerCaptured::class, VisualCaptured::class).exclude(CirclingApproach::class).get()
     private val locArmedFamily: Family = allOf(Position::class, Direction::class, IndicatedAirSpeed::class, GroundTrack::class, LocalizerArmed::class).get()
     private val gsArmedFamily: Family = allOf(Position::class, Altitude::class, GlideSlopeArmed::class, LocalizerCaptured::class).get()
@@ -81,7 +81,9 @@ class AISystem: EntitySystem() {
                 if (ias.iasKt >= aircraftInfo.aircraftPerf.vR) {
                     // Transition to takeoff climb mode
                     remove<TakeoffRoll>()
+                    // Remove runway occupied status
                     takeoffRoll.rwy.remove<RunwayOccupied>()
+                    takeoffRoll.rwy[OppositeRunway.mapper]?.oppRwy?.remove<RunwayOccupied>()
                     val randomAGL = MathUtils.random(1200, 1800)
                     val accelAlt = alt.altitudeFt + randomAGL
                     this += TakeoffClimb(accelAlt)
@@ -134,13 +136,9 @@ class AISystem: EntitySystem() {
                                 val nextArrCallsign = nextArr.aircraft[AircraftInfo.mapper]?.icaoCallsign ?: return@also
                                 if (nextArrCallsign == get(AircraftInfo.mapper)?.icaoCallsign) landingRwy.remove<RunwayNextArrival>()
                             }
-                            landingRwy.remove<RunwayOccupied>() // Remove runway occupied status
-                            (landingRwy[RunwayPreviousArrival.mapper] ?: RunwayPreviousArrival().apply { landingRwy += this }).also { prevArr ->
-                                val aircraftPerf = get(AircraftInfo.mapper)?.aircraftPerf ?: return@also
-                                prevArr.wakeCat = aircraftPerf.wakeCategory
-                                prevArr.recat = aircraftPerf.recat
-                                prevArr.timeSinceTouchdownS = 0f
-                            }
+                            // Remove runway occupied status
+                            landingRwy.remove<RunwayOccupied>()
+                            landingRwy[OppositeRunway.mapper]?.oppRwy?.remove<RunwayOccupied>()
                         }
 
                         val callsign = get(AircraftInfo.mapper)?.icaoCallsign ?: return@let
@@ -623,9 +621,9 @@ class AISystem: EntitySystem() {
         }
 
         // Update stabilized approach status, and checks for minimums
-        val stabApp = engine.getEntitiesFor(stabilisedAppFamily)
-        for (i in 0 until stabApp.size()) {
-            stabApp[i]?.apply {
+        val checkGoAround = engine.getEntitiesFor(checkGoAroundFamily)
+        for (i in 0 until checkGoAround.size()) {
+            checkGoAround[i]?.apply {
                 val gsApp = get(GlideSlopeCaptured.mapper)?.gsApp ?: get(GlideSlopeArmed.mapper)?.gsApp
                 val stepDownApp = get(StepDownApproach.mapper)?.stepDownApp
                 val visApp = get(VisualCaptured.mapper)?.visApp
@@ -657,7 +655,7 @@ class AISystem: EntitySystem() {
                 // For visual approach, check for stabilized approach by 1.2nm from threshold
                 // For approach with localizer and/or glide slope, check for stabilized approach by 3.2nm from threshold
                 val stabDistNm = if (gsApp != null || locApp != null) 3.2f else 1.2f
-                if (pxToNm(distFromRwyPx) > stabDistNm) return@apply //  No need to check if aircraft is not yet close enough to the runway
+                if (pxToNm(distFromRwyPx) > stabDistNm) return@apply // No need to check if aircraft is not yet close enough to the runway
 
                 // Check airspeed
                 // For visual approach, check speed not more than 10 knots above approach speed
@@ -705,6 +703,36 @@ class AISystem: EntitySystem() {
                 rwyObj[RunwayWindComponents.mapper]?.let {
                     if (it.tailwindKt > 15 || it.crosswindKt > 25) return@apply initiateGoAround(this)
                 }
+
+                // Check runway occupancy
+                // For all approaches, go around if runway is still occupied by the time aircraft reaches 200 feet AGL
+                val rwyAlt = rwyObj[Altitude.mapper]?.altitudeFt
+                if (rwyAlt != null && rwyObj.has(RunwayOccupied.mapper) && alt.altitudeFt < rwyAlt + 200) {
+                    println("Traffic on runway")
+                    return@apply initiateGoAround(this)
+                }
+
+                // Check opposite runway aircraft departure
+                // For all approaches, go around if aircraft is less than 5nm from runway and a departure has taken off
+                // less than 120s ago from the opposite (including dependent) runway
+                if (pxToNm(distFromRwyPx) < 5) {
+                    rwyObj[OppositeRunway.mapper]?.oppRwy?.get(RunwayPreviousDeparture.mapper)?.let {
+                        if (it.timeSinceDepartureS < 120) {
+                            println("Departure from opposite runway")
+                            return@apply initiateGoAround(this)
+                        }
+                    }
+                    rwyObj[DependentOppositeRunway.mapper]?.depOppRwys?.let { depOppRwys ->
+                        for (j in 0 until depOppRwys.size) {
+                            depOppRwys[j][RunwayPreviousDeparture.mapper]?.let {
+                                if (it.timeSinceDepartureS < 120) {
+                                    println("Departure from dependent opposite runway")
+                                    return@apply initiateGoAround(this)
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -722,13 +750,23 @@ class AISystem: EntitySystem() {
                 if (alt.altitudeFt < rwyElevation + 25) {
                     removeAllApproachComponents(this)
                     this += LandingRoll(rwyEntity)
+                    // Set runway as occupied
                     rwyEntity += RunwayOccupied()
+                    rwyEntity[OppositeRunway.mapper]?.oppRwy?.plusAssign(RunwayOccupied())
+                    // Set aircraft physics properties
                     alt.altitudeFt = rwyElevation
                     spd.vertSpdFpm = 0f
                     spd.angularSpdDps = 0f
                     acc.dVertSpdMps2 = 0f
                     acc.dAngularSpdDps2 = 0f
                     dir.trackUnitVector = rwyEntity[Direction.mapper]?.trackUnitVector ?: return@apply
+                    // Update runway's previous arrival component to this aircraft
+                    (rwyEntity[RunwayPreviousArrival.mapper] ?: RunwayPreviousArrival().apply { rwyEntity += this }).also { prevArr ->
+                        val aircraftPerf = get(AircraftInfo.mapper)?.aircraftPerf ?: return@also
+                        prevArr.wakeCat = aircraftPerf.wakeCategory
+                        prevArr.recat = aircraftPerf.recat
+                        prevArr.timeSinceTouchdownS = 0f
+                    }
                 }
             }
         }

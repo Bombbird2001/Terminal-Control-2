@@ -51,7 +51,7 @@ class ArrivalClosed: Component {
 }
 
 /** Component for tagging a closed airport for departures */
-data class DepartureInfo(var closed: Boolean = false, var backlog: Int = 0, var prevDepTimeS: Float = 999f): Component {
+data class DepartureInfo(var closed: Boolean = false, var backlog: Int = 0): Component {
     companion object: Mapper<DepartureInfo>()
 }
 

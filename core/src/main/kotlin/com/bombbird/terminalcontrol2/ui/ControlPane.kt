@@ -11,6 +11,7 @@ import com.bombbird.terminalcontrol2.navigation.*
 import com.bombbird.terminalcontrol2.traffic.getAvailableApproaches
 import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.get
+import ktx.ashley.remove
 import ktx.collections.GdxArray
 import ktx.scene2d.*
 import kotlin.math.max
@@ -23,6 +24,15 @@ class ControlPane {
         const val PANE_ROUTE: Byte = 0
         const val PANE_HOLD: Byte = 1
         const val PANE_VECTOR: Byte = 2
+
+        const val ROUTE = "Route"
+        const val HOLD = "Hold"
+        const val VECTORS = "Vectors"
+        const val EXPEDITE = "Expedite"
+        const val ACKNOWLEDGE = "Acknowledge"
+        const val HANDOVER = "Handover"
+        const val TRANSMIT = "Transmit"
+        const val UNDO_ALL = "Undo all"
     }
     lateinit var parentPane: UIPane
 
@@ -40,6 +50,7 @@ class ControlPane {
     private val vectorSubpaneObj = VectorSubpane()
 
     private lateinit var undoButton: KTextButton
+    private lateinit var handoverAckButton: KTextButton
     private lateinit var transmitButton: KTextButton
 
     var modificationInProgress = false
@@ -71,7 +82,7 @@ class ControlPane {
             table {
                 table {
                     // First row of mode buttons - Route, Hold, Vectors
-                    routeModeButton = textButton("Route", "ControlPaneSelected").cell(grow = true, preferredWidth = paneWidth / 3).apply {
+                    routeModeButton = textButton(ROUTE, "ControlPaneSelected").cell(grow = true, preferredWidth = paneWidth / 3).apply {
                         addChangeListener { _, _ ->
                             if (modificationInProgress) return@addChangeListener
                             if (!isChecked) {
@@ -81,7 +92,7 @@ class ControlPane {
                             setPaneLateralMode(UIPane.MODE_ROUTE)
                         }
                     }
-                    holdModeButton = textButton("Hold", "ControlPaneSelected").cell(grow = true, preferredWidth = paneWidth / 3).apply {
+                    holdModeButton = textButton(HOLD, "ControlPaneSelected").cell(grow = true, preferredWidth = paneWidth / 3).apply {
                         addChangeListener { _, _ ->
                             if (modificationInProgress) return@addChangeListener
                             if (!isChecked) {
@@ -91,7 +102,7 @@ class ControlPane {
                             setPaneLateralMode(UIPane.MODE_HOLD)
                         }
                     }
-                    vectorModeButton = textButton("Vectors", "ControlPaneSelected").cell(grow = true, preferredWidth = paneWidth / 3).apply {
+                    vectorModeButton = textButton(VECTORS, "ControlPaneSelected").cell(grow = true, preferredWidth = paneWidth / 3).apply {
                         addChangeListener { _, _ ->
                             if (modificationInProgress) return@addChangeListener
                             if (!isChecked) {
@@ -162,7 +173,7 @@ class ControlPane {
                             updateUndoTransmitButtonStates()
                         }
                     }.cell(grow = true, preferredWidth = paneWidth * 0.37f)
-                    textButton("Expedite", "ControlPaneSelected").cell(grow = true, preferredWidth = paneWidth * 0.26f)
+                    textButton(EXPEDITE, "ControlPaneSelected").cell(grow = true, preferredWidth = paneWidth * 0.26f)
                     spdSelectBox = selectBox<Short>("ControlPane").apply {
                         list.alignment = Align.center
                         setAlignment(Align.center)
@@ -179,12 +190,27 @@ class ControlPane {
                 row()
                 table {
                     // Last row of buttons - Undo all, Acknowledge/Handover, Transmit
-                    undoButton = textButton("Undo all", "ControlPaneButton").cell(grow = true, preferredWidth = paneWidth / 3).apply {
-                        addChangeListener { _, _ -> Gdx.app.postRunnable { parentPane.setSelectedAircraft(GAME.gameClientScreen?.selectedAircraft ?: return@postRunnable) }}
+                    undoButton = textButton(UNDO_ALL, "ControlPaneButton").cell(grow = true, preferredWidth = paneWidth / 3).apply {
+                        addChangeListener { _, _ -> Gdx.app.postRunnable { parentPane.setSelectedAircraft(parentPane.selAircraft ?: return@postRunnable) }}
                     }
-                    textButton("Handover\n-\nAcknowledge", "ControlPaneButton").cell(grow = true, preferredWidth = paneWidth / 3).isVisible = false
-                    transmitButton = textButton("Transmit", "ControlPaneButton").cell(grow = true, preferredWidth = paneWidth / 3).apply {
-                        addChangeListener { _, _ -> GAME.gameClientScreen?.let { radarScreen -> radarScreen.selectedAircraft?.let { aircraft ->
+                    handoverAckButton = textButton(ACKNOWLEDGE, "ControlPaneButtonChanged").cell(grow = true, preferredWidth = paneWidth / 3).apply {
+                        isVisible = false
+                        addChangeListener { _, _ ->
+                            Gdx.app.postRunnable {
+                                parentPane.selAircraft?.entity?.remove<ContactNotification>()
+                                if (text.toString() == HANDOVER) {
+                                    parentPane.selAircraft?.entity?.let { ac ->
+                                        val callsign = ac[AircraftInfo.mapper]?.icaoCallsign
+                                        val newSector = ac[CanBeHandedOver.mapper]?.nextSector
+                                        if (callsign != null && newSector != null) GAME.gameClientScreen?.sendAircraftHandOverRequest(callsign, newSector)
+                                    }
+                                }
+                            }
+                            isVisible = false
+                        }
+                    }
+                    transmitButton = textButton(TRANSMIT, "ControlPaneButton").cell(grow = true, preferredWidth = paneWidth / 3).apply {
+                        addChangeListener { _, _ -> GAME.gameClientScreen?.let { radarScreen -> parentPane.selAircraft?.let { aircraft ->
                             val leg1 = if (parentPane.clearanceState.route.size > 0) parentPane.clearanceState.route[0] else null
                             val leg2 = directLeg
                             val directChanged = if (leg1 == null && leg2 == null) false else if (leg1 == null || leg2 == null) true else !compareLegEquality(leg1, leg2)
@@ -207,6 +233,9 @@ class ControlPane {
                             Gdx.app.postRunnable {
                                 aircraft.entity[ClearanceAct.mapper]?.actingClearance?.actingClearance?.updateUIClearanceState(parentPane.userClearanceState)
                                 parentPane.updateSelectedAircraft(aircraft)
+                                parentPane.selAircraft?.entity?.remove<ContactNotification>()
+                                // Manually hide acknowledge button since the removal of ContactNotification is not immediate
+                                if (handoverAckButton.text.toString() == ACKNOWLEDGE) handoverAckButton.isVisible = false
                             }
                         }}}
                     }
@@ -526,7 +555,7 @@ class ControlPane {
                 // If the aircraft has not been cleared for vector in acting and user clearance, and there isn't an after
                 // waypoint vector leg selected, set the user clearance vector heading to the heading of the aircraft
                 if (parentPane.userClearanceState.vectorHdg == null && parentPane.clearanceState.vectorHdg == null && afterWptHdgLeg == null)
-                    parentPane.userClearanceState.vectorHdg = GAME.gameClientScreen?.selectedAircraft?.entity?.get(CommandTarget.mapper)?.targetHdgDeg?.roundToInt()?.toShort() ?: 360
+                    parentPane.userClearanceState.vectorHdg = parentPane.selAircraft?.entity?.get(CommandTarget.mapper)?.targetHdgDeg?.roundToInt()?.toShort() ?: 360
                 else if (parentPane.userClearanceState.vectorHdg == null) parentPane.userClearanceState.vectorHdg = parentPane.clearanceState.vectorHdg
                 vectorSubpaneObj.setHdgElementsDisabled(parentPane.appTrackCaptured)
                 vectorSubpaneObj.updateVectorTable(parentPane.userClearanceState.route, parentPane.userClearanceState.vectorHdg, parentPane.userClearanceState.vectorTurnDir)
@@ -586,6 +615,19 @@ class ControlPane {
         else if (leg1 == null || leg2 == null) true else !compareLegEquality(leg1, leg2)
         if (checkClearanceEquality(parentPane.clearanceState, parentPane.userClearanceState) && !directChanged) setUndoTransmitButtonsUnchanged()
         else setUndoTransmitButtonsChanged()
+    }
+
+    /**
+     * Updates the state of the handover/acknowledge button; if both are false the button will be hiddem
+     * @param handover whether the button should display handover and perform handover functionality when clicked
+     * @param acknowledge whether the button should display acknowledge and perform acknowledge functionality when
+     * clicked; will be overridden by [handover] if it is true
+     */
+    fun updateHandoverAcknowledgeButton(handover: Boolean, acknowledge: Boolean) {
+        handoverAckButton.isVisible = true
+        if (handover) handoverAckButton.setText(HANDOVER)
+        else if (acknowledge) handoverAckButton.setText(ACKNOWLEDGE)
+        else handoverAckButton.isVisible = false
     }
 
     /** Resets [directLeg] back to null, called when a new aircraft is being set in [parentPane] */

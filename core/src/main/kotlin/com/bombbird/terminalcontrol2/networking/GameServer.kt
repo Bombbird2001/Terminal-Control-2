@@ -22,6 +22,7 @@ import com.esotericsoftware.kryonet.Connection
 import com.esotericsoftware.kryonet.Listener
 import com.esotericsoftware.kryonet.Server
 import ktx.ashley.get
+import ktx.ashley.hasNot
 import ktx.collections.GdxArray
 import ktx.collections.GdxArrayMap
 import java.util.UUID
@@ -198,6 +199,7 @@ class GameServer {
                 (obj as? AircraftControlStateUpdateData)?.apply {
                     postRunnableAfterEngineUpdate {
                         aircraft[obj.callsign]?.entity?.let {
+                            // Validate the sender
                             if (it[Controllable.mapper]?.sectorId != obj.sendingSector) return@postRunnableAfterEngineUpdate
                             addNewClearanceToPendingClearances(it, obj, connection.returnTripTime)
                         }
@@ -242,6 +244,30 @@ class GameServer {
                         // Send score data
                         connection.sendTCP(ScoreData(score, highScore))
                     }
+                } ?: (obj as? HandoverRequest)?.apply {
+                    val aircraft = aircraft[obj.callsign]?.entity ?: return@apply
+                    // Validate the sender
+                    val controllable = aircraft[Controllable.mapper] ?: return@apply
+                    if (controllable.sectorId != obj.sendingSector) return@apply
+                    // Validate new sector
+                    if (obj.newSector == SectorInfo.TOWER) {
+                        // Validate approach status
+                        if (aircraft.hasNot(LocalizerCaptured.mapper) && aircraft.hasNot(GlideSlopeCaptured.mapper) && aircraft.hasNot(VisualCaptured.mapper))
+                            return@apply
+                    } else if (obj.newSector == SectorInfo.CENTRE) {
+                        // Validate aircraft altitude
+                        val alt = aircraft[Altitude.mapper]?.altitudeFt ?: return@apply
+                        if (alt < MAX_ALT - 1500) return@apply
+                    } else {
+                        // Validate the extrapolated position
+                        val pos = aircraft[Position.mapper] ?: return@apply
+                        val track = aircraft[GroundTrack.mapper] ?: return@apply
+                        if (getSectorForExtrapolatedPosition(pos.x, pos.y, track.trackVectorPxps, TRACK_EXTRAPOLATE_TIME_S) != obj.newSector) return@apply
+                    }
+                    // Request validated - update controllable ID and send update to clients
+                    controllable.sectorId = obj.newSector
+                    val uuid = sectorUUIDMap[obj.newSector]?.toString()
+                    sendAircraftSectorUpdateTCPToAll(obj.callsign, obj.newSector, uuid)
                 }
             }
 

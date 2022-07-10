@@ -268,18 +268,16 @@ fun clearForTakeoff(aircraft: Entity, rwy: Entity) {
         }
         // Set runway as occupied
         rwy += RunwayOccupied()
+        rwy[OppositeRunway.mapper]?.oppRwy?.plusAssign(RunwayOccupied())
         remove<WaitingTakeoff>()
         // Set runway previous departure
-        (rwy[RunwayPreviousDeparture.mapper] ?: RunwayPreviousDeparture()).apply {
+        (rwy[RunwayPreviousDeparture.mapper] ?: RunwayPreviousDeparture().apply { rwy += this }).apply {
             wakeCat = acPerf.wakeCategory
             recat = acPerf.recat
             timeSinceDepartureS = 0f
         }
         // Set airport previous departure
-        rwyInfo.airport.entity[DepartureInfo.mapper]?.apply {
-            backlog--
-            prevDepTimeS = 0f
-        }
+        rwyInfo.airport.entity[DepartureInfo.mapper]?.apply { backlog-- }
         rwyInfo.airport.entity.remove<AirportNextDeparture>()
     }
 }
@@ -457,7 +455,8 @@ object WakeMatrix {
         val gs = GAME.gameServer ?: return 0
         val leaderIndex = getWakeRecatIndex(leaderWake, leaderRECAT)
         val followerIndex = getWakeRecatIndex(followerWake, followerRECAT)
-        return if (gs.useRecat) RECAT_DEP_TIME[leaderIndex][followerIndex] else WAKE_DEP_TIME[leaderIndex][followerIndex]
+        // Minimum 90s separation between successive takeoffs regardless of wake/RECAT
+        return max(90, if (gs.useRecat) RECAT_DEP_TIME[leaderIndex][followerIndex] else WAKE_DEP_TIME[leaderIndex][followerIndex])
     }
 }
 
@@ -491,7 +490,7 @@ fun calculateTimeToThreshold(aircraft: Entity, rwy: Entity): Float {
  * @param rwy the runway to check traffic for
  * @return whether this runway is clear for departure
  */
-fun checkSameRunwayTraffic(rwy: Entity): Boolean {
+fun checkSameRunwayTraffic(rwy: Entity, additionalTime: Int): Boolean {
     val airport = rwy[RunwayInfo.mapper]?.airport ?: return false
     val nextDeparture = airport.entity[AirportNextDeparture.mapper]?.aircraft?.get(AircraftInfo.mapper)?.aircraftPerf ?: return false
     val prevDeparture = rwy[RunwayPreviousDeparture.mapper]
@@ -501,7 +500,7 @@ fun checkSameRunwayTraffic(rwy: Entity): Boolean {
     if (rwy.has(RunwayOccupied.mapper)) return false
     // Check previous departure time required
     if (prevDeparture != null && WakeMatrix.getTimeRequired(prevDeparture.wakeCat, prevDeparture.recat,
-            nextDeparture.wakeCategory, nextDeparture.recat) > prevDeparture.timeSinceDepartureS) return false
+            nextDeparture.wakeCategory, nextDeparture.recat) + additionalTime > prevDeparture.timeSinceDepartureS) return false
     // Check previous arrival time required
     if (prevArrival != null && WakeMatrix.getTimeRequired(prevArrival.wakeCat, prevArrival.recat,
             nextDeparture.wakeCategory, nextDeparture.recat) > prevArrival.timeSinceTouchdownS) return false
@@ -515,7 +514,7 @@ fun checkSameRunwayTraffic(rwy: Entity): Boolean {
  * @param rwy the opposite runway
  * @return whether the opposite runway is clear for departure from original runway
  */
-fun checkOppRunwayTraffic(rwy: Entity): Boolean {
+fun checkOppRunwayTraffic(rwy: Entity, additionalTime: Int): Boolean {
     val airport = rwy[RunwayInfo.mapper]?.airport ?: return false
     val nextDeparture = airport.entity[AirportNextDeparture.mapper]?.aircraft?.get(AircraftInfo.mapper)?.aircraftPerf ?: return false
     val prevDeparture = rwy[RunwayPreviousDeparture.mapper]
@@ -525,7 +524,7 @@ fun checkOppRunwayTraffic(rwy: Entity): Boolean {
     if (rwy.has(RunwayOccupied.mapper)) return false
     // Check previous departure time required
     if (prevDeparture != null && WakeMatrix.getTimeRequired(prevDeparture.wakeCat, prevDeparture.recat,
-            nextDeparture.wakeCategory, nextDeparture.recat) > prevDeparture.timeSinceDepartureS) return false
+            nextDeparture.wakeCategory, nextDeparture.recat) + additionalTime > prevDeparture.timeSinceDepartureS) return false
     // Check previous arrival time required
     if (prevArrival != null && WakeMatrix.getTimeRequired(prevArrival.wakeCat, prevArrival.recat,
             nextDeparture.wakeCategory, nextDeparture.recat) > prevArrival.timeSinceTouchdownS) return false
@@ -539,10 +538,13 @@ fun checkOppRunwayTraffic(rwy: Entity): Boolean {
  * @param rwy the dependent parallel runway
  * @return whether the dependent parallel runway is clear for departure from original runway
  */
-fun checkDependentParallelRunwayTraffic(rwy: Entity): Boolean {
+fun checkDependentParallelRunwayTraffic(rwy: Entity, additionalTime: Int): Boolean {
     val nextArrival = rwy[RunwayNextArrival.mapper]
+    val prevDeparture = rwy[RunwayPreviousDeparture.mapper]
     // Check time from touchdown - minimum 60s
     if (nextArrival != null && calculateTimeToThreshold(nextArrival.aircraft, rwy) < 60) return false
+    // Check time since departure - minimum 60s
+    if (prevDeparture != null && prevDeparture.timeSinceDepartureS < 60 + additionalTime) return false
     return true
 }
 
@@ -551,33 +553,44 @@ fun checkDependentParallelRunwayTraffic(rwy: Entity): Boolean {
  * @param rwy the dependent opposite runway
  * @return whether the dependent opposite runway is clear for departure from original runway
  */
-fun checkDependentOppositeRunwayTraffic(rwy: Entity): Boolean {
+fun checkDependentOppositeRunwayTraffic(rwy: Entity, additionalTime: Int): Boolean {
     val nextArrival = rwy[RunwayNextArrival.mapper]
+    val prevDeparture = rwy[RunwayPreviousDeparture.mapper]
     // Check distance from touchdown - minimum 15nm away
     if (nextArrival != null && calculateDistFromThreshold(nextArrival.aircraft, rwy) < nmToPx(15)) return false
-    return true
-}
-
-fun checkCrossingRunwayTraffic(rwy: Entity): Boolean {
-    val nextArrival = rwy[RunwayNextArrival.mapper]
-    // Check if runway is occupied
-    if (rwy.has(RunwayOccupied.mapper)) return false
-    // Check time from touchdown - minimum 30s
-    if (nextArrival != null && calculateTimeToThreshold(nextArrival.aircraft, rwy) < 30) return false
+    // Check time since departure - minimum 60s
+    if (prevDeparture != null && prevDeparture.timeSinceDepartureS < 60 + additionalTime) return false
     return true
 }
 
 /**
- * Calculates the minimum time from the previous departure to the next departure for an airport depending on its departure
- * backlog
- * @param backlog the number of departure aircraft waiting
- * @return the minimum time, in seconds, between the previous departure and the next departure
+ * Checks the traffic for an intersecting runway
+ * @param rwy the intersecting runway
+ * @return whether the intersecting runway is clear for departure from original runway
  */
-fun calculateTimeToNextDeparture(backlog: Int): Int {
+fun checkCrossingRunwayTraffic(rwy: Entity, additionalTime: Int): Boolean {
+    val nextArrival = rwy[RunwayNextArrival.mapper]
+    val prevDeparture = rwy[RunwayPreviousDeparture.mapper]
+    // Check if runway is occupied
+    if (rwy.has(RunwayOccupied.mapper)) return false
+    // Check time from touchdown - minimum 30s
+    if (nextArrival != null && calculateTimeToThreshold(nextArrival.aircraft, rwy) < 30) return false
+    // No minimum time since departure needed, but check for additional time
+    if (prevDeparture != null && prevDeparture.timeSinceDepartureS < additionalTime) return false
+    return true
+}
+
+/**
+ * Calculates the minimum additional time from the previous departure to the next departure for an airport depending on
+ * its departure backlog
+ * @param backlog the number of departure aircraft waiting
+ * @return the minimum additional time, in seconds, between the previous departure and the next departure
+ */
+fun calculateAdditionalTimeToNextDeparture(backlog: Int): Int {
     return when {
-        backlog >= 10 -> 90
-        backlog >= -20 -> 90 + (210 - 90) * (10 - backlog) / 30
-        backlog >= -40 -> 210 + (410 - 210) * (-20 - backlog) / 20
-        else -> 410
+        backlog >= 10 -> 0
+        backlog >= -20 -> 0 + 120 * (10 - backlog) / 30
+        backlog >= -40 -> 120 + (320 - 120) * (-20 - backlog) / 20
+        else -> 320
     }
 }

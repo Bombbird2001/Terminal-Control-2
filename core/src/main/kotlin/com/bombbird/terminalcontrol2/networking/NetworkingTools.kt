@@ -17,6 +17,7 @@ import com.esotericsoftware.kryo.Kryo
 import ktx.ashley.allOf
 import ktx.ashley.get
 import ktx.ashley.plusAssign
+import ktx.ashley.remove
 import java.util.*
 
 private val sectorFamily = allOf(SectorInfo::class).get()
@@ -118,6 +119,7 @@ fun registerClassesToKryo(kryo: Kryo?) {
         register(AircraftSpawnData::class.java)
         register(AircraftDespawnData::class.java)
         register(AircraftControlStateUpdateData::class.java)
+        register(HandoverRequest::class.java)
         register(CustomWaypointData::class.java)
         register(RemoveCustomWaypointData::class.java)
         register(GameRunningStatus::class.java)
@@ -190,12 +192,17 @@ data class AircraftSpawnData(val newAircraft: Aircraft.SerialisedAircraft = Airc
 data class AircraftDespawnData(val callsign: String = "")
 
 /** Class representing control state data sent when the aircraft command state is updated (either through player command, or due to leg being reached) */
-data class AircraftControlStateUpdateData(val callsign: String = "", var primaryName: String = "", var route: Route.SerialisedRoute = Route.SerialisedRoute(), var hiddenLegs: Route.SerialisedRoute = Route.SerialisedRoute(),
+data class AircraftControlStateUpdateData(val callsign: String = "", val primaryName: String = "",
+                                          val route: Route.SerialisedRoute = Route.SerialisedRoute(),
+                                          val hiddenLegs: Route.SerialisedRoute = Route.SerialisedRoute(),
                                           val vectorHdg: Short? = null, val vectorTurnDir: Byte? = null,
                                           val clearedAlt: Int = 0, val clearedIas: Short = 0,
                                           val minIas: Short = 0, val maxIas: Short = 0, val optimalIas: Short = 0,
                                           val clearedApp: String? = null, val clearedTrans: String? = null,
                                           val sendingSector: Byte = -5)
+
+/** Class representing client request to hand over an aircraft to the new sector */
+data class HandoverRequest(val callsign: String = "", val newSector: Byte = 0, val sendingSector: Byte = 0)
 
 /** Class representing data sent during creation of a new custom waypoint */
 data class CustomWaypointData(val customWpt: Waypoint.SerialisedWaypoint = Waypoint.SerialisedWaypoint())
@@ -305,7 +312,8 @@ fun handleIncomingRequest(rs: RadarScreen, obj: Any?) {
                 if (obj.newSector == rs.playerSector && controllable.controllerUUID.toString() != obj.newUUID && obj.newUUID == uuid.toString()) {
                     // Send message only if aircraft is in player's sector, old UUID is not the player's UUID and the new UUID is the player's UUID
                     GAME.gameClientScreen?.uiPane?.commsPane?.initialContact(aircraft.entity)
-                }
+                    aircraft.entity += ContactNotification()
+                } else if (obj.newSector != rs.playerSector || obj.newUUID != uuid.toString()) aircraft.entity.remove<ContactNotification>()
                 controllable.controllerUUID = obj.newUUID?.let { UUID.fromString(it) }
                 if (rs.selectedAircraft == aircraft) {
                     if (obj.newSector == rs.playerSector) rs.setUISelectedAircraft(aircraft)

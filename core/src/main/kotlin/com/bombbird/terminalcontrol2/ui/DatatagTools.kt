@@ -114,6 +114,7 @@ fun addDatatagInputListeners(datatag: Datatag, aircraft: Aircraft) {
         zIndex = 0
         addListener(object: DragListener() {
             override fun drag(event: InputEvent?, x: Float, y: Float, pointer: Int) {
+                if (aircraft.entity.has(WaitingTakeoff.mapper)) return
                 datatag.xOffset += (x - this@apply.width / 2)
                 datatag.yOffset += (y - this@apply.height / 2)
                 datatag.dragging = true
@@ -121,6 +122,7 @@ fun addDatatagInputListeners(datatag: Datatag, aircraft: Aircraft) {
             }
         })
         addChangeListener { _, _ ->
+            if (aircraft.entity.has(WaitingTakeoff.mapper)) return@addChangeListener
             if (datatag.dragging) {
                 datatag.dragging = false
                 return@addChangeListener
@@ -147,6 +149,7 @@ fun addDatatagInputListeners(datatag: Datatag, aircraft: Aircraft) {
  * is minimised
  * @param entity the aircraft to generate the datatag for
  * @param minimised whether the datatag should be minimised
+ * @return an array of string denoting each line in the datatag
  * */
 fun getNewDatatagLabelText(entity: Entity, minimised: Boolean): Array<String> {
     val controllable = entity[Controllable.mapper]
@@ -154,7 +157,11 @@ fun getNewDatatagLabelText(entity: Entity, minimised: Boolean): Array<String> {
     else getExpandedLabelText(entity)
 }
 
-/** Gets a nw array of strings for the minimised datatag, based on the player's datatag format */
+/**
+ * Gets a new array of strings for the minimised datatag, based on the player's datatag format
+ * @param entity the aircraft to generate the minimised datatag for
+ * @return an array of string denoting each line in the datatag
+ * */
 private fun getMinimisedLabelText(entity: Entity): Array<String> {
     val labelText = arrayOf("", "", "", "")
     // Temporary label format TODO change based on datatag format in use
@@ -171,12 +178,16 @@ private fun getMinimisedLabelText(entity: Entity): Array<String> {
     val icaoType = aircraftInfo.icaoType
 
     labelText[0] = "$callsign/$recat"
-    labelText[1] = if (System.currentTimeMillis() % 4000 < 2000) "$alt $groundSpd" else "$clearedAlt $icaoType"
+    labelText[1] = if (System.currentTimeMillis() % 4000 < 2500) "$alt $groundSpd" else "$clearedAlt $icaoType"
 
     return labelText
 }
 
-/** Gets a new array of strings for the expanded datatag, based on the player's datatag format */
+/**
+ * Gets a new array of strings for the expanded datatag, based on the player's datatag format
+ * @param entity the aircraft to generate the minimised datatag for
+ * @return an array of string denoting each line in the datatag
+ * */
 private fun getExpandedLabelText(entity: Entity): Array<String> {
     val labelText = arrayOf("", "", "", "")
     // Temporary label format TODO change based on datatag format in use

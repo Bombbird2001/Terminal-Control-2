@@ -61,7 +61,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float,icaoAircra
             with<Datatag> {
                 updateDatatagStyle(this, flightType, false)
                 updateDatatagText(this, arrayOf("Test line 1", "Test line 2", "", "Test line 3"))
-                addDatatagInputListeners(this, this@Aircraft)
+                // addDatatagInputListeners(this, this@Aircraft)
                 xOffset = -imgButton.width / 2
                 yOffset = 13f
             }
@@ -116,8 +116,8 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float,icaoAircra
                 serialisedAircraft.altitude,
                 serialisedAircraft.icaoType,
                 serialisedAircraft.flightType
-            ).apply {
-                entity.apply {
+            ).also {
+                it.entity.apply {
                     get(Direction.mapper)?.apply {
                         trackUnitVector.x = serialisedAircraft.directionX
                         trackUnitVector.y = serialisedAircraft.directionY
@@ -154,17 +154,21 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float,icaoAircra
                         serialisedAircraft.commandAlt, serialisedAircraft.clearedIas,
                         serialisedAircraft.minIas, serialisedAircraft.maxIas, serialisedAircraft.optimalIas,
                     )))
-                    serialisedAircraft.arrivalArptId?.let { this += ArrivalAirport(it) }
+                    serialisedAircraft.arrivalArptId?.let { arrId -> this += ArrivalAirport(arrId) }
                     get(Controllable.mapper)?.apply {
                         sectorId = serialisedAircraft.controlSectorId
-                        controllerUUID = serialisedAircraft.controllerUUID?.let { UUID.fromString(it) }
+                        controllerUUID = serialisedAircraft.controllerUUID?.let { controlId -> UUID.fromString(controlId) }
                     }
                     get(RSSprite.mapper)?.drawable = getAircraftIcon(serialisedAircraft.flightType, serialisedAircraft.controlSectorId)
                     if (serialisedAircraft.gsCap) this += GlideSlopeCaptured()
                     if (serialisedAircraft.locCap) this += LocalizerCaptured()
                     if (serialisedAircraft.visCap) this += VisualCaptured()
+                    if (serialisedAircraft.contactToCentre) this += ContactToCentre()
+
+                    val datatag = get(Datatag.mapper)
                     if (serialisedAircraft.waitingTakeoff) this += WaitingTakeoff()
-                    get(Datatag.mapper)?.let { updateDatatagText(it, getNewDatatagLabelText(this, it.minimised))}
+                    else if (datatag != null) addDatatagInputListeners(datatag, it)
+                    datatag?.let { tag -> updateDatatagText(tag, getNewDatatagLabelText(this, tag.minimised))}
                 }
             }
         }
@@ -183,19 +187,29 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float,icaoAircra
                                 val trackX: Float = 0f, val trackY: Float = 0f,
                                 val targetHdgDeg: Short = 0, val targetAltFt: Short = 0, val targetIasKt: Short = 0,
                                 val gsCap: Boolean = false, val locCap: Boolean = false, val visCap: Boolean = false,
-                                val waitingTakeoff: Boolean = false
+                                val waitingTakeoff: Boolean = false,
+                                val contactToCentre: Boolean = false
     )
+
+    /**
+     * Returns a default empty [SerialisedAircraftUDP] due to missing component, and logs a message to the console
+     * @param missingComponent the missing aircraft component
+     */
+    private fun emptySerialisableUDPObject(missingComponent: String): SerialisedAircraftUDP {
+        Gdx.app.log("Aircraft", "Empty serialised UDP aircraft returned due to missing $missingComponent component")
+        return SerialisedAircraftUDP()
+    }
 
     /** Gets a [SerialisedAircraftUDP] from current state */
     fun getSerialisableObjectUDP(): SerialisedAircraftUDP {
         entity.apply {
-            val position = get(Position.mapper) ?: return SerialisedAircraftUDP()
-            val altitude = get(Altitude.mapper) ?: return SerialisedAircraftUDP()
-            val acInfo = get(AircraftInfo.mapper) ?: return SerialisedAircraftUDP()
-            val direction = get(Direction.mapper) ?: return SerialisedAircraftUDP()
-            val speed = get(Speed.mapper) ?: return SerialisedAircraftUDP()
-            val gs = get(GroundTrack.mapper) ?: return SerialisedAircraftUDP()
-            val cmdTarget = get(CommandTarget.mapper) ?: return SerialisedAircraftUDP()
+            val position = get(Position.mapper) ?: return emptySerialisableUDPObject("Position")
+            val altitude = get(Altitude.mapper) ?: return emptySerialisableUDPObject("Altitude")
+            val acInfo = get(AircraftInfo.mapper) ?: return emptySerialisableUDPObject("AircraftInfo")
+            val direction = get(Direction.mapper) ?: return emptySerialisableUDPObject("Direction")
+            val speed = get(Speed.mapper) ?: return emptySerialisableUDPObject("Speed")
+            val gs = get(GroundTrack.mapper) ?: return emptySerialisableUDPObject("GroundTrack")
+            val cmdTarget = get(CommandTarget.mapper) ?: return emptySerialisableUDPObject("CommandTarget")
             return SerialisedAircraftUDP(
                 position.x, position.y,
                 altitude.altitudeFt,
@@ -205,7 +219,8 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float,icaoAircra
                 cmdTarget.targetHdgDeg.toInt().toShort(), (cmdTarget.targetAltFt / 100f).roundToInt().toShort(), cmdTarget.targetIasKt,
                 has(GlideSlopeCaptured.mapper), has(LocalizerCaptured.mapper),
                 has(VisualCaptured.mapper) || (get(CirclingApproach.mapper)?.phase ?: 0) >= 1,
-                has(WaitingTakeoff.mapper)
+                has(WaitingTakeoff.mapper),
+                has(ContactToCentre.mapper)
             )
         }
     }
@@ -250,9 +265,12 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float,icaoAircra
                     // Was waiting takeoff, but now isn't: update radar data and datatag
                     updateAircraftRadarData(this)
                     updateAircraftDatatagText(this)
+                    get(Datatag.mapper)?.let { it -> addDatatagInputListeners(it, this@Aircraft) }
                 }
                 remove<WaitingTakeoff>()
             }
+            if (data.contactToCentre) this += ContactToCentre()
+            else remove<ContactToCentre>()
         }
     }
 
@@ -275,7 +293,8 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float,icaoAircra
                              val arrivalArptId: Byte? = null,
                              val controlSectorId: Byte = 0, val controllerUUID: String? = null,
                              val gsCap: Boolean = false, val locCap: Boolean = false, val visCap: Boolean = false,
-                             val waitingTakeoff: Boolean = false
+                             val waitingTakeoff: Boolean = false,
+                             val contactToCentre: Boolean = false
     )
 
     /**
@@ -318,7 +337,8 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float,icaoAircra
                 controllable.sectorId, controllable.controllerUUID?.toString(),
                 has(GlideSlopeCaptured.mapper), has(LocalizerCaptured.mapper),
                 has(VisualCaptured.mapper) || (get(CirclingApproach.mapper)?.phase ?: 0) >= 1,
-                has(WaitingTakeoff.mapper)
+                has(WaitingTakeoff.mapper),
+                has(ContactToCentre.mapper)
             )
         }
     }

@@ -20,7 +20,6 @@ class TrafficSystem(override val updateTimeS: Float): EntitySystem(), LowFreqUpd
     private val pendingRunwayChangeFamily = allOf(PendingRunwayConfig::class, AirportInfo::class, RunwayConfigurationChildren::class).get()
     private val arrivalFamily = allOf(AircraftInfo::class, ArrivalAirport::class).get()
     private val runwayTakeoffFamily = allOf(RunwayInfo::class).get()
-    private val airportTimingFamily = allOf(AirportInfo::class, DepartureInfo::class).get()
     private val closestArrivalFamily = allOf(Position::class, AircraftInfo::class).oneOf(LocalizerCaptured::class, GlideSlopeCaptured::class, VisualCaptured::class).get()
 
     /**
@@ -84,14 +83,6 @@ class TrafficSystem(override val updateTimeS: Float): EntitySystem(), LowFreqUpd
             }
         }
 
-        // Airport departure backlog timer
-        val airportDeparture = engine.getEntitiesFor(airportTimingFamily)
-        for (i in 0 until airportDeparture.size()) {
-            airportDeparture[i]?.apply {
-                get(DepartureInfo.mapper)?.let { it.prevDepTimeS += 1 }
-            }
-        }
-
         // Departure spawning timer
         val runwayTakeoff = engine.getEntitiesFor(runwayTakeoffFamily)
         for (i in 0 until runwayTakeoff.size()) {
@@ -115,29 +106,28 @@ class TrafficSystem(override val updateTimeS: Float): EntitySystem(), LowFreqUpd
                 }
                 // Otherwise, generate a new next departure if not present
                 else if (airport.entity.hasNot(AirportNextDeparture.mapper)) createRandomDeparture(airport.entity, GAME.gameServer ?: return@apply)
-                val nextDep = airport.entity[AirportNextDeparture.mapper] ?: return@apply
-                // If the next departure is not ready yet, skip
-                if (depInfo.prevDepTimeS < calculateTimeToNextDeparture(depInfo.backlog)) return@apply
 
                 // Runway checks
+                val additionalTime = calculateAdditionalTimeToNextDeparture(depInfo.backlog)
                 // Check self and all related runways
                 if (hasNot(ActiveTakeoff.mapper)) return@apply // Not active for departures
-                if (!checkSameRunwayTraffic(this)) return@apply
-                get(OppositeRunway.mapper)?.let { if (!checkOppRunwayTraffic(it.oppRwy)) return@apply }
+                if (!checkSameRunwayTraffic(this, additionalTime)) return@apply
+                get(OppositeRunway.mapper)?.let { if (!checkOppRunwayTraffic(it.oppRwy, additionalTime)) return@apply }
                 get(DependentParallelRunway.mapper)?.let {
                     for (j in 0 until it.depParRwys.size)
-                        if (!checkDependentParallelRunwayTraffic(it.depParRwys[j])) return@apply
+                        if (!checkDependentParallelRunwayTraffic(it.depParRwys[j], additionalTime)) return@apply
                 }
                 get(DependentOppositeRunway.mapper)?.let {
                     for (j in 0 until it.depOppRwys.size)
-                        if (!checkDependentOppositeRunwayTraffic(it.depOppRwys[j])) return@apply
+                        if (!checkDependentOppositeRunwayTraffic(it.depOppRwys[j], additionalTime)) return@apply
                 }
                 get(CrossingRunway.mapper)?.let {
                     for (j in 0 until it.crossRwys.size)
-                        if (!checkCrossingRunwayTraffic(it.crossRwys[j])) return@apply
+                        if (!checkCrossingRunwayTraffic(it.crossRwys[j], additionalTime)) return@apply
                 }
 
                 // All related checks passed - clear next departure for takeoff
+                val nextDep = airport.entity[AirportNextDeparture.mapper] ?: return@apply
                 clearForTakeoff(nextDep.aircraft, this)
             }
         }
