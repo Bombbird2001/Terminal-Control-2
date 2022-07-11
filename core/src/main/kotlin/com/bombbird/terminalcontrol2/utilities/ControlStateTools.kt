@@ -206,16 +206,15 @@ fun removeAllApproachComponents(aircraft: Entity) {
  * Gets the appropriate sector the aircraft is in
  * @param posX the x coordinate of the aircraft position
  * @param posY the y coordinate of the aircraft position
+ * @param useServerSectors whether to use the sector data from the server or the client
  * @return the sector ID of the sector the aircraft is in, or null if none found
  */
-fun getSectorForPosition(posX: Float, posY: Float): Byte? {
-    GAME.gameServer?.apply {
-        sectors.get(playerNo.get().toByte())?.also { allSectors ->
-            for (j in 0 until allSectors.size) allSectors[j]?.let { sector ->
-                if (Polygon(sector.entity[GPolygon.mapper]?.vertices ?: floatArrayOf(0f, 1f, 1f, 0f, -1f, 0f)).contains(posX, posY)) {
-                    return sector.entity[SectorInfo.mapper]?.sectorId ?: return@let
-                }
-            }
+fun getSectorForPosition(posX: Float, posY: Float, useServerSectors: Boolean): Byte? {
+    val allSectors = if (useServerSectors) GAME.gameServer?.let { it.sectors[it.playerNo.get().toByte()] } ?: return null
+    else GAME.gameClientScreen?.sectors ?: return null
+    for (j in 0 until allSectors.size) allSectors[j]?.let { sector ->
+        if (Polygon(sector.entity[GPolygon.mapper]?.vertices ?: floatArrayOf(0f, 1f, 1f, 0f, -1f, 0f)).contains(posX, posY)) {
+            return sector.entity[SectorInfo.mapper]?.sectorId ?: return@let
         }
     }
 
@@ -229,9 +228,10 @@ fun getSectorForPosition(posX: Float, posY: Float): Byte? {
  * @param posY the y coordinate of the aircraft position
  * @param track the ground track vector, in pixels per second in each dimension
  * @param extrapolateTime the time, in seconds, to extrapolate the current aircraft position
+ * @param useServerSectors whether to use the sector data from the server or the client
  */
-fun getSectorForExtrapolatedPosition(posX: Float, posY: Float, track: Vector2, extrapolateTime: Float): Byte? {
+fun getSectorForExtrapolatedPosition(posX: Float, posY: Float, track: Vector2, extrapolateTime: Float, useServerSectors: Boolean): Byte? {
     val newX = posX + track.x * extrapolateTime
     val newY = posY + track.y * extrapolateTime
-    return getSectorForPosition(newX, newY)
+    return getSectorForPosition(newX, newY, useServerSectors)
 }

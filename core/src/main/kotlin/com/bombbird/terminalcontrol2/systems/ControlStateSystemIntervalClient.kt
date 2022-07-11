@@ -43,7 +43,7 @@ class ControlStateSystemIntervalClient: IntervalSystem(1f) {
                             updateUIPaneHandover(this)
                             return@apply
                         }
-                        val extrapolatedSectorId = getSectorForExtrapolatedPosition(pos.x, pos.y, track.trackVectorPxps, TRACK_EXTRAPOLATE_TIME_S)
+                        val extrapolatedSectorId = getSectorForExtrapolatedPosition(pos.x, pos.y, track.trackVectorPxps, TRACK_EXTRAPOLATE_TIME_S, false)
                         if (extrapolatedSectorId != null && extrapolatedSectorId >= 0 && extrapolatedSectorId != it.playerSector) {
                             // Aircraft is entering another player controlled sector in 30 seconds, allow handover to them
                             this += CanBeHandedOver(extrapolatedSectorId)

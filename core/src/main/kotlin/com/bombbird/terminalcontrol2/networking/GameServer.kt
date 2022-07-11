@@ -219,6 +219,7 @@ class GameServer {
                     postRunnableAfterEngineUpdate {
                         // Get data only after engine has completed this update to prevent threading issues
                         connectionUUIDMap.put(connection, uuidObj)
+                        println("Start of initial data send")
                         connection.sendTCP(ClearAllClientData())
                         connection.sendTCP(InitialAirspaceData(MAG_HDG_DEV, MIN_ALT, MAX_ALT, MIN_SEP, TRANS_ALT, TRANS_LVL))
                         assignSectorsToPlayers(server.connections, sectorMap, connectionUUIDMap, sectorUUIDMap, currPlayerNo, sectors)
@@ -243,6 +244,7 @@ class GameServer {
 
                         // Send score data
                         connection.sendTCP(ScoreData(score, highScore))
+                        println("End of initial data send")
                     }
                 } ?: (obj as? HandoverRequest)?.apply {
                     val aircraft = aircraft[obj.callsign]?.entity ?: return@apply
@@ -262,7 +264,7 @@ class GameServer {
                         // Validate the extrapolated position
                         val pos = aircraft[Position.mapper] ?: return@apply
                         val track = aircraft[GroundTrack.mapper] ?: return@apply
-                        if (getSectorForExtrapolatedPosition(pos.x, pos.y, track.trackVectorPxps, TRACK_EXTRAPOLATE_TIME_S) != obj.newSector) return@apply
+                        if (getSectorForExtrapolatedPosition(pos.x, pos.y, track.trackVectorPxps, TRACK_EXTRAPOLATE_TIME_S, true) != obj.newSector) return@apply
                     }
                     // Request validated - update controllable ID and send update to clients
                     controllable.sectorId = obj.newSector

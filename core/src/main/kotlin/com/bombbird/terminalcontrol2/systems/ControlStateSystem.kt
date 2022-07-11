@@ -162,7 +162,7 @@ class ControlStateSystem(override val updateTimeS: Float = 0f): EntitySystem(), 
                 val controllable = get(Controllable.mapper) ?: return@apply
                 val track = get(GroundTrack.mapper) ?: return@apply
                 if (alt.altitudeFt > contact.altitudeFt) {
-                    controllable.sectorId = getSectorForExtrapolatedPosition(pos.x, pos.y, track.trackVectorPxps, TRACK_EXTRAPOLATE_TIME_S) ?: return@apply
+                    controllable.sectorId = getSectorForExtrapolatedPosition(pos.x, pos.y, track.trackVectorPxps, TRACK_EXTRAPOLATE_TIME_S, true) ?: return@apply
                     get(AircraftInfo.mapper)?.icaoCallsign?.let { callsign -> GAME.gameServer?.also { server ->
                         server.sendAircraftSectorUpdateTCPToAll(callsign, controllable.sectorId,
                             GAME.gameServer?.sectorUUIDMap?.get(controllable.sectorId)?.toString())
@@ -199,7 +199,7 @@ class ControlStateSystem(override val updateTimeS: Float = 0f): EntitySystem(), 
                 val controllable = get(Controllable.mapper) ?: return@apply
                 val track = get(GroundTrack.mapper) ?: return@apply
                 if (alt.altitudeFt < contact.altitudeFt) {
-                    controllable.sectorId = getSectorForExtrapolatedPosition(pos.x, pos.y, track.trackVectorPxps, TRACK_EXTRAPOLATE_TIME_S) ?: return@apply
+                    controllable.sectorId = getSectorForExtrapolatedPosition(pos.x, pos.y, track.trackVectorPxps, TRACK_EXTRAPOLATE_TIME_S, true) ?: return@apply
                     get(AircraftInfo.mapper)?.icaoCallsign?.let { callsign -> GAME.gameServer?.also { server ->
                         server.sendAircraftSectorUpdateTCPToAll(callsign, controllable.sectorId,
                             GAME.gameServer?.sectorUUIDMap?.get(controllable.sectorId)?.toString())
@@ -217,7 +217,7 @@ class ControlStateSystem(override val updateTimeS: Float = 0f): EntitySystem(), 
                 val pos = get(Position.mapper) ?: return@apply
                 val contact = get(ContactFromCentre.mapper) ?: return@apply
                 val controllable = get(Controllable.mapper) ?: return@apply
-                if (alt.altitudeFt > contact.altitudeFt || getSectorForPosition(pos.x, pos.y) == null) {
+                if (alt.altitudeFt > contact.altitudeFt || getSectorForPosition(pos.x, pos.y, true) == null) {
                     controllable.sectorId = SectorInfo.CENTRE
                     get(AircraftInfo.mapper)?.icaoCallsign?.let { callsign -> GAME.gameServer?.also { server->
                         server.sendAircraftSectorUpdateTCPToAll(callsign, controllable.sectorId, null)
@@ -227,7 +227,7 @@ class ControlStateSystem(override val updateTimeS: Float = 0f): EntitySystem(), 
             }
         }
 
-        // Checking of whether aircraft is still in player's sector; if not switch it other player's sector
+        // Checking of whether aircraft is still in player's sector; if not switch it to other player's sector
         val checkSector = engine.getEntitiesFor(checkSectorFamily)
         for (i in 0 until checkSector.size()) {
             checkSector[i]?.apply {
@@ -235,14 +235,20 @@ class ControlStateSystem(override val updateTimeS: Float = 0f): EntitySystem(), 
                 val controllable = get(Controllable.mapper) ?: return@apply
                 val track = get(GroundTrack.mapper) ?: return@apply
                 if (controllable.sectorId == SectorInfo.TOWER || controllable.sectorId == SectorInfo.CENTRE) return@apply
-                val expectedSector = getSectorForPosition(pos.x, pos.y)
+                val expectedSector = getSectorForPosition(pos.x, pos.y, true)
                 val expectedController = GAME.gameServer?.sectorUUIDMap?.get(expectedSector)
                 if (expectedSector != null && expectedSector != controllable.sectorId) {
-                    // If the sector has changed for the aircraft
-                    controllable.sectorId = getSectorForExtrapolatedPosition(pos.x, pos.y, track.trackVectorPxps, TRACK_EXTRAPOLATE_TIME_S) ?: expectedSector
-                    get(AircraftInfo.mapper)?.icaoCallsign?.let { callsign -> GAME.gameServer?.also { server ->
-                        server.sendAircraftSectorUpdateTCPToAll(callsign, controllable.sectorId, controllable.controllerUUID?.toString())
-                    }}
+                    // If the aircraft is not in expected sector, get the extrapolated sector and check if it is currently
+                    // under that sector's control; if it is then do nothing, otherwise set it to the extrapolated sector
+                    val extrapolatedSector = getSectorForExtrapolatedPosition(pos.x, pos.y, track.trackVectorPxps, TRACK_EXTRAPOLATE_TIME_S, true)
+                    if (controllable.sectorId != extrapolatedSector) {
+                        controllable.sectorId = extrapolatedSector ?: expectedSector
+                        val extrapolatedController = GAME.gameServer?.sectorUUIDMap?.get(extrapolatedSector)
+                        controllable.controllerUUID = extrapolatedController
+                        get(AircraftInfo.mapper)?.icaoCallsign?.let { callsign -> GAME.gameServer?.also { server ->
+                            server.sendAircraftSectorUpdateTCPToAll(callsign, controllable.sectorId, controllable.controllerUUID?.toString())
+                        }}
+                    }
                 } else if (expectedSector != null && expectedController != controllable.controllerUUID) {
                     // If sector has not changed, but the controller has changed (i.e. during connections/disconnections)
                     controllable.controllerUUID = expectedController

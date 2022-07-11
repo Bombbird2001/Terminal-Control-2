@@ -490,6 +490,6 @@ class RadarScreen(private val connectionHost: String, airportToHost: String?): K
      * @param newSector the ID of the new sector to hand over to
      */
     fun sendAircraftHandOverRequest(callsign: String, newSector: Byte) {
-        client.sendTCP(HandoverRequest(callsign, newSector))
+        client.sendTCP(HandoverRequest(callsign, newSector, playerSector))
     }
 }
