@@ -14,20 +14,16 @@ import ktx.math.times
  *
  * Used only in RadarScreen
  * */
-class PhysicsSystemClient(override val updateTimeS: Float): EntitySystem(), LowFreqUpdate {
-    override var timer = 0f
-
+class PhysicsSystemClient: EntitySystem() {
     private val positionUpdateFamily: Family = allOf(Position::class, Altitude::class, Speed::class, Direction::class)
         .exclude(WaitingTakeoff::class).get()
     private val windAffectedFamily: Family = allOf(AffectedByWind::class, Position::class)
         .exclude(TakeoffRoll::class, LandingRoll::class).get()
-    private val tasToIasFamily: Family = allOf(Speed::class, IndicatedAirSpeed::class, Altitude::class)
-        .exclude(TakeoffRoll::class).get()
-    private val affectedByWindFamily: Family = allOf(Position::class, AffectedByWind::class).get()
 
-    /** Main update function, for values that need to be updated frequently
+    /**
+     * Main update function, for values that need to be updated frequently
      *
-     * For values that can be updated less frequently and are not dependent on [deltaTime], put in [lowFreqUpdate]
+     * For values that can be updated less frequently and are not dependent on [deltaTime], put in [PhysicsSystemIntervalClient]
      * */
     override fun update(deltaTime: Float) {
         // Update position with speed, direction
@@ -54,37 +50,6 @@ class PhysicsSystemClient(override val updateTimeS: Float): EntitySystem(), LowF
                 val wind = get(AffectedByWind.mapper) ?: return@apply
                 pos.x += wind.windVectorPxps.x * deltaTime
                 pos.y += wind.windVectorPxps.y * deltaTime
-            }
-        }
-
-        checkLowFreqUpdate(deltaTime)
-    }
-
-    /**
-     * Secondary update system, for operations that can be updated at a lower frequency and do not rely on deltaTime
-     * (e.g. can be derived from other values without needing a time variable)
-     *
-     * Values that require constant updating or relies on deltaTime should be put in the main [update] function
-     * */
-    override fun lowFreqUpdate() {
-        // Calculate the IAS of the aircraft
-        val tasToIas = engine.getEntitiesFor(tasToIasFamily)
-        for (i in 0 until tasToIas.size()) {
-            tasToIas[i]?.apply {
-                val spd = get(Speed.mapper) ?: return@apply
-                val ias = get(IndicatedAirSpeed.mapper) ?: return@apply
-                val alt = get(Altitude.mapper) ?: return@apply
-                ias.iasKt = calculateIASFromTAS(alt.altitudeFt, spd.speedKts)
-            }
-        }
-
-        // Update the wind vector (to that of the METAR of the nearest airport)
-        val affectedByWind = engine.getEntitiesFor(affectedByWindFamily)
-        for (i in 0 until affectedByWind.size()) {
-            affectedByWind[i]?.apply {
-                val pos = get(Position.mapper) ?: return@apply
-                val wind = get(AffectedByWind.mapper) ?: return@apply
-                wind.windVectorPxps = getClosestAirportWindVector(pos.x, pos.y)
             }
         }
     }

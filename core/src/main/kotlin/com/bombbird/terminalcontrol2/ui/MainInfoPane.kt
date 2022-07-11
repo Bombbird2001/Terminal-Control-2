@@ -1,6 +1,7 @@
 package com.bombbird.terminalcontrol2.ui
 
 import com.badlogic.ashley.core.Entity
+import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.scenes.scene2d.Actor
 import com.badlogic.gdx.scenes.scene2d.ui.ImageButton.ImageButtonStyle
 import com.badlogic.gdx.scenes.scene2d.ui.Label
@@ -35,6 +36,7 @@ class MainInfoPane {
     private lateinit var buttonTable: KTableWidget
     private lateinit var commsButton: KTextButton
     private lateinit var statusButton: KTextButton
+    private lateinit var sectorButton: KTextButton
 
     private val airportAtisButtonMap = GdxArrayMap<Byte, Pair<KTextButton, KTextButton>>(AIRPORT_SIZE)
     private val airportAtisMap = GdxArrayMap<Byte, Pair<String, String>>(AIRPORT_SIZE)
@@ -47,6 +49,7 @@ class MainInfoPane {
     private var selectedArptId: Byte? = null
 
     val commsPaneObj = CommsPane()
+    val sectorPaneObj = SectorPane()
 
     /**
      * @param paneWidth will be used as the reference width of the UI pane when initialising the container
@@ -91,6 +94,7 @@ class MainInfoPane {
                                 paneContainer.actor = commsPaneObj.commsTable
                                 selectedArptId = null
                                 statusButton.isChecked = false
+                                sectorButton.isChecked = false
                             }
                             buttonsBeingModified = false
                         }
@@ -104,6 +108,24 @@ class MainInfoPane {
                                 paneContainer.actor = statusOuterTable
                                 selectedArptId = null
                                 commsButton.isChecked = false
+                                sectorButton.isChecked = false
+                            }
+                            buttonsBeingModified = false
+                        }
+                    }
+                    sectorButton = textButton("Sectors", "MenuPaneCategory").cell(preferredWidth = 0.15f * paneWidth, growY = true).apply {
+                        addChangeListener { _, _ ->
+                            if (buttonsBeingModified) return@addChangeListener
+                            buttonsBeingModified = true
+                            if (!isChecked) isChecked = true
+                            else {
+                                paneContainer.actor = sectorPaneObj.sectorTable
+                                selectedArptId = null
+                                commsButton.isChecked = false
+                                statusButton.isChecked = false
+                                Gdx.app.postRunnable {
+                                    GAME.gameClientScreen?.let { sectorPaneObj.updateSectorDisplay(it.sectors, it.playerSector) }
+                                }
                             }
                             buttonsBeingModified = false
                         }
@@ -124,6 +146,8 @@ class MainInfoPane {
                             removeMouseScrollListeners()
                         }.cell(preferredWidth = paneWidth, preferredHeight = 0.5f * UI_HEIGHT, grow = true)
                     }
+                    actor = null
+                    sectorPaneObj.sectorPane(this, paneWidth)
                 }.cell(align = Align.top, grow = true, colspan = 2)
             }
             isVisible = true

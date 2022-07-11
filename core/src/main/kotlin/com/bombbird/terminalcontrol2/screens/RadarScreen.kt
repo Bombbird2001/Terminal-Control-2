@@ -20,11 +20,8 @@ import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.graphics.ScreenSize
 import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.networking.*
-import com.bombbird.terminalcontrol2.systems.ControlStateSystemIntervalClient
+import com.bombbird.terminalcontrol2.systems.*
 import com.bombbird.terminalcontrol2.ui.UIPane
-import com.bombbird.terminalcontrol2.systems.DataSystem
-import com.bombbird.terminalcontrol2.systems.PhysicsSystemClient
-import com.bombbird.terminalcontrol2.systems.RenderingSystem
 import com.bombbird.terminalcontrol2.utilities.nmToPx
 import com.bombbird.terminalcontrol2.ui.safeStage
 import com.bombbird.terminalcontrol2.ui.updateDatatagLineSpacing
@@ -93,6 +90,7 @@ class RadarScreen(private val connectionHost: String, airportToHost: String?): K
     // The current active configuration of polygons
     val sectors = GdxArray<Sector>()
     var playerSector: Byte = 0
+    var swapSectorRequest: Byte? = null
 
     // Aircraft map for access during UDP updates
     val aircraft = GdxArrayMap<String, Aircraft>(AIRCRAFT_SIZE)
@@ -134,7 +132,8 @@ class RadarScreen(private val connectionHost: String, airportToHost: String?): K
         constZoomStage.camera.moveTo(Vector2())
 
         clientEngine.addSystem(RenderingSystem(shapeRenderer, radarDisplayStage, constZoomStage, uiStage, uiPane))
-        clientEngine.addSystem(PhysicsSystemClient(1f))
+        clientEngine.addSystem(PhysicsSystemClient())
+        clientEngine.addSystem(PhysicsSystemIntervalClient())
         clientEngine.addSystem(DataSystem())
         clientEngine.addSystem(ControlStateSystemIntervalClient())
     }

@@ -258,6 +258,7 @@ fun handleIncomingRequest(rs: RadarScreen, obj: Any?) {
             rs.playerSector = obj.assignedSectorId
             sectors.onEach { sector -> rs.sectors.add(Sector.fromSerialisedObject(sector)) }
             rs.primarySector.vertices = primarySector
+            rs.uiPane.sectorPane.updateSectorDisplay(rs.sectors, rs.playerSector)
         } ?: (obj as? InitialAircraftData)?.aircraft?.onEach {
             Aircraft.fromSerialisedObject(it).apply {
                 entity[AircraftInfo.mapper]?.icaoCallsign?.let { callsign ->
@@ -304,6 +305,8 @@ fun handleIncomingRequest(rs: RadarScreen, obj: Any?) {
             }
             GAME.gameClientScreen?.uiPane?.mainInfoObj?.updateAtisInformation()
         } ?: (obj as? AircraftSectorUpdateData)?.apply {
+            // If the client has not received the initial load data, ignore this sector update
+            if (rs.sectors.isEmpty) return@apply
             rs.aircraft[obj.callsign]?.let { aircraft ->
                 val controllable = aircraft.entity[Controllable.mapper] ?: return@apply
                 controllable.sectorId = obj.newSector

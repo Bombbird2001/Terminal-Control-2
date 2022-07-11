@@ -11,10 +11,7 @@ import com.bombbird.terminalcontrol2.files.loadWorldData
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.navigation.Route
-import com.bombbird.terminalcontrol2.systems.AISystem
-import com.bombbird.terminalcontrol2.systems.ControlStateSystem
-import com.bombbird.terminalcontrol2.systems.PhysicsSystem
-import com.bombbird.terminalcontrol2.systems.TrafficSystem
+import com.bombbird.terminalcontrol2.systems.*
 import com.bombbird.terminalcontrol2.traffic.TrafficMode
 import com.bombbird.terminalcontrol2.traffic.appTestArrival
 import com.bombbird.terminalcontrol2.utilities.*
@@ -148,10 +145,12 @@ class GameServer {
         loadDisallowedCallsigns()
         loadWorldData(mainName, this)
 
-        engine.addSystem(PhysicsSystem(1f))
+        engine.addSystem(PhysicsSystem())
+        engine.addSystem(PhysicsSystemInterval())
         engine.addSystem(AISystem())
-        engine.addSystem(ControlStateSystem(1f))
-        engine.addSystem(TrafficSystem(1f))
+        engine.addSystem(ControlStateSystem())
+        engine.addSystem(ControlStateSystemInterval())
+        engine.addSystem(TrafficSystemInterval())
 
         if (initialisingWeather.get()) lock.withLock {
             requestAllMetar()
@@ -219,7 +218,6 @@ class GameServer {
                     postRunnableAfterEngineUpdate {
                         // Get data only after engine has completed this update to prevent threading issues
                         connectionUUIDMap.put(connection, uuidObj)
-                        println("Start of initial data send")
                         connection.sendTCP(ClearAllClientData())
                         connection.sendTCP(InitialAirspaceData(MAG_HDG_DEV, MIN_ALT, MAX_ALT, MIN_SEP, TRANS_ALT, TRANS_LVL))
                         assignSectorsToPlayers(server.connections, sectorMap, connectionUUIDMap, sectorUUIDMap, currPlayerNo, sectors)
@@ -244,7 +242,6 @@ class GameServer {
 
                         // Send score data
                         connection.sendTCP(ScoreData(score, highScore))
-                        println("End of initial data send")
                     }
                 } ?: (obj as? HandoverRequest)?.apply {
                     val aircraft = aircraft[obj.callsign]?.entity ?: return@apply

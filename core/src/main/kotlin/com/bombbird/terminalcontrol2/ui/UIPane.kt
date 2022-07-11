@@ -37,6 +37,8 @@ class UIPane(private val uiStage: Stage) {
     private val mainInfoPane: KContainer<Actor>
     val commsPane: CommsPane
         get() = mainInfoObj.commsPaneObj
+    val sectorPane: SectorPane
+        get() = mainInfoObj.sectorPaneObj
 
     // Control pane (when aircraft is selected)
     private val controlObj = ControlPane()

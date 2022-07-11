@@ -6,6 +6,8 @@ import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.scenes.scene2d.Actor
 import com.badlogic.gdx.scenes.scene2d.ui.Label
 import com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle
+import com.badlogic.gdx.utils.Timer
+import com.badlogic.gdx.utils.Timer.Task
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.CONVO_SIZE
 import com.bombbird.terminalcontrol2.global.GAME
@@ -101,7 +103,15 @@ class CommsPane {
         val arrivalAirport = aircraft[ArrivalAirport.mapper]
 
         // Get the callsign of the player
-        val thisSectorInfo = GAME.gameClientScreen?.let { it.sectors[it.playerSector.toInt()] }?.entity?.get(SectorInfo.mapper) ?: return
+        val thisSectorInfo = GAME.gameClientScreen?.let {
+            // If the player has not received the initial sector data, schedule the contact for 0.5s later
+            if (it.sectors.isEmpty) Timer.schedule(object: Task() {
+                override fun run() {
+                    initialContact(aircraft)
+                }
+            }, 0.5f)
+            it.sectors[it.playerSector.toInt()]
+        }?.entity?.get(SectorInfo.mapper) ?: return
         val yourCallsign = when (flightType.type) {
             FlightType.ARRIVAL, FlightType.EN_ROUTE -> thisSectorInfo.arrivalCallsign
             FlightType.DEPARTURE -> thisSectorInfo.departureCallsign

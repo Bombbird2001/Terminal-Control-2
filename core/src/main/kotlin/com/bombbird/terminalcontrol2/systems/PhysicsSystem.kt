@@ -20,9 +20,7 @@ import kotlin.math.tan
  *
  * Used only in GameServer
  * */
-class PhysicsSystem(override val updateTimeS: Float): EntitySystem(), LowFreqUpdate {
-    override var timer = 0f
-
+class PhysicsSystem: EntitySystem() {
     private val positionUpdateFamily: Family = allOf(Position::class, Altitude::class, Speed::class, Direction::class)
         .exclude(WaitingTakeoff::class).get()
     private val windAffectedFamily: Family = allOf(AffectedByWind::class, Position::class)
@@ -36,15 +34,11 @@ class PhysicsSystem(override val updateTimeS: Float): EntitySystem(), LowFreqUpd
         .exclude(TakeoffRoll::class, LandingRoll::class, WaitingTakeoff::class).get()
     private val glideSlopeCapturedFamily: Family = allOf(Altitude::class, Speed::class, GlideSlopeCaptured::class).get()
     private val gsFamily: Family = allOf(Position::class, Altitude::class, GroundTrack::class, Speed::class, Direction::class, Acceleration::class).get()
-    private val tasToIasFamily: Family = allOf(Speed::class, IndicatedAirSpeed::class, Altitude::class)
-        .exclude(TakeoffRoll::class).get()
-    private val accLimitFamily: Family = allOf(Speed::class, Altitude::class, Acceleration::class, AircraftInfo::class).get()
-    private val affectedByWindFamily: Family = allOf(Position::class, AffectedByWind::class).get()
 
     /**
      * Main update function, for values that need to be updated frequently
      *
-     * For values that can be updated less frequently and are not dependent on [deltaTime], put in [lowFreqUpdate]
+     * For values that can be updated less frequently and are not dependent on [deltaTime], put in [PhysicsSystemInterval]
      * */
     override fun update(deltaTime: Float) {
         // Update position with speed, direction
@@ -194,67 +188,6 @@ class PhysicsSystem(override val updateTimeS: Float): EntitySystem(), LowFreqUpd
                     if (affectedByWind != null) tasVector.plusAssign(affectedByWind.windVectorPxps)
                     tasVector
                 }
-            }
-        }
-
-        checkLowFreqUpdate(deltaTime)
-    }
-
-    /**
-     * Secondary update system, for operations that can be updated at a lower frequency and do not rely on deltaTime
-     * (e.g. can be derived from other values without needing a time variable)
-     *
-     * Values that require constant updating or relies on deltaTime should be put in the main [update] function
-     * */
-    override fun lowFreqUpdate() {
-        // Calculate the IAS of the aircraft
-        val tasToIas = engine.getEntitiesFor(tasToIasFamily)
-        for (i in 0 until tasToIas.size()) {
-            tasToIas[i]?.apply {
-                val spd = get(Speed.mapper) ?: return@apply
-                val ias = get(IndicatedAirSpeed.mapper) ?: return@apply
-                val alt = get(Altitude.mapper) ?: return@apply
-                ias.iasKt = calculateIASFromTAS(alt.altitudeFt, spd.speedKts)
-            }
-        }
-
-        // Calculate the min, max acceleration of the aircraft
-        val accLimit = engine.getEntitiesFor(accLimitFamily)
-        for (i in 0 until accLimit.size()) {
-            accLimit[i]?.apply {
-                val spd = get(Speed.mapper) ?: return@apply
-                val alt = get(Altitude.mapper) ?: return@apply
-                val acc = get(Acceleration.mapper) ?: return@apply
-                val aircraftInfo = get(AircraftInfo.mapper) ?: return@apply
-                val takingOff = has(TakeoffRoll.mapper) || has(LandingRoll.mapper) || has(WaitingTakeoff.mapper)
-                val takeoffClimb = has(TakeoffClimb.mapper)
-                val approach = has(LocalizerCaptured.mapper) || has(GlideSlopeCaptured.mapper) || has(VisualCaptured.mapper) || (get(CirclingApproach.mapper)?.phase ?: 0) >= 1
-
-                val fixedVs = if (has(GlideSlopeCaptured.mapper)) {
-                    spd.vertSpdFpm
-                } else {
-                    val cmd = get(CommandTarget.mapper)
-                    if (cmd == null) 0f
-                    // Minimum vertical speed of 500fpm if more than 100ft away from target altitude
-                    else if (cmd.targetAltFt > alt.altitudeFt + 100) 500f
-                    else if (cmd.targetAltFt < alt.altitudeFt - 100) -500f
-                    else 0f
-                }
-                // TODO distinguish between aircraft expediting and those not
-                aircraftInfo.maxAcc = calculateMaxAcceleration(aircraftInfo.aircraftPerf, alt.altitudeFt, spd.speedKts, fixedVs, approach, takingOff, takeoffClimb)
-                aircraftInfo.minAcc = calculateMinAcceleration(aircraftInfo.aircraftPerf, alt.altitudeFt, spd.speedKts, fixedVs, approach, takingOff, takeoffClimb)
-                aircraftInfo.maxVs = calculateMaxVerticalSpd(aircraftInfo.aircraftPerf, alt.altitudeFt, spd.speedKts, acc.dSpeedMps2, approach, takingOff, takeoffClimb)
-                aircraftInfo.minVs = calculateMinVerticalSpd(aircraftInfo.aircraftPerf, alt.altitudeFt, spd.speedKts, acc.dSpeedMps2, approach, takingOff, takeoffClimb)
-            }
-        }
-
-        // Update the wind vector (to that of the METAR of the nearest airport)
-        val affectedByWind = engine.getEntitiesFor(affectedByWindFamily)
-        for (i in 0 until affectedByWind.size()) {
-            affectedByWind[i]?.apply {
-                val pos = get(Position.mapper) ?: return@apply
-                val wind = get(AffectedByWind.mapper) ?: return@apply
-                wind.windVectorPxps = getClosestAirportWindVector(pos.x, pos.y)
             }
         }
     }
