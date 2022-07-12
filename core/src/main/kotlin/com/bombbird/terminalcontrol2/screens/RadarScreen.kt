@@ -91,6 +91,7 @@ class RadarScreen(private val connectionHost: String, airportToHost: String?): K
     val sectors = GdxArray<Sector>()
     var playerSector: Byte = 0
     var swapSectorRequest: Byte? = null
+    var incomingSwapRequest: Byte? = null
 
     // Aircraft map for access during UDP updates
     val aircraft = GdxArrayMap<String, Aircraft>(AIRCRAFT_SIZE)
@@ -490,5 +491,18 @@ class RadarScreen(private val connectionHost: String, airportToHost: String?): K
      */
     fun sendAircraftHandOverRequest(callsign: String, newSector: Byte) {
         client.sendTCP(HandoverRequest(callsign, newSector, playerSector))
+    }
+
+    /**
+     * Sends a sector swap request to the server
+     * @param requestedSector the ID of the sector the user wishes to swap with
+     */
+    fun sendSectorSwapRequest(requestedSector: Byte) {
+        client.sendTCP(SectorSwapRequest(requestedSector, playerSector))
+    }
+
+    /** Sends a request to cancel the current pending sector swap request to the server */
+    fun cancelSectorSwapRequest() {
+        client.sendTCP(SectorSwapRequest(null, playerSector))
     }
 }

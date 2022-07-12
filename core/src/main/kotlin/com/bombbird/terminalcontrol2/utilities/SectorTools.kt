@@ -7,6 +7,7 @@ import com.bombbird.terminalcontrol2.global.PLAYER_SIZE
 import com.esotericsoftware.kryonet.Connection
 import ktx.collections.GdxArray
 import ktx.collections.GdxArrayMap
+import ktx.collections.set
 import java.util.UUID
 
 /**
@@ -38,8 +39,34 @@ fun assignSectorsToPlayers(connections: Collection<Connection>, currentIdMap: Gd
             } else currId
         } ?: emptySectors.pop() // If the connection has not been mapped to an ID, give them a new ID from the empty sectors
         // Update the sector to connection and UUID map
-        currentIdMap.put(it, newId)
-        sectorUUIDMap.put(newId, connectionUUIDMap[it])
+        currentIdMap[it] = newId
+        sectorUUIDMap[newId] = connectionUUIDMap[it]
         GAME.gameServer?.sendIndividualSectorUpdateTCP(it, newId, newSectorArray)
+    }
+}
+
+/**
+ * Performs a sector swap between the 2 connections
+ * @param connection1 the first connection
+ * @param currentSector1 the existing assigned sector of the first connection
+ * @param connection2 the second connection
+ * @param currentSector2 the existing assigned sector of the second connection
+ */
+fun swapPlayerSectors(connection1: Connection, currentSector1: Byte, connection2: Connection, currentSector2: Byte,
+                      currentIdMap: GdxArrayMap<Connection, Byte>, sectorUUIDMap: GdxArrayMap<Byte, UUID>) {
+    // Ensure both connections' existing sector matches with the map
+    if (currentIdMap[connection1] != currentSector1) return
+    if (currentIdMap[connection2] != currentSector2) return
+    // Swap the connection to sector mappings
+    currentIdMap[connection1] = currentSector2
+    currentIdMap[connection2] = currentSector1
+    // Swap the sector to UUID mappings
+    val tmp = sectorUUIDMap[currentSector1]
+    sectorUUIDMap[currentSector1] = sectorUUIDMap[currentSector2]
+    sectorUUIDMap[currentSector2] = tmp
+    GAME.gameServer?.apply {
+        val sectorArray = sectors[playerNo.get().toByte()].toArray().map { it.getSerialisableObject() }.toTypedArray()
+        sendIndividualSectorUpdateTCP(connection1, currentSector2, sectorArray)
+        sendIndividualSectorUpdateTCP(connection2, currentSector1, sectorArray)
     }
 }

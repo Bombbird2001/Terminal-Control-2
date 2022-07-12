@@ -61,19 +61,20 @@ class SectorPane {
     }
 
     /**
-     * Updates the sector pane buttons with the sectors in the game, as well as this player's sector ID
+     * Updates the sector pane buttons with the sectors in the game, this player's sector ID, outgoing sector request and
+     * any incoming sector requests
      * @param sectors all sectors in the game currently
-     * @param mySector the sector ID of the player
      */
-    fun updateSectorDisplay(sectors: GdxArray<Sector>, mySector: Byte) {
+    fun updateSectorDisplay(sectors: GdxArray<Sector>) {
         sectorButtonArray.clear()
         sectorButtonTable.apply {
             clear()
             for (i in 0 until sectors.size) {
                 val sectorButton = textButton("Sector ${i + 1}", "MenuPaneSector").apply {
-                    isChecked = mySector == i.byte
+                    isChecked = GAME.gameClientScreen?.playerSector == i.byte
                     addChangeListener { _, _ ->
                         if (buttonsBeingModified) return@addChangeListener
+                        val rs = GAME.gameClientScreen ?: return@addChangeListener
                         buttonsBeingModified = true
                         for (j in 0 until sectorButtonArray.size) {
                             sectorButtonArray[j].isChecked = false
@@ -81,10 +82,15 @@ class SectorPane {
                         }
                         isChecked = true
                         selectedId = i.byte
-                        val isThisSector = i.byte == mySector
-                        if (!isThisSector) swapButton.setText("Request\nsector\nswap")
+                        val isThisSector = i.byte == rs.playerSector
+                        swapButton.setText(when {
+                            !isThisSector && GAME.gameClientScreen?.incomingSwapRequest == i.byte -> "Accept\nswap\nrequest"
+                            !isThisSector && GAME.gameClientScreen?.swapSectorRequest == i.byte -> "Cancel\nsent\nRequest"
+                            !isThisSector -> "Request\nsector\nswap"
+                            else -> ""
+                        })
                         swapButton.isVisible = !isThisSector
-                        swapButton.style = Scene2DSkin.defaultSkin[if (isThisSector) "MenuPaneSector" else "MenuPaneSectorChanged", TextButtonStyle::class.java]
+                        swapButton.style = Scene2DSkin.defaultSkin[if (isThisSector) "MenuPaneSectorChange" else "MenuPaneSectorChanged", TextButtonStyle::class.java]
                         style = Scene2DSkin.defaultSkin[if (isThisSector) "MenuPaneSector" else "MenuPaneSectorChanged", TextButtonStyle::class.java]
                         buttonsBeingModified = false
                     }
@@ -93,8 +99,8 @@ class SectorPane {
                 if (i % 2 == 1) row()
             }
         }
-        val sectorChosen = selectedId != (-1).byte && selectedId != mySector
-        swapButton.isVisible = sectorChosen
-        swapButton.style = Scene2DSkin.defaultSkin[if (!sectorChosen) "MenuPaneSector" else "MenuPaneSectorChanged", TextButtonStyle::class.java]
+        selectedId = -1
+        swapButton.isVisible = false
+        swapButton.style = Scene2DSkin.defaultSkin["MenuPaneSectorChange", TextButtonStyle::class.java]
     }
 }

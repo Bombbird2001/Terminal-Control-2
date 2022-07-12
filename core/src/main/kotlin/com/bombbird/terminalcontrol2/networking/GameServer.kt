@@ -18,8 +18,6 @@ import com.bombbird.terminalcontrol2.utilities.*
 import com.esotericsoftware.kryonet.Connection
 import com.esotericsoftware.kryonet.Listener
 import com.esotericsoftware.kryonet.Server
-import ktx.ashley.get
-import ktx.ashley.hasNot
 import ktx.collections.GdxArray
 import ktx.collections.GdxArrayMap
 import java.util.UUID
@@ -65,7 +63,7 @@ class GameServer {
     val initialisingWeather = AtomicBoolean(true)
     private val initialWeatherCondition = lock.newCondition()
     var playerNo = AtomicInteger(0)
-    private val server = Server()
+    val server = Server()
     val engine = Engine()
 
     // Blocking queue to store runnables to be run in the main thread after engine update
@@ -116,6 +114,9 @@ class GameServer {
 
     /** Maps [SectorInfo.sectorId] to [UUID] */
     val sectorUUIDMap = GdxArrayMap<Byte, UUID>(PLAYER_SIZE)
+
+    /** Keeps track of all sector swap requests sent */
+    val sectorSwapRequests = GdxArray<Pair<Byte, Byte>>(SECTOR_COUNT_SIZE * (SECTOR_COUNT_SIZE + 1) / 2)
 
     var arrivalSpawnTimerS = 0f
     var previousArrivalOffsetS = 0f
@@ -195,79 +196,7 @@ class GameServer {
              * @param obj the serialised network object
              */
             override fun received(connection: Connection, obj: Any?) {
-                (obj as? AircraftControlStateUpdateData)?.apply {
-                    postRunnableAfterEngineUpdate {
-                        aircraft[obj.callsign]?.entity?.let {
-                            // Validate the sender
-                            if (it[Controllable.mapper]?.sectorId != obj.sendingSector) return@postRunnableAfterEngineUpdate
-                            addNewClearanceToPendingClearances(it, obj, connection.returnTripTime)
-                        }
-                    }
-                } ?: (obj as? GameRunningStatus)?.apply {
-                    if (obj.running) {
-                        if (gamePaused.get()) lock.withLock { pauseCondition.signal() }
-                        gamePaused.set(false)
-                    }
-                    else if (playerNo.get() <= 1) gamePaused.set(true)
-                } ?: (obj as? ClientUUIDData)?.apply {
-                    // If the UUID is null or the map already contains the UUID, do not send the data
-                    if (uuid == null) return
-                    val uuidObj = UUID.fromString(uuid)
-                    if (connectionUUIDMap.containsValue(uuidObj, false)) return
-                    val currPlayerNo = playerNo.incrementAndGet().toByte()
-                    postRunnableAfterEngineUpdate {
-                        // Get data only after engine has completed this update to prevent threading issues
-                        connectionUUIDMap.put(connection, uuidObj)
-                        connection.sendTCP(ClearAllClientData())
-                        connection.sendTCP(InitialAirspaceData(MAG_HDG_DEV, MIN_ALT, MAX_ALT, MIN_SEP, TRANS_ALT, TRANS_LVL))
-                        assignSectorsToPlayers(server.connections, sectorMap, connectionUUIDMap, sectorUUIDMap, currPlayerNo, sectors)
-                        connection.sendTCP(InitialAircraftData(aircraft.values().toArray().map { it.getSerialisableObject() }.toTypedArray()))
-                        connection.sendTCP(AirportData(airports.values().toArray().map { it.getSerialisableObject() }.toTypedArray()))
-                        val wptArray = waypoints.values.toTypedArray()
-                        connection.sendTCP(WaypointData(wptArray.map { it.getSerialisableObject() }.toTypedArray()))
-                        connection.sendTCP(WaypointMappingData(wptArray.map { it.getMappingSerialisableObject() }.toTypedArray()))
-                        connection.sendTCP(PublishedHoldData(publishedHolds.values().toArray().map { it.getSerialisableObject() }.toTypedArray()))
-                        connection.sendTCP(MinAltData(minAltSectors.toArray().map { it.getSerialisableObject() }.toTypedArray()))
-                        connection.sendTCP(ShorelineData(shoreline.toArray().map { it.getSerialisableObject() }.toTypedArray()))
-
-                        // Send current METAR
-                        connection.sendTCP(MetarData(airports.values().map { it.getSerialisedMetar() }.toTypedArray()))
-
-                        // Send runway configs
-                        airports.values().toArray().forEach {
-                            val arptId = it.entity[AirportInfo.mapper]?.arptId ?: return@forEach
-                            connection.sendTCP(ActiveRunwayUpdateData(arptId, it.entity[ActiveRunwayConfig.mapper]?.configId ?: return@forEach))
-                            connection.sendTCP(PendingRunwayUpdateData(arptId, it.entity[PendingRunwayConfig.mapper]?.pendingId))
-                        }
-
-                        // Send score data
-                        connection.sendTCP(ScoreData(score, highScore))
-                    }
-                } ?: (obj as? HandoverRequest)?.apply {
-                    val aircraft = aircraft[obj.callsign]?.entity ?: return@apply
-                    // Validate the sender
-                    val controllable = aircraft[Controllable.mapper] ?: return@apply
-                    if (controllable.sectorId != obj.sendingSector) return@apply
-                    // Validate new sector
-                    if (obj.newSector == SectorInfo.TOWER) {
-                        // Validate approach status
-                        if (aircraft.hasNot(LocalizerCaptured.mapper) && aircraft.hasNot(GlideSlopeCaptured.mapper) && aircraft.hasNot(VisualCaptured.mapper))
-                            return@apply
-                    } else if (obj.newSector == SectorInfo.CENTRE) {
-                        // Validate aircraft altitude
-                        val alt = aircraft[Altitude.mapper]?.altitudeFt ?: return@apply
-                        if (alt < MAX_ALT - 1500) return@apply
-                    } else {
-                        // Validate the extrapolated position
-                        val pos = aircraft[Position.mapper] ?: return@apply
-                        val track = aircraft[GroundTrack.mapper] ?: return@apply
-                        if (getSectorForExtrapolatedPosition(pos.x, pos.y, track.trackVectorPxps, TRACK_EXTRAPOLATE_TIME_S, true) != obj.newSector) return@apply
-                    }
-                    // Request validated - update controllable ID and send update to clients
-                    controllable.sectorId = obj.newSector
-                    val uuid = sectorUUIDMap[obj.newSector]?.toString()
-                    sendAircraftSectorUpdateTCPToAll(obj.callsign, obj.newSector, uuid)
-                }
+                handleIncomingRequestServer(this@GameServer, connection, obj)
             }
 
             /**
@@ -290,6 +219,7 @@ class GameServer {
                     sectorMap.removeKey(connection)
                     connectionUUIDMap.removeKey(connection)
                     if (newPlayerNo > 0) assignSectorsToPlayers(server.connections, sectorMap, connectionUUIDMap, sectorUUIDMap, newPlayerNo, sectors)
+                    sectorSwapRequests.clear()
                 }
             }
         })
@@ -368,6 +298,18 @@ class GameServer {
 
         // Process pending runnables
         while (true) { pendingRunnablesQueue.poll()?.run() ?: break }
+    }
+
+    /**
+     * Handles received [GameRunningStatus] requests from clients
+     * @param running the running status sent in the request
+     */
+    fun handleGameRunningRequest(running: Boolean) {
+        if (running) {
+            if (gamePaused.get()) lock.withLock { pauseCondition.signal() }
+            gamePaused.set(false)
+        }
+        else if (playerNo.get() <= 1) gamePaused.set(true)
     }
 
     /**

@@ -38,7 +38,7 @@ class TerminalControl2 : KtxGame<KtxScreen>(clearScreen = false) {
                 if (obj != null && obj !is FastUDPData) println("Handling ${obj::class.simpleName}")
                 (obj as? RequestClientUUID)?.apply {
                     connection.sendTCP(ClientUUIDData(uuid.toString()))
-                } ?: handleIncomingRequest(gameClientScreen ?: return, obj)
+                } ?: handleIncomingRequestClient(gameClientScreen ?: return, obj)
             }
         })
     }

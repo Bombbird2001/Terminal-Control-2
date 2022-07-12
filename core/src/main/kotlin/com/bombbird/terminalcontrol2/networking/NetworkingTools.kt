@@ -2,6 +2,7 @@ package com.bombbird.terminalcontrol2.networking
 
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.math.Vector2
+import com.badlogic.gdx.utils.ArrayMap.Entries
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.*
 import com.bombbird.terminalcontrol2.global.*
@@ -12,12 +13,10 @@ import com.bombbird.terminalcontrol2.navigation.SidStar
 import com.bombbird.terminalcontrol2.screens.RadarScreen
 import com.bombbird.terminalcontrol2.traffic.RunwayConfiguration
 import com.bombbird.terminalcontrol2.ui.*
-import com.bombbird.terminalcontrol2.utilities.getAircraftIcon
+import com.bombbird.terminalcontrol2.utilities.*
 import com.esotericsoftware.kryo.Kryo
-import ktx.ashley.allOf
-import ktx.ashley.get
-import ktx.ashley.plusAssign
-import ktx.ashley.remove
+import com.esotericsoftware.kryonet.Connection
+import ktx.ashley.*
 import java.util.*
 
 private val sectorFamily = allOf(SectorInfo::class).get()
@@ -204,6 +203,9 @@ data class AircraftControlStateUpdateData(val callsign: String = "", val primary
 /** Class representing client request to hand over an aircraft to the new sector */
 data class HandoverRequest(val callsign: String = "", val newSector: Byte = 0, val sendingSector: Byte = 0)
 
+/** Class representing client request to swap sectors */
+data class SectorSwapRequest(val requestedSector: Byte? = null, val sendingSector: Byte = -1)
+
 /** Class representing data sent during creation of a new custom waypoint */
 data class CustomWaypointData(val customWpt: Waypoint.SerialisedWaypoint = Waypoint.SerialisedWaypoint())
 
@@ -227,7 +229,7 @@ data class GameRunningStatus(val running: Boolean = true)
  * @param rs the [RadarScreen] to apply changes to
  * @param obj the incoming data object whose class should have been registered to [Kryo]
  * */
-fun handleIncomingRequest(rs: RadarScreen, obj: Any?) {
+fun handleIncomingRequestClient(rs: RadarScreen, obj: Any?) {
     rs.postRunnableAfterEngineUpdate {
         (obj as? String)?.apply {
             println(this)
@@ -258,7 +260,7 @@ fun handleIncomingRequest(rs: RadarScreen, obj: Any?) {
             rs.playerSector = obj.assignedSectorId
             sectors.onEach { sector -> rs.sectors.add(Sector.fromSerialisedObject(sector)) }
             rs.primarySector.vertices = primarySector
-            rs.uiPane.sectorPane.updateSectorDisplay(rs.sectors, rs.playerSector)
+            rs.uiPane.sectorPane.updateSectorDisplay(rs.sectors)
         } ?: (obj as? InitialAircraftData)?.aircraft?.onEach {
             Aircraft.fromSerialisedObject(it).apply {
                 entity[AircraftInfo.mapper]?.icaoCallsign?.let { callsign ->
@@ -342,6 +344,8 @@ fun handleIncomingRequest(rs: RadarScreen, obj: Any?) {
                 aircraft.entity[Datatag.mapper]?.let { updateDatatagText(it, getNewDatatagLabelText(aircraft.entity, it.minimised)) }
                 if (rs.selectedAircraft == aircraft) rs.uiPane.updateSelectedAircraft(aircraft)
             }
+        } ?: (obj as? SectorSwapRequest)?.apply {
+            rs.incomingSwapRequest = obj.requestedSector
         } ?: (obj as? CustomWaypointData)?.apply {
             if (rs.waypoints.containsKey(customWpt.id)) {
                 Gdx.app.log("NetworkingTools", "Existing waypoint with ID ${customWpt.id} found, ignoring this custom waypoint")
@@ -363,5 +367,130 @@ fun handleIncomingRequest(rs: RadarScreen, obj: Any?) {
         } ?: (obj as? ScoreData)?.apply {
             GAME.gameClientScreen?.uiPane?.mainInfoObj?.updateScoreDisplay(obj.score, obj.highScore)
         }
+    }
+}
+
+/**
+ * Handles an incoming request from the client to server, and performs the appropriate actions
+ * @param gs the [GameServer] to apply changes to
+ * @param obj the incoming data object whose class should have been registered to [Kryo]
+ * */
+fun handleIncomingRequestServer(gs: GameServer, connection: Connection, obj: Any?) {
+    (obj as? AircraftControlStateUpdateData)?.apply {
+        gs.postRunnableAfterEngineUpdate {
+            gs.aircraft[obj.callsign]?.entity?.let {
+                // Validate the sender
+                if (it[Controllable.mapper]?.sectorId != obj.sendingSector) return@postRunnableAfterEngineUpdate
+                addNewClearanceToPendingClearances(it, obj, connection.returnTripTime)
+            }
+        }
+    } ?: (obj as? GameRunningStatus)?.apply {
+        gs.handleGameRunningRequest(obj.running)
+    } ?: (obj as? ClientUUIDData)?.apply {
+        // If the UUID is null or the map already contains the UUID, do not send the data
+        if (uuid == null) return
+        val uuidObj = UUID.fromString(uuid)
+        if (gs.connectionUUIDMap.containsValue(uuidObj, false)) return
+        val currPlayerNo = gs.playerNo.incrementAndGet().toByte()
+        gs.postRunnableAfterEngineUpdate {
+            // Get data only after engine has completed this update to prevent threading issues
+            gs.connectionUUIDMap.put(connection, uuidObj)
+            connection.sendTCP(ClearAllClientData())
+            connection.sendTCP(InitialAirspaceData(MAG_HDG_DEV, MIN_ALT, MAX_ALT, MIN_SEP, TRANS_ALT, TRANS_LVL))
+            assignSectorsToPlayers(gs.server.connections, gs.sectorMap, gs.connectionUUIDMap, gs.sectorUUIDMap, currPlayerNo, gs.sectors)
+            gs.sectorSwapRequests.clear()
+            connection.sendTCP(InitialAircraftData(gs.aircraft.values().toArray().map { it.getSerialisableObject() }.toTypedArray()))
+            connection.sendTCP(AirportData(gs.airports.values().toArray().map { it.getSerialisableObject() }.toTypedArray()))
+            val wptArray = gs.waypoints.values.toTypedArray()
+            connection.sendTCP(WaypointData(wptArray.map { it.getSerialisableObject() }.toTypedArray()))
+            connection.sendTCP(WaypointMappingData(wptArray.map { it.getMappingSerialisableObject() }.toTypedArray()))
+            connection.sendTCP(PublishedHoldData(gs.publishedHolds.values().toArray().map { it.getSerialisableObject() }.toTypedArray()))
+            connection.sendTCP(MinAltData(gs.minAltSectors.toArray().map { it.getSerialisableObject() }.toTypedArray()))
+            connection.sendTCP(ShorelineData(gs.shoreline.toArray().map { it.getSerialisableObject() }.toTypedArray()))
+
+            // Send current METAR
+            connection.sendTCP(MetarData(gs.airports.values().map { it.getSerialisedMetar() }.toTypedArray()))
+
+            // Send runway configs
+            gs.airports.values().toArray().forEach {
+                val arptId = it.entity[AirportInfo.mapper]?.arptId ?: return@forEach
+                connection.sendTCP(ActiveRunwayUpdateData(arptId, it.entity[ActiveRunwayConfig.mapper]?.configId ?: return@forEach))
+                connection.sendTCP(PendingRunwayUpdateData(arptId, it.entity[PendingRunwayConfig.mapper]?.pendingId))
+            }
+
+            // Send score data
+            connection.sendTCP(ScoreData(gs.score, gs.highScore))
+        }
+    } ?: (obj as? HandoverRequest)?.apply {
+        val aircraft = gs.aircraft[obj.callsign]?.entity ?: return@apply
+        // Validate the sender
+        val controllable = aircraft[Controllable.mapper] ?: return@apply
+        if (controllable.sectorId != obj.sendingSector) return@apply
+        // Validate new sector
+        if (obj.newSector == SectorInfo.TOWER) {
+            // Validate approach status
+            if (aircraft.hasNot(LocalizerCaptured.mapper) && aircraft.hasNot(GlideSlopeCaptured.mapper) && aircraft.hasNot(VisualCaptured.mapper))
+                return@apply
+        } else if (obj.newSector == SectorInfo.CENTRE) {
+            // Validate aircraft altitude
+            val alt = aircraft[Altitude.mapper]?.altitudeFt ?: return@apply
+            if (alt < MAX_ALT - 1500) return@apply
+        } else {
+            // Validate the extrapolated position
+            val pos = aircraft[Position.mapper] ?: return@apply
+            val track = aircraft[GroundTrack.mapper] ?: return@apply
+            if (getSectorForExtrapolatedPosition(pos.x, pos.y, track.trackVectorPxps, TRACK_EXTRAPOLATE_TIME_S, true) != obj.newSector) return@apply
+        }
+        // Request validated - update controllable ID and send update to clients
+        controllable.sectorId = obj.newSector
+        val uuid = gs.sectorUUIDMap[obj.newSector]?.toString()
+        gs.sendAircraftSectorUpdateTCPToAll(obj.callsign, obj.newSector, uuid)
+    } ?: (obj as? SectorSwapRequest)?.apply {
+        // Validate the sender
+        if (gs.sectorMap[connection] != obj.sendingSector) return@apply
+        // Validate requested sector
+        if (!gs.sectorMap.containsValue(obj.requestedSector, false)) return@apply
+        // Clear all existing requests from the sending sector
+        for (i in gs.sectorSwapRequests.size - 1 downTo 0) {
+            if (gs.sectorSwapRequests[i].second == obj.sendingSector && gs.sectorSwapRequests[i].first != obj.requestedSector) {
+                gs.sectorSwapRequests.removeIndex(i)
+                // TODO Send cancel request
+                // TODO Make function in sector tools to get connection from sector ID
+            }
+        }
+        // If requested sector is null, return
+        if (obj.requestedSector == null) return@apply
+        // Check swap array for existing matching request
+        for (i in 0 until gs.sectorSwapRequests.size) {
+            gs.sectorSwapRequests[i]?.let {
+                // Found, execute sector swap
+                if (it.first == obj.sendingSector && it.second == obj.requestedSector) {
+                    var requestingConnection: Connection? = null
+                    // Loop through map to find connection corresponding to the requesting sector
+                    for (entry in Entries(gs.sectorMap)) {
+                        if (entry.value == obj.requestedSector) {
+                            requestingConnection = entry.key
+                            break
+                        }
+                    }
+                    // If connection that originally requested swap is not present for some reason, return
+                    if (requestingConnection == null) return@apply
+                    swapPlayerSectors(requestingConnection, it.first, connection, it.second, gs.sectorMap, gs.sectorUUIDMap)
+                    gs.sectorSwapRequests.removeIndex(i)
+                    return@apply
+                }
+            }
+        }
+        // Not found - store new request in array
+        gs.sectorSwapRequests.add(Pair(obj.requestedSector, obj.sendingSector))
+        // Send the request notification to target sector
+        var targetConnection: Connection? = null
+        for (entry in Entries(gs.sectorMap)) {
+            if (entry.value == obj.requestedSector) {
+                targetConnection = entry.key
+                break
+            }
+        }
+        targetConnection?.sendTCP(SectorSwapRequest(obj.sendingSector))
     }
 }

@@ -124,7 +124,7 @@ class MainInfoPane {
                                 commsButton.isChecked = false
                                 statusButton.isChecked = false
                                 Gdx.app.postRunnable {
-                                    GAME.gameClientScreen?.let { sectorPaneObj.updateSectorDisplay(it.sectors, it.playerSector) }
+                                    GAME.gameClientScreen?.let { sectorPaneObj.updateSectorDisplay(it.sectors) }
                                 }
                             }
                             buttonsBeingModified = false
