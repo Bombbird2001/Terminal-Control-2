@@ -32,8 +32,7 @@ dependencies {
 
 	kapt "com.squareup.moshi:moshi-kotlin-codegen:$moshiKotlinVersion"
 
-	testImplementation "org.junit.jupiter:junit-jupiter-api:$JUnitVersion"
-	testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$JUnitVersion"
+	testImplementation "io.kotest:kotest-runner-junit5:$kotestVersion"
 }
 
 test {
