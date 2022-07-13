@@ -1,6 +1,7 @@
 package com.bombbird.terminalcontrol2.utilities
 
 import com.badlogic.gdx.Gdx
+import com.badlogic.gdx.utils.ArrayMap
 import com.bombbird.terminalcontrol2.entities.Sector
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.PLAYER_SIZE
@@ -53,13 +54,13 @@ fun assignSectorsToPlayers(connections: Collection<Connection>, currentIdMap: Gd
  * @param currentSector2 the existing assigned sector of the second connection
  */
 fun swapPlayerSectors(connection1: Connection, currentSector1: Byte, connection2: Connection, currentSector2: Byte,
-                      currentIdMap: GdxArrayMap<Connection, Byte>, sectorUUIDMap: GdxArrayMap<Byte, UUID>) {
+                      connectionSectorMap: GdxArrayMap<Connection, Byte>, sectorUUIDMap: GdxArrayMap<Byte, UUID>) {
     // Ensure both connections' existing sector matches with the map
-    if (currentIdMap[connection1] != currentSector1) return
-    if (currentIdMap[connection2] != currentSector2) return
+    if (connectionSectorMap[connection1] != currentSector1) return
+    if (connectionSectorMap[connection2] != currentSector2) return
     // Swap the connection to sector mappings
-    currentIdMap[connection1] = currentSector2
-    currentIdMap[connection2] = currentSector1
+    connectionSectorMap[connection1] = currentSector2
+    connectionSectorMap[connection2] = currentSector1
     // Swap the sector to UUID mappings
     val tmp = sectorUUIDMap[currentSector1]
     sectorUUIDMap[currentSector1] = sectorUUIDMap[currentSector2]
@@ -69,4 +70,23 @@ fun swapPlayerSectors(connection1: Connection, currentSector1: Byte, connection2
         sendIndividualSectorUpdateTCP(connection1, currentSector2, sectorArray)
         sendIndividualSectorUpdateTCP(connection2, currentSector1, sectorArray)
     }
+}
+
+/**
+ * Gets the connection that owns the sector ID
+ * @param sector the sector to search the connection for
+ * @param connectionSectorMap the connection to sector ID map
+ * @return the connection that owns the sector currently, or null if none found
+ */
+fun getConnectionFromSector(sector: Byte, connectionSectorMap: GdxArrayMap<Connection, Byte>): Connection? {
+    var connection: Connection? = null
+    // Loop through map to find connection corresponding to the requesting sector
+    for (entry in ArrayMap.Entries(connectionSectorMap)) {
+        if (entry.value == sector) {
+            connection = entry.key
+            break
+        }
+    }
+
+    return connection
 }

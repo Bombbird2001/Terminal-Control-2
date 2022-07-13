@@ -2,7 +2,6 @@ package com.bombbird.terminalcontrol2.networking
 
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.math.Vector2
-import com.badlogic.gdx.utils.ArrayMap.Entries
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.*
 import com.bombbird.terminalcontrol2.global.*
@@ -119,6 +118,7 @@ fun registerClassesToKryo(kryo: Kryo?) {
         register(AircraftDespawnData::class.java)
         register(AircraftControlStateUpdateData::class.java)
         register(HandoverRequest::class.java)
+        register(SectorSwapRequest::class.java)
         register(CustomWaypointData::class.java)
         register(RemoveCustomWaypointData::class.java)
         register(GameRunningStatus::class.java)
@@ -345,7 +345,8 @@ fun handleIncomingRequestClient(rs: RadarScreen, obj: Any?) {
                 if (rs.selectedAircraft == aircraft) rs.uiPane.updateSelectedAircraft(aircraft)
             }
         } ?: (obj as? SectorSwapRequest)?.apply {
-            rs.incomingSwapRequest = obj.requestedSector
+            rs.incomingSwapRequest = obj.sendingSector
+            rs.uiPane.sectorPane.updateSectorDisplay(rs.sectors)
         } ?: (obj as? CustomWaypointData)?.apply {
             if (rs.waypoints.containsKey(customWpt.id)) {
                 Gdx.app.log("NetworkingTools", "Existing waypoint with ID ${customWpt.id} found, ignoring this custom waypoint")
@@ -453,9 +454,8 @@ fun handleIncomingRequestServer(gs: GameServer, connection: Connection, obj: Any
         // Clear all existing requests from the sending sector
         for (i in gs.sectorSwapRequests.size - 1 downTo 0) {
             if (gs.sectorSwapRequests[i].second == obj.sendingSector && gs.sectorSwapRequests[i].first != obj.requestedSector) {
+                getConnectionFromSector(gs.sectorSwapRequests[i].first, gs.sectorMap)?.sendTCP(SectorSwapRequest(null))
                 gs.sectorSwapRequests.removeIndex(i)
-                // TODO Send cancel request
-                // TODO Make function in sector tools to get connection from sector ID
             }
         }
         // If requested sector is null, return
@@ -464,18 +464,10 @@ fun handleIncomingRequestServer(gs: GameServer, connection: Connection, obj: Any
         for (i in 0 until gs.sectorSwapRequests.size) {
             gs.sectorSwapRequests[i]?.let {
                 // Found, execute sector swap
-                if (it.first == obj.sendingSector && it.second == obj.requestedSector) {
-                    var requestingConnection: Connection? = null
-                    // Loop through map to find connection corresponding to the requesting sector
-                    for (entry in Entries(gs.sectorMap)) {
-                        if (entry.value == obj.requestedSector) {
-                            requestingConnection = entry.key
-                            break
-                        }
-                    }
+                if (it.second == obj.requestedSector && it.first == obj.sendingSector) {
+                    val requestingConnection = getConnectionFromSector(obj.requestedSector, gs.sectorMap) ?: return@apply
                     // If connection that originally requested swap is not present for some reason, return
-                    if (requestingConnection == null) return@apply
-                    swapPlayerSectors(requestingConnection, it.first, connection, it.second, gs.sectorMap, gs.sectorUUIDMap)
+                    swapPlayerSectors(requestingConnection, it.second, connection, it.first, gs.sectorMap, gs.sectorUUIDMap)
                     gs.sectorSwapRequests.removeIndex(i)
                     return@apply
                 }
@@ -484,13 +476,6 @@ fun handleIncomingRequestServer(gs: GameServer, connection: Connection, obj: Any
         // Not found - store new request in array
         gs.sectorSwapRequests.add(Pair(obj.requestedSector, obj.sendingSector))
         // Send the request notification to target sector
-        var targetConnection: Connection? = null
-        for (entry in Entries(gs.sectorMap)) {
-            if (entry.value == obj.requestedSector) {
-                targetConnection = entry.key
-                break
-            }
-        }
-        targetConnection?.sendTCP(SectorSwapRequest(obj.sendingSector))
+        getConnectionFromSector(obj.requestedSector, gs.sectorMap)?.sendTCP(SectorSwapRequest(obj.requestedSector, obj.sendingSector))
     }
 }

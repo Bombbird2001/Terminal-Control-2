@@ -36,19 +36,19 @@ class SectorPane {
                 table {
                     debugAll()
                     sectorButtonTable = table { }.cell(grow = true)
-                    swapButton = textButton("Request\nswap", "MenuPaneSectorChange").apply {
+                    swapButton = textButton("Request\nswap", "MenuPaneSectorConfirm").apply {
                         addChangeListener { _, _ ->
                             GAME.gameClientScreen?.let {
                                 if (it.swapSectorRequest != null) {
                                     // If an active request is pending
-                                    // TODO Cancel swap request
+                                    it.cancelSectorSwapRequest()
                                     return@addChangeListener
                                 }
                                 // If no selected request, return
                                 if (selectedId.toInt() == -1) return@addChangeListener
                                 // If the selected ID is the same as player sector, return
                                 if (it.playerSector == selectedId) return@addChangeListener
-                                // TODO Send swap request
+                                it.sendSectorSwapRequest(selectedId)
                             }
                         }
                     }.cell(padLeft = 10f, padRight = 10f, preferredWidth = 0.3f * paneWidth)
@@ -85,12 +85,12 @@ class SectorPane {
                         val isThisSector = i.byte == rs.playerSector
                         swapButton.setText(when {
                             !isThisSector && GAME.gameClientScreen?.incomingSwapRequest == i.byte -> "Accept\nswap\nrequest"
-                            !isThisSector && GAME.gameClientScreen?.swapSectorRequest == i.byte -> "Cancel\nsent\nRequest"
+                            !isThisSector && GAME.gameClientScreen?.swapSectorRequest == i.byte -> "Cancel\nsent\nrequest"
                             !isThisSector -> "Request\nsector\nswap"
                             else -> ""
                         })
                         swapButton.isVisible = !isThisSector
-                        swapButton.style = Scene2DSkin.defaultSkin[if (isThisSector) "MenuPaneSectorChange" else "MenuPaneSectorChanged", TextButtonStyle::class.java]
+                        swapButton.style = Scene2DSkin.defaultSkin[if (isThisSector) "MenuPaneSectorConfirm" else "MenuPaneSectorConfirmChanged", TextButtonStyle::class.java]
                         style = Scene2DSkin.defaultSkin[if (isThisSector) "MenuPaneSector" else "MenuPaneSectorChanged", TextButtonStyle::class.java]
                         buttonsBeingModified = false
                     }
@@ -101,6 +101,6 @@ class SectorPane {
         }
         selectedId = -1
         swapButton.isVisible = false
-        swapButton.style = Scene2DSkin.defaultSkin["MenuPaneSectorChange", TextButtonStyle::class.java]
+        swapButton.style = Scene2DSkin.defaultSkin["MenuPaneSectorConfirm", TextButtonStyle::class.java]
     }
 }

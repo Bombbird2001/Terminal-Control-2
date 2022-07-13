@@ -115,7 +115,13 @@ class GameServer {
     /** Maps [SectorInfo.sectorId] to [UUID] */
     val sectorUUIDMap = GdxArrayMap<Byte, UUID>(PLAYER_SIZE)
 
-    /** Keeps track of all sector swap requests sent */
+    /**
+     * Keeps track of all sector swap requests sent
+     *
+     * First value in the pair is the sector that is being requested
+     *
+     * Second value in the pair is the sector requesting the swap
+     * */
     val sectorSwapRequests = GdxArray<Pair<Byte, Byte>>(SECTOR_COUNT_SIZE * (SECTOR_COUNT_SIZE + 1) / 2)
 
     var arrivalSpawnTimerS = 0f
