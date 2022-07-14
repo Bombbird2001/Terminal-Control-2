@@ -119,6 +119,7 @@ fun registerClassesToKryo(kryo: Kryo?) {
         register(AircraftControlStateUpdateData::class.java)
         register(HandoverRequest::class.java)
         register(SectorSwapRequest::class.java)
+        register(DeclineSwapRequest::class.java)
         register(CustomWaypointData::class.java)
         register(RemoveCustomWaypointData::class.java)
         register(GameRunningStatus::class.java)
@@ -206,6 +207,9 @@ data class HandoverRequest(val callsign: String = "", val newSector: Byte = 0, v
 /** Class representing client request to swap sectors */
 data class SectorSwapRequest(val requestedSector: Byte? = null, val sendingSector: Byte = -1)
 
+/** Class representing client request to decline the incoming swap request from another sector */
+data class DeclineSwapRequest(val requestingSector: Byte = -1, val decliningSector: Byte = -1)
+
 /** Class representing data sent during creation of a new custom waypoint */
 data class CustomWaypointData(val customWpt: Waypoint.SerialisedWaypoint = Waypoint.SerialisedWaypoint())
 
@@ -260,6 +264,8 @@ fun handleIncomingRequestClient(rs: RadarScreen, obj: Any?) {
             rs.playerSector = obj.assignedSectorId
             sectors.onEach { sector -> rs.sectors.add(Sector.fromSerialisedObject(sector)) }
             rs.primarySector.vertices = primarySector
+            rs.swapSectorRequest = null
+            rs.incomingSwapRequests.clear()
             rs.uiPane.sectorPane.updateSectorDisplay(rs.sectors)
         } ?: (obj as? InitialAircraftData)?.aircraft?.onEach {
             Aircraft.fromSerialisedObject(it).apply {
@@ -345,7 +351,20 @@ fun handleIncomingRequestClient(rs: RadarScreen, obj: Any?) {
                 if (rs.selectedAircraft == aircraft) rs.uiPane.updateSelectedAircraft(aircraft)
             }
         } ?: (obj as? SectorSwapRequest)?.apply {
-            rs.incomingSwapRequest = obj.sendingSector
+            if (obj.requestedSector == null) {
+                // Requesting sector cancelled, remove swap request
+                rs.incomingSwapRequests.removeValue(obj.sendingSector, false)
+            } else {
+                // Check the request has not been received before
+                if (rs.incomingSwapRequests.contains(obj.sendingSector, false)) return@apply
+                rs.incomingSwapRequests.add(obj.sendingSector)
+            }
+            rs.uiPane.sectorPane.updateSectorDisplay(rs.sectors)
+        } ?: (obj as? DeclineSwapRequest)?.apply {
+            // Check the requesting sector is indeed this player
+            if (obj.requestingSector != rs.playerSector) return@apply
+            if (rs.swapSectorRequest != obj.decliningSector) return@apply
+            rs.swapSectorRequest = null
             rs.uiPane.sectorPane.updateSectorDisplay(rs.sectors)
         } ?: (obj as? CustomWaypointData)?.apply {
             if (rs.waypoints.containsKey(customWpt.id)) {
@@ -449,33 +468,50 @@ fun handleIncomingRequestServer(gs: GameServer, connection: Connection, obj: Any
     } ?: (obj as? SectorSwapRequest)?.apply {
         // Validate the sender
         if (gs.sectorMap[connection] != obj.sendingSector) return@apply
-        // Validate requested sector
-        if (!gs.sectorMap.containsValue(obj.requestedSector, false)) return@apply
+        // Validate requested sector (either requested sector is null or it must be in the sector map)
+        if (obj.requestedSector != null && !gs.sectorMap.containsValue(obj.requestedSector, false)) return@apply
         // Clear all existing requests from the sending sector
         for (i in gs.sectorSwapRequests.size - 1 downTo 0) {
             if (gs.sectorSwapRequests[i].second == obj.sendingSector && gs.sectorSwapRequests[i].first != obj.requestedSector) {
-                getConnectionFromSector(gs.sectorSwapRequests[i].first, gs.sectorMap)?.sendTCP(SectorSwapRequest(null))
+                getConnectionFromSector(gs.sectorSwapRequests[i].first, gs.sectorMap)?.sendTCP(SectorSwapRequest(null, obj.sendingSector))
                 gs.sectorSwapRequests.removeIndex(i)
             }
         }
         // If requested sector is null, return
         if (obj.requestedSector == null) return@apply
         // Check swap array for existing matching request
-        for (i in 0 until gs.sectorSwapRequests.size) {
-            gs.sectorSwapRequests[i]?.let {
-                // Found, execute sector swap
-                if (it.second == obj.requestedSector && it.first == obj.sendingSector) {
-                    val requestingConnection = getConnectionFromSector(obj.requestedSector, gs.sectorMap) ?: return@apply
-                    // If connection that originally requested swap is not present for some reason, return
-                    swapPlayerSectors(requestingConnection, it.second, connection, it.first, gs.sectorMap, gs.sectorUUIDMap)
-                    gs.sectorSwapRequests.removeIndex(i)
-                    return@apply
+        val index = gs.sectorSwapRequests.indexOf(Pair(obj.sendingSector, obj.requestedSector), false)
+        if (index > -1) {
+            val requestingConnection = getConnectionFromSector(obj.requestedSector, gs.sectorMap) ?: return@apply
+            // If connection that originally requested swap is not present for some reason, return
+            swapPlayerSectors(requestingConnection, obj.requestedSector, connection, obj.sendingSector, gs.sectorMap, gs.sectorUUIDMap)
+            gs.sectorSwapRequests.removeIndex(index)
+            // Forward all existing swap requests to the 2 sectors (and remove any from, though there shouldn't be any at all)
+            for (i in gs.sectorSwapRequests.size - 1 downTo 0) {
+                gs.sectorSwapRequests[i]?.let {
+                    // Request originally bound for player who initiated the swap request
+                    if (it.first == obj.requestedSector)
+                        connection.sendTCP(SectorSwapRequest(it.first, it.second))
+                    // Request originally bound for player who accepted the swap request
+                    if (it.first == obj.sendingSector)
+                        requestingConnection.sendTCP(SectorSwapRequest(it.first, it.second))
+                    // Request from one of the players (there shouldn't be any, but just in case)
+                    if (it.second == obj.requestedSector || it.second == obj.sendingSector)
+                        gs.sectorSwapRequests.removeIndex(i)
                 }
             }
+            return@apply
         }
         // Not found - store new request in array
         gs.sectorSwapRequests.add(Pair(obj.requestedSector, obj.sendingSector))
         // Send the request notification to target sector
-        getConnectionFromSector(obj.requestedSector, gs.sectorMap)?.sendTCP(SectorSwapRequest(obj.requestedSector, obj.sendingSector))
+        getConnectionFromSector(obj.requestedSector, gs.sectorMap)?.sendTCP(obj)
+    } ?: (obj as? DeclineSwapRequest)?.apply {
+        // Validate the declining player
+        if (gs.sectorMap[connection] != obj.decliningSector) return@apply
+        // Ensure requesting sector did indeed request the sector
+        if (!gs.sectorSwapRequests.contains(Pair(obj.decliningSector, obj.requestingSector), false)) return@apply
+        gs.sectorSwapRequests.removeValue(Pair(obj.decliningSector, obj.requestingSector), false)
+        getConnectionFromSector(obj.requestingSector, gs.sectorMap)?.sendTCP(obj)
     }
 }

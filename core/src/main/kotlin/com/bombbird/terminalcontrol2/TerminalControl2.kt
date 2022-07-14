@@ -35,7 +35,7 @@ class TerminalControl2 : KtxGame<KtxScreen>(clearScreen = false) {
         setDiscoveryHandler(gameClientDiscoveryHandler)
         addListener(object: Listener {
             override fun received(connection: Connection, obj: Any?) {
-                if (obj != null && obj !is FastUDPData) println("Handling ${obj::class.simpleName}")
+                // if (obj != null && obj !is FastUDPData) println("Handling ${obj::class.simpleName}")
                 (obj as? RequestClientUUID)?.apply {
                     connection.sendTCP(ClientUUIDData(uuid.toString()))
                 } ?: handleIncomingRequestClient(gameClientScreen ?: return, obj)

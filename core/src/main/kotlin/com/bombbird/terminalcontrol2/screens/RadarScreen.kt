@@ -88,10 +88,10 @@ class RadarScreen(private val connectionHost: String, airportToHost: String?): K
     val primarySector = Polygon()
 
     // The current active configuration of polygons
-    val sectors = GdxArray<Sector>()
+    val sectors = GdxArray<Sector>(SECTOR_COUNT_SIZE)
     var playerSector: Byte = 0
     var swapSectorRequest: Byte? = null
-    var incomingSwapRequest: Byte? = null
+    var incomingSwapRequests = GdxArray<Byte>(SECTOR_COUNT_SIZE)
 
     // Aircraft map for access during UDP updates
     val aircraft = GdxArrayMap<String, Aircraft>(AIRCRAFT_SIZE)
@@ -504,5 +504,10 @@ class RadarScreen(private val connectionHost: String, airportToHost: String?): K
     /** Sends a request to cancel the current pending sector swap request to the server */
     fun cancelSectorSwapRequest() {
         client.sendTCP(SectorSwapRequest(null, playerSector))
+    }
+
+    /** Sends a request to decline an incoming swap request */
+    fun declineSectorSwapRequest(requestingSector: Byte) {
+        client.sendTCP(DeclineSwapRequest(requestingSector, playerSector))
     }
 }
