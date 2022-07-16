@@ -26,7 +26,7 @@ import java.util.*
 import kotlin.math.roundToInt
 
 /** Aircraft class that creates an aircraft entity with the required components on instantiation */
-class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float,icaoAircraftType: String, flightType: Byte,
+class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircraftType: String, flightType: Byte,
                onClient: Boolean = true): SerialisableEntity<Aircraft.SerialisedAircraft> {
     val entity = getEngine(onClient).entity {
         with<Position> {
@@ -61,7 +61,6 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float,icaoAircra
             with<Datatag> {
                 updateDatatagStyle(this, flightType, false)
                 updateDatatagText(this, arrayOf("Test line 1", "Test line 2", "", "Test line 3"))
-                // addDatatagInputListeners(this, this@Aircraft)
                 xOffset = -imgButton.width / 2
                 yOffset = 13f
             }

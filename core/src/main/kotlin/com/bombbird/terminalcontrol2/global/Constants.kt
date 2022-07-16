@@ -59,10 +59,12 @@ const val TRACK_EXTRAPOLATE_TIME_S = 30f
 val AVAIL_AIRPORTS = GdxArray<String>(arrayOf("TCTP", "TCWS", "TCTT", "TCBB", "TCHH", "TCBD", "TCMD", "TCPG"))
 
 /** Application platform type */
-val APP_TYPE = Gdx.app.type
+val APP_TYPE = Gdx.app?.type
 
 /** The current game instance (can be modified, but don't), client engine, and server engine (if [TerminalControl2.gameServer] exists, else throws a [RuntimeException] when accessed) */
 lateinit var GAME: TerminalControl2
+val isGameInitialised: Boolean
+    get() = ::GAME.isInitialized
 private val CLIENT_ENGINE: Engine
     get() = GAME.engine
 private val SERVER_ENGINE: Engine
