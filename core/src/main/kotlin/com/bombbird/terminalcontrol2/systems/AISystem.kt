@@ -1079,6 +1079,9 @@ class AISystem: EntitySystem() {
             entity += LatestClearanceChanged()
             val arptAltitude = GAME.gameServer?.airports?.get(get(ArrivalAirport.mapper)?.arptId)?.entity?.get(Altitude.mapper)?.altitudeFt?.roundToInt() ?: 0
             entity += ContactFromTower(arptAltitude + MathUtils.random(600, 1100))
+
+            // Add the go around flag
+            entity += RecentGoAround()
         }
     }
 }

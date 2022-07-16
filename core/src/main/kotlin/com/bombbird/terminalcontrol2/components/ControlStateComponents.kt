@@ -143,6 +143,14 @@ class ContactNotification: Component {
  * Component for tagging aircraft that can be handed over to the next sector, including tower and ACC; this component will
  * enable the handover button
  */
-data class CanBeHandedOver(val nextSector: Byte): Component {
+data class CanBeHandedOver(val nextSector: Byte = 0): Component {
     companion object: Mapper<CanBeHandedOver>()
+}
+
+/**
+ * Component for tagging aircraft that did a go around recently (i.e. < 30 seconds); a timer comes with the component
+ * to keep track of when to remove this component from the aircraft
+ */
+data class RecentGoAround(var timeLeft: Float = 30f): Component {
+    companion object: Mapper<RecentGoAround>()
 }

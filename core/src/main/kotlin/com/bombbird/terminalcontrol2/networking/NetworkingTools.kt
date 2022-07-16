@@ -320,9 +320,17 @@ fun handleIncomingRequestClient(rs: RadarScreen, obj: Any?) {
                 controllable.sectorId = obj.newSector
                 aircraft.entity[RSSprite.mapper]?.drawable = getAircraftIcon(aircraft.entity[FlightType.mapper]?.type ?: return@apply, obj.newSector)
                 aircraft.entity[Datatag.mapper]?.let { updateDatatagText(it, getNewDatatagLabelText(aircraft.entity, it.minimised)) }
+                if (obj.newSector != rs.playerSector && controllable.controllerUUID.toString() == uuid.toString() && obj.newUUID != uuid.toString()) {
+                    // Send contact other sector message only if aircraft is not in player's sector, old UUID is this
+                    // player's UUID, and new UUID is not this player's UUID
+                    GAME.gameClientScreen?.uiPane?.commsPane?.contactOther(aircraft.entity, obj.newSector)
+                }
                 if (obj.newSector == rs.playerSector && controllable.controllerUUID.toString() != obj.newUUID && obj.newUUID == uuid.toString()) {
                     // Send message only if aircraft is in player's sector, old UUID is not the player's UUID and the new UUID is the player's UUID
-                    GAME.gameClientScreen?.uiPane?.commsPane?.initialContact(aircraft.entity)
+                    GAME.gameClientScreen?.uiPane?.commsPane?.also { commsPane ->
+                        if (aircraft.entity.has(RecentGoAround.mapper)) commsPane.goAround(aircraft.entity)
+                        else commsPane.initialContact(aircraft.entity)
+                    }
                     aircraft.entity += ContactNotification()
                 } else if (obj.newSector != rs.playerSector || obj.newUUID != uuid.toString()) aircraft.entity.remove<ContactNotification>()
                 controllable.controllerUUID = obj.newUUID?.let { UUID.fromString(it) }

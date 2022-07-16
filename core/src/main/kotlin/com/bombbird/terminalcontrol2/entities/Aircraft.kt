@@ -164,6 +164,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float,icaoAircra
                     if (serialisedAircraft.locCap) this += LocalizerCaptured()
                     if (serialisedAircraft.visCap) this += VisualCaptured()
                     if (serialisedAircraft.contactToCentre) this += ContactToCentre()
+                    if (serialisedAircraft.recentGoAround) this += RecentGoAround()
 
                     val datatag = get(Datatag.mapper)
                     if (serialisedAircraft.waitingTakeoff) this += WaitingTakeoff()
@@ -188,7 +189,8 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float,icaoAircra
                                 val targetHdgDeg: Short = 0, val targetAltFt: Short = 0, val targetIasKt: Short = 0,
                                 val gsCap: Boolean = false, val locCap: Boolean = false, val visCap: Boolean = false,
                                 val waitingTakeoff: Boolean = false,
-                                val contactToCentre: Boolean = false
+                                val contactToCentre: Boolean = false,
+                                val recentGoAround: Boolean = false
     )
 
     /**
@@ -220,7 +222,8 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float,icaoAircra
                 has(GlideSlopeCaptured.mapper), has(LocalizerCaptured.mapper),
                 has(VisualCaptured.mapper) || (get(CirclingApproach.mapper)?.phase ?: 0) >= 1,
                 has(WaitingTakeoff.mapper),
-                has(ContactToCentre.mapper)
+                has(ContactToCentre.mapper),
+                has(RecentGoAround.mapper)
             )
         }
     }
@@ -271,6 +274,8 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float,icaoAircra
             }
             if (data.contactToCentre) this += ContactToCentre()
             else remove<ContactToCentre>()
+            if (data.recentGoAround) this += RecentGoAround()
+            else remove<RecentGoAround>()
         }
     }
 
@@ -294,7 +299,8 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float,icaoAircra
                              val controlSectorId: Byte = 0, val controllerUUID: String? = null,
                              val gsCap: Boolean = false, val locCap: Boolean = false, val visCap: Boolean = false,
                              val waitingTakeoff: Boolean = false,
-                             val contactToCentre: Boolean = false
+                             val contactToCentre: Boolean = false,
+                             val recentGoAround: Boolean = false
     )
 
     /**
@@ -338,7 +344,8 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float,icaoAircra
                 has(GlideSlopeCaptured.mapper), has(LocalizerCaptured.mapper),
                 has(VisualCaptured.mapper) || (get(CirclingApproach.mapper)?.phase ?: 0) >= 1,
                 has(WaitingTakeoff.mapper),
-                has(ContactToCentre.mapper)
+                has(ContactToCentre.mapper),
+                has(RecentGoAround.mapper)
             )
         }
     }

@@ -24,6 +24,7 @@ class ControlStateSystemInterval: IntervalSystem(1f) {
     private val contactFromCentreFamily: Family = allOf(Altitude::class, Position::class, ContactFromCentre::class, GroundTrack::class, Controllable::class).get()
     private val contactToCentreFamily: Family = allOf(Altitude::class, Position::class, ContactToCentre::class).get()
     private val checkSectorFamily: Family = allOf(Position::class, GroundTrack::class, Controllable::class).get()
+    private val goAroundFamily: Family = allOf(RecentGoAround::class).get()
 
     /**
      * Secondary update system, for operations that can be updated at a lower frequency and do not rely on deltaTime
@@ -210,6 +211,16 @@ class ControlStateSystemInterval: IntervalSystem(1f) {
                         server.sendAircraftSectorUpdateTCPToAll(callsign, controllable.sectorId, controllable.controllerUUID?.toString())
                     }}
                 }
+            }
+        }
+
+        // Check recent go-around and decrement the timer counter
+        val goAround = engine.getEntitiesFor(goAroundFamily)
+        for (i in 0 until goAround.size()) {
+            goAround[i]?.apply {
+                val recentGA = get(RecentGoAround.mapper) ?: return@apply
+                recentGA.timeLeft -= interval
+                if (recentGA.timeLeft < 0) remove<RecentGoAround>()
             }
         }
     }
