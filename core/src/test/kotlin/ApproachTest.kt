@@ -13,6 +13,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import ktx.ashley.get
 
+/** Kotest FunSpec class for testing approach functions */
 object ApproachTest: FunSpec() {
     private var approach: Approach? = null
 

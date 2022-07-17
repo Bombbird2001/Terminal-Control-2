@@ -4,6 +4,7 @@ import com.bombbird.terminalcontrol2.graphics.ScreenSize
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 
+/** Kotest FunSpec class for testing screen size functions */
 object ScreenSizeTest: FunSpec() {
     init {
         test("Screen size calculation") {

@@ -230,6 +230,20 @@ class ControlPane {
                             }
                             if (checkClearanceEquality(parentPane.userClearanceState, parentPane.clearanceState) && !directChanged) return@addChangeListener // No need to update anything if no change to clearance
                             radarScreen.sendAircraftControlStateClearance(aircraft.entity[AircraftInfo.mapper]?.icaoCallsign ?: return@addChangeListener, parentPane.userClearanceState)
+                            // After sending the request, remove any non-active waypoint legs before the direct leg
+                            leg2?.also {
+                                var index = 0
+                                parentPane.userClearanceState.route.apply { while (index < size) {
+                                    val legToCheck = get(index)
+                                    if (compareLegEquality(legToCheck, leg2)) return@also // Leg reached
+                                    if (legToCheck is Route.WaypointLeg && !legToCheck.legActive) {
+                                        // Remove any non-active waypoint legs along the way
+                                        removeIndex(index)
+                                        index--
+                                    }
+                                    index++
+                                }}
+                            }
                             Gdx.app.postRunnable {
                                 aircraft.entity[ClearanceAct.mapper]?.actingClearance?.actingClearance?.updateUIClearanceState(parentPane.userClearanceState)
                                 parentPane.updateSelectedAircraft(aircraft)

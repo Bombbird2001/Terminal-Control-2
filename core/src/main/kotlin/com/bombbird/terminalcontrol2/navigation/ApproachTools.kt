@@ -8,6 +8,7 @@ import com.bombbird.terminalcontrol2.global.VIS_GLIDE_ANGLE_DEG
 import com.bombbird.terminalcontrol2.global.VIS_MAX_DIST_NM
 import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.get
+import ktx.ashley.hasNot
 import ktx.math.plus
 import ktx.math.times
 import kotlin.math.max
@@ -59,7 +60,7 @@ fun getAppAltAtPos(approach: Entity, posX: Float, posY: Float, gsKt: Float): Flo
 /**
  * Calculates the position the aircraft should target given its current position on the approach
  *
- * The position on the approach track 1.5/0.75/0.25nm (depending on the current distance from the approach position) in
+ * The position on the approach track 1.5/0.75nm (depending on the current distance from the approach position) in
  * front of the aircraft's current distance from the approach origin will be calculated and returned
  * @param approach the approach entity
  * @param posX the x coordinate of aircraft position
@@ -110,6 +111,7 @@ fun checkLineUpDistReached(approach: Entity, posX: Float, posY: Float): Boolean 
 fun isInsideLocArc(locApp: Entity, posX: Float, posY: Float, angleDeg: Float, distNm: Byte): Boolean {
     val pos = locApp[Position.mapper] ?: return false
     val dir = locApp[Direction.mapper] ?: return false
+    if (locApp.hasNot(Localizer.mapper)) return false
 
     return checkInArc(pos.x, pos.y, convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()), nmToPx(distNm.toFloat()), angleDeg, posX, posY)
 }

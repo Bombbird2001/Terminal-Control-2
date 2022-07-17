@@ -78,7 +78,7 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
 
                 if (currFirstLeg != null && newFirstLeg != null) {
                     if (!compareLegEquality(currFirstLeg, newFirstLeg)) {
-                        // 3 possible leg conflict scenarios
+                        // 4 possible leg conflict scenarios
                         if (newRoute.size >= 3 && newRoute[1] is Route.HoldLeg && compareLegEquality(newRoute[2], currFirstLeg)) {
                             // 1. Aircraft has flown by waypoint, but the new clearance wants it to hold at that waypoint;
                             // clear the current route, and add the new route from the 2nd leg (the hold leg) onwards
@@ -96,7 +96,7 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
                             if (currDirIndex > 0) {
                                 // 2. Aircraft has been cleared a new approach or transition, new clearance contains leg(s)
                                 // from the existing approach/transition but legs prior to that should not be removed
-                                val adjustedCurrDir = if (transChanged) {
+                                val adjustedCurrDir = if (transChanged || appChanged) {
                                     var newDirIndex = currDirIndex
                                     for (i in 0 until currDirIndex) {
                                         if (newRoute[i].phase == Route.Leg.APP_TRANS) {
@@ -105,7 +105,7 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
                                         }
                                     }
                                     newDirIndex
-                                } else if (appChanged) {
+                                } /* else if (appChanged) {
                                     var newDirIndex = currDirIndex
                                     for (i in 0 until currDirIndex) {
                                         if (newRoute[i].phase == Route.Leg.APP) {
@@ -114,9 +114,9 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
                                         }
                                     }
                                     newDirIndex
-                                } else {
-                                    // 3. Aircraft has flown by waypoint, new clearance is the same route except it still contains
-                                    // that waypoint; remove all legs from the new clearance till the current direct
+                                } */ else {
+                                    // 3. Aircraft has flown by waypoint, new clearance is the same route except it still
+                                    // contains that waypoint; remove all legs from the new clearance till the current direct
                                     currDirIndex
                                 }
 
@@ -199,10 +199,10 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
                 if (checkRouteEqualityStrict(route, uiClearance.route)) route.setToRouteCopy(latestClearance.route)
                 else {
                     var i = 0
-                    while (0 <= i && i < route.size) { route[i].also { leg ->
+                    while (i < route.size) { route[i].also { leg ->
                         (leg as? Route.WaypointLeg)?.let { wptLeg ->
                             // Sanity check - any waypoint legs in the current pane clearance state not in the new clearance
-                            // must be removed
+                            // must be removed, starting from the front, until a matching leg has been found
                             if (checkLegChanged(latestClearance.route, wptLeg)) {
                                 route.removeIndex(i)
                                 i--
