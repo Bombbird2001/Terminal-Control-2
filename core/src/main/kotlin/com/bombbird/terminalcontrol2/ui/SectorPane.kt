@@ -3,7 +3,7 @@ package com.bombbird.terminalcontrol2.ui
 import com.badlogic.gdx.scenes.scene2d.Actor
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton.TextButtonStyle
 import com.bombbird.terminalcontrol2.entities.Sector
-import com.bombbird.terminalcontrol2.global.GAME
+import com.bombbird.terminalcontrol2.global.CLIENT_SCREEN
 import com.bombbird.terminalcontrol2.global.SECTOR_COUNT_SIZE
 import com.bombbird.terminalcontrol2.global.UI_HEIGHT
 import com.bombbird.terminalcontrol2.utilities.byte
@@ -40,7 +40,7 @@ class SectorPane {
                     table {
                         swapButton = textButton("Request\nswap", "MenuPaneSectorConfirm").apply {
                             addChangeListener { _, _ ->
-                                GAME.gameClientScreen?.let {
+                                CLIENT_SCREEN?.let {
                                     if (it.swapSectorRequest == selectedId) {
                                         // If an active request with same ID is pending, cancel it
                                         it.cancelSectorSwapRequest()
@@ -64,13 +64,13 @@ class SectorPane {
                         row()
                         declineButton = textButton("Decline\nswap\nrequest", "MenuPaneSectorConfirm").apply {
                             addChangeListener { _, _ ->
-                                GAME.gameClientScreen?.let {
+                                CLIENT_SCREEN?.let {
                                     // Check and remove the selected sector ID from incoming requests, send decline request to server
                                     if (it.incomingSwapRequests.contains(selectedId, false)) {
-                                        GAME.gameClientScreen?.declineSectorSwapRequest(selectedId ?: return@addChangeListener)
+                                        CLIENT_SCREEN?.declineSectorSwapRequest(selectedId ?: return@addChangeListener)
                                         it.incomingSwapRequests.removeValue(selectedId, false)
                                     }
-                                    updateSectorDisplay(GAME.gameClientScreen?.sectors ?: return@addChangeListener)
+                                    updateSectorDisplay(CLIENT_SCREEN?.sectors ?: return@addChangeListener)
                                 }
                             }
                             isVisible = false
@@ -95,7 +95,7 @@ class SectorPane {
             clear()
             for (i in 0 until sectors.size) {
                 val sectorButton = textButton("Sector ${i + 1}", "MenuPaneSector").apply {
-                    isChecked = GAME.gameClientScreen?.playerSector == i.byte
+                    isChecked = CLIENT_SCREEN?.playerSector == i.byte
                     addChangeListener { _, _ ->
                         updateSelectedSectorState(this, i.byte)
                     }
@@ -109,7 +109,7 @@ class SectorPane {
         selectedId?.let {
             // If selected ID is larger than last index due to player number change, set the ID to this player's sector
             val correctedSelectedId = if (it >= sectors.size) {
-                GAME.gameClientScreen?.playerSector ?: return
+                CLIENT_SCREEN?.playerSector ?: return
             } else it
             selectedId = correctedSelectedId
             updateSelectedSectorState(sectorButtonArray[correctedSelectedId.toInt()], correctedSelectedId)
@@ -125,7 +125,7 @@ class SectorPane {
     private fun updateSelectedSectorState(button: KTextButton, buttonSector: Byte) {
         if (buttonsBeingModified) return
         buttonsBeingModified = true
-        val rs = GAME.gameClientScreen ?: return
+        val rs = CLIENT_SCREEN ?: return
         for (j in 0 until sectorButtonArray.size) {
             sectorButtonArray[j].isChecked = false
             sectorButtonArray[j].style = Scene2DSkin.defaultSkin["MenuPaneSector", TextButtonStyle::class.java]
@@ -134,8 +134,8 @@ class SectorPane {
         selectedId = buttonSector
         val isThisSector = buttonSector == rs.playerSector
         swapButton.setText(when {
-            !isThisSector && GAME.gameClientScreen?.incomingSwapRequests?.contains(buttonSector, false) == true -> "Accept\nswap\nrequest"
-            !isThisSector && GAME.gameClientScreen?.swapSectorRequest == buttonSector -> "Cancel\nswap\nrequest"
+            !isThisSector && CLIENT_SCREEN?.incomingSwapRequests?.contains(buttonSector, false) == true -> "Accept\nswap\nrequest"
+            !isThisSector && CLIENT_SCREEN?.swapSectorRequest == buttonSector -> "Cancel\nswap\nrequest"
             !isThisSector -> "Request\nsector\nswap"
             else -> ""
         })

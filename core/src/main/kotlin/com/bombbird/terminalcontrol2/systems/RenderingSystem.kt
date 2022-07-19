@@ -1,5 +1,6 @@
 package com.bombbird.terminalcontrol2.systems
 
+import com.badlogic.ashley.core.Entity
 import com.badlogic.ashley.core.EntitySystem
 import com.badlogic.ashley.core.Family
 import com.badlogic.gdx.Gdx
@@ -164,16 +165,18 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer,
         }
 
         // Render current UI selected aircraft's lateral navigation state, accessed via radarScreen's uiPane
-        GAME.gameClientScreen?.selectedAircraft?.let {
+        CLIENT_SCREEN?.selectedAircraft?.let {
             val aircraftPos = it.entity[RadarData.mapper]?.position ?: return@let
             val vectorUnchanged = uiPane.clearanceState.vectorHdg == uiPane.userClearanceState.vectorHdg
             uiPane.clearanceState.vectorHdg?.let { hdg -> renderVector(aircraftPos.x, aircraftPos.y, hdg, false) } ?:
-            run { renderRouteSegments(aircraftPos.x, aircraftPos.y, uiPane.clearanceRouteSegments) }
+            run { renderRouteSegments(aircraftPos.x, aircraftPos.y, uiPane.clearanceRouteSegments, skipAircraftToFirstWaypoint = false,
+                forceRenderChangedAircraftToFirstWaypoint = false) }
             if (!vectorUnchanged) uiPane.userClearanceState.vectorHdg?.let { newHdg ->
                 // Render new vector if changed and is not null
                 renderVector(aircraftPos.x, aircraftPos.y, newHdg, true)
             }
-            renderRouteSegments(aircraftPos.x, aircraftPos.y, uiPane.userClearanceRouteSegments)
+            renderRouteSegments(aircraftPos.x, aircraftPos.y, uiPane.userClearanceRouteSegments, skipAircraftToFirstWaypoint = true,
+                forceRenderChangedAircraftToFirstWaypoint = !vectorUnchanged && uiPane.userClearanceState.vectorHdg == null)
         }
 
         // Render trajectory line for controlled aircraft
@@ -181,7 +184,7 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer,
         for (i in 0 until trajectory.size()) {
             trajectory[i]?.apply {
                 val controllable = get(Controllable.mapper) ?: return@apply
-                if (controllable.sectorId != GAME.gameClientScreen?.playerSector) return@apply
+                if (controllable.sectorId != CLIENT_SCREEN?.playerSector) return@apply
                 val rData = get(RadarData.mapper) ?: return@apply
                 val srColor = get(SRColor.mapper) ?: return@apply
                 val wind = get(AffectedByWind.mapper)
@@ -331,12 +334,17 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer,
             }
         }
 
-        // Render aircraft datatags
+        var lastRenderDatatagAircraft: Entity? = null
+        // Render aircraft datatags (except the one marked with RenderLast)
         val datatags = engine.getEntitiesFor(datatagFamily)
         for (i in 0 until datatags.size()) {
             datatags[i]?.apply {
                 val datatag = get(Datatag.mapper) ?: return@apply
                 val radarData = get(RadarData.mapper) ?: return@apply
+                if (datatag.renderLast) {
+                    if (lastRenderDatatagAircraft != null) Gdx.app.log("RenderingSystem", "Multiple render last aircraft datatags found")
+                    lastRenderDatatagAircraft = this
+                }
                 if (!datatag.smallLabelFont && camZoom > DATATAG_ZOOM_THRESHOLD) updateDatatagLabelSize(datatag, true)
                 else if (datatag.smallLabelFont && camZoom <= DATATAG_ZOOM_THRESHOLD) updateDatatagLabelSize(datatag, false)
                 val leftX = (radarData.position.x - camX) / camZoom + datatag.xOffset
@@ -358,6 +366,32 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer,
                 }
             }
         }
+
+        // Save the render last datatag to be rendered after all other datatags
+        lastRenderDatatagAircraft?.apply {
+            val datatag = get(Datatag.mapper) ?: return@apply
+            val radarData = get(RadarData.mapper) ?: return@apply
+            if (!datatag.smallLabelFont && camZoom > DATATAG_ZOOM_THRESHOLD) updateDatatagLabelSize(datatag, true)
+            else if (datatag.smallLabelFont && camZoom <= DATATAG_ZOOM_THRESHOLD) updateDatatagLabelSize(datatag, false)
+            val leftX = (radarData.position.x - camX) / camZoom + datatag.xOffset
+            val bottomY = (radarData.position.y - camY) / camZoom + datatag.yOffset
+            datatag.initialPosSet = true
+            datatag.imgButton.apply {
+                setPosition(leftX, bottomY)
+                draw(GAME.batch, 1f)
+            }
+            datatag.clickSpot.setPosition(leftX, bottomY)
+            var labelY = bottomY + LABEL_PADDING
+            for (j in datatag.labelArray.size - 1 downTo 0) {
+                datatag.labelArray[j].let { label ->
+                    if (label.text.isNullOrEmpty()) return@let
+                    label.setPosition(leftX + LABEL_PADDING, labelY)
+                    label.draw(GAME.batch, 1f)
+                    labelY += (label.height + DATATAG_ROW_SPACING_PX)
+                }
+            }
+        }
+
         GAME.batch.end()
 
         constZoomStage.act(deltaTime)
@@ -374,8 +408,14 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer,
      * @param posX the x coordinate of the aircraft
      * @param posY the y coordinate of the aircraft
      * @param segments the route segments to render
+     * @param skipAircraftToFirstWaypoint whether the skip rendering of the first aircraft -> waypoint segment (used when
+     * aircraft has been cleared vectors while still on the SID/STAR); will be overridden by [forceRenderChangedAircraftToFirstWaypoint]
+     * if it is true
+     * @param forceRenderChangedAircraftToFirstWaypoint whether to force the rendering of the first aircraft -> waypoint
+     * segment as a changed segment; will override [skipAircraftToFirstWaypoint] if this is true
      */
-    private fun renderRouteSegments(posX: Float, posY: Float, segments: GdxArray<Route.LegSegment>) {
+    private fun renderRouteSegments(posX: Float, posY: Float, segments: GdxArray<Route.LegSegment>, skipAircraftToFirstWaypoint: Boolean,
+                                    forceRenderChangedAircraftToFirstWaypoint: Boolean) {
         var firstPhase = Route.Leg.NORMAL
 
         for (i in 0 until segments.size) { segments[i]?.also { seg ->
@@ -388,19 +428,21 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer,
             when {
                 (leg1 == null && leg2 is Route.WaypointLeg) -> {
                     // Aircraft to waypoint segment
-                    val wptPos = GAME.gameClientScreen?.waypoints?.get(leg2.wptId)?.entity?.get(Position.mapper) ?: return@also
+                    if (forceRenderChangedAircraftToFirstWaypoint) shapeRenderer.color = Color.YELLOW
+                    else if (skipAircraftToFirstWaypoint) return@also
+                    val wptPos = CLIENT_SCREEN?.waypoints?.get(leg2.wptId)?.entity?.get(Position.mapper) ?: return@also
                     shapeRenderer.line(posX, posY, wptPos.x, wptPos.y)
                 }
                 (leg1 is Route.WaypointLeg && leg2 is Route.WaypointLeg) -> {
                     // Waypoint to waypoint segment
-                    val pos1 = GAME.gameClientScreen?.waypoints?.get(leg1.wptId)?.entity?.get(Position.mapper) ?: return@also
-                    val pos2 = GAME.gameClientScreen?.waypoints?.get(leg2.wptId)?.entity?.get(Position.mapper) ?: return@also
+                    val pos1 = CLIENT_SCREEN?.waypoints?.get(leg1.wptId)?.entity?.get(Position.mapper) ?: return@also
+                    val pos2 = CLIENT_SCREEN?.waypoints?.get(leg2.wptId)?.entity?.get(Position.mapper) ?: return@also
                     shapeRenderer.line(pos1.x, pos1.y, pos2.x, pos2.y)
                 }
                 (leg1 == null && leg2 is Route.HoldLeg) -> {
                     // Hold segment
                     val wptPos = if (leg2.wptId.toInt() == -1) Position(posX, posY)
-                    else GAME.gameClientScreen?.waypoints?.get(leg2.wptId)?.entity?.get(Position.mapper) ?: return@also
+                    else CLIENT_SCREEN?.waypoints?.get(leg2.wptId)?.entity?.get(Position.mapper) ?: return@also
                     val wptVec = Vector2(wptPos.x, wptPos.y)
                     // Render a default 230 knot IAS @ 10000ft, 3 deg/s turn
                     val tasPxps = ktToPxps(266)
@@ -434,14 +476,14 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer,
                 }
                 (leg1 is Route.WaypointLeg && leg2 is Route.VectorLeg) -> {
                     // Waypoint to vector segment
-                    val wptPos = GAME.gameClientScreen?.waypoints?.get(leg1.wptId)?.entity?.get(Position.mapper) ?: return@also
+                    val wptPos = CLIENT_SCREEN?.waypoints?.get(leg1.wptId)?.entity?.get(Position.mapper) ?: return@also
                     renderVector(wptPos.x, wptPos.y, leg2.heading, seg.changed)
                 }
                 (leg1 is Route.HoldLeg && leg2 is Route.WaypointLeg) -> {
                     // Hold to waypoint segment
                     val pos1 = if (leg1.wptId.toInt() == -1) Position(posX, posY)
-                    else GAME.gameClientScreen?.waypoints?.get(leg1.wptId)?.entity?.get(Position.mapper) ?: return@also
-                    val pos2 = GAME.gameClientScreen?.waypoints?.get(leg2.wptId)?.entity?.get(Position.mapper) ?: return@also
+                    else CLIENT_SCREEN?.waypoints?.get(leg1.wptId)?.entity?.get(Position.mapper) ?: return@also
+                    val pos2 = CLIENT_SCREEN?.waypoints?.get(leg2.wptId)?.entity?.get(Position.mapper) ?: return@also
                     shapeRenderer.line(pos1.x, pos1.y, pos2.x, pos2.y)
                 }
             }
@@ -458,7 +500,7 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer,
      */
     private fun renderVector(posX: Float, posY: Float, hdg: Short, differs: Boolean) {
         shapeRenderer.color = if (differs) Color.YELLOW else Color.WHITE
-        val sectorBoundingRectangle = GAME.gameClientScreen?.primarySector?.boundingRectangle ?: return
+        val sectorBoundingRectangle = CLIENT_SCREEN?.primarySector?.boundingRectangle ?: return
         val lineEnd = pointsAtBorder(floatArrayOf(sectorBoundingRectangle.x, sectorBoundingRectangle.x  + sectorBoundingRectangle.width),
             floatArrayOf(sectorBoundingRectangle.y, sectorBoundingRectangle.y + sectorBoundingRectangle.height), posX, posY, hdg - MAG_HDG_DEV)
         shapeRenderer.line(posX, posY, lineEnd[0], lineEnd[1])

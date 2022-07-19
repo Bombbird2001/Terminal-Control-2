@@ -284,7 +284,7 @@ fun handleIncomingRequestClient(rs: RadarScreen, obj: Any?) {
                     // printAirportApproaches(entity)
                 }
             }
-            GAME.gameClientScreen?.uiPane?.mainInfoObj?.let {
+            CLIENT_SCREEN?.uiPane?.mainInfoObj?.let {
                 it.initializeAtisDisplay()
                 it.initializeAirportRwyConfigPanes()
             }
@@ -311,7 +311,7 @@ fun handleIncomingRequestClient(rs: RadarScreen, obj: Any?) {
             metars.forEach {
                 rs.airports[it.arptId]?.updateFromSerialisedMetar(it)
             }
-            GAME.gameClientScreen?.uiPane?.mainInfoObj?.updateAtisInformation()
+            CLIENT_SCREEN?.uiPane?.mainInfoObj?.updateAtisInformation()
         } ?: (obj as? AircraftSectorUpdateData)?.apply {
             // If the client has not received the initial load data, ignore this sector update
             if (rs.sectors.isEmpty) return@apply
@@ -323,11 +323,11 @@ fun handleIncomingRequestClient(rs: RadarScreen, obj: Any?) {
                 if (obj.newSector != rs.playerSector && controllable.controllerUUID.toString() == uuid.toString() && obj.newUUID != uuid.toString()) {
                     // Send contact other sector message only if aircraft is not in player's sector, old UUID is this
                     // player's UUID, and new UUID is not this player's UUID
-                    GAME.gameClientScreen?.uiPane?.commsPane?.contactOther(aircraft.entity, obj.newSector)
+                    CLIENT_SCREEN?.uiPane?.commsPane?.contactOther(aircraft.entity, obj.newSector)
                 }
                 if (obj.newSector == rs.playerSector && controllable.controllerUUID.toString() != obj.newUUID && obj.newUUID == uuid.toString()) {
                     // Send message only if aircraft is in player's sector, old UUID is not the player's UUID and the new UUID is the player's UUID
-                    GAME.gameClientScreen?.uiPane?.commsPane?.also { commsPane ->
+                    CLIENT_SCREEN?.uiPane?.commsPane?.also { commsPane ->
                         if (aircraft.entity.has(RecentGoAround.mapper)) commsPane.goAround(aircraft.entity)
                         else commsPane.initialContact(aircraft.entity)
                     }
@@ -391,9 +391,9 @@ fun handleIncomingRequestClient(rs: RadarScreen, obj: Any?) {
             rs.airports[obj.airportId]?.pendingRunwayConfigClient(obj.configId)
         } ?: (obj as? ActiveRunwayUpdateData)?.apply {
             rs.airports[obj.airportId]?.activateRunwayConfig(obj.configId)
-            GAME.gameClientScreen?.uiPane?.mainInfoObj?.updateAtisInformation()
+            CLIENT_SCREEN?.uiPane?.mainInfoObj?.updateAtisInformation()
         } ?: (obj as? ScoreData)?.apply {
-            GAME.gameClientScreen?.uiPane?.mainInfoObj?.updateScoreDisplay(obj.score, obj.highScore)
+            CLIENT_SCREEN?.uiPane?.mainInfoObj?.updateScoreDisplay(obj.score, obj.highScore)
         }
     }
 }

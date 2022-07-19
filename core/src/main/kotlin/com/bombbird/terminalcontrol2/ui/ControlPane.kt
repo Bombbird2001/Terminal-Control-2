@@ -202,7 +202,7 @@ class ControlPane {
                                     parentPane.selAircraft?.entity?.let { ac ->
                                         val callsign = ac[AircraftInfo.mapper]?.icaoCallsign
                                         val newSector = ac[CanBeHandedOver.mapper]?.nextSector
-                                        if (callsign != null && newSector != null) GAME.gameClientScreen?.sendAircraftHandOverRequest(callsign, newSector)
+                                        if (callsign != null && newSector != null) CLIENT_SCREEN?.sendAircraftHandOverRequest(callsign, newSector)
                                     }
                                 }
                             }
@@ -210,7 +210,7 @@ class ControlPane {
                         }
                     }
                     transmitButton = textButton(TRANSMIT, "ControlPaneButton").cell(grow = true, preferredWidth = paneWidth / 3).apply {
-                        addChangeListener { _, _ -> GAME.gameClientScreen?.let { radarScreen -> parentPane.selAircraft?.let { aircraft ->
+                        addChangeListener { _, _ -> CLIENT_SCREEN?.let { radarScreen -> parentPane.selAircraft?.let { aircraft ->
                             val leg1 = if (parentPane.clearanceState.route.size > 0) parentPane.clearanceState.route[0] else null
                             val leg2 = directLeg
                             val directChanged = if (leg1 == null && leg2 == null) false else if (leg1 == null || leg2 == null) true else !compareLegEquality(leg1, leg2)
@@ -327,7 +327,7 @@ class ControlPane {
      * */
     private fun updateApproachSelectBoxChoices(airportId: Byte?) {
         modificationInProgress = true
-        GAME.gameClientScreen?.airports?.get(airportId)?.entity?.let { arpt ->
+        CLIENT_SCREEN?.airports?.get(airportId)?.entity?.let { arpt ->
             updateAppTransBoxesDisabled(false)
             appSelectBox.apply {
                 items = getAvailableApproaches(arpt)
@@ -344,7 +344,7 @@ class ControlPane {
     private fun updateTransitionSelectBoxChoices(airportId: Byte?, selectedApp: String, selectedTrans: String?) {
         modificationInProgress = true
         transitionSelectBox.apply {
-            GAME.gameClientScreen?.airports?.get(airportId)?.entity?.get(ApproachChildren.mapper)?.approachMap?.get(selectedApp)?.let { app ->
+            CLIENT_SCREEN?.airports?.get(airportId)?.entity?.get(ApproachChildren.mapper)?.approachMap?.get(selectedApp)?.let { app ->
                 var transFound = false
                 items = GdxArray<String>().also { array ->
                     app.transitions.keys().map { "$TRANS_PREFIX$it" }.forEach {

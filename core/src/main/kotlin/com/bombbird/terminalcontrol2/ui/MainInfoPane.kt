@@ -71,7 +71,7 @@ class MainInfoPane {
                 }.cell(padLeft = 20f, preferredWidth = paneWidth * 0.85f - 50)
                 textButton("||", "Pause").cell(padRight = 30f, preferredWidth = paneWidth * 0.15f, height = UI_HEIGHT * 0.1f).addChangeListener { _, _ ->
                     // Pause the client
-                    GAME.gameClientScreen?.pauseGame()
+                    CLIENT_SCREEN?.pauseGame()
                 }
                 row()
                 metarScroll = scrollPane("MetarPane") {
@@ -124,7 +124,7 @@ class MainInfoPane {
                                 commsButton.isChecked = false
                                 statusButton.isChecked = false
                                 Gdx.app.postRunnable {
-                                    GAME.gameClientScreen?.let {
+                                    CLIENT_SCREEN?.let {
                                         it.uiPane.sectorPane.selectedId = it.playerSector
                                         sectorPaneObj.updateSectorDisplay(it.sectors)
                                     }
@@ -272,7 +272,7 @@ class MainInfoPane {
 
     /** Initializes the runway configuration panes for all the airports */
     fun initializeAirportRwyConfigPanes() {
-        for (airport in GAME.gameClientScreen?.airports?.values() ?: return) {
+        for (airport in CLIENT_SCREEN?.airports?.values() ?: return) {
             val arptId = airport.entity[AirportInfo.mapper]?.arptId ?: return
             paneContainer.actor = null
             val newTable = paneContainer.table {

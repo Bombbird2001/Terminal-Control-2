@@ -110,8 +110,7 @@ private fun updateDatatagSize(datatag: Datatag) {
 /** Adds a dragListener and changeListener to the background [Datatag.clickSpot] */
 fun addDatatagInputListeners(datatag: Datatag, aircraft: Aircraft) {
     datatag.clickSpot.apply {
-        GAME.gameClientScreen?.addToConstZoomStage(this) // Add to uiStage in order for drag gesture to be detected by inputMultiplexer
-        zIndex = 0
+        CLIENT_SCREEN?.addToConstZoomStage(this) // Add to uiStage in order for drag gesture to be detected by inputMultiplexer
         addListener(object: DragListener() {
             override fun drag(event: InputEvent?, x: Float, y: Float, pointer: Int) {
                 if (aircraft.entity.has(WaitingTakeoff.mapper)) return
@@ -130,7 +129,7 @@ fun addDatatagInputListeners(datatag: Datatag, aircraft: Aircraft) {
             datatag.clicks++
             if (datatag.clicks >= 2) {
                 val controllable = aircraft.entity[Controllable.mapper]
-                if (controllable != null && controllable.sectorId == GAME.gameClientScreen?.playerSector) datatag.minimised = !datatag.minimised
+                if (controllable != null && controllable.sectorId == CLIENT_SCREEN?.playerSector) datatag.minimised = !datatag.minimised
                 datatag.clicks = 0
                 datatag.tapTimer.clear()
                 Gdx.app.postRunnable { updateDatatagText(datatag, getNewDatatagLabelText(aircraft.entity, datatag.minimised)) }
@@ -139,7 +138,15 @@ fun addDatatagInputListeners(datatag: Datatag, aircraft: Aircraft) {
                     datatag.clicks = 0
                 }
             }, 0.2f)
-            Gdx.app.postRunnable { CLIENT_SCREEN?.setUISelectedAircraft(aircraft) }
+            Gdx.app.postRunnable {
+                CLIENT_SCREEN?.setUISelectedAircraft(aircraft)
+                if (!datatag.renderLast) {
+                    CLIENT_SCREEN?.aircraft?.values()?.forEach { it.entity[Datatag.mapper]?.renderLast = false }
+                    remove()
+                    CLIENT_SCREEN?.addToConstZoomStage(this) // Re-add to uiStage in order for position to be increased
+                    datatag.renderLast = true
+                }
+            }
         }
     }
 }
@@ -153,7 +160,7 @@ fun addDatatagInputListeners(datatag: Datatag, aircraft: Aircraft) {
  * */
 fun getNewDatatagLabelText(entity: Entity, minimised: Boolean): Array<String> {
     val controllable = entity[Controllable.mapper]
-    return if (minimised || controllable == null || controllable.sectorId != GAME.gameClientScreen?.playerSector) getMinimisedLabelText(entity)
+    return if (minimised || controllable == null || controllable.sectorId != CLIENT_SCREEN?.playerSector) getMinimisedLabelText(entity)
     else getExpandedLabelText(entity)
 }
 

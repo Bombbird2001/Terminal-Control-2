@@ -48,10 +48,10 @@ import kotlin.math.min
  * Also contains the stage for drawing the UI overlay
  *
  * Implements [GestureListener] and [InputProcessor] to handle input/gesture events to it
- * @param connectionHost the address of the host server to connect to
+ * @param connectionHost the address of the host server to connect to; if null, no connection will be initiated
  * @param airportToHost the main map airport name to be hosted; must be null if not hosting the server
  * */
-class RadarScreen(private val connectionHost: String, airportToHost: String?): KtxScreen, GestureListener, InputProcessor {
+class RadarScreen(private val connectionHost: String?, airportToHost: String?): KtxScreen, GestureListener, InputProcessor {
     private val clientEngine = getEngine(true)
     private val radarDisplayStage = safeStage(GAME.batch)
     private val constZoomStage = safeStage(GAME.batch)
@@ -436,6 +436,7 @@ class RadarScreen(private val connectionHost: String, airportToHost: String?): K
      * If client is already connected, the method will return
      * */
     private fun attemptConnectionToServer() {
+        if (connectionHost == null) return
         if (client.isConnected) return
         while (true) {
             try {

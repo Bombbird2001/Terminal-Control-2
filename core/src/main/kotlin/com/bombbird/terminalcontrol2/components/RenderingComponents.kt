@@ -101,5 +101,6 @@ class Datatag(var xOffset: Float = 0f, var yOffset: Float = 0f, var minimised: B
     val labelArray: Array<Label> = arrayOf(Label("", Scene2DSkin.defaultSkin, "Datatag"), Label("", Scene2DSkin.defaultSkin, "Datatag"),
                                            Label("", Scene2DSkin.defaultSkin, "Datatag"), Label("", Scene2DSkin.defaultSkin, "Datatag"))
     var smallLabelFont = false
+    var renderLast = false
     companion object: Mapper<Datatag>()
 }

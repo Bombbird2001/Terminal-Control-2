@@ -9,6 +9,7 @@ import com.bombbird.terminalcontrol2.components.CommandTarget
 import com.bombbird.terminalcontrol2.components.STARChildren
 import com.bombbird.terminalcontrol2.components.WaypointInfo
 import com.bombbird.terminalcontrol2.global.CHANGED_YELLOW
+import com.bombbird.terminalcontrol2.global.CLIENT_SCREEN
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.UI_HEIGHT
 import com.bombbird.terminalcontrol2.navigation.*
@@ -125,7 +126,7 @@ class RouteEditPane {
                             CommandTarget.TURN_LEFT -> "Turn left\n"
                             CommandTarget.TURN_RIGHT -> "Turn right\n"
                             else -> ""
-                        } + GAME.gameClientScreen?.waypoints?.get(wpt.wptId)?.entity?.get(WaypointInfo.mapper)?.wptName
+                        } + CLIENT_SCREEN?.waypoints?.get(wpt.wptId)?.entity?.get(WaypointInfo.mapper)?.wptName
                     } ?:
                     (leg as? Route.VectorLeg)?.let { vec -> "${when (vec.turnDir) {
                         CommandTarget.TURN_LEFT -> "Left "
@@ -134,7 +135,7 @@ class RouteEditPane {
                     }}HDG ${vec.heading}" } ?:
                     (leg as? Route.HoldLeg)?.wptId?.let {
                             wptId -> "Hold ${
-                                if (wptId >= 0) "at\n" + GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName else "here"
+                                if (wptId >= 0) "at\n" + CLIENT_SCREEN?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName else "here"
                             }"
                     } ?:
                     (leg as? Route.DiscontinuityLeg)?.let { "Discontinuity" } ?:
@@ -242,7 +243,7 @@ class RouteEditPane {
      */
     private fun updateNewStarSelection(route: Route, hiddenLegs: Route, clearedApp: String?, clearedTrans: String?, arptId: Byte?, newStar: String) {
         if (newStar == "Change STAR" || arptId == null) return
-        val star = GAME.gameClientScreen?.airports?.get(arptId)?.entity?.get(STARChildren.mapper)?.starMap?.get(newStar) ?: return
+        val star = CLIENT_SCREEN?.airports?.get(arptId)?.entity?.get(STARChildren.mapper)?.starMap?.get(newStar) ?: return
         parentPane.userClearanceState.routePrimaryName = newStar
         route.clear()
         hiddenLegs.clear()

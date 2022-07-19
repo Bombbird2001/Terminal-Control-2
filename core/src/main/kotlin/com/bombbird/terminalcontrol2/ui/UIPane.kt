@@ -137,7 +137,7 @@ class UIPane(private val uiStage: Stage) {
         selAircraft = aircraft
         aircraft.entity.apply {
             val controllable = get(Controllable.mapper) ?: return
-            if (controllable.sectorId != GAME.gameClientScreen?.playerSector) return
+            if (controllable.sectorId != CLIENT_SCREEN?.playerSector) return
         }
         aircraftMaxAlt = aircraft.entity[AircraftInfo.mapper]?.aircraftPerf?.maxAlt ?: return
         aircraftArrivalArptId = aircraft.entity[ArrivalAirport.mapper]?.arptId
@@ -172,7 +172,7 @@ class UIPane(private val uiStage: Stage) {
     fun updateSelectedAircraft(aircraft: Aircraft) {
         aircraft.entity.apply {
             val controllable = get(Controllable.mapper) ?: return
-            if (controllable.sectorId != GAME.gameClientScreen?.playerSector) return
+            if (controllable.sectorId != CLIENT_SCREEN?.playerSector) return
         }
         aircraftArrivalArptId = aircraft.entity[ArrivalAirport.mapper]?.arptId
         appTrackCaptured = aircraft.entity.has(VisualCaptured.mapper) || aircraft.entity.has(LocalizerCaptured.mapper)

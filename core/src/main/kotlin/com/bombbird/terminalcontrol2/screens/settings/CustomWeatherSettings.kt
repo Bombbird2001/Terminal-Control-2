@@ -35,7 +35,7 @@ class CustomWeatherSettings: BaseGameSettings() {
                     row().padTop(50f)
                     scrollPane("SettingsPane") {
                         table {
-                            GAME.gameClientScreen?.apply { for (airport in airports.values()) {
+                            CLIENT_SCREEN?.apply { for (airport in airports.values()) {
                                 airport?.entity?.get(AirportInfo.mapper)?.let { arptInfo ->
                                     row().padTop(30f)
                                     label("${arptInfo.icaoCode}:", "SettingsOption").cell(height = BUTTON_HEIGHT_BIG / 1.5f, padRight = 20f)

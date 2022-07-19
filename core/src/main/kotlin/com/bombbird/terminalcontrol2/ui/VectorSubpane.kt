@@ -7,7 +7,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.TextButton
 import com.badlogic.gdx.utils.Align
 import com.bombbird.terminalcontrol2.components.CommandTarget
 import com.bombbird.terminalcontrol2.components.WaypointInfo
-import com.bombbird.terminalcontrol2.global.GAME
+import com.bombbird.terminalcontrol2.global.CLIENT_SCREEN
 import com.bombbird.terminalcontrol2.global.UI_HEIGHT
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.navigation.compareLegEquality
@@ -176,7 +176,7 @@ class VectorSubpane {
             add("Now")
             for (i in 0 until parentPane.userClearanceState.route.size) {
                 (parentPane.userClearanceState.route[i] as? Route.WaypointLeg)?.let {
-                    val wptName = GAME.gameClientScreen?.waypoints?.get(it.wptId)?.entity?.get(WaypointInfo.mapper)?.wptName
+                    val wptName = CLIENT_SCREEN?.waypoints?.get(it.wptId)?.entity?.get(WaypointInfo.mapper)?.wptName
                     add("After $wptName")
                 }
             }
@@ -188,7 +188,7 @@ class VectorSubpane {
             vectorLabel.setText(newAftWptLeg.heading.toString())
             val prevAftWptLeg = getAfterWptHdgLeg(this, parentPane.clearanceState.route)
             vectorLabel.style = Scene2DSkin.defaultSkin["ControlPaneHdg${if (prevAftWptLeg?.heading != newAftWptLeg.heading) "Changed" else ""}", Label.LabelStyle::class.java]
-            val wptName = GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName
+            val wptName = CLIENT_SCREEN?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName
             afterWaypointSelectBox.selected = if (wptName == null) "Now" else "After $wptName"
             // Set style as changed if new after waypoint leg does not yet exist in acting clearance
             afterWaypointSelectBox.style = Scene2DSkin.defaultSkin[if (wptName == null || getAfterWptHdgLeg(wptName, parentPane.clearanceState.route) == null) "ControlPaneChanged" else "ControlPane", SelectBoxStyle::class.java]
@@ -257,7 +257,7 @@ class VectorSubpane {
                 } ?: Route.VectorLeg(vectorLabel.text.toString().toShort()).also { addedLeg ->
                     // If no current after waypoint vector leg exists, add one after the selected waypoint
                     for (i in 0 until route.size) (route[i] as? Route.WaypointLeg)?.apply {
-                        if (GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName == wpt) {
+                        if (CLIENT_SCREEN?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName == wpt) {
                             // Remove hold leg if it exists
                             if (i + 1 < route.size && route[i + 1] is Route.HoldLeg) route.removeIndex(i + 1)
                             route.insert(i + 1, addedLeg)

@@ -1,11 +1,9 @@
-import com.bombbird.terminalcontrol2.TerminalControl2
 import com.bombbird.terminalcontrol2.components.RunwayChildren
 import com.bombbird.terminalcontrol2.components.RunwayLabel
 import com.bombbird.terminalcontrol2.components.VisualApproach
 import com.bombbird.terminalcontrol2.entities.Airport
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.*
-import com.bombbird.terminalcontrol2.networking.GameServer
 import com.bombbird.terminalcontrol2.utilities.UsabilityFilter
 import com.bombbird.terminalcontrol2.utilities.nmToPx
 import com.bombbird.terminalcontrol2.utilities.pxToFt
@@ -13,8 +11,8 @@ import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.floats.plusOrMinus
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.shouldNotBe
 import ktx.ashley.get
 import ktx.collections.set
 
@@ -27,8 +25,7 @@ object ApproachToolsTest: FunSpec() {
 
     init {
         beforeTest {
-            if (!isGameInitialised) GAME = TerminalControl2()
-            if (GAME.gameServer == null) GAME.gameServer = GameServer()
+            initialiseGameAndServer()
             MAG_HDG_DEV = 0f
             GAME.gameServer?.apply {
                 airports.clear()
@@ -78,24 +75,24 @@ object ApproachToolsTest: FunSpec() {
                 getAppAltAtPos(visual, 10f + nmToPx(3), 10f + nmToPx(4), 100f) shouldBe pxToFt(nmToPx(0.25005f)).plusOrMinus(0.1f)
                 getAppAltAtPos(visual, 10f + nmToPx(11), 10f, 180f) shouldBe null
                 getAppAltAtPos(visual, 11f, 10f, 100f) shouldBe -20f
-            } shouldNotBe null
+            }.shouldNotBeNull()
         }
 
         test("Target position calculations") {
             getTargetPos(locGsApp1.entity, 10f, 10f + nmToPx(12))?.apply {
                 x shouldBe 10f.plusOrMinus(0.001f)
                 y shouldBe (10f + nmToPx(10.5f)).plusOrMinus(0.01f)
-            } shouldNotBe null
+            }.shouldNotBeNull()
 
             getTargetPos(locGsApp1.entity, 10f + nmToPx(3), 10f + nmToPx(4))?.apply {
                 x shouldBe 10f.plusOrMinus(0.001f)
                 y shouldBe (10f + nmToPx(4.5f)).plusOrMinus(0.01f)
-            } shouldNotBe null
+            }.shouldNotBeNull()
 
             getTargetPos(locGsApp2.entity, 10f + nmToPx(7), 10f)?.apply {
                 x shouldBe (10f + nmToPx(6.5f))
                 y shouldBe (10f.plusOrMinus(0.001f)).plusOrMinus(0.01f)
-            } shouldNotBe null
+            }.shouldNotBeNull()
 
             getTargetPos(locStepApp.entity, 10f + nmToPx(30), 10f) shouldBe null
 
@@ -103,8 +100,8 @@ object ApproachToolsTest: FunSpec() {
                 getTargetPos(visual, 10f + nmToPx(4), 10f + nmToPx(0.5f))?.apply {
                     x shouldBe (10f + nmToPx(3.5311f)).plusOrMinus(0.02f)
                     y shouldBe 10f.plusOrMinus(0.001f)
-                } shouldNotBe null
-            } shouldNotBe null
+                }.shouldNotBeNull()
+            }.shouldNotBeNull()
         }
 
         test("Line up distance check") {
@@ -118,7 +115,7 @@ object ApproachToolsTest: FunSpec() {
             isInsideLocArc(locGsApp2.entity, 10f + nmToPx(12), 10f + nmToPx(4), LOC_OUTER_ARC_ANGLE_DEG, 25).shouldBeFalse()
             isInsideLocArc(locGsApp2.entity, 10f + nmToPx(12), 10f + nmToPx(1), LOC_OUTER_ARC_ANGLE_DEG, 25).shouldBeTrue()
             isInsideLocArc(locStepApp.entity, 10f + nmToPx(13), 10f, LOC_INNER_ARC_ANGLE_DEG, LOC_INNER_ARC_DIST_NM).shouldBeFalse()
-            visApp?.apply { isInsideLocArc(visual, 10f + nmToPx(5), 10f, LOC_INNER_ARC_ANGLE_DEG, LOC_INNER_ARC_DIST_NM).shouldBeFalse() } shouldNotBe null
+            visApp?.apply { isInsideLocArc(visual, 10f + nmToPx(5), 10f, LOC_INNER_ARC_ANGLE_DEG, LOC_INNER_ARC_DIST_NM).shouldBeFalse() }.shouldNotBeNull()
         }
     }
 }

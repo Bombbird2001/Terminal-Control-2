@@ -3,10 +3,7 @@ package com.bombbird.terminalcontrol2.systems
 import com.badlogic.ashley.core.Entity
 import com.badlogic.ashley.systems.IntervalSystem
 import com.bombbird.terminalcontrol2.components.*
-import com.bombbird.terminalcontrol2.global.GAME
-import com.bombbird.terminalcontrol2.global.MAX_ALT
-import com.bombbird.terminalcontrol2.global.TRACK_EXTRAPOLATE_TIME_S
-import com.bombbird.terminalcontrol2.global.uuid
+import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.utilities.getSectorForExtrapolatedPosition
 import ktx.ashley.*
 
@@ -28,7 +25,7 @@ class ControlStateSystemIntervalClient: IntervalSystem(1f) {
                 val alt = get(Altitude.mapper) ?: return@apply
                 val track = get(GroundTrack.mapper) ?: return@apply
                 val controllable = get(Controllable.mapper) ?: return@apply
-                GAME.gameClientScreen?.let {
+                CLIENT_SCREEN?.let {
                     if (controllable.sectorId == it.playerSector && controllable.controllerUUID == uuid) {
                         if (has(LocalizerCaptured.mapper) || has(GlideSlopeCaptured.mapper) || has(VisualCaptured.mapper)) {
                             // Aircraft has captured localizer/glide slope/visual approach path, allow handover to tower
@@ -65,7 +62,7 @@ class ControlStateSystemIntervalClient: IntervalSystem(1f) {
      * @param aircraft the aircraft entity to check for an update
      */
     private fun updateUIPaneHandover(aircraft: Entity) {
-        GAME.gameClientScreen?.apply {
+        CLIENT_SCREEN?.apply {
             val callsign = aircraft[AircraftInfo.mapper]?.icaoCallsign ?: return
             if (selectedAircraft?.entity?.get(AircraftInfo.mapper)?.icaoCallsign == callsign) {
                 uiPane.updateHandoverAckButtonState(aircraft)

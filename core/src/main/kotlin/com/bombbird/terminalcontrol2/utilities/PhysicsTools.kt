@@ -471,13 +471,14 @@ fun calculateArrivalSpawnPoint(route: Route, primarySector: Polygon): Triple<Flo
     val endX: Float
     val endY: Float
     val oppSpawnTrack: Float
-    val firstWptLeg = getFirstWaypointLegInSector(primarySector, route)
+    val firstWptLegIndex = getFirstWaypointLegInSector(primarySector, route)
+    val firstWptLeg = firstWptLegIndex?.let { route[it] as? Route.WaypointLeg }
     if (firstWptLeg != null) {
         // Waypoint inside sector found
-        val pos = GAME.gameServer?.waypoints?.get(firstWptLeg.first.wptId)?.entity?.get(Position.mapper) ?: Position()
+        val pos = GAME.gameServer?.waypoints?.get(firstWptLeg.wptId)?.entity?.get(Position.mapper) ?: Position()
         originX = pos.x
         originY = pos.y
-        if (firstWptLeg.second == 0) {
+        if (firstWptLegIndex == 0) {
             var nextWptLeg: Route.WaypointLeg? = null
             route.apply {
                 for (i in 1 until size) get(i).let { nextLeg ->
@@ -506,7 +507,7 @@ fun calculateArrivalSpawnPoint(route: Route, primarySector: Polygon): Triple<Flo
             var prevWptLeg: Route.WaypointLeg? = null
             var prevVectorLeg: Route.VectorLeg? = null
             route.apply {
-                for (i in firstWptLeg.second - 1 downTo 0) get(i).let { prevLeg ->
+                for (i in firstWptLegIndex - 1 downTo 0) get(i).let { prevLeg ->
                     when (prevLeg) {
                         is Route.WaypointLeg -> {
                             prevWptLeg = prevLeg
@@ -544,7 +545,7 @@ fun calculateArrivalSpawnPoint(route: Route, primarySector: Polygon): Triple<Flo
             }
 
             // Remove all previous legs and set the first leg to the first waypoint leg inside the sector
-            route.removeRange(0, firstWptLeg.second - 1)
+            route.removeRange(0, firstWptLegIndex - 1)
         }
     } else {
         // If no waypoint leg in sector, choose a random track towards the center (0, 0)

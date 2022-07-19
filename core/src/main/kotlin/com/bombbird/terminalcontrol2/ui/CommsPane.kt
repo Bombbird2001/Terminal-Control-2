@@ -9,10 +9,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle
 import com.badlogic.gdx.utils.Timer
 import com.badlogic.gdx.utils.Timer.Task
 import com.bombbird.terminalcontrol2.components.*
-import com.bombbird.terminalcontrol2.global.CONVO_SIZE
-import com.bombbird.terminalcontrol2.global.GAME
-import com.bombbird.terminalcontrol2.global.TRANS_ALT
-import com.bombbird.terminalcontrol2.global.UI_HEIGHT
+import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.utilities.AircraftTypeData
 import ktx.ashley.get
@@ -103,7 +100,7 @@ class CommsPane {
         val arrivalAirport = aircraft[ArrivalAirport.mapper]
 
         // Get the callsign of the player
-        val thisSectorInfo = GAME.gameClientScreen?.let {
+        val thisSectorInfo = CLIENT_SCREEN?.let {
             // If the player has not received the initial sector data, schedule the contact for 0.5s later
             if (it.sectors.isEmpty) {
                 Timer.schedule(object: Task() {
@@ -136,7 +133,7 @@ class CommsPane {
         else null
         val inbound = if (clearedHdg != null) ", heading ${if (clearedHdg < 100) "0" else ""}$clearedHdg"
         else if (clearedDirect != null && clearedDirect is Route.WaypointLeg && MathUtils.randomBoolean()) {
-            ", inbound ${GAME.gameClientScreen?.waypoints?.get(clearedDirect.wptId)?.entity?.get(WaypointInfo.mapper)?.wptName}"
+            ", inbound ${CLIENT_SCREEN?.waypoints?.get(clearedDirect.wptId)?.entity?.get(WaypointInfo.mapper)?.wptName}"
         } else ""
 
         // Get current SID/STAR name
@@ -149,7 +146,7 @@ class CommsPane {
         }
 
         // Get current airport ATIS letter
-        val atisLetter = GAME.gameClientScreen?.airports?.get(arrivalAirport?.arptId)?.entity?.get(MetarInfo.mapper)?.letterCode
+        val atisLetter = CLIENT_SCREEN?.airports?.get(arrivalAirport?.arptId)?.entity?.get(MetarInfo.mapper)?.letterCode
         val atis = if (atisLetter != null && MathUtils.randomBoolean(0.7f)) {
             when (MathUtils.random(3)) {
                 0 -> ", information $atisLetter"
@@ -174,7 +171,7 @@ class CommsPane {
         val alt = aircraft[Altitude.mapper] ?: return
 
         // Get the callsign of the player
-        val thisSectorInfo = GAME.gameClientScreen?.let {
+        val thisSectorInfo = CLIENT_SCREEN?.let {
             // If the player has not received the initial sector data, schedule the contact for 0.5s later
             if (it.sectors.isEmpty) {
                 Timer.schedule(object: Task() {
@@ -225,7 +222,7 @@ class CommsPane {
                 var towerCallsign = "Tower"
                 var towerFreq = "118.70"
                 aircraft[ClearanceAct.mapper]?.actingClearance?.actingClearance?.clearedApp?.let { app ->
-                    val arpt = GAME.gameClientScreen?.airports?.get(aircraft[ArrivalAirport.mapper]?.arptId)?.entity
+                    val arpt = CLIENT_SCREEN?.airports?.get(aircraft[ArrivalAirport.mapper]?.arptId)?.entity
                     val rwy = arpt?.get(ApproachChildren.mapper)?.approachMap?.get(app)?.entity?.get(ApproachInfo.mapper)?.rwyObj ?:
                     arpt?.get(RunwayChildren.mapper)?.rwyMap?.firstValue()
                     rwy?.entity?.get(RunwayInfo.mapper)?.let {
@@ -238,7 +235,7 @@ class CommsPane {
             }
             SectorInfo.CENTRE -> SectorInfo(SectorInfo.CENTRE, "121.5", "Control", "Control")
             else -> {
-                GAME.gameClientScreen?.let {
+                CLIENT_SCREEN?.let {
                     // If the player has not received the initial sector data, schedule the contact for 0.5s later
                     if (it.sectors.isEmpty) {
                         Timer.schedule(object: Task() {

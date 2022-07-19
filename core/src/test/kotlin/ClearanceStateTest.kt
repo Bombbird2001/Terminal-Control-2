@@ -1,13 +1,9 @@
-import com.bombbird.terminalcontrol2.TerminalControl2
 import com.bombbird.terminalcontrol2.components.CommandTarget
 import com.bombbird.terminalcontrol2.components.FlightType
 import com.bombbird.terminalcontrol2.entities.Aircraft
-import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.MAG_HDG_DEV
-import com.bombbird.terminalcontrol2.global.isGameInitialised
 import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.navigation.Route
-import com.bombbird.terminalcontrol2.networking.GameServer
 import com.bombbird.terminalcontrol2.utilities.AircraftTypeData
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
@@ -21,8 +17,7 @@ object ClearanceStateTest: FunSpec() {
 
     init {
         beforeTest {
-            if (!isGameInitialised) GAME = TerminalControl2()
-            if (GAME.gameServer == null) GAME.gameServer = GameServer()
+            initialiseGameAndServer()
             AircraftTypeData.addAircraftPerf("B77W", AircraftTypeData.AircraftPerfData())
             MAG_HDG_DEV = 0f
             aircraft = Aircraft("TESTSHIBA", 0f, 0f, 10000f, "B77W", FlightType.ARRIVAL, false)

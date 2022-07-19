@@ -126,6 +126,6 @@ class DatatagSettings: BaseSettings() {
             }
         }
         DATATAG_ROW_SPACING_PX = rowSpacingSlide.value.roundToInt().toByte()
-        GAME.gameClientScreen?.updateAllDatatagStyles()
+        CLIENT_SCREEN?.updateAllDatatagStyles()
     }
 }

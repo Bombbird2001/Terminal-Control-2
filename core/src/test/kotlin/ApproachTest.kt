@@ -1,16 +1,12 @@
-import com.bombbird.terminalcontrol2.TerminalControl2
 import com.bombbird.terminalcontrol2.components.*
-import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.MAG_HDG_DEV
-import com.bombbird.terminalcontrol2.global.isGameInitialised
 import com.bombbird.terminalcontrol2.navigation.Approach
-import com.bombbird.terminalcontrol2.networking.GameServer
 import com.bombbird.terminalcontrol2.utilities.UsabilityFilter
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.floats.plusOrMinus
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.shouldNotBe
 import ktx.ashley.get
 
 /** Kotest FunSpec class for testing approach functions */
@@ -19,8 +15,7 @@ object ApproachTest: FunSpec() {
 
     init {
         beforeTest {
-            if (!isGameInitialised) GAME = TerminalControl2()
-            if (GAME.gameServer == null) GAME.gameServer = GameServer()
+            initialiseGameAndServer()
             MAG_HDG_DEV = 0f
             approach = Approach("TESTAPP1", 0, 0, 0f, 0f, 200, 500,
                 false, UsabilityFilter.DAY_AND_NIGHT)
@@ -32,14 +27,14 @@ object ApproachTest: FunSpec() {
             approach?.entity?.get(Direction.mapper)?.trackUnitVector?.apply {
                 x shouldBe 0f.plusOrMinus(0.0001f)
                 y shouldBe (-1f).plusOrMinus(0.0001f)
-            } shouldNotBe null
+            }.shouldNotBeNull()
 
             approach?.addLocalizer(90, 20)
             approach?.entity?.get(Localizer.mapper)?.maxDistNm shouldBe 20
             approach?.entity?.get(Direction.mapper)?.trackUnitVector?.apply {
                 x shouldBe (-1f).plusOrMinus(0.0001f)
                 y shouldBe 0f.plusOrMinus(0.0001f)
-            } shouldNotBe null
+            }.shouldNotBeNull()
 
             MAG_HDG_DEV = 3f
             approach?.addLocalizer(180, 15)
@@ -47,14 +42,14 @@ object ApproachTest: FunSpec() {
             approach?.entity?.get(Direction.mapper)?.trackUnitVector?.apply {
                 x shouldBe (-0.052336f).plusOrMinus(0.000001f)
                 y shouldBe 0.99863f.plusOrMinus(0.00001f)
-            } shouldNotBe null
+            }.shouldNotBeNull()
 
             approach?.addLocalizer(270, 10)
             approach?.entity?.get(Localizer.mapper)?.maxDistNm shouldBe 10
             approach?.entity?.get(Direction.mapper)?.trackUnitVector?.apply {
                 x shouldBe 0.99863f.plusOrMinus(0.0001f)
                 y shouldBe 0.052336f.plusOrMinus(0.0001f)
-            } shouldNotBe null
+            }.shouldNotBeNull()
         }
 
         test("Glideslope addition") {
@@ -63,14 +58,14 @@ object ApproachTest: FunSpec() {
                 glideAngle shouldBe 3f
                 offsetNm shouldBe -2f
                 maxInterceptAlt shouldBe 4000
-            } shouldNotBe null
+            }.shouldNotBeNull()
 
             approach?.addGlideslope(4.5f, -1.2f, 6000)
             approach?.entity?.get(GlideSlope.mapper)?.apply {
                 glideAngle shouldBe 4.5f
                 offsetNm shouldBe -1.2f
                 maxInterceptAlt shouldBe 6000
-            } shouldNotBe null
+            }.shouldNotBeNull()
         }
 
         test("Step down addition") {
@@ -95,14 +90,14 @@ object ApproachTest: FunSpec() {
                 minBreakoutAlt shouldBe 1000
                 maxBreakoutAlt shouldBe 2000
                 breakoutDir shouldBe CommandTarget.TURN_LEFT
-            } shouldNotBe null
+            }.shouldNotBeNull()
 
             approach?.addCircling(1300, 1900, CommandTarget.TURN_RIGHT)
             approach?.entity?.get(Circling.mapper)?.apply {
                 minBreakoutAlt shouldBe 1300
                 maxBreakoutAlt shouldBe 1900
                 breakoutDir shouldBe CommandTarget.TURN_RIGHT
-            } shouldNotBe null
+            }.shouldNotBeNull()
         }
     }
 }

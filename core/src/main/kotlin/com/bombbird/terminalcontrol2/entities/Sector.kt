@@ -6,7 +6,7 @@ import com.bombbird.terminalcontrol2.components.GPolygon
 import com.bombbird.terminalcontrol2.components.RenderLast
 import com.bombbird.terminalcontrol2.components.SRColor
 import com.bombbird.terminalcontrol2.components.SectorInfo
-import com.bombbird.terminalcontrol2.global.GAME
+import com.bombbird.terminalcontrol2.global.CLIENT_SCREEN
 import com.bombbird.terminalcontrol2.global.SECTOR_GREEN
 import com.bombbird.terminalcontrol2.global.getEngine
 import ktx.ashley.entity
@@ -27,7 +27,7 @@ class Sector(id: Byte, freq: String, arrCallsign: String, depCallsign: String, s
             vertices = sectorBoundary.map { it.toFloat() }.toFloatArray()
         }
         if (onClient) {
-            val mySector = GAME.gameClientScreen?.playerSector == id
+            val mySector = CLIENT_SCREEN?.playerSector == id
             with<SRColor> {
                 color = if (mySector) Color.WHITE else SECTOR_GREEN
             }

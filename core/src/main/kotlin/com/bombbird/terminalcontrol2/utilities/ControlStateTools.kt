@@ -8,6 +8,7 @@ import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable
 import com.badlogic.gdx.utils.Queue
 import com.bombbird.terminalcontrol2.components.*
+import com.bombbird.terminalcontrol2.global.CLIENT_SCREEN
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.navigation.*
 import com.bombbird.terminalcontrol2.navigation.Route.*
@@ -211,7 +212,7 @@ fun removeAllApproachComponents(aircraft: Entity) {
  */
 fun getSectorForPosition(posX: Float, posY: Float, useServerSectors: Boolean): Byte? {
     val allSectors = if (useServerSectors) GAME.gameServer?.let { it.sectors[it.playerNo.get().toByte()] } ?: return null
-    else GAME.gameClientScreen?.sectors ?: return null
+    else CLIENT_SCREEN?.sectors ?: return null
     for (j in 0 until allSectors.size) allSectors[j]?.let { sector ->
         if (Polygon(sector.entity[GPolygon.mapper]?.vertices ?: floatArrayOf(0f, 1f, 1f, 0f, -1f, 0f)).contains(posX, posY)) {
             return sector.entity[SectorInfo.mapper]?.sectorId ?: return@let

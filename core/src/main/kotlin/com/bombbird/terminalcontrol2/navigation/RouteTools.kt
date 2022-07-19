@@ -6,6 +6,7 @@ import com.bombbird.terminalcontrol2.components.ApproachChildren
 import com.bombbird.terminalcontrol2.components.Position
 import com.bombbird.terminalcontrol2.components.WaypointInfo
 import com.bombbird.terminalcontrol2.entities.Waypoint
+import com.bombbird.terminalcontrol2.global.CLIENT_SCREEN
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.navigation.Route.*
 import com.bombbird.terminalcontrol2.utilities.calculateDistanceBetweenPoints
@@ -157,11 +158,11 @@ fun removeCustomHoldWaypoint(wptId: Short) {
  * @param route the route to refer to
  * @return a Pair, first being the [WaypointLeg], second being the index of the [WaypointLeg], or null if none found
  * */
-fun getFirstWaypointLegInSector(sector: Polygon, route: Route): Pair<WaypointLeg, Int>? {
+fun getFirstWaypointLegInSector(sector: Polygon, route: Route): Int? {
     for (i in 0 until route.size) {
         (route[i] as? WaypointLeg)?.apply {
             val pos = GAME.gameServer?.waypoints?.get(wptId)?.entity?.get(Position.mapper) ?: return@apply
-            if (sector.contains(pos.x, pos.y)) return Pair(this, i)
+            if (sector.contains(pos.x, pos.y)) return i
         }
     }
     return null
@@ -173,14 +174,17 @@ fun getFirstWaypointLegInSector(sector: Polygon, route: Route): Pair<WaypointLeg
  * @return a Pair, the first being a float denoting the track, the second being a byte representing the turn direction
  * */
 fun findNextWptLegTrackAndDirection(route: Route): Pair<Float, Byte>? {
-    if (route.size < 2) return null
     (route[0] as? WaypointLeg)?.let { wpt1 ->
-        (route[1] as? WaypointLeg)?.let { wpt2 ->
-            val w1 = GAME.gameServer?.waypoints?.get(wpt1.wptId)?.entity?.get(Position.mapper) ?: return null
-            val w2 = GAME.gameServer?.waypoints?.get(wpt2.wptId)?.entity?.get(Position.mapper) ?: return null
-            return Pair(getRequiredTrack(w1.x, w1.y, w2.x, w2.y), wpt2.turnDir)
+        for (i in 1 until route.size) {
+            (route[i] as? WaypointLeg)?.also { wpt2 ->
+                if (!wpt2.legActive) return@also
+                val w1 = GAME.gameServer?.waypoints?.get(wpt1.wptId)?.entity?.get(Position.mapper) ?: return null
+                val w2 = GAME.gameServer?.waypoints?.get(wpt2.wptId)?.entity?.get(Position.mapper) ?: return null
+                return Pair(getRequiredTrack(w1.x, w1.y, w2.x, w2.y), wpt2.turnDir)
+            }
         }
-    } ?: return null
+    }
+    return null
 }
 
 /**
@@ -207,7 +211,7 @@ fun getAfterWptHdgLeg(wpt: WaypointLeg, route: Route): VectorLeg? {
  * */
 fun getAfterWptHdgLeg(wptName: String, route: Route): Pair<VectorLeg, WaypointLeg>? {
     for (i in 0 until route.size) (route[i] as? WaypointLeg)?.apply {
-        if (GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName == wptName) {
+        if (CLIENT_SCREEN?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName == wptName) {
             if (route.size > i + 1) (route[i + 1] as? VectorLeg)?.let { return Pair(it, this) } ?: return null // If subsequent leg exists and is vector, return it
         }
     }
@@ -276,7 +280,7 @@ fun findFirstHoldLegWithID(wptId: Short, route: Route): HoldLeg? {
  * @return a [WaypointLeg], or null if no legs with a speed restriction are found
  * */
 fun getNextWaypointWithSpdRestr(route: Route): WaypointLeg? {
-    for (i in 0 until route.size) (route[i] as? WaypointLeg)?.let { if (it.maxSpdKt != null && it.spdRestrActive) return it } ?: return null
+    for (i in 0 until route.size) (route[i] as? WaypointLeg)?.let { if (it.maxSpdKt != null && it.legActive && it.spdRestrActive) return it } ?: return null
     return null
 }
 
@@ -340,7 +344,7 @@ fun getFafAltitude(route: Route): Int? {
 fun hasOnlyWaypointLegsTillMissed(startLeg: Leg?, route: Route): Boolean {
     var startFound = startLeg == null
     for (i in 0 until route.size) {
-        if (startLeg != null) startFound = compareLegEquality(startLeg, route[i])
+        if (startLeg != null && !startFound) startFound = compareLegEquality(startLeg, route[i])
         if (!startFound) continue
         if (route[i].phase == Leg.MISSED_APP) return true
         if (route[i] !is WaypointLeg) return false
@@ -407,6 +411,7 @@ fun calculateDistToGo(aircraftPos: Position?, startLeg: Leg, endLeg: Leg, route:
             foundStart = true
         }
         if (foundStart) (leg as? WaypointLeg)?.apply {
+            if (!legActive) return@apply
             val wptPos = GAME.gameServer?.waypoints?.get(wptId)?.entity?.get(Position.mapper) ?: return@apply
             val finalX = prevX
             val finalY = prevY
@@ -484,7 +489,7 @@ fun calculateRouteSegments(route: Route, routeSegmentArray: GdxArray<LegSegment>
 fun updateApproachRoute(route: Route, hiddenLegs: Route, arptId: Byte?, appName: String?, transName: String?) {
     removeApproachLegs(route, hiddenLegs)
     if (arptId == null || appName == null || transName == null) return
-    val app = GAME.gameClientScreen?.airports?.get(arptId)?.entity?.get(ApproachChildren.mapper)?.approachMap?.get(appName) ?: return
+    val app = CLIENT_SCREEN?.airports?.get(arptId)?.entity?.get(ApproachChildren.mapper)?.approachMap?.get(appName) ?: return
     val trans = app.transitions[transName] ?: null // Force to nullable Route? type, instead of a Route! type
     // Search for the first leg in the current route that matches the first leg in the transition
     val matchingIndex = if (transName != "vectors" && (trans?.size ?: 0) > 0) (trans?.get(0) as? WaypointLeg)?.let { firstTransWpt ->

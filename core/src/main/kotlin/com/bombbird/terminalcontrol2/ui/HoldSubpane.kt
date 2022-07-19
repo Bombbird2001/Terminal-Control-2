@@ -10,7 +10,7 @@ import com.badlogic.gdx.utils.Align
 import com.bombbird.terminalcontrol2.components.CommandTarget
 import com.bombbird.terminalcontrol2.components.PublishedHoldInfo
 import com.bombbird.terminalcontrol2.components.WaypointInfo
-import com.bombbird.terminalcontrol2.global.GAME
+import com.bombbird.terminalcontrol2.global.CLIENT_SCREEN
 import com.bombbird.terminalcontrol2.global.UI_HEIGHT
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.navigation.findFirstHoldLegWithID
@@ -207,24 +207,24 @@ class HoldSubpane {
         modificationInProgress = true
         holdSelectBox.items = GdxArray<String>().apply {
             if (parentPane.clearanceState.route.size > 0) { (parentPane.clearanceState.route[0] as? Route.HoldLeg)?.let {
-                add(if (it.wptId.toInt() <= -1) "Present position" else GAME.gameClientScreen?.waypoints?.get(it.wptId)?.entity?.get(
+                add(if (it.wptId.toInt() <= -1) "Present position" else CLIENT_SCREEN?.waypoints?.get(it.wptId)?.entity?.get(
                     WaypointInfo.mapper)?.wptName)
                 return@apply // Only allow the current hold leg in the selection if aircraft is already holding
             }}
             add("Present position")
             for (i in 0 until route.size) route[i].let {
-                if (it is Route.WaypointLeg) GAME.gameClientScreen?.waypoints?.get(it.wptId)?.entity?.get(WaypointInfo.mapper)?.wptName?.also { name -> add(name) }
+                if (it is Route.WaypointLeg) CLIENT_SCREEN?.waypoints?.get(it.wptId)?.entity?.get(WaypointInfo.mapper)?.wptName?.also { name -> add(name) }
             }
         }
         selectedHold?.apply {
-            val wptName = if (wptId.toInt() <= -1) "Present position" else GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(
+            val wptName = if (wptId.toInt() <= -1) "Present position" else CLIENT_SCREEN?.waypoints?.get(wptId)?.entity?.get(
                 WaypointInfo.mapper)?.wptName ?: return@apply
             holdSelectBox.selected = wptName
             holdLegDistLabel.setText("$legDist nm")
             holdInboundHdgLabel.setText(inboundHdg.toString())
             holdLeftButton.isChecked = turnDir == CommandTarget.TURN_LEFT
             holdRightButton.isChecked = turnDir == CommandTarget.TURN_RIGHT
-            GAME.gameClientScreen?.publishedHolds?.get(wptName)?.entity?.get(PublishedHoldInfo.mapper)?.let {
+            CLIENT_SCREEN?.publishedHolds?.get(wptName)?.entity?.get(PublishedHoldInfo.mapper)?.let {
                 holdAsPublishedButton.isVisible = true
                 val asPublished = legDist == it.legDistNm && inboundHdg == it.inboundHdgDeg && turnDir == it.turnDir
                 holdAsPublishedButton.isChecked = asPublished
@@ -312,7 +312,7 @@ class HoldSubpane {
                 // Find the corresponding hold or waypoint leg in route (until a non waypoint/hold leg is found)
                 route.also { legs -> for (i in 0 until legs.size) legs[i].apply {
                     // Search for hold leg first
-                    if (this is Route.HoldLeg && GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName == it) {
+                    if (this is Route.HoldLeg && CLIENT_SCREEN?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName == it) {
                         // Hold already exists in route, update to selected parameters
                         inboundHdg = selectedInboundHdg
                         legDist = selectedLegDist
@@ -324,11 +324,11 @@ class HoldSubpane {
 
                     // Hold leg not found, search for waypoint leg instead
                     for (i in 0 until legs.size) legs[i].apply {
-                        if (this is Route.WaypointLeg && GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName == it) {
+                        if (this is Route.WaypointLeg && CLIENT_SCREEN?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName == it) {
                             // Add a new hold leg after this waypoint leg (phase will be the same as the parent waypoint leg)
-                            val newHold = GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName?.let { name ->
+                            val newHold = CLIENT_SCREEN?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName?.let { name ->
                                 // If this leg is a published hold leg, set to published by default
-                                GAME.gameClientScreen?.publishedHolds?.get(name)?.entity?.get(PublishedHoldInfo.mapper)?.let { pubHold ->
+                                CLIENT_SCREEN?.publishedHolds?.get(name)?.entity?.get(PublishedHoldInfo.mapper)?.let { pubHold ->
                                     Route.HoldLeg(wptId, pubHold.maxAltFt, pubHold.minAltFt, pubHold.maxSpdKtLower, pubHold.maxSpdKtHigher,
                                         pubHold.inboundHdgDeg, pubHold.legDistNm, pubHold.turnDir, phase)
                                 }} ?: Route.HoldLeg(wptId, null, null, 230, 240, selectedInboundHdg, selectedLegDist, selectedTurnDir, phase)
@@ -371,8 +371,8 @@ class HoldSubpane {
      * @param holdWpt the hold leg
      * */
     private fun setHoldAsPublished(holdWpt: Route.HoldLeg) {
-        val name = GAME.gameClientScreen?.waypoints?.get(holdWpt.wptId)?.entity?.get(WaypointInfo.mapper)?.wptName ?: return
-        val publishedHold = GAME.gameClientScreen?.publishedHolds?.get(name)?.entity?.get(PublishedHoldInfo.mapper) ?: return // Return if no published hold found
+        val name = CLIENT_SCREEN?.waypoints?.get(holdWpt.wptId)?.entity?.get(WaypointInfo.mapper)?.wptName ?: return
+        val publishedHold = CLIENT_SCREEN?.publishedHolds?.get(name)?.entity?.get(PublishedHoldInfo.mapper) ?: return // Return if no published hold found
         holdWpt.apply {
             maxAltFt = publishedHold.maxAltFt
             minAltFt = publishedHold.minAltFt
@@ -387,8 +387,8 @@ class HoldSubpane {
     /** Updates the "As Published" and "Custom" buttons state for the selected hold waypoint */
     private fun updateAsPublishedStatus() {
         selectedHoldLeg?.apply {
-            val name = if (wptId.toInt() == -1) "" else GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName ?: return
-            val pubHold = GAME.gameClientScreen?.publishedHolds?.get(name)?.entity?.get(PublishedHoldInfo.mapper)
+            val name = if (wptId.toInt() == -1) "" else CLIENT_SCREEN?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName ?: return
+            val pubHold = CLIENT_SCREEN?.publishedHolds?.get(name)?.entity?.get(PublishedHoldInfo.mapper)
             modificationInProgress = true
             if (pubHold == null || pubHold.maxAltFt != maxAltFt || pubHold.minAltFt != minAltFt || pubHold.inboundHdgDeg != inboundHdg ||
                 pubHold.maxSpdKtLower != maxSpdKtLower || pubHold.maxSpdKtHigher != maxSpdKtHigher || pubHold.legDistNm != legDist || pubHold.turnDir != turnDir) {
