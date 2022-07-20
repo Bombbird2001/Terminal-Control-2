@@ -333,7 +333,11 @@ fun handleIncomingRequestClient(rs: RadarScreen, obj: Any?) {
                         else commsPane.initialContact(aircraft.entity)
                     }
                     aircraft.entity += ContactNotification()
-                } else if (obj.newSector != rs.playerSector || obj.newUUID != uuid.toString()) aircraft.entity.remove<ContactNotification>()
+                    aircraft.entity[Datatag.mapper]?.let { setDatatagFlash(it, aircraft, true) }
+                } else if (obj.newSector != rs.playerSector || obj.newUUID != uuid.toString()) {
+                    aircraft.entity.remove<ContactNotification>()
+                    aircraft.entity[Datatag.mapper]?.let { setDatatagFlash(it, aircraft, false) }
+                }
                 controllable.controllerUUID = obj.newUUID?.let { UUID.fromString(it) }
                 if (rs.selectedAircraft == aircraft) {
                     if (obj.newSector == rs.playerSector) rs.setUISelectedAircraft(aircraft)

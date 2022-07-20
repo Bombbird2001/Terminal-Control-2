@@ -54,7 +54,8 @@ fun updateDatatagText(datatag: Datatag, newText: Array<String>) {
 fun updateDatatagStyle(datatag: Datatag, flightType: Byte, selected: Boolean) {
     val background = if ((selected && DATATAG_BACKGROUND != DATATAG_BACKGROUND_OFF) || (DATATAG_BACKGROUND == DATATAG_BACKGROUND_ALWAYS)) "" else "NoBG"
     val showBorder = ((selected && DATATAG_BORDER != DATATAG_BORDER_OFF) || (DATATAG_BORDER == DATATAG_BORDER_ALWAYS))
-    val colour = if (showBorder) when (flightType) {
+    val colour = if (datatag.flashingOrange) "Orange"
+    else if (showBorder) when (flightType) {
         FlightType.DEPARTURE -> "Green"
         FlightType.ARRIVAL -> "Blue"
         FlightType.EN_ROUTE -> "Gray"
@@ -63,7 +64,34 @@ fun updateDatatagStyle(datatag: Datatag, flightType: Byte, selected: Boolean) {
             ""
         }
     } else ""
-    datatag.imgButton.style = Scene2DSkin.defaultSkin.get("Datatag${colour}${background}", ImageButton.ImageButtonStyle::class.java)
+    if (!datatag.flashingOrange) datatag.imgButton.style = Scene2DSkin.defaultSkin.get("Datatag${colour}${background}", ImageButton.ImageButtonStyle::class.java)
+    else datatag.imgButton.style = Scene2DSkin.defaultSkin.get("DatatagOrange${background}", ImageButton.ImageButtonStyle::class.java)
+    datatag.currentDatatagStyle = "Datatag${colour}${background}"
+}
+
+/**
+ * Sets the flashing status of the datatag
+ * @param datatag the datatag to set flash
+ * @param aircraft the aircraft the datatag belongs to
+ * @param flash whether to start or stop the flash
+ */
+fun setDatatagFlash(datatag: Datatag, aircraft: Aircraft, flash: Boolean) {
+    if (datatag.flashing == flash) return
+    datatag.flashing = flash
+    if (flash) {
+        datatag.flashTimer.scheduleTask(object: Timer.Task() {
+            override fun run() {
+                // Every 1 second, update the datatag flashing orange status, and call updateDatatagStyle
+                datatag.flashingOrange = !datatag.flashingOrange
+                updateDatatagStyle(datatag, aircraft.entity[FlightType.mapper]?.type ?: return, CLIENT_SCREEN?.selectedAircraft == aircraft)
+            }
+        }, 0f, 1f)
+    } else {
+        datatag.flashTimer.clear()
+        datatag.flashing = false
+        datatag.flashingOrange = false
+        updateDatatagStyle(datatag, aircraft.entity[FlightType.mapper]?.type ?: return, CLIENT_SCREEN?.selectedAircraft == aircraft)
+    }
 }
 
 /** Updates the label style to use smaller fonts when radar is zoomed out */

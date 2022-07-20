@@ -197,7 +197,12 @@ class ControlPane {
                         isVisible = false
                         addChangeListener { _, _ ->
                             Gdx.app.postRunnable {
-                                parentPane.selAircraft?.entity?.remove<ContactNotification>()
+                                parentPane.selAircraft?.let {
+                                    it.entity.remove<ContactNotification>()
+                                    it.entity[Datatag.mapper]?.let { datatag ->
+                                        setDatatagFlash(datatag, it, false)
+                                    }
+                                }
                                 if (text.toString() == HANDOVER) {
                                     parentPane.selAircraft?.entity?.let { ac ->
                                         val callsign = ac[AircraftInfo.mapper]?.icaoCallsign
@@ -247,7 +252,12 @@ class ControlPane {
                             Gdx.app.postRunnable {
                                 aircraft.entity[ClearanceAct.mapper]?.actingClearance?.actingClearance?.updateUIClearanceState(parentPane.userClearanceState)
                                 parentPane.updateSelectedAircraft(aircraft)
-                                parentPane.selAircraft?.entity?.remove<ContactNotification>()
+                                parentPane.selAircraft?.let {
+                                    it.entity.remove<ContactNotification>()
+                                    it.entity[Datatag.mapper]?.let { datatag ->
+                                        setDatatagFlash(datatag, it, false)
+                                    }
+                                }
                                 // Manually hide acknowledge button since the removal of ContactNotification is not immediate
                                 if (handoverAckButton.text.toString() == ACKNOWLEDGE) handoverAckButton.isVisible = false
                             }

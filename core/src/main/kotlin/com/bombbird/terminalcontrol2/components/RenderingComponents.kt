@@ -95,7 +95,11 @@ class Datatag(var xOffset: Float = 0f, var yOffset: Float = 0f, var minimised: B
     var dragging = false
     var clicks = 0
     val tapTimer = Timer()
+    val flashTimer = Timer()
+    var flashing = false
+    var flashingOrange = false
     var initialPosSet = false
+    var currentDatatagStyle = "DatatagGreenNoBG"
     val imgButton: ImageButton = ImageButton(Scene2DSkin.defaultSkin, "DatatagGreenNoBG")
     val clickSpot: ImageButton = ImageButton(Scene2DSkin.defaultSkin, "DatatagNoBG")
     val labelArray: Array<Label> = arrayOf(Label("", Scene2DSkin.defaultSkin, "Datatag"), Label("", Scene2DSkin.defaultSkin, "Datatag"),
