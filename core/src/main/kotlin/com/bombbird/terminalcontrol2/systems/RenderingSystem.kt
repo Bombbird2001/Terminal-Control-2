@@ -168,6 +168,7 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer,
         CLIENT_SCREEN?.selectedAircraft?.let {
             val aircraftPos = it.entity[RadarData.mapper]?.position ?: return@let
             val vectorUnchanged = uiPane.clearanceState.vectorHdg == uiPane.userClearanceState.vectorHdg
+            val noVector = uiPane.userClearanceState.vectorHdg == null
             uiPane.clearanceState.vectorHdg?.let { hdg -> renderVector(aircraftPos.x, aircraftPos.y, hdg, false) } ?:
             run { renderRouteSegments(aircraftPos.x, aircraftPos.y, uiPane.clearanceRouteSegments, skipAircraftToFirstWaypoint = false,
                 forceRenderChangedAircraftToFirstWaypoint = false) }
@@ -175,8 +176,8 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer,
                 // Render new vector if changed and is not null
                 renderVector(aircraftPos.x, aircraftPos.y, newHdg, true)
             }
-            renderRouteSegments(aircraftPos.x, aircraftPos.y, uiPane.userClearanceRouteSegments, skipAircraftToFirstWaypoint = true,
-                forceRenderChangedAircraftToFirstWaypoint = !vectorUnchanged && uiPane.userClearanceState.vectorHdg == null)
+            renderRouteSegments(aircraftPos.x, aircraftPos.y, uiPane.userClearanceRouteSegments, skipAircraftToFirstWaypoint = !noVector,
+                forceRenderChangedAircraftToFirstWaypoint = !vectorUnchanged && noVector)
         }
 
         // Render trajectory line for controlled aircraft

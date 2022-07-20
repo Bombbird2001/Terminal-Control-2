@@ -187,7 +187,7 @@ class VectorSubpane {
             val newAftWptLeg = getAfterWptHdgLeg(this, route) ?: return@apply
             vectorLabel.setText(newAftWptLeg.heading.toString())
             val prevAftWptLeg = getAfterWptHdgLeg(this, parentPane.clearanceState.route)
-            vectorLabel.style = Scene2DSkin.defaultSkin["ControlPaneHdg${if (prevAftWptLeg?.heading != newAftWptLeg.heading) "Changed" else ""}", Label.LabelStyle::class.java]
+            vectorLabel.style = Scene2DSkin.defaultSkin["ControlPaneHdg${if (prevAftWptLeg?.heading != newAftWptLeg.heading && !parentPane.appTrackCaptured) "Changed" else ""}", Label.LabelStyle::class.java]
             val wptName = CLIENT_SCREEN?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName
             afterWaypointSelectBox.selected = if (wptName == null) "Now" else "After $wptName"
             // Set style as changed if new after waypoint leg does not yet exist in acting clearance
@@ -200,7 +200,7 @@ class VectorSubpane {
                     (newAftWptLeg.turnDir == CommandTarget.TURN_RIGHT && prevAftWptLeg?.turnDir != CommandTarget.TURN_RIGHT)
         } ?: run {
             vectorLabel.setText(vectorHdg?.toString() ?: "0")
-            vectorLabel.style = Scene2DSkin.defaultSkin["ControlPaneHdg${if (parentPane.clearanceState.vectorHdg != parentPane.userClearanceState.vectorHdg) "Changed" else ""}", Label.LabelStyle::class.java]
+            vectorLabel.style = Scene2DSkin.defaultSkin["ControlPaneHdg${if (parentPane.clearanceState.vectorHdg != parentPane.userClearanceState.vectorHdg && !parentPane.appTrackCaptured) "Changed" else ""}", Label.LabelStyle::class.java]
             afterWaypointSelectBox.selectedIndex = 0
             afterWaypointSelectBox.style = Scene2DSkin.defaultSkin[if (parentPane.clearanceState.vectorHdg == null) "ControlPaneChanged" else "ControlPane", SelectBoxStyle::class.java]
             leftButton.isChecked = vectorTurnDir == CommandTarget.TURN_LEFT

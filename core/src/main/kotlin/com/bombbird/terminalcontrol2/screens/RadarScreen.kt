@@ -224,7 +224,7 @@ class RadarScreen(private val connectionHost: String?, airportToHost: String?): 
      * Helper function for unprojecting from screen coordinates to camera world coordinates, as unfortunately Camera's
      * unproject function is not accurate in this case
      * */
-    private var unprojectFromRadarCamera = fun (screenX: Float, screenY: Float): Vector2 {
+    private fun unprojectFromRadarCamera(screenX: Float, screenY: Float): Vector2 {
         (radarDisplayStage.camera as OrthographicCamera).apply {
             val scaleFactor = UI_HEIGHT / HEIGHT // 1px in screen distance = ?px in world distance (at zoom = 1)
             return Vector2((screenX - WIDTH / 2) * zoom * scaleFactor + position.x, (HEIGHT / 2 - screenY) * zoom * scaleFactor + position.y)

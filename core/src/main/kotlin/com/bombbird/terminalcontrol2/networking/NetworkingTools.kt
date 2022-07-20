@@ -259,6 +259,7 @@ fun handleIncomingRequestClient(rs: RadarScreen, obj: Any?) {
             TRANS_LVL = transLvl
         } ?: (obj as? IndividualSectorData)?.apply {
             // Remove all existing sector mapping and entities
+            println("Individual sector received")
             rs.sectors.clear()
             GAME.engine.removeAllEntities(sectorFamily)
             rs.playerSector = obj.assignedSectorId

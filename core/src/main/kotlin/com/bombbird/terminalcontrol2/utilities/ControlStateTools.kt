@@ -69,14 +69,15 @@ fun addNewClearanceToPendingClearances(entity: Entity, clearance: AircraftContro
  * cleared altitude and cleared IAS must be equal as well
  * @param clearanceState1 the first clearance state to compare
  * @param clearanceState2 the second clearance state to compare
+ * @param checkVector whether to check for vector clearance differences
  * @return a boolean denoting whether the two clearance states are equal
  * */
-fun checkClearanceEquality(clearanceState1: ClearanceState, clearanceState2: ClearanceState): Boolean {
+fun checkClearanceEquality(clearanceState1: ClearanceState, clearanceState2: ClearanceState, checkVector: Boolean): Boolean {
     if (!checkRouteEqualityStrict(clearanceState1.route, clearanceState2.route)) return false
     if (!checkRouteEqualityStrict(clearanceState1.hiddenLegs, clearanceState2.hiddenLegs)) return false
     return clearanceState1.routePrimaryName == clearanceState2.routePrimaryName &&
-            clearanceState1.vectorHdg == clearanceState2.vectorHdg &&
-            clearanceState1.vectorTurnDir == clearanceState2.vectorTurnDir &&
+            ((clearanceState1.vectorHdg == clearanceState2.vectorHdg &&
+            clearanceState1.vectorTurnDir == clearanceState2.vectorTurnDir) || !checkVector) &&
             clearanceState1.clearedAlt == clearanceState2.clearedAlt &&
             clearanceState1.clearedIas == clearanceState2.clearedIas &&
             clearanceState1.clearedApp == clearanceState2.clearedApp &&

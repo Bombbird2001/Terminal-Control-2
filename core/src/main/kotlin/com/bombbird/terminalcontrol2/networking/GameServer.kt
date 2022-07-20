@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
+import kotlin.math.min
 import kotlin.math.roundToLong
 
 /**
@@ -327,7 +328,17 @@ class GameServer {
      * */
     private fun sendFastUDPToAll() {
         // println("Fast UDP sent, time passed since program start: ${(System.currentTimeMillis() - startTime) / 1000f}s")
-        server.sendToAllUDP(FastUDPData(aircraft.values().map { it.getSerialisableObjectUDP() }.toTypedArray()))
+        // Split aircraft values into blocks of 25 aircraft max, and send a UDP packet for each, to prevent buffer size
+        // limitations at high aircraft counts
+        val aircraftArray = aircraft.values().toArray()
+        var itemsRemaining = aircraftArray.size
+        while (itemsRemaining > 0) {
+            val serialisedAircraftArray = Array(min(itemsRemaining, SERVER_AIRCRAFT_UDP_MAX_COUNT)) {
+                aircraftArray[aircraftArray.size - itemsRemaining + it].getSerialisableObjectUDP()
+            }
+            itemsRemaining -= SERVER_AIRCRAFT_UDP_MAX_COUNT
+            server.sendToAllUDP(FastUDPData(serialisedAircraftArray))
+        }
     }
 
     /**
@@ -371,6 +382,7 @@ class GameServer {
      * @param newSectorArray the new sector configuration to use
      */
     fun sendIndividualSectorUpdateTCP(connection: Connection, newId: Byte, newSectorArray: Array<Sector.SerialisedSector>) {
+        println("Individual sector send to $connection")
         connection.sendTCP(IndividualSectorData(newId, newSectorArray, primarySector.vertices ?: floatArrayOf()))
     }
 
