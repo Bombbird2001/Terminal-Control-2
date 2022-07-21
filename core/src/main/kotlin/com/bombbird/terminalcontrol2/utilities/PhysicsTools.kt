@@ -5,10 +5,7 @@ import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.math.Polygon
 import com.bombbird.terminalcontrol2.components.*
-import com.bombbird.terminalcontrol2.global.GAME
-import com.bombbird.terminalcontrol2.global.MAG_HDG_DEV
-import com.bombbird.terminalcontrol2.global.TRANS_ALT
-import com.bombbird.terminalcontrol2.global.TRANS_LVL
+import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.navigation.SidStar
 import com.bombbird.terminalcontrol2.navigation.compareLegEquality
@@ -557,7 +554,7 @@ fun calculateArrivalSpawnPoint(route: Route, primarySector: Polygon): Triple<Flo
         endY = (nmToPx(75) * sin(randomTrackConvertedRadians)).toFloat()
     }
 
-    return findClosestIntersectionBetweenSegmentAndPolygon(originX, originY, endX, endY, primarySector.vertices)?.let {
+    return findClosestIntersectionBetweenSegmentAndPolygon(originX, originY, endX, endY, primarySector.vertices, nmToPx(ARRIVAL_SPAWN_EXTEND_DIST_NM))?.let {
         Triple(it.x, it.y, oppSpawnTrack)
     } ?: Triple(endX, endY, oppSpawnTrack)
 }

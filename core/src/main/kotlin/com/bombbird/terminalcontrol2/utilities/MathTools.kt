@@ -262,9 +262,10 @@ fun findTurnDistance(deltaHeading: Float, turnRateDps: Float, groundSpeedPxps: F
  * @param endX the line end's x coordinate
  * @param endY the line end's y coordinate
  * @param vertices the borders of the polygon
+ * @param extendLengthPx how much to extend the point past the intersection point along the line, in px
  * @return a [Vector2] object with the point of intersection, or null if none is found
  * */
-fun findClosestIntersectionBetweenSegmentAndPolygon(originX: Float, originY: Float, endX: Float, endY: Float, vertices: FloatArray): Vector2? {
+fun findClosestIntersectionBetweenSegmentAndPolygon(originX: Float, originY: Float, endX: Float, endY: Float, vertices: FloatArray, extendLengthPx: Float): Vector2? {
     if (vertices.size % 2 != 0) {
         Gdx.app.log("MathTools", "Coordinates cannot be odd in number: ${vertices.size}")
         return null
@@ -285,14 +286,14 @@ fun findClosestIntersectionBetweenSegmentAndPolygon(originX: Float, originY: Flo
         }
     }
 
-    // Extend the intersection point by 10nm
+    // Extend the intersection point by amount specified
     return intersectionVector?.apply {
         // Get the vector between the intersection and origin
         val diff = this - Vector2(originX, originY)
         // Calculate length in pixels
         val currLen = diff.len()
-        // Add the diff vector scaled by 10nm/length
-        plusAssign(diff * (nmToPx(0.5f) / currLen))
+        // Add the diff vector scaled by extendLength/length
+        plusAssign(diff * (extendLengthPx / currLen))
     }
 }
 

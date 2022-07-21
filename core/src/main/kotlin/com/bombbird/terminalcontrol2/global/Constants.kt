@@ -19,7 +19,7 @@ const val BUTTON_WIDTH_MEDIUM = 250f
 const val BUTTON_HEIGHT_BIG = 130f
 const val BOTTOM_BUTTON_MARGIN = 90f
 
-/** radarScreen defaults */
+/** RadarScreen defaults */
 const val DEFAULT_ZOOM_NM = 100
 const val MIN_ZOOM_NM = 10
 const val MAX_ZOOM_NM = 150
@@ -54,6 +54,9 @@ const val NO_TRANS_SELECTION = "..."
 
 /** Control state constants */
 const val TRACK_EXTRAPOLATE_TIME_S = 30f
+
+/** Aircraft initial spawn */
+const val ARRIVAL_SPAWN_EXTEND_DIST_NM = 0.5f
 
 /** List of available airports (can be modified, but don't) */
 val AVAIL_AIRPORTS = GdxArray<String>(arrayOf("TCTP", "TCWS", "TCTT", "TCBB", "TCHH", "TCBD", "TCMD", "TCPG"))

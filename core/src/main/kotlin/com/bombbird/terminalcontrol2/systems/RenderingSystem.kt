@@ -6,7 +6,9 @@ import com.badlogic.ashley.core.Family
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.OrthographicCamera
+import com.badlogic.gdx.graphics.g2d.TextureRegion
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer
+import com.badlogic.gdx.math.Intersector
 import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.scenes.scene2d.Stage
 import com.bombbird.terminalcontrol2.components.*
@@ -19,6 +21,7 @@ import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.*
 import ktx.collections.GdxArray
 import ktx.math.*
+import ktx.scene2d.Scene2DSkin
 import kotlin.math.sqrt
 
 /**
@@ -53,6 +56,10 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer,
     private val constSizeLabelFamily: Family = allOf(GenericLabel::class, Position::class, ConstantZoomSize::class).get()
     private val datatagFamily: Family = allOf(Datatag::class, RadarData::class)
         .exclude(WaitingTakeoff::class).get()
+    private val contactDotFamily: Family = allOf(ContactNotification::class, RadarData::class, FlightType::class).get()
+
+    private val dotBlue: TextureRegion = Scene2DSkin.defaultSkin["DotBlue", TextureRegion::class.java]
+    private val dotGreen: TextureRegion = Scene2DSkin.defaultSkin["DotGreen", TextureRegion::class.java]
 
     /** Main update function */
     override fun update(deltaTime: Float) {
@@ -389,6 +396,46 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer,
                     label.setPosition(leftX + LABEL_PADDING, labelY)
                     label.draw(GAME.batch, 1f)
                     labelY += (label.height + DATATAG_ROW_SPACING_PX)
+                }
+            }
+        }
+
+        // Render contact notification dots for 1s every 2s
+        if (System.currentTimeMillis() % 2000 > 1000) {
+            val leftX = uiPane.paneWidth + 15 - UI_WIDTH / 2
+            val rightX = UI_WIDTH / 2 - 15
+            val bottomY = 15f - UI_HEIGHT / 2
+            val topY = UI_HEIGHT / 2 - 15
+            val centreX = uiPane.paneWidth / 2
+            val centreY = 0f
+            val contactDots = engine.getEntitiesFor(contactDotFamily)
+            for (i in 0 until contactDots.size()) {
+                contactDots[i]?.apply {
+                    val radarData = get(RadarData.mapper) ?: return@apply
+                    val flightType = get(FlightType.mapper) ?: return@apply
+                    val radarX = (radarData.position.x - camX) / camZoom
+                    val radarY = (radarData.position.y - camY) / camZoom
+                    val intersectionVector = Vector2()
+                    run {
+                        if (Intersector.intersectSegments(centreX, centreY, radarX, radarY, leftX, topY, rightX, topY, intersectionVector))
+                            return@run
+                        if (Intersector.intersectSegments(centreX, centreY, radarX, radarY, rightX, topY, rightX, bottomY, intersectionVector))
+                            return@run
+                        if (Intersector.intersectSegments(centreX, centreY, radarX, radarY, rightX, bottomY, leftX, bottomY, intersectionVector))
+                            return@run
+                        Intersector.intersectSegments(centreX, centreY, radarX, radarY, leftX, bottomY, leftX, topY, intersectionVector)
+                    }
+                    if (!intersectionVector.isZero) {
+                        val textureToDraw = when (flightType.type) {
+                            FlightType.ARRIVAL -> dotBlue
+                            FlightType.DEPARTURE -> dotGreen
+                            else -> {
+                                Gdx.app.log("RenderingSystem", "Invalid flight type ${flightType.type} for contact dot rendering")
+                                null
+                            }
+                        }
+                        if (textureToDraw != null) GAME.batch.draw(textureToDraw, intersectionVector.x - 10, intersectionVector.y - 10)
+                    }
                 }
             }
         }
