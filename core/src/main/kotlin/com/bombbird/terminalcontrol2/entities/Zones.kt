@@ -2,6 +2,7 @@ package com.bombbird.terminalcontrol2.entities
 
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.Color
+import com.badlogic.gdx.math.Polygon
 import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.MAG_HDG_DEV
@@ -11,9 +12,20 @@ import com.bombbird.terminalcontrol2.utilities.nmToPx
 import ktx.ashley.*
 import kotlin.math.roundToInt
 
+/** Zone interface for implementing zone related functions such as position checking */
+interface Zone {
+    /**
+     * Checks whether the polygon of this zone contains the input coordinates
+     * @param x the x coordinate
+     * @param y the y coordinate
+     * @return true if ([x], [y]) is inside the zone polygon, else false
+     * */
+    fun contains(x: Float, y: Float): Boolean
+}
+
 /** Class for storing a runway's approach NOZ information */
 class ApproachNormalOperatingZone(posX: Float, posY: Float, appHdg: Short, private val widthNm: Float, private val lengthNm: Float,
-                                  onClient: Boolean = true):SerialisableEntity<ApproachNormalOperatingZone.SerialisedApproachNOZ> {
+                                  onClient: Boolean = true): Zone, SerialisableEntity<ApproachNormalOperatingZone.SerialisedApproachNOZ> {
     val entity = getEngine(onClient).entity {
         with<Position> {
             x = posX
@@ -57,6 +69,17 @@ class ApproachNormalOperatingZone(posX: Float, posY: Float, appHdg: Short, priva
         }
     }
 
+    /**
+     * Checks whether the polygon of this Approach NOZ contains the input coordinates
+     * @param x the x coordinate
+     * @param y the y coordinate
+     * @return true if ([x], [y]) is inside the zone polygon, else false
+     * */
+    override fun contains(x: Float, y: Float): Boolean {
+        val vertices = entity[GPolygon.mapper]?.vertices ?: return false
+        return Polygon(vertices).contains(x, y)
+    }
+
     companion object {
         /**
          * De-serialises a [SerialisedApproachNOZ] and creates a new [ApproachNormalOperatingZone] object from it
@@ -76,7 +99,7 @@ class ApproachNormalOperatingZone(posX: Float, posY: Float, appHdg: Short, priva
 
 /** Class for storing a runway's departure NOZ information */
 class DepartureNormalOperatingZone(posX: Float, posY: Float, appHdg: Short, private val widthNm: Float, private val lengthNm: Float,
-                                   onClient: Boolean = true): SerialisableEntity<DepartureNormalOperatingZone.SerialisedDepartureNOZ> {
+                                   onClient: Boolean = true): Zone, SerialisableEntity<DepartureNormalOperatingZone.SerialisedDepartureNOZ> {
     val entity = getEngine(onClient).entity {
         with<Position> {
             x = posX
@@ -120,6 +143,17 @@ class DepartureNormalOperatingZone(posX: Float, posY: Float, appHdg: Short, priv
         }
     }
 
+    /**
+     * Checks whether the polygon of this Departure NOZ contains the input coordinates
+     * @param x the x coordinate
+     * @param y the y coordinate
+     * @return true if ([x], [y]) is inside the zone polygon, else false
+     * */
+    override fun contains(x: Float, y: Float): Boolean {
+        val vertices = entity[GPolygon.mapper]?.vertices ?: return false
+        return Polygon(vertices).contains(x, y)
+    }
+
     companion object {
         /**
          * De-serialises a [SerialisedDepartureNOZ] and creates a new [DepartureNormalOperatingZone] object from it
@@ -140,10 +174,10 @@ class DepartureNormalOperatingZone(posX: Float, posY: Float, appHdg: Short, priv
 /**
  * Class for storing NTZ information
  *
- * Note that NTZs are purely for aesthetic purposes and will not handle any sort of logic or positional checking
+ * Note that NTZs are mainly for aesthetic purposes, and will be used for positional checking to detect NTZ transgressions
  * */
 class NoTransgressionZone(posX: Float, posY: Float, appHdg: Short, private val widthNm: Float, private val lengthNm: Float,
-                          onClient: Boolean = true): SerialisableEntity<NoTransgressionZone.SerialisedNTZ> {
+                          onClient: Boolean = true): Zone, SerialisableEntity<NoTransgressionZone.SerialisedNTZ> {
     val entity = getEngine(onClient).entity {
         with<Position> {
             x = posX
@@ -185,6 +219,17 @@ class NoTransgressionZone(posX: Float, posY: Float, appHdg: Short, private val w
             val appHdg = convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()) + MAG_HDG_DEV
             return SerialisedNTZ(pos.x, pos.y, appHdg.roundToInt().toShort(), widthNm, lengthNm)
         }
+    }
+
+    /**
+     * Checks whether the polygon of this NTZ contains the input coordinates
+     * @param x the x coordinate
+     * @param y the y coordinate
+     * @return true if ([x], [y]) is inside the zone polygon, else false
+     * */
+    override fun contains(x: Float, y: Float): Boolean {
+        val vertices = entity[GPolygon.mapper]?.vertices ?: return false
+        return Polygon(vertices).contains(x, y)
     }
 
     companion object {

@@ -1,13 +1,20 @@
 package com.bombbird.terminalcontrol2.systems
 
+import com.badlogic.ashley.core.Entity
 import com.badlogic.ashley.systems.IntervalSystem
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.math.MathUtils
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.GAME
+import com.bombbird.terminalcontrol2.global.MAX_ALT
+import com.bombbird.terminalcontrol2.global.VERT_SEP
 import com.bombbird.terminalcontrol2.traffic.*
 import com.bombbird.terminalcontrol2.utilities.calculateDistanceBetweenPoints
 import ktx.ashley.*
+import ktx.collections.GdxArray
+import kotlin.math.ceil
+import kotlin.math.floor
+import kotlin.math.roundToInt
 
 /**
  * System for handling traffic matters, such as spawning of aircraft, checking of separation, runway states
@@ -19,6 +26,14 @@ class TrafficSystemInterval: IntervalSystem(1f) {
     private val arrivalFamily = allOf(AircraftInfo::class, ArrivalAirport::class).get()
     private val runwayTakeoffFamily = allOf(RunwayInfo::class).get()
     private val closestArrivalFamily = allOf(Position::class, AircraftInfo::class).oneOf(LocalizerCaptured::class, GlideSlopeCaptured::class, VisualCaptured::class).get()
+    private val conflictAbleFamily = allOf(Position::class, Altitude::class, ConflictAble::class)
+        .exclude(WaitingTakeoff::class, TakeoffRoll::class, LandingRoll::class).get()
+
+    private val startingAltitude = floor(getLowestAirportElevation() / VERT_SEP).roundToInt() * VERT_SEP
+    private val conflictLevels = Array<GdxArray<Entity>>(ceil(MAX_ALT + 1500f / VERT_SEP).roundToInt() - startingAltitude / VERT_SEP) {
+        GdxArray()
+    }
+    private val conflictManager = ConflictManager()
 
     /**
      * Update function for operations that can be updated at a lower frequency and do not rely on deltaTime
@@ -139,5 +154,25 @@ class TrafficSystemInterval: IntervalSystem(1f) {
                 }
             }
         }
+
+        // Traffic separation checking
+        val conflictAble = engine.getEntitiesFor(conflictAbleFamily)
+
+        // Update the levels of each conflict-able entity
+        for (i in 0 until conflictAble.size()) {
+            conflictAble[i]?.apply {
+                val alt = get(Altitude.mapper) ?: return@apply
+                val conflict = get(ConflictAble.mapper) ?: return@apply
+                val expectedSector = getSectorIndexForAlt(alt.altitudeFt, startingAltitude)
+                if (expectedSector != conflict.conflictLevel) {
+                    if (conflict.conflictLevel >= 0 && conflict.conflictLevel < conflictLevels.size)
+                        conflictLevels[conflict.conflictLevel].removeValue(this, true)
+                    if (expectedSector >= 0 && expectedSector < conflictLevels.size)
+                        conflictLevels[expectedSector].add(this)
+                }
+            }
+        }
+
+        conflictManager.checkAllConflicts(conflictLevels, conflictAble)
     }
 }

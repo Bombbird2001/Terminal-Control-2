@@ -115,3 +115,12 @@ fun isInsideLocArc(locApp: Entity, posX: Float, posY: Float, angleDeg: Float, di
 
     return checkInArc(pos.x, pos.y, convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()), nmToPx(distNm.toFloat()), angleDeg, posX, posY)
 }
+
+fun establishedOnFinalApproachTrack(app: Entity, posX: Float, posY: Float): Boolean {
+    val rwy = app[ApproachInfo.mapper]?.rwyObj ?: return false
+    val pos = rwy.entity[Position.mapper] ?: return false
+    val dir = app[Direction.mapper] ?: rwy.entity[VisualApproach.mapper]?.visual?.get(Direction.mapper) ?: return false
+
+    // Use an arc extending along approach track for 25nm, and a max deviation of 2.5 degrees on each side
+    return checkInArc(pos.x, pos.y, convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()), nmToPx(25), 2.5f, posX, posY)
+}

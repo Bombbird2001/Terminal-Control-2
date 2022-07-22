@@ -45,6 +45,7 @@ val INTERMEDIATE_ALTS = GdxArray<Int>(6)
 
 /** Radar separation required under normal circumstances */
 var MIN_SEP = 3f
+var VERT_SEP = 1000
 
 /** Transition altitude, level */
 var TRANS_ALT = 18000

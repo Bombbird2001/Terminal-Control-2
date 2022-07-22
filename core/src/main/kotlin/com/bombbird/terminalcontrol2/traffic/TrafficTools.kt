@@ -21,10 +21,7 @@ import ktx.collections.GdxArray
 import ktx.collections.GdxSet
 import ktx.math.plus
 import ktx.math.times
-import kotlin.math.ceil
-import kotlin.math.max
-import kotlin.math.min
-import kotlin.math.roundToInt
+import kotlin.math.*
 
 val disallowedCallsigns = GdxSet<String>()
 
@@ -232,6 +229,10 @@ fun clearForTakeoff(aircraft: Entity, rwy: Entity) {
 
     val rwyAlt = rwy[Altitude.mapper]?.altitudeFt ?: return
     val rwyInfo = rwy[RunwayInfo.mapper] ?: return
+
+    val rwyId = rwy[RunwayInfo.mapper]?.rwyId ?: return
+    val arptId = rwyInfo.airport.entity[AirportInfo.mapper]?.arptId ?: return
+
     val rwyTakeoffPosLength = rwyInfo.intersectionTakeoffM
     val spawnPos = Vector2(rwyPos.x, rwyPos.y) + rwyDir.trackUnitVector * mToPx(rwyTakeoffPosLength.toFloat())
     aircraft.apply {
@@ -266,6 +267,8 @@ fun clearForTakeoff(aircraft: Entity, rwy: Entity) {
             it.targetIasKt = acPerf.climbOutSpeed
             it.targetHdgDeg = convertWorldAndRenderDeg(rwyDir.trackUnitVector.angleDeg()) + MAG_HDG_DEV
         }
+        aircraft += DepartureAirport(arptId, rwyId)
+
         // Set runway as occupied
         rwy += RunwayOccupied()
         rwy[OppositeRunway.mapper]?.oppRwy?.plusAssign(RunwayOccupied())
@@ -593,4 +596,30 @@ fun calculateAdditionalTimeToNextDeparture(backlog: Int): Int {
         backlog >= -40 -> 120 + (320 - 120) * (-20 - backlog) / 20
         else -> 320
     }
+}
+
+/**
+ * Finds the airport with the lowest elevation in the game world and gets its elevation
+ * @return elevation of the lowest airport
+ */
+fun getLowestAirportElevation(): Float {
+    var minElevation: Float? = null
+    GAME.gameServer?.apply {
+        airports.values().forEach {
+            val alt = it.entity[Altitude.mapper]?.altitudeFt ?: return@forEach
+            val finalMinElevation = minElevation
+            if (finalMinElevation == null || alt < finalMinElevation) minElevation = alt
+        }
+    }
+    return minElevation ?: 0f
+}
+
+/**
+ * Gets the sector index the entity belongs to based on its altitude, as well as the altitude of the lowest sector
+ * @param alt the altitude, in feet, of the entity
+ * @param startingAltitude the altitude of the lowest sector, in feet
+ * @return the index of the sector the entity should belong to
+ */
+fun getSectorIndexForAlt(alt: Float, startingAltitude: Int): Int {
+    return floor((alt - startingAltitude) / 1000).roundToInt()
 }

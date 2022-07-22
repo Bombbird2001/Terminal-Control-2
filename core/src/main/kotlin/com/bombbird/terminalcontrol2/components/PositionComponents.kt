@@ -97,7 +97,7 @@ data class GroundTrack(var trackVectorPxps: Vector2 = Vector2()): Component {
  * Entities tagged with [TakeoffRoll] or [LandingRoll] will also not be affected by wind even if this component is tagged
  * @param windVectorPxps the velocity vector of the wind, in px per second
  * */
-class AffectedByWind(var windVectorPxps: Vector2 = Vector2()): Component {
+data class AffectedByWind(var windVectorPxps: Vector2 = Vector2()): Component {
     companion object: Mapper<AffectedByWind>()
 }
 

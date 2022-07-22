@@ -93,14 +93,15 @@ data class AircraftInfo(var icaoCallsign: String = "SHIBA1", var icaoType: Strin
 }
 
 /** Component for tagging the arrival airport for an aircraft */
-data class ArrivalAirport(var arptId: Byte = 0): Component {
+data class ArrivalAirport(var arptId: Byte): Component {
     companion object: Mapper<ArrivalAirport>()
 }
 
-class Emergency: Component {
-
+/** Component for tagging the departure airport (and runway after cleared for takeoff) for an aircraft */
+data class DepartureAirport(var arptId: Byte, var rwyId: Byte): Component {
+    companion object: Mapper<DepartureAirport>()
 }
 
-class Conflictable: Component {
+class Emergency: Component {
 
 }
