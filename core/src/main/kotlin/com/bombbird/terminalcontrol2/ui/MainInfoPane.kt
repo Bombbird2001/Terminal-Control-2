@@ -31,8 +31,6 @@ class MainInfoPane {
 
     private lateinit var paneContainer: KContainer<Actor>
 
-    private lateinit var statusOuterTable: KTableWidget
-    private lateinit var statusTable: KTableWidget
     private lateinit var buttonTable: KTableWidget
     private lateinit var commsButton: KTextButton
     private lateinit var statusButton: KTextButton
@@ -49,6 +47,7 @@ class MainInfoPane {
     private var selectedArptId: Byte? = null
 
     val commsPaneObj = CommsPane()
+    val statusPaneObj = StatusPane()
     val sectorPaneObj = SectorPane()
 
     /**
@@ -105,7 +104,8 @@ class MainInfoPane {
                             buttonsBeingModified = true
                             if (!isChecked) isChecked = true
                             else {
-                                paneContainer.actor = statusOuterTable
+                                paneContainer.actor = statusPaneObj.statusTable
+                                Gdx.app.postRunnable { statusPaneObj.refreshStatusMessages() }
                                 selectedArptId = null
                                 commsButton.isChecked = false
                                 sectorButton.isChecked = false
@@ -139,16 +139,7 @@ class MainInfoPane {
                     // debugAll()
                     commsPaneObj.commsPane(this, paneWidth)
                     actor = null
-                    statusOuterTable = table {
-                        scrollPane("MenuPane") {
-                            // debugAll()
-                            statusTable = table {
-                                label("Nom nom nom", "HighScore").cell(growX = true, padLeft = 15f, padRight = 15f)
-                            }
-                            setOverscroll(false, false)
-                            removeMouseScrollListeners()
-                        }.cell(preferredWidth = paneWidth, preferredHeight = 0.5f * UI_HEIGHT, grow = true)
-                    }
+                    statusPaneObj.statusPane(this, paneWidth)
                     actor = null
                     sectorPaneObj.sectorPane(this, paneWidth)
                 }.cell(align = Align.top, grow = true, colspan = 2)
@@ -445,4 +436,10 @@ class MainInfoPane {
 
         }
     }
+
+    /**
+     * Checks whether the currently selected pane is the status pane
+     * @return true if status pane button selected, else false
+     */
+    fun isStatusPaneSelected(): Boolean { return statusButton.isChecked }
 }

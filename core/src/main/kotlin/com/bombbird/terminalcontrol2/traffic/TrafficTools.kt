@@ -8,9 +8,7 @@ import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.Aircraft
 import com.bombbird.terminalcontrol2.entities.Airport
-import com.bombbird.terminalcontrol2.global.GAME
-import com.bombbird.terminalcontrol2.global.MAG_HDG_DEV
-import com.bombbird.terminalcontrol2.global.MAX_ALT
+import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.navigation.SidStar
@@ -644,4 +642,30 @@ fun getLowestAirportElevation(): Float {
  */
 fun getSectorIndexForAlt(alt: Float, startingAltitude: Int): Int {
     return floor((alt - startingAltitude) / 1000).roundToInt()
+}
+
+/**
+ * Gets airports that are closed for arrivals
+ * @return an array of bytes containing the ID of airports closed for arrivals
+ * */
+fun getArrivalClosedAirports(): ByteArray {
+    val airports = GdxArray<Byte>(AIRPORT_SIZE)
+    GAME.gameServer?.airports?.values()?.forEach {
+        val id = it.entity[AirportInfo.mapper]?.arptId ?: return@forEach
+        if (it.entity.has(ArrivalClosed.mapper)) airports.add(id)
+    }
+    return airports.toArray().map { it }.toByteArray()
+}
+
+/**
+ * Gets airports that are closed for departures
+ * @return an array of bytes containing the ID of airports closed for departures
+ * */
+fun getDepartureClosedAirports(): ByteArray {
+    val airports = GdxArray<Byte>(AIRPORT_SIZE)
+    GAME.gameServer?.airports?.values()?.forEach {
+        val id = it.entity[AirportInfo.mapper]?.arptId ?: return@forEach
+        if (it.entity[DepartureInfo.mapper]?.closed == true) airports.add(id)
+    }
+    return airports.toArray().map { it }.toByteArray()
 }

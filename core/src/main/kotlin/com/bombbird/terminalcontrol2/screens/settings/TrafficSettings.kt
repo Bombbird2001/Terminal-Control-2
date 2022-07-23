@@ -131,6 +131,7 @@ class TrafficSettings: BaseGameSettings() {
                 else airport.entity += ArrivalClosed()
                 airport.entity[DepartureInfo.mapper]?.closed = !checkboxes.second.isChecked
             }
+            sendTrafficSettings()
         }
     }
 

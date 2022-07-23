@@ -29,9 +29,9 @@ import kotlin.math.sqrt
  *
  * Used only in RadarScreen
  * */
-class RenderingSystem(private val shapeRenderer: ShapeRenderer,
-                      private val stage: Stage, private val constZoomStage: Stage, private val uiStage: Stage,
-                      private val uiPane: UIPane): EntitySystem() {
+class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
+                            private val stage: Stage, private val constZoomStage: Stage, private val uiStage: Stage,
+                            private val uiPane: UIPane): EntitySystem() {
     private val lineArrayFamily: Family = allOf(GLineArray::class, SRColor::class)
         .exclude(DoNotRender::class.java).get()
     private val polygonFamily: Family = allOf(GPolygon::class, SRColor::class)

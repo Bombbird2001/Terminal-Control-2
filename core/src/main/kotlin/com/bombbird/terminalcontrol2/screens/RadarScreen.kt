@@ -22,6 +22,7 @@ import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.networking.*
 import com.bombbird.terminalcontrol2.systems.*
 import com.bombbird.terminalcontrol2.traffic.ConflictManager
+import com.bombbird.terminalcontrol2.traffic.TrafficMode
 import com.bombbird.terminalcontrol2.ui.UIPane
 import com.bombbird.terminalcontrol2.utilities.nmToPx
 import com.bombbird.terminalcontrol2.ui.safeStage
@@ -104,6 +105,10 @@ class RadarScreen(private val connectionHost: String?, airportToHost: String?): 
     val conflicts = GdxArray<ConflictManager.Conflict>(CONFLICT_SIZE)
     val potentialConflicts = GdxArray<ConflictManager.PotentialConflict>(CONFLICT_SIZE)
 
+    // Server values - used in this case only for displaying traffic info on the status pane and serves no other purposes
+    var serverTrafficMode = TrafficMode.NORMAL
+    var serverTrafficValue = 6f
+
     // Selected aircraft
     var selectedAircraft: Aircraft? = null
 
@@ -140,10 +145,11 @@ class RadarScreen(private val connectionHost: String?, airportToHost: String?): 
         }
         constZoomStage.camera.moveTo(Vector2())
 
-        clientEngine.addSystem(RenderingSystem(shapeRenderer, radarDisplayStage, constZoomStage, uiStage, uiPane))
+        clientEngine.addSystem(RenderingSystemClient(shapeRenderer, radarDisplayStage, constZoomStage, uiStage, uiPane))
         clientEngine.addSystem(PhysicsSystemClient())
         clientEngine.addSystem(PhysicsSystemIntervalClient())
-        clientEngine.addSystem(DataSystem())
+        clientEngine.addSystem(DataSystemClient())
+        clientEngine.addSystem(DataSystemIntervalClient())
         clientEngine.addSystem(ControlStateSystemIntervalClient())
     }
 
@@ -265,7 +271,7 @@ class RadarScreen(private val connectionHost: String?, airportToHost: String?): 
         Gdx.input.inputProcessor = inputMultiplexer
     }
 
-    /** Main rendering function, updates engine which draws using [RenderingSystem] every loop */
+    /** Main rendering function, updates engine which draws using [RenderingSystemClient] every loop */
     override fun render(delta: Float) {
         Gdx.gl.glClearColor(0f, 0f, 0f, 1f)
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT or GL20.GL_DEPTH_BUFFER_BIT or if (Gdx.graphics.bufferFormat.coverageSampling) GL20.GL_COVERAGE_BUFFER_BIT_NV else 0)

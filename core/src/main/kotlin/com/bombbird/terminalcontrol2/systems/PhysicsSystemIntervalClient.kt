@@ -9,6 +9,11 @@ import ktx.ashley.allOf
 import ktx.ashley.exclude
 import ktx.ashley.get
 
+/**
+ * A lightweight [PhysicsSystemInterval] that only runs certain required calculations on the client device
+ *
+ * Used only in RadarScreen
+ * */
 class PhysicsSystemIntervalClient: IntervalSystem(1f) {
     private val tasToIasFamily: Family = allOf(Speed::class, IndicatedAirSpeed::class, Altitude::class)
         .exclude(TakeoffRoll::class).get()
@@ -18,7 +23,7 @@ class PhysicsSystemIntervalClient: IntervalSystem(1f) {
      * Secondary update system, for operations that can be updated at a lower frequency and do not rely on deltaTime
      * (e.g. can be derived from other values without needing a time variable)
      *
-     * Values that require constant updating or relies on deltaTime should be put in the main [update] function
+     * Values that require constant updating or relies on deltaTime should be put in [PhysicsSystemClient]
      * */
     override fun updateInterval() {
         // Calculate the IAS of the aircraft

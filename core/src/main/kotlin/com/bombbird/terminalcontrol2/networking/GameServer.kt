@@ -12,9 +12,7 @@ import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.systems.*
-import com.bombbird.terminalcontrol2.traffic.ConflictManager
-import com.bombbird.terminalcontrol2.traffic.TrafficMode
-import com.bombbird.terminalcontrol2.traffic.appTestArrival
+import com.bombbird.terminalcontrol2.traffic.*
 import com.bombbird.terminalcontrol2.utilities.*
 import com.esotericsoftware.kryonet.Connection
 import com.esotericsoftware.kryonet.Listener
@@ -471,6 +469,12 @@ class GameServer {
     fun sendConflicts(conflicts: GdxArray<ConflictManager.Conflict>, potentialConflicts: GdxArray<ConflictManager.PotentialConflict>) {
         server.sendToAllTCP(ConflictData(conflicts.toArray().map { it.getSerialisableObject() }.toTypedArray(),
             potentialConflicts.toArray().map { it.getSerialisableObject() }.toTypedArray()))
+    }
+
+    /** Sends a message to clients to inform them of the server's traffic settings */
+    fun sendTrafficSettings() {
+        server.sendToAllTCP(TrafficSettingsData(trafficMode, trafficValue,
+            getArrivalClosedAirports(), getDepartureClosedAirports()))
     }
 
     /**

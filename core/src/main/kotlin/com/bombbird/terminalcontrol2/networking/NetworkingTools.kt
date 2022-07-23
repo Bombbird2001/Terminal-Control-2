@@ -10,8 +10,7 @@ import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.navigation.SidStar
 import com.bombbird.terminalcontrol2.screens.RadarScreen
-import com.bombbird.terminalcontrol2.traffic.ConflictManager
-import com.bombbird.terminalcontrol2.traffic.RunwayConfiguration
+import com.bombbird.terminalcontrol2.traffic.*
 import com.bombbird.terminalcontrol2.ui.*
 import com.bombbird.terminalcontrol2.utilities.*
 import com.esotericsoftware.kryo.Kryo
@@ -135,6 +134,7 @@ fun registerClassesToKryo(kryo: Kryo?) {
         register(PendingRunwayUpdateData::class.java)
         register(ActiveRunwayUpdateData::class.java)
         register(ScoreData::class.java)
+        register(TrafficSettingsData::class.java)
 
     } ?: Gdx.app.log("NetworkingTools", "Null kryo passed, unable to register classes")
 }
@@ -237,6 +237,10 @@ data class ScoreData(val score: Int = 0, val highScore: Int = 0)
 /** Class representing data sent for ongoing conflicts and potential conflicts */
 class ConflictData(val conflicts: Array<ConflictManager.Conflict.SerialisedConflict> = arrayOf(),
                    val potentialConflicts: Array<ConflictManager.PotentialConflict.SerialisedPotentialConflict> = arrayOf())
+
+/** Class representing data sent for traffic settings on the server */
+class TrafficSettingsData(val trafficMode: Byte = TrafficMode.NORMAL, val trafficValue: Float = 0f,
+                          val arrivalClosed: ByteArray = byteArrayOf(), val departureClosed: ByteArray = byteArrayOf())
 
 /** Class representing data sent on a client request to pause/run the game */
 data class GameRunningStatus(val running: Boolean = true)
@@ -425,6 +429,18 @@ fun handleIncomingRequestClient(rs: RadarScreen, obj: Any?) {
                     it.potentialConflicts.add(ConflictManager.PotentialConflict.fromSerialisedObject(potentialConflict))
                 }
             }
+        } ?: (obj as? TrafficSettingsData)?.apply {
+            CLIENT_SCREEN?.also {
+                it.serverTrafficMode = obj.trafficMode
+                it.serverTrafficValue = obj.trafficValue
+                // Remove all airport closed components/flags
+                it.airports.values().forEach { arpt ->
+                    arpt.entity.remove<ArrivalClosed>()
+                    arpt.entity += DepartureInfo(closed = false)
+                }
+                obj.arrivalClosed.forEach { id -> it.airports[id]?.entity?.plusAssign(ArrivalClosed()) }
+                obj.departureClosed.forEach { id -> it.airports[id]?.entity?.plusAssign(DepartureInfo(closed = true)) }
+            }
         }
     }
 }
@@ -478,6 +494,10 @@ fun handleIncomingRequestServer(gs: GameServer, connection: Connection, obj: Any
 
             // Send current METAR
             connection.sendTCP(MetarData(gs.airports.values().map { it.getSerialisedMetar() }.toTypedArray()))
+
+            // Send current traffic settings
+            connection.sendTCP(TrafficSettingsData(gs.trafficMode, gs.trafficValue,
+                getArrivalClosedAirports(), getDepartureClosedAirports()))
 
             // Send runway configs
             gs.airports.values().toArray().forEach {

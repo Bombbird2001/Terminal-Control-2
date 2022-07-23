@@ -17,6 +17,7 @@ import ktx.scene2d.*
 import java.time.LocalTime
 import kotlin.math.roundToInt
 
+/** Communications pane class to display all "communications" between player and aircraft */
 class CommsPane {
     companion object {
         const val ARRIVAL: Byte = 0

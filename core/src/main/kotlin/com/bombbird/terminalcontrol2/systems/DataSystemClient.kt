@@ -16,7 +16,7 @@ import ktx.ashley.get
  *
  * Used only in RadarScreen
  * */
-class DataSystem: EntitySystem() {
+class DataSystemClient: EntitySystem() {
     var radarDataTimer = 0f
 
     private val radarDataUpdateFamily: Family = allOf(Position::class, Direction::class, Speed::class, Altitude::class, RadarData::class).get()

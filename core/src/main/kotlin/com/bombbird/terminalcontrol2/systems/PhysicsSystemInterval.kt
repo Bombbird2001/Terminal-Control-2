@@ -9,6 +9,7 @@ import ktx.ashley.exclude
 import ktx.ashley.get
 import ktx.ashley.has
 
+/** A lower frequency [PhysicsSystem] used to deal with physics calculations that can be done at a lower rate */
 class PhysicsSystemInterval: IntervalSystem(1f) {
     private val tasToIasFamily: Family = allOf(Speed::class, IndicatedAirSpeed::class, Altitude::class)
         .exclude(TakeoffRoll::class).get()
