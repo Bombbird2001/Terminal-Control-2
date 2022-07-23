@@ -101,17 +101,6 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer,
             }
         }
 
-        // Render polygons with RenderLast
-        val polygonsLast = engine.getEntitiesFor(polygonLastFamily)
-        for (i in 0 until polygonsLast.size()) {
-            polygonsLast[i]?.apply {
-                val poly = get(GPolygon.mapper) ?: return@apply
-                val srColor = get(SRColor.mapper) ?: return@apply
-                shapeRenderer.color = srColor.color
-                shapeRenderer.polygon(poly.vertices)
-            }
-        }
-
         // Render circles
         val circles = engine.getEntitiesFor(circleFamily)
         for (i in 0 until circles.size()) {
@@ -121,6 +110,35 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer,
                 val srColor = get(SRColor.mapper) ?: return@apply
                 shapeRenderer.color = srColor.color
                 shapeRenderer.circle(pos.x, pos.y, circle.radius)
+            }
+        }
+
+        // Render conflicting min alt sectors (will re-render over the existing Polygon/Circle)
+        CLIENT_SCREEN?.also {
+            shapeRenderer.color = Color.RED
+            for (i in 0 until it.conflicts.size) {
+                it.conflicts[i]?.apply {
+                    if (minAltSectorIndex != null) {
+                        val minAltSector = it.minAltSectors[minAltSectorIndex]?.entity
+                        val polygon = minAltSector?.get(GPolygon.mapper)
+                        val circle = minAltSector?.get(GCircle.mapper)
+                        if (polygon != null) shapeRenderer.polygon(polygon.vertices)
+                        else if (circle != null) minAltSector[Position.mapper]?.let { pos ->
+                            shapeRenderer.circle(pos.x, pos.y, circle.radius)
+                        }
+                    }
+                }
+            }
+        }
+
+        // Render polygons with RenderLast
+        val polygonsLast = engine.getEntitiesFor(polygonLastFamily)
+        for (i in 0 until polygonsLast.size()) {
+            polygonsLast[i]?.apply {
+                val poly = get(GPolygon.mapper) ?: return@apply
+                val srColor = get(SRColor.mapper) ?: return@apply
+                shapeRenderer.color = srColor.color
+                shapeRenderer.polygon(poly.vertices)
             }
         }
 
@@ -200,6 +218,33 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer,
                 val windVector = wind?.windVectorPxps?.let { Vector2(it).scl(TRAJECTORY_DURATION_S.toFloat()) }
                 shapeRenderer.color = srColor.color
                 shapeRenderer.line(rData.position.x, rData.position.y, rData.position.x + spdVector.x + (windVector?.x ?: 0f), rData.position.y + spdVector.y + (windVector?.y ?: 0f))
+            }
+        }
+
+        // Render conflicts and potential conflicts (potential conflicts rendered first so actual conflicts will draw over them)
+        CLIENT_SCREEN?.also {
+            shapeRenderer.color = Color.YELLOW
+            for (i in 0 until it.potentialConflicts.size) {
+                it.potentialConflicts[i]?.apply {
+                    val pos1 = entity1[RadarData.mapper]?.position ?: return@apply
+                    val pos2 = entity2[RadarData.mapper]?.position ?: return@apply
+                    shapeRenderer.circle(pos1.x, pos1.y, nmToPx(latSepRequiredNm) / 2)
+                    shapeRenderer.circle(pos2.x, pos2.y, nmToPx(latSepRequiredNm) / 2)
+                    shapeRenderer.line(pos1.x, pos1.y, pos2.x, pos2.y)
+                }
+            }
+
+            shapeRenderer.color = Color.RED
+            for (i in 0 until it.conflicts.size) {
+                it.conflicts[i]?.apply {
+                    val pos1 = entity1[RadarData.mapper]?.position ?: return@apply
+                    val pos2 = entity2?.get(RadarData.mapper)?.position
+                    shapeRenderer.circle(pos1.x, pos1.y, nmToPx(latSepRequiredNm) / 2)
+                    if (pos2 != null) {
+                        shapeRenderer.circle(pos2.x, pos2.y, nmToPx(latSepRequiredNm) / 2)
+                        shapeRenderer.line(pos1.x, pos1.y, pos2.x, pos2.y)
+                    }
+                }
             }
         }
 
@@ -338,6 +383,24 @@ class RenderingSystem(private val shapeRenderer: ShapeRenderer,
                 labelInfo.label.apply {
                     setPosition((pos.x - camX) / camZoom + labelInfo.xOffset, (pos.y - camY) / camZoom + labelInfo.yOffset)
                     draw(GAME.batch, 1f)
+                }
+            }
+        }
+
+        // Render conflicting min alt sector labels in red
+        CLIENT_SCREEN?.also {
+            for (i in 0 until it.conflicts.size) {
+                it.conflicts[i]?.apply {
+                    if (minAltSectorIndex != null) {
+                        val minAltSector = it.minAltSectors[minAltSectorIndex]?.entity ?: return@apply
+                        val labelInfo = minAltSector[GenericLabel.mapper] ?: return@apply
+                        labelInfo.apply {
+                            val currStyle = label.style
+                            updateStyle("MinAltSectorConflict")
+                            label.draw(GAME.batch, 1f)
+                            label.style = currStyle
+                        }
+                    }
                 }
             }
         }

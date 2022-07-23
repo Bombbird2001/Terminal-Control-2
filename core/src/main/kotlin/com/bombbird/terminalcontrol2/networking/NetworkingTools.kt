@@ -10,6 +10,7 @@ import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.navigation.SidStar
 import com.bombbird.terminalcontrol2.screens.RadarScreen
+import com.bombbird.terminalcontrol2.traffic.ConflictManager
 import com.bombbird.terminalcontrol2.traffic.RunwayConfiguration
 import com.bombbird.terminalcontrol2.ui.*
 import com.bombbird.terminalcontrol2.utilities.*
@@ -17,6 +18,7 @@ import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryonet.Connection
 import ktx.ashley.*
 import java.util.*
+import kotlin.math.min
 
 private val sectorFamily = allOf(SectorInfo::class).get()
 
@@ -111,6 +113,13 @@ fun registerClassesToKryo(kryo: Kryo?) {
         register(FastUDPData::class.java)
         register(Aircraft.SerialisedAircraftUDP::class.java)
         register(Array<Aircraft.SerialisedAircraftUDP>::class.java)
+
+        // Conflict classes
+        register(ConflictData::class.java)
+        register(ConflictManager.Conflict.SerialisedConflict::class.java)
+        register(Array<ConflictManager.Conflict.SerialisedConflict>::class.java)
+        register(ConflictManager.PotentialConflict.SerialisedPotentialConflict::class.java)
+        register(Array<ConflictManager.PotentialConflict.SerialisedPotentialConflict>::class.java)
 
         // Miscellaneous event triggered updated classes
         register(AircraftSectorUpdateData::class.java)
@@ -225,6 +234,10 @@ data class ActiveRunwayUpdateData(val airportId: Byte = 0, val configId: Byte = 
 /** Class representing data sent when the score is updated */
 data class ScoreData(val score: Int = 0, val highScore: Int = 0)
 
+/** Class representing data sent for ongoing conflicts and potential conflicts */
+class ConflictData(val conflicts: Array<ConflictManager.Conflict.SerialisedConflict> = arrayOf(),
+                   val potentialConflicts: Array<ConflictManager.PotentialConflict.SerialisedPotentialConflict> = arrayOf())
+
 /** Class representing data sent on a client request to pause/run the game */
 data class GameRunningStatus(val running: Boolean = true)
 
@@ -249,6 +262,7 @@ fun handleIncomingRequestClient(rs: RadarScreen, obj: Any?) {
             rs.waypoints.clear()
             rs.updatedWaypointMapping.clear()
             rs.publishedHolds.clear()
+            rs.minAltSectors.clear()
             GAME.engine.removeAllEntities()
         } ?: (obj as? InitialAirspaceData)?.apply {
             MAG_HDG_DEV = magHdgDev
@@ -305,7 +319,8 @@ fun handleIncomingRequestClient(rs: RadarScreen, obj: Any?) {
                 }
             }
         } ?: (obj as? MinAltData)?.minAltSectors?.onEach {
-            MinAltSector.fromSerialisedObject(it)
+            rs.minAltSectors.add(MinAltSector.fromSerialisedObject(it))
+            rs.minAltSectors.sort(MinAltSector::sortByDescendingMinAltComparator)
         } ?: (obj as? ShorelineData)?.shoreline?.onEach {
             Shoreline.fromSerialisedObject(it)
         } ?: (obj as? MetarData)?.apply {
@@ -399,6 +414,17 @@ fun handleIncomingRequestClient(rs: RadarScreen, obj: Any?) {
             CLIENT_SCREEN?.uiPane?.mainInfoObj?.updateAtisInformation()
         } ?: (obj as? ScoreData)?.apply {
             CLIENT_SCREEN?.uiPane?.mainInfoObj?.updateScoreDisplay(obj.score, obj.highScore)
+        } ?: (obj as? ConflictData)?.apply {
+            CLIENT_SCREEN?.also {
+                it.conflicts.clear()
+                it.potentialConflicts.clear()
+                obj.conflicts.forEach { conflict ->
+                    it.conflicts.add(ConflictManager.Conflict.fromSerialisedObject(conflict))
+                }
+                obj.potentialConflicts.forEach { potentialConflict ->
+                    it.potentialConflicts.add(ConflictManager.PotentialConflict.fromSerialisedObject(potentialConflict))
+                }
+            }
         }
     }
 }
@@ -432,7 +458,16 @@ fun handleIncomingRequestServer(gs: GameServer, connection: Connection, obj: Any
             connection.sendTCP(InitialAirspaceData(MAG_HDG_DEV, MIN_ALT, MAX_ALT, MIN_SEP, TRANS_ALT, TRANS_LVL))
             assignSectorsToPlayers(gs.server.connections, gs.sectorMap, gs.connectionUUIDMap, gs.sectorUUIDMap, currPlayerNo, gs.sectors)
             gs.sectorSwapRequests.clear()
-            connection.sendTCP(InitialAircraftData(gs.aircraft.values().toArray().map { it.getSerialisableObject() }.toTypedArray()))
+            // connection.sendTCP(InitialAircraftData(gs.aircraft.values().toArray().map { it.getSerialisableObject() }.toTypedArray()))
+            val aircraftArray = gs.aircraft.values().toArray()
+            var itemsRemaining = aircraftArray.size
+            while (itemsRemaining > 0) {
+                val serialisedAircraftArray = Array(min(itemsRemaining, SERVER_AIRCRAFT_TCP_UDP_MAX_COUNT)) {
+                    aircraftArray[aircraftArray.size - itemsRemaining + it].getSerialisableObject()
+                }
+                itemsRemaining -= SERVER_AIRCRAFT_TCP_UDP_MAX_COUNT
+                gs.server.sendToAllTCP(InitialAircraftData(serialisedAircraftArray))
+            }
             connection.sendTCP(AirportData(gs.airports.values().toArray().map { it.getSerialisableObject() }.toTypedArray()))
             val wptArray = gs.waypoints.values.toTypedArray()
             connection.sendTCP(WaypointData(wptArray.map { it.getSerialisableObject() }.toTypedArray()))

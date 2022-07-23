@@ -81,6 +81,8 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                     else -> Color.WHITE
                 }
             }
+        } else {
+            with<ConflictAble>()
         }
         with<Controllable> {
             sectorId = when (flightType) {

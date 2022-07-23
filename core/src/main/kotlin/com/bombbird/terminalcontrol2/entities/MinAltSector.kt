@@ -14,6 +14,7 @@ import kotlin.math.roundToInt
 /** Sector class that creates a sector entity with the required components for implementing an MVA or restricted area */
 class MinAltSector(minAlt: Int?, polygonBoundary: ShortArray?, circleX: Short = 0, circleY: Short = 0, radiusBoundary: Float = 0f,
                    labelX: Short? = null, labelY: Short? = null, restr: Boolean, onClient: Boolean = true): SerialisableEntity<MinAltSector.SerialisedMinAltSector> {
+
     val entity = getEngine(onClient).entity {
         with<MinAltSectorInfo> {
             minAltFt = minAlt
@@ -73,6 +74,24 @@ class MinAltSector(minAlt: Int?, polygonBoundary: ShortArray?, circleX: Short = 
                 serialisedMinAltSector.labelX, serialisedMinAltSector.labelY,
                 serialisedMinAltSector.restr
             )
+        }
+
+        /**
+         * Comparator function for sorting min alt sector arrays in descending order by altitude
+         * @param sector1 the first sector to compare
+         * @param sector2 the second sector to compare
+         * @return an Int < 0 if min alt of [sector1] > [sector2]; 0 if min alt of [sector1] = [sector2]; > 0 if min alt of
+         * [sector1] < [sector2]
+         */
+        fun sortByDescendingMinAltComparator(sector1: MinAltSector, sector2: MinAltSector): Int {
+            val alt1 = sector1.entity[MinAltSectorInfo.mapper] ?: return 0
+            val alt2 = sector2.entity[MinAltSectorInfo.mapper] ?: return 0
+            val altFt1 = alt1.minAltFt
+            val altFt2 = alt2.minAltFt
+            if (altFt1 == null && altFt2 == null) return 0 // If both altitudes are null, they are same
+            if (altFt1 == null) return -1 // If first is null, first is larger
+            if (altFt2 == null) return 1 // If second is null, second is larger
+            return altFt2 - altFt1
         }
     }
 

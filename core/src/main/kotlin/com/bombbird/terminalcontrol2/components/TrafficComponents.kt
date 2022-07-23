@@ -86,6 +86,6 @@ data class RunwayNextArrival(var aircraft: Entity = Entity(), var distFromThrPx:
  * Component for tagging a conflict-able entity, and the conflict sector (based on its altitude) that it belongs to; this
  * is updated once every second and used to reduce the number of comparisons required during the conflict check
  * */
-data class ConflictAble(var conflictLevel: Int): Component {
+data class ConflictAble(var conflictLevel: Int = Int.MAX_VALUE): Component {
     companion object: Mapper<ConflictAble>()
 }

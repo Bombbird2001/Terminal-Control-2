@@ -152,6 +152,28 @@ private fun randomStar(airport: Entity): SidStar.STAR? {
 }
 
 fun appTestArrival(gs: GameServer) {
+    gs.aircraft.put("SHIBA3", Aircraft("SHIBA3", 50f, -400f, 2000f, "B78X", FlightType.ARRIVAL, false).apply {
+        entity += ArrivalAirport(0)
+        entity[Direction.mapper]?.trackUnitVector?.rotateDeg(-70f)
+        val ias = 240.toShort()
+        val tas = calculateTASFromIAS(2000f, ias.toFloat())
+        entity[Speed.mapper]?.apply {
+            speedKts = tas
+            vertSpdFpm = 0f
+        }
+        val clearedAlt = 2000
+        entity += ClearanceAct(ClearanceState.ActingClearance(
+            ClearanceState("NTN1A", Route(), Route(),
+                70, null, clearedAlt, ias)
+        ))
+        entity[CommandTarget.mapper]?.apply {
+            targetAltFt = clearedAlt
+            targetIasKt = ias
+            targetHdgDeg = 70f
+        }
+        entity += InitialArrivalSpawn()
+    })
+
     gs.aircraft.put("SHIBA4", Aircraft("SHIBA4", -200f, -125f, 2000f, "A359", FlightType.ARRIVAL, false).apply {
         entity += ArrivalAirport(0)
         entity[Direction.mapper]?.trackUnitVector?.rotateDeg(-70f)

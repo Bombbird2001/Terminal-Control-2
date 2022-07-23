@@ -30,7 +30,7 @@ class TrafficSystemInterval: IntervalSystem(1f) {
         .exclude(WaitingTakeoff::class, TakeoffRoll::class, LandingRoll::class).get()
 
     private val startingAltitude = floor(getLowestAirportElevation() / VERT_SEP).roundToInt() * VERT_SEP
-    private val conflictLevels = Array<GdxArray<Entity>>(ceil(MAX_ALT + 1500f / VERT_SEP).roundToInt() - startingAltitude / VERT_SEP) {
+    private val conflictLevels = Array<GdxArray<Entity>>(ceil((MAX_ALT + 1500f) / VERT_SEP).roundToInt() - startingAltitude / VERT_SEP) {
         GdxArray()
     }
     private val conflictManager = ConflictManager()
@@ -166,9 +166,10 @@ class TrafficSystemInterval: IntervalSystem(1f) {
                 val expectedSector = getSectorIndexForAlt(alt.altitudeFt, startingAltitude)
                 if (expectedSector != conflict.conflictLevel) {
                     if (conflict.conflictLevel >= 0 && conflict.conflictLevel < conflictLevels.size)
-                        conflictLevels[conflict.conflictLevel].removeValue(this, true)
+                        conflictLevels[conflict.conflictLevel].removeValue(this, false)
                     if (expectedSector >= 0 && expectedSector < conflictLevels.size)
                         conflictLevels[expectedSector].add(this)
+                    conflict.conflictLevel = expectedSector
                 }
             }
         }

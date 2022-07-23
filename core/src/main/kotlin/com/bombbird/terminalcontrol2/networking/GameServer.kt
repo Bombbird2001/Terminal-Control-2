@@ -12,6 +12,7 @@ import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.systems.*
+import com.bombbird.terminalcontrol2.traffic.ConflictManager
 import com.bombbird.terminalcontrol2.traffic.TrafficMode
 import com.bombbird.terminalcontrol2.traffic.appTestArrival
 import com.bombbird.terminalcontrol2.utilities.*
@@ -333,10 +334,10 @@ class GameServer {
         val aircraftArray = aircraft.values().toArray()
         var itemsRemaining = aircraftArray.size
         while (itemsRemaining > 0) {
-            val serialisedAircraftArray = Array(min(itemsRemaining, SERVER_AIRCRAFT_UDP_MAX_COUNT)) {
+            val serialisedAircraftArray = Array(min(itemsRemaining, SERVER_AIRCRAFT_TCP_UDP_MAX_COUNT)) {
                 aircraftArray[aircraftArray.size - itemsRemaining + it].getSerialisableObjectUDP()
             }
-            itemsRemaining -= SERVER_AIRCRAFT_UDP_MAX_COUNT
+            itemsRemaining -= SERVER_AIRCRAFT_TCP_UDP_MAX_COUNT
             server.sendToAllUDP(FastUDPData(serialisedAircraftArray))
         }
     }
@@ -450,6 +451,7 @@ class GameServer {
 
     /**
      * Sends a message to clients to inform them of the active runway configuration update
+     * @param airportId the ID of the airport to change
      * @param configId the new ID of the active configuration
      */
     fun sendActiveRunwayUpdateToAll(airportId: Byte, configId: Byte) {
@@ -459,6 +461,16 @@ class GameServer {
     /** Sends a message to clients to inform them of a change in scores */
     fun sendScoreUpdate() {
         server.sendToAllTCP(ScoreData(score, highScore))
+    }
+
+    /**
+     * Sends a message to clients to update them on the ongoing conflicts
+     * @param conflicts the list of ongoing conflicts
+     * @param potentialConflicts the list of potential conflicts
+     * */
+    fun sendConflicts(conflicts: GdxArray<ConflictManager.Conflict>, potentialConflicts: GdxArray<ConflictManager.PotentialConflict>) {
+        server.sendToAllTCP(ConflictData(conflicts.toArray().map { it.getSerialisableObject() }.toTypedArray(),
+            potentialConflicts.toArray().map { it.getSerialisableObject() }.toTypedArray()))
     }
 
     /**

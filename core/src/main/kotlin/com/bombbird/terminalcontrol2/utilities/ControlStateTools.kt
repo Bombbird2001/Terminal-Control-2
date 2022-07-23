@@ -65,6 +65,17 @@ fun addNewClearanceToPendingClearances(entity: Entity, clearance: AircraftContro
 }
 
 /**
+ * Gets the latest clearance state for the aircraft, including pending clearances that are not acting yet
+ * @param entity the aircraft entity to get the clearance state for
+ * @return the latest clearance state, or null if none found
+ */
+fun getLatestClearanceState(entity: Entity): ClearanceState? {
+    val pending = entity[PendingClearances.mapper]
+    if (pending != null && pending.clearanceQueue.size > 0) return pending.clearanceQueue.last().clearanceState
+    return entity[ClearanceAct.mapper]?.actingClearance?.actingClearance
+}
+
+/**
  * Compares input clearance states and checks if they are the same; routes must be strictly equal and route name,
  * cleared altitude and cleared IAS must be equal as well
  * @param clearanceState1 the first clearance state to compare

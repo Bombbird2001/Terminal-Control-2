@@ -203,6 +203,9 @@ fun loadWorldData(mainName: String, gameServer: GameServer) {
             }
         }
     }
+
+    // Sort all min alt sectors in descending order (optimise for min alt sector conflict checking)
+    gameServer.minAltSectors.sort(MinAltSector::sortByDescendingMinAltComparator)
 }
 
 /** Parse the given [data] into a [Waypoint], and adds it to [GameServer.waypoints] */

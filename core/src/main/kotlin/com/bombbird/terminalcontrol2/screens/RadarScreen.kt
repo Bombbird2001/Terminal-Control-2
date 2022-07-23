@@ -21,6 +21,7 @@ import com.bombbird.terminalcontrol2.graphics.ScreenSize
 import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.networking.*
 import com.bombbird.terminalcontrol2.systems.*
+import com.bombbird.terminalcontrol2.traffic.ConflictManager
 import com.bombbird.terminalcontrol2.ui.UIPane
 import com.bombbird.terminalcontrol2.utilities.nmToPx
 import com.bombbird.terminalcontrol2.ui.safeStage
@@ -84,6 +85,9 @@ class RadarScreen(private val connectionHost: String?, airportToHost: String?): 
     // Published hold map for access
     val publishedHolds = GdxArrayMap<String, PublishedHold>(PUBLISHED_HOLD_SIZE)
 
+    // Array for min alt sectors
+    val minAltSectors = GdxArray<MinAltSector>()
+
     // The primary TMA sector polygon without being split up into sub-sectors
     val primarySector = Polygon()
 
@@ -95,6 +99,10 @@ class RadarScreen(private val connectionHost: String?, airportToHost: String?): 
 
     // Aircraft map for access during UDP updates
     val aircraft = GdxArrayMap<String, Aircraft>(AIRCRAFT_SIZE)
+
+    // List of ongoing and potential conflicts to be rendered
+    val conflicts = GdxArray<ConflictManager.Conflict>(CONFLICT_SIZE)
+    val potentialConflicts = GdxArray<ConflictManager.PotentialConflict>(CONFLICT_SIZE)
 
     // Selected aircraft
     var selectedAircraft: Aircraft? = null
