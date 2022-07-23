@@ -152,7 +152,7 @@ private fun randomStar(airport: Entity): SidStar.STAR? {
 }
 
 fun appTestArrival(gs: GameServer) {
-    gs.aircraft.put("SHIBA3", Aircraft("SHIBA3", 50f, -400f, 2000f, "B78X", FlightType.ARRIVAL, false).apply {
+    gs.aircraft.put("SHIBA3", Aircraft("SHIBA3", -175f, -150f, 2000f, "B78X", FlightType.ARRIVAL, false).apply {
         entity += ArrivalAirport(0)
         entity[Direction.mapper]?.trackUnitVector?.rotateDeg(-70f)
         val ias = 240.toShort()

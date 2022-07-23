@@ -222,6 +222,18 @@ class ConflictManager {
         conflictAbles.forEach {
             val alt = it[Altitude.mapper] ?: return@forEach
             val pos = it[Position.mapper] ?: return@forEach
+
+            // Whether the aircraft has already captured the vertical component of the approach (or phase >= 1 for circling)
+            val approachCaptured = it.has(GlideSlopeCaptured.mapper) || it.has(StepDownApproach.mapper) ||
+                    (it[CirclingApproach.mapper]?.phase ?: 0) >= 1 || it.has(VisualCaptured.mapper)
+
+            // Whether the aircraft is following vectors (if false, it is following the route)
+            val underVector = getLatestClearanceState(it)?.vectorHdg != null
+
+            // Whether the aircraft has deviated from its default route, or is below min alt restriction
+            val deviatedFromRoute = false // TODO implement check
+            val belowMinAltRestriction = it[LastRestrictions.mapper]?.minAltFt?.let { minAlt -> alt.altitudeFt < minAlt - 25 } ?: false
+
             for (i in 0 until allMinAltSectors.size) {
                 allMinAltSectors[i]?.apply {
                     val sectorInfo = entity[MinAltSectorInfo.mapper] ?: return@apply
@@ -230,10 +242,14 @@ class ConflictManager {
                     // descending order, and all subsequent sectors will not trigger a conflict
                     if (minAlt != null && alt.altitudeFt > minAlt - 25) return@forEach
 
-                    // TODO Check if deviate too far from original SID/STAR route/below min altitude restriction
-                    // For now, if aircraft is not being vectored (i.e. SID/STAR/approach) and sector is not restricted,
-                    // skip checking
-                    if (getLatestClearanceState(it)?.vectorHdg == null && !sectorInfo.restricted) return@apply
+                    // If aircraft is already on glide slope, step down, circling (phase 1 or later) or visual approach
+                    // and sector is not restricted, skip checking
+                    if (!sectorInfo.restricted && approachCaptured)
+                        return@apply
+
+                    // If aircraft is not being vectored (i.e. SID/STAR/approach), is not below route min alt
+                    // restriction, has not deviated too much from the route, and sector is not restricted, skip checking
+                    if (!sectorInfo.restricted && !underVector && !belowMinAltRestriction && !deviatedFromRoute) return@apply
 
                     var insideShape = false
                     // Try to get either the polygon or the circle
@@ -248,8 +264,8 @@ class ConflictManager {
                     }
 
                     if (!insideShape) return@apply
-                    // TODO Add reason for SID/STAR/approach route deviation when implemented
                     val reason = if (sectorInfo.restricted) Conflict.RESTRICTED
+                    else if (deviatedFromRoute || belowMinAltRestriction) Conflict.SID_STAR_MVA
                     else Conflict.MVA
 
                     conflicts.add(Conflict(it, entity, i, 3f, reason))

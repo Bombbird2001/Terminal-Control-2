@@ -336,6 +336,7 @@ class MainInfoPane {
                                         return@addChangeListener
                                     arpt.activateRunwayConfig(configIdToUse)
                                     server.sendActiveRunwayUpdateToAll(arptId, configIdToUse)
+                                    server.sendPendingRunwayUpdateToAll(arptId, null)
                                 }
                             }
                         }
@@ -343,7 +344,7 @@ class MainInfoPane {
                     }
                     row()
                     val cancelButton = textButton("Close\nPane", "MenuPaneRunwayChange").cell(padRight = 20f, growX = true).apply {
-                        name = "Close" // When this is getting initialized, it will always start of with the active runway config
+                        name = "Close" // When this is getting initialized, it will always start with the active runway config
                         addChangeListener { _, _ ->
                             // Reset to the current state
                             if (name == "") setAirportRunwayConfigPaneState(airport.entity)
