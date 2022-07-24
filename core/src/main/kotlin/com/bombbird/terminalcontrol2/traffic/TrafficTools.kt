@@ -9,9 +9,7 @@ import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.Aircraft
 import com.bombbird.terminalcontrol2.entities.Airport
 import com.bombbird.terminalcontrol2.global.*
-import com.bombbird.terminalcontrol2.navigation.ClearanceState
-import com.bombbird.terminalcontrol2.navigation.Route
-import com.bombbird.terminalcontrol2.navigation.SidStar
+import com.bombbird.terminalcontrol2.navigation.*
 import com.bombbird.terminalcontrol2.networking.GameServer
 import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.*
@@ -80,6 +78,7 @@ fun createArrival(callsign: String, icaoType: String, airport: Entity, gs: GameS
 
     gs.aircraft.put(callsign, Aircraft(callsign, spawnPos.first, spawnPos.second, 0f, icaoType, FlightType.ARRIVAL, false).apply {
         entity += ArrivalAirport(airport[AirportInfo.mapper]?.arptId ?: 0)
+        entity += ArrivalRouteZone().apply { starZone.addAll(getZonesForRoute(origStarRoute)) }
         val alt = calculateArrivalSpawnAltitude(entity, airport, origStarRoute, spawnPos.first, spawnPos.second, starRoute)
         entity[Altitude.mapper]?.altitudeFt = alt
         val dir = (entity[Direction.mapper] ?: Direction()).apply { trackUnitVector.rotateDeg(-spawnPos.third - 180) }
@@ -274,12 +273,19 @@ fun clearForTakeoff(aircraft: Entity, rwy: Entity) {
         this += TakeoffRoll(max(1.5f,
             calculateRequiredAcceleration(0, calculateTASFromIAS(rwyAlt, acPerf.vR + tailwind).toInt().toShort(),
                 ((rwy[RunwayInfo.mapper]?.lengthM ?: 3800) - 1000) * MathUtils.random(0.75f, 1f))), rwy)
-        // Set initial clearance state
+        // Get random SID, add route zones
         val sid = randomSid(rwy)
         val rwyName = rwy[RunwayInfo.mapper]?.rwyName ?: ""
         val initClimb = sid?.rwyInitialClimbs?.get(rwyName) ?: 3000
+        val sidRoute = sid?.getRandomSIDRouteForRunway(rwyName) ?: Route()
+        get(DepartureRouteZone.mapper)?.sidZone?.also {
+            it.clear()
+            it.addAll(getZonesForInitialRunwayClimb(sidRoute, rwy))
+            it.addAll(getZonesForRoute(sidRoute))
+        }
+        // Set initial clearance state
         this += ClearanceAct(ClearanceState.ActingClearance(
-            ClearanceState(sid?.name ?: "", sid?.getRandomSIDRouteForRunway(rwyName) ?: Route(), Route(),
+            ClearanceState(sid?.name ?: "", sidRoute, Route(),
                 null, null, initClimb, acPerf.climbOutSpeed)
         ))
         get(CommandTarget.mapper)?.let {

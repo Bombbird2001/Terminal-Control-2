@@ -61,6 +61,7 @@ class StatusPane {
         getMissedApproachMessages()
         getPendingRunwayChangeMessages()
         getInitialContactMessages()
+        getAircraftRequestMessages()
         getTrafficInfoMessages()
     }
 
@@ -164,6 +165,11 @@ class StatusPane {
                 })
             }
         }
+    }
+
+    /** Gets aircraft requests and adds them as messages to the status pane */
+    private fun getAircraftRequestMessages() {
+        // TODO To be added after implementing aircraft requests
     }
 
     /** Gets traffic info for the game world and airports and adds them as messages to the status pane */

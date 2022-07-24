@@ -3,6 +3,7 @@ package com.bombbird.terminalcontrol2.components
 import com.badlogic.ashley.core.Component
 import com.badlogic.ashley.core.Entity
 import com.bombbird.terminalcontrol2.entities.Airport
+import com.bombbird.terminalcontrol2.entities.RouteZone
 import com.bombbird.terminalcontrol2.navigation.Approach
 import com.bombbird.terminalcontrol2.navigation.SidStar
 import com.bombbird.terminalcontrol2.traffic.RunwayConfiguration
@@ -58,4 +59,14 @@ data class DependentParallelRunway(val depParRwys: GdxArray<Entity> = GdxArray(4
 /** Component to keep track of the list of runways that a runway has crossings with */
 data class CrossingRunway(val crossRwys: GdxArray<Entity> = GdxArray(3)): Component {
     companion object: Mapper<CrossingRunway>()
+}
+
+/** Component to store an arrival route's MVA exclusion zones */
+data class ArrivalRouteZone(val starZone: GdxArray<RouteZone> = GdxArray(), val appZone: GdxArray<RouteZone> = GdxArray()): Component {
+    companion object: Mapper<ArrivalRouteZone>()
+}
+
+/** Component to store a departure route's MVA exclusion zones */
+data class DepartureRouteZone(val sidZone: GdxArray<RouteZone> = GdxArray()): Component {
+    companion object: Mapper<DepartureRouteZone>()
 }

@@ -705,19 +705,19 @@ class AISystem: EntitySystem() {
                 }
 
                 // Check runway occupancy
-                // For all approaches, go around if runway is still occupied by the time aircraft reaches 200 feet AGL
+                // For all approaches, go around if runway is still occupied by the time aircraft reaches 150 feet AGL
                 val rwyAlt = rwyObj[Altitude.mapper]?.altitudeFt
-                if (rwyAlt != null && rwyObj.has(RunwayOccupied.mapper) && alt.altitudeFt < rwyAlt + 200) {
+                if (rwyAlt != null && rwyObj.has(RunwayOccupied.mapper) && alt.altitudeFt < rwyAlt + 150) {
                     println("Traffic on runway")
                     return@apply initiateGoAround(this)
                 }
 
                 // Check opposite runway aircraft departure
-                // For all approaches, go around if aircraft is less than 5nm from runway and a departure has taken off
-                // less than 120s ago from the opposite (including dependent) runway
-                if (pxToNm(distFromRwyPx) < 5) {
+                // For all approaches, go around if aircraft is less than 7nm from runway and a departure has taken off
+                // less than 135s ago from the opposite (including dependent) runway
+                if (pxToNm(distFromRwyPx) < 7) {
                     rwyObj[OppositeRunway.mapper]?.oppRwy?.get(RunwayPreviousDeparture.mapper)?.let {
-                        if (it.timeSinceDepartureS < 120) {
+                        if (it.timeSinceDepartureS < 135) {
                             println("Departure from opposite runway")
                             return@apply initiateGoAround(this)
                         }
@@ -725,7 +725,7 @@ class AISystem: EntitySystem() {
                     rwyObj[DependentOppositeRunway.mapper]?.depOppRwys?.let { depOppRwys ->
                         for (j in 0 until depOppRwys.size) {
                             depOppRwys[j][RunwayPreviousDeparture.mapper]?.let {
-                                if (it.timeSinceDepartureS < 120) {
+                                if (it.timeSinceDepartureS < 135) {
                                     println("Departure from dependent opposite runway")
                                     return@apply initiateGoAround(this)
                                 }

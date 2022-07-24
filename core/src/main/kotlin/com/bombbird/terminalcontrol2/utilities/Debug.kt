@@ -4,7 +4,6 @@ import com.badlogic.ashley.core.Engine
 import com.badlogic.ashley.core.Entity
 import com.badlogic.ashley.core.Family
 import com.badlogic.gdx.graphics.Color
-import com.badlogic.gdx.math.Polygon
 import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.MAG_HDG_DEV
@@ -81,9 +80,9 @@ fun printAirportApproaches(entity: Entity) {
 fun toggleMinAltSectorsOnClick(x: Float, y: Float, unprojectFromRadarCamera: (Float, Float) -> Vector2, clientEngine: Engine) {
     unprojectFromRadarCamera(x, y).apply { println("${pxToNm(this.x)} ${pxToNm(this.y)}") }
     for (mva in clientEngine.getEntitiesFor(minAltSectorFamily)) {
-        mva[GPolygon.mapper]?.vertices?.apply {
-            if (Polygon(this).contains(unprojectFromRadarCamera(x, y))) {
-                println("${mva[MinAltSectorInfo.mapper]?.minAltFt} ${this.map { pxToNm(it) }.toGdxArray()}")
+        mva[GPolygon.mapper]?.apply {
+            if (polygonObj.contains(unprojectFromRadarCamera(x, y))) {
+                println("${mva[MinAltSectorInfo.mapper]?.minAltFt} ${vertices.map { pxToNm(it) }.toGdxArray()}")
                 mva[SRColor.mapper]?.apply {
                     color = if (color == Color.GRAY) {
                         mva += RenderLast()

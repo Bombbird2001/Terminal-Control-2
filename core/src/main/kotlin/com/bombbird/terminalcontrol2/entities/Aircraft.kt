@@ -83,6 +83,8 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
             }
         } else {
             with<ConflictAble>()
+            if (flightType == FlightType.ARRIVAL) with<ArrivalRouteZone>()
+            else if (flightType == FlightType.DEPARTURE) with<DepartureRouteZone>()
         }
         with<Controllable> {
             sectorId = when (flightType) {

@@ -1,18 +1,26 @@
 package com.bombbird.terminalcontrol2.navigation
 
+import com.badlogic.ashley.core.Entity
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.math.Polygon
-import com.bombbird.terminalcontrol2.components.ApproachChildren
-import com.bombbird.terminalcontrol2.components.Position
-import com.bombbird.terminalcontrol2.components.WaypointInfo
+import com.badlogic.gdx.math.Vector2
+import com.bombbird.terminalcontrol2.components.*
+import com.bombbird.terminalcontrol2.entities.RouteZone
 import com.bombbird.terminalcontrol2.entities.Waypoint
 import com.bombbird.terminalcontrol2.global.CLIENT_SCREEN
 import com.bombbird.terminalcontrol2.global.GAME
+import com.bombbird.terminalcontrol2.global.MAG_HDG_DEV
+import com.bombbird.terminalcontrol2.global.ROUTE_RNP_NM
 import com.bombbird.terminalcontrol2.navigation.Route.*
 import com.bombbird.terminalcontrol2.utilities.calculateDistanceBetweenPoints
+import com.bombbird.terminalcontrol2.utilities.ftToPx
 import com.bombbird.terminalcontrol2.utilities.getRequiredTrack
+import com.bombbird.terminalcontrol2.utilities.mToPx
 import ktx.ashley.get
 import ktx.collections.GdxArray
+import ktx.math.plus
+import ktx.math.times
+import kotlin.math.min
 
 /** Helper file containing functions for dealing with aircraft route shenanigans */
 
@@ -532,4 +540,63 @@ fun removeApproachLegs(route: Route, hiddenLegs: Route) {
     }
     route.extendRoute(hiddenLegs)
     hiddenLegs.clear()
+}
+
+/**
+ * Gets the route MVA exclusion zones for the input route
+ * @param route the route to find zones for
+ * @return an array of route zones for each waypoint -> waypoint segment on the route
+ */
+fun getZonesForRoute(route: Route): GdxArray<RouteZone> {
+    if (route.size == 0) return GdxArray()
+    val segmentArray = GdxArray<LegSegment>()
+    calculateRouteSegments(route, segmentArray, route[0])
+    val routeZones = GdxArray<RouteZone>()
+    for (i in 0 until segmentArray.size) {
+        segmentArray[i]?.apply {
+            val finalLeg1 = leg1
+            val finalLeg2 = leg2
+            if (finalLeg1 is WaypointLeg && finalLeg2 is WaypointLeg) {
+                val wpt1Pos = GAME.gameServer?.waypoints?.get(finalLeg1.wptId)?.entity?.get(Position.mapper) ?: return@apply
+                val wpt2Pos = GAME.gameServer?.waypoints?.get(finalLeg2.wptId)?.entity?.get(Position.mapper) ?: return@apply
+                val minAlt = if (finalLeg1.minAltFt == null || finalLeg2.minAltFt == null) null
+                else min(finalLeg1.minAltFt, finalLeg2.minAltFt)
+                routeZones.add(RouteZone(wpt1Pos.x, wpt1Pos.y, wpt2Pos.x, wpt2Pos.y, ROUTE_RNP_NM, minAlt))
+            }
+        }
+    }
+    return routeZones
+}
+
+/**
+ * Gets the initial MVA exclusion zones for the initial climb portion of the SID - this can consist of a maximum of an
+ * initial climb leg followed by a waypoint leg; it is possible for either or both legs to not exist as well
+ * @param route the SID route to get initial climb zones for
+ * @return an array of zones, with a maximum of 2 zones for the initial climb
+ */
+fun getZonesForInitialRunwayClimb(route: Route, rwy: Entity): GdxArray<RouteZone> {
+    val zones = GdxArray<RouteZone>()
+    if (route.size == 0) return zones
+    val rwyPos = rwy[Position.mapper] ?: return zones
+    val rwyLengthHalf = (rwy[RunwayInfo.mapper]?.lengthM ?: return zones) / 2f
+    val rwyDir = rwy[Direction.mapper]?.trackUnitVector ?: return zones
+    val startPos = Vector2(rwyPos.x, rwyPos.y) + rwyDir * (mToPx(rwyLengthHalf))
+    (route[0] as? WaypointLeg)?.apply {
+        val wptPos = GAME.gameServer?.waypoints?.get(wptId)?.entity?.get(Position.mapper) ?: return@apply
+        zones.add(RouteZone(startPos.x, startPos.y, wptPos.x, wptPos.y, ROUTE_RNP_NM, null))
+        return zones
+    } ?: (route[0] as? InitClimbLeg)?.apply {
+        val rwyAlt = rwy[Altitude.mapper]?.altitudeFt ?: return@apply
+        // Assume 7% gradient climb
+        val distPxNeeded = ftToPx(minAltFt - rwyAlt) * 100 / 7
+        val trackVector = Vector2(Vector2.Y).rotateDeg(MAG_HDG_DEV - heading) * distPxNeeded
+        val climbEndPos = startPos + trackVector
+        zones.add(RouteZone(startPos.x, startPos.y, climbEndPos.x, climbEndPos.y, ROUTE_RNP_NM, null))
+        if (route.size < 2) return@apply
+        (route[1] as? WaypointLeg)?.also { wpt ->
+            val wptPos = GAME.gameServer?.waypoints?.get(wpt.wptId)?.entity?.get(Position.mapper) ?: return@apply
+            zones.add(RouteZone(climbEndPos.x, climbEndPos.y, wptPos.x, wptPos.y, ROUTE_RNP_NM, null))
+        }
+    }
+    return zones
 }

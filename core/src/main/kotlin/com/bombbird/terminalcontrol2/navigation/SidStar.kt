@@ -1,6 +1,8 @@
 package com.bombbird.terminalcontrol2.navigation
 
 import com.badlogic.gdx.Gdx
+import com.bombbird.terminalcontrol2.entities.RouteZone
+import com.bombbird.terminalcontrol2.global.RUNWAY_SIZE
 import com.bombbird.terminalcontrol2.utilities.Pronounceable
 import com.bombbird.terminalcontrol2.utilities.UsabilityFilter
 import ktx.collections.GdxArray
@@ -23,6 +25,7 @@ abstract class SidStar(val name: String,
                        override val timeRestriction: Byte,
                        override val pronunciation: String): UsabilityFilter, Pronounceable {
     val routeLegs = Route()
+    val routeZones = GdxArray<RouteZone>()
     val rwyLegs = GdxArrayMap<String, Route>(6)
     protected val inOutboundLegs = GdxArray<Route>(10)
 
@@ -83,7 +86,7 @@ abstract class SidStar(val name: String,
             }
         }
 
-        val rwyInitialClimbs = GdxArrayMap<String, Int>(6)
+        val rwyInitialClimbs = GdxArrayMap<String, Int>(RUNWAY_SIZE)
         val outboundLegs: GdxArray<Route>
             get() = inOutboundLegs
 

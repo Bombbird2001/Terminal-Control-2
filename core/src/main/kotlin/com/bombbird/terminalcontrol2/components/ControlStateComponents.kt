@@ -148,9 +148,9 @@ data class CanBeHandedOver(val nextSector: Byte = 0): Component {
 }
 
 /**
- * Component for tagging aircraft that did a go around recently (i.e. < 30 seconds); a timer comes with the component
+ * Component for tagging aircraft that did a go around recently (i.e. < 45 seconds); a timer comes with the component
  * to keep track of when to remove this component from the aircraft
  */
-data class RecentGoAround(var timeLeft: Float = 30f): Component {
+data class RecentGoAround(var timeLeft: Float = 45f): Component {
     companion object: Mapper<RecentGoAround>()
 }

@@ -2,7 +2,9 @@ package com.bombbird.terminalcontrol2.navigation
 
 import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
+import com.bombbird.terminalcontrol2.entities.RouteZone
 import com.bombbird.terminalcontrol2.global.MAG_HDG_DEV
+import com.bombbird.terminalcontrol2.global.TRANSITION_SIZE
 import com.bombbird.terminalcontrol2.global.getEngine
 import com.bombbird.terminalcontrol2.utilities.Pronounceable
 import com.bombbird.terminalcontrol2.utilities.UsabilityFilter
@@ -11,6 +13,7 @@ import ktx.ashley.entity
 import ktx.ashley.get
 import ktx.ashley.plusAssign
 import ktx.ashley.with
+import ktx.collections.GdxArray
 import ktx.collections.GdxArrayMap
 import kotlin.math.roundToInt
 
@@ -47,9 +50,12 @@ class Approach(name: String, arptId: Byte, runwayId: Byte, posX: Float, posY: Fl
         }
     }
 
-    val transitions = GdxArrayMap<String, Route>(6)
+    val transitions = GdxArrayMap<String, Route>(TRANSITION_SIZE)
+    val transitionRouteZones = GdxArrayMap<String, GdxArray<RouteZone>>(TRANSITION_SIZE)
     val routeLegs = Route()
+    val routeZones = GdxArray<RouteZone>()
     val missedLegs = Route()
+    val missedRouteZones = GdxArray<RouteZone>()
 
     /**
      * Gets a [SerialisedApproach] from current state

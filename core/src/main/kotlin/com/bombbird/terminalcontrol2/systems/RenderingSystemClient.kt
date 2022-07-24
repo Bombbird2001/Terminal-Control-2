@@ -101,6 +101,18 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
             }
         }
 
+        // Debug: Render route MVA exclusion zone of selected aircraft
+        shapeRenderer.color = Color.WHITE
+        GAME.gameServer?.aircraft?.get(CLIENT_SCREEN?.selectedAircraft?.entity?.get(AircraftInfo.mapper)?.icaoCallsign)?.apply {
+            entity[ArrivalRouteZone.mapper]?.let {
+                for (i in 0 until it.starZone.size) shapeRenderer.polygon(it.starZone[i].entity[GPolygon.mapper]?.vertices ?: continue)
+                for (i in 0 until it.appZone.size) shapeRenderer.polygon(it.appZone[i].entity[GPolygon.mapper]?.vertices ?: continue)
+            }
+            entity[DepartureRouteZone.mapper]?.let {
+                for (i in 0 until it.sidZone.size) shapeRenderer.polygon(it.sidZone[i].entity[GPolygon.mapper]?.vertices ?: continue)
+            }
+        }
+
         // Render circles
         val circles = engine.getEntitiesFor(circleFamily)
         for (i in 0 until circles.size()) {
@@ -197,8 +209,8 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
             uiPane.clearanceState.vectorHdg?.let { hdg -> renderVector(aircraftPos.x, aircraftPos.y, hdg, false) } ?:
             run { renderRouteSegments(aircraftPos.x, aircraftPos.y, uiPane.clearanceRouteSegments, skipAircraftToFirstWaypoint = false,
                 forceRenderChangedAircraftToFirstWaypoint = false) }
-            if (!vectorUnchanged) uiPane.userClearanceState.vectorHdg?.let { newHdg ->
-                // Render new vector if changed and is not null
+            if (!vectorUnchanged && !uiPane.appTrackCaptured) uiPane.userClearanceState.vectorHdg?.let { newHdg ->
+                // Render new vector if changed and is not null, and aircraft has not captured approach track
                 renderVector(aircraftPos.x, aircraftPos.y, newHdg, true)
             }
             renderRouteSegments(aircraftPos.x, aircraftPos.y, uiPane.userClearanceRouteSegments, skipAircraftToFirstWaypoint = !noVector,

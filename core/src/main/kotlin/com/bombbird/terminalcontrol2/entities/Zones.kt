@@ -2,7 +2,6 @@ package com.bombbird.terminalcontrol2.entities
 
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.Color
-import com.badlogic.gdx.math.Polygon
 import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.MAG_HDG_DEV
@@ -76,8 +75,7 @@ class ApproachNormalOperatingZone(posX: Float, posY: Float, appHdg: Short, priva
      * @return true if ([x], [y]) is inside the zone polygon, else false
      * */
     override fun contains(x: Float, y: Float): Boolean {
-        val vertices = entity[GPolygon.mapper]?.vertices ?: return false
-        return Polygon(vertices).contains(x, y)
+       return entity[GPolygon.mapper]?.polygonObj?.contains(x, y) == true
     }
 
     companion object {
@@ -150,8 +148,7 @@ class DepartureNormalOperatingZone(posX: Float, posY: Float, appHdg: Short, priv
      * @return true if ([x], [y]) is inside the zone polygon, else false
      * */
     override fun contains(x: Float, y: Float): Boolean {
-        val vertices = entity[GPolygon.mapper]?.vertices ?: return false
-        return Polygon(vertices).contains(x, y)
+        return entity[GPolygon.mapper]?.polygonObj?.contains(x, y) == true
     }
 
     companion object {
@@ -228,8 +225,7 @@ class NoTransgressionZone(posX: Float, posY: Float, appHdg: Short, private val w
      * @return true if ([x], [y]) is inside the zone polygon, else false
      * */
     override fun contains(x: Float, y: Float): Boolean {
-        val vertices = entity[GPolygon.mapper]?.vertices ?: return false
-        return Polygon(vertices).contains(x, y)
+        return entity[GPolygon.mapper]?.polygonObj?.contains(x, y) == true
     }
 
     companion object {
@@ -247,4 +243,32 @@ class NoTransgressionZone(posX: Float, posY: Float, appHdg: Short, private val w
     /** Object that contains [NoTransgressionZone] data to be serialised by Kryo */
     class SerialisedNTZ(val posX: Float = 0f, val posY: Float = 0f, val appHdg: Short = 0,
                                  val widthNm: Float = 0f, val lengthNm: Float = 0f)
+}
+
+/**
+ * Class for storing route segment zone (for waypoint -> waypoint leg segments)
+ *
+ * This class should be initialized only on the server as it is not required on the client
+ * */
+class RouteZone(posX1: Float, posY1: Float, posX2: Float, posY2: Float, rnpNm: Float, val minAlt: Int?): Zone {
+    val entity = getEngine(false).entity {
+        with<GPolygon> {
+            val halfWidth = Vector2(posX2 - posX1, posY2 - posY1).apply { scl(nmToPx(rnpNm) / len()) }.rotate90(-1)
+            val halfWidthOppTrack = Vector2(halfWidth).rotate90(-1)
+            vertices = floatArrayOf(posX1 + halfWidth.x + halfWidthOppTrack.x, posY1 + halfWidth.y + halfWidthOppTrack.y,
+                posX1 - halfWidth.x + halfWidthOppTrack.x, posY1 - halfWidth.y + halfWidthOppTrack.y,
+                posX2 - halfWidth.x - halfWidthOppTrack.x, posY2 - halfWidth.y - halfWidthOppTrack.y,
+                posX2 + halfWidth.x - halfWidthOppTrack.x, posY2 + halfWidth.y - halfWidthOppTrack.y)
+        }
+    }
+
+    /**
+     * Checks whether the polygon of this route zone contains the input coordinates
+     * @param x the x coordinate
+     * @param y the y coordinate
+     * @return true if ([x], [y]) is inside the zone polygon, else false
+     * */
+    override fun contains(x: Float, y: Float): Boolean {
+        return entity[GPolygon.mapper]?.polygonObj?.contains(x, y) == true
+    }
 }

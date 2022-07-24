@@ -52,6 +52,7 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
          * @param entity the aircraft entity that the clearance will be applied to
          * */
         fun updateClearanceAct(newClearance: ClearanceState, entity: Entity) {
+            val starChanged = actingClearance.routePrimaryName != newClearance.routePrimaryName
             actingClearance.routePrimaryName = newClearance.routePrimaryName
             val appChanged = newClearance.clearedApp != actingClearance.clearedApp
             val transChanged = newClearance.clearedTrans != actingClearance.clearedTrans
@@ -174,6 +175,33 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
                 entity += ContactToTower(min((alt + MathUtils.random(1100, 1500)).toInt(), MIN_ALT - 50))
             }
             actingClearance.clearedTrans = newClearance.clearedTrans
+
+            // Update route polygons
+            entity[ArrivalRouteZone.mapper]?.also {
+                val airport = GAME.gameServer?.airports?.get(entity[ArrivalAirport.mapper]?.arptId)?.entity ?: return@also
+                if (starChanged) {
+                    it.starZone.clear()
+                    airport[STARChildren.mapper]?.starMap?.get(actingClearance.routePrimaryName)?.let { star ->
+                        it.starZone.addAll(star.routeZones)
+                    }
+                }
+                if (starChanged || transChanged || appChanged) {
+                    it.appZone.clear()
+                    airport[ApproachChildren.mapper]?.approachMap?.get(actingClearance.clearedApp)?.let { app ->
+                        app.transitionRouteZones[actingClearance.clearedTrans]?.let { trans ->
+                            it.appZone.addAll(trans)
+                        }
+                        app.transitions[actingClearance.clearedTrans]?.let { trans ->
+                            it.appZone.addAll(getZonesForRoute(Route().apply {
+                                if (trans.size > 0) add(trans[trans.size - 1])
+                                if (app.routeLegs.size > 0) add(app.routeLegs[0])
+                            }))
+                        }
+                        it.appZone.addAll(app.routeZones)
+                        it.appZone.addAll(app.missedRouteZones)
+                    }
+                }
+            }
         }
     }
 

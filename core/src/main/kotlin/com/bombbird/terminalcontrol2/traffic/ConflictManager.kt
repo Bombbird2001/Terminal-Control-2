@@ -4,8 +4,8 @@ import com.badlogic.ashley.core.Entity
 import com.badlogic.ashley.utils.ImmutableArray
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.math.Circle
-import com.badlogic.gdx.math.Polygon
 import com.bombbird.terminalcontrol2.components.*
+import com.bombbird.terminalcontrol2.entities.RouteZone
 import com.bombbird.terminalcontrol2.entities.SerialisableEntity
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.establishedOnFinalApproachTrack
@@ -230,9 +230,20 @@ class ConflictManager {
             // Whether the aircraft is following vectors (if false, it is following the route)
             val underVector = getLatestClearanceState(it)?.vectorHdg != null
 
-            // Whether the aircraft has deviated from its default route, or is below min alt restriction
-            val deviatedFromRoute = false // TODO implement check
-            val belowMinAltRestriction = it[LastRestrictions.mapper]?.minAltFt?.let { minAlt -> alt.altitudeFt < minAlt - 25 } ?: false
+            // Whether the aircraft is within its route zones
+            val routeZones = GdxArray<RouteZone>()
+            it[ArrivalRouteZone.mapper]?.let { arrZone ->
+                routeZones.addAll(arrZone.appZone)
+                routeZones.addAll(arrZone.starZone)
+            }
+            it[DepartureRouteZone.mapper]?.let { depZone -> routeZones.addAll(depZone.sidZone) }
+            var deviatedFromRoute = true
+            run { for (i in 0 until routeZones.size) routeZones[i]?.also { zone ->
+                if ((zone.minAlt == null || alt.altitudeFt > zone.minAlt - 25) && zone.contains(pos.x, pos.y)) {
+                    deviatedFromRoute = false
+                    return@run
+                }
+            }}
 
             for (i in 0 until allMinAltSectors.size) {
                 allMinAltSectors[i]?.apply {
@@ -247,16 +258,17 @@ class ConflictManager {
                     if (!sectorInfo.restricted && approachCaptured)
                         return@apply
 
-                    // If aircraft is not being vectored (i.e. SID/STAR/approach), is not below route min alt
-                    // restriction, has not deviated too much from the route, and sector is not restricted, skip checking
-                    if (!sectorInfo.restricted && !underVector && !belowMinAltRestriction && !deviatedFromRoute) return@apply
+                    // If aircraft is not being vectored (i.e. SID/STAR/approach), is within the route's MVA exclusion
+                    // zone, or instead of all the above, the aircraft just did a go around, and sector is not restricted,
+                    // skip checking
+                    if (!sectorInfo.restricted && ((!underVector && !deviatedFromRoute) || it.has(RecentGoAround.mapper))) return@apply
 
                     var insideShape = false
                     // Try to get either the polygon or the circle
                     val polygon = entity[GPolygon.mapper]
                     val circle = entity[GCircle.mapper]
                     if (polygon != null) {
-                        insideShape = Polygon(polygon.vertices).contains(pos.x, pos.y)
+                        insideShape = polygon.polygonObj.contains(pos.x, pos.y)
                     } else if (circle != null) {
                         insideShape = entity[Position.mapper]?.let { circlePos ->
                             Circle(circlePos.x, circlePos.y, circle.radius).contains(pos.x, pos.y)
@@ -265,7 +277,7 @@ class ConflictManager {
 
                     if (!insideShape) return@apply
                     val reason = if (sectorInfo.restricted) Conflict.RESTRICTED
-                    else if (deviatedFromRoute || belowMinAltRestriction) Conflict.SID_STAR_MVA
+                    else if (deviatedFromRoute) Conflict.SID_STAR_MVA
                     else Conflict.MVA
 
                     conflicts.add(Conflict(it, entity, i, 3f, reason))

@@ -8,6 +8,7 @@ import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.Approach
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.navigation.SidStar
+import com.bombbird.terminalcontrol2.navigation.getZonesForRoute
 import com.bombbird.terminalcontrol2.utilities.UsabilityFilter
 import com.bombbird.terminalcontrol2.networking.GameServer
 import com.bombbird.terminalcontrol2.traffic.RunwayConfiguration
@@ -19,6 +20,7 @@ import ktx.ashley.get
 import ktx.ashley.plusAssign
 import ktx.assets.toInternalFile
 import ktx.collections.GdxArray
+import ktx.collections.set
 import ktx.collections.toGdxArray
 
 private const val WORLD_MIN_ALT = "MIN_ALT"
@@ -238,7 +240,7 @@ private fun parseSector(data: List<String>, currSectorCount: Byte, gameServer: G
     }
     val sector = Sector(id, freq, arrCallsign, depCallsign, polygon.toShortArray(), onClient = false)
     if (currSectorCount == 1.byte) gameServer.primarySector.vertices = polygon.map { it.toFloat() }.toFloatArray()
-    if (id == 0.byte) gameServer.sectors.put(currSectorCount, Array<Sector>().apply { add(sector) })
+    if (id == 0.byte) gameServer.sectors[currSectorCount] = Array<Sector>().apply { add(sector) }
     else gameServer.sectors[currSectorCount].add(sector)
 }
 
@@ -316,7 +318,7 @@ private fun parseHold(data: List<String>, gameServer: GameServer) {
         minAlt = aboveAltRegex.find(it)?.groupValues?.get(1)?.toInt()
         maxAlt = belowAltRegex.find(it)?.groupValues?.get(1)?.toInt()
     }
-    gameServer.publishedHolds.put(wptName, PublishedHold(wptId, maxAlt, minAlt, maxSpdLower, maxSpdHigher, inboundHdg, legDist, dir, false))
+    gameServer.publishedHolds[wptName] = PublishedHold(wptId, maxAlt, minAlt, maxSpdLower, maxSpdHigher, inboundHdg, legDist, dir, false)
 }
 
 /** Parse the given [data] into an [Airport], and adds it to [GameServer.airports]
@@ -337,8 +339,8 @@ private fun parseAirport(data: List<String>, gameServer: GameServer): Airport {
     val arpt = Airport(id, icao, name, ratio, posX, posY, elevation, false).apply {
         setMetarRealLifeIcao(realLifeIcao)
     }
-    gameServer.airports.put(id, arpt)
-    gameServer.updatedAirportMapping.put(icao, id)
+    gameServer.airports[id] = arpt
+    gameServer.updatedAirportMapping[icao] = id
     return arpt
 }
 
@@ -607,11 +609,15 @@ private fun parseApproachRoute(data: List<String>, approach: Approach) {
         Gdx.app.log("GameLoader", "Multiple routes for approach: ${approach.entity[ApproachInfo.mapper]?.approachName}")
     }
     approach.routeLegs.extendRoute(parseLegs(data.subList(1, data.size), Route.Leg.APP))
+    approach.routeZones.clear()
+    approach.routeZones.addAll(getZonesForRoute(approach.routeLegs))
 }
 
 /** Parse the given [data] into approach transition legs data, and adds it to the supplied [approach]'s [Approach.transitions] */
 private fun parseApproachTransition(data: List<String>, approach: Approach) {
-    approach.transitions.put(data[1], parseLegs(data.subList(2, data.size), Route.Leg.APP_TRANS))
+    val transRoute = parseLegs(data.subList(2, data.size), Route.Leg.APP_TRANS)
+    approach.transitions[data[1]] = transRoute
+    approach.transitionRouteZones[data[1]] = getZonesForRoute(transRoute)
 }
 
 /**
@@ -625,6 +631,8 @@ private fun parseApproachMissed(data: List<String>, approach: Approach) {
     }
     approach.missedLegs.add(Route.DiscontinuityLeg(Route.Leg.MISSED_APP))
     approach.missedLegs.extendRoute(parseLegs(data.subList(1, data.size), Route.Leg.MISSED_APP))
+    approach.missedRouteZones.clear()
+    approach.missedRouteZones.addAll(getZonesForRoute(approach.missedLegs))
 }
 
 /**
@@ -650,13 +658,18 @@ private fun parseSID(data: List<String>, airport: Airport): SidStar.SID {
     return sid
 }
 
-/** Parse the given [data] into the route data for runway segment of the SID, and adds it to the supplied [sid]'s [SidStar.rwyLegs] */
+/**
+ * Parse the given [data] into the route data for runway segment of the SID, and adds it to the supplied [sid]'s
+ * [SidStar.rwyLegs]
+ * @param data the line array for the legs
+ * @param sid the SID to add the runway legs too
+ * */
 private fun parseSIDRwyRoute(data: List<String>, sid: SidStar.SID) {
     val rwy = data[1]
     val initClimb = data[2].toInt()
     val route = parseLegs(data.subList(3, data.size), Route.Leg.NORMAL)
-    sid.rwyLegs.put(rwy, route)
-    sid.rwyInitialClimbs.put(rwy, initClimb)
+    sid.rwyLegs[rwy] = route
+    sid.rwyInitialClimbs[rwy] = initClimb
 }
 
 /**
@@ -693,7 +706,7 @@ private fun parseSTAR(data: List<String>, airport: Airport): SidStar.STAR {
  * */
 private fun parseSTARRwyRoute(data: List<String>, star: SidStar.STAR) {
     val rwy = data[1]
-    star.rwyLegs.put(rwy, Route())
+    star.rwyLegs[rwy] = Route()
 }
 
 /**
@@ -706,6 +719,8 @@ private fun parseSIDSTARRoute(data: List<String>, sidStar: SidStar) {
         Gdx.app.log("GameLoader", "Multiple routes for SID/STAR: ${sidStar.name}")
     }
     sidStar.routeLegs.extendRoute(parseLegs(data.subList(1, data.size), Route.Leg.NORMAL))
+    sidStar.routeZones.clear()
+    sidStar.routeZones.addAll(getZonesForRoute(sidStar.routeLegs))
 }
 
 /** Parse the given [data] into the route data for the inbound/outbound segment of the SID/STAR respectively, and adds it to the supplied [sidStar]'s [SidStar.routeLegs] */

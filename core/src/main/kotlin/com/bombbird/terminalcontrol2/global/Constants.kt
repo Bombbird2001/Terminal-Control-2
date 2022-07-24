@@ -58,6 +58,9 @@ const val TRACK_EXTRAPOLATE_TIME_S = 30f
 /** Aircraft initial spawn */
 const val ARRIVAL_SPAWN_EXTEND_DIST_NM = 0.5f
 
+/** Route zone deviation tolerances */
+const val ROUTE_RNP_NM = 1.5f
+
 /** List of available airports (can be modified, but don't) */
 val AVAIL_AIRPORTS = GdxArray<String>(arrayOf("TCTP", "TCWS", "TCTT", "TCBB", "TCHH", "TCBD", "TCMD", "TCPG"))
 
@@ -107,6 +110,8 @@ const val PUBLISHED_HOLD_SIZE = 30
 const val PLAYER_SIZE = 6
 const val CONVO_SIZE = 16
 const val CONFLICT_SIZE = 6
+const val TRANSITION_SIZE = 6
+const val RUNWAY_SIZE = 6
 
 /** Zoom threshold to switch between small and large datatag fonts */
 const val DATATAG_ZOOM_THRESHOLD = 1f

@@ -3,7 +3,6 @@ package com.bombbird.terminalcontrol2.utilities
 import com.badlogic.ashley.core.Entity
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.math.MathUtils
-import com.badlogic.gdx.math.Polygon
 import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable
 import com.badlogic.gdx.utils.Queue
@@ -226,7 +225,7 @@ fun getSectorForPosition(posX: Float, posY: Float, useServerSectors: Boolean): B
     val allSectors = if (useServerSectors) GAME.gameServer?.let { it.sectors[it.playerNo.get().toByte()] } ?: return null
     else CLIENT_SCREEN?.sectors ?: return null
     for (j in 0 until allSectors.size) allSectors[j]?.let { sector ->
-        if (Polygon(sector.entity[GPolygon.mapper]?.vertices ?: floatArrayOf(0f, 1f, 1f, 0f, -1f, 0f)).contains(posX, posY)) {
+        if (sector.entity[GPolygon.mapper]?.polygonObj?.contains(posX, posY) == true) {
             return sector.entity[SectorInfo.mapper]?.sectorId ?: return@let
         }
     }
