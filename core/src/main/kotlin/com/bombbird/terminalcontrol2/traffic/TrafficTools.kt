@@ -5,9 +5,11 @@ import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.math.CumulativeDistribution
 import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.math.Vector2
+import com.badlogic.gdx.utils.Queue
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.Aircraft
 import com.bombbird.terminalcontrol2.entities.Airport
+import com.bombbird.terminalcontrol2.entities.WakeZone
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.*
 import com.bombbird.terminalcontrol2.networking.GameServer
@@ -674,4 +676,27 @@ fun getDepartureClosedAirports(): ByteArray {
         if (it.entity[DepartureInfo.mapper]?.closed == true) airports.add(id)
     }
     return airports.toArray().map { it }.toByteArray()
+}
+
+/**
+ * Updates the wake trails status for the aircraft - the last wake trail will be removed if queue is above a certain size,
+ * and a new wake zone added based on the current aircraft position and altitude
+ * @param aircraft the aircraft entity to update wake trail for
+ */
+fun updateWakeTrailState(aircraft: Entity) {
+    val pos = aircraft[Position.mapper] ?: return
+    val alt = aircraft[Altitude.mapper] ?: return
+    val acInfo = aircraft[AircraftInfo.mapper] ?: return
+    val wake = aircraft[WakeTrail.mapper] ?: return
+    // Remove last wake dot if more than or equal to max count (since a new wake dot will be added)
+    if (wake.wakeZones.size >= MAX_WAKE_DOTS) wake.wakeZones.removeLast()
+    // Increment distance from AC for each zone
+    for (element in Queue.QueueIterator(wake.wakeZones))
+        element.second?.entity?.get(WakeStrength.mapper)?.let { it.distFromAircraft += WAKE_DOT_SPACING_NM }
+    val newWakeZone = if (wake.wakeZones.size < 1) null
+    else {
+        val prevPos = wake.wakeZones.first().first
+        WakeZone(prevPos.x, prevPos.y, pos.x, pos.y, alt.altitudeFt, acInfo.aircraftPerf.wakeCategory, acInfo.aircraftPerf.recat)
+    }
+    wake.wakeZones.addFirst(Pair(pos, newWakeZone))
 }

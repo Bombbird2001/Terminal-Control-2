@@ -5,6 +5,7 @@ import com.badlogic.ashley.systems.IntervalSystem
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.math.MathUtils
 import com.bombbird.terminalcontrol2.components.*
+import com.bombbird.terminalcontrol2.entities.WakeZone
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.MAX_ALT
 import com.bombbird.terminalcontrol2.global.VERT_SEP
@@ -175,5 +176,23 @@ class TrafficSystemInterval: IntervalSystem(1f) {
         }
 
         conflictManager.checkAllConflicts(conflictLevels, conflictAble)
+    }
+
+    /**
+     * Adds a wake zone to the respective wake level array, based on its wake altitude; this is a wrapper function for
+     * delegation to [ConflictManager.wakeManager]
+     * @param wakeZone the wake zone to add
+     */
+    fun addWakeZone(wakeZone: WakeZone) {
+        conflictManager.wakeManager.addWakeZone(wakeZone)
+    }
+
+    /**
+     * Removes the input wake zone from its respective wake level array; this is a wrapper function for
+     * delegation to [ConflictManager.wakeManager]
+     * @param wakeZone the wake zone to add
+     */
+    fun removeWakeZone(wakeZone: WakeZone) {
+        conflictManager.wakeManager.removeWakeZone(wakeZone)
     }
 }

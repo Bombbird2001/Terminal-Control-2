@@ -6,6 +6,7 @@ import com.badlogic.gdx.math.MathUtils
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.getAppAltAtPos
+import com.bombbird.terminalcontrol2.traffic.updateWakeTrailState
 import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.*
 import ktx.math.plusAssign
@@ -54,6 +55,15 @@ class PhysicsSystem: EntitySystem() {
                 pos.y += velVector.y
                 dir.trackUnitVector.rotateDeg(-spd.angularSpdDps * deltaTime)
                 alt.altitudeFt += spd.vertSpdFpm / 60 * deltaTime
+
+                // Update wake travel distance if component present
+                get(WakeTrail.mapper)?.also {
+                    it.distNmCounter += spd.speedKts / 3600 * deltaTime // Convert knots to nautical miles per second
+                    if (it.distNmCounter > WAKE_DOT_SPACING_NM) {
+                        it.distNmCounter -= WAKE_DOT_SPACING_NM
+                        updateWakeTrailState(this)
+                    }
+                }
             }
         }
 

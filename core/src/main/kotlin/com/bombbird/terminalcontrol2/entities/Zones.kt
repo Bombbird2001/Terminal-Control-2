@@ -5,6 +5,7 @@ import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.MAG_HDG_DEV
+import com.bombbird.terminalcontrol2.global.WAKE_WIDTH_NM
 import com.bombbird.terminalcontrol2.global.getEngine
 import com.bombbird.terminalcontrol2.utilities.convertWorldAndRenderDeg
 import com.bombbird.terminalcontrol2.utilities.nmToPx
@@ -250,7 +251,7 @@ class NoTransgressionZone(posX: Float, posY: Float, appHdg: Short, private val w
  *
  * This class should be initialized only on the server as it is not required on the client
  * */
-class RouteZone(posX1: Float, posY1: Float, posX2: Float, posY2: Float, rnpNm: Float, val minAlt: Int?): Zone {
+class RouteZone(posX1: Float, posY1: Float, posX2: Float, posY2: Float, rnpNm: Float, minAlt: Int?): Zone {
     val entity = getEngine(false).entity {
         with<GPolygon> {
             val halfWidth = Vector2(posX2 - posX1, posY2 - posY1).apply { scl(nmToPx(rnpNm) / len()) }.rotate90(-1)
@@ -260,10 +261,47 @@ class RouteZone(posX1: Float, posY1: Float, posX2: Float, posY2: Float, rnpNm: F
                 posX2 - halfWidth.x - halfWidthOppTrack.x, posY2 - halfWidth.y - halfWidthOppTrack.y,
                 posX2 + halfWidth.x - halfWidthOppTrack.x, posY2 + halfWidth.y - halfWidthOppTrack.y)
         }
+        if (minAlt != null) with<Altitude> {
+            altitudeFt = minAlt.toFloat()
+        }
     }
 
     /**
      * Checks whether the polygon of this route zone contains the input coordinates
+     * @param x the x coordinate
+     * @param y the y coordinate
+     * @return true if ([x], [y]) is inside the zone polygon, else false
+     * */
+    override fun contains(x: Float, y: Float): Boolean {
+        return entity[GPolygon.mapper]?.polygonObj?.contains(x, y) == true
+    }
+}
+
+/**
+ * Class for storing wake turbulence zones
+ *
+ * This class should be initialized only on the server as it is not required on the client
+ * */
+class WakeZone(posX1: Float, posY1: Float, posX2: Float, posY2: Float, wakeAlt: Float, leadingWakeCat: Char, leadingRecatCat: Char): Zone {
+    val entity = getEngine(false).entity {
+        with<GPolygon> {
+            val halfWidth = Vector2(posX2 - posX1, posY2 - posY1).apply { scl(nmToPx(WAKE_WIDTH_NM / 2) / len()) }.rotate90(-1)
+            val halfWidthOppTrack = Vector2(halfWidth).rotate90(-1)
+            vertices = floatArrayOf(posX1 + halfWidth.x, posY1 + halfWidth.y, posX1 - halfWidth.x, posY1 - halfWidth.y,
+                posX2 - halfWidth.x - halfWidthOppTrack.x, posY2 - halfWidth.y - halfWidthOppTrack.y,
+                posX2 + halfWidth.x - halfWidthOppTrack.x, posY2 + halfWidth.y - halfWidthOppTrack.y)
+        }
+        with<Altitude> {
+            altitudeFt = wakeAlt
+        }
+        with<WakeStrength> {
+            leadingWake = leadingWakeCat
+            leadingRecat = leadingRecatCat
+        }
+    }
+
+    /**
+     * Checks whether the polygon of this wake zone contains the input coordinates
      * @param x the x coordinate
      * @param y the y coordinate
      * @return true if ([x], [y]) is inside the zone polygon, else false

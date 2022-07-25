@@ -83,6 +83,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
             }
         } else {
             with<ConflictAble>()
+            with<WakeTrail>()
             if (flightType == FlightType.ARRIVAL) with<ArrivalRouteZone>()
             else if (flightType == FlightType.DEPARTURE) with<DepartureRouteZone>()
         }

@@ -28,9 +28,11 @@ class ConflictManager {
     }
 
     private var timer = PENALTY_DURATION_S
-    private var prevConflictCount = 0
+    private var prevConflictNoWakeCount = 0
     private val conflicts = GdxArray<Conflict>(CONFLICT_SIZE)
     private val potentialConflicts = GdxArray<PotentialConflict>(CONFLICT_SIZE)
+
+    val wakeManager = WakeManager()
 
     /**
      * Main function to check for all types of conflicts, given the conflict sector distribution for each entity, as well
@@ -44,7 +46,7 @@ class ConflictManager {
      */
     fun checkAllConflicts(conflictLevels: Array<GdxArray<Entity>>, conflictAbles: ImmutableArray<Entity>) {
         // Clear the existing list of conflicts/potential conflicts first
-        prevConflictCount = conflicts.size
+        prevConflictNoWakeCount = getCurrentNonWakeConflicts()
         conflicts.clear()
         potentialConflicts.clear()
 
@@ -66,9 +68,9 @@ class ConflictManager {
     /** Subtracts the game score corresponding to the number of conflicts and new conflicts, and updates the clients if needed */
     private fun updateScore() {
         GAME.gameServer?.apply {
-            // For every new conflict, subtract 5% of score
+            // For every new conflict (excluding wake conflicts), subtract 5% of score
             val currScore = score
-            val newConflicts = conflicts.size - prevConflictCount
+            val newConflicts = getCurrentNonWakeConflicts() - prevConflictNoWakeCount
             if (newConflicts > 0) score = floor(score * 0.95f.pow(newConflicts)).roundToInt()
             // When the 3s timer is up, subtract 1 from score for every conflict
             timer--
@@ -239,7 +241,8 @@ class ConflictManager {
             it[DepartureRouteZone.mapper]?.let { depZone -> routeZones.addAll(depZone.sidZone) }
             var deviatedFromRoute = true
             run { for (i in 0 until routeZones.size) routeZones[i]?.also { zone ->
-                if ((zone.minAlt == null || alt.altitudeFt > zone.minAlt - 25) && zone.contains(pos.x, pos.y)) {
+                val minAlt = zone.entity[Altitude.mapper]?.altitudeFt
+                if ((minAlt == null || alt.altitudeFt > minAlt - 25) && zone.contains(pos.x, pos.y)) {
                     deviatedFromRoute = false
                     return@run
                 }
@@ -284,6 +287,17 @@ class ConflictManager {
                 }
             }
         }
+    }
+
+    /**
+     * Gets the number of ongoing conflicts excluding wake conflicts
+     * @return the number of conflicts that are not wake conflicts
+     */
+    private fun getCurrentNonWakeConflicts(): Int {
+        var count = 0
+        for (i in 0 until conflicts.size)
+            if (conflicts[i].reason != Conflict.WAKE_INFRINGE) count++
+        return count
     }
 
     /** Nested class to store information related to an instance of a conflict */

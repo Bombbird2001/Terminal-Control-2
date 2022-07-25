@@ -61,6 +61,11 @@ const val ARRIVAL_SPAWN_EXTEND_DIST_NM = 0.5f
 /** Route zone deviation tolerances */
 const val ROUTE_RNP_NM = 1.5f
 
+/** Wake turbulence constants */
+const val WAKE_WIDTH_NM = 0.15f
+const val WAKE_DOT_SPACING_NM = 0.5f
+const val MAX_WAKE_DOTS = 16
+
 /** List of available airports (can be modified, but don't) */
 val AVAIL_AIRPORTS = GdxArray<String>(arrayOf("TCTP", "TCWS", "TCTT", "TCBB", "TCHH", "TCBD", "TCMD", "TCPG"))
 

@@ -3,8 +3,10 @@ package com.bombbird.terminalcontrol2.components
 import com.badlogic.ashley.core.Component
 import com.badlogic.ashley.core.Entity
 import com.badlogic.gdx.math.CumulativeDistribution
+import com.badlogic.gdx.utils.Queue
 import com.bombbird.terminalcontrol2.entities.ApproachNormalOperatingZone
 import com.bombbird.terminalcontrol2.entities.DepartureNormalOperatingZone
+import com.bombbird.terminalcontrol2.entities.WakeZone
 import com.bombbird.terminalcontrol2.utilities.AircraftTypeData
 import ktx.ashley.Mapper
 import ktx.collections.GdxArray
@@ -88,4 +90,20 @@ data class RunwayNextArrival(var aircraft: Entity = Entity(), var distFromThrPx:
  * */
 data class ConflictAble(var conflictLevel: Int = Int.MAX_VALUE): Component {
     companion object: Mapper<ConflictAble>()
+}
+
+/**
+ * Component for tagging the wake turbulence trails of an aircraft; the trail queue will be updated every 0.5nm travelled
+ * by the aircraft
+ * */
+data class WakeTrail(val wakeZones: Queue<Pair<Position, WakeZone?>> = Queue(), var distNmCounter: Float = 0f): Component {
+    companion object: Mapper<WakeTrail>()
+}
+
+/**
+ * Component for tagging the wake turbulence zone strength, based on the leading aircraft wake/Recat category and the
+ * distance from the leading aircraft
+ * */
+data class WakeStrength(var leadingWake: Char = 'M', var leadingRecat: Char = 'D', var distFromAircraft: Float = 0f): Component {
+    companion object: Mapper<WakeStrength>()
 }
