@@ -282,7 +282,7 @@ class RouteZone(posX1: Float, posY1: Float, posX2: Float, posY2: Float, rnpNm: F
  *
  * This class should be initialized only on the server as it is not required on the client
  * */
-class WakeZone(posX1: Float, posY1: Float, posX2: Float, posY2: Float, wakeAlt: Float, leadingWakeCat: Char, leadingRecatCat: Char): Zone {
+class WakeZone(posX1: Float, posY1: Float, posX2: Float, posY2: Float, wakeAlt: Float, callsign: String, leadingWakeCat: Char, leadingRecatCat: Char): Zone {
     val entity = getEngine(false).entity {
         with<GPolygon> {
             val halfWidth = Vector2(posX2 - posX1, posY2 - posY1).apply { scl(nmToPx(WAKE_WIDTH_NM / 2) / len()) }.rotate90(-1)
@@ -294,7 +294,8 @@ class WakeZone(posX1: Float, posY1: Float, posX2: Float, posY2: Float, wakeAlt: 
         with<Altitude> {
             altitudeFt = wakeAlt
         }
-        with<WakeStrength> {
+        with<WakeInfo> {
+            aircraftCallsign = callsign
             leadingWake = leadingWakeCat
             leadingRecat = leadingRecatCat
         }

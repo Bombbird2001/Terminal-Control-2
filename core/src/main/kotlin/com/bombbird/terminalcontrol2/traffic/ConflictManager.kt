@@ -56,7 +56,8 @@ class ConflictManager {
         // Check MVA, restricted areas
         checkMVARestrictedConflict(conflictAbles)
 
-        // TODO Other forms of conflict
+        // Check wake separation
+        wakeManager.checkWakeConflicts(conflictAbles, conflicts)
 
         // Send all conflicts to clients using TCP
         GAME.gameServer?.sendConflicts(conflicts, potentialConflicts)

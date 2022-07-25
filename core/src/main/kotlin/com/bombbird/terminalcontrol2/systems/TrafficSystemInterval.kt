@@ -34,7 +34,7 @@ class TrafficSystemInterval: IntervalSystem(1f) {
     private val conflictLevels = Array<GdxArray<Entity>>(ceil((MAX_ALT + 1500f) / VERT_SEP).roundToInt() - startingAltitude / VERT_SEP) {
         GdxArray()
     }
-    private val conflictManager = ConflictManager()
+    val conflictManager = ConflictManager()
 
     /**
      * Update function for operations that can be updated at a lower frequency and do not rely on deltaTime

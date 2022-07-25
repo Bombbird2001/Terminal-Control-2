@@ -13,6 +13,7 @@ import com.bombbird.terminalcontrol2.entities.WakeZone
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.*
 import com.bombbird.terminalcontrol2.networking.GameServer
+import com.bombbird.terminalcontrol2.systems.TrafficSystemInterval
 import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.*
 import ktx.collections.GdxArray
@@ -463,14 +464,14 @@ object WakeMatrix {
     /**
      * Gets the distance required between the leader and follower aircraft, based on the relevant separation standard
      * @param leaderWake the wake category of the aircraft in front
-     * @param leaderRECAT the RECAT category of the aircraft in front
+     * @param leaderRecat the RECAT category of the aircraft in front
      * @param followerWake the wake category of the aircraft behind
-     * @param followerRECAT the RECAT category of the aircraft behind
+     * @param followerRecat the RECAT category of the aircraft behind
      */
-    fun getDistanceRequired(leaderWake: Char, leaderRECAT: Char, followerWake: Char, followerRECAT: Char): Byte {
+    fun getDistanceRequired(leaderWake: Char, leaderRecat: Char, followerWake: Char, followerRecat: Char): Byte {
         val gs = GAME.gameServer ?: return 0
-        val leaderIndex = getWakeRecatIndex(leaderWake, leaderRECAT)
-        val followerIndex = getWakeRecatIndex(followerWake, followerRECAT)
+        val leaderIndex = getWakeRecatIndex(leaderWake, leaderRecat)
+        val followerIndex = getWakeRecatIndex(followerWake, followerRecat)
         return if (gs.useRecat) RECAT_DIST[leaderIndex][followerIndex] else WAKE_DIST[leaderIndex][followerIndex]
     }
 
@@ -478,14 +479,14 @@ object WakeMatrix {
      * Gets the time required between the leader and follower aircraft for departures, based on the relevant separation
      * standard
      * @param leaderWake the wake category of the aircraft that landed/departed previously
-     * @param leaderRECAT the RECAT category of the aircraft that landed/departed previously
+     * @param leaderRecat the RECAT category of the aircraft that landed/departed previously
      * @param followerWake the wake category of the aircraft departing behind
-     * @param followerRECAT the RECAT category of the aircraft departing behind
+     * @param followerRecat the RECAT category of the aircraft departing behind
      */
-    fun getTimeRequired(leaderWake: Char, leaderRECAT: Char, followerWake: Char, followerRECAT: Char): Int {
+    fun getTimeRequired(leaderWake: Char, leaderRecat: Char, followerWake: Char, followerRecat: Char): Int {
         val gs = GAME.gameServer ?: return 0
-        val leaderIndex = getWakeRecatIndex(leaderWake, leaderRECAT)
-        val followerIndex = getWakeRecatIndex(followerWake, followerRECAT)
+        val leaderIndex = getWakeRecatIndex(leaderWake, leaderRecat)
+        val followerIndex = getWakeRecatIndex(followerWake, followerRecat)
         // Minimum 90s separation between successive takeoffs regardless of wake/RECAT
         return max(90, if (gs.useRecat) RECAT_DEP_TIME[leaderIndex][followerIndex] else WAKE_DEP_TIME[leaderIndex][followerIndex])
     }
@@ -644,12 +645,14 @@ fun getLowestAirportElevation(): Float {
 
 /**
  * Gets the sector index the entity belongs to based on its altitude, as well as the altitude of the lowest sector
+ *
+ * This can be used for both aircraft conflict and wake separation conflict level distribution
  * @param alt the altitude, in feet, of the entity
  * @param startingAltitude the altitude of the lowest sector, in feet
  * @return the index of the sector the entity should belong to
  */
 fun getSectorIndexForAlt(alt: Float, startingAltitude: Int): Int {
-    return floor((alt - startingAltitude) / 1000).roundToInt()
+    return floor((alt - startingAltitude) / VERT_SEP).roundToInt()
 }
 
 /**
@@ -682,21 +685,26 @@ fun getDepartureClosedAirports(): ByteArray {
  * Updates the wake trails status for the aircraft - the last wake trail will be removed if queue is above a certain size,
  * and a new wake zone added based on the current aircraft position and altitude
  * @param aircraft the aircraft entity to update wake trail for
+ * @param system the [TrafficSystemInterval] to update the wake level sectors for
  */
-fun updateWakeTrailState(aircraft: Entity) {
+fun updateWakeTrailState(aircraft: Entity, system: TrafficSystemInterval) {
     val pos = aircraft[Position.mapper] ?: return
     val alt = aircraft[Altitude.mapper] ?: return
     val acInfo = aircraft[AircraftInfo.mapper] ?: return
     val wake = aircraft[WakeTrail.mapper] ?: return
     // Remove last wake dot if more than or equal to max count (since a new wake dot will be added)
-    if (wake.wakeZones.size >= MAX_WAKE_DOTS) wake.wakeZones.removeLast()
+    if (wake.wakeZones.size >= MAX_WAKE_DOTS) {
+        val removed = wake.wakeZones.removeLast().second
+        if (removed != null) system.removeWakeZone(removed)
+    }
     // Increment distance from AC for each zone
     for (element in Queue.QueueIterator(wake.wakeZones))
-        element.second?.entity?.get(WakeStrength.mapper)?.let { it.distFromAircraft += WAKE_DOT_SPACING_NM }
-    val newWakeZone = if (wake.wakeZones.size < 1) null
+        element.second?.entity?.get(WakeInfo.mapper)?.let { it.distFromAircraft += WAKE_DOT_SPACING_NM }
+    val newWakeZone = if (wake.wakeZones.isEmpty) null
     else {
         val prevPos = wake.wakeZones.first().first
-        WakeZone(prevPos.x, prevPos.y, pos.x, pos.y, alt.altitudeFt, acInfo.aircraftPerf.wakeCategory, acInfo.aircraftPerf.recat)
+        WakeZone(prevPos.x, prevPos.y, pos.x, pos.y, alt.altitudeFt, acInfo.icaoCallsign, acInfo.aircraftPerf.wakeCategory, acInfo.aircraftPerf.recat)
     }
-    wake.wakeZones.addFirst(Pair(pos, newWakeZone))
+    wake.wakeZones.addFirst(Pair(pos.copy(), newWakeZone))
+    if (newWakeZone != null) system.addWakeZone(newWakeZone)
 }

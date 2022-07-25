@@ -61,7 +61,7 @@ class PhysicsSystem: EntitySystem() {
                     it.distNmCounter += spd.speedKts / 3600 * deltaTime // Convert knots to nautical miles per second
                     if (it.distNmCounter > WAKE_DOT_SPACING_NM) {
                         it.distNmCounter -= WAKE_DOT_SPACING_NM
-                        updateWakeTrailState(this)
+                        updateWakeTrailState(this, engine.getSystem())
                     }
                 }
             }

@@ -4,13 +4,16 @@ import com.badlogic.ashley.core.Engine
 import com.badlogic.ashley.core.Entity
 import com.badlogic.ashley.core.Family
 import com.badlogic.gdx.graphics.Color
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import com.badlogic.gdx.math.Vector2
+import com.badlogic.gdx.utils.Queue
 import com.bombbird.terminalcontrol2.components.*
+import com.bombbird.terminalcontrol2.global.CLIENT_SCREEN
+import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.MAG_HDG_DEV
-import ktx.ashley.allOf
-import ktx.ashley.get
-import ktx.ashley.plusAssign
-import ktx.ashley.remove
+import com.bombbird.terminalcontrol2.global.getEngine
+import com.bombbird.terminalcontrol2.systems.TrafficSystemInterval
+import ktx.ashley.*
 import ktx.collections.toGdxArray
 import kotlin.math.roundToInt
 
@@ -96,6 +99,43 @@ fun toggleMinAltSectorsOnClick(x: Float, y: Float, unprojectFromRadarCamera: (Fl
                     updateStyle(if (label.style.fontColor == Color.ORANGE) "MinAltSector" else "MinAltSectorRestr")
                 }
             }
+        }
+    }
+}
+
+/**
+ * Renders the MVA exclusion zones for the currently selected aircraft
+ * @param shapeRenderer the [ShapeRenderer] to use to render the zones
+ */
+fun renderSelectedAircraftRouteZones(shapeRenderer: ShapeRenderer) {
+    shapeRenderer.color = Color.WHITE
+    GAME.gameServer?.aircraft?.get(CLIENT_SCREEN?.selectedAircraft?.entity?.get(AircraftInfo.mapper)?.icaoCallsign)?.apply {
+        entity[ArrivalRouteZone.mapper]?.let {
+            for (i in 0 until it.starZone.size) shapeRenderer.polygon(it.starZone[i].entity[GPolygon.mapper]?.vertices ?: continue)
+            for (i in 0 until it.appZone.size) shapeRenderer.polygon(it.appZone[i].entity[GPolygon.mapper]?.vertices ?: continue)
+        }
+        entity[DepartureRouteZone.mapper]?.let {
+            for (i in 0 until it.sidZone.size) shapeRenderer.polygon(it.sidZone[i].entity[GPolygon.mapper]?.vertices ?: continue)
+        }
+    }
+}
+
+/**
+ * Renders the wake turbulence zones for all aircraft in game; both zones stored in the aircraft's [WakeTrail] component,
+ * and that stored in [TrafficSystemInterval.conflictManager]'s wakeManager
+ * @param shapeRenderer the [ShapeRenderer] to use to render the zones
+ */
+fun renderWakeZones(shapeRenderer: ShapeRenderer) {
+    shapeRenderer.color = Color.RED
+    getEngine(false).getSystem<TrafficSystemInterval>().conflictManager.wakeManager.wakeLevels.forEach {
+        for (i in 0 until it.size) {
+            it[0].entity[GPolygon.mapper]?.let { polygon -> shapeRenderer.polygon(polygon.vertices) }
+        }
+    }
+    shapeRenderer.color = Color.WHITE
+    GAME.gameServer?.aircraft?.values()?.toArray()?.forEach { aircraft ->
+        for (zone in Queue.QueueIterator(aircraft.entity[WakeTrail.mapper]?.wakeZones)) zone.second?.entity?.get(GPolygon.mapper)?.let {
+            shapeRenderer.polygon(it.vertices)
         }
     }
 }

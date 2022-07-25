@@ -104,6 +104,6 @@ data class WakeTrail(val wakeZones: Queue<Pair<Position, WakeZone?>> = Queue(), 
  * Component for tagging the wake turbulence zone strength, based on the leading aircraft wake/Recat category and the
  * distance from the leading aircraft
  * */
-data class WakeStrength(var leadingWake: Char = 'M', var leadingRecat: Char = 'D', var distFromAircraft: Float = 0f): Component {
-    companion object: Mapper<WakeStrength>()
+data class WakeInfo(var aircraftCallsign: String = "", var leadingWake: Char = 'M', var leadingRecat: Char = 'D', var distFromAircraft: Float = 0f): Component {
+    companion object: Mapper<WakeInfo>()
 }

@@ -102,16 +102,10 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         }
 
         // Debug: Render route MVA exclusion zone of selected aircraft
-        shapeRenderer.color = Color.WHITE
-        GAME.gameServer?.aircraft?.get(CLIENT_SCREEN?.selectedAircraft?.entity?.get(AircraftInfo.mapper)?.icaoCallsign)?.apply {
-            entity[ArrivalRouteZone.mapper]?.let {
-                for (i in 0 until it.starZone.size) shapeRenderer.polygon(it.starZone[i].entity[GPolygon.mapper]?.vertices ?: continue)
-                for (i in 0 until it.appZone.size) shapeRenderer.polygon(it.appZone[i].entity[GPolygon.mapper]?.vertices ?: continue)
-            }
-            entity[DepartureRouteZone.mapper]?.let {
-                for (i in 0 until it.sidZone.size) shapeRenderer.polygon(it.sidZone[i].entity[GPolygon.mapper]?.vertices ?: continue)
-            }
-        }
+        // renderSelectedAircraftRouteZones(shapeRenderer)
+
+        // Debug: Render wake zones
+        // renderWakeZones(shapeRenderer)
 
         // Render circles
         val circles = engine.getEntitiesFor(circleFamily)

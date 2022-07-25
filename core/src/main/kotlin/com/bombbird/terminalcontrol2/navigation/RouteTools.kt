@@ -552,6 +552,7 @@ fun getZonesForRoute(route: Route): GdxArray<RouteZone> {
     val segmentArray = GdxArray<LegSegment>()
     calculateRouteSegments(route, segmentArray, route[0])
     val routeZones = GdxArray<RouteZone>()
+    var currMinAlt: Int? = null
     for (i in 0 until segmentArray.size) {
         segmentArray[i]?.apply {
             val finalLeg1 = leg1
@@ -559,9 +560,19 @@ fun getZonesForRoute(route: Route): GdxArray<RouteZone> {
             if (finalLeg1 is WaypointLeg && finalLeg2 is WaypointLeg) {
                 val wpt1Pos = GAME.gameServer?.waypoints?.get(finalLeg1.wptId)?.entity?.get(Position.mapper) ?: return@apply
                 val wpt2Pos = GAME.gameServer?.waypoints?.get(finalLeg2.wptId)?.entity?.get(Position.mapper) ?: return@apply
-                val minAlt = if (finalLeg1.minAltFt == null || finalLeg2.minAltFt == null) null
+                // Get the lower altitude restriction among the 2 waypoints; or if one is null, use altitude restriction
+                // of the other; if both null, use null
+                val minAlt = if (finalLeg1.minAltFt == null && finalLeg2.minAltFt == null) null
+                else if (finalLeg1.minAltFt == null) finalLeg2.minAltFt
+                else if (finalLeg2.minAltFt == null) finalLeg1.minAltFt
                 else min(finalLeg1.minAltFt, finalLeg2.minAltFt)
-                routeZones.add(RouteZone(wpt1Pos.x, wpt1Pos.y, wpt2Pos.x, wpt2Pos.y, ROUTE_RNP_NM, minAlt))
+                // Get the lowest of the current minimum altitude and the minimum altitude of the 2 new waypoints
+                val finalCurrMinAlt = currMinAlt
+                val newCurrMinAlt = if (minAlt == null) finalCurrMinAlt
+                else if (finalCurrMinAlt == null) minAlt
+                else min(finalCurrMinAlt, minAlt)
+                currMinAlt = newCurrMinAlt
+                routeZones.add(RouteZone(wpt1Pos.x, wpt1Pos.y, wpt2Pos.x, wpt2Pos.y, ROUTE_RNP_NM, newCurrMinAlt))
             }
         }
     }
