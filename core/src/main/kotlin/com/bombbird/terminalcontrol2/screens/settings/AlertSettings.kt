@@ -1,6 +1,7 @@
 package com.bombbird.terminalcontrol2.screens.settings
 
 import com.badlogic.gdx.utils.Align
+import com.bombbird.terminalcontrol2.files.savePlayerSettings
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.ui.addChangeListener
 import com.bombbird.terminalcontrol2.ui.defaultSettingsLabel
@@ -71,5 +72,6 @@ class AlertSettings: BaseSettings() {
         ADV_TRAJECTORY_DURATION_S = trajectorySelectBox.selected.let { if (it == OFF) 0 else it.replace(SECONDS_SUFFIX, "").toInt() }
         APW_DURATION_S = apwSelectBox.selected.let { if (it == OFF) 0 else it.replace(SECONDS_SUFFIX, "").toInt() }
         STCA_DURATION_S = stcaSelectBox.selected.let { if (it == OFF) 0 else it.replace(SECONDS_SUFFIX, "").toInt() }
+        savePlayerSettings()
     }
 }

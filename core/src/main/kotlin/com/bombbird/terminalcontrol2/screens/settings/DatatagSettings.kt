@@ -5,6 +5,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.Label
 import com.badlogic.gdx.scenes.scene2d.ui.SelectBox
 import com.badlogic.gdx.scenes.scene2d.ui.Slider
 import com.badlogic.gdx.utils.Align
+import com.bombbird.terminalcontrol2.files.savePlayerSettings
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.ui.addChangeListener
 import com.bombbird.terminalcontrol2.ui.defaultSettingsLabel
@@ -126,6 +127,7 @@ class DatatagSettings: BaseSettings() {
             }
         }
         DATATAG_ROW_SPACING_PX = rowSpacingSlide.value.roundToInt().toByte()
+        savePlayerSettings()
         CLIENT_SCREEN?.updateAllDatatagStyles()
     }
 }

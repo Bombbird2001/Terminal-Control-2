@@ -2,6 +2,7 @@ package com.bombbird.terminalcontrol2.screens.settings
 
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.utils.Align
+import com.bombbird.terminalcontrol2.files.savePlayerSettings
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.ui.addChangeListener
 import com.bombbird.terminalcontrol2.ui.defaultSettingsLabel
@@ -171,5 +172,6 @@ class DisplaySettings: BaseSettings() {
                 SHOW_DIST_TO_GO_ALL
             }
         }
+        savePlayerSettings()
     }
 }
