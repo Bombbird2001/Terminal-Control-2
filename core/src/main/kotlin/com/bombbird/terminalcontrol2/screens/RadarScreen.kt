@@ -492,7 +492,7 @@ class RadarScreen(private val connectionHost: String?, airportToHost: String?): 
         client.sendTCP(
             AircraftControlStateUpdateData(callsign, newClearanceState.routePrimaryName,
             newClearanceState.route.getSerialisedObject(), newClearanceState.hiddenLegs.getSerialisedObject(),
-            newClearanceState.vectorHdg, newClearanceState.vectorTurnDir, newClearanceState.clearedAlt, newClearanceState.clearedIas,
+            newClearanceState.vectorHdg, newClearanceState.vectorTurnDir, newClearanceState.clearedAlt, newClearanceState.expedite, newClearanceState.clearedIas,
             newClearanceState.minIas, newClearanceState.maxIas, newClearanceState.optimalIas,
             newClearanceState.clearedApp, newClearanceState.clearedTrans,
             playerSector)

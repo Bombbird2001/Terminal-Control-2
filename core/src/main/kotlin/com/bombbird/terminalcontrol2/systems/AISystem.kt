@@ -55,6 +55,7 @@ class AISystem: EntitySystem() {
     private val checkTouchdownFamily: Family = allOf(Altitude::class, Speed::class, Acceleration::class, Direction::class)
         .oneOf(VisualCaptured::class, GlideSlopeCaptured::class).get()
     private val actingClearanceChangedFamily: Family = allOf(CommandTarget::class, ClearanceActChanged::class, ClearanceAct::class).get()
+    private val expediteFamily: Family = allOf(CommandExpedite::class, CommandTarget::class, Altitude::class).get()
 
     /** Main update function */
     override fun update(deltaTime: Float) {
@@ -770,6 +771,16 @@ class AISystem: EntitySystem() {
                 }
             }
         }
+
+        // Clear any existing expedite flags if the aircraft is within 500 feet of its target altitude
+        val expediteClearFamily = engine.getEntitiesFor(expediteFamily)
+        for (i in 0 until expediteClearFamily.size()) {
+            expediteClearFamily[i]?.apply {
+                val alt = get(Altitude.mapper) ?: return@apply
+                val cmd = get(CommandTarget.mapper) ?: return@apply
+                if (abs(alt.altitudeFt - cmd.targetAltFt) < 500) remove<CommandExpedite>()
+            }
+        }
     }
 
     /**
@@ -962,6 +973,10 @@ class AISystem: EntitySystem() {
             commandTarget.targetAltFt = actingClearance.clearedAlt
             commandTarget.targetIasKt = actingClearance.clearedIas
         }
+
+        // Update expedite state
+        if (actingClearance.expedite) entity += CommandExpedite()
+        else entity.remove<CommandExpedite>()
 
         if (entity[PendingClearances.mapper] == null) entity += LatestClearanceChanged()
     }

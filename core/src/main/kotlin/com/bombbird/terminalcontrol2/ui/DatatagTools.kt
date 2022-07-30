@@ -236,7 +236,7 @@ private fun getExpandedLabelText(entity: Entity): Array<String> {
     val acInfo = "${aircraftInfo.icaoType}/${aircraftInfo.aircraftPerf.wakeCategory}/${aircraftInfo.aircraftPerf.recat}"
     val alt = (radarData.altitude.altitudeFt / 100).roundToInt()
     val vs = if (radarData.speed.vertSpdFpm > 150) '^' else if (radarData.speed.vertSpdFpm < -150) 'v' else '='
-    val clearedAlt = latestClearance?.clearedAlt?.let { "=> ${it / 100}" } ?: ""
+    val clearedAlt = latestClearance?.clearedAlt?.let { "${if (latestClearance.expedite) "=>>" else "=>"} ${it / 100}" } ?: ""
     val cmdAlt = if (entity.has(GlideSlopeCaptured.mapper)) "GS" else if (entity.has(VisualCaptured.mapper)) "VIS"
     else (cmdTarget.targetAltFt / 100f).roundToInt().toString()
     val hdg = modulateHeading((convertWorldAndRenderDeg(radarData.direction.trackUnitVector.angleDeg()) + MAG_HDG_DEV).roundToInt().toFloat()).roundToInt()

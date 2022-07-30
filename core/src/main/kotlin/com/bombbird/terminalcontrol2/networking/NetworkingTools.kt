@@ -205,7 +205,7 @@ data class AircraftControlStateUpdateData(val callsign: String = "", val primary
                                           val route: Route.SerialisedRoute = Route.SerialisedRoute(),
                                           val hiddenLegs: Route.SerialisedRoute = Route.SerialisedRoute(),
                                           val vectorHdg: Short? = null, val vectorTurnDir: Byte? = null,
-                                          val clearedAlt: Int = 0, val clearedIas: Short = 0,
+                                          val clearedAlt: Int = 0, val expedite: Boolean = false, val clearedIas: Short = 0,
                                           val minIas: Short = 0, val maxIas: Short = 0, val optimalIas: Short = 0,
                                           val clearedApp: String? = null, val clearedTrans: String? = null,
                                           val sendingSector: Byte = -5)
@@ -377,7 +377,7 @@ fun handleIncomingRequestClient(rs: RadarScreen, obj: Any?) {
                 aircraft.entity += ClearanceAct(
                     ClearanceState.ActingClearance(
                         ClearanceState(obj.primaryName, Route.fromSerialisedObject(obj.route), Route.fromSerialisedObject(obj.hiddenLegs),
-                            obj.vectorHdg, obj.vectorTurnDir, obj.clearedAlt,
+                            obj.vectorHdg, obj.vectorTurnDir, obj.clearedAlt, obj.expedite,
                             obj.clearedIas, obj.minIas, obj.maxIas, obj.optimalIas, obj.clearedApp, obj.clearedTrans)))
                 aircraft.entity[Datatag.mapper]?.let { updateDatatagText(it, getNewDatatagLabelText(aircraft.entity, it.minimised)) }
                 if (rs.selectedAircraft == aircraft) rs.uiPane.updateSelectedAircraft(aircraft)

@@ -103,7 +103,7 @@ fun createArrival(callsign: String, icaoType: String, airport: Entity, gs: GameS
         val clearanceAct = ClearanceAct(ClearanceState.ActingClearance(
             ClearanceState(randomStar?.name ?: "", starRoute, Route(),
                 if (starRoute.size == 0) (spawnPos.third + MAG_HDG_DEV).toInt().toShort() else null, null,
-                clearedAlt, ias)
+                clearedAlt, false, ias)
         ))
         entity += clearanceAct
         entity[CommandTarget.mapper]?.apply {
@@ -164,7 +164,7 @@ fun appTestArrival(gs: GameServer) {
         val clearedAlt = 2000
         entity += ClearanceAct(ClearanceState.ActingClearance(
             ClearanceState("NTN1A", Route(), Route(),
-                70, null, clearedAlt, ias)
+                70, null, clearedAlt, false, ias)
         ))
         entity[CommandTarget.mapper]?.apply {
             targetAltFt = clearedAlt
@@ -186,7 +186,7 @@ fun appTestArrival(gs: GameServer) {
         val clearedAlt = 2000
         entity += ClearanceAct(ClearanceState.ActingClearance(
             ClearanceState("NTN1A", Route(), Route(),
-                70, null, clearedAlt, ias)
+                70, null, clearedAlt, false, ias)
         ))
         entity[CommandTarget.mapper]?.apply {
             targetAltFt = clearedAlt
@@ -208,7 +208,7 @@ fun appTestArrival(gs: GameServer) {
         val clearedAlt = 1800
         entity += ClearanceAct(ClearanceState.ActingClearance(
             ClearanceState("", Route(), Route(),
-                250, null, clearedAlt, ias)
+                250, null, clearedAlt, false, ias)
         ))
         entity[CommandTarget.mapper]?.apply {
             targetAltFt = clearedAlt
@@ -289,7 +289,7 @@ fun clearForTakeoff(aircraft: Entity, rwy: Entity) {
         // Set initial clearance state
         this += ClearanceAct(ClearanceState.ActingClearance(
             ClearanceState(sid?.name ?: "", sidRoute, Route(),
-                null, null, initClimb, acPerf.climbOutSpeed)
+                null, null, initClimb, false, acPerf.climbOutSpeed)
         ))
         get(CommandTarget.mapper)?.let {
             it.targetAltFt = initClimb

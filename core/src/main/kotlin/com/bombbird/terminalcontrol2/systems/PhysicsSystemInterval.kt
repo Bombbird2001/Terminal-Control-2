@@ -46,10 +46,10 @@ class PhysicsSystemInterval: IntervalSystem(1f) {
                 val takeoffClimb = has(TakeoffClimb.mapper)
                 val approach = has(LocalizerCaptured.mapper) || has(GlideSlopeCaptured.mapper) || has(VisualCaptured.mapper) || (get(
                     CirclingApproach.mapper)?.phase ?: 0) >= 1
+                val expediting = has(CommandExpedite.mapper)
 
-                val fixedVs = if (has(GlideSlopeCaptured.mapper)) {
-                    spd.vertSpdFpm
-                } else {
+                val fixedVs = if (has(GlideSlopeCaptured.mapper)) spd.vertSpdFpm
+                else {
                     val cmd = get(CommandTarget.mapper)
                     if (cmd == null) 0f
                     // Minimum vertical speed of 500fpm if more than 100ft away from target altitude
@@ -57,11 +57,10 @@ class PhysicsSystemInterval: IntervalSystem(1f) {
                     else if (cmd.targetAltFt < alt.altitudeFt - 100) -500f
                     else 0f
                 }
-                // TODO distinguish between aircraft expediting and those not
-                aircraftInfo.maxAcc = calculateMaxAcceleration(aircraftInfo.aircraftPerf, alt.altitudeFt, spd.speedKts, fixedVs, approach, takingOff, takeoffClimb)
-                aircraftInfo.minAcc = calculateMinAcceleration(aircraftInfo.aircraftPerf, alt.altitudeFt, spd.speedKts, fixedVs, approach, takingOff, takeoffClimb)
-                aircraftInfo.maxVs = calculateMaxVerticalSpd(aircraftInfo.aircraftPerf, alt.altitudeFt, spd.speedKts, acc.dSpeedMps2, approach, takingOff, takeoffClimb)
-                aircraftInfo.minVs = calculateMinVerticalSpd(aircraftInfo.aircraftPerf, alt.altitudeFt, spd.speedKts, acc.dSpeedMps2, approach, takingOff, takeoffClimb)
+                aircraftInfo.maxAcc = calculateMaxAcceleration(aircraftInfo.aircraftPerf, alt.altitudeFt, spd.speedKts, fixedVs, approach || expediting, takingOff, takeoffClimb)
+                aircraftInfo.minAcc = calculateMinAcceleration(aircraftInfo.aircraftPerf, alt.altitudeFt, spd.speedKts, fixedVs, approach || expediting, takingOff, takeoffClimb)
+                aircraftInfo.maxVs = calculateMaxVerticalSpd(aircraftInfo.aircraftPerf, alt.altitudeFt, spd.speedKts, acc.dSpeedMps2, approach || expediting, takingOff, takeoffClimb)
+                aircraftInfo.minVs = calculateMinVerticalSpd(aircraftInfo.aircraftPerf, alt.altitudeFt, spd.speedKts, acc.dSpeedMps2, approach || expediting, takingOff, takeoffClimb)
             }
         }
 

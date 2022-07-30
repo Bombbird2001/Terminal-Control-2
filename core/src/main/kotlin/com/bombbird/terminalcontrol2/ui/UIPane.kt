@@ -150,6 +150,7 @@ class UIPane(private val uiStage: Stage) {
         controlObj.updateAltSpdAppClearances(userClearanceState.clearedAlt, userClearanceState.clearedIas,
             userClearanceState.minIas, userClearanceState.maxIas, userClearanceState.optimalIas,
             userClearanceState.clearedApp, userClearanceState.clearedTrans)
+        controlObj.updateExpediteClearance(userClearanceState.expedite)
         controlObj.updateChangedStates(userClearanceState, clearanceState)
         controlObj.updateClearanceMode(userClearanceState.route, userClearanceState.vectorHdg,
             aircraft.entity.has(VisualCaptured.mapper) || aircraft.entity.has(LocalizerCaptured.mapper), true)
@@ -186,6 +187,7 @@ class UIPane(private val uiStage: Stage) {
         controlObj.updateAltSpdAppClearances(userClearanceState.clearedAlt, userClearanceState.clearedIas,
             userClearanceState.minIas, userClearanceState.maxIas, userClearanceState.optimalIas,
             userClearanceState.clearedApp, userClearanceState.clearedTrans)
+        controlObj.updateExpediteClearance(userClearanceState.expedite)
         controlObj.updateChangedStates(userClearanceState, clearanceState)
         controlObj.updateUndoTransmitButtonStates()
         controlObj.updateHandoverAcknowledgeButton(aircraft.entity.has(CanBeHandedOver.mapper), aircraft.entity.has(ContactNotification.mapper))

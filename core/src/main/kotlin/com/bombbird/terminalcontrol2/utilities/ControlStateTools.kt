@@ -51,7 +51,7 @@ fun getAircraftIcon(flightType: Byte, sectorID: Byte): TextureRegionDrawable {
 fun addNewClearanceToPendingClearances(entity: Entity, clearance: AircraftControlStateUpdateData, returnTripTime: Int) {
     val pendingClearances = entity[PendingClearances.mapper]
     val newClearance = ClearanceState(clearance.primaryName, Route.fromSerialisedObject(clearance.route), Route.fromSerialisedObject(clearance.hiddenLegs),
-        clearance.vectorHdg, clearance.vectorTurnDir, clearance.clearedAlt,
+        clearance.vectorHdg, clearance.vectorTurnDir, clearance.clearedAlt, clearance.expedite,
         clearance.clearedIas, clearance.minIas, clearance.maxIas, clearance.optimalIas,
         clearance.clearedApp, clearance.clearedTrans)
     if (pendingClearances == null) entity += PendingClearances(Queue<ClearanceState.PendingClearanceState>().apply {
@@ -89,6 +89,7 @@ fun checkClearanceEquality(clearanceState1: ClearanceState, clearanceState2: Cle
             ((clearanceState1.vectorHdg == clearanceState2.vectorHdg &&
             clearanceState1.vectorTurnDir == clearanceState2.vectorTurnDir) || !checkVector) &&
             clearanceState1.clearedAlt == clearanceState2.clearedAlt &&
+            clearanceState1.expedite == clearanceState2.expedite &&
             clearanceState1.clearedIas == clearanceState2.clearedIas &&
             clearanceState1.clearedApp == clearanceState2.clearedApp &&
             clearanceState1.clearedTrans == clearanceState2.clearedTrans

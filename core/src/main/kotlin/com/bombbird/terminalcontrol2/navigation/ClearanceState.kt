@@ -24,7 +24,7 @@ import kotlin.math.min
  *
  * [vectorHdg] is the player cleared vector heading, and should be null when the aircraft is not under direct vectors
  *
- * [clearedAlt] is the player cleared altitude (before taking into account SID/STAR altitude restrictions
+ * [clearedAlt] is the player cleared altitude (before taking into account SID/STAR altitude restrictions)
  *
  * [clearedIas] is from the CommandTarget component; the targetIas value can be used directly as it is not possible to
  * "Accelerate/Decelerate via SID/STAR"
@@ -33,7 +33,7 @@ import kotlin.math.min
  * */
 class ClearanceState(var routePrimaryName: String = "", val route: Route = Route(), val hiddenLegs: Route = Route(),
                      var vectorHdg: Short? = null, var vectorTurnDir: Byte? = null,
-                     var clearedAlt: Int = 0, var clearedIas: Short = 0,
+                     var clearedAlt: Int = 0, var expedite: Boolean = false, var clearedIas: Short = 0,
                      var minIas: Short = 0, var maxIas: Short = 0, var optimalIas: Short = 0,
                      var clearedApp: String? = null, var clearedTrans: String? = null) {
 
@@ -145,6 +145,7 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
             }
             actingClearance.vectorHdg = newClearance.vectorHdg
             actingClearance.clearedAlt = newClearance.clearedAlt
+            actingClearance.expedite = newClearance.expedite
 
             val spds = getMinMaxOptimalIAS(entity)
             if (newClearance.clearedIas == newClearance.optimalIas && newClearance.clearedIas != spds.third) newClearance.clearedIas = spds.third
@@ -255,6 +256,7 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
                 if (vectorTurnDir == uiClearance.vectorTurnDir) vectorTurnDir = latestClearance.vectorTurnDir
             }
             if (clearedAlt == uiClearance.clearedAlt) clearedAlt = latestClearance.clearedAlt
+            if (expedite == uiClearance.expedite) expedite = latestClearance.expedite
             // Set to new IAS if the current IAS has not changed, or if it has changed but is equal to the current optimal IAS,
             // and is different from the new optimal IAS, and the new clearance is equal to the new optimal IAS
             if (clearedIas == uiClearance.clearedIas ||
@@ -269,6 +271,7 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
             vectorHdg = latestClearance.vectorHdg
             vectorTurnDir = latestClearance.vectorTurnDir
             clearedAlt = latestClearance.clearedAlt
+            expedite = latestClearance.expedite
             clearedIas = latestClearance.clearedIas
             clearedApp = latestClearance.clearedApp
             clearedTrans = latestClearance.clearedTrans

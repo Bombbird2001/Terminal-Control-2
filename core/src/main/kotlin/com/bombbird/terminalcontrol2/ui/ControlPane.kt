@@ -43,6 +43,7 @@ class ControlPane {
     private lateinit var appSelectBox: KSelectBox<String>
     private lateinit var transitionSelectBox: KSelectBox<String>
     private lateinit var altSelectBox: KSelectBox<String>
+    private lateinit var expediteButton: KTextButton
     private lateinit var spdSelectBox: KSelectBox<Short>
 
     private val routeSubpaneObj = RouteSubpane()
@@ -173,7 +174,14 @@ class ControlPane {
                             updateUndoTransmitButtonStates()
                         }
                     }.cell(grow = true, preferredWidth = paneWidth * 0.37f)
-                    textButton(EXPEDITE, "ControlPaneSelected").cell(grow = true, preferredWidth = paneWidth * 0.26f)
+                    expediteButton = textButton(EXPEDITE, "ControlPaneSelected").cell(grow = true, preferredWidth = paneWidth * 0.26f).apply {
+                        addChangeListener { _, _ ->
+                            if (modificationInProgress) return@addChangeListener
+                            parentPane.userClearanceState.expedite = isChecked
+                            style = Scene2DSkin.defaultSkin[if (parentPane.userClearanceState.expedite == parentPane.clearanceState.expedite) "ControlPaneSelected" else "ControlPaneSelectedChanged", TextButtonStyle::class.java]
+                            updateUndoTransmitButtonStates()
+                        }
+                    }
                     spdSelectBox = selectBox<Short>("ControlPane").apply {
                         list.alignment = Align.center
                         setAlignment(Align.center)
@@ -478,6 +486,8 @@ class ControlPane {
         else "ControlPaneChanged", SelectBoxStyle::class.java]
         transitionSelectBox.style = Scene2DSkin.defaultSkin[if (userClearanceState.clearedTrans == clearanceState.clearedTrans) "ControlPane"
         else "ControlPaneChanged", SelectBoxStyle::class.java]
+        expediteButton.style = Scene2DSkin.defaultSkin[if (parentPane.userClearanceState.expedite == parentPane.clearanceState.expedite) "ControlPaneSelected"
+        else "ControlPaneSelectedChanged", TextButtonStyle::class.java]
     }
 
     /** Clears all the choices in the altitude select box; should be used when deselecting an aircraft */
@@ -527,6 +537,16 @@ class ControlPane {
             transitionSelectBox.isDisabled = true
             transitionSelectBox.items = GdxArray<String>().apply { add("$TRANS_PREFIX$NO_TRANS_SELECTION") }
         }
+    }
+
+    /**
+     * Updates the cleared expedite status in the pane
+     * @param expedite the expedite status to set
+     */
+    fun updateExpediteClearance(expedite: Boolean) {
+        modificationInProgress = true
+        expediteButton.isChecked = expedite
+        modificationInProgress = false
     }
 
     /**
@@ -642,7 +662,7 @@ class ControlPane {
     }
 
     /**
-     * Updates the state of the handover/acknowledge button; if both are false the button will be hiddem
+     * Updates the state of the handover/acknowledge button; if both are false the button will be hidden
      * @param handover whether the button should display handover and perform handover functionality when clicked
      * @param acknowledge whether the button should display acknowledge and perform acknowledge functionality when
      * clicked; will be overridden by [handover] if it is true

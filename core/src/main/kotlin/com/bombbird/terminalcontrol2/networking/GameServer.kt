@@ -416,11 +416,11 @@ class GameServer {
      * @param optimalIas the updated optimal IAS that aircraft will target
      * */
     fun sendAircraftClearanceStateUpdateToAll(callsign: String, primaryName: String = "", route: Route, hiddenLegs: Route,
-                                           vectorHdg: Short?, vectorTurnDir: Byte?, clearedAlt: Int,
+                                           vectorHdg: Short?, vectorTurnDir: Byte?, clearedAlt: Int, expedite: Boolean,
                                               clearedIas: Short, minIas: Short, maxIas: Short, optimalIas: Short,
                                               clearedApp: String?, clearedTrans: String?) {
         server.sendToAllTCP(AircraftControlStateUpdateData(callsign, primaryName, route.getSerialisedObject(), hiddenLegs.getSerialisedObject(),
-            vectorHdg, vectorTurnDir, clearedAlt, clearedIas, minIas, maxIas, optimalIas, clearedApp, clearedTrans, -5))
+            vectorHdg, vectorTurnDir, clearedAlt, expedite, clearedIas, minIas, maxIas, optimalIas, clearedApp, clearedTrans, -5))
     }
 
     /**

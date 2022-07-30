@@ -155,7 +155,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                     this += ClearanceAct(ClearanceState.ActingClearance(ClearanceState(serialisedAircraft.routePrimaryName,
                         Route.fromSerialisedObject(serialisedAircraft.commandRoute), Route.fromSerialisedObject(serialisedAircraft.commandHiddenLegs),
                         serialisedAircraft.vectorHdg, serialisedAircraft.vectorTurnDir,
-                        serialisedAircraft.commandAlt, serialisedAircraft.clearedIas,
+                        serialisedAircraft.commandAlt, serialisedAircraft.expedite, serialisedAircraft.clearedIas,
                         serialisedAircraft.minIas, serialisedAircraft.maxIas, serialisedAircraft.optimalIas,
                     )))
                     serialisedAircraft.arrivalArptId?.let { arrId -> this += ArrivalAirport(arrId) }
@@ -272,7 +272,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                     // Was waiting takeoff, but now isn't: update radar data and datatag
                     updateAircraftRadarData(this)
                     updateAircraftDatatagText(this)
-                    get(Datatag.mapper)?.let { it -> addDatatagInputListeners(it, this@Aircraft) }
+                    get(Datatag.mapper)?.let { addDatatagInputListeners(it, this@Aircraft) }
                 }
                 remove<WaitingTakeoff>()
             }
@@ -297,7 +297,8 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                              val targetHdgDeg: Short = 0, val targetAltFt: Short = 0, val targetIasKt: Short = 0,
                              val flightType: Byte = 0,
                              val routePrimaryName: String = "", val commandRoute: Route.SerialisedRoute = Route.SerialisedRoute(), val commandHiddenLegs: Route.SerialisedRoute = Route.SerialisedRoute(),
-                             val vectorHdg: Short? = null, val vectorTurnDir: Byte? = null, val commandAlt: Int = 0, val clearedIas: Short = 0, // Vector HDG will be null if aircraft is flying route
+                             val vectorHdg: Short? = null, val vectorTurnDir: Byte? = null, // Vector HDG will be null if aircraft is flying route
+                             val commandAlt: Int = 0, val expedite: Boolean = false, val clearedIas: Short = 0,
                              val minIas: Short = 0, val maxIas: Short = 0, val optimalIas: Short = 0,
                              val arrivalArptId: Byte? = null,
                              val controlSectorId: Byte = 0, val controllerUUID: String? = null,
@@ -341,7 +342,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                 cmdTarget.targetHdgDeg.toInt().toShort(), (cmdTarget.targetAltFt / 100f).roundToInt().toShort(), cmdTarget.targetIasKt,
                 flightType.type,
                 clearance.routePrimaryName, clearance.route.getSerialisedObject(), clearance.hiddenLegs.getSerialisedObject(),
-                clearance.vectorHdg, clearance.vectorTurnDir, clearance.clearedAlt, clearance.clearedIas,
+                clearance.vectorHdg, clearance.vectorTurnDir, clearance.clearedAlt, has(CommandExpedite.mapper), clearance.clearedIas,
                 clearance.minIas, clearance.maxIas, clearance.optimalIas,
                 arrArptId,
                 controllable.sectorId, controllable.controllerUUID?.toString(),
