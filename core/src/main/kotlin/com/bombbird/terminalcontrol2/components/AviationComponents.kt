@@ -5,14 +5,17 @@ import com.badlogic.gdx.math.CumulativeDistribution
 import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.entities.Airport
 import com.bombbird.terminalcontrol2.utilities.AircraftTypeData
+import com.squareup.moshi.JsonClass
 import ktx.ashley.Mapper
 
 /** Component for tagging airport related information */
+@JsonClass(generateAdapter = true)
 data class AirportInfo(var arptId: Byte = 0, var icaoCode: String = "", var name: String = "", var tfcRatio: Byte = 1): Component {
     companion object: Mapper<AirportInfo>()
 }
 
 /** Component for tagging runway related information */
+@JsonClass(generateAdapter = true)
 data class RunwayInfo(var rwyId: Byte = 0, var rwyName: String = "", var lengthM: Short = 4000,
                       var displacedThresholdM: Short = 0, var intersectionTakeoffM: Short = 0,
                       var tower: String = "", var freq: String = ""): Component {
@@ -67,6 +70,7 @@ data class MinAltSectorInfo(var minAltFt: Int? = null, var restricted: Boolean =
 }
 
 /** Component for tagging waypoint related information */
+@JsonClass(generateAdapter = true)
 data class WaypointInfo(var wptId: Short = 0, var wptName: String = "-----"): Component {
     companion object: Mapper<WaypointInfo>()
 }
@@ -83,6 +87,7 @@ data class PublishedHoldInfo(var wptId: Short = 0, var maxAltFt: Int? = null, va
  *
  * Includes performance determining data - minimum approach speed, rotation speed, weight, others in [aircraftPerf]
  * */
+@JsonClass(generateAdapter = true)
 data class AircraftInfo(var icaoCallsign: String = "SHIBA1", var icaoType: String = "SHIB"): Component {
     var aircraftPerf = AircraftTypeData.AircraftPerfData()
     var maxAcc: Float = 0f
@@ -93,15 +98,13 @@ data class AircraftInfo(var icaoCallsign: String = "SHIBA1", var icaoType: Strin
 }
 
 /** Component for tagging the arrival airport for an aircraft */
+@JsonClass(generateAdapter = true)
 data class ArrivalAirport(var arptId: Byte): Component {
     companion object: Mapper<ArrivalAirport>()
 }
 
 /** Component for tagging the departure airport (and runway after cleared for takeoff) for an aircraft */
+@JsonClass(generateAdapter = true)
 data class DepartureAirport(var arptId: Byte, var rwyId: Byte): Component {
     companion object: Mapper<DepartureAirport>()
-}
-
-class Emergency: Component {
-
 }

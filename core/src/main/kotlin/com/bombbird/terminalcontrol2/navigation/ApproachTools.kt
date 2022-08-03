@@ -47,7 +47,7 @@ fun getAppAltAtPos(approach: Entity, posX: Float, posY: Float, gsKt: Float): Flo
                 (appInfo.rwyObj.entity[Altitude.mapper]?.altitudeFt ?: 0f)
     } else if (npa != null) {
         val distNm = pxToNm(distPx)
-        for (i in npa.altAtDist.size - 1 downTo 0) if (distNm > npa.altAtDist[i].first) return npa.altAtDist[i].second.toFloat()
+        for (i in npa.altAtDist.size - 1 downTo 0) if (distNm > npa.altAtDist[i].dist) return npa.altAtDist[i].alt.toFloat()
     } else {
         Gdx.app.log("ApproachTools", "No suitable approach type for ${appInfo.approachName}")
         return null

@@ -21,16 +21,16 @@ object ClearanceStateTest: FunSpec() {
             AircraftTypeData.addAircraftPerf("B77W", AircraftTypeData.AircraftPerfData())
             MAG_HDG_DEV = 0f
             aircraft = Aircraft("TESTSHIBA", 0f, 0f, 10000f, "B77W", FlightType.ARRIVAL, false)
-            actingClearance1 = ClearanceState.ActingClearance(ClearanceState(route = Route().apply {
+            actingClearance1 = ClearanceState(route = Route().apply {
                 add(Route.WaypointLeg(0, null, null, null, legActive = true, altRestrActive = true, spdRestrActive = true))
                 add(Route.WaypointLeg(1, null, null, null, legActive = true, altRestrActive = true, spdRestrActive = true))
                 add(Route.WaypointLeg(2, null, null, null, legActive = true, altRestrActive = true, spdRestrActive = true))
                 add(Route.HoldLeg(2, null, null, null, null, 360, 5, CommandTarget.TURN_LEFT))
-            }))
-            actingClearance2 = ClearanceState.ActingClearance(ClearanceState(route = Route().apply {
+            }).ActingClearance()
+            actingClearance2 = ClearanceState(route = Route().apply {
                 add(Route.WaypointLeg(6, null, null, null, legActive = true, altRestrActive = true, spdRestrActive = true, phase = Route.Leg.APP))
                 add(Route.WaypointLeg(3, null, null, null, legActive = true, altRestrActive = true, spdRestrActive = true, phase = Route.Leg.APP))
-            }))
+            }).ActingClearance()
             uiClearance1 = ClearanceState(route = Route().apply {
                 add(Route.WaypointLeg(6, null, null, null, legActive = true, altRestrActive = true, spdRestrActive = true))
                 add(Route.WaypointLeg(1, null, null, null, legActive = true, altRestrActive = true, spdRestrActive = true))
@@ -50,7 +50,7 @@ object ClearanceStateTest: FunSpec() {
                 add(Route.WaypointLeg(2, null, null, null, legActive = true, altRestrActive = true, spdRestrActive = true))
                 add(Route.HoldLeg(2, null, null, null, null, 360, 5, CommandTarget.TURN_LEFT))
             }), aircraft.entity)
-            actingClearance1.actingClearance.route[0] shouldBe Route.HoldLeg(3, null, null, null, null, 360, 5, CommandTarget.TURN_LEFT)
+            actingClearance1.clearanceState.route[0] shouldBe Route.HoldLeg(3, null, null, null, null, 360, 5, CommandTarget.TURN_LEFT)
         }
 
         test("Route conflict 2 test") {
@@ -62,7 +62,7 @@ object ClearanceStateTest: FunSpec() {
                 add(Route.WaypointLeg(2, null, null, null, legActive = true, altRestrActive = true, spdRestrActive = true))
                 add(Route.HoldLeg(2, null, null, null, null, 360, 5, CommandTarget.TURN_LEFT))
             }), aircraft.entity)
-            actingClearance1.actingClearance.route[0] shouldBe Route.WaypointLeg(0, null, null, null, legActive = true, altRestrActive = true, spdRestrActive = true)
+            actingClearance1.clearanceState.route[0] shouldBe Route.WaypointLeg(0, null, null, null, legActive = true, altRestrActive = true, spdRestrActive = true)
         }
 
         test("Route conflict 3 test") {
@@ -73,7 +73,7 @@ object ClearanceStateTest: FunSpec() {
                 add(Route.WaypointLeg(5, null, null, null, legActive = true, altRestrActive = true, spdRestrActive = true, phase = Route.Leg.APP))
                 add(Route.WaypointLeg(6, null, null, null, legActive = true, altRestrActive = true, spdRestrActive = true, phase = Route.Leg.APP))
             }), aircraft.entity)
-            actingClearance1.actingClearance.route[0] shouldBe Route.WaypointLeg(4, null, null, null, legActive = true, altRestrActive = true, spdRestrActive = true, phase = Route.Leg.APP_TRANS)
+            actingClearance1.clearanceState.route[0] shouldBe Route.WaypointLeg(4, null, null, null, legActive = true, altRestrActive = true, spdRestrActive = true, phase = Route.Leg.APP_TRANS)
         }
 
         test("Route conflict 4 test") {
@@ -85,38 +85,38 @@ object ClearanceStateTest: FunSpec() {
                 add(Route.WaypointLeg(6, null, null, null, legActive = true, altRestrActive = true, spdRestrActive = true, phase = Route.Leg.APP))
                 add(Route.WaypointLeg(3, null, null, null, legActive = true, altRestrActive = true, spdRestrActive = true, phase = Route.Leg.APP))
             }), aircraft.entity)
-            actingClearance2.actingClearance.route[0] shouldBe Route.WaypointLeg(4, null, null, null, legActive = true, altRestrActive = true, spdRestrActive = true, phase = Route.Leg.APP_TRANS)
-            actingClearance2.actingClearance.route[1] shouldBe Route.WaypointLeg(5, null, null, null, legActive = true, altRestrActive = true, spdRestrActive = true, phase = Route.Leg.APP)
-            actingClearance2.actingClearance.route[2] shouldBe Route.WaypointLeg(6, null, null, null, legActive = true, altRestrActive = true, spdRestrActive = true, phase = Route.Leg.APP)
-            actingClearance2.actingClearance.route[3] shouldBe Route.WaypointLeg(3, null, null, null, legActive = true, altRestrActive = true, spdRestrActive = true, phase = Route.Leg.APP)
+            actingClearance2.clearanceState.route[0] shouldBe Route.WaypointLeg(4, null, null, null, legActive = true, altRestrActive = true, spdRestrActive = true, phase = Route.Leg.APP_TRANS)
+            actingClearance2.clearanceState.route[1] shouldBe Route.WaypointLeg(5, null, null, null, legActive = true, altRestrActive = true, spdRestrActive = true, phase = Route.Leg.APP)
+            actingClearance2.clearanceState.route[2] shouldBe Route.WaypointLeg(6, null, null, null, legActive = true, altRestrActive = true, spdRestrActive = true, phase = Route.Leg.APP)
+            actingClearance2.clearanceState.route[3] shouldBe Route.WaypointLeg(3, null, null, null, legActive = true, altRestrActive = true, spdRestrActive = true, phase = Route.Leg.APP)
         }
 
         test("Route conflict 5 test") {
-            actingClearance2.actingClearance.route.insert(0, Route.WaypointLeg(0, null, null, null, legActive = true, altRestrActive = true, spdRestrActive = true, phase = Route.Leg.APP_TRANS))
+            actingClearance2.clearanceState.route.insert(0, Route.WaypointLeg(0, null, null, null, legActive = true, altRestrActive = true, spdRestrActive = true, phase = Route.Leg.APP_TRANS))
             actingClearance2.updateClearanceAct(ClearanceState(clearedTrans = "TESTTRANS", route = Route().apply {
                 add(Route.WaypointLeg(4, null, null, null, legActive = true, altRestrActive = true, spdRestrActive = true, phase = Route.Leg.APP_TRANS))
                 add(Route.WaypointLeg(5, null, null, null, legActive = true, altRestrActive = true, spdRestrActive = true, phase = Route.Leg.APP))
                 add(Route.WaypointLeg(6, null, null, null, legActive = true, altRestrActive = true, spdRestrActive = true, phase = Route.Leg.APP))
                 add(Route.WaypointLeg(3, null, null, null, legActive = true, altRestrActive = true, spdRestrActive = true, phase = Route.Leg.APP))
             }), aircraft.entity)
-            actingClearance2.actingClearance.route[0] shouldBe Route.WaypointLeg(4, null, null, null, legActive = true, altRestrActive = true, spdRestrActive = true, phase = Route.Leg.APP_TRANS)
-            actingClearance2.actingClearance.route[1] shouldBe Route.WaypointLeg(5, null, null, null, legActive = true, altRestrActive = true, spdRestrActive = true, phase = Route.Leg.APP)
-            actingClearance2.actingClearance.route[2] shouldBe Route.WaypointLeg(6, null, null, null, legActive = true, altRestrActive = true, spdRestrActive = true, phase = Route.Leg.APP)
-            actingClearance2.actingClearance.route[3] shouldBe Route.WaypointLeg(3, null, null, null, legActive = true, altRestrActive = true, spdRestrActive = true, phase = Route.Leg.APP)
+            actingClearance2.clearanceState.route[0] shouldBe Route.WaypointLeg(4, null, null, null, legActive = true, altRestrActive = true, spdRestrActive = true, phase = Route.Leg.APP_TRANS)
+            actingClearance2.clearanceState.route[1] shouldBe Route.WaypointLeg(5, null, null, null, legActive = true, altRestrActive = true, spdRestrActive = true, phase = Route.Leg.APP)
+            actingClearance2.clearanceState.route[2] shouldBe Route.WaypointLeg(6, null, null, null, legActive = true, altRestrActive = true, spdRestrActive = true, phase = Route.Leg.APP)
+            actingClearance2.clearanceState.route[3] shouldBe Route.WaypointLeg(3, null, null, null, legActive = true, altRestrActive = true, spdRestrActive = true, phase = Route.Leg.APP)
         }
 
         test("Route conflict 6 test") {
-            actingClearance2.actingClearance.route.clear()
+            actingClearance2.clearanceState.route.clear()
             actingClearance2.updateClearanceAct(ClearanceState(clearedApp = "TESTAPP", route = Route().apply {
                 add(Route.WaypointLeg(0, null, null, null, legActive = true, altRestrActive = true, spdRestrActive = true, phase = Route.Leg.APP_TRANS))
                 add(Route.WaypointLeg(1, null, null, null, legActive = true, altRestrActive = true, spdRestrActive = true, phase = Route.Leg.APP))
                 add(Route.WaypointLeg(2, null, null, null, legActive = true, altRestrActive = true, spdRestrActive = true, phase = Route.Leg.APP))
                 add(Route.WaypointLeg(4, null, null, null, legActive = true, altRestrActive = true, spdRestrActive = true, phase = Route.Leg.APP))
             }), aircraft.entity)
-            actingClearance2.actingClearance.route[0] shouldBe Route.WaypointLeg(0, null, null, null, legActive = true, altRestrActive = true, spdRestrActive = true, phase = Route.Leg.APP_TRANS)
-            actingClearance2.actingClearance.route[1] shouldBe Route.WaypointLeg(1, null, null, null, legActive = true, altRestrActive = true, spdRestrActive = true, phase = Route.Leg.APP)
-            actingClearance2.actingClearance.route[2] shouldBe Route.WaypointLeg(2, null, null, null, legActive = true, altRestrActive = true, spdRestrActive = true, phase = Route.Leg.APP)
-            actingClearance2.actingClearance.route[3] shouldBe Route.WaypointLeg(4, null, null, null, legActive = true, altRestrActive = true, spdRestrActive = true, phase = Route.Leg.APP)
+            actingClearance2.clearanceState.route[0] shouldBe Route.WaypointLeg(0, null, null, null, legActive = true, altRestrActive = true, spdRestrActive = true, phase = Route.Leg.APP_TRANS)
+            actingClearance2.clearanceState.route[1] shouldBe Route.WaypointLeg(1, null, null, null, legActive = true, altRestrActive = true, spdRestrActive = true, phase = Route.Leg.APP)
+            actingClearance2.clearanceState.route[2] shouldBe Route.WaypointLeg(2, null, null, null, legActive = true, altRestrActive = true, spdRestrActive = true, phase = Route.Leg.APP)
+            actingClearance2.clearanceState.route[3] shouldBe Route.WaypointLeg(4, null, null, null, legActive = true, altRestrActive = true, spdRestrActive = true, phase = Route.Leg.APP)
         }
 
         test("UI clearance update 1 test") {

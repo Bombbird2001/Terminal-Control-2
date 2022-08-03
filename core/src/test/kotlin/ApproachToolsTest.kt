@@ -1,5 +1,6 @@
 import com.bombbird.terminalcontrol2.components.RunwayChildren
 import com.bombbird.terminalcontrol2.components.RunwayLabel
+import com.bombbird.terminalcontrol2.components.StepDown
 import com.bombbird.terminalcontrol2.components.VisualApproach
 import com.bombbird.terminalcontrol2.entities.Airport
 import com.bombbird.terminalcontrol2.global.*
@@ -53,7 +54,7 @@ object ApproachToolsTest: FunSpec() {
                 false, UsabilityFilter.DAY_AND_NIGHT
             ).apply {
                 addLocalizer(270, 25)
-                addStepDown(arrayOf(Pair(3f, 900), Pair(5f, 1500), Pair(10f, 3000)))
+                addStepDown(arrayOf(StepDown.Step(3f, 900), StepDown.Step(5f, 1500), StepDown.Step(10f, 3000)))
                 addLineUpDist(0.4f)
             }
             visApp = GAME.gameServer?.airports?.get(0)?.entity?.get(RunwayChildren.mapper)?.rwyMap?.get(0)?.entity?.get(VisualApproach.mapper)

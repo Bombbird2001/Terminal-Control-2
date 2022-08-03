@@ -27,7 +27,7 @@ class ControlStateSystem: EntitySystem() {
                     val clearanceToUse = if (it != null && it.size > 0) it.last()?.clearanceState ?: return@also
                     else {
                         entity.remove<PendingClearances>()
-                        entity[ClearanceAct.mapper]?.actingClearance?.actingClearance ?: return@also
+                        entity[ClearanceAct.mapper]?.actingClearance?.clearanceState ?: return@also
                     }
                     clearanceToUse.apply {
                         GAME.gameServer?.sendAircraftClearanceStateUpdateToAll(aircraftInfo.icaoCallsign, routePrimaryName, route, hiddenLegs,

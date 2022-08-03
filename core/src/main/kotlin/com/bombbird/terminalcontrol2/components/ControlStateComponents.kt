@@ -1,9 +1,9 @@
 package com.bombbird.terminalcontrol2.components
 
 import com.badlogic.ashley.core.Component
-import com.badlogic.ashley.core.Entity
 import com.badlogic.gdx.utils.Queue
 import com.bombbird.terminalcontrol2.navigation.ClearanceState
+import com.squareup.moshi.JsonClass
 import ktx.ashley.Mapper
 import java.util.UUID
 
@@ -21,6 +21,7 @@ data class Controllable(var sectorId: Byte = 0, var controllerUUID: UUID? = null
  *
  * [type] = 2 -> En-route
  * */
+@JsonClass(generateAdapter = true)
 data class FlightType(var type: Byte = 0): Component {
     companion object: Mapper<FlightType>() {
         const val ARRIVAL: Byte = 0
@@ -30,41 +31,49 @@ data class FlightType(var type: Byte = 0): Component {
 }
 
 /** Component for tagging an aircraft on the ground waiting for takeoff (it won't be rendered or updated) */
+@JsonClass(generateAdapter = true)
 class WaitingTakeoff: Component {
     companion object: Mapper<WaitingTakeoff>()
 }
 
 /** Component for tagging the [altitudeFt] when an aircraft should switch from tower to approach/departure */
+@JsonClass(generateAdapter = true)
 data class ContactFromTower(var altitudeFt: Int = 0): Component {
     companion object: Mapper<ContactFromTower>()
 }
 
 /** Component for tagging the [altitudeFt] when an aircraft should switch from approach/departure to tower */
+@JsonClass(generateAdapter = true)
 data class ContactToTower(var altitudeFt: Int = 0): Component {
     companion object: Mapper<ContactToTower>()
 }
 
 /** Component for tagging the [altitudeFt] when an aircraft should switch from centre to approach/departure */
+@JsonClass(generateAdapter = true)
 data class ContactFromCentre(var altitudeFt: Int = 0): Component {
     companion object: Mapper<ContactFromCentre>()
 }
 
 /** Component for tagging the [altitudeFt] when an aircraft should switch from approach/departure to centre */
+@JsonClass(generateAdapter = true)
 data class ContactToCentre(var altitudeFt: Int = 0): Component {
     companion object: Mapper<ContactToCentre>()
 }
 
 /** Component for tagging aircraft that should accelerate to their trip speed (> 250 knots) once above 10000 feet */
+@JsonClass(generateAdapter = true)
 class AccelerateToAbove250kts: Component {
     companion object: Mapper<AccelerateToAbove250kts>()
 }
 
 /** Component for tagging aircraft that should decelerate to 240 knots when nearing 10000 feet */
+@JsonClass(generateAdapter = true)
 class DecelerateTo240kts: Component {
     companion object: Mapper<AccelerateToAbove250kts>()
 }
 
 /** Component for tagging aircraft that should decelerate to 190 knots when less than 16 nm from the runway threshold */
+@JsonClass(generateAdapter = true)
 class AppDecelerateTo190kts: Component {
     companion object: Mapper<AppDecelerateTo190kts>()
 }
@@ -73,20 +82,9 @@ class AppDecelerateTo190kts: Component {
  * Component for tagging aircraft that should decelerate to their minimum approach speed when less than 5 nm from the
  * runway threshold
  * */
+@JsonClass(generateAdapter = true)
 class DecelerateToAppSpd: Component {
     companion object: Mapper<DecelerateToAppSpd>()
-}
-
-/**
- * Component for tagging aircraft cleared for a circling approach; the aircraft must have captured the localizer, or
- * captured the glideslope, or be cleared for a step-down approach in order for this component to take effect
- *
- * This component will persist until the aircraft is no longer on the approach or is on the final visual segment of the
- * approach
- */
-data class CirclingApproach(val circlingApp: Entity = Entity(), var breakoutAlt: Int = 0, var phase: Byte = 0,
-                            var phase1Timer: Float = 70f, var phase3Timer: Float = 50f): Component {
-    companion object: Mapper<CirclingApproach>()
 }
 
 /**
@@ -100,7 +98,8 @@ class PendingClearances(val clearanceQueue: Queue<ClearanceState.PendingClearanc
 /**
  * Component for tagging the latest [ClearanceState] an aircraft has been cleared
  * */
-class ClearanceAct(val actingClearance: ClearanceState.ActingClearance = ClearanceState.ActingClearance()): Component {
+@JsonClass(generateAdapter = true)
+class ClearanceAct(val actingClearance: ClearanceState.ActingClearance = ClearanceState().ActingClearance()): Component {
     companion object: Mapper<ClearanceAct>()
 }
 
@@ -109,6 +108,7 @@ class ClearanceAct(val actingClearance: ClearanceState.ActingClearance = Clearan
  *
  * The server will send a TCP update to all clients informing them of the updated clearance state
  * */
+@JsonClass(generateAdapter = true)
 class LatestClearanceChanged: Component {
     companion object: Mapper<LatestClearanceChanged>()
 }
@@ -118,6 +118,7 @@ class LatestClearanceChanged: Component {
  *
  * The system will update command target to follow the new clearance
  * */
+@JsonClass(generateAdapter = true)
 class ClearanceActChanged: Component {
     companion object: Mapper<ClearanceActChanged>()
 }
@@ -127,6 +128,7 @@ class ClearanceActChanged: Component {
  *
  * Required actions will be performed in the AI system and then removed for the entity
  * */
+@JsonClass(generateAdapter = true)
 class InitialArrivalSpawn: Component {
     companion object: Mapper<InitialArrivalSpawn>()
 }
@@ -135,6 +137,7 @@ class InitialArrivalSpawn: Component {
  * Component for tagging aircraft that has just contacted the player, which will enable the acknowledge button as well
  * as the datatag flashing to notify the player; this will be used only on client
  * */
+@JsonClass(generateAdapter = true)
 class ContactNotification: Component {
     companion object: Mapper<ContactNotification>()
 }
@@ -151,6 +154,7 @@ data class CanBeHandedOver(val nextSector: Byte = 0): Component {
  * Component for tagging aircraft that did a go around recently (i.e. < 45 seconds); a timer comes with the component
  * to keep track of when to remove this component from the aircraft
  */
+@JsonClass(generateAdapter = true)
 data class RecentGoAround(var timeLeft: Float = 45f): Component {
     companion object: Mapper<RecentGoAround>()
 }

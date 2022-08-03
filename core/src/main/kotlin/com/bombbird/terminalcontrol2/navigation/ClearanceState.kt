@@ -6,6 +6,7 @@ import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.MIN_ALT
 import com.bombbird.terminalcontrol2.utilities.*
+import com.squareup.moshi.JsonClass
 import ktx.ashley.get
 import ktx.ashley.has
 import ktx.ashley.plusAssign
@@ -31,6 +32,7 @@ import kotlin.math.min
  *
  * Also contains utility functions for updating the actual aircraft command state
  * */
+@JsonClass(generateAdapter = true)
 class ClearanceState(var routePrimaryName: String = "", val route: Route = Route(), val hiddenLegs: Route = Route(),
                      var vectorHdg: Short? = null, var vectorTurnDir: Byte? = null,
                      var clearedAlt: Int = 0, var expedite: Boolean = false, var clearedIas: Short = 0,
@@ -38,11 +40,14 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
                      var clearedApp: String? = null, var clearedTrans: String? = null) {
 
     /**
-     * Wrapper class used solely to denote and store the currently active clearance the aircraft is following
+     * Inner class used solely to denote and store the currently active clearance the aircraft is following
      *
      * Provides functions that interact with new player clearances as well as the aircraft command target state
      * */
-    class ActingClearance(val actingClearance: ClearanceState = ClearanceState()) {
+    inner class ActingClearance {
+        val clearanceState: ClearanceState
+            get() = this@ClearanceState
+
         /**
          * Updates this acting clearance to the new clearance, performing corrections in case of any conflicts caused due to
          * pilot response time
@@ -52,12 +57,12 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
          * @param entity the aircraft entity that the clearance will be applied to
          * */
         fun updateClearanceAct(newClearance: ClearanceState, entity: Entity) {
-            val starChanged = actingClearance.routePrimaryName != newClearance.routePrimaryName
-            actingClearance.routePrimaryName = newClearance.routePrimaryName
-            val appChanged = newClearance.clearedApp != actingClearance.clearedApp
-            val transChanged = newClearance.clearedTrans != actingClearance.clearedTrans
+            val starChanged = routePrimaryName != newClearance.routePrimaryName
+            routePrimaryName = newClearance.routePrimaryName
+            val appChanged = newClearance.clearedApp != clearedApp
+            val transChanged = newClearance.clearedTrans != clearedTrans
 
-            actingClearance.route.let { currRoute -> newClearance.route.let { newRoute ->
+            route.let { currRoute -> newClearance.route.let { newRoute ->
                 val currFirstLeg = if (currRoute.size > 0) currRoute[0] else null
                 val newFirstLeg = if (newRoute.size > 0) newRoute[0] else null
                 // Remove current present position hold leg if next leg is a different hold leg and is not an uninitialised leg, or not a hold leg
@@ -137,15 +142,15 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
                 currRoute.setToRoute(newRoute) // Set the acting route clearance to the new clearance (after corrections, if any)
             }}
 
-            actingClearance.hiddenLegs.setToRoute(newClearance.hiddenLegs)
-            if (actingClearance.vectorHdg != newClearance.vectorHdg || actingClearance.vectorTurnDir != CommandTarget.TURN_DEFAULT) {
+            hiddenLegs.setToRoute(newClearance.hiddenLegs)
+            if (vectorHdg != newClearance.vectorHdg || vectorTurnDir != CommandTarget.TURN_DEFAULT) {
                 // Do not change the turn direction only if the heading has not changed, and current turn direction is default
                 // i.e. Change turn direction if heading has changed or current turn direction is not default
-                actingClearance.vectorTurnDir = newClearance.vectorTurnDir
+                vectorTurnDir = newClearance.vectorTurnDir
             }
-            actingClearance.vectorHdg = newClearance.vectorHdg
-            actingClearance.clearedAlt = newClearance.clearedAlt
-            actingClearance.expedite = newClearance.expedite
+            vectorHdg = newClearance.vectorHdg
+            clearedAlt = newClearance.clearedAlt
+            expedite = newClearance.expedite
 
             val spds = getMinMaxOptimalIAS(entity)
             if (newClearance.clearedIas == newClearance.optimalIas && newClearance.clearedIas != spds.third) newClearance.clearedIas = spds.third
@@ -153,11 +158,11 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
             newClearance.maxIas = spds.second
             newClearance.optimalIas = spds.third
             newClearance.clearedIas = MathUtils.clamp(newClearance.clearedIas, newClearance.minIas, newClearance.maxIas)
-            actingClearance.clearedIas = newClearance.clearedIas
-            actingClearance.minIas = newClearance.minIas
-            actingClearance.maxIas = newClearance.maxIas
-            actingClearance.optimalIas = newClearance.optimalIas
-            actingClearance.clearedApp = newClearance.clearedApp
+            clearedIas = newClearance.clearedIas
+            minIas = newClearance.minIas
+            maxIas = newClearance.maxIas
+            optimalIas = newClearance.optimalIas
+            clearedApp = newClearance.clearedApp
             newClearance.clearedApp?.let {
                 // If the approach has been changed, remove all current approach components to allow aircraft to
                 // re-establish on new approach
@@ -175,24 +180,24 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
                 val alt = GAME.gameServer?.airports?.get(entity[ArrivalAirport.mapper]?.arptId)?.entity?.get(Altitude.mapper)?.altitudeFt ?: 0f
                 entity += ContactToTower(min((alt + MathUtils.random(1100, 1500)).toInt(), MIN_ALT - 50))
             }
-            actingClearance.clearedTrans = newClearance.clearedTrans
+            clearedTrans = newClearance.clearedTrans
 
             // Update route polygons
             entity[ArrivalRouteZone.mapper]?.also {
                 val airport = GAME.gameServer?.airports?.get(entity[ArrivalAirport.mapper]?.arptId)?.entity ?: return@also
                 if (starChanged) {
                     it.starZone.clear()
-                    airport[STARChildren.mapper]?.starMap?.get(actingClearance.routePrimaryName)?.let { star ->
+                    airport[STARChildren.mapper]?.starMap?.get(routePrimaryName)?.let { star ->
                         it.starZone.addAll(star.routeZones)
                     }
                 }
                 if (starChanged || transChanged || appChanged) {
                     it.appZone.clear()
-                    airport[ApproachChildren.mapper]?.approachMap?.get(actingClearance.clearedApp)?.let { app ->
-                        app.transitionRouteZones[actingClearance.clearedTrans]?.let { trans ->
+                    airport[ApproachChildren.mapper]?.approachMap?.get(clearedApp)?.let { app ->
+                        app.transitionRouteZones[clearedTrans]?.let { trans ->
                             it.appZone.addAll(trans)
                         }
-                        app.transitions[actingClearance.clearedTrans]?.let { trans ->
+                        app.transitions[clearedTrans]?.let { trans ->
                             it.appZone.addAll(getZonesForRoute(Route().apply {
                                 if (trans.size > 0) add(trans[trans.size - 1])
                                 if (app.routeLegs.size > 0) add(app.routeLegs[0])
@@ -210,6 +215,7 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
      * Clearance class that also contains a [timeLeft] value that keeps track of the time remaining before the [clearanceState]
      * should be executed
      * */
+    @JsonClass(generateAdapter = true)
     class PendingClearanceState(var timeLeft: Float, val clearanceState: ClearanceState)
 
     /**

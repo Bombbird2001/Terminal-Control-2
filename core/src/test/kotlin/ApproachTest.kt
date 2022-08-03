@@ -69,11 +69,11 @@ object ApproachTest: FunSpec() {
         }
 
         test("Step down addition") {
-            approach?.addStepDown(arrayOf(Pair(3f, 900), Pair(5f, 1500), Pair(10f, 3000)))
-            approach?.entity?.get(StepDown.mapper)?.altAtDist shouldContainExactly arrayOf(Pair(3f, 900), Pair(5f, 1500), Pair(10f, 3000))
+            approach?.addStepDown(arrayOf(StepDown.Step(3f, 900), StepDown.Step(5f, 1500), StepDown.Step(10f, 3000)))
+            approach?.entity?.get(StepDown.mapper)?.altAtDist shouldContainExactly arrayOf(StepDown.Step(3f, 900), StepDown.Step(5f, 1500), StepDown.Step(10f, 3000))
 
-            approach?.addStepDown(arrayOf(Pair(3.5f, 1000), Pair(8f, 2500), Pair(15f, 4700)))
-            approach?.entity?.get(StepDown.mapper)?.altAtDist shouldContainExactly arrayOf(Pair(3.5f, 1000), Pair(8f, 2500), Pair(15f, 4700))
+            approach?.addStepDown(arrayOf(StepDown.Step(3.5f, 1000), StepDown.Step(8f, 2500), StepDown.Step(15f, 4700)))
+            approach?.entity?.get(StepDown.mapper)?.altAtDist shouldContainExactly arrayOf(StepDown.Step(3.5f, 1000), StepDown.Step(8f, 2500), StepDown.Step(15f, 4700))
         }
 
         test("Line up distance addition") {

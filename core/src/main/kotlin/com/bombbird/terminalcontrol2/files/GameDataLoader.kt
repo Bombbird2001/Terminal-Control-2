@@ -567,12 +567,12 @@ private fun parseAppGlideslope(data: List<String>, approach: Approach) {
  * @param approach the approach to add the step-down procedure to
  * */
 private fun parseAppStepDown(data: List<String>, approach: Approach) {
-    val steps = ArrayList<Pair<Float, Short>>()
+    val steps = ArrayList<StepDown.Step>()
     for (i in 1 until data.size) {
         val step = data[i].split("@")
-        steps.add(Pair(step[1].toFloat(), step[0].toShort()))
+        steps.add(StepDown.Step(step[1].toFloat(), step[0].toShort()))
     }
-    steps.sortBy { it.first }
+    steps.sortBy { it.dist }
     approach.addStepDown(steps.toTypedArray())
 }
 

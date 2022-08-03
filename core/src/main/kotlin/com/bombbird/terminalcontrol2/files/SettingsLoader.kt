@@ -112,8 +112,8 @@ private fun getJsonFromPlayerSettings(): PlayerSettingsJSON {
         ADV_TRAJECTORY_DURATION_S, APW_DURATION_S, STCA_DURATION_S)
 }
 
-/** Adapter class for serializing UUID to and from JSON */
-private class UUIDAdapter {
+/** Adapter object for serializing UUID to and from JSON */
+private object UUIDAdapter {
     @ToJson
     fun toJson(uuid: UUID): String {
         return uuid.toString()
@@ -132,7 +132,7 @@ fun loadPlayerUUID() {
     uuid = if (uuidHandle.exists()) {
         // File exists, read from it
         val jsonString = uuidHandle.readString()
-        val moshi = Moshi.Builder().add(UUIDAdapter()).build()
+        val moshi = Moshi.Builder().add(UUIDAdapter).build()
         val uuidAdapter = moshi.adapter<UUID>()
         uuidAdapter.fromJson(jsonString) ?: generateRandomUUIDAndSave()
     } else {
@@ -148,7 +148,7 @@ fun loadPlayerUUID() {
 @OptIn(ExperimentalStdlibApi::class)
 private fun generateRandomUUIDAndSave(): UUID {
     val newUUID = UUID.randomUUID()
-    val moshi = Moshi.Builder().add(UUIDAdapter()).build()
+    val moshi = Moshi.Builder().add(UUIDAdapter).build()
     val uuidAdapter = moshi.adapter<UUID>()
     val jsonString = uuidAdapter.toJson(newUUID)
     getExtDir(uuidPath)?.writeString(jsonString, false)

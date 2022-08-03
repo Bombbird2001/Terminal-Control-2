@@ -50,6 +50,9 @@ class Approach(name: String, arptId: Byte, runwayId: Byte, posX: Float, posY: Fl
         }
     }
 
+    /** Default approach for loading of saves */
+    constructor(): this("EMPTY", 0, 0, 0f, 0f, 200, 1200, false, UsabilityFilter.DAY_AND_NIGHT)
+
     val transitions = GdxArrayMap<String, Route>(TRANSITION_SIZE)
     val transitionRouteZones = GdxArrayMap<String, GdxArray<RouteZone>>(TRANSITION_SIZE)
     val routeLegs = Route()
@@ -77,7 +80,7 @@ class Approach(name: String, arptId: Byte, runwayId: Byte, posX: Float, posY: Fl
             missedLegs.getSerialisedObject(),
             if (loc != null && dir != null) (convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()) + 180 + MAG_HDG_DEV).roundToInt().toShort() else null, loc?.maxDistNm,
             gs?.glideAngle, gs?.offsetNm, gs?.maxInterceptAlt,
-            stepDown?.altAtDist?.map { SerialisedStep(it.first, it.second) }?.toTypedArray()
+            stepDown?.altAtDist?.map { SerialisedStep(it.dist, it.alt) }?.toTypedArray()
         )
     }
 
@@ -104,7 +107,7 @@ class Approach(name: String, arptId: Byte, runwayId: Byte, posX: Float, posY: Fl
                 val gsMaxAlt = serialisedApproach.maxGsAlt
                 val steps = serialisedApproach.steps
                 if (gsAngleDeg != null && gsOffsetNm != null && gsMaxAlt != null) entity += GlideSlope(gsAngleDeg, gsOffsetNm, gsMaxAlt)
-                else if (steps != null) entity += StepDown(steps.map { Pair(it.dist, it.alt) }.toTypedArray())
+                else if (steps != null) entity += StepDown(steps.map { StepDown.Step(it.dist, it.alt) }.toTypedArray())
             }
         }
     }
@@ -166,7 +169,7 @@ class Approach(name: String, arptId: Byte, runwayId: Byte, posX: Float, posY: Fl
      * Adds a glideslope to the entity of this approach
      * @param steps the sorted list of step down altitudes at distances from the localizer origin
      * */
-    fun addStepDown(steps: Array<Pair<Float, Short>>) {
+    fun addStepDown(steps: Array<StepDown.Step>) {
         entity += StepDown(steps)
     }
 

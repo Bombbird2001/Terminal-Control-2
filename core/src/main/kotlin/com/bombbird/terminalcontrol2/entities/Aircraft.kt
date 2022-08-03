@@ -111,6 +111,9 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
         }
     }
 
+    /** Empty aircraft constructor in case of missing information */
+    constructor(): this("EMPTY", 0f, 0f, 0f, "B77W", FlightType.ARRIVAL)
+
     companion object {
         /** De-serialises a [SerialisedAircraft] and creates a new [Aircraft] object from it */
         fun fromSerialisedObject(serialisedAircraft: SerialisedAircraft): Aircraft {
@@ -152,12 +155,12 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                         speed.vertSpdFpm = serialisedAircraft.vertSpdFpm
                         speed.angularSpdDps = serialisedAircraft.angularSpdDps
                     }
-                    this += ClearanceAct(ClearanceState.ActingClearance(ClearanceState(serialisedAircraft.routePrimaryName,
+                    this += ClearanceAct(ClearanceState(serialisedAircraft.routePrimaryName,
                         Route.fromSerialisedObject(serialisedAircraft.commandRoute), Route.fromSerialisedObject(serialisedAircraft.commandHiddenLegs),
                         serialisedAircraft.vectorHdg, serialisedAircraft.vectorTurnDir,
                         serialisedAircraft.commandAlt, serialisedAircraft.expedite, serialisedAircraft.clearedIas,
                         serialisedAircraft.minIas, serialisedAircraft.maxIas, serialisedAircraft.optimalIas,
-                    )))
+                    ).ActingClearance())
                     serialisedAircraft.arrivalArptId?.let { arrId -> this += ArrivalAirport(arrId) }
                     get(Controllable.mapper)?.apply {
                         sectorId = serialisedAircraft.controlSectorId
@@ -329,7 +332,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
             val cmdTarget = get(CommandTarget.mapper) ?: return emptySerialisableObject("CommandTarget")
             val flightType = get(FlightType.mapper) ?: return emptySerialisableObject("FlightType")
             val clearance = get(PendingClearances.mapper)?.clearanceQueue?.last()?.clearanceState ?:
-            get(ClearanceAct.mapper)?.actingClearance?.actingClearance ?:
+            get(ClearanceAct.mapper)?.actingClearance?.clearanceState ?:
             return emptySerialisableObject("PendingClearances")
             val arrArptId = get(ArrivalAirport.mapper)?.arptId
             val controllable = get(Controllable.mapper) ?: return emptySerialisableObject("Controllable")

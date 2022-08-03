@@ -3,16 +3,19 @@ package com.bombbird.terminalcontrol2.components
 import com.badlogic.ashley.core.Component
 import com.badlogic.gdx.math.Polygon
 import com.badlogic.gdx.math.Vector2
+import com.squareup.moshi.JsonClass
 import ktx.ashley.Mapper
 
 /** Component for polygons */
+@JsonClass(generateAdapter = true)
 class GPolygon(var vertices: FloatArray = FloatArray(0)): Component {
     val polygonObj: Polygon by lazy { Polygon(vertices) }
 
     companion object: Mapper<GPolygon>()
 }
 
-/** Component for an array of points ot be joined together with lines
+/**
+ * Component for an array of points to be joined together with lines
  *
  * Essentially the same as [GPolygon] except this does not need to be a closed shape
  * */

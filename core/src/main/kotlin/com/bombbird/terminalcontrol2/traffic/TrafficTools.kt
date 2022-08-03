@@ -25,7 +25,7 @@ import kotlin.math.*
 val disallowedCallsigns = GdxSet<String>()
 
 /**
- * Class for storing traffic modes for the game
+ * Object for storing traffic modes for the game
  *
  * [NORMAL] is [ARRIVALS_TO_CONTROL] except landing planes successfully will gradually raise the count, while separation
  * conflicts will decrease the count
@@ -100,11 +100,9 @@ fun createArrival(callsign: String, icaoType: String, airport: Entity, gs: GameS
             val tasVector = dir.trackUnitVector * ktToPxps(speed.speedKts.toInt())
             trackVectorPxps = tasVector + affectedByWind.windVectorPxps
         }
-        val clearanceAct = ClearanceAct(ClearanceState.ActingClearance(
-            ClearanceState(randomStar?.name ?: "", starRoute, Route(),
+        val clearanceAct = ClearanceAct(ClearanceState(randomStar?.name ?: "", starRoute, Route(),
                 if (starRoute.size == 0) (spawnPos.third + MAG_HDG_DEV).toInt().toShort() else null, null,
-                clearedAlt, false, ias)
-        ))
+                clearedAlt, false, ias).ActingClearance())
         entity += clearanceAct
         entity[CommandTarget.mapper]?.apply {
             targetAltFt = clearedAlt
@@ -112,7 +110,7 @@ fun createArrival(callsign: String, icaoType: String, airport: Entity, gs: GameS
             targetHdgDeg = modulateHeading(spawnPos.third + 180)
         }
         val spds = getMinMaxOptimalIAS(entity)
-        clearanceAct.actingClearance.actingClearance.apply {
+        clearanceAct.actingClearance.clearanceState.apply {
             minIas = spds.first
             maxIas = spds.second
             optimalIas = spds.third
@@ -162,10 +160,8 @@ fun appTestArrival(gs: GameServer) {
             vertSpdFpm = 0f
         }
         val clearedAlt = 2000
-        entity += ClearanceAct(ClearanceState.ActingClearance(
-            ClearanceState("NTN1A", Route(), Route(),
-                70, null, clearedAlt, false, ias)
-        ))
+        entity += ClearanceAct(ClearanceState("NTN1A", Route(), Route(),
+                70, null, clearedAlt, false, ias).ActingClearance())
         entity[CommandTarget.mapper]?.apply {
             targetAltFt = clearedAlt
             targetIasKt = ias
@@ -184,10 +180,8 @@ fun appTestArrival(gs: GameServer) {
             vertSpdFpm = 0f
         }
         val clearedAlt = 2000
-        entity += ClearanceAct(ClearanceState.ActingClearance(
-            ClearanceState("NTN1A", Route(), Route(),
-                70, null, clearedAlt, false, ias)
-        ))
+        entity += ClearanceAct(ClearanceState("NTN1A", Route(), Route(),
+                70, null, clearedAlt, false, ias).ActingClearance())
         entity[CommandTarget.mapper]?.apply {
             targetAltFt = clearedAlt
             targetIasKt = ias
@@ -206,10 +200,8 @@ fun appTestArrival(gs: GameServer) {
             vertSpdFpm = 0f
         }
         val clearedAlt = 1800
-        entity += ClearanceAct(ClearanceState.ActingClearance(
-            ClearanceState("", Route(), Route(),
-                250, null, clearedAlt, false, ias)
-        ))
+        entity += ClearanceAct(ClearanceState("", Route(), Route(),
+                250, null, clearedAlt, false, ias).ActingClearance())
         entity[CommandTarget.mapper]?.apply {
             targetAltFt = clearedAlt
             targetIasKt = ias
@@ -287,10 +279,8 @@ fun clearForTakeoff(aircraft: Entity, rwy: Entity) {
             it.addAll(getZonesForRoute(sidRoute))
         }
         // Set initial clearance state
-        this += ClearanceAct(ClearanceState.ActingClearance(
-            ClearanceState(sid?.name ?: "", sidRoute, Route(),
-                null, null, initClimb, false, acPerf.climbOutSpeed)
-        ))
+        this += ClearanceAct(ClearanceState(sid?.name ?: "", sidRoute, Route(),
+                null, null, initClimb, false, acPerf.climbOutSpeed).ActingClearance())
         get(CommandTarget.mapper)?.let {
             it.targetAltFt = initClimb
             it.targetIasKt = acPerf.climbOutSpeed

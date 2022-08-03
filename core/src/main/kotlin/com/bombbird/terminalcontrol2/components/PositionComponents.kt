@@ -2,6 +2,7 @@ package com.bombbird.terminalcontrol2.components
 
 import com.badlogic.ashley.core.Component
 import com.badlogic.gdx.math.Vector2
+import com.squareup.moshi.JsonClass
 import ktx.ashley.Mapper
 
 /**
@@ -9,6 +10,7 @@ import ktx.ashley.Mapper
  * @param x the x coordinate, in px, of the entity on radarScreen
  * @param y the y coordinate, in px, of the entity on radarScreen
  * */
+@JsonClass(generateAdapter = true)
 data class Position(var x: Float = 0f, var y: Float = 0f): Component {
     companion object: Mapper<Position>()
 }
@@ -21,6 +23,7 @@ data class Position(var x: Float = 0f, var y: Float = 0f): Component {
  * @param x the x coordinate, in px, on radarScreen
  * @param y the y coordinate, in px, on radarScreen
  * */
+@JsonClass(generateAdapter = true)
 data class CustomPosition(var x: Float = 0f, var y: Float = 0f): Component {
     companion object: Mapper<CustomPosition>()
 }
@@ -30,6 +33,7 @@ data class CustomPosition(var x: Float = 0f, var y: Float = 0f): Component {
  * @param trackUnitVector the direction unit vector rotated with respect to the screen, with positive [Vector2.x]
  * towards the right and positive [Vector2.y] towards the top
  * */
+@JsonClass(generateAdapter = true)
 data class Direction(var trackUnitVector: Vector2 = Vector2()): Component {
     companion object: Mapper<Direction>()
 }
@@ -40,6 +44,7 @@ data class Direction(var trackUnitVector: Vector2 = Vector2()): Component {
  * @param vertSpdFpm the vertical speed, in feet per minute
  * @param angularSpdDps the angular speed, in degrees per second, positive means a clockwise turn
  * */
+@JsonClass(generateAdapter = true)
 data class Speed(var speedKts: Float = 0f, var vertSpdFpm: Float = 0f, var angularSpdDps: Float = 0f): Component {
     companion object: Mapper<Speed>()
 }
@@ -48,6 +53,7 @@ data class Speed(var speedKts: Float = 0f, var vertSpdFpm: Float = 0f, var angul
  * Component for altitude
  * @param altitudeFt the altitude, in feet
  * */
+@JsonClass(generateAdapter = true)
 class Altitude(var altitudeFt: Float = 0f): Component {
     companion object: Mapper<Altitude>()
 }
@@ -58,6 +64,7 @@ class Altitude(var altitudeFt: Float = 0f): Component {
  * @param dVertSpdMps2, the vertical acceleration, in metres per second^2
  * @param dAngularSpdDps2, the angular acceleration, in degrees per second^2
  * */
+@JsonClass(generateAdapter = true)
 data class Acceleration(var dSpeedMps2: Float = 0f, var dVertSpdMps2: Float = 0f, var dAngularSpdDps2: Float = 0f): Component {
     companion object: Mapper<Acceleration>()
 }
@@ -77,6 +84,7 @@ data class RadarData(val position: Position = Position(), val direction: Directi
  * the difference between [iasKt] and CAS is negligible and use them interchangeably
  * @param iasKt the indicated airspeed, in knots, of the aircraft
  * */
+@JsonClass(generateAdapter = true)
 data class IndicatedAirSpeed(var iasKt: Float = 0f): Component {
     companion object: Mapper<IndicatedAirSpeed>()
 }
@@ -85,6 +93,7 @@ data class IndicatedAirSpeed(var iasKt: Float = 0f): Component {
  * Component for ground speed - the magnitude of the sum of the aircraft's velocity vector and the wind velocity vector
  * @param trackVectorPxps the ground track vector, in pixels per second, of the aircraft
  * */
+@JsonClass(generateAdapter = true)
 data class GroundTrack(var trackVectorPxps: Vector2 = Vector2()): Component {
     companion object: Mapper<GroundTrack>()
 }
@@ -97,11 +106,13 @@ data class GroundTrack(var trackVectorPxps: Vector2 = Vector2()): Component {
  * Entities tagged with [TakeoffRoll] or [LandingRoll] will also not be affected by wind even if this component is tagged
  * @param windVectorPxps the velocity vector of the wind, in px per second
  * */
+@JsonClass(generateAdapter = true)
 data class AffectedByWind(var windVectorPxps: Vector2 = Vector2()): Component {
     companion object: Mapper<AffectedByWind>()
 }
 
 /** Component for tagging on ground entities (will not be affected by wind even if tagged with it) */
+@JsonClass(generateAdapter = true)
 class OnGround: Component {
     companion object: Mapper<OnGround>()
 }

@@ -107,7 +107,7 @@ class AISystem: EntitySystem() {
                 val alt = get(Altitude.mapper) ?: return@apply
                 val cmd = get(CommandTarget.mapper) ?: return@apply
                 val tkOff = get(TakeoffClimb.mapper) ?: return@apply
-                val clearanceAct = get(ClearanceAct.mapper)?.actingClearance?.actingClearance ?: return@apply
+                val clearanceAct = get(ClearanceAct.mapper)?.actingClearance?.clearanceState ?: return@apply
                 val perf = get(AircraftInfo.mapper)?.aircraftPerf ?: return@apply
                 if (alt.altitudeFt > tkOff.accelAltFt) {
                     // Climbed past acceleration altitude, set new target IAS and remove takeoff climb component
@@ -171,7 +171,7 @@ class AISystem: EntitySystem() {
                 if (alt.altitudeFt > 10000) {
                     val spds = getMinMaxOptimalIAS(this)
                     cmd.targetIasKt = spds.third // If aircraft is still constrained by SIDs, it will automatically accelerate to optimal speed later
-                    clearanceAct.actingClearance.actingClearance.let {
+                    clearanceAct.actingClearance.clearanceState.let {
                         it.clearedIas = spds.third
                         it.optimalIas = spds.third
                         it.maxIas = spds.second
@@ -193,7 +193,7 @@ class AISystem: EntitySystem() {
                 if (alt.altitudeFt < 11000 && cmd.targetAltFt <= 10000) {
                     if (cmd.targetIasKt > 240) {
                         cmd.targetIasKt = 240
-                        clearanceAct.actingClearance.actingClearance.clearedIas = 240
+                        clearanceAct.actingClearance.clearanceState.clearedIas = 240
                     }
                     remove<DecelerateTo240kts>()
                     this += LatestClearanceChanged()
@@ -214,7 +214,7 @@ class AISystem: EntitySystem() {
                 if (distNm < 16) {
                     if (cmd.targetIasKt > 190) {
                         cmd.targetIasKt = 190
-                        clearanceAct.actingClearance.actingClearance.clearedIas = 190
+                        clearanceAct.actingClearance.clearanceState.clearedIas = 190
                     }
                     remove<AppDecelerateTo190kts>()
                     this += LatestClearanceChanged()
@@ -237,7 +237,7 @@ class AISystem: EntitySystem() {
                 if (distNm < 6.4) {
                     if (cmd.targetIasKt > minAppSpd) {
                         cmd.targetIasKt = minAppSpd
-                        clearanceAct.actingClearance.actingClearance.clearedIas = minAppSpd
+                        clearanceAct.actingClearance.clearanceState.clearedIas = minAppSpd
                     }
                     remove<DecelerateToAppSpd>()
                     this += LatestClearanceChanged()
@@ -294,7 +294,7 @@ class AISystem: EntitySystem() {
             waypoint[i]?.apply {
                 val cmdTarget = get(CommandTarget.mapper) ?: return@apply
                 val cmdDir = get(CommandDirect.mapper) ?: return@apply
-                val clearanceAct = get(ClearanceAct.mapper)?.actingClearance?.actingClearance ?: return@apply
+                val clearanceAct = get(ClearanceAct.mapper)?.actingClearance?.clearanceState ?: return@apply
                 val pos = get(Position.mapper) ?: return@apply
                 val wpt = GAME.gameServer?.waypoints?.get(cmdDir.wptId)?.entity?.get(Position.mapper) ?: run {
                     Gdx.app.log("AISystem", "Unknown command direct waypoint with ID ${cmdDir.wptId}")
@@ -422,7 +422,7 @@ class AISystem: EntitySystem() {
                 if (appropriateTurnDir != cmd.turnDir) {
                     // Aircraft has reached the end of turn
                     cmd.turnDir = appropriateTurnDir
-                    actingClearance.actingClearance.vectorTurnDir = appropriateTurnDir
+                    actingClearance.clearanceState.vectorTurnDir = appropriateTurnDir
                     val pendingClearances = get(PendingClearances.mapper)
                     if (pendingClearances == null || pendingClearances.clearanceQueue.isEmpty) this += LatestClearanceChanged()
                 }
@@ -457,10 +457,10 @@ class AISystem: EntitySystem() {
                 val appEntity = get(LocalizerCaptured.mapper)?.locApp ?: get(VisualCaptured.mapper)?.visApp ?: return@apply
                 val targetPos = getTargetPos(appEntity, pos.x, pos.y) ?: return@apply
                 cmd.turnDir = CommandTarget.TURN_DEFAULT
-                actingClearance.actingClearance.vectorTurnDir = CommandTarget.TURN_DEFAULT
+                actingClearance.clearanceState.vectorTurnDir = CommandTarget.TURN_DEFAULT
                 val targetTrackAndGs = getPointTargetTrackAndGS(getRequiredTrack(pos.x, pos.y, targetPos.x, targetPos.y).toDouble(), spd.speedKts, dir, get(AffectedByWind.mapper))
                 cmd.targetHdgDeg = targetTrackAndGs.first + MAG_HDG_DEV
-                actingClearance.actingClearance.vectorHdg = null
+                actingClearance.clearanceState.vectorHdg = null
 
                 appEntity[LineUpDist.mapper]?.let { if (checkLineUpDistReached(appEntity, pos.x, pos.y)) {
                     // If line up distance exists and is reached, remove all other approach components and add visual approach component
@@ -790,7 +790,7 @@ class AISystem: EntitySystem() {
      * @param entity the aircraft entity to apply the changes to
      */
     private fun setToFirstRouteLeg(entity: Entity) {
-        val actingClearance = entity[ClearanceAct.mapper]?.actingClearance?.actingClearance ?: return
+        val actingClearance = entity[ClearanceAct.mapper]?.actingClearance?.clearanceState ?: return
         val lastRestrictions = entity[LastRestrictions.mapper] ?: LastRestrictions().apply { entity += this }
         val cmd = entity[CommandTarget.mapper] ?: return
         actingClearance.route.apply {
@@ -854,7 +854,7 @@ class AISystem: EntitySystem() {
      * @param entity the aircraft entity
      * */
     private fun setToNextRouteLeg(entity: Entity) {
-        entity[ClearanceAct.mapper]?.actingClearance?.actingClearance?.route?.apply { if (size > 0) {
+        entity[ClearanceAct.mapper]?.actingClearance?.clearanceState?.route?.apply { if (size > 0) {
             (get(0) as? Route.WaypointLeg)?.let { prevWpt -> entity[LastRestrictions.mapper]?.let { restr ->
                 prevWpt.maxSpdKt?.let { maxSpd -> restr.maxSpdKt = maxSpd }
                 prevWpt.minAltFt?.let { minAltFt -> restr.minAltFt = minAltFt }
@@ -874,7 +874,7 @@ class AISystem: EntitySystem() {
      * @param entity the aircraft entity
      * */
     private fun updateLegRestr(entity: Entity) {
-        val actingClearance = entity[ClearanceAct.mapper]?.actingClearance?.actingClearance ?: return
+        val actingClearance = entity[ClearanceAct.mapper]?.actingClearance?.clearanceState ?: return
         val commandTarget = entity[CommandTarget.mapper] ?: return
         val flightType = entity[FlightType.mapper]
         val lastRestriction = entity[LastRestrictions.mapper] ?: LastRestrictions().apply { entity += this }
@@ -951,7 +951,7 @@ class AISystem: EntitySystem() {
      * @param entity the aircraft entity to apply the changes to
      * */
     private fun setCommandTargetToNewActingClearance(entity: Entity) {
-        val actingClearance = entity[ClearanceAct.mapper]?.actingClearance?.actingClearance ?: return
+        val actingClearance = entity[ClearanceAct.mapper]?.actingClearance?.clearanceState ?: return
         val commandTarget = entity[CommandTarget.mapper] ?: return
         actingClearance.vectorHdg?.let { hdg ->
             // Cleared vector heading
@@ -1050,7 +1050,7 @@ class AISystem: EntitySystem() {
      * @param entity the aircraft entity
      */
     private fun setMissedApproachAltitude(entity: Entity) {
-        val actingClearance = entity[ClearanceAct.mapper]?.actingClearance?.actingClearance ?: return
+        val actingClearance = entity[ClearanceAct.mapper]?.actingClearance?.clearanceState ?: return
         val prevClearedAlt = actingClearance.clearedAlt
         actingClearance.clearedAlt = findMissedApproachAlt(actingClearance.route) ?:
                 ((((GAME.gameServer?.airports?.get(entity[ArrivalAirport.mapper]?.arptId)?.entity?.get(Altitude.mapper)?.altitudeFt ?: 0f) / 1000).roundToInt() + 3) * 1000)
@@ -1066,7 +1066,7 @@ class AISystem: EntitySystem() {
             // Remove all approach components
             removeAllApproachComponents(entity)
 
-            get(ClearanceAct.mapper)?.actingClearance?.actingClearance?.let {
+            get(ClearanceAct.mapper)?.actingClearance?.clearanceState?.let {
                 // Set route to first missed approach leg
                 removeAllLegsTillMissed(it.route)
 

@@ -266,6 +266,9 @@ class RouteZone(posX1: Float, posY1: Float, posX2: Float, posY2: Float, rnpNm: F
         }
     }
 
+    /** Empty route zone constructor for loading of saves */
+    constructor(): this(0f, 0f, 0f, 0f, 3f, null)
+
     /**
      * Checks whether the polygon of this route zone contains the input coordinates
      * @param x the x coordinate
@@ -300,6 +303,9 @@ class WakeZone(posX1: Float, posY1: Float, posX2: Float, posY2: Float, wakeAlt: 
             leadingRecat = leadingRecatCat
         }
     }
+
+    /** Empty wake zone constructor for loading of saves */
+    constructor(): this(0f, 0f, 0f, 0f, 0f, "", 'H', 'B')
 
     /**
      * Checks whether the polygon of this wake zone contains the input coordinates

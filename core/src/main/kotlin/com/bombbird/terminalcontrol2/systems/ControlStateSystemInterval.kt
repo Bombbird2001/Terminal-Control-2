@@ -37,7 +37,7 @@ class ControlStateSystemInterval: IntervalSystem(1f) {
         val minMaxOptIas = engine.getEntitiesFor(minMaxOptIasFamily)
         for (i in 0 until minMaxOptIas.size()) {
             minMaxOptIas[i]?.apply {
-                val clearanceAct = get(ClearanceAct.mapper)?.actingClearance?.actingClearance ?: return@apply
+                val clearanceAct = get(ClearanceAct.mapper)?.actingClearance?.clearanceState ?: return@apply
                 val cmd = get(CommandTarget.mapper) ?: return@apply
                 val prevSpds = Triple(clearanceAct.minIas, clearanceAct.maxIas, clearanceAct.optimalIas)
                 val spds = getMinMaxOptimalIAS(this)
@@ -58,7 +58,7 @@ class ControlStateSystemInterval: IntervalSystem(1f) {
         val spdRestr = engine.getEntitiesFor(spdRestrFamily)
         for (i in 0 until spdRestr.size()) {
             spdRestr[i]?.apply {
-                val actingClearance = get(ClearanceAct.mapper)?.actingClearance?.actingClearance ?: return@apply
+                val actingClearance = get(ClearanceAct.mapper)?.actingClearance?.clearanceState ?: return@apply
                 val lastRestriction = get(LastRestrictions.mapper) ?: return@apply
                 val pos = get(Position.mapper) ?: return@apply
                 val alt = get(Altitude.mapper) ?: return@apply

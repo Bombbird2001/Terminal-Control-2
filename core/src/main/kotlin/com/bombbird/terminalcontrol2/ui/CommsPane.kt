@@ -96,7 +96,7 @@ class CommsPane {
     fun initialContact(aircraft: Entity) {
         val flightType = aircraft[FlightType.mapper] ?: return
         val acInfo = aircraft[AircraftInfo.mapper] ?: return
-        val clearanceState = aircraft[ClearanceAct.mapper]?.actingClearance?.actingClearance ?: return
+        val clearanceState = aircraft[ClearanceAct.mapper]?.actingClearance?.clearanceState ?: return
         val alt = aircraft[Altitude.mapper] ?: return
         val arrivalAirport = aircraft[ArrivalAirport.mapper]
 
@@ -168,7 +168,7 @@ class CommsPane {
     fun goAround(aircraft: Entity) {
         val flightType = aircraft[FlightType.mapper] ?: return
         val acInfo = aircraft[AircraftInfo.mapper] ?: return
-        val clearanceState = aircraft[ClearanceAct.mapper]?.actingClearance?.actingClearance ?: return
+        val clearanceState = aircraft[ClearanceAct.mapper]?.actingClearance?.clearanceState ?: return
         val alt = aircraft[Altitude.mapper] ?: return
 
         // Get the callsign of the player
@@ -222,7 +222,7 @@ class CommsPane {
                 // If something still goes wrong, the default values below are used
                 var towerCallsign = "Tower"
                 var towerFreq = "118.70"
-                aircraft[ClearanceAct.mapper]?.actingClearance?.actingClearance?.clearedApp?.let { app ->
+                aircraft[ClearanceAct.mapper]?.actingClearance?.clearanceState?.clearedApp?.let { app ->
                     val arpt = CLIENT_SCREEN?.airports?.get(aircraft[ArrivalAirport.mapper]?.arptId)?.entity
                     val rwy = arpt?.get(ApproachChildren.mapper)?.approachMap?.get(app)?.entity?.get(ApproachInfo.mapper)?.rwyObj ?:
                     arpt?.get(RunwayChildren.mapper)?.rwyMap?.firstValue()

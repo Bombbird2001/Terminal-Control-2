@@ -138,8 +138,8 @@ class ConflictManager {
         if (alt1.altitudeFt < arptElevation1 + 1000 || alt2.altitudeFt < arptElevation2 + 1000) return
 
         // Inhibit if both planes are arriving at same airport, and are both inside different NOZs of their cleared approaches
-        val app1 = entity1[ClearanceAct.mapper]?.actingClearance?.actingClearance?.clearedApp?.let { arrival1?.get(ApproachChildren.mapper)?.approachMap?.get(it) }
-        val app2 = entity2[ClearanceAct.mapper]?.actingClearance?.actingClearance?.clearedApp?.let { arrival2?.get(ApproachChildren.mapper)?.approachMap?.get(it) }
+        val app1 = entity1[ClearanceAct.mapper]?.actingClearance?.clearanceState?.clearedApp?.let { arrival1?.get(ApproachChildren.mapper)?.approachMap?.get(it) }
+        val app2 = entity2[ClearanceAct.mapper]?.actingClearance?.clearanceState?.clearedApp?.let { arrival2?.get(ApproachChildren.mapper)?.approachMap?.get(it) }
         val appNoz1 = app1?.entity?.get(ApproachInfo.mapper)?.rwyObj?.entity?.get(ApproachNOZ.mapper)?.appNoz
         val appNoz2 = app2?.entity?.get(ApproachInfo.mapper)?.rwyObj?.entity?.get(ApproachNOZ.mapper)?.appNoz
         // Since appNoz1 and appNoz2 are nullable, the .contains method must return a true (not false or null)
