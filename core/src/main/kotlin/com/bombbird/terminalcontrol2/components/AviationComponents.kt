@@ -4,21 +4,25 @@ import com.badlogic.ashley.core.Component
 import com.badlogic.gdx.math.CumulativeDistribution
 import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.entities.Airport
+import com.bombbird.terminalcontrol2.json.BaseComponentJSONInterface
 import com.bombbird.terminalcontrol2.utilities.AircraftTypeData
 import com.squareup.moshi.JsonClass
 import ktx.ashley.Mapper
 
 /** Component for tagging airport related information */
 @JsonClass(generateAdapter = true)
-data class AirportInfo(var arptId: Byte = 0, var icaoCode: String = "", var name: String = "", var tfcRatio: Byte = 1): Component {
+data class AirportInfo(var arptId: Byte = 0, var icaoCode: String = "", var name: String = "", var tfcRatio: Byte = 1): Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.AIRPORT_INFO
+
     companion object: Mapper<AirportInfo>()
 }
 
 /** Component for tagging runway related information */
-@JsonClass(generateAdapter = true)
 data class RunwayInfo(var rwyId: Byte = 0, var rwyName: String = "", var lengthM: Short = 4000,
                       var displacedThresholdM: Short = 0, var intersectionTakeoffM: Short = 0,
-                      var tower: String = "", var freq: String = ""): Component {
+                      var tower: String = "", var freq: String = ""): Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.RUNWAY_INFO
+
     lateinit var airport: Airport
     companion object: Mapper<RunwayInfo>()
 }
@@ -41,7 +45,9 @@ data class RandomMetarInfo(var windDirDist: CumulativeDistribution<Short> = Cumu
                            var windSpdDist: CumulativeDistribution<Short> = CumulativeDistribution(),
                            var visibilityDist: CumulativeDistribution<Short> = CumulativeDistribution(),
                            var ceilingDist: CumulativeDistribution<Short> = CumulativeDistribution(),
-                           var windshearLogCoefficients: Pair<Float, Float>? = null): Component {
+                           var windshearLogCoefficients: Pair<Float, Float>? = null): Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.RANDOM_METAR_INFO
+
     companion object: Mapper<RandomMetarInfo>()
 }
 
@@ -71,7 +77,9 @@ data class MinAltSectorInfo(var minAltFt: Int? = null, var restricted: Boolean =
 
 /** Component for tagging waypoint related information */
 @JsonClass(generateAdapter = true)
-data class WaypointInfo(var wptId: Short = 0, var wptName: String = "-----"): Component {
+data class WaypointInfo(var wptId: Short = 0, var wptName: String = "-----"): Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.WAYPOINT_INFO
+
     companion object: Mapper<WaypointInfo>()
 }
 
@@ -88,7 +96,9 @@ data class PublishedHoldInfo(var wptId: Short = 0, var maxAltFt: Int? = null, va
  * Includes performance determining data - minimum approach speed, rotation speed, weight, others in [aircraftPerf]
  * */
 @JsonClass(generateAdapter = true)
-data class AircraftInfo(var icaoCallsign: String = "SHIBA1", var icaoType: String = "SHIB"): Component {
+data class AircraftInfo(var icaoCallsign: String = "SHIBA1", var icaoType: String = "SHIB"): Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.AIRCRAFT_INFO
+
     var aircraftPerf = AircraftTypeData.AircraftPerfData()
     var maxAcc: Float = 0f
     var minAcc: Float = 0f
@@ -99,12 +109,16 @@ data class AircraftInfo(var icaoCallsign: String = "SHIBA1", var icaoType: Strin
 
 /** Component for tagging the arrival airport for an aircraft */
 @JsonClass(generateAdapter = true)
-data class ArrivalAirport(var arptId: Byte): Component {
+data class ArrivalAirport(var arptId: Byte): Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.ARRIVAL_AIRPORT
+
     companion object: Mapper<ArrivalAirport>()
 }
 
 /** Component for tagging the departure airport (and runway after cleared for takeoff) for an aircraft */
 @JsonClass(generateAdapter = true)
-data class DepartureAirport(var arptId: Byte, var rwyId: Byte): Component {
+data class DepartureAirport(var arptId: Byte, var rwyId: Byte): Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.DEPARTURE_AIRPORT
+
     companion object: Mapper<DepartureAirport>()
 }

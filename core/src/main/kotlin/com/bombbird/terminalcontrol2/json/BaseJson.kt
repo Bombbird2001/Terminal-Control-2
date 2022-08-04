@@ -11,6 +11,7 @@ import com.squareup.moshi.ToJson
 import ktx.ashley.get
 
 /** Data class for storing runway reference information (airport and runway ID) */
+@JsonClass(generateAdapter = true)
 data class RunwayRefJSON(val arptId: Byte, val rwyId: Byte) {
     /**
      * Method to get a runway entity from this input runway JSON object
@@ -34,6 +35,7 @@ fun toRunwayRefJSON(rwy: Entity): RunwayRefJSON {
 }
 
 /** Data class for storing approach reference information (airport ID and approach name) */
+@JsonClass(generateAdapter = true)
 data class ApproachRefJSON(val arptId: Byte, val appName: String) {
     /**
      * Method to get an approach entity from this input approach JSON object
@@ -71,4 +73,3 @@ object Vector2Adapter {
         return Vector2(vector2JSON.x, vector2JSON.y)
     }
 }
-

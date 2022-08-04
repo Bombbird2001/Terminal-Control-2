@@ -6,7 +6,6 @@ import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.Airport.Runway.SerialisedRunway
 import com.bombbird.terminalcontrol2.global.CLIENT_SCREEN
-import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.getEngine
 import com.bombbird.terminalcontrol2.navigation.Approach
 import com.bombbird.terminalcontrol2.navigation.SidStar
@@ -244,7 +243,7 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
         }
 
         /** Empty runway constructor for loading of saves */
-        constructor(): this(GAME.gameServer?.airports?.get(0) ?: Airport(), 0, "EMPTY", 0f, 0f,
+        constructor(): this(Airport(), 0, "EMPTY", 0f, 0f,
             0f, 4000, 0, 0, 0, RunwayLabel.BEFORE, "", "")
 
         companion object {

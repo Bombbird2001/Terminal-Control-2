@@ -1,5 +1,6 @@
 package com.bombbird.terminalcontrol2.json
 
+import com.badlogic.ashley.core.Component
 import com.bombbird.terminalcontrol2.entities.RouteZone
 import com.bombbird.terminalcontrol2.entities.WakeZone
 import com.squareup.moshi.FromJson
@@ -21,7 +22,7 @@ object RouteZoneAdapter {
     @FromJson
     fun fromJson(routeZoneJSON: RouteZoneJSON): RouteZone {
         return RouteZone().apply {
-            routeZoneJSON.entity.components.forEach { entity += it }
+            routeZoneJSON.entity.components.forEach { if (it is Component) entity += it }
         }
     }
 }
@@ -40,7 +41,7 @@ object WakeZoneAdapter {
     @FromJson
     fun fromJson(wakeZoneJSON: WakeZoneJSON): WakeZone {
         return WakeZone().apply {
-            wakeZoneJSON.entity.components.forEach { entity += it }
+            wakeZoneJSON.entity.components.forEach { if (it is Component) entity += it }
         }
     }
 }

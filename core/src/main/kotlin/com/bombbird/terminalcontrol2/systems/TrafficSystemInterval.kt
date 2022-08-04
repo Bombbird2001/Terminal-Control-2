@@ -66,6 +66,27 @@ class TrafficSystemInterval: IntervalSystem(1f) {
             }
         }
 
+        // Closest arrival to runway checker
+        val closestRunwayArrival = engine.getEntitiesFor(closestArrivalFamily)
+        for (i in 0 until closestRunwayArrival.size()) {
+            closestRunwayArrival[i]?.apply {
+                val approach = get(LocalizerCaptured.mapper)?.locApp ?: get(GlideSlopeCaptured.mapper)?.gsApp ?:
+                get(VisualCaptured.mapper)?.visApp ?: return@apply
+                val rwyObj = approach[ApproachInfo.mapper]?.rwyObj?.entity ?: return@apply
+                val rwyThrPos = rwyObj[CustomPosition.mapper] ?: return@apply
+                val pos = get(Position.mapper) ?: return@apply
+                val distPx = calculateDistanceBetweenPoints(pos.x, pos.y, rwyThrPos.x, rwyThrPos.y)
+                // If no next arrival has been determined yet, add this arrival
+                if (rwyObj.hasNot(RunwayNextArrival.mapper)) rwyObj += RunwayNextArrival(this, distPx)
+                else rwyObj[RunwayNextArrival.mapper]?.let {
+                    if (distPx < it.distFromThrPx) {
+                        it.aircraft = this
+                        it.distFromThrPx = distPx
+                    }
+                }
+            }
+        }
+
         // Update pending runway change timer
         val pendingRunway = engine.getEntitiesFor(pendingRunwayChangeFamily)
         for (i in 0 until pendingRunway.size()) {
@@ -132,27 +153,6 @@ class TrafficSystemInterval: IntervalSystem(1f) {
                 // All related checks passed - clear next departure for takeoff
                 val nextDep = airport.entity[AirportNextDeparture.mapper] ?: return@apply
                 clearForTakeoff(nextDep.aircraft, this)
-            }
-        }
-
-        // Closest arrival to runway checker
-        val closestRunwayArrival = engine.getEntitiesFor(closestArrivalFamily)
-        for (i in 0 until closestRunwayArrival.size()) {
-            closestRunwayArrival[i]?.apply {
-                val approach = get(LocalizerCaptured.mapper)?.locApp ?: get(GlideSlopeCaptured.mapper)?.gsApp ?:
-                get(VisualCaptured.mapper)?.visApp ?: return@apply
-                val rwyObj = approach[ApproachInfo.mapper]?.rwyObj?.entity ?: return@apply
-                val rwyThrPos = rwyObj[CustomPosition.mapper] ?: return@apply
-                val pos = get(Position.mapper) ?: return@apply
-                val distPx = calculateDistanceBetweenPoints(pos.x, pos.y, rwyThrPos.x, rwyThrPos.y)
-                // If no next arrival has been determined yet, add this arrival
-                if (rwyObj.hasNot(RunwayNextArrival.mapper)) rwyObj += RunwayNextArrival(this, distPx)
-                else rwyObj[RunwayNextArrival.mapper]?.let {
-                    if (distPx < it.distFromThrPx) {
-                        it.aircraft = this
-                        it.distFromThrPx = distPx
-                    }
-                }
             }
         }
 

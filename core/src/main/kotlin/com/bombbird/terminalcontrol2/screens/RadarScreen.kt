@@ -437,10 +437,12 @@ class RadarScreen(private val connectionHost: String?, airportToHost: String?): 
     /**
      * Adds a runnable to be run on the main client thread after the current engine update
      *
-     * This is different from Gdx.app.postRunnable in that the runnable will only be run after
+     * This is different from Gdx.app.postRunnable in that the runnable will run right after the engine has updated,
+     * instead of after the whole render loop has been finished
      * @param runnable the runnable to add
      * */
-    fun postRunnableAfterEngineUpdate(runnable: Runnable) {
+    fun postRunnableAfterEngineUpdate(print: Boolean, runnable: Runnable) {
+        if (print) println("Runnable added")
         pendingRunnablesQueue.offer(runnable)
     }
 

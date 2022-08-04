@@ -258,7 +258,7 @@ class ControlPane {
                                 }}
                             }
                             Gdx.app.postRunnable {
-                                aircraft.entity[ClearanceAct.mapper]?.actingClearance?.actingClearance?.updateUIClearanceState(parentPane.userClearanceState)
+                                aircraft.entity[ClearanceAct.mapper]?.actingClearance?.clearanceState?.updateUIClearanceState(parentPane.userClearanceState)
                                 parentPane.updateSelectedAircraft(aircraft)
                                 parentPane.selAircraft?.let {
                                     it.entity.remove<ContactNotification>()

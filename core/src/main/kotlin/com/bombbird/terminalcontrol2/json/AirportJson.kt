@@ -1,5 +1,6 @@
 package com.bombbird.terminalcontrol2.json
 
+import com.badlogic.ashley.core.Component
 import com.badlogic.gdx.Gdx
 import com.bombbird.terminalcontrol2.entities.Airport
 import com.squareup.moshi.FromJson
@@ -21,7 +22,7 @@ object AirportAdapter {
     @FromJson
     fun fromJson(airportJSON: AirportJSON): Airport {
         return Airport().apply {
-            airportJSON.entity.components.forEach { entity += it }
+            airportJSON.entity.components.forEach { if (it is Component) entity += it }
         }
     }
 
@@ -50,7 +51,7 @@ object RunwayAdapter {
     @FromJson
     fun fromJson(rwyJSON: RunwayJSON): Airport.Runway {
         return Airport.Runway().apply {
-            rwyJSON.entity.components.forEach { entity += it }
+            rwyJSON.entity.components.forEach { if (it is Component) entity += it }
         }
     }
 

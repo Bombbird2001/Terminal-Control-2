@@ -203,7 +203,7 @@ private fun getMinimisedLabelText(entity: Entity): Array<String> {
     val aircraftInfo = entity[AircraftInfo.mapper] ?: return labelText
     val radarData = entity[RadarData.mapper] ?: return labelText
     val groundTrack = entity[GroundTrack.mapper] ?: return labelText
-    val latestClearance = entity[ClearanceAct.mapper]?.actingClearance?.actingClearance
+    val latestClearance = entity[ClearanceAct.mapper]?.actingClearance?.clearanceState
 
     val callsign = aircraftInfo.icaoCallsign
     val recat = aircraftInfo.aircraftPerf.recat
@@ -230,7 +230,7 @@ private fun getExpandedLabelText(entity: Entity): Array<String> {
     val radarData = entity[RadarData.mapper] ?: return labelText
     val cmdTarget = entity[CommandTarget.mapper] ?: return labelText
     val groundTrack = entity[GroundTrack.mapper] ?: return labelText
-    val latestClearance = entity[ClearanceAct.mapper]?.actingClearance?.actingClearance
+    val latestClearance = entity[ClearanceAct.mapper]?.actingClearance?.clearanceState
 
     val callsign = aircraftInfo.icaoCallsign
     val acInfo = "${aircraftInfo.icaoType}/${aircraftInfo.aircraftPerf.wakeCategory}/${aircraftInfo.aircraftPerf.recat}"

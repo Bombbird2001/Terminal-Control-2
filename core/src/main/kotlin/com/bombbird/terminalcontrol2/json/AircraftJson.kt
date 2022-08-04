@@ -1,5 +1,6 @@
 package com.bombbird.terminalcontrol2.json
 
+import com.badlogic.ashley.core.Component
 import com.badlogic.gdx.Gdx
 import com.bombbird.terminalcontrol2.components.AircraftInfo
 import com.bombbird.terminalcontrol2.components.Altitude
@@ -30,7 +31,7 @@ object AircraftAdapter {
         val pos = components.getComponent<Position>() ?: return emptyAircraft("Position")
         val flightType = components.getComponent<FlightType>() ?: return emptyAircraft("FlightType")
         return Aircraft(acInfo.icaoCallsign, pos.x, pos.y, alt.altitudeFt, acInfo.icaoType, flightType.type).apply {
-            components.forEach { entity += it }
+            components.forEach { if (it is Component) entity += it }
         }
     }
 

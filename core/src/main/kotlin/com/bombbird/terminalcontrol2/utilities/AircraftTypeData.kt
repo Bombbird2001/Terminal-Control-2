@@ -3,6 +3,8 @@ package com.bombbird.terminalcontrol2.utilities
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.math.MathUtils
 import com.bombbird.terminalcontrol2.components.FlightType
+import com.squareup.moshi.Json
+import com.squareup.moshi.JsonClass
 import kotlin.math.roundToInt
 
 /** Helper object for aircraft performance data */
@@ -78,11 +80,16 @@ object AircraftTypeData {
      *
      * @param flightType the type of the flight, used for load factor calculation purposes
      * */
+    @JsonClass(generateAdapter = true)
     class AircraftPerfData(val wakeCategory: Char = WAKE_HEAVY, val recat: Char = RECAT_B,
                            val thrustNSLISA: Int? = 1026000, val propPowerWSLISA: Int? = null, val propArea: Float? = null,
                            val minCd0TimesRefArea: Float = 6.552f, val maxCdTimesRefArea: Float = 41.496f,
-                           val maxIas: Short = 340, val maxMach: Float = 0.89f, private val typApp: Short = 149, private val typVr: Short = 158,
-                           private val operatingEmptyWeightKg: Int = 167829, private val maxTakeoffWeightKg: Int = 351533, flightType: Byte = FlightType.ARRIVAL) {
+                           val maxIas: Short = 340, val maxMach: Float = 0.89f,
+                           @Json(ignore = true) private val typApp: Short = 149,
+                           @Json(ignore = true) private val typVr: Short = 158,
+                           @Json(ignore = true) private val operatingEmptyWeightKg: Int = 167829,
+                           @Json(ignore = true) private val maxTakeoffWeightKg: Int = 351533,
+                           flightType: Byte = FlightType.ARRIVAL) {
 
         companion object {
             const val WAKE_SUPER = 'J'

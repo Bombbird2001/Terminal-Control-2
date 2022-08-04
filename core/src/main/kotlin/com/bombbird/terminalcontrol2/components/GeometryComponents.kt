@@ -3,12 +3,15 @@ package com.bombbird.terminalcontrol2.components
 import com.badlogic.ashley.core.Component
 import com.badlogic.gdx.math.Polygon
 import com.badlogic.gdx.math.Vector2
+import com.bombbird.terminalcontrol2.json.BaseComponentJSONInterface
 import com.squareup.moshi.JsonClass
 import ktx.ashley.Mapper
 
 /** Component for polygons */
 @JsonClass(generateAdapter = true)
-class GPolygon(var vertices: FloatArray = FloatArray(0)): Component {
+class GPolygon(var vertices: FloatArray = FloatArray(0)): Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.G_POLYGON
+
     val polygonObj: Polygon by lazy { Polygon(vertices) }
 
     companion object: Mapper<GPolygon>()

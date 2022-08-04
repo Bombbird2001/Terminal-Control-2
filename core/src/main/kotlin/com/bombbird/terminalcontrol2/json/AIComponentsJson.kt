@@ -40,6 +40,7 @@ object LandingRollAdapter {
 }
 
 /** Data class for storing visual approach captured information for JSON serialization */
+@JsonClass(generateAdapter = true)
 data class VisualCapturedJSON(val visApp: ApproachRefJSON, val parentApp: ApproachRefJSON)
 
 /** Adapter object for serialization between [VisualCaptured] and [VisualCapturedJSON] */
@@ -113,13 +114,13 @@ data class GlideSlopeCapturedJSON(val gsApp: ApproachRefJSON)
 /** Adapter object for serialization between [LocalizerCaptured] and [LocalizerCapturedJSON] */
 object GlideSlopeCapturedAdapter {
     @ToJson
-    fun toGlideSlopeCapturedJSON(gsArmed: GlideSlopeArmed): GlideSlopeCapturedJSON {
-        return GlideSlopeCapturedJSON(toApproachRefJSON(gsArmed.gsApp))
+    fun toGlideSlopeCapturedJSON(gsCap: GlideSlopeCaptured): GlideSlopeCapturedJSON {
+        return GlideSlopeCapturedJSON(toApproachRefJSON(gsCap.gsApp))
     }
 
     @FromJson
-    fun fromGlideSlopeCapturedJSON(gsArmedJSON: GlideSlopeArmedJSON): GlideSlopeCaptured {
-        return GlideSlopeCaptured(gsArmedJSON.gsApp.toApproachEntity())
+    fun fromGlideSlopeCapturedJSON(gsCapJSON: GlideSlopeCapturedJSON): GlideSlopeCaptured {
+        return GlideSlopeCaptured(gsCapJSON.gsApp.toApproachEntity())
     }
 }
 

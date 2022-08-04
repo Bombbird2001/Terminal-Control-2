@@ -3,6 +3,8 @@ package com.bombbird.terminalcontrol2.navigation
 import com.bombbird.terminalcontrol2.components.CommandTarget
 import com.bombbird.terminalcontrol2.components.WaypointInfo
 import com.bombbird.terminalcontrol2.global.GAME
+import com.bombbird.terminalcontrol2.json.BaseLegJSONInterface
+import com.squareup.moshi.JsonClass
 import ktx.ashley.get
 import ktx.collections.GdxArray
 import ktx.collections.toGdxArray
@@ -180,11 +182,14 @@ class Route() {
      *
      * Optional declaration of [flyOver], [turnDir], [phase]
      * */
+    @JsonClass(generateAdapter = true)
     data class WaypointLeg(val wptId: Short, val maxAltFt: Int?, val minAltFt: Int?, val maxSpdKt: Short?,
                       var legActive: Boolean, var altRestrActive: Boolean, var spdRestrActive: Boolean,
                       val flyOver: Boolean = false, val turnDir: Byte = CommandTarget.TURN_DEFAULT,
                       override var phase: Byte = NORMAL
-    ): Leg() {
+    ): Leg(), BaseLegJSONInterface {
+        override val legType = BaseLegJSONInterface.LegType.WAYPOINT_LEG
+
         /** Secondary constructor using the name of a waypoint instead of its ID - use only when loading from internal game files */
         constructor(wptName: String, maxAltFt: Int?, minAltFt: Int?, maxSpdKt: Short?,
                     legActive: Boolean, altRestrActive: Boolean, spdRestrActive: Boolean,
@@ -217,7 +222,9 @@ class Route() {
      *
      * Optional declaration of [phase]
      * */
-    data class VectorLeg(var heading: Short, var turnDir: Byte = CommandTarget.TURN_DEFAULT, override var phase: Byte = NORMAL): Leg() {
+    @JsonClass(generateAdapter = true)
+    data class VectorLeg(var heading: Short, var turnDir: Byte = CommandTarget.TURN_DEFAULT, override var phase: Byte = NORMAL): Leg(), BaseLegJSONInterface {
+        override val legType = BaseLegJSONInterface.LegType.VECTOR_LEG
 
         // No-arg constructor for Kryo serialisation
         constructor(): this(360)
@@ -236,8 +243,13 @@ class Route() {
         }
     }
 
-    /** Defines an initial climb leg with the [heading] to fly, and the minimum altitude after which the aircraft will continue to the next leg */
-    data class InitClimbLeg(val heading: Short, val minAltFt: Int, override var phase: Byte = NORMAL): Leg() {
+    /**
+     * Defines an initial climb leg with the [heading] to fly, and the minimum altitude after which the aircraft will
+     * continue to the next leg
+     * */
+    @JsonClass(generateAdapter = true)
+    data class InitClimbLeg(val heading: Short, val minAltFt: Int, override var phase: Byte = NORMAL): Leg(), BaseLegJSONInterface {
+        override val legType = BaseLegJSONInterface.LegType.INIT_CLIMB_LEG
 
         // No-arg constructor for Kryo serialisation
         constructor(): this(360, 0)
@@ -263,7 +275,9 @@ class Route() {
      *
      * Optional declaration of [phase]
      * */
-    data class DiscontinuityLeg(override var phase: Byte = NORMAL): Leg() {
+    @JsonClass(generateAdapter = true)
+    data class DiscontinuityLeg(override var phase: Byte = NORMAL): Leg(), BaseLegJSONInterface {
+        override val legType = BaseLegJSONInterface.LegType.DISCONTINUITY_LEG
 
         /**
          * Makes a copy of this discontinuity leg and returns it
@@ -281,8 +295,10 @@ class Route() {
      *
      * Optional declaration of [phase]
      * */
+    @JsonClass(generateAdapter = true)
     data class HoldLeg(var wptId: Short, var maxAltFt: Int?, var minAltFt: Int?, var maxSpdKtLower: Short?, var maxSpdKtHigher: Short?,
-                       var inboundHdg: Short, var legDist: Byte, var turnDir: Byte, override var phase: Byte = NORMAL): Leg() {
+                       var inboundHdg: Short, var legDist: Byte, var turnDir: Byte, override var phase: Byte = NORMAL): Leg(), BaseLegJSONInterface {
+        override val legType = BaseLegJSONInterface.LegType.HOLD_LEG
 
         // No-arg constructor for Kryo serialisation
         constructor(): this(0, null, null, 230, 240, 360, 5, CommandTarget.TURN_RIGHT)

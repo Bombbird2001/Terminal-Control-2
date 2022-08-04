@@ -1,22 +1,21 @@
 package com.bombbird.terminalcontrol2.json
 
-import com.badlogic.ashley.core.Component
 import com.badlogic.ashley.core.Entity
 import com.squareup.moshi.JsonClass
 
 /** Base entity data class that stores components of an entity for JSON serialization */
 @JsonClass(generateAdapter = true)
-data class BaseEntityJson(val components: ArrayList<Component>)
+data class BaseEntityJson(val components: List<BaseComponentJSONInterface>)
 
-/** Gets the components of an entity as an [ArrayList] */
-fun Entity.getComponentArrayList(): ArrayList<Component> {
-    val array = ArrayList<Component>()
-    for (i in 0 until components.size()) array.add(components[i])
+/** Gets the serializable components of an entity as an [ArrayList] */
+fun Entity.getComponentArrayList(): ArrayList<BaseComponentJSONInterface> {
+    val array = ArrayList<BaseComponentJSONInterface>()
+    for (i in 0 until components.size()) components[i]?.let { if (it is BaseComponentJSONInterface) array.add(it) }
     return array
 }
 
 /** Gets a component that is an instance of the input type from the array of components, or null if none is found */
-inline fun <reified T> ArrayList<Component>.getComponent(): T? {
+inline fun <reified T> List<BaseComponentJSONInterface>.getComponent(): T? {
     forEach {
         if (it is T) return it
     }

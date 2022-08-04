@@ -2,6 +2,7 @@ package com.bombbird.terminalcontrol2.components
 
 import com.badlogic.ashley.core.Component
 import com.badlogic.ashley.core.Entity
+import com.bombbird.terminalcontrol2.json.BaseComponentJSONInterface
 import com.squareup.moshi.JsonClass
 import ktx.ashley.Mapper
 
@@ -10,7 +11,9 @@ import ktx.ashley.Mapper
  *
  * Aircraft will accelerate at a constant rate [targetAccMps2], rotate at vR
  * */
-data class TakeoffRoll(var targetAccMps2: Float = 2f, var rwy: Entity = Entity()): Component {
+data class TakeoffRoll(var targetAccMps2: Float = 2f, var rwy: Entity = Entity()): Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.TAKEOFF_ROLL
+
     companion object: Mapper<TakeoffRoll>()
 }
 
@@ -20,7 +23,9 @@ data class TakeoffRoll(var targetAccMps2: Float = 2f, var rwy: Entity = Entity()
  * Aircraft will maintain vR + (15 to 20) and climb at max allowed rate till [accelAltFt], where it will accelerate
  * */
 @JsonClass(generateAdapter = true)
-data class TakeoffClimb(var accelAltFt: Float = 1500f): Component {
+data class TakeoffClimb(var accelAltFt: Float = 1500f): Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.TAKEOFF_CLIMB
+
     companion object: Mapper<TakeoffClimb>()
 }
 
@@ -29,7 +34,9 @@ data class TakeoffClimb(var accelAltFt: Float = 1500f): Component {
  *
  * Aircraft will decelerate at a constant rate till ~45 knots, then decelerate at a reduced rate, then de-spawn at 25-30 knots
  * */
-data class LandingRoll(var rwy: Entity = Entity()): Component {
+data class LandingRoll(var rwy: Entity = Entity()): Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.LANDING_ROLL
+
     companion object: Mapper<LandingRoll>()
 }
 
@@ -48,7 +55,10 @@ data class LandingRoll(var rwy: Entity = Entity()): Component {
  * Climb via SID/Descend via STAR (to altitude), and SID/STAR speed restrictions in order to achieve the required behaviour
  * */
 @JsonClass(generateAdapter = true)
-data class CommandTarget(var targetHdgDeg: Float = 360f, var turnDir: Byte = TURN_DEFAULT, var targetAltFt: Int = 0, var targetIasKt: Short = 0): Component {
+data class CommandTarget(var targetHdgDeg: Float = 360f, var turnDir: Byte = TURN_DEFAULT, var targetAltFt: Int = 0,
+                         var targetIasKt: Short = 0): Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.COMMAND_TARGET
+
     companion object: Mapper<CommandTarget>() {
         const val TURN_DEFAULT: Byte = 0
         const val TURN_LEFT: Byte = -1
@@ -66,7 +76,9 @@ data class CommandTarget(var targetHdgDeg: Float = 360f, var turnDir: Byte = TUR
  * This component does not persist; it is removed after setting the [CommandTarget] parameters
  * */
 @JsonClass(generateAdapter = true)
-data class CommandVector(var heading: Short = 360, var turnDir: Byte = CommandTarget.TURN_DEFAULT): Component {
+data class CommandVector(var heading: Short = 360, var turnDir: Byte = CommandTarget.TURN_DEFAULT): Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.COMMAND_VECTOR
+
     companion object: Mapper<CommandVector>()
 }
 
@@ -80,7 +92,9 @@ data class CommandVector(var heading: Short = 360, var turnDir: Byte = CommandTa
  * This component will persist until the aircraft no longer flies in initClimb mode
  * */
 @JsonClass(generateAdapter = true)
-data class CommandInitClimb(var heading: Short = 360, var minAltFt: Int = 0): Component {
+data class CommandInitClimb(var heading: Short = 360, var minAltFt: Int = 0): Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.COMMAND_INIT_CLIMB
+
     companion object: Mapper<CommandInitClimb>()
 }
 
@@ -100,7 +114,9 @@ data class CommandInitClimb(var heading: Short = 360, var minAltFt: Int = 0): Co
  * */
 @JsonClass(generateAdapter = true)
 data class CommandDirect(var wptId: Short = 0, var maxAltFt: Int? = null, var minAltFt: Int? = null, val maxSpdKt: Short?,
-                         val flyOver: Boolean = false, val turnDir: Byte = CommandTarget.TURN_DEFAULT): Component {
+                         val flyOver: Boolean = false, val turnDir: Byte = CommandTarget.TURN_DEFAULT): Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.COMMAND_DIRECT
+
     companion object: Mapper<CommandDirect>()
 }
 
@@ -112,19 +128,26 @@ data class CommandDirect(var wptId: Short = 0, var maxAltFt: Int? = null, var mi
 @JsonClass(generateAdapter = true)
 data class CommandHold(var wptId: Short = 0, var maxAltFt: Int? = null, var minAltFt: Int? = null, var maxSpdKt: Short? = null,
                        var inboundHdg: Short = 360, var legDist: Byte = 5, var legDir: Byte = CommandTarget.TURN_RIGHT,
-                       var currentEntryProc: Byte = 0, var entryDone: Boolean = false, var oppositeTravelled: Boolean = false, var flyOutbound: Boolean = true): Component {
+                       var currentEntryProc: Byte = 0, var entryDone: Boolean = false, var oppositeTravelled: Boolean = false,
+                       var flyOutbound: Boolean = true): Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.COMMAND_HOLD
+
     companion object: Mapper<CommandHold>()
 }
 
 /** Command for tagging an aircraft that is expediting its climb or descent */
 @JsonClass(generateAdapter = true)
-class CommandExpedite: Component {
+class CommandExpedite: Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.COMMAND_EXPEDITE
+
     companion object: Mapper<CommandExpedite>()
 }
 
 /** Component for tagging an aircraft that is flying according to continuous descent approach (CDA) operations */
 @JsonClass(generateAdapter = true)
-class CommandCDA: Component {
+class CommandCDA: Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.COMMAND_CDA
+
     companion object: Mapper<CommandCDA>()
 }
 
@@ -133,7 +156,9 @@ class CommandCDA: Component {
  * previous legs and cannot provide information about past restrictions
  * */
 @JsonClass(generateAdapter = true)
-data class LastRestrictions(var minAltFt: Int? = null, var maxAltFt: Int? = null, var maxSpdKt: Short? = null): Component {
+data class LastRestrictions(var minAltFt: Int? = null, var maxAltFt: Int? = null, var maxSpdKt: Short? = null): Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.LAST_RESTRICTIONS
+
     companion object: Mapper<LastRestrictions>()
 }
 
@@ -141,7 +166,9 @@ data class LastRestrictions(var minAltFt: Int? = null, var maxAltFt: Int? = null
  * Component for tagging aircraft that has captured the extended runway centreline and glide path in a visual approach,
  * and will alter aircraft AI behaviour to follow the extended centreline track and glide path
  * */
-class VisualCaptured(val visApp: Entity = Entity(), val parentApp: Entity = Entity()): Component {
+class VisualCaptured(val visApp: Entity = Entity(), val parentApp: Entity = Entity()): Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.VISUAL_CAPTURED
+
     companion object: Mapper<VisualCaptured>()
 }
 
@@ -150,7 +177,9 @@ class VisualCaptured(val visApp: Entity = Entity(), val parentApp: Entity = Enti
  *
  * The aircraft will monitor its position relative to the approach position origin and capture it when within range
  * */
-class LocalizerArmed(val locApp: Entity = Entity()): Component {
+class LocalizerArmed(val locApp: Entity = Entity()): Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.LOCALIZER_ARMED
+
     companion object: Mapper<LocalizerArmed>()
 }
 
@@ -158,7 +187,9 @@ class LocalizerArmed(val locApp: Entity = Entity()): Component {
  * Component for tagging aircraft that has captured the localizer, and will alter aircraft AI behaviour to follow the
  * localizer track
  * */
-class LocalizerCaptured(val locApp: Entity = Entity()): Component {
+class LocalizerCaptured(val locApp: Entity = Entity()): Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.LOCALIZER_CAPTURED
+
     companion object: Mapper<LocalizerCaptured>()
 }
 
@@ -167,7 +198,9 @@ class LocalizerCaptured(val locApp: Entity = Entity()): Component {
  *
  * The aircraft will monitor its altitude and capture it when it reaches the appropriate altitude
  */
-class GlideSlopeArmed(val gsApp: Entity = Entity()): Component {
+class GlideSlopeArmed(val gsApp: Entity = Entity()): Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.GLIDE_SLOPE_ARMED
+
     companion object: Mapper<GlideSlopeArmed>()
 }
 
@@ -175,7 +208,9 @@ class GlideSlopeArmed(val gsApp: Entity = Entity()): Component {
  * Component for tagging aircraft that has captured the glide slope, and will alter aircraft AI, physics behaviour to follow
  * the glide slope strictly
  * */
-class GlideSlopeCaptured(val gsApp: Entity = Entity()): Component {
+class GlideSlopeCaptured(val gsApp: Entity = Entity()): Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.GLIDE_SLOPE_CAPTURED
+
     companion object: Mapper<GlideSlopeCaptured>()
 }
 
@@ -183,7 +218,9 @@ class GlideSlopeCaptured(val gsApp: Entity = Entity()): Component {
  * Component for tagging aircraft that have been cleared for a non-precision step down approach, and will alter aircraft
  * AI behaviour to follow the step-down altitudes if the localizer is captured
  * */
-class StepDownApproach(val stepDownApp: Entity = Entity()): Component {
+class StepDownApproach(val stepDownApp: Entity = Entity()): Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.STEP_DOWN_APPROACH
+
     companion object: Mapper<StepDownApproach>()
 }
 
@@ -195,6 +232,8 @@ class StepDownApproach(val stepDownApp: Entity = Entity()): Component {
  * approach
  */
 data class CirclingApproach(val circlingApp: Entity = Entity(), var breakoutAlt: Int = 0, var phase: Byte = 0,
-                            var phase1Timer: Float = 70f, var phase3Timer: Float = 50f): Component {
+                            var phase1Timer: Float = 70f, var phase3Timer: Float = 50f): Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.CIRCLING_APPROACH
+
     companion object: Mapper<CirclingApproach>()
 }

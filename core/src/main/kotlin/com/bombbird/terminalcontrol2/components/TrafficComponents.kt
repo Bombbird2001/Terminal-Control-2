@@ -7,23 +7,33 @@ import com.badlogic.gdx.utils.Queue
 import com.bombbird.terminalcontrol2.entities.ApproachNormalOperatingZone
 import com.bombbird.terminalcontrol2.entities.DepartureNormalOperatingZone
 import com.bombbird.terminalcontrol2.entities.WakeZone
+import com.bombbird.terminalcontrol2.json.BaseComponentJSONInterface
 import com.bombbird.terminalcontrol2.utilities.AircraftTypeData
+import com.squareup.moshi.JsonClass
 import ktx.ashley.Mapper
 import ktx.collections.GdxArray
 
 /** Component for tagging runway that is active for landings */
-class ActiveLanding: Component {
+@JsonClass(generateAdapter = true)
+class ActiveLanding: Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.ACTIVE_LANDING
+
     companion object: Mapper<ActiveLanding>()
 }
 
 /** Component for tagging runway that is active for takeoffs */
-class ActiveTakeoff: Component {
+@JsonClass(generateAdapter = true)
+class ActiveTakeoff: Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.ACTIVE_TAKEOFF
+
     companion object: Mapper<ActiveTakeoff>()
 }
 
 /** Component for tagging traffic distribution at an airport */
 data class RandomAirlineData(val airlineDistribution: CumulativeDistribution<Triple<String, Boolean, GdxArray<String>>> = CumulativeDistribution()):
-    Component {
+    Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.RANDOM_AIRLINE_DATA
+
     companion object: Mapper<RandomAirlineData>()
 }
 
@@ -38,7 +48,10 @@ data class DepartureNOZ(var depNoz: DepartureNormalOperatingZone): Component {
 }
 
 /** Component for tagging the active runway configuration of an airport */
-data class ActiveRunwayConfig(var configId: Byte = 0): Component {
+@JsonClass(generateAdapter = true)
+data class ActiveRunwayConfig(var configId: Byte = 0): Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.ACTIVE_RUNWAY_CONFIG
+
     companion object: Mapper<ActiveRunwayConfig>()
 }
 
@@ -48,34 +61,50 @@ data class PendingRunwayConfig(var pendingId: Byte = 0, var timeRemaining: Float
 }
 
 /** Component for tagging a closed airport for arrivals */
-class ArrivalClosed: Component {
+@JsonClass(generateAdapter = true)
+class ArrivalClosed: Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.ARRIVAL_CLOSED
+
     companion object: Mapper<ArrivalClosed>()
 }
 
 /** Component for tagging a closed airport for departures */
-data class DepartureInfo(var closed: Boolean = false, var backlog: Int = 0): Component {
+@JsonClass(generateAdapter = true)
+data class DepartureInfo(var closed: Boolean = false, var backlog: Int = 0): Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.DEPARTURE_INFO
+
     companion object: Mapper<DepartureInfo>()
 }
 
 /** Component for tagging the next departure aircraft entity of the airport */
-data class AirportNextDeparture(var aircraft: Entity = Entity()): Component {
+data class AirportNextDeparture(var aircraft: Entity = Entity()): Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.AIRPORT_NEXT_DEPARTURE
+
     companion object: Mapper<AirportNextDeparture>()
 }
 
 /** Component for tagging the information of a previous arrival aircraft of the runway */
+@JsonClass(generateAdapter = true)
 data class RunwayPreviousArrival(var timeSinceTouchdownS: Float = 0f, var wakeCat: Char = AircraftTypeData.AircraftPerfData.WAKE_MEDIUM,
-                                 var recat: Char = AircraftTypeData.AircraftPerfData.RECAT_D): Component {
+                                 var recat: Char = AircraftTypeData.AircraftPerfData.RECAT_D): Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.RUNWAY_PREVIOUS_ARRIVAL
+
     companion object: Mapper<RunwayPreviousArrival>()
 }
 
 /** Component for tagging the information of a previous departure aircraft of the runway */
+@JsonClass(generateAdapter = true)
 data class RunwayPreviousDeparture(var timeSinceDepartureS: Float = 0f, var wakeCat: Char = AircraftTypeData.AircraftPerfData.WAKE_MEDIUM,
-                                   var recat: Char = AircraftTypeData.AircraftPerfData.RECAT_D): Component {
+                                   var recat: Char = AircraftTypeData.AircraftPerfData.RECAT_D): Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.RUNWAY_PREVIOUS_DEPARTURE
     companion object: Mapper<RunwayPreviousDeparture>()
 }
 
 /** Component for tagging if a runway is occupied by an aircraft */
-class RunwayOccupied: Component {
+@JsonClass(generateAdapter = true)
+class RunwayOccupied: Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.RUNWAY_OCCUPIED
+
     companion object: Mapper<RunwayOccupied>()
 }
 
@@ -96,7 +125,9 @@ data class ConflictAble(var conflictLevel: Int = Int.MAX_VALUE): Component {
  * Component for tagging the wake turbulence trails of an aircraft; the trail queue will be updated every 0.5nm travelled
  * by the aircraft
  * */
-data class WakeTrail(val wakeZones: Queue<Pair<Position, WakeZone?>> = Queue(), var distNmCounter: Float = 0f): Component {
+data class WakeTrail(val wakeZones: Queue<Pair<Position, WakeZone?>> = Queue(), var distNmCounter: Float = 0f): Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.WAKE_TRAIL
+
     companion object: Mapper<WakeTrail>()
 }
 
@@ -104,6 +135,10 @@ data class WakeTrail(val wakeZones: Queue<Pair<Position, WakeZone?>> = Queue(), 
  * Component for tagging the wake turbulence zone strength, based on the leading aircraft wake/Recat category and the
  * distance from the leading aircraft
  * */
-data class WakeInfo(var aircraftCallsign: String = "", var leadingWake: Char = 'M', var leadingRecat: Char = 'D', var distFromAircraft: Float = 0f): Component {
+@JsonClass(generateAdapter = true)
+data class WakeInfo(var aircraftCallsign: String = "", var leadingWake: Char = 'M', var leadingRecat: Char = 'D',
+                    var distFromAircraft: Float = 0f): Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.WAKE_INFO
+
     companion object: Mapper<WakeInfo>()
 }

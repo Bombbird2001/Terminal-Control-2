@@ -1,5 +1,6 @@
 package com.bombbird.terminalcontrol2.json
 
+import com.badlogic.ashley.core.Component
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.Airport
 import com.bombbird.terminalcontrol2.entities.RouteZone
@@ -14,7 +15,7 @@ import ktx.collections.set
 
 /** Data class for storing all runways belonging to an airport */
 @JsonClass(generateAdapter = true)
-data class RunwayChildrenJSON(val rwys: ArrayList<Airport.Runway>)
+data class RunwayChildrenJSON(val rwys: List<Airport.Runway>)
 
 /** Adapter object for serialization between [RunwayChildren] and [RunwayChildrenJSON] */
 object RunwayChildrenAdapter {
@@ -38,7 +39,7 @@ object RunwayChildrenAdapter {
 
 /** Data class for storing all approaches belonging to an airport */
 @JsonClass(generateAdapter = true)
-data class ApproachChildrenJSON(val apps: ArrayList<Approach>)
+data class ApproachChildrenJSON(val apps: List<Approach>)
 
 /** Adapter object for serialization between [ApproachChildren] and [ApproachChildrenJSON] */
 object ApproachChildrenAdapter {
@@ -74,14 +75,14 @@ object VisualApproachAdapter {
     @FromJson
     fun fromJson(visAppJSON: VisualApproachJSON): VisualApproach {
         return VisualApproach().apply {
-            visAppJSON.visApp.components.forEach { visual += it }
+            visAppJSON.visApp.components.forEach { if (it is Component) visual += it }
         }
     }
 }
 
 /** Data class for storing the dependent opposite runways belonging to a runway */
 @JsonClass(generateAdapter = true)
-data class DependentOppositeRunwayJSON(val depOppRwys: ArrayList<RunwayRefJSON>)
+data class DependentOppositeRunwayJSON(val depOppRwys: List<RunwayRefJSON>)
 
 /** Adapter object for serialization between [DependentOppositeRunway] and [DependentOppositeRunwayJSON] */
 object DependentOppositeRunwayAdapter {
@@ -104,7 +105,7 @@ object DependentOppositeRunwayAdapter {
 
 /** Data class for storing the dependent parallel runways belonging to a runway */
 @JsonClass(generateAdapter = true)
-data class DependentParallelRunwayJSON(val depParallelRwys: ArrayList<RunwayRefJSON>)
+data class DependentParallelRunwayJSON(val depParallelRwys: List<RunwayRefJSON>)
 
 /** Adapter object for serialization between [DependentParallelRunway] and [DependentParallelRunwayJSON] */
 object DependentParallelRunwayAdapter {
@@ -127,7 +128,7 @@ object DependentParallelRunwayAdapter {
 
 /** Data class for storing the crossing runways belonging to a runway */
 @JsonClass(generateAdapter = true)
-data class CrossingRunwayJSON(val crossingRwys: ArrayList<RunwayRefJSON>)
+data class CrossingRunwayJSON(val crossingRwys: List<RunwayRefJSON>)
 
 /** Adapter object for serialization between [CrossingRunway] and [CrossingRunwayJSON] */
 object CrossingRunwayAdapter {
@@ -150,7 +151,7 @@ object CrossingRunwayAdapter {
 
 /** Data class for storing arrival route zone information */
 @JsonClass(generateAdapter = true)
-data class ArrivalRouteZoneJSON(val starZones: ArrayList<RouteZone>, val appZones: ArrayList<RouteZone>)
+data class ArrivalRouteZoneJSON(val starZones: List<RouteZone>, val appZones: List<RouteZone>)
 
 /** Adapter object for serialization between [ArrivalRouteZone] and [ArrivalRouteZoneJSON] */
 object ArrivalRouteZoneAdapter {
@@ -174,7 +175,7 @@ object ArrivalRouteZoneAdapter {
 
 /** Data class for storing departure route zone information */
 @JsonClass(generateAdapter = true)
-data class DepartureRouteZoneJSON(val sidZones: ArrayList<RouteZone>)
+data class DepartureRouteZoneJSON(val sidZones: List<RouteZone>)
 
 /** Adapter object for serialization between [DepartureRouteZone] and [DepartureRouteZoneJSON] */
 object DepartureRouteZoneAdapter {

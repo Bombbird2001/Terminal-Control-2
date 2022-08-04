@@ -5,9 +5,7 @@ import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.math.Polygon
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.*
-import com.bombbird.terminalcontrol2.files.loadAircraftData
-import com.bombbird.terminalcontrol2.files.loadDisallowedCallsigns
-import com.bombbird.terminalcontrol2.files.loadWorldData
+import com.bombbird.terminalcontrol2.files.*
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.navigation.Route
@@ -40,18 +38,18 @@ class GameServer {
         const val SERVER_TO_CLIENT_UPDATE_INTERVAL_SLOW = 1000.0 / SERVER_TO_CLIENT_UPDATE_RATE_SLOW
         const val SERVER_METAR_UPDATE_INTERVAL = SERVER_METAR_UPDATE_INTERVAL_MINS * 60 * 1000
 
-        const val WEATHER_LIVE = 0
-        const val WEATHER_RANDOM = 1
-        const val WEATHER_STATIC = 2
-        const val EMERGENCY_OFF = 3
-        const val EMERGENCY_LOW = 4
-        const val EMERGENCY_MEDIUM = 5
-        const val EMERGENCY_HIGH = 6
-        const val STORMS_OFF = 7
-        const val STORMS_LOW = 8
-        const val STORMS_MEDIUM = 9
-        const val STORMS_HIGH = 10
-        const val STORMS_NIGHTMARE = 11
+        const val WEATHER_LIVE: Byte = 0
+        const val WEATHER_RANDOM: Byte = 1
+        const val WEATHER_STATIC: Byte = 2
+        const val EMERGENCY_OFF: Byte = 3
+        const val EMERGENCY_LOW: Byte = 4
+        const val EMERGENCY_MEDIUM: Byte = 5
+        const val EMERGENCY_HIGH: Byte = 6
+        const val STORMS_OFF: Byte = 7
+        const val STORMS_LOW: Byte = 8
+        const val STORMS_MEDIUM: Byte = 9
+        const val STORMS_HIGH: Byte = 10
+        const val STORMS_NIGHTMARE: Byte = 11
     }
 
     private val loopRunning = AtomicBoolean(false)
@@ -177,6 +175,8 @@ class GameServer {
             loopRunning.set(true)
             gameLoop()
             stopNetworkingServer()
+            saveGame(this)
+            loadSave(this, 0)
         }
     }
 

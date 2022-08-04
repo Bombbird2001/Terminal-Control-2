@@ -71,7 +71,7 @@ fun addNewClearanceToPendingClearances(entity: Entity, clearance: AircraftContro
 fun getLatestClearanceState(entity: Entity): ClearanceState? {
     val pending = entity[PendingClearances.mapper]
     if (pending != null && pending.clearanceQueue.size > 0) return pending.clearanceQueue.last().clearanceState
-    return entity[ClearanceAct.mapper]?.actingClearance?.actingClearance
+    return entity[ClearanceAct.mapper]?.actingClearance?.clearanceState
 }
 
 /**
@@ -109,7 +109,7 @@ fun checkClearanceEquality(clearanceState1: ClearanceState, clearanceState2: Cle
 fun getMinMaxOptimalIAS(entity: Entity): Triple<Short, Short, Short> {
     val perf = entity[AircraftInfo.mapper]?.aircraftPerf ?: return Triple(150, 250, 240)
     val altitude = entity[Altitude.mapper] ?: return Triple(150, 250, 240)
-    val actingClearance = entity[ClearanceAct.mapper]?.actingClearance?.actingClearance ?: return Triple(150, 250, 240)
+    val actingClearance = entity[ClearanceAct.mapper]?.actingClearance?.clearanceState ?: return Triple(150, 250, 240)
     val flightType = entity[FlightType.mapper] ?: return Triple(150, 250, 240)
     val onApproach = entity.has(LocalizerCaptured.mapper) || entity.has(VisualCaptured.mapper) || entity.has(GlideSlopeCaptured.mapper)
     val takingOff = entity[TakeoffClimb.mapper] != null || entity[TakeoffRoll.mapper] != null

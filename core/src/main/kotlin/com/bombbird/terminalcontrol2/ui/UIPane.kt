@@ -143,9 +143,9 @@ class UIPane(private val uiStage: Stage) {
         aircraftArrivalArptId = aircraft.entity[ArrivalAirport.mapper]?.arptId
         appTrackCaptured = aircraft.entity.has(VisualCaptured.mapper) || aircraft.entity.has(LocalizerCaptured.mapper)
         // glidePathCaptured = aircraft.entity.has(VisualCaptured.mapper) || aircraft.entity.has(GlideSlopeCaptured.mapper)
-        val latestClearance = aircraft.entity[ClearanceAct.mapper]?.actingClearance ?: return
-        userClearanceState.updateUIClearanceState(latestClearance.actingClearance)
-        clearanceState.updateUIClearanceState(latestClearance.actingClearance)
+        val latestActing = aircraft.entity[ClearanceAct.mapper]?.actingClearance ?: return
+        userClearanceState.updateUIClearanceState(latestActing.clearanceState)
+        clearanceState.updateUIClearanceState(latestActing.clearanceState)
         controlObj.resetDirectButton()
         controlObj.updateAltSpdAppClearances(userClearanceState.clearedAlt, userClearanceState.clearedIas,
             userClearanceState.minIas, userClearanceState.maxIas, userClearanceState.optimalIas,
@@ -178,9 +178,9 @@ class UIPane(private val uiStage: Stage) {
         aircraftArrivalArptId = aircraft.entity[ArrivalAirport.mapper]?.arptId
         appTrackCaptured = aircraft.entity.has(VisualCaptured.mapper) || aircraft.entity.has(LocalizerCaptured.mapper)
         // glidePathCaptured = aircraft.entity.has(VisualCaptured.mapper) || aircraft.entity.has(GlideSlopeCaptured.mapper)
-        val latestClearance = aircraft.entity[ClearanceAct.mapper]?.actingClearance ?: return
-        userClearanceState.updateUIClearanceState(latestClearance.actingClearance, clearanceState)
-        clearanceState.updateUIClearanceState(latestClearance.actingClearance)
+        val latestActing = aircraft.entity[ClearanceAct.mapper]?.actingClearance ?: return
+        userClearanceState.updateUIClearanceState(latestActing.clearanceState, clearanceState)
+        clearanceState.updateUIClearanceState(latestActing.clearanceState)
         controlObj.updateClearanceMode(userClearanceState.route, userClearanceState.vectorHdg,
             aircraft.entity.has(VisualCaptured.mapper) || aircraft.entity.has(LocalizerCaptured.mapper), false)
         controlObj.updateAltSelectBoxChoices(aircraftMaxAlt, userClearanceState)

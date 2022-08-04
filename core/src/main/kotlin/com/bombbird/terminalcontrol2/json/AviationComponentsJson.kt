@@ -1,22 +1,48 @@
 package com.bombbird.terminalcontrol2.json
 
 import com.badlogic.gdx.math.CumulativeDistribution
+import com.bombbird.terminalcontrol2.components.AirportInfo
 import com.bombbird.terminalcontrol2.components.RandomMetarInfo
+import com.bombbird.terminalcontrol2.components.RunwayInfo
+import com.bombbird.terminalcontrol2.global.GAME
 import com.squareup.moshi.FromJson
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.ToJson
+import ktx.ashley.get
+
+/** Data class storing runway information */
+@JsonClass(generateAdapter = true)
+data class RunwayInfoJSON(val rwyId: Byte, val rwyName: String, val lengthM: Short, val displacedThresholdM: Short,
+                          val intersectionTakeoffM: Short, val tower: String, val freq: String, val airportId: Byte)
+
+/** Adapter object for serialization between [RunwayInfo] and [RunwayInfoJSON] */
+object RunwayInfoAdapter {
+    @ToJson
+    fun toJson(runwayInfo: RunwayInfo): RunwayInfoJSON {
+        return RunwayInfoJSON(runwayInfo.rwyId, runwayInfo.rwyName, runwayInfo.lengthM, runwayInfo.displacedThresholdM,
+            runwayInfo.intersectionTakeoffM, runwayInfo.tower, runwayInfo.freq, runwayInfo.airport.entity[AirportInfo.mapper]?.arptId ?: -1)
+    }
+
+    @FromJson
+    fun fromJson(runwayInfoJSON: RunwayInfoJSON): RunwayInfo {
+        return RunwayInfo(runwayInfoJSON.rwyId, runwayInfoJSON.rwyName, runwayInfoJSON.lengthM, runwayInfoJSON.displacedThresholdM,
+            runwayInfoJSON.intersectionTakeoffM, runwayInfoJSON.tower, runwayInfoJSON.freq).apply {
+                GAME.gameServer?.airports?.get(runwayInfoJSON.airportId)?.let { airport = it }
+        }
+    }
+}
 
 /** Data class storing data for each value in the distribution for JSON serialization */
 @JsonClass(generateAdapter = true)
 data class DistributionValueJSON(val value: Short, val interval: Float)
 
-/** Class storing data for the coefficients and distributions used when generating random weather for JSON serialization */
+/** Data class storing data for the coefficients and distributions used when generating random weather for JSON serialization */
 @JsonClass(generateAdapter = true)
-class RandomMetarDistributionJSON(
-    val windDirDist: ArrayList<DistributionValueJSON>,
-    val windSpdDist: ArrayList<DistributionValueJSON>,
-    val visibilityDist: ArrayList<DistributionValueJSON>,
-    val ceilingDist: ArrayList<DistributionValueJSON>,
+data class RandomMetarDistributionJSON(
+    val windDirDist: List<DistributionValueJSON>,
+    val windSpdDist: List<DistributionValueJSON>,
+    val visibilityDist: List<DistributionValueJSON>,
+    val ceilingDist: List<DistributionValueJSON>,
     val windshearCoeff1: Float?, val windshearCoeff2: Float?
 )
 
@@ -66,7 +92,7 @@ object RandomMetarDistributionAdapter {
      * @param distJson the arrayList of values to turn into a distribution
      * @return a [CumulativeDistribution] containing the distribution values in the arrayList
      */
-    private fun getDistribution(distJson: ArrayList<DistributionValueJSON>): CumulativeDistribution<Short> {
+    private fun getDistribution(distJson: List<DistributionValueJSON>): CumulativeDistribution<Short> {
         val dist = CumulativeDistribution<Short>()
         distJson.forEach { dist.add(it.value, it.interval) }
         return dist

@@ -5,6 +5,7 @@ import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.*
 import com.bombbird.terminalcontrol2.global.*
+import com.bombbird.terminalcontrol2.json.BaseLegJSONInterface
 import com.bombbird.terminalcontrol2.navigation.Approach
 import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.navigation.Route
@@ -84,6 +85,8 @@ fun registerClassesToKryo(kryo: Kryo?) {
         register(Route.HoldLeg::class.java)
         register(Array<Route.SerialisedRoute>::class.java)
         register(Route.SerialisedRoute::class.java)
+        register(BaseLegJSONInterface::class.java)
+        register(BaseLegJSONInterface.LegType::class.java)
 
         // SID, STAR classes
         register(Array<SidStar.SID.SerialisedRwyInitClimb>::class.java)
@@ -251,7 +254,8 @@ data class GameRunningStatus(val running: Boolean = true)
  * @param obj the incoming data object whose class should have been registered to [Kryo]
  * */
 fun handleIncomingRequestClient(rs: RadarScreen, obj: Any?) {
-    rs.postRunnableAfterEngineUpdate {
+    rs.postRunnableAfterEngineUpdate(obj is IndividualSectorData) {
+        if (obj is IndividualSectorData) println("IndividualSectorData scheduled")
         (obj as? String)?.apply {
             println(this)
         } ?: (obj as? FastUDPData)?.apply {
@@ -375,10 +379,9 @@ fun handleIncomingRequestClient(rs: RadarScreen, obj: Any?) {
         } ?: (obj as? AircraftControlStateUpdateData)?.apply {
             rs.aircraft[obj.callsign]?.let { aircraft ->
                 aircraft.entity += ClearanceAct(
-                    ClearanceState.ActingClearance(
                         ClearanceState(obj.primaryName, Route.fromSerialisedObject(obj.route), Route.fromSerialisedObject(obj.hiddenLegs),
                             obj.vectorHdg, obj.vectorTurnDir, obj.clearedAlt, obj.expedite,
-                            obj.clearedIas, obj.minIas, obj.maxIas, obj.optimalIas, obj.clearedApp, obj.clearedTrans)))
+                            obj.clearedIas, obj.minIas, obj.maxIas, obj.optimalIas, obj.clearedApp, obj.clearedTrans).ActingClearance())
                 aircraft.entity[Datatag.mapper]?.let { updateDatatagText(it, getNewDatatagLabelText(aircraft.entity, it.minimised)) }
                 if (rs.selectedAircraft == aircraft) rs.uiPane.updateSelectedAircraft(aircraft)
             }
