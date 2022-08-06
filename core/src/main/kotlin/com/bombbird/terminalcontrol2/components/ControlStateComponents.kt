@@ -9,7 +9,9 @@ import ktx.ashley.Mapper
 import java.util.UUID
 
 /** Component for tagging sector control information */
-data class Controllable(var sectorId: Byte = 0, var controllerUUID: UUID? = null): Component {
+data class Controllable(var sectorId: Byte = 0, var controllerUUID: UUID? = null): Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.CONTROLLABLE
+
     companion object: Mapper<Controllable>()
 }
 

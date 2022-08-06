@@ -45,7 +45,7 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
     }
 
     /** Empty airport constructor for loading of saves */
-    constructor(): this(-1, "XXXX", "Empty", 1, 0f, 0f, 0)
+    constructor(): this(-1, "XXXX", "Empty", 1, 0f, 0f, 0, false)
 
     companion object {
         /** De-serialises a [SerialisedAirport] and creates a new [Airport] object from it */
@@ -244,7 +244,7 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
 
         /** Empty runway constructor for loading of saves */
         constructor(): this(Airport(), 0, "EMPTY", 0f, 0f,
-            0f, 4000, 0, 0, 0, RunwayLabel.BEFORE, "", "")
+            0f, 4000, 0, 0, 0, RunwayLabel.BEFORE, "", "", false)
 
         companion object {
             /** De-serialises a [SerialisedRunway] and creates a new [Runway] object from it */
@@ -321,7 +321,13 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
                   towerName: String, towerFreq: String, labelPos: Byte) {
         Runway(this, id, name, posX, posY, trueHdg, runwayLengthM, displacedThresholdM, intersectionTakeoffM,
             elevation, labelPos, towerName, towerFreq, false).also { rwy ->
-            entity[RunwayChildren.mapper]?.rwyMap?.put(id, rwy)
+            // Check if a runway with the same ID already exists; if it does, overwrite the base runway components
+            val loadedRwy = entity[RunwayChildren.mapper]?.rwyMap?.get(id)?.let {
+                for (i in 0 until rwy.entity.components.size()) it.entity += rwy.entity.components[i]
+                it
+            }
+            if (loadedRwy == null) entity[RunwayChildren.mapper]?.rwyMap?.put(id, rwy)
+            else getEngine(false).removeEntity(rwy.entity)
         }
     }
 

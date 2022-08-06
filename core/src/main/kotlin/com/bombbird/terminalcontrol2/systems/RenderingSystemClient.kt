@@ -124,7 +124,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
             shapeRenderer.color = Color.RED
             for (i in 0 until it.conflicts.size) {
                 it.conflicts[i]?.apply {
-                    if (minAltSectorIndex != null) {
+                    if (minAltSectorIndex != null && minAltSectorIndex < it.minAltSectors.size) {
                         val minAltSector = it.minAltSectors[minAltSectorIndex]?.entity
                         val polygon = minAltSector?.get(GPolygon.mapper)
                         val circle = minAltSector?.get(GCircle.mapper)
@@ -248,7 +248,6 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
                     shapeRenderer.circle(pos1.x, pos1.y, nmToPx(latSepRequiredNm) / 2)
                     if (pos2 != null) {
                         shapeRenderer.circle(pos2.x, pos2.y, nmToPx(latSepRequiredNm) / 2)
-                        shapeRenderer.line(pos1.x, pos1.y, pos2.x, pos2.y)
                     }
                 }
             }

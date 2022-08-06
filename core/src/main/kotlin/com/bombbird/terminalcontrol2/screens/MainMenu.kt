@@ -25,7 +25,9 @@ class MainMenu: BasicUIScreen() {
                         GAME.setScreen<NewGame>()
                     }
                     row().padTop(15f)
-                    textButton("Load Game", "Menu").cell(width = BUTTON_WIDTH_BIG, height = BUTTON_HEIGHT_BIG)
+                    textButton("Load Game", "Menu").cell(width = BUTTON_WIDTH_BIG, height = BUTTON_HEIGHT_BIG).addChangeListener { _, _ ->
+                        GAME.setScreen<LoadGame>()
+                    }
                     row().padTop(15f)
                     textButton("Join Game", "Menu").cell(width = BUTTON_WIDTH_BIG, height = BUTTON_HEIGHT_BIG).addChangeListener { _, _ ->
                         GAME.setScreen<JoinGame>()

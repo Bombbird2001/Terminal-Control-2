@@ -342,9 +342,17 @@ private fun parseAirport(data: List<String>, gameServer: GameServer): Airport {
     val arpt = Airport(id, icao, name, ratio, posX, posY, elevation, false).apply {
         setMetarRealLifeIcao(realLifeIcao)
     }
-    gameServer.airports[id] = arpt
+    // Check if an airport with the same ID already exists from the save load; if it does, overwrite the base info components
+    val loadedArpt = gameServer.airports[id]?.let {
+        for (i in 0 until arpt.entity.components.size()) arpt.entity.components[i]?.also { comp ->
+            if (comp !is RunwayChildren) it.entity += arpt.entity.components[i]
+        }
+        it
+    }
+    if (loadedArpt == null) gameServer.airports[id] = arpt
+    else getEngine(false).removeEntity(arpt.entity)
     gameServer.updatedAirportMapping[icao] = id
-    return arpt
+    return loadedArpt ?: arpt
 }
 
 /** Parse the given [data] into a runway, and adds it to the supplied [airport] */

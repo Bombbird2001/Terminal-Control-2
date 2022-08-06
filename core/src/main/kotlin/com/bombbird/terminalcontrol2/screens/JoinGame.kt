@@ -10,6 +10,7 @@ import ktx.async.KtxAsync
 import ktx.collections.GdxArray
 import ktx.scene2d.*
 
+/** Screen for searching and joining multiplayer games on the LAN */
 class JoinGame: BasicUIScreen() {
     private val refreshButton: KTextButton
     private val lanGamesTable: KTableWidget
@@ -98,6 +99,7 @@ class JoinGame: BasicUIScreen() {
                     GAME.addScreen(GameLoading(game.first, null))
                     GAME.setScreen<GameLoading>()
                 }
+                row()
             }}
             if (addressData.size == 0) label("No games found", "SearchingGame")
         }

@@ -683,7 +683,7 @@ fun updateWakeTrailState(aircraft: Entity, system: TrafficSystemInterval) {
     val acInfo = aircraft[AircraftInfo.mapper] ?: return
     val wake = aircraft[WakeTrail.mapper] ?: return
     // Remove last wake dot if more than or equal to max count (since a new wake dot will be added)
-    if (wake.wakeZones.size >= MAX_WAKE_DOTS) {
+    while (wake.wakeZones.size >= MAX_WAKE_DOTS) {
         val removed = wake.wakeZones.removeLast().second
         if (removed != null) system.removeWakeZone(removed)
     }

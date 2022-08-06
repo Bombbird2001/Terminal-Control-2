@@ -14,7 +14,7 @@ fun getMoshiWithAllAdapters(): Moshi {
         .add(LocalizerArmedAdapter).add(LocalizerCapturedAdapter).add(GlideSlopeArmedAdapter)
         .add(GlideSlopeCapturedAdapter).add(StepDownApproachAdapter).add(CirclingApproachAdapter)
         .add(AircraftAdapter).add(AirportAdapter).add(RunwayAdapter).add(ApproachAdapter).add(RunwayInfoAdapter)
-        .add(RandomMetarDistributionAdapter).add(Vector2Adapter).add(PendingClearanceAdapter)
+        .add(RandomMetarDistributionAdapter).add(Vector2Adapter).add(ControllableAdapter).add(PendingClearanceAdapter)
         .add(ClearanceActAdapter).add(RunwayChildrenAdapter).add(ApproachChildrenAdapter)
         .add(VisualApproachAdapter).add(DependentOppositeRunwayAdapter).add(DependentParallelRunwayAdapter)
         .add(CrossingRunwayAdapter).add(RandomAirlineDataAdapter).add(AirportNextDepartureAdapter)
@@ -31,7 +31,7 @@ fun getMoshiWithAircraftAdapters(): Moshi {
     return Moshi.Builder().add(TakeoffRollAdapter).add(LandingRollAdapter).add(VisualCapturedAdapter)
         .add(LocalizerArmedAdapter).add(LocalizerCapturedAdapter).add(GlideSlopeArmedAdapter)
         .add(GlideSlopeCapturedAdapter).add(StepDownApproachAdapter).add(CirclingApproachAdapter)
-        .add(AircraftAdapter).add(Vector2Adapter).add(PendingClearanceAdapter)
+        .add(AircraftAdapter).add(Vector2Adapter).add(ControllableAdapter).add(PendingClearanceAdapter)
         .add(ClearanceActAdapter).add(RouteAdapter).add(ArrivalRouteZoneAdapter).add(DepartureRouteZoneAdapter)
         .add(RouteZoneAdapter).add(WakeTrailAdapter).add(getPolymorphicComponentAdapter())
         .add(getPolymorphicLegAdapter()).build()
@@ -44,15 +44,15 @@ interface BaseComponentJSONInterface {
         COMMAND_HOLD, COMMAND_EXPEDITE, COMMAND_CDA, LAST_RESTRICTIONS, VISUAL_CAPTURED, LOCALIZER_ARMED, LOCALIZER_CAPTURED,
         GLIDE_SLOPE_ARMED, GLIDE_SLOPE_CAPTURED, STEP_DOWN_APPROACH, CIRCLING_APPROACH, APPROACH_INFO, LOCALIZER, LINE_UP_DIST,
         GLIDE_SLOPE, STEP_DOWN, CIRCLING, MINIMUMS, VISUAL, AIRPORT_INFO, RUNWAY_INFO, RANDOM_METAR_INFO, WAYPOINT_INFO,
-        AIRCRAFT_INFO, ARRIVAL_AIRPORT, DEPARTURE_AIRPORT, FLIGHT_TYPE, WAITING_TAKEOFF, CONTACT_FROM_TOWER, CONTACT_TO_TOWER,
-        CONTACT_FROM_CENTRE, CONTACT_TO_CENTRE, ACCELERATE_TO_ABOVE_250KTS, DECELERATE_TO_240KTS, APP_DECELERATE_TO_190KTS,
-        DECELERATE_TO_APP_SPD, PENDING_CLEARANCES, CLEARANCE_ACT, LATEST_CLEARANCE_CHANGED, CLEARANCE_ACT_CHANGED,
-        INITIAL_ARRIVAL_SPAWN, RECENT_GO_AROUND, G_POLYGON, POSITION, CUSTOM_POSITION, DIRECTION, SPEED, ALTITUDE,
-        ACCELERATION, INDICATED_AIR_SPEED, GROUND_TRACK, AFFECTED_BY_WIND, ON_GROUND, RUNWAY_CHILDREN, APPROACH_CHILDREN,
-        VISUAL_APPROACH, DEPENDENT_OPPOSITE_RUNWAY, DEPENDENT_PARALLEL_RUNWAY, CROSSING_RUNWAY, ARRIVAL_ROUTE_ZONE,
-        DEPARTURE_ROUTE_ZONE, ACTIVE_LANDING, ACTIVE_TAKEOFF, RANDOM_AIRLINE_DATA, ACTIVE_RUNWAY_CONFIG, ARRIVAL_CLOSED,
-        DEPARTURE_INFO, AIRPORT_NEXT_DEPARTURE, RUNWAY_PREVIOUS_ARRIVAL, RUNWAY_PREVIOUS_DEPARTURE, RUNWAY_OCCUPIED,
-        WAKE_TRAIL, WAKE_INFO
+        AIRCRAFT_INFO, ARRIVAL_AIRPORT, DEPARTURE_AIRPORT, CONTROLLABLE, FLIGHT_TYPE, WAITING_TAKEOFF, CONTACT_FROM_TOWER,
+        CONTACT_TO_TOWER, CONTACT_FROM_CENTRE, CONTACT_TO_CENTRE, ACCELERATE_TO_ABOVE_250KTS, DECELERATE_TO_240KTS,
+        APP_DECELERATE_TO_190KTS, DECELERATE_TO_APP_SPD, PENDING_CLEARANCES, CLEARANCE_ACT, LATEST_CLEARANCE_CHANGED,
+        CLEARANCE_ACT_CHANGED, INITIAL_ARRIVAL_SPAWN, RECENT_GO_AROUND, G_POLYGON, POSITION, CUSTOM_POSITION, DIRECTION,
+        SPEED, ALTITUDE, ACCELERATION, INDICATED_AIR_SPEED, GROUND_TRACK, AFFECTED_BY_WIND, ON_GROUND, RUNWAY_CHILDREN,
+        APPROACH_CHILDREN, VISUAL_APPROACH, DEPENDENT_OPPOSITE_RUNWAY, DEPENDENT_PARALLEL_RUNWAY, CROSSING_RUNWAY,
+        ARRIVAL_ROUTE_ZONE, DEPARTURE_ROUTE_ZONE, ACTIVE_LANDING, ACTIVE_TAKEOFF, RANDOM_AIRLINE_DATA, ACTIVE_RUNWAY_CONFIG,
+        ARRIVAL_CLOSED, DEPARTURE_INFO, AIRPORT_NEXT_DEPARTURE, RUNWAY_PREVIOUS_ARRIVAL, RUNWAY_PREVIOUS_DEPARTURE,
+        RUNWAY_OCCUPIED, WAKE_TRAIL, WAKE_INFO
     }
 
     val componentType: ComponentType
@@ -95,6 +95,7 @@ private fun getPolymorphicComponentAdapter(): PolymorphicJsonAdapterFactory<Base
         .withSubtype(AircraftInfo::class.java, BaseComponentJSONInterface.ComponentType.AIRCRAFT_INFO.name)
         .withSubtype(ArrivalAirport::class.java, BaseComponentJSONInterface.ComponentType.ARRIVAL_AIRPORT.name)
         .withSubtype(DepartureAirport::class.java, BaseComponentJSONInterface.ComponentType.DEPARTURE_AIRPORT.name)
+        .withSubtype(Controllable::class.java, BaseComponentJSONInterface.ComponentType.CONTROLLABLE.name)
         .withSubtype(FlightType::class.java, BaseComponentJSONInterface.ComponentType.FLIGHT_TYPE.name)
         .withSubtype(WaitingTakeoff::class.java, BaseComponentJSONInterface.ComponentType.WAITING_TAKEOFF.name)
         .withSubtype(ContactFromTower::class.java, BaseComponentJSONInterface.ComponentType.CONTACT_FROM_TOWER.name)

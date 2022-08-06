@@ -166,7 +166,7 @@ data class LastRestrictions(var minAltFt: Int? = null, var maxAltFt: Int? = null
  * Component for tagging aircraft that has captured the extended runway centreline and glide path in a visual approach,
  * and will alter aircraft AI behaviour to follow the extended centreline track and glide path
  * */
-class VisualCaptured(val visApp: Entity = Entity(), val parentApp: Entity = Entity()): Component, BaseComponentJSONInterface {
+class VisualCaptured(var visApp: Entity = Entity(), var parentApp: Entity = Entity()): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.VISUAL_CAPTURED
 
     companion object: Mapper<VisualCaptured>()
@@ -177,7 +177,7 @@ class VisualCaptured(val visApp: Entity = Entity(), val parentApp: Entity = Enti
  *
  * The aircraft will monitor its position relative to the approach position origin and capture it when within range
  * */
-class LocalizerArmed(val locApp: Entity = Entity()): Component, BaseComponentJSONInterface {
+class LocalizerArmed(var locApp: Entity = Entity()): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.LOCALIZER_ARMED
 
     companion object: Mapper<LocalizerArmed>()
@@ -187,7 +187,7 @@ class LocalizerArmed(val locApp: Entity = Entity()): Component, BaseComponentJSO
  * Component for tagging aircraft that has captured the localizer, and will alter aircraft AI behaviour to follow the
  * localizer track
  * */
-class LocalizerCaptured(val locApp: Entity = Entity()): Component, BaseComponentJSONInterface {
+class LocalizerCaptured(var locApp: Entity = Entity()): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.LOCALIZER_CAPTURED
 
     companion object: Mapper<LocalizerCaptured>()
@@ -198,7 +198,7 @@ class LocalizerCaptured(val locApp: Entity = Entity()): Component, BaseComponent
  *
  * The aircraft will monitor its altitude and capture it when it reaches the appropriate altitude
  */
-class GlideSlopeArmed(val gsApp: Entity = Entity()): Component, BaseComponentJSONInterface {
+class GlideSlopeArmed(var gsApp: Entity = Entity()): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.GLIDE_SLOPE_ARMED
 
     companion object: Mapper<GlideSlopeArmed>()
@@ -208,7 +208,7 @@ class GlideSlopeArmed(val gsApp: Entity = Entity()): Component, BaseComponentJSO
  * Component for tagging aircraft that has captured the glide slope, and will alter aircraft AI, physics behaviour to follow
  * the glide slope strictly
  * */
-class GlideSlopeCaptured(val gsApp: Entity = Entity()): Component, BaseComponentJSONInterface {
+class GlideSlopeCaptured(var gsApp: Entity = Entity()): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.GLIDE_SLOPE_CAPTURED
 
     companion object: Mapper<GlideSlopeCaptured>()
@@ -218,7 +218,7 @@ class GlideSlopeCaptured(val gsApp: Entity = Entity()): Component, BaseComponent
  * Component for tagging aircraft that have been cleared for a non-precision step down approach, and will alter aircraft
  * AI behaviour to follow the step-down altitudes if the localizer is captured
  * */
-class StepDownApproach(val stepDownApp: Entity = Entity()): Component, BaseComponentJSONInterface {
+class StepDownApproach(var stepDownApp: Entity = Entity()): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.STEP_DOWN_APPROACH
 
     companion object: Mapper<StepDownApproach>()
@@ -231,7 +231,7 @@ class StepDownApproach(val stepDownApp: Entity = Entity()): Component, BaseCompo
  * This component will persist until the aircraft is no longer on the approach or is on the final visual segment of the
  * approach
  */
-data class CirclingApproach(val circlingApp: Entity = Entity(), var breakoutAlt: Int = 0, var phase: Byte = 0,
+data class CirclingApproach(var circlingApp: Entity = Entity(), var breakoutAlt: Int = 0, var phase: Byte = 0,
                             var phase1Timer: Float = 70f, var phase3Timer: Float = 50f): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.CIRCLING_APPROACH
 

@@ -174,9 +174,15 @@ class ControlStateSystemInterval: IntervalSystem(1f) {
                 val controllable = get(Controllable.mapper) ?: return@apply
                 if (alt.altitudeFt > contact.altitudeFt || getSectorForPosition(pos.x, pos.y, true) == null) {
                     controllable.sectorId = SectorInfo.CENTRE
-                    get(AircraftInfo.mapper)?.icaoCallsign?.let { callsign -> GAME.gameServer?.also { server->
-                        server.sendAircraftSectorUpdateTCPToAll(callsign, controllable.sectorId, null)
-                    }}
+                    GAME.gameServer?.also { server ->
+                        get(AircraftInfo.mapper)?.icaoCallsign?.let { callsign ->
+                            server.sendAircraftSectorUpdateTCPToAll(callsign, controllable.sectorId, null)
+                        }
+                        server.score++
+                        server.departed++
+                        if (server.score > server.highScore) server.highScore = server.score
+                        server.sendScoreUpdate()
+                    }
                     remove<ContactFromCentre>()
                 }
             }

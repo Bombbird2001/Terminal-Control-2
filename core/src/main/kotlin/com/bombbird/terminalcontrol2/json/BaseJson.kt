@@ -1,5 +1,6 @@
 package com.bombbird.terminalcontrol2.json
 
+import com.badlogic.ashley.core.Component
 import com.badlogic.ashley.core.Entity
 import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
@@ -9,17 +10,31 @@ import com.squareup.moshi.FromJson
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.ToJson
 import ktx.ashley.get
+import ktx.collections.GdxArray
+
+/**
+ * Array to store runnables for delayed retrieval of entities based on their references (as per below) till after the entities
+ * have been loaded and created
+ * */
+val delayedEntityRetrieval = GdxArray<() -> Unit>()
 
 /** Data class for storing runway reference information (airport and runway ID) */
 @JsonClass(generateAdapter = true)
 data class RunwayRefJSON(val arptId: Byte, val rwyId: Byte) {
     /**
-     * Method to get a runway entity from this input runway JSON object
-     * @return the runway entity
+     * Method to retrieve the runway entity based on this runway reference, delayed to after the entities themselves have
+     * been fully loaded
+     * @param component the component to set the runway entity to - only component subclasses defined in this method will
+     * have their runway entity field set after the delayed retrieval
      */
-    fun toRunwayEntity(): Entity {
-        val arpt = GAME.gameServer?.airports?.get(arptId) ?: return Entity()
-        return arpt.entity[RunwayChildren.mapper]?.rwyMap?.get(rwyId)?.entity ?: Entity()
+    fun delayedRunwayEntityRetrieval(component: Component) {
+        delayedEntityRetrieval.add {
+            val rwy = GAME.gameServer?.airports?.get(arptId)?.entity?.get(RunwayChildren.mapper)?.rwyMap?.get(rwyId)?.entity ?: return@add
+            when (component) {
+                is TakeoffRoll -> component.rwy = rwy
+                is LandingRoll -> component.rwy = rwy
+            }
+        }
     }
 }
 
@@ -38,12 +53,27 @@ fun toRunwayRefJSON(rwy: Entity): RunwayRefJSON {
 @JsonClass(generateAdapter = true)
 data class ApproachRefJSON(val arptId: Byte, val appName: String) {
     /**
-     * Method to get an approach entity from this input approach JSON object
-     * @return the approach entity
+     * Method to retrieve the runway entity based on this approach reference, delayed to after the entities themselves
+     * have been fully loaded
+     * @param component the component to set the approach entity to - only component subclasses defined in this method will
+     * have their approach entity field set after the delayed retrieval
      */
-    fun toApproachEntity(): Entity {
-        val arpt = GAME.gameServer?.airports?.get(arptId) ?: return Entity()
-        return arpt.entity[ApproachChildren.mapper]?.approachMap?.get(appName)?.entity ?: Entity()
+    fun delayedApproachEntityRetrieval(component: Component) {
+        delayedEntityRetrieval.add {
+            val app = GAME.gameServer?.airports?.get(arptId)?.entity?.get(ApproachChildren.mapper)?.approachMap?.get(appName)?.entity ?: return@add
+            when (component) {
+                is VisualCaptured -> {
+                    if (component.visApp.components.size() == 0) component.visApp = app
+                    else component.parentApp = app
+                }
+                is LocalizerArmed -> component.locApp = app
+                is LocalizerCaptured -> component.locApp = app
+                is GlideSlopeArmed -> component.gsApp = app
+                is GlideSlopeCaptured -> component.gsApp = app
+                is StepDownApproach -> component.stepDownApp = app
+                is CirclingApproach -> component.circlingApp = app
+            }
+        }
     }
 }
 

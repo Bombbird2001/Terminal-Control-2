@@ -150,7 +150,8 @@ class AISystem: EntitySystem() {
                             points = MathUtils.clamp(points, 0.15f, 0.5f)
                             it.trafficValue = MathUtils.clamp(it.trafficValue + points, 4f, MAX_ARRIVALS.toFloat())
                         }
-                        it.score += 1
+                        it.score++
+                        it.landed++
                         if (it.score > it.highScore) it.highScore = it.score
                         it.sendScoreUpdate()
                     }

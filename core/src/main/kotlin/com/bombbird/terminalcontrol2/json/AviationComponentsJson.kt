@@ -27,7 +27,7 @@ object RunwayInfoAdapter {
     fun fromJson(runwayInfoJSON: RunwayInfoJSON): RunwayInfo {
         return RunwayInfo(runwayInfoJSON.rwyId, runwayInfoJSON.rwyName, runwayInfoJSON.lengthM, runwayInfoJSON.displacedThresholdM,
             runwayInfoJSON.intersectionTakeoffM, runwayInfoJSON.tower, runwayInfoJSON.freq).apply {
-                GAME.gameServer?.airports?.get(runwayInfoJSON.airportId)?.let { airport = it }
+            delayedEntityRetrieval.add { GAME.gameServer?.airports?.get(runwayInfoJSON.airportId)?.let { airport = it } }
         }
     }
 }

@@ -63,6 +63,7 @@ class GameServer {
     var playerNo = AtomicInteger(0)
     val server = Server()
     val engine = Engine()
+    var saveID: Int? = null
 
     // Blocking queue to store runnables to be run in the main thread after engine update
     private val pendingRunnablesQueue = ConcurrentLinkedQueue<Runnable>()
@@ -130,6 +131,9 @@ class GameServer {
     var score = 0
     var highScore = 0
 
+    var landed = 0
+    var departed = 0
+
     /** Game specific settings */
     var weatherMode = WEATHER_LIVE
     var emergencyRate = EMERGENCY_LOW
@@ -143,12 +147,14 @@ class GameServer {
     // var frames = 0
     private var startTime = -1L
 
-    /** Initialises game world */
-    private fun loadGame(mainName: String) {
+    /**
+     * Initialises game world
+     * @param mainName the ICAO code of the main airport in the game world
+     * */
+    private fun loadGame(mainName: String, saveId: Int?) {
         this.mainName = mainName
         loadAircraftData()
         loadDisallowedCallsigns()
-        loadWorldData(mainName, this)
 
         engine.addSystem(PhysicsSystem())
         engine.addSystem(PhysicsSystemInterval())
@@ -157,18 +163,26 @@ class GameServer {
         engine.addSystem(ControlStateSystemInterval())
         engine.addSystem(TrafficSystemInterval())
 
+        if (saveId != null) loadSave(this, saveId)
+        loadWorldData(mainName, this)
+
         if (initialisingWeather.get()) lock.withLock {
             requestAllMetar()
             initialWeatherCondition.await()
         }
 
-        appTestArrival(this)
+        if (saveId == null) appTestArrival(this)
     }
 
-    /** Starts the game loop */
-    fun initiateServer(mainName: String) {
+    /**
+     * Starts the server processes
+     * @param mainName the name of the main airport in the map
+     * @param saveId the ID of the save file to load, or null if nothing to load
+     * */
+    fun initiateServer(mainName: String, saveId: Int?) {
         thread {
-            loadGame(mainName)
+            saveID = saveId
+            loadGame(mainName, saveId)
             startNetworkingServer()
             startTime = -1L
             Gdx.app.log("GameServer", "Starting game server")
@@ -176,7 +190,6 @@ class GameServer {
             gameLoop()
             stopNetworkingServer()
             saveGame(this)
-            loadSave(this, 0)
         }
     }
 

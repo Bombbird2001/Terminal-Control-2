@@ -28,10 +28,13 @@ import com.bombbird.terminalcontrol2.utilities.nmToPx
 import com.bombbird.terminalcontrol2.ui.safeStage
 import com.bombbird.terminalcontrol2.ui.updateDatatagLineSpacing
 import com.bombbird.terminalcontrol2.ui.updateDatatagStyle
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import ktx.app.KtxScreen
 import ktx.ashley.allOf
 import ktx.ashley.get
 import ktx.assets.disposeSafely
+import ktx.async.KtxAsync
 import ktx.collections.GdxArray
 import ktx.collections.GdxArrayMap
 import ktx.graphics.moveTo
@@ -52,8 +55,9 @@ import kotlin.math.min
  * Implements [GestureListener] and [InputProcessor] to handle input/gesture events to it
  * @param connectionHost the address of the host server to connect to; if null, no connection will be initiated
  * @param airportToHost the main map airport name to be hosted; must be null if not hosting the server
+ * @param saveId the ID of the save to load from; if null, no save is loaded to the GameServer
  * */
-class RadarScreen(private val connectionHost: String?, airportToHost: String?): KtxScreen, GestureListener, InputProcessor {
+class RadarScreen(private val connectionHost: String?, airportToHost: String?, saveId: Int?): KtxScreen, GestureListener, InputProcessor {
     private val clientEngine = getEngine(true)
     private val radarDisplayStage = safeStage(GAME.batch)
     private val constZoomStage = safeStage(GAME.batch)
@@ -74,6 +78,7 @@ class RadarScreen(private val connectionHost: String?, airportToHost: String?): 
     private var prevZoom = 1f
 
     // Game running status
+    @Volatile
     private var running = false
 
     // Airport map for access during TCP updates; see GameServer for more details
@@ -121,18 +126,21 @@ class RadarScreen(private val connectionHost: String?, airportToHost: String?): 
     // Blocking queue to store runnables to be run in the main thread after engine update
     private val pendingRunnablesQueue = ConcurrentLinkedQueue<Runnable>()
 
+    // Loading screen callbacks
+    var dataLoadedCallback: (() -> Unit)? = null
+    var connectedToHostCallback: (() -> Unit)? = null
+
     init {
-        if (airportToHost != null) {
-            GAME.gameServer = GameServer()
-            GAME.gameServer?.initiateServer(airportToHost)
-        } else {
-            // Aircraft data must be loaded on client side as well
-            loadAircraftData()
+        KtxAsync.launch(Dispatchers.IO) {
+            if (airportToHost != null) {
+                GAME.gameServer = GameServer()
+                GAME.gameServer?.initiateServer(airportToHost, saveId)
+            } else {
+                // Aircraft data must be loaded on client side as well
+                loadAircraftData()
+            }
+            dataLoadedCallback?.invoke()
         }
-        registerClassesToKryo(client.kryo)
-        client.start()
-        attemptConnectionToServer()
-        running = true
 
         // Default zoom is set so that a full 100nm by 100nm square is visible (2500px x 2500px)
         (radarDisplayStage.camera as OrthographicCamera).apply {
@@ -151,6 +159,14 @@ class RadarScreen(private val connectionHost: String?, airportToHost: String?): 
         clientEngine.addSystem(DataSystemClient())
         clientEngine.addSystem(DataSystemIntervalClient())
         clientEngine.addSystem(ControlStateSystemIntervalClient())
+
+        registerClassesToKryo(client.kryo)
+        client.start()
+        KtxAsync.launch(Dispatchers.IO) {
+            attemptConnectionToServer()
+            running = true
+            connectedToHostCallback?.invoke()
+        }
     }
 
     /**

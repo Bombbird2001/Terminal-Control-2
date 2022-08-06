@@ -2,11 +2,35 @@ package com.bombbird.terminalcontrol2.json
 
 import com.badlogic.gdx.utils.Queue
 import com.bombbird.terminalcontrol2.components.ClearanceAct
+import com.bombbird.terminalcontrol2.components.Controllable
 import com.bombbird.terminalcontrol2.components.PendingClearances
 import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.squareup.moshi.FromJson
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.ToJson
+
+/**
+ * Data class for storing controllable information for JSON serialization
+ *
+ * The only sector IDs that can be stored are -1 (Tower), -2 (ACC) and 0 (player controlled), since when the game server
+ * launches it starts with 1 player by default, and subsequent player connections will result in the aircraft automatically
+ * being reassigned to the relevant controller
+ * */
+@JsonClass(generateAdapter = true)
+data class ControllableJSON(val sector: Byte)
+
+/** Adapter object for serialization between [Controllable] and [ControllableJSON] */
+object ControllableAdapter {
+    @ToJson
+    fun toJson(controllable: Controllable): ControllableJSON {
+        return ControllableJSON(if (controllable.sectorId >= 0) 0 else controllable.sectorId)
+    }
+
+    @FromJson
+    fun fromJson(controllableJSON: ControllableJSON): Controllable {
+        return Controllable(controllableJSON.sector)
+    }
+}
 
 /** Data class for storing pending clearance information for JSON serialization */
 @JsonClass(generateAdapter = true)

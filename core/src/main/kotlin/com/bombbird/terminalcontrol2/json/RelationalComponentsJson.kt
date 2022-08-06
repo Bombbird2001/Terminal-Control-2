@@ -97,7 +97,7 @@ object DependentOppositeRunwayAdapter {
     fun fromJson(depOppRwysJSON: DependentOppositeRunwayJSON): DependentOppositeRunway {
         return DependentOppositeRunway().apply {
             depOppRwysJSON.depOppRwys.forEach {
-                GAME.gameServer?.airports?.get(it.arptId)?.entity.let { rwy -> depOppRwys.add(rwy) }
+                delayedEntityRetrieval.add { GAME.gameServer?.airports?.get(it.arptId)?.entity.let { rwy -> depOppRwys.add(rwy) }}
             }
         }
     }
@@ -120,7 +120,7 @@ object DependentParallelRunwayAdapter {
     fun fromJson(depParallelRwysJSON: DependentParallelRunwayJSON): DependentParallelRunway {
         return DependentParallelRunway().apply {
             depParallelRwysJSON.depParallelRwys.forEach {
-                GAME.gameServer?.airports?.get(it.arptId)?.entity.let { rwy -> depParRwys.add(rwy) }
+                delayedEntityRetrieval.add { GAME.gameServer?.airports?.get(it.arptId)?.entity.let { rwy -> depParRwys.add(rwy) }}
             }
         }
     }
@@ -143,7 +143,7 @@ object CrossingRunwayAdapter {
     fun fromJson(crossingRwyJSON: CrossingRunwayJSON): CrossingRunway {
         return CrossingRunway().apply {
             crossingRwyJSON.crossingRwys.forEach {
-                GAME.gameServer?.airports?.get(it.arptId)?.entity.let { rwy -> crossRwys.add(rwy) }
+                delayedEntityRetrieval.add { GAME.gameServer?.airports?.get(it.arptId)?.entity.let { rwy -> crossRwys.add(rwy) }}
             }
         }
     }

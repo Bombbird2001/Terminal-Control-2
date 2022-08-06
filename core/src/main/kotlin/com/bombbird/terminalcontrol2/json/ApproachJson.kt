@@ -1,5 +1,6 @@
 package com.bombbird.terminalcontrol2.json
 
+import com.badlogic.ashley.core.Component
 import com.bombbird.terminalcontrol2.navigation.Approach
 import com.squareup.moshi.FromJson
 import com.squareup.moshi.JsonClass
@@ -20,7 +21,7 @@ object ApproachAdapter {
     @FromJson
     fun fromJson(appJSON: ApproachJSON): Approach {
         return Approach().apply {
-            appJSON.entity.components.forEach { entity += it }
+            appJSON.entity.components.forEach { if (it is Component) entity += it }
         }
     }
 }

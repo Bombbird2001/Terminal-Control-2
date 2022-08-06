@@ -30,7 +30,7 @@ object AircraftAdapter {
         val alt = components.getComponent<Altitude>() ?: return emptyAircraft("Altitude")
         val pos = components.getComponent<Position>() ?: return emptyAircraft("Position")
         val flightType = components.getComponent<FlightType>() ?: return emptyAircraft("FlightType")
-        return Aircraft(acInfo.icaoCallsign, pos.x, pos.y, alt.altitudeFt, acInfo.icaoType, flightType.type).apply {
+        return Aircraft(acInfo.icaoCallsign, pos.x, pos.y, alt.altitudeFt, acInfo.icaoType, flightType.type, false).apply {
             components.forEach { if (it is Component) entity += it }
         }
     }

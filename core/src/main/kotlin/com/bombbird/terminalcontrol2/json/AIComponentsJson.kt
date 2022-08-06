@@ -1,5 +1,6 @@
 package com.bombbird.terminalcontrol2.json
 
+import com.badlogic.ashley.core.Entity
 import com.bombbird.terminalcontrol2.components.*
 import com.squareup.moshi.FromJson
 import com.squareup.moshi.JsonClass
@@ -18,7 +19,7 @@ object TakeoffRollAdapter {
 
     @FromJson
     fun fromTakeoffRollJSON(takeoffRollJSON: TakeoffRollJSON): TakeoffRoll {
-        return TakeoffRoll(takeoffRollJSON.targetAccMps2, takeoffRollJSON.rwy.toRunwayEntity())
+        return TakeoffRoll(takeoffRollJSON.targetAccMps2).apply { takeoffRollJSON.rwy.delayedRunwayEntityRetrieval(this) }
     }
 }
 
@@ -35,7 +36,7 @@ object LandingRollAdapter {
 
     @FromJson
     fun fromLandingRollJSON(landingRollJSON: LandingRollJSON): LandingRoll {
-        return LandingRoll(landingRollJSON.rwy.toRunwayEntity())
+        return LandingRoll().apply { landingRollJSON.rwy.delayedRunwayEntityRetrieval(this) }
     }
 }
 
@@ -52,7 +53,10 @@ object VisualCapturedAdapter {
 
     @FromJson
     fun fromVisualCapturedJSON(visualCapturedJSON: VisualCapturedJSON): VisualCaptured {
-        return VisualCaptured(visualCapturedJSON.visApp.toApproachEntity(), visualCapturedJSON.parentApp.toApproachEntity())
+        return VisualCaptured().apply {
+            visualCapturedJSON.visApp.delayedApproachEntityRetrieval(this)
+            visualCapturedJSON.parentApp.delayedApproachEntityRetrieval(this)
+        }
     }
 }
 
@@ -69,7 +73,7 @@ object LocalizerArmedAdapter {
 
     @FromJson
     fun fromLocalizerArmedJSON(locArmedJSON: LocalizerArmedJSON): LocalizerArmed {
-        return LocalizerArmed(locArmedJSON.locApp.toApproachEntity())
+        return LocalizerArmed().apply { locArmedJSON.locApp.delayedApproachEntityRetrieval(this) }
     }
 }
 
@@ -86,7 +90,7 @@ object LocalizerCapturedAdapter {
 
     @FromJson
     fun fromLocalizerCapturedJSON(locCapturedJSON: LocalizerCapturedJSON): LocalizerCaptured {
-        return LocalizerCaptured(locCapturedJSON.locApp.toApproachEntity())
+        return LocalizerCaptured().apply { locCapturedJSON.locApp.delayedApproachEntityRetrieval(this) }
     }
 }
 
@@ -103,7 +107,7 @@ object GlideSlopeArmedAdapter {
 
     @FromJson
     fun fromGlideSlopeArmedJSON(gsArmedJSON: GlideSlopeArmedJSON): GlideSlopeArmed {
-        return GlideSlopeArmed(gsArmedJSON.gsApp.toApproachEntity())
+        return GlideSlopeArmed().apply { gsArmedJSON.gsApp.delayedApproachEntityRetrieval(this) }
     }
 }
 
@@ -120,7 +124,7 @@ object GlideSlopeCapturedAdapter {
 
     @FromJson
     fun fromGlideSlopeCapturedJSON(gsCapJSON: GlideSlopeCapturedJSON): GlideSlopeCaptured {
-        return GlideSlopeCaptured(gsCapJSON.gsApp.toApproachEntity())
+        return GlideSlopeCaptured().apply { gsCapJSON.gsApp.delayedApproachEntityRetrieval(this) }
     }
 }
 
@@ -137,7 +141,7 @@ object StepDownApproachAdapter {
 
     @FromJson
     fun fromStepDownApproachJSON(stepDownJSON: StepDownApproachJSON): StepDownApproach {
-        return StepDownApproach(stepDownJSON.stepDownApp.toApproachEntity())
+        return StepDownApproach().apply { stepDownJSON.stepDownApp.delayedApproachEntityRetrieval(this) }
     }
 }
 
@@ -156,7 +160,7 @@ object CirclingApproachAdapter {
 
     @FromJson
     fun fromCirclingApproachJSON(circlingJSON: CirclingApproachJSON): CirclingApproach {
-        return CirclingApproach(circlingJSON.circlingApp.toApproachEntity(), circlingJSON.breakoutAlt, circlingJSON.phase,
-            circlingJSON.phase1Timer, circlingJSON.phase3Timer)
+        return CirclingApproach(Entity(), circlingJSON.breakoutAlt, circlingJSON.phase,
+            circlingJSON.phase1Timer, circlingJSON.phase3Timer).apply { circlingJSON.circlingApp.delayedApproachEntityRetrieval(this) }
     }
 }
