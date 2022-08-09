@@ -26,7 +26,7 @@ object ApproachToolsTest: FunSpec() {
 
     init {
         beforeTest {
-            initialiseGameAndServer()
+            testInitialiseGameAndServer()
             MAG_HDG_DEV = 0f
             GAME.gameServer?.apply {
                 airports.clear()

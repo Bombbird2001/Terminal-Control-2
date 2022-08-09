@@ -15,7 +15,7 @@ object ApproachTest: FunSpec() {
 
     init {
         beforeTest {
-            initialiseGameAndServer()
+            testInitialiseGameAndServer()
             MAG_HDG_DEV = 0f
             approach = Approach("TESTAPP1", 0, 0, 0f, 0f, 200, 500,
                 false, UsabilityFilter.DAY_AND_NIGHT)

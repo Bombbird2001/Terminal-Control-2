@@ -3,8 +3,10 @@ package com.bombbird.terminalcontrol2.utilities
 import com.bombbird.terminalcontrol2.global.GAME
 import java.time.LocalTime
 
-/** Helper interface that contains data and functions to determine whether a SID, STAR or approach is valid for use
- * under the given conditions */
+/**
+ * Helper interface that contains data and functions to determine whether a SID, STAR or approach is valid for use
+ * under the given conditions
+ * */
 interface UsabilityFilter {
     companion object {
         const val DAY_AND_NIGHT: Byte = 0

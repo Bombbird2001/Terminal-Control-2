@@ -158,7 +158,8 @@ class Approach(name: String, arptId: Byte, runwayId: Byte, posX: Float, posY: Fl
     /**
      * Adds a glideslope to the entity of this approach
      * @param angleDeg the slope degree of the glideslope
-     * @param offsetDistNm the maximum localizer distance
+     * @param offsetDistNm the negative of the distance, in nm, from the localizer beacon is located away from the glide
+     * slope beacon
      * @param maxInterceptAltFt the maximum glideslope intercept altitude
      * */
     fun addGlideslope(angleDeg: Float, offsetDistNm: Float, maxInterceptAltFt: Short) {

@@ -105,7 +105,7 @@ object RouteToolsTest: FunSpec() {
         }
 
         test("Create, remove custom waypoint") {
-            initialiseGameAndServer()
+            testInitialiseGameAndServer()
             GAME.gameServer?.apply {
                 waypoints[-3] = Waypoint(-3, "TESTWPT", 0, 0, false)
                 createCustomHoldWaypoint(1f, 1f)
@@ -119,7 +119,7 @@ object RouteToolsTest: FunSpec() {
         }
         
         test("Find first waypoint leg in sector") {
-            initialiseGameAndServer()
+            testInitialiseGameAndServer()
             GAME.gameServer?.apply { 
                 waypoints[0] = Waypoint(0, "TESTWPT1", 0, 0, false)
                 waypoints[1] = Waypoint(1, "TESTWPT2", 1, 1, false)
@@ -135,7 +135,7 @@ object RouteToolsTest: FunSpec() {
         }
 
         test("Find next waypoint track and turn direction") {
-            initialiseGameAndServer()
+            testInitialiseGameAndServer()
             GAME.gameServer?.apply {
                 waypoints[0] = Waypoint(0, "TESTWPT1", 0, 0, false)
                 waypoints[1] = Waypoint(1, "TESTWPT2", 1, 1, false)
@@ -367,7 +367,7 @@ object RouteToolsTest: FunSpec() {
         }
 
         test("Calculate distance to go") {
-            initialiseGameAndServer()
+            testInitialiseGameAndServer()
             GAME.gameServer?.apply {
                 waypoints[0] = Waypoint(0, "TESTWPT1", 0, 0, false)
                 waypoints[1] = Waypoint(1, "TESTWPT2", 1, 1, false)

@@ -9,8 +9,8 @@ import com.bombbird.terminalcontrol2.entities.Aircraft
 import com.bombbird.terminalcontrol2.entities.Airport
 import com.bombbird.terminalcontrol2.entities.Waypoint
 import com.bombbird.terminalcontrol2.global.getEngine
-import com.bombbird.terminalcontrol2.json.delayedEntityRetrieval
 import com.bombbird.terminalcontrol2.json.getMoshiWithAllAdapters
+import com.bombbird.terminalcontrol2.json.runDelayedEntityRetrieval
 import com.bombbird.terminalcontrol2.networking.GameServer
 import com.bombbird.terminalcontrol2.systems.TrafficSystemInterval
 import com.squareup.moshi.JsonClass
@@ -110,5 +110,5 @@ fun loadSave(gs: GameServer, saveId: Int) {
         val wakeTrail = it.entity[WakeTrail.mapper] ?: return@forEach
         for (point in QueueIterator(wakeTrail.wakeZones)) point.second?.let { zone -> trafficSystem.addWakeZone(zone) }
     }
-    for (i in 0 until delayedEntityRetrieval.size) delayedEntityRetrieval[i]()
+    runDelayedEntityRetrieval()
 }

@@ -10,13 +10,20 @@ import com.squareup.moshi.FromJson
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.ToJson
 import ktx.ashley.get
+import ktx.ashley.has
 import ktx.collections.GdxArray
 
 /**
  * Array to store runnables for delayed retrieval of entities based on their references (as per below) till after the entities
  * have been loaded and created
  * */
-val delayedEntityRetrieval = GdxArray<() -> Unit>()
+internal val delayedEntityRetrieval = GdxArray<() -> Unit>()
+
+/** Runs all functions stored in the delayed entity retrieval array, and clears the array after running */
+fun runDelayedEntityRetrieval() {
+    for (i in 0 until delayedEntityRetrieval.size) delayedEntityRetrieval[i]()
+    delayedEntityRetrieval.clear()
+}
 
 /** Data class for storing runway reference information (airport and runway ID) */
 @JsonClass(generateAdapter = true)
@@ -51,7 +58,7 @@ fun toRunwayRefJSON(rwy: Entity): RunwayRefJSON {
 
 /** Data class for storing approach reference information (airport ID and approach name) */
 @JsonClass(generateAdapter = true)
-data class ApproachRefJSON(val arptId: Byte, val appName: String) {
+data class ApproachRefJSON(val arptId: Byte, val appName: String, val visRwyId: Byte?) {
     /**
      * Method to retrieve the runway entity based on this approach reference, delayed to after the entities themselves
      * have been fully loaded
@@ -60,10 +67,13 @@ data class ApproachRefJSON(val arptId: Byte, val appName: String) {
      */
     fun delayedApproachEntityRetrieval(component: Component) {
         delayedEntityRetrieval.add {
-            val app = GAME.gameServer?.airports?.get(arptId)?.entity?.get(ApproachChildren.mapper)?.approachMap?.get(appName)?.entity ?: return@add
+            val app = if (visRwyId != null) GAME.gameServer?.airports?.get(arptId)?.entity?.get(RunwayChildren.mapper)
+                ?.rwyMap?.get(visRwyId)?.entity?.get(VisualApproach.mapper)?.visual
+            else GAME.gameServer?.airports?.get(arptId)?.entity?.get(ApproachChildren.mapper)?.approachMap?.get(appName)?.entity
+            if (app == null) return@add
             when (component) {
                 is VisualCaptured -> {
-                    if (component.visApp.components.size() == 0) component.visApp = app
+                    if (visRwyId != null) component.visApp = app
                     else component.parentApp = app
                 }
                 is LocalizerArmed -> component.locApp = app
@@ -84,7 +94,7 @@ data class ApproachRefJSON(val arptId: Byte, val appName: String) {
  */
 fun toApproachRefJSON(app: Entity): ApproachRefJSON {
     val appInfo = app[ApproachInfo.mapper]
-    return ApproachRefJSON(appInfo?.airportId ?: -1, appInfo?.approachName ?: "")
+    return ApproachRefJSON(appInfo?.airportId ?: -1, appInfo?.approachName ?: "", if (app.has(Visual.mapper)) appInfo?.rwyId else null)
 }
 
 /** Data class for storing Vector2 information */

@@ -17,7 +17,7 @@ object ClearanceStateTest: FunSpec() {
 
     init {
         beforeTest {
-            initialiseGameAndServer()
+            testInitialiseGameAndServer()
             AircraftTypeData.addAircraftPerf("B77W", AircraftTypeData.AircraftPerfData())
             MAG_HDG_DEV = 0f
             aircraft = Aircraft("TESTSHIBA", 0f, 0f, 10000f, "B77W", FlightType.ARRIVAL, false)
