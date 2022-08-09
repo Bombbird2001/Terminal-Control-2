@@ -1,4 +1,5 @@
 import com.badlogic.ashley.core.Entity
+import com.badlogic.gdx.math.CumulativeDistribution
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.Airport
 import com.bombbird.terminalcontrol2.global.GAME
@@ -8,7 +9,10 @@ import com.bombbird.terminalcontrol2.navigation.Approach
 import com.bombbird.terminalcontrol2.utilities.UsabilityFilter
 import com.squareup.moshi.adapter
 import io.kotest.core.spec.style.FunSpec
+import io.kotest.matchers.Matcher
+import io.kotest.matchers.MatcherResult
 import io.kotest.matchers.nulls.shouldNotBeNull
+import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import ktx.ashley.get
 import ktx.collections.set
@@ -234,5 +238,129 @@ object JsonTest: FunSpec() {
             circling3FromJson shouldBe circling3
             circling4FromJson shouldBe circling4
         }
+
+        test("ApproachInfo serialization") {
+            val appInfoAdapter = testMoshi.adapter<ApproachInfo>()
+            val appInfo1 = ApproachInfo("ILS05L", 0, 0)
+            val appInfo2 = ApproachInfo("LDA05R", 0, 1)
+            val appInfo3 = ApproachInfo("CIRCLE05L", 0, 0)
+            appInfoAdapter.fromJson(appInfoAdapter.toJson(appInfo1)) shouldBe appInfo1
+            appInfoAdapter.fromJson(appInfoAdapter.toJson(appInfo2)) shouldBe appInfo2
+            appInfoAdapter.fromJson(appInfoAdapter.toJson(appInfo3)) shouldBe appInfo3
+        }
+
+        test("Localizer serialization") {
+            val locAdapter = testMoshi.adapter<Localizer>()
+            val loc1 = Localizer(20)
+            val loc2 = Localizer(25)
+            val loc3 = Localizer(15)
+            locAdapter.fromJson(locAdapter.toJson(loc1)) shouldBe loc1
+            locAdapter.fromJson(locAdapter.toJson(loc2)) shouldBe loc2
+            locAdapter.fromJson(locAdapter.toJson(loc3)) shouldBe loc3
+        }
+
+        test("LineUpDist serialization") {
+            val lineUpDistAdapter = testMoshi.adapter<LineUpDist>()
+            val lineUpDist1 = LineUpDist(0.3f)
+            val lineUpDist2 = LineUpDist(0.65f)
+            val lineUpDist3 = LineUpDist(1.35f)
+            lineUpDistAdapter.fromJson(lineUpDistAdapter.toJson(lineUpDist1)) shouldBe lineUpDist1
+            lineUpDistAdapter.fromJson(lineUpDistAdapter.toJson(lineUpDist2)) shouldBe lineUpDist2
+            lineUpDistAdapter.fromJson(lineUpDistAdapter.toJson(lineUpDist3)) shouldBe lineUpDist3
+        }
+
+        test("GlideSlope serialization") {
+            val gsAdapter = testMoshi.adapter<GlideSlope>()
+            val gs1 = GlideSlope(3f, -1.4f, 4000)
+            val gs2 = GlideSlope(3f, -2f, 5000)
+            val gs3 = GlideSlope(4.5f, -1f, 6000)
+            gsAdapter.fromJson(gsAdapter.toJson(gs1)) shouldBe gs1
+            gsAdapter.fromJson(gsAdapter.toJson(gs2)) shouldBe gs2
+            gsAdapter.fromJson(gsAdapter.toJson(gs3)) shouldBe gs3
+        }
+
+        test("StepDown serialization") {
+            val stepDownAdapter = testMoshi.adapter<StepDown>()
+            val stepDown1 = StepDown(arrayOf(StepDown.Step(4f, 1200), StepDown.Step(8f, 2000), StepDown.Step(15f, 4000)))
+            val stepDown2 = StepDown(arrayOf(StepDown.Step(5f, 1200), StepDown.Step(8.4f, 2000), StepDown.Step(14f, 4000)))
+            val stepDown3 = StepDown(arrayOf(StepDown.Step(3.3f, 800), StepDown.Step(7f, 2100), StepDown.Step(10f, 3000)))
+            stepDownAdapter.fromJson(stepDownAdapter.toJson(stepDown1)) shouldBe stepDown1
+            stepDownAdapter.fromJson(stepDownAdapter.toJson(stepDown2)) shouldBe stepDown2
+            stepDownAdapter.fromJson(stepDownAdapter.toJson(stepDown3)) shouldBe stepDown3
+        }
+
+        test("Circling serialization") {
+            val circlingAdapter = testMoshi.adapter<Circling>()
+            val circling1 = Circling(1000, 1400, CommandTarget.TURN_LEFT)
+            val circling2 = Circling(1200, 1400, CommandTarget.TURN_RIGHT)
+            val circling3 = Circling(900, 1300, CommandTarget.TURN_LEFT)
+            circlingAdapter.fromJson(circlingAdapter.toJson(circling1)) shouldBe circling1
+            circlingAdapter.fromJson(circlingAdapter.toJson(circling2)) shouldBe circling2
+            circlingAdapter.fromJson(circlingAdapter.toJson(circling3)) shouldBe circling3
+        }
+
+        test("Minimums serialization") {
+            val minsAdapter = testMoshi.adapter<Minimums>()
+            val mins1 = Minimums(220, 800)
+            val mins2 = Minimums(620, 2700)
+            val mins3 = Minimums(1220, 4000)
+            minsAdapter.fromJson(minsAdapter.toJson(mins1)) shouldBe mins1
+            minsAdapter.fromJson(minsAdapter.toJson(mins2)) shouldBe mins2
+            minsAdapter.fromJson(minsAdapter.toJson(mins3)) shouldBe mins3
+        }
+
+        test("AirportInfo serialization") {
+            val arptInfoAdapter = testMoshi.adapter<AirportInfo>()
+            val arptInfo1 = AirportInfo(0, "TESA", "Test 1", 1)
+            val arptInfo2 = AirportInfo(1, "TESB", "Test 2", 3)
+            arptInfoAdapter.fromJson(arptInfoAdapter.toJson(arptInfo1)) shouldBe arptInfo1
+            arptInfoAdapter.fromJson(arptInfoAdapter.toJson(arptInfo2)) shouldBe arptInfo2
+        }
+
+        test("RunwayInfo serialization") {
+            val rwyInfoAdapter = testMoshi.adapter<RunwayInfo>()
+            val rwyInfo1 = rwy1?.entity?.get(RunwayInfo.mapper)?.shouldNotBeNull()
+            val rwyInfo2 = rwy2?.entity?.get(RunwayInfo.mapper)?.shouldNotBeNull()
+            val rwyInfo1FromJson = rwyInfoAdapter.fromJson(rwyInfoAdapter.toJson(rwyInfo1))
+            val rwyInfo2FromJson = rwyInfoAdapter.fromJson(rwyInfoAdapter.toJson(rwyInfo2))
+            runDelayedEntityRetrieval()
+            rwyInfo1FromJson shouldBe rwyInfo1
+            rwyInfo2FromJson shouldBe rwyInfo2
+        }
+
+        test("RandomMetarInfo serialization") {
+            val randomMetarAdapter = testMoshi.adapter<RandomMetarInfo>()
+            val cumDist1a = CumulativeDistribution<Short>().apply { for (i in 0..36) add(i.toShort(), i + 1f) }
+            val cumDist1b = CumulativeDistribution<Short>().apply { for (i in 0..50) add(i.toShort(), 51f - i) }
+            val cumDist1c = CumulativeDistribution<Short>().apply { for (i in 0 until 20) add(i.toShort(), i + 1f) }
+            val cumDist1d = CumulativeDistribution<Short>().apply { for (i in 0 until 15) add(i.toShort(), i + 1f) }
+            val randomMetar = RandomMetarInfo(cumDist1a, cumDist1b, cumDist1c, cumDist1d)
+            val randomMetarFromJson = randomMetarAdapter.fromJson(randomMetarAdapter.toJson(randomMetar)).shouldNotBeNull()
+            randomMetarFromJson.windDirDist should matchCumDist(cumDist1a)
+            randomMetarFromJson.windSpdDist should matchCumDist(cumDist1b)
+            randomMetarFromJson.visibilityDist should matchCumDist(cumDist1c)
+            randomMetarFromJson.ceilingDist should matchCumDist(cumDist1d)
+        }
+    }
+
+    /**
+     * Matcher for checking contents of a cumulative distribution are equal
+     * @param otherDist the other distribution to check for equality with; the existing distribution to check if accessed
+     * from [Matcher]
+     * */
+    private fun <T> matchCumDist(otherDist: CumulativeDistribution<T>) = Matcher<CumulativeDistribution<T>> {
+        var discrepancyFound = true
+        if (otherDist.size() == it.size()) {
+            discrepancyFound = false
+            for (i in 0 until otherDist.size())
+                if (otherDist.getValue(i) != it.getValue(i) || otherDist.getInterval(i) != it.getInterval(i)) {
+                    discrepancyFound = true
+                    break
+                }
+        }
+        return@Matcher MatcherResult(!discrepancyFound, {
+            if (otherDist.size() != it.size()) "Cumulative distributions did not match in size"
+            else "Cumulative distribution values and/or intervals did not match exactly (including order)"
+        }, { "Cumulative distributions matched, but should not have matched" })
     }
 }

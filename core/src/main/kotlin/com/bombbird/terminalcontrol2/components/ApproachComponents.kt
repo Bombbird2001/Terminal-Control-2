@@ -50,7 +50,7 @@ data class GlideSlope(var glideAngle: Float = 0f, var offsetNm: Float = 0f, var 
 
 /** Component for tagging step-down approach information */
 @JsonClass(generateAdapter = true)
-class StepDown(var altAtDist: Array<Step> = arrayOf()): Component, BaseComponentJSONInterface {
+data class StepDown(var altAtDist: Array<Step> = arrayOf()): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.STEP_DOWN
 
     companion object: Mapper<StepDown>()
@@ -58,11 +58,29 @@ class StepDown(var altAtDist: Array<Step> = arrayOf()): Component, BaseComponent
     /** Class for steps on the step-down approach */
     @JsonClass(generateAdapter = true)
     data class Step(val dist: Float, val alt: Short)
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as StepDown
+
+        if (!altAtDist.contentEquals(other.altAtDist)) return false
+        if (componentType != other.componentType) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = altAtDist.contentHashCode()
+        result = 31 * result + componentType.hashCode()
+        return result
+    }
 }
 
 /** Component for tagging circling approach information */
 @JsonClass(generateAdapter = true)
-class Circling(var minBreakoutAlt: Int = 0, var maxBreakoutAlt: Int = 0, var breakoutDir: Byte = CommandTarget.TURN_LEFT): Component, BaseComponentJSONInterface {
+data class Circling(var minBreakoutAlt: Int = 0, var maxBreakoutAlt: Int = 0, var breakoutDir: Byte = CommandTarget.TURN_LEFT): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.CIRCLING
 
     companion object: Mapper<Circling>()
