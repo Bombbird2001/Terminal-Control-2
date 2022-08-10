@@ -63,7 +63,7 @@ data class Speed(var speedKts: Float = 0f, var vertSpdFpm: Float = 0f, var angul
  * @param altitudeFt the altitude, in feet
  * */
 @JsonClass(generateAdapter = true)
-class Altitude(var altitudeFt: Float = 0f): Component, BaseComponentJSONInterface {
+data class Altitude(var altitudeFt: Float = 0f): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.ALTITUDE
 
     companion object: Mapper<Altitude>()

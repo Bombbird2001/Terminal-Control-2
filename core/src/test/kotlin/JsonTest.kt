@@ -1,21 +1,28 @@
 import com.badlogic.ashley.core.Entity
 import com.badlogic.gdx.math.CumulativeDistribution
+import com.badlogic.gdx.math.Vector2
+import com.badlogic.gdx.utils.Queue
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.Airport
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.json.getMoshiWithAllAdapters
 import com.bombbird.terminalcontrol2.json.runDelayedEntityRetrieval
 import com.bombbird.terminalcontrol2.navigation.Approach
+import com.bombbird.terminalcontrol2.navigation.ClearanceState
+import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.utilities.UsabilityFilter
+import com.bombbird.terminalcontrol2.utilities.checkClearanceEquality
 import com.squareup.moshi.adapter
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.Matcher
 import io.kotest.matchers.MatcherResult
+import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import ktx.ashley.get
 import ktx.collections.set
+import java.util.*
 
 /** Kotest FunSpec class for testing JSON serialization for components and entities */
 @OptIn(ExperimentalStdlibApi::class)
@@ -341,11 +348,263 @@ object JsonTest: FunSpec() {
             randomMetarFromJson.visibilityDist should matchCumDist(cumDist1c)
             randomMetarFromJson.ceilingDist should matchCumDist(cumDist1d)
         }
+
+        test("WaypointInfo serialization") {
+            val wptAdapter = testMoshi.adapter<WaypointInfo>()
+            val wpt1 = WaypointInfo(0, "SHIBA")
+            val wpt2 = WaypointInfo(1, "SHIBE")
+            val wpt3 = WaypointInfo(2, "DREKO")
+            wptAdapter.fromJson(wptAdapter.toJson(wpt1)) shouldBe wpt1
+            wptAdapter.fromJson(wptAdapter.toJson(wpt2)) shouldBe wpt2
+            wptAdapter.fromJson(wptAdapter.toJson(wpt3)) shouldBe wpt3
+        }
+
+        test("AircraftInfo serialization") {
+            val acAdapter = testMoshi.adapter<AircraftInfo>()
+            val ac1 = AircraftInfo("SHIBA1", "B77W")
+            val ac2 = AircraftInfo("SHIBA2", "B78X")
+            val ac3 = AircraftInfo("DREKO1", "A359")
+            acAdapter.fromJson(acAdapter.toJson(ac1)) shouldBe ac1
+            acAdapter.fromJson(acAdapter.toJson(ac2)) shouldBe ac2
+            acAdapter.fromJson(acAdapter.toJson(ac3)) shouldBe ac3
+        }
+
+        test("ArrivalAirport serialization") {
+            val arrivalArptAdapter = testMoshi.adapter<ArrivalAirport>()
+            val arrivalArpt1 = ArrivalAirport(0)
+            val arrivalArpt2 = ArrivalAirport(1)
+            arrivalArptAdapter.fromJson(arrivalArptAdapter.toJson(arrivalArpt1)) shouldBe arrivalArpt1
+            arrivalArptAdapter.fromJson(arrivalArptAdapter.toJson(arrivalArpt2)) shouldBe arrivalArpt2
+        }
+
+        test("DepartureAirport serialization") {
+            val depArptAdapter = testMoshi.adapter<DepartureAirport>()
+            val depArpt1 = DepartureAirport(0, 0)
+            val depArpt2 = DepartureAirport(1, 0)
+            val depArpt3 = DepartureAirport(1, 1)
+            depArptAdapter.fromJson(depArptAdapter.toJson(depArpt1)) shouldBe depArpt1
+            depArptAdapter.fromJson(depArptAdapter.toJson(depArpt2)) shouldBe depArpt2
+            depArptAdapter.fromJson(depArptAdapter.toJson(depArpt3)) shouldBe depArpt3
+        }
+
+        test("Controllable serialization") {
+            val controllableAdapter = testMoshi.adapter<Controllable>()
+            val controllable1 = Controllable(0, null)
+            val controllable2 = Controllable(2, UUID.randomUUID())
+            val controllable3 = Controllable(SectorInfo.TOWER, null)
+            val controllable4 = Controllable(SectorInfo.CENTRE, null)
+            controllableAdapter.fromJson(controllableAdapter.toJson(controllable1)) shouldBe controllable1
+            controllableAdapter.fromJson(controllableAdapter.toJson(controllable2)) shouldBe controllable1
+            controllableAdapter.fromJson(controllableAdapter.toJson(controllable3)) shouldBe controllable3
+            controllableAdapter.fromJson(controllableAdapter.toJson(controllable4)) shouldBe controllable4
+        }
+
+        test("FlightType serialization") {
+            val flightTypeAdapter = testMoshi.adapter<FlightType>()
+            val flightType1 = FlightType(FlightType.ARRIVAL)
+            val flightType2 = FlightType(FlightType.DEPARTURE)
+            val flightType3 = FlightType(FlightType.EN_ROUTE)
+            flightTypeAdapter.fromJson(flightTypeAdapter.toJson(flightType1)) shouldBe flightType1
+            flightTypeAdapter.fromJson(flightTypeAdapter.toJson(flightType2)) shouldBe flightType2
+            flightTypeAdapter.fromJson(flightTypeAdapter.toJson(flightType3)) shouldBe flightType3
+        }
+
+        test("ContactFromTower serialization") {
+            val contactFromTowerAdapter = testMoshi.adapter<ContactFromTower>()
+            val cft1 = ContactFromTower(600)
+            val cft2 = ContactFromTower(1200)
+            val cft3 = ContactFromTower(1270)
+            contactFromTowerAdapter.fromJson(contactFromTowerAdapter.toJson(cft1)) shouldBe cft1
+            contactFromTowerAdapter.fromJson(contactFromTowerAdapter.toJson(cft2)) shouldBe cft2
+            contactFromTowerAdapter.fromJson(contactFromTowerAdapter.toJson(cft3)) shouldBe cft3
+        }
+
+        test("ContactToTower serialization") {
+            val contactToTowerAdapter = testMoshi.adapter<ContactToTower>()
+            val ctt1 = ContactToTower(1170)
+            val ctt2 = ContactToTower(1200)
+            val ctt3 = ContactToTower(1270)
+            contactToTowerAdapter.fromJson(contactToTowerAdapter.toJson(ctt1)) shouldBe ctt1
+            contactToTowerAdapter.fromJson(contactToTowerAdapter.toJson(ctt2)) shouldBe ctt2
+            contactToTowerAdapter.fromJson(contactToTowerAdapter.toJson(ctt3)) shouldBe ctt3
+        }
+
+        test("ContactFromCentre serialization") {
+            val contactFromCentreAdapter = testMoshi.adapter<ContactFromCentre>()
+            val cfc1 = ContactFromCentre(20500)
+            val cfc2 = ContactFromCentre(22700)
+            val cfc3 = ContactFromCentre(18200)
+            contactFromCentreAdapter.fromJson(contactFromCentreAdapter.toJson(cfc1)) shouldBe cfc1
+            contactFromCentreAdapter.fromJson(contactFromCentreAdapter.toJson(cfc2)) shouldBe cfc2
+            contactFromCentreAdapter.fromJson(contactFromCentreAdapter.toJson(cfc3)) shouldBe cfc3
+        }
+
+        test("ContactToCentre serialization") {
+            val contactToCentreAdapter = testMoshi.adapter<ContactToCentre>()
+            val ctc1 = ContactToCentre(20500)
+            val ctc2 = ContactToCentre(22700)
+            val ctc3 = ContactToCentre(18200)
+            contactToCentreAdapter.fromJson(contactToCentreAdapter.toJson(ctc1)) shouldBe ctc1
+            contactToCentreAdapter.fromJson(contactToCentreAdapter.toJson(ctc2)) shouldBe ctc2
+            contactToCentreAdapter.fromJson(contactToCentreAdapter.toJson(ctc3)) shouldBe ctc3
+        }
+
+        test("PendingClearances serialization") {
+            val pendingClearancesAdapter = testMoshi.adapter<PendingClearances>()
+            val pending1 = PendingClearances(Queue<ClearanceState.PendingClearanceState>().apply {
+                addLast(ClearanceState.PendingClearanceState(0.4f, ClearanceState()))
+                addLast(ClearanceState.PendingClearanceState(1.9f, ClearanceState(vectorHdg = 200, clearedAlt = 5000, clearedIas = 220)))
+            })
+            val pending2 = PendingClearances()
+            pendingClearancesAdapter.fromJson(pendingClearancesAdapter.toJson(pending1)) shouldBe matchPendingClearances(pending1)
+            pendingClearancesAdapter.fromJson(pendingClearancesAdapter.toJson(pending2)) shouldBe matchPendingClearances(pending2)
+        }
+
+        test("ClearanceAct serialization") {
+            val clearanceActAdapter = testMoshi.adapter<ClearanceAct>()
+            val act1 = ClearanceAct(ClearanceState().ActingClearance())
+            val act2 = ClearanceAct(ClearanceState(vectorHdg = 200, clearedAlt = 5000, clearedIas = 220, route = Route().apply {
+                add(Route.InitClimbLeg(45, 1000))
+                add(Route.WaypointLeg(0, null, 2000, 230, legActive = true, altRestrActive = true, spdRestrActive = true))
+                add(Route.WaypointLeg(1, 12000, 5000, null, legActive = true, altRestrActive = false, spdRestrActive = true, phase = Route.Leg.APP))
+                add(Route.VectorLeg(250))
+                add(Route.HoldLeg(2, null, 4000, 230, 240, 45, 5, CommandTarget.TURN_RIGHT))
+                add(Route.DiscontinuityLeg())
+            }).ActingClearance())
+            val act1FromJson = clearanceActAdapter.fromJson(clearanceActAdapter.toJson(act1))?.actingClearance?.clearanceState?.shouldNotBeNull()
+            if (act1FromJson != null) checkClearanceEquality(act1FromJson, act1.actingClearance.clearanceState, true).shouldBeTrue()
+            val act2FromJson = clearanceActAdapter.fromJson(clearanceActAdapter.toJson(act2))?.actingClearance?.clearanceState?.shouldNotBeNull()
+            if (act2FromJson != null) checkClearanceEquality(act2FromJson, act2.actingClearance.clearanceState, true).shouldBeTrue()
+        }
+
+        test("RecentGoAround serialization") {
+            val recentGaAdapter = testMoshi.adapter<RecentGoAround>()
+            val recentGa1 = RecentGoAround(20f)
+            val recentGa2 = RecentGoAround(40.1f)
+            val recentGa3 = RecentGoAround(14.2f)
+            recentGaAdapter.fromJson(recentGaAdapter.toJson(recentGa1)) shouldBe recentGa1
+            recentGaAdapter.fromJson(recentGaAdapter.toJson(recentGa2)) shouldBe recentGa2
+            recentGaAdapter.fromJson(recentGaAdapter.toJson(recentGa3)) shouldBe recentGa3
+        }
+
+        test("GPolygon serialization") {
+            val gPolygonAdapter = testMoshi.adapter<GPolygon>()
+            val gPolygon1 = GPolygon(floatArrayOf(12.3f, 43.1f, 5.6f, 3.5f, 8.2f, 90.3f))
+            val gPolygon2 = GPolygon(floatArrayOf(0f, 111.1f, 222.2f, 333.3f, 444.4f, 555.5f))
+            val gPolygon3 = GPolygon(floatArrayOf(-90.3f, -45.1f, -34f, -56.1f, 23.1f, -90.6f))
+            gPolygonAdapter.fromJson(gPolygonAdapter.toJson(gPolygon1))?.vertices?.contentEquals(gPolygon1.vertices)?.shouldNotBeNull()?.shouldBeTrue()
+            gPolygonAdapter.fromJson(gPolygonAdapter.toJson(gPolygon2))?.vertices?.contentEquals(gPolygon2.vertices)?.shouldNotBeNull()?.shouldBeTrue()
+            gPolygonAdapter.fromJson(gPolygonAdapter.toJson(gPolygon3))?.vertices?.contentEquals(gPolygon3.vertices)?.shouldNotBeNull()?.shouldBeTrue()
+        }
+
+        test("Position serialization") {
+            val positionAdapter = testMoshi.adapter<Position>()
+            val pos1 = Position()
+            val pos2 = Position(45.3f, 871.4f)
+            val pos3 = Position(-45.2f, -435.2f)
+            positionAdapter.fromJson(positionAdapter.toJson(pos1)) shouldBe pos1
+            positionAdapter.fromJson(positionAdapter.toJson(pos2)) shouldBe pos2
+            positionAdapter.fromJson(positionAdapter.toJson(pos3)) shouldBe pos3
+        }
+
+        test("CustomPosition serialization") {
+            val customPositionAdapter = testMoshi.adapter<CustomPosition>()
+            val customPos1 = CustomPosition()
+            val customPos2 = CustomPosition(45.3f, 871.4f)
+            val customPos3 = CustomPosition(-45.2f, -435.2f)
+            customPositionAdapter.fromJson(customPositionAdapter.toJson(customPos1)) shouldBe customPos1
+            customPositionAdapter.fromJson(customPositionAdapter.toJson(customPos2)) shouldBe customPos2
+            customPositionAdapter.fromJson(customPositionAdapter.toJson(customPos3)) shouldBe customPos3
+        }
+
+        test("Direction serialization") {
+            val directionAdapter = testMoshi.adapter<Direction>()
+            val dir1 = Direction()
+            val dir2 = Direction(Vector2(Vector2.Y).rotate90(1))
+            val dir3 = Direction(Vector2(Vector2.Y).rotateDeg(31.4f))
+            val dir4 = Direction(Vector2(Vector2.Y).rotateDeg(-45.6f))
+            directionAdapter.fromJson(directionAdapter.toJson(dir1)) shouldBe dir1
+            directionAdapter.fromJson(directionAdapter.toJson(dir2)) shouldBe dir2
+            directionAdapter.fromJson(directionAdapter.toJson(dir3)) shouldBe dir3
+            directionAdapter.fromJson(directionAdapter.toJson(dir4)) shouldBe dir4
+        }
+
+        test("Speed serialization") {
+            val speedAdapter = testMoshi.adapter<Speed>()
+            val speed1 = Speed()
+            val speed2 = Speed(200f, 1500f, 3f)
+            val speed3 = Speed(80f, 0f, 0f)
+            val speed4 = Speed(490f, 1200f, 0.02f)
+            speedAdapter.fromJson(speedAdapter.toJson(speed1)) shouldBe speed1
+            speedAdapter.fromJson(speedAdapter.toJson(speed2)) shouldBe speed2
+            speedAdapter.fromJson(speedAdapter.toJson(speed3)) shouldBe speed3
+            speedAdapter.fromJson(speedAdapter.toJson(speed4)) shouldBe speed4
+        }
+
+        test("Altitude serialization") {
+            val altAdapter = testMoshi.adapter<Altitude>()
+            val alt1 = Altitude()
+            val alt2 = Altitude(54f)
+            val alt3 = Altitude(5089.3f)
+            val alt4 = Altitude(32189.3f)
+            altAdapter.fromJson(altAdapter.toJson(alt1)) shouldBe alt1
+            altAdapter.fromJson(altAdapter.toJson(alt2)) shouldBe alt2
+            altAdapter.fromJson(altAdapter.toJson(alt3)) shouldBe alt3
+            altAdapter.fromJson(altAdapter.toJson(alt4)) shouldBe alt4
+        }
+
+        test("Acceleration serialization") {
+            val accelAdapter = testMoshi.adapter<Acceleration>()
+            val acc1 = Acceleration()
+            val acc2 = Acceleration(2f, 0f, 0f)
+            val acc3 = Acceleration(0.05f, 0.9f, 0f)
+            val acc4 = Acceleration(0.1f, 0f, 0.13f)
+            accelAdapter.fromJson(accelAdapter.toJson(acc1)) shouldBe acc1
+            accelAdapter.fromJson(accelAdapter.toJson(acc2)) shouldBe acc2
+            accelAdapter.fromJson(accelAdapter.toJson(acc3)) shouldBe acc3
+            accelAdapter.fromJson(accelAdapter.toJson(acc4)) shouldBe acc4
+        }
+
+        test("IndicatedAirSpeed serialization") {
+            val iasAdapter = testMoshi.adapter<IndicatedAirSpeed>()
+            val ias1 = IndicatedAirSpeed()
+            val ias2 = IndicatedAirSpeed(200f)
+            val ias3 = IndicatedAirSpeed(80.4f)
+            val ias4 = IndicatedAirSpeed(271.3f)
+            iasAdapter.fromJson(iasAdapter.toJson(ias1)) shouldBe ias1
+            iasAdapter.fromJson(iasAdapter.toJson(ias2)) shouldBe ias2
+            iasAdapter.fromJson(iasAdapter.toJson(ias3)) shouldBe ias3
+            iasAdapter.fromJson(iasAdapter.toJson(ias4)) shouldBe ias4
+        }
+
+        test("GroundTrack serialization") {
+            val groundTrackAdapter = testMoshi.adapter<GroundTrack>()
+            val groundTrack1 = GroundTrack()
+            val groundTrack2 = GroundTrack(Vector2(Vector2.Y).rotate90(1).scl(1.38f))
+            val groundTrack3 = GroundTrack(Vector2(Vector2.Y).rotateDeg(31.4f).scl(0.56f))
+            val groundTrack4 = GroundTrack(Vector2(Vector2.Y).rotateDeg(-45.6f).scl(3.40f))
+            groundTrackAdapter.fromJson(groundTrackAdapter.toJson(groundTrack1)) shouldBe groundTrack1
+            groundTrackAdapter.fromJson(groundTrackAdapter.toJson(groundTrack2)) shouldBe groundTrack2
+            groundTrackAdapter.fromJson(groundTrackAdapter.toJson(groundTrack3)) shouldBe groundTrack3
+            groundTrackAdapter.fromJson(groundTrackAdapter.toJson(groundTrack4)) shouldBe groundTrack4
+        }
+
+        test("AffectedByWind serialization") {
+            val affectedByWindAdapter = testMoshi.adapter<AffectedByWind>()
+            val affectedByWind1 = AffectedByWind()
+            val affectedByWind2 = AffectedByWind(Vector2(Vector2.Y).rotate90(1).scl(0.0694f))
+            val affectedByWind3 = AffectedByWind(Vector2(Vector2.Y).rotateDeg(31.4f).scl(0.222f))
+            val affectedByWind4 = AffectedByWind(Vector2(Vector2.Y).rotateDeg(-45.6f).scl(0.493f))
+            affectedByWindAdapter.fromJson(affectedByWindAdapter.toJson(affectedByWind1)) shouldBe affectedByWind1
+            affectedByWindAdapter.fromJson(affectedByWindAdapter.toJson(affectedByWind2)) shouldBe affectedByWind2
+            affectedByWindAdapter.fromJson(affectedByWindAdapter.toJson(affectedByWind3)) shouldBe affectedByWind3
+            affectedByWindAdapter.fromJson(affectedByWindAdapter.toJson(affectedByWind4)) shouldBe affectedByWind4
+        }
     }
 
     /**
      * Matcher for checking contents of a cumulative distribution are equal
-     * @param otherDist the other distribution to check for equality with; the existing distribution to check if accessed
+     * @param otherDist the other distribution to check for equality with; the existing distribution to check is accessed
      * from [Matcher]
      * */
     private fun <T> matchCumDist(otherDist: CumulativeDistribution<T>) = Matcher<CumulativeDistribution<T>> {
@@ -359,8 +618,32 @@ object JsonTest: FunSpec() {
                 }
         }
         return@Matcher MatcherResult(!discrepancyFound, {
-            if (otherDist.size() != it.size()) "Cumulative distributions did not match in size"
+            if (otherDist.size() != it.size()) "Cumulative distributions did not match in size: ${otherDist.size()} != ${it.size()}"
             else "Cumulative distribution values and/or intervals did not match exactly (including order)"
-        }, { "Cumulative distributions matched, but should not have matched" })
+        }, { "Cumulative distributions matched, but should not have" })
+    }
+
+    /**
+     * Matcher for checking contents of a pending clearance component are equal
+     * @param otherPending the other pending clearance component to check for equality with; the existing pending clearance
+     * to check is accessed from [Matcher]
+     */
+    private fun matchPendingClearances(otherPending: PendingClearances) = Matcher<PendingClearances> {
+        val size1 = otherPending.clearanceQueue.size
+        val size2 = it.clearanceQueue.size
+        if (size1 != size2) return@Matcher MatcherResult(false, {
+            "Pending clearance queue size did not match: $size1 != $size2"
+        }, { "Pending clearance should not have matched" })
+        for (i in 0 until size1) {
+            val item1 = otherPending.clearanceQueue[i]
+            val item2 = it.clearanceQueue[i]
+            if (item1.timeLeft != item2.timeLeft) return@Matcher MatcherResult(false, {
+                "Pending clearance time remaining did not match at index $i: ${item1.timeLeft} != ${item2.timeLeft}"
+            }, { "Pending clearance should not have matched" })
+            if (!checkClearanceEquality(item1.clearanceState, item2.clearanceState, true)) return@Matcher MatcherResult(false, {
+                "Pending clearance state did not match at index $i"
+            }, { "Pending clearance should not have matched" })
+        }
+        return@Matcher MatcherResult(true, { "Pending clearance state matched" }, { "Pending clearance should not have matched" })
     }
 }

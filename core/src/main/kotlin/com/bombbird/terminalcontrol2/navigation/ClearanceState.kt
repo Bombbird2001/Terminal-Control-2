@@ -216,7 +216,7 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
      * should be executed
      * */
     @JsonClass(generateAdapter = true)
-    class PendingClearanceState(var timeLeft: Float, val clearanceState: ClearanceState)
+    data class PendingClearanceState(var timeLeft: Float, val clearanceState: ClearanceState)
 
     /**
      * Updates this clearance state to match the input clearance for UI purposes
