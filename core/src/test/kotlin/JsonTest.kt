@@ -21,6 +21,7 @@ import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import ktx.ashley.get
+import ktx.collections.GdxArrayMap
 import ktx.collections.set
 import java.util.*
 
@@ -600,6 +601,36 @@ object JsonTest: FunSpec() {
             affectedByWindAdapter.fromJson(affectedByWindAdapter.toJson(affectedByWind3)) shouldBe affectedByWind3
             affectedByWindAdapter.fromJson(affectedByWindAdapter.toJson(affectedByWind4)) shouldBe affectedByWind4
         }
+
+        test("RunwayChildren serialization") {
+            val rwyChildrenAdapter = testMoshi.adapter<RunwayChildren>()
+            val rwyChildren = arpt?.entity?.get(RunwayChildren.mapper)?.shouldNotBeNull()
+            if (rwyChildren != null) {
+                rwyChildrenAdapter.fromJson(rwyChildrenAdapter.toJson(rwyChildren))?.apply {
+                    rwyMap should matchMap(rwyChildren.rwyMap)
+                    updatedRwyMapping should matchMap(GdxArrayMap())
+                }?.shouldNotBeNull()
+            }
+        }
+
+        test("ApproachChildren serialization") {
+            val appChildrenAdapter = testMoshi.adapter<ApproachChildren>()
+            val appChildren = arpt?.entity?.get(ApproachChildren.mapper)?.shouldNotBeNull()
+            if (appChildren != null) {
+                appChildrenAdapter.fromJson(appChildrenAdapter.toJson(appChildren))?.apply {
+                    approachMap should matchMap(appChildren.approachMap)
+                }?.shouldNotBeNull()
+            }
+        }
+
+        test("VisualApproach serialization") {
+            val visAppAdapter = testMoshi.adapter<VisualApproach>()
+            val visApp1 = rwy1?.entity?.get(VisualApproach.mapper)?.shouldNotBeNull()
+            val visApp2 = rwy2?.entity?.get(VisualApproach.mapper)?.shouldNotBeNull()
+            visAppAdapter.fromJson(visAppAdapter.toJson(visApp1)) shouldBe visApp1
+            visAppAdapter.fromJson(visAppAdapter.toJson(visApp2)) shouldBe visApp2
+            // TODO Match entity function
+        }
     }
 
     /**
@@ -645,5 +676,70 @@ object JsonTest: FunSpec() {
             }, { "Pending clearance should not have matched" })
         }
         return@Matcher MatcherResult(true, { "Pending clearance state matched" }, { "Pending clearance should not have matched" })
+    }
+
+    /**
+     * Matcher for checking contents of a [GdxArrayMap] are equal
+     * @param otherMap the other GdxArrayMap to check for equality with; the existing map to check is accessed from [Matcher]
+     */
+    private fun <T, U> matchMap(otherMap: GdxArrayMap<T, U>) = Matcher<GdxArrayMap<T, U>> {
+        val size1 = otherMap.size
+        val size2 = it.size
+        if (size1 != size2) return@Matcher MatcherResult(false, {
+            "Map size did not match: $size1 != $size2"
+        }, { "Map should not have matched" })
+        for (entry in it) {
+            val thisObj = entry.value
+            val otherObj = otherMap[entry.key]
+            when {
+                thisObj is Airport.Runway && otherObj is Airport.Runway -> thisObj should matchRunway(otherObj)
+                thisObj is Approach && otherObj is Approach -> thisObj should matchApproach(otherObj)
+                otherObj != thisObj -> return@Matcher MatcherResult(false, {
+                    "Map entry did not match at key ${entry.key}: ${otherMap[entry.key]} != ${entry.value}"
+                }, { "Map should not have matched" })
+            }
+        }
+        return@Matcher MatcherResult(true, { "Map matched" }, { "Map should not have matched" })
+    }
+
+    /**
+     * Matcher for checking contents of a [Airport.Runway] are equal; it will only check the runway info component
+     * @param otherRunway the other Runway to check for equality with; the existing runway to check is accessed from
+     * [Matcher]
+     */
+    private fun matchRunway(otherRunway: Airport.Runway) = Matcher<Airport.Runway> {
+        val rwyInfo1 = otherRunway.entity[RunwayInfo.mapper]?.shouldNotBeNull()
+        val rwyInfo2 = it.entity[RunwayInfo.mapper]?.shouldNotBeNull()
+        if (rwyInfo1 == null || rwyInfo2 == null) return@Matcher MatcherResult(false, {
+            "Both runways should have a RunwayInfo component"
+        }, { "Runway should not have matched" })
+        if (rwyInfo1.rwyId != rwyInfo2.rwyId ||
+            rwyInfo1.rwyName != rwyInfo2.rwyName || rwyInfo1.lengthM != rwyInfo2.lengthM ||
+            rwyInfo1.displacedThresholdM != rwyInfo2.displacedThresholdM ||
+            rwyInfo1.intersectionTakeoffM != rwyInfo2.intersectionTakeoffM ||
+            rwyInfo1.tower != rwyInfo2.tower || rwyInfo1.freq != rwyInfo2.freq) return@Matcher MatcherResult(false, {
+            "RunwayInfo of both runways do not match"
+        }, { "Runway should not have matched" })
+        return@Matcher MatcherResult(true, { "Runway matched" }, { "Runway should not have matched" })
+    }
+
+    /**
+     * Matcher for checking contents of a [Approach] are equal
+     * @param otherApp the other Approach to check for equality with; the existing approach to check is accessed from
+     * [Matcher]
+     */
+    private fun matchApproach(otherApp: Approach) = Matcher<Approach> {
+        val size1 = otherApp.entity.components.size()
+        val size2 = it.entity.components.size()
+        if (size1 != size2) return@Matcher MatcherResult(false, {
+            "Approach entity do not contain the same number of components: $size1 != $size2"
+        }, { "Approach should not have matched" })
+        if (size1 == 0) return@Matcher MatcherResult(false, { "Approach entity is empty" }, { "Approach should not have matched" })
+        for (comp in otherApp.entity.components) {
+            if (!it.entity.components.contains(comp, false)) return@Matcher MatcherResult(false, {
+                "Missing component ${comp::class.simpleName} in approach entity"
+            }, { "Approach should not have matched" })
+        }
+        return@Matcher MatcherResult(true, { "Approach matched" }, { "Approach should not have matched" })
     }
 }
