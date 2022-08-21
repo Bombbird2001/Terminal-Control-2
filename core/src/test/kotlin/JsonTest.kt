@@ -21,6 +21,8 @@ import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import ktx.ashley.get
+import ktx.ashley.plusAssign
+import ktx.collections.GdxArray
 import ktx.collections.GdxArrayMap
 import ktx.collections.set
 import java.util.*
@@ -51,6 +53,8 @@ object JsonTest: FunSpec() {
             arpt?.setRunwayMapping("05R", 1)
             rwy1 = arpt?.getRunway("05L")
             rwy2 = arpt?.getRunway("05R")
+            rwy1?.entity?.plusAssign(DependentOppositeRunway().apply { rwy1?.entity?.let { depOppRwys.add(it) }})
+            rwy2?.entity?.plusAssign(DependentOppositeRunway())
             arpt?.assignOppositeRunways()
             GAME.gameServer?.apply {
                 airports.clear()
@@ -82,8 +86,6 @@ object JsonTest: FunSpec() {
             val takeoffRollAdapter = testMoshi.adapter<TakeoffRoll>()
             val takeoffRoll1 = TakeoffRoll(2f, rwy1?.entity ?: Entity())
             val takeoffRoll2 = TakeoffRoll(2.5f, rwy2?.entity ?: Entity())
-            takeoffRollAdapter.toJson(takeoffRoll1) shouldBe """{"targetAccMps2":2.0,"rwy":{"arptId":0,"rwyId":0}}"""
-            takeoffRollAdapter.toJson(takeoffRoll2) shouldBe """{"targetAccMps2":2.5,"rwy":{"arptId":0,"rwyId":1}}"""
             val takeoffRoll1FromJson = takeoffRollAdapter.fromJson(takeoffRollAdapter.toJson(takeoffRoll1))
             val takeoffRoll2FromJson = takeoffRollAdapter.fromJson(takeoffRollAdapter.toJson(takeoffRoll2))
             runDelayedEntityRetrieval()
@@ -95,8 +97,6 @@ object JsonTest: FunSpec() {
             val landingRollAdapter = testMoshi.adapter<LandingRoll>()
             val landingRoll1 = LandingRoll(rwy1?.entity ?: Entity())
             val landingRoll2 = LandingRoll(rwy2?.entity ?: Entity())
-            landingRollAdapter.toJson(landingRoll1) shouldBe """{"rwy":{"arptId":0,"rwyId":0}}"""
-            landingRollAdapter.toJson(landingRoll2) shouldBe """{"rwy":{"arptId":0,"rwyId":1}}"""
             val landingRoll1FromJson = landingRollAdapter.fromJson(landingRollAdapter.toJson(landingRoll1))
             val landingRoll2FromJson = landingRollAdapter.fromJson(landingRollAdapter.toJson(landingRoll2))
             runDelayedEntityRetrieval()
@@ -632,6 +632,21 @@ object JsonTest: FunSpec() {
             if (visApp1 != null && visApp1FromJson != null) visApp1.visual should matchEntityExactly(visApp1FromJson.visual)
             if (visApp2 != null && visApp2FromJson != null) visApp2.visual should matchEntityExactly(visApp2FromJson.visual)
         }
+
+        test("DependentOppositeRunway serialization") {
+            val depOppRwyAdapter = testMoshi.adapter<DependentOppositeRunway>()
+            val depOppRwy1 = rwy1?.entity?.get(DependentOppositeRunway.mapper)?.shouldNotBeNull()
+            val depOppRwy2 = rwy2?.entity?.get(DependentOppositeRunway.mapper)?.shouldNotBeNull()
+            val depOppRwy1FromJson = depOppRwyAdapter.fromJson(depOppRwyAdapter.toJson(depOppRwy1))?.shouldNotBeNull()
+            val depOppRwy2FromJson = depOppRwyAdapter.fromJson(depOppRwyAdapter.toJson(depOppRwy2))?.shouldNotBeNull()
+            runDelayedEntityRetrieval()
+            if (depOppRwy1 != null && depOppRwy1FromJson != null) for ((index, rwy) in depOppRwy1FromJson.depOppRwys.withIndex()) {
+                rwy should matchRunway(depOppRwy1.depOppRwys[index])
+            }
+            if (depOppRwy2 != null && depOppRwy2FromJson != null) for ((index, rwy) in depOppRwy2FromJson.depOppRwys.withIndex()) {
+                rwy should matchRunway(depOppRwy2.depOppRwys[index])
+            }
+        }
     }
 
     /**
@@ -693,7 +708,7 @@ object JsonTest: FunSpec() {
             val thisObj = entry.value
             val otherObj = otherMap[entry.key]
             when {
-                thisObj is Airport.Runway && otherObj is Airport.Runway -> thisObj should matchRunway(otherObj)
+                thisObj is Airport.Runway && otherObj is Airport.Runway -> thisObj.entity should matchRunway(otherObj.entity)
                 thisObj is Approach && otherObj is Approach -> thisObj should matchApproach(otherObj)
                 otherObj != thisObj -> return@Matcher MatcherResult(false, {
                     "Map entry did not match at key ${entry.key}: ${otherMap[entry.key]} != ${entry.value}"
@@ -704,13 +719,33 @@ object JsonTest: FunSpec() {
     }
 
     /**
+     * Matcher for checking contents of a [GdxArray] are equal
+     * @param otherArray the other GdxArray to check for equality with; the existing array to check is accessed from [Matcher]
+     */
+    private fun <T> matchGdxArray(otherArray: GdxArray<T>) = Matcher<GdxArray<T>> {
+        val size1 = otherArray.size
+        val size2 = it.size
+        if (size1 != size2) return@Matcher MatcherResult(false, {
+            "Array size did not match: $size1 != $size2"
+        }, { "Array should not have matched" })
+        for ((index, entry) in it.withIndex()) {
+            val otherObj = otherArray[index]
+            if (entry is Airport.Runway && otherObj is Airport.Runway) entry.entity should matchRunway(otherObj.entity)
+            else if (!otherArray.contains(entry, false)) return@Matcher MatcherResult(false, {
+                "Array did not contain element $entry"
+            }, { "Array should not have matched" })
+        }
+        return@Matcher MatcherResult(true, { "Array matched" }, { "Array should not have matched" })
+    }
+
+    /**
      * Matcher for checking contents of a [Airport.Runway] are equal; it will only check the runway info component
      * @param otherRunway the other Runway to check for equality with; the existing runway to check is accessed from
      * [Matcher]
      */
-    private fun matchRunway(otherRunway: Airport.Runway) = Matcher<Airport.Runway> {
-        val rwyInfo1 = otherRunway.entity[RunwayInfo.mapper]?.shouldNotBeNull()
-        val rwyInfo2 = it.entity[RunwayInfo.mapper]?.shouldNotBeNull()
+    private fun matchRunway(otherRunway: Entity) = Matcher<Entity> {
+        val rwyInfo1 = otherRunway[RunwayInfo.mapper]?.shouldNotBeNull()
+        val rwyInfo2 = it[RunwayInfo.mapper]?.shouldNotBeNull()
         if (rwyInfo1 == null || rwyInfo2 == null) return@Matcher MatcherResult(false, {
             "Both runways should have a RunwayInfo component"
         }, { "Runway should not have matched" })

@@ -29,19 +29,13 @@ fun runDelayedEntityRetrieval() {
 @JsonClass(generateAdapter = true)
 data class RunwayRefJSON(val arptId: Byte, val rwyId: Byte) {
     /**
-     * Method to retrieve the runway entity based on this runway reference, delayed to after the entities themselves have
-     * been fully loaded
-     * @param component the component to set the runway entity to - only component subclasses defined in this method will
-     * have their runway entity field set after the delayed retrieval
+     * Convenience function for retrieving the appropriate runway entity based on [arptId] and [rwyId]
+     *
+     * This function should only be run after the airport and runway children entities have been loaded into the airport;
+     * i.e. during invocation of [runDelayedEntityRetrieval]
      */
-    fun delayedRunwayEntityRetrieval(component: Component) {
-        delayedEntityRetrieval.add {
-            val rwy = GAME.gameServer?.airports?.get(arptId)?.entity?.get(RunwayChildren.mapper)?.rwyMap?.get(rwyId)?.entity ?: return@add
-            when (component) {
-                is TakeoffRoll -> component.rwy = rwy
-                is LandingRoll -> component.rwy = rwy
-            }
-        }
+    fun getRunwayEntity(): Entity {
+        return GAME.gameServer?.airports?.get(arptId)?.entity?.get(RunwayChildren.mapper)?.rwyMap?.get(rwyId)?.entity ?: Entity()
     }
 }
 

@@ -4,7 +4,6 @@ import com.badlogic.ashley.core.Component
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.Airport
 import com.bombbird.terminalcontrol2.entities.RouteZone
-import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.navigation.Approach
 import com.squareup.moshi.FromJson
 import com.squareup.moshi.JsonClass
@@ -97,7 +96,7 @@ object DependentOppositeRunwayAdapter {
     fun fromJson(depOppRwysJSON: DependentOppositeRunwayJSON): DependentOppositeRunway {
         return DependentOppositeRunway().apply {
             depOppRwysJSON.depOppRwys.forEach {
-                delayedEntityRetrieval.add { GAME.gameServer?.airports?.get(it.arptId)?.entity.let { rwy -> depOppRwys.add(rwy) }}
+                delayedEntityRetrieval.add { depOppRwys.add(it.getRunwayEntity()) }
             }
         }
     }
@@ -120,7 +119,7 @@ object DependentParallelRunwayAdapter {
     fun fromJson(depParallelRwysJSON: DependentParallelRunwayJSON): DependentParallelRunway {
         return DependentParallelRunway().apply {
             depParallelRwysJSON.depParallelRwys.forEach {
-                delayedEntityRetrieval.add { GAME.gameServer?.airports?.get(it.arptId)?.entity.let { rwy -> depParRwys.add(rwy) }}
+                delayedEntityRetrieval.add { depParRwys.add(it.getRunwayEntity()) }
             }
         }
     }
@@ -143,7 +142,7 @@ object CrossingRunwayAdapter {
     fun fromJson(crossingRwyJSON: CrossingRunwayJSON): CrossingRunway {
         return CrossingRunway().apply {
             crossingRwyJSON.crossingRwys.forEach {
-                delayedEntityRetrieval.add { GAME.gameServer?.airports?.get(it.arptId)?.entity.let { rwy -> crossRwys.add(rwy) }}
+                delayedEntityRetrieval.add { crossRwys.add(it.getRunwayEntity()) }
             }
         }
     }

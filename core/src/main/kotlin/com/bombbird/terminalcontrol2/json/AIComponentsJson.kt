@@ -19,7 +19,9 @@ object TakeoffRollAdapter {
 
     @FromJson
     fun fromTakeoffRollJSON(takeoffRollJSON: TakeoffRollJSON): TakeoffRoll {
-        return TakeoffRoll(takeoffRollJSON.targetAccMps2).apply { takeoffRollJSON.rwy.delayedRunwayEntityRetrieval(this) }
+        return TakeoffRoll(takeoffRollJSON.targetAccMps2).apply {
+            delayedEntityRetrieval.add { rwy = takeoffRollJSON.rwy.getRunwayEntity() }
+        }
     }
 }
 
@@ -36,7 +38,9 @@ object LandingRollAdapter {
 
     @FromJson
     fun fromLandingRollJSON(landingRollJSON: LandingRollJSON): LandingRoll {
-        return LandingRoll().apply { landingRollJSON.rwy.delayedRunwayEntityRetrieval(this) }
+        return LandingRoll().apply {
+            delayedEntityRetrieval.add { rwy = landingRollJSON.rwy.getRunwayEntity() }
+        }
     }
 }
 
