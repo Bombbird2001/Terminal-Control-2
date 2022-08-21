@@ -627,9 +627,10 @@ object JsonTest: FunSpec() {
             val visAppAdapter = testMoshi.adapter<VisualApproach>()
             val visApp1 = rwy1?.entity?.get(VisualApproach.mapper)?.shouldNotBeNull()
             val visApp2 = rwy2?.entity?.get(VisualApproach.mapper)?.shouldNotBeNull()
-            visAppAdapter.fromJson(visAppAdapter.toJson(visApp1)) shouldBe visApp1
-            visAppAdapter.fromJson(visAppAdapter.toJson(visApp2)) shouldBe visApp2
-            // TODO Match entity function
+            val visApp1FromJson = visAppAdapter.fromJson(visAppAdapter.toJson(visApp1))?.shouldNotBeNull()
+            val visApp2FromJson = visAppAdapter.fromJson(visAppAdapter.toJson(visApp2))?.shouldNotBeNull()
+            if (visApp1 != null && visApp1FromJson != null) visApp1.visual should matchEntityExactly(visApp1FromJson.visual)
+            if (visApp2 != null && visApp2FromJson != null) visApp2.visual should matchEntityExactly(visApp2FromJson.visual)
         }
     }
 
@@ -731,15 +732,29 @@ object JsonTest: FunSpec() {
     private fun matchApproach(otherApp: Approach) = Matcher<Approach> {
         val size1 = otherApp.entity.components.size()
         val size2 = it.entity.components.size()
-        if (size1 != size2) return@Matcher MatcherResult(false, {
-            "Approach entity do not contain the same number of components: $size1 != $size2"
-        }, { "Approach should not have matched" })
-        if (size1 == 0) return@Matcher MatcherResult(false, { "Approach entity is empty" }, { "Approach should not have matched" })
-        for (comp in otherApp.entity.components) {
-            if (!it.entity.components.contains(comp, false)) return@Matcher MatcherResult(false, {
-                "Missing component ${comp::class.simpleName} in approach entity"
-            }, { "Approach should not have matched" })
-        }
+        if (size1 == 0 || size2 == 0) return@Matcher MatcherResult(false, { "Approach entity is empty" }, { "Approach should not have matched" })
+        it.entity should matchEntityExactly(otherApp.entity)
         return@Matcher MatcherResult(true, { "Approach matched" }, { "Approach should not have matched" })
+    }
+
+    /**
+     * Matcher for checking components of an [Entity] are equal; components have to match exactly
+     * @param otherEntity the other Entity to check for equality with; the existing entity to check is accessed from
+     * [Matcher]
+     */
+    private fun matchEntityExactly(otherEntity: Entity) = Matcher<Entity> {
+        val size1 = otherEntity.components.size()
+        val size2 = it.components.size()
+        if (size1 != size2) return@Matcher MatcherResult(false, {
+            "Entity do not contain the same number of components: $size1 != $size2"
+        }, { "Entity should not have matched" })
+        for (comp in otherEntity.components) {
+            if (!it.components.contains(comp, false)) {
+                return@Matcher MatcherResult(false, {
+                    "Missing component ${comp::class.simpleName} in entity"
+                }, { "Entity should not have matched" })
+            }
+        }
+        return@Matcher MatcherResult(true, { "Entity matched" }, { "Entity should not have matched" })
     }
 }

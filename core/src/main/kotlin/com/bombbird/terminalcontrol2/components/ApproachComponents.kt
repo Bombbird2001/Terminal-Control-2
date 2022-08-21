@@ -103,4 +103,13 @@ class Visual: Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.VISUAL
 
     companion object: Mapper<Visual>()
+
+    override fun equals(other: Any?): Boolean {
+        if (other == null) return false
+        return other::class == Visual::class
+    }
+
+    override fun hashCode(): Int {
+        return componentType.hashCode()
+    }
 }
