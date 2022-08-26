@@ -647,6 +647,36 @@ object JsonTest: FunSpec() {
                 rwy should matchRunway(depOppRwy2.depOppRwys[index])
             }
         }
+
+        test("DependentParallelRunway serialization") {
+            val depParRwyAdapter = testMoshi.adapter<DependentParallelRunway>()
+            val depParRwy1 = rwy1?.entity?.get(DependentParallelRunway.mapper)?.shouldNotBeNull()
+            val depParRwy2 = rwy2?.entity?.get(DependentParallelRunway.mapper)?.shouldNotBeNull()
+            val depParRwy1FromJson = depParRwyAdapter.fromJson(depParRwyAdapter.toJson(depParRwy1))?.shouldNotBeNull()
+            val depParRwy2FromJson = depParRwyAdapter.fromJson(depParRwyAdapter.toJson(depParRwy2))?.shouldNotBeNull()
+            runDelayedEntityRetrieval()
+            if (depParRwy1 != null && depParRwy1FromJson != null) for ((index, rwy) in depParRwy1FromJson.depParRwys.withIndex()) {
+                rwy should matchRunway(depParRwy1.depParRwys[index])
+            }
+            if (depParRwy2 != null && depParRwy2FromJson != null) for ((index, rwy) in depParRwy2FromJson.depParRwys.withIndex()) {
+                rwy should matchRunway(depParRwy2.depParRwys[index])
+            }
+        }
+
+        test("CrossingRunway serialization") {
+            val crossingRwyAdapter = testMoshi.adapter<CrossingRunway>()
+            val crossingRwy1 = rwy1?.entity?.get(CrossingRunway.mapper)?.shouldNotBeNull()
+            val crossingRwy2 = rwy2?.entity?.get(CrossingRunway.mapper)?.shouldNotBeNull()
+            val crossingRwy1FromJson = crossingRwyAdapter.fromJson(crossingRwyAdapter.toJson(crossingRwy1))?.shouldNotBeNull()
+            val crossingRwy2FromJson = crossingRwyAdapter.fromJson(crossingRwyAdapter.toJson(crossingRwy2))?.shouldNotBeNull()
+            runDelayedEntityRetrieval()
+            if (crossingRwy1 != null && crossingRwy1FromJson != null) for ((index, rwy) in crossingRwy1FromJson.crossRwys.withIndex()) {
+                rwy should matchRunway(crossingRwy1.crossRwys[index])
+            }
+            if (crossingRwy2 != null && crossingRwy2FromJson != null) for ((index, rwy) in crossingRwy2FromJson.crossRwys.withIndex()) {
+                rwy should matchRunway(crossingRwy2.crossRwys[index])
+            }
+        }
     }
 
     /**
