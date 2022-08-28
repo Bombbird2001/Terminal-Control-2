@@ -3,8 +3,11 @@ import com.badlogic.gdx.math.CumulativeDistribution
 import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.utils.Queue
+import com.badlogic.gdx.utils.Queue.QueueIterator
 import com.bombbird.terminalcontrol2.components.*
+import com.bombbird.terminalcontrol2.entities.Aircraft
 import com.bombbird.terminalcontrol2.entities.Airport
+import com.bombbird.terminalcontrol2.entities.WakeZone
 import com.bombbird.terminalcontrol2.entities.Waypoint
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.json.getMoshiWithAllAdapters
@@ -13,6 +16,7 @@ import com.bombbird.terminalcontrol2.navigation.Approach
 import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.navigation.getZonesForRoute
+import com.bombbird.terminalcontrol2.utilities.AircraftTypeData
 import com.bombbird.terminalcontrol2.utilities.UsabilityFilter
 import com.bombbird.terminalcontrol2.utilities.checkClearanceEquality
 import com.squareup.moshi.adapter
@@ -20,6 +24,7 @@ import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.Matcher
 import io.kotest.matchers.MatcherResult
 import io.kotest.matchers.booleans.shouldBeTrue
+import io.kotest.matchers.floats.plusOrMinus
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
@@ -43,6 +48,9 @@ object JsonTest: FunSpec() {
     private var app3: Approach? = null
 
     private var route1: Route? = null
+
+    private var aircraft1: Aircraft? = null
+    private var aircraft2: Aircraft? = null
 
     private val testMoshi = getMoshiWithAllAdapters()
 
@@ -80,6 +88,12 @@ object JsonTest: FunSpec() {
                 waypoints[8] = Waypoint(8, "TEST8", 8, 8, false)
                 waypoints[9] = Waypoint(9, "TEST9", 9, 9, false)
                 waypoints[10] = Waypoint(10, "TEST10", 10, 10, false)
+
+                aircraft.clear()
+                AircraftTypeData.addAircraftPerf("B77W", AircraftTypeData.AircraftPerfData())
+                AircraftTypeData.addAircraftPerf("A359", AircraftTypeData.AircraftPerfData())
+                aircraft["SHIBA1"] = Aircraft("SHIBA1", -200f, -100f, 19806.4f, "B77W", FlightType.ARRIVAL, false).apply { aircraft1 = this }
+                aircraft["SHIBA2"] = Aircraft("SHIBA2", 50f, 50f, 3000f, "A359", FlightType.DEPARTURE, false).apply { aircraft2 = this }
             }
 
             app1 = Approach("ILS05L", 0, 0, 9f, 11f, 220, 800, false, UsabilityFilter.DAY_AND_NIGHT).apply {
@@ -775,6 +789,67 @@ object JsonTest: FunSpec() {
             activeRwyConfigAdapter.fromJson(activeRwyConfigAdapter.toJson(activeRwyConfig2)) shouldBe activeRwyConfig2
             activeRwyConfigAdapter.fromJson(activeRwyConfigAdapter.toJson(activeRwyConfig3)) shouldBe activeRwyConfig3
         }
+
+        test("DepartureInfo serialization") {
+            val depInfoAdapter = testMoshi.adapter<DepartureInfo>()
+            val depInfo1 = DepartureInfo(false, 5)
+            val depInfo2 = DepartureInfo(false, -23)
+            val depInfo3 = DepartureInfo(true, -5)
+            depInfoAdapter.fromJson(depInfoAdapter.toJson(depInfo1)) shouldBe depInfo1
+            depInfoAdapter.fromJson(depInfoAdapter.toJson(depInfo2)) shouldBe depInfo2
+            depInfoAdapter.fromJson(depInfoAdapter.toJson(depInfo3)) shouldBe depInfo3
+        }
+
+        test("AirportNextDeparture serialization") {
+            val arptNextDepAdapter = testMoshi.adapter<AirportNextDeparture>()
+            val arptNextDep1 = AirportNextDeparture(aircraft1?.entity ?: Entity())
+            val arptNextDep2 = AirportNextDeparture(aircraft2?.entity ?: Entity())
+            val arptNextDep1Json = arptNextDepAdapter.fromJson(arptNextDepAdapter.toJson(arptNextDep1))
+            val arptNextDep2Json = arptNextDepAdapter.fromJson(arptNextDepAdapter.toJson(arptNextDep2))
+            runDelayedEntityRetrieval()
+            arptNextDep1Json shouldBe arptNextDep1
+            arptNextDep2Json shouldBe arptNextDep2
+        }
+
+        test("RunwayPreviousArrival serialization") {
+            val rwyPrevArrAdapter = testMoshi.adapter<RunwayPreviousArrival>()
+            val rwyPrevArr1 = RunwayPreviousArrival(65f, 'H', 'B')
+            val rwyPrevArr2 = RunwayPreviousArrival(151f, 'J', 'A')
+            val rwyPrevArr3 = RunwayPreviousArrival(83f, 'M', 'D')
+            rwyPrevArrAdapter.fromJson(rwyPrevArrAdapter.toJson(rwyPrevArr1)) shouldBe rwyPrevArr1
+            rwyPrevArrAdapter.fromJson(rwyPrevArrAdapter.toJson(rwyPrevArr2)) shouldBe rwyPrevArr2
+            rwyPrevArrAdapter.fromJson(rwyPrevArrAdapter.toJson(rwyPrevArr3)) shouldBe rwyPrevArr3
+        }
+
+        test("RunwayPreviousDeparture serialization") {
+            val rwyPrevDepAdapter = testMoshi.adapter<RunwayPreviousDeparture>()
+            val rwyPrevDep1 = RunwayPreviousDeparture(33f, 'H', 'B')
+            val rwyPrevDep2 = RunwayPreviousDeparture(193f, 'J', 'A')
+            val rwyPrevDep3 = RunwayPreviousDeparture(67f, 'M', 'D')
+            rwyPrevDepAdapter.fromJson(rwyPrevDepAdapter.toJson(rwyPrevDep1)) shouldBe rwyPrevDep1
+            rwyPrevDepAdapter.fromJson(rwyPrevDepAdapter.toJson(rwyPrevDep2)) shouldBe rwyPrevDep2
+            rwyPrevDepAdapter.fromJson(rwyPrevDepAdapter.toJson(rwyPrevDep3)) shouldBe rwyPrevDep3
+        }
+
+        test("WakeTrail serialization") {
+            val wakeTrailAdapter = testMoshi.adapter<WakeTrail>()
+            val wakeTrail1 = WakeTrail(Queue<Pair<Position, WakeZone?>>().apply {
+                addLast(Pair(Position(1f, 1f), WakeZone(1f, 2f, 1f, 0f, 7000f, "SHIBA1", 'H', 'B')))
+                addLast(Pair(Position(10f, 10f), WakeZone(10f, 11f, 10f, 9f, 6500f, "SHIBA1", 'H', 'B')))
+                addLast(Pair(Position(20f, 20f), null))
+            }, 1.65f)
+            val wakeTrail2 = WakeTrail(distNmCounter = 0.2f)
+            wakeTrailAdapter.fromJson(wakeTrailAdapter.toJson(wakeTrail1)).shouldNotBeNull() should matchWakeTrail(wakeTrail1)
+            wakeTrailAdapter.fromJson(wakeTrailAdapter.toJson(wakeTrail2)).shouldNotBeNull() should matchWakeTrail(wakeTrail2)
+        }
+
+        test("WakeInfo serialization") {
+            val wakeInfoAdapter = testMoshi.adapter<WakeInfo>()
+            val wakeInfo1 = WakeInfo("SHIBA1", 'H', 'B', 0.5f)
+            val wakeInfo2 = WakeInfo("SHIBA2", 'M', 'C', 3.5f)
+            wakeInfoAdapter.fromJson(wakeInfoAdapter.toJson(wakeInfo1)) shouldBe wakeInfo1
+            wakeInfoAdapter.fromJson(wakeInfoAdapter.toJson(wakeInfo2)) shouldBe wakeInfo2
+        }
     }
 
     /**
@@ -857,9 +932,7 @@ object JsonTest: FunSpec() {
             "Array size did not match: $size1 != $size2"
         }, { "Array should not have matched" })
         for ((index, entry) in it.withIndex()) {
-            val otherObj = otherArray[index]
-            if (entry is Airport.Runway && otherObj is Airport.Runway) entry.entity should matchRunway(otherObj.entity)
-            else if (!otherArray.contains(entry, false)) return@Matcher MatcherResult(false, {
+            if (otherArray[index] != entry) return@Matcher MatcherResult(false, {
                 "Array did not contain element $entry"
             }, { "Array should not have matched" })
         }
@@ -920,7 +993,7 @@ object JsonTest: FunSpec() {
 
     /**
      * Matcher for checking contents of a [ArrivalRouteZone] are equal
-     * @param otherArrZone the other arrival zone to check for equality with; the existing runway to check is accessed
+     * @param otherArrZone the other arrival zone to check for equality with; the existing arrival zone to check is accessed
      * from [Matcher]
      */
     private fun matchArrivalZone(otherArrZone: ArrivalRouteZone) = Matcher<ArrivalRouteZone> {
@@ -935,12 +1008,12 @@ object JsonTest: FunSpec() {
             "Approach zone size did not match: ${arr1.size} != ${arr2.size}"
         }, { "Arrival route zone should not have matched" })
         for ((index, starZone) in arr1.withIndex()) {
-            starZone.entity[GPolygon.mapper].shouldNotBeNull().vertices.contentEquals(arr2[index].entity[GPolygon.mapper].shouldNotBeNull().vertices)
-            starZone.entity[Altitude.mapper].shouldNotBeNull() shouldBe arr2[index].entity[Altitude.mapper].shouldNotBeNull()
+            starZone.entity[GPolygon.mapper].shouldNotBeNull().vertices.contentEquals(arr2[index].entity[GPolygon.mapper].shouldNotBeNull().vertices).shouldBeTrue()
+            starZone.entity[Altitude.mapper] shouldBe arr2[index].entity[Altitude.mapper]
         }
         for ((index, appZone) in app1.withIndex()) {
-            appZone.entity[GPolygon.mapper].shouldNotBeNull().vertices.contentEquals(app2[index].entity[GPolygon.mapper].shouldNotBeNull().vertices)
-            appZone.entity[Altitude.mapper].shouldNotBeNull() shouldBe app2[index].entity[Altitude.mapper].shouldNotBeNull()
+            appZone.entity[GPolygon.mapper].shouldNotBeNull().vertices.contentEquals(app2[index].entity[GPolygon.mapper].shouldNotBeNull().vertices).shouldBeTrue()
+            appZone.entity[Altitude.mapper] shouldBe app2[index].entity[Altitude.mapper]
         }
         return@Matcher MatcherResult(true, {
             "Arrival route zone matched"
@@ -949,8 +1022,8 @@ object JsonTest: FunSpec() {
 
     /**
      * Matcher for checking contents of a [DepartureRouteZone] are equal
-     * @param otherDepZone the other departure zone to check for equality with; the existing runway to check is accessed
-     * from [Matcher]
+     * @param otherDepZone the other departure zone to check for equality with; the existing departure zone to check is
+     * accessed from [Matcher]
      */
     private fun matchDepartureZone(otherDepZone: DepartureRouteZone) = Matcher<DepartureRouteZone> {
         val dep1 = it.sidZone
@@ -959,11 +1032,56 @@ object JsonTest: FunSpec() {
             "SID zone size did not match: ${dep1.size} != ${dep2.size}"
         }, { "Departure route zone should not have matched" })
         for ((index, depZone) in dep1.withIndex()) {
-            depZone.entity[GPolygon.mapper].shouldNotBeNull().vertices.contentEquals(dep2[index].entity[GPolygon.mapper].shouldNotBeNull().vertices)
-            depZone.entity[Altitude.mapper].shouldNotBeNull() shouldBe dep2[index].entity[Altitude.mapper].shouldNotBeNull()
+            depZone.entity[GPolygon.mapper].shouldNotBeNull().vertices.contentEquals(dep2[index].entity[GPolygon.mapper].shouldNotBeNull().vertices).shouldBeTrue()
+            depZone.entity[Altitude.mapper] shouldBe dep2[index].entity[Altitude.mapper]
         }
         return@Matcher MatcherResult(true, {
             "Departure route zone matched"
         }, { "Departure route zone should not have matched" })
+    }
+
+    /**
+     * Matcher for checking contents of a [WakeTrail] are equal
+     * @param otherWakeTrail the other wake trail to check for equality with; the existing wake trail to check is accessed
+     * from [Matcher]
+     */
+    private fun matchWakeTrail(otherWakeTrail: WakeTrail) = Matcher<WakeTrail> {
+        it.distNmCounter shouldBe otherWakeTrail.distNmCounter.plusOrMinus(0.001f)
+        val wake1 = it.wakeZones
+        val wake2 = otherWakeTrail.wakeZones
+        if (wake1.size != wake2.size) return@Matcher MatcherResult(false, {
+            "Wake queue size did not match: ${wake1.size} != ${wake2.size}"
+        }, { "Wake trail should not have matched" })
+        val queueIterator2 = QueueIterator(wake2)
+        for (trail in wake1) {
+            val secondTrail = queueIterator2.next()
+            trail.first shouldBe secondTrail.first
+            trail.second should matchWakeZone(secondTrail.second)
+        }
+        return@Matcher MatcherResult(true, {
+            "Wake trail matched"
+        }, { "Wake trail should not have matched" })
+    }
+
+    /**
+     * Matcher for checking contents of a [WakeZone] are equal; if both are null the check passes
+     * @param otherWakeZone the other wake zone to check for equality with; the existing wake zone to check is accessed
+     * from [Matcher]
+     */
+    private fun matchWakeZone(otherWakeZone: WakeZone?) = Matcher<WakeZone?> {
+        if (it == null && otherWakeZone == null) return@Matcher MatcherResult(true, {
+            "Both null wake zones matched"
+        }, { "Wake zone should not have matched" })
+        if (it == null || otherWakeZone == null) return@Matcher MatcherResult(false, {
+            "One wake zone is null"
+        }, { "Wake zone should not have matched" })
+        val wake1 = it.entity
+        val wake2 = otherWakeZone.entity
+        wake1[GPolygon.mapper].shouldNotBeNull().vertices.contentEquals(wake2[GPolygon.mapper].shouldNotBeNull().vertices).shouldBeTrue()
+        wake1[Altitude.mapper].shouldNotBeNull() shouldBe wake2[Altitude.mapper].shouldNotBeNull()
+        wake1[WakeInfo.mapper].shouldNotBeNull() shouldBe wake2[WakeInfo.mapper].shouldNotBeNull()
+        return@Matcher MatcherResult(true, {
+            "Wake zone matched"
+        }, { "Wake zone should not have matched" })
     }
 }

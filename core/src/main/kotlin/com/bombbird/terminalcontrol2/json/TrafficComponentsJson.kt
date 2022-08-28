@@ -60,7 +60,9 @@ object AirportNextDepartureAdapter {
 
     @FromJson
     fun fromJson(airportNextDepartureJSON: AirportNextDepartureJSON): AirportNextDeparture {
-        return AirportNextDeparture(GAME.gameServer?.aircraft?.get(airportNextDepartureJSON.callsign)?.entity ?: Entity())
+        return AirportNextDeparture().apply {
+            delayedEntityRetrieval.add { aircraft = GAME.gameServer?.aircraft?.get(airportNextDepartureJSON.callsign)?.entity ?: Entity() }
+        }
     }
 }
 
