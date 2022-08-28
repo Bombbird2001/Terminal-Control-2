@@ -1,15 +1,18 @@
 import com.badlogic.ashley.core.Entity
 import com.badlogic.gdx.math.CumulativeDistribution
+import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.utils.Queue
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.Airport
+import com.bombbird.terminalcontrol2.entities.Waypoint
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.json.getMoshiWithAllAdapters
 import com.bombbird.terminalcontrol2.json.runDelayedEntityRetrieval
 import com.bombbird.terminalcontrol2.navigation.Approach
 import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.navigation.Route
+import com.bombbird.terminalcontrol2.navigation.getZonesForRoute
 import com.bombbird.terminalcontrol2.utilities.UsabilityFilter
 import com.bombbird.terminalcontrol2.utilities.checkClearanceEquality
 import com.squareup.moshi.adapter
@@ -39,6 +42,8 @@ object JsonTest: FunSpec() {
     private var app2: Approach? = null
     private var app3: Approach? = null
 
+    private var route1: Route? = null
+
     private val testMoshi = getMoshiWithAllAdapters()
 
     init {
@@ -55,20 +60,63 @@ object JsonTest: FunSpec() {
             rwy2 = arpt?.getRunway("05R")
             rwy1?.entity?.plusAssign(DependentOppositeRunway().apply { rwy1?.entity?.let { depOppRwys.add(it) }})
             rwy2?.entity?.plusAssign(DependentOppositeRunway())
+            rwy1?.entity?.plusAssign(DependentParallelRunway().apply { rwy2?.entity?.let { depParRwys.add(it) }})
+            rwy2?.entity?.plusAssign(DependentParallelRunway().apply { rwy1?.entity?.let { depParRwys.add(it) }})
+            rwy1?.entity?.plusAssign(CrossingRunway().apply { rwy2?.entity?.let { crossRwys.add(it) }})
+            rwy2?.entity?.plusAssign(CrossingRunway().apply { rwy1?.entity?.let { crossRwys.add(it) }})
             arpt?.assignOppositeRunways()
             GAME.gameServer?.apply {
                 airports.clear()
                 arpt?.let { airports[0] = it }
+                waypoints.clear()
+                waypoints[0] = Waypoint(0, "TEST0", 0, 0, false)
+                waypoints[1] = Waypoint(1, "TEST1", 1, 1, false)
+                waypoints[2] = Waypoint(2, "TEST2", 2, 2, false)
+                waypoints[3] = Waypoint(3, "TEST3", 3, 3, false)
+                waypoints[4] = Waypoint(4, "TEST4", 4, 4, false)
+                waypoints[5] = Waypoint(5, "TEST5", 5, 5, false)
+                waypoints[6] = Waypoint(6, "TEST6", 6, 6, false)
+                waypoints[7] = Waypoint(7, "TEST7", 7, 7, false)
+                waypoints[8] = Waypoint(8, "TEST8", 8, 8, false)
+                waypoints[9] = Waypoint(9, "TEST9", 9, 9, false)
+                waypoints[10] = Waypoint(10, "TEST10", 10, 10, false)
             }
 
             app1 = Approach("ILS05L", 0, 0, 9f, 11f, 220, 800, false, UsabilityFilter.DAY_AND_NIGHT).apply {
                 addLocalizer(45, 20)
                 addGlideslope(3f, -2f, 4000)
+                routeLegs.setToRoute(Route().apply {
+                    add(Route.WaypointLeg(3, null, 2000, 230, legActive = true, altRestrActive = true, spdRestrActive = true, phase = Route.Leg.APP))
+                    add(Route.WaypointLeg(4, 12000, 5000, null, legActive = true, altRestrActive = false, spdRestrActive = true, phase = Route.Leg.APP))
+                })
+                routeZones.addAll(getZonesForRoute(routeLegs))
+                missedLegs.setToRoute(Route().apply {
+                    add(Route.InitClimbLeg(45, 1000, phase = Route.Leg.MISSED_APP))
+                    add(Route.WaypointLeg(5, null, 3000, null, legActive = true, altRestrActive = true, spdRestrActive = true, phase = Route.Leg.MISSED_APP))
+                    add(Route.HoldLeg(5, null, 4000, 230, 240, 45, 5, CommandTarget.TURN_RIGHT, phase = Route.Leg.MISSED_APP))
+                })
+                missedRouteZones.addAll(getZonesForRoute(missedLegs))
+                transitions["TESTT"] = Route().apply {
+                    add(Route.WaypointLeg(6, null, 2000, 230, legActive = true, altRestrActive = true, spdRestrActive = true, phase = Route.Leg.APP_TRANS))
+                    add(Route.WaypointLeg(7, 12000, 5000, null, legActive = true, altRestrActive = false, spdRestrActive = true, phase = Route.Leg.APP_TRANS))
+                }
+                transitionRouteZones["TESTT"] = getZonesForRoute(transitions["TESTT"])
             }.shouldNotBeNull()
             app2 = Approach("LDA05R", 0, 1, 7f, 11f, 625, 2700, false, UsabilityFilter.DAY_AND_NIGHT).apply {
                 addLocalizer(30, 20)
                 addStepDown(arrayOf(StepDown.Step(4f, 1200), StepDown.Step(8f, 2000), StepDown.Step(15f, 4000)))
                 addLineUpDist(1f)
+                routeLegs.setToRoute(Route().apply {
+                    add(Route.WaypointLeg(8, null, 2000, 230, legActive = true, altRestrActive = true, spdRestrActive = true, phase = Route.Leg.APP))
+                    add(Route.WaypointLeg(9, 12000, 5000, null, legActive = true, altRestrActive = false, spdRestrActive = true, phase = Route.Leg.APP))
+                })
+                routeZones.addAll(getZonesForRoute(routeLegs))
+                missedLegs.setToRoute(Route().apply {
+                    add(Route.InitClimbLeg(45, 1000, phase = Route.Leg.MISSED_APP))
+                    add(Route.WaypointLeg(10, null, 3000, null, legActive = true, altRestrActive = true, spdRestrActive = true, phase = Route.Leg.MISSED_APP))
+                    add(Route.HoldLeg(10, null, 4000, 230, 240, 45, 5, CommandTarget.TURN_RIGHT, phase = Route.Leg.MISSED_APP))
+                })
+                missedRouteZones.addAll(getZonesForRoute(missedLegs))
             }.shouldNotBeNull()
             app3 = Approach("CIRCLE05L", 0, 0, -1f, 1f, 1220, 4000, false, UsabilityFilter.DAY_AND_NIGHT).apply {
                 addLocalizer(225, 20)
@@ -80,6 +128,15 @@ object JsonTest: FunSpec() {
                 app2?.let { approachMap["LDA05R"] = it }.shouldNotBeNull()
                 app3?.let { approachMap["CIRCLE05L"] = it }.shouldNotBeNull()
             }.shouldNotBeNull()
+
+            route1 = Route().apply {
+                add(Route.InitClimbLeg(45, 1000))
+                add(Route.WaypointLeg(0, null, 2000, 230, legActive = true, altRestrActive = true, spdRestrActive = true))
+                add(Route.WaypointLeg(1, 12000, 5000, null, legActive = true, altRestrActive = false, spdRestrActive = true, phase = Route.Leg.APP))
+                add(Route.VectorLeg(250))
+                add(Route.HoldLeg(2, null, 4000, 230, 240, 45, 5, CommandTarget.TURN_RIGHT))
+                add(Route.DiscontinuityLeg())
+            }
         }
 
         test("TakeoffRoll serialization") {
@@ -327,8 +384,8 @@ object JsonTest: FunSpec() {
 
         test("RunwayInfo serialization") {
             val rwyInfoAdapter = testMoshi.adapter<RunwayInfo>()
-            val rwyInfo1 = rwy1?.entity?.get(RunwayInfo.mapper)?.shouldNotBeNull()
-            val rwyInfo2 = rwy2?.entity?.get(RunwayInfo.mapper)?.shouldNotBeNull()
+            val rwyInfo1 = rwy1?.entity?.get(RunwayInfo.mapper).shouldNotBeNull()
+            val rwyInfo2 = rwy2?.entity?.get(RunwayInfo.mapper).shouldNotBeNull()
             val rwyInfo1FromJson = rwyInfoAdapter.fromJson(rwyInfoAdapter.toJson(rwyInfo1))
             val rwyInfo2FromJson = rwyInfoAdapter.fromJson(rwyInfoAdapter.toJson(rwyInfo2))
             runDelayedEntityRetrieval()
@@ -464,18 +521,11 @@ object JsonTest: FunSpec() {
         test("ClearanceAct serialization") {
             val clearanceActAdapter = testMoshi.adapter<ClearanceAct>()
             val act1 = ClearanceAct(ClearanceState().ActingClearance())
-            val act2 = ClearanceAct(ClearanceState(vectorHdg = 200, clearedAlt = 5000, clearedIas = 220, route = Route().apply {
-                add(Route.InitClimbLeg(45, 1000))
-                add(Route.WaypointLeg(0, null, 2000, 230, legActive = true, altRestrActive = true, spdRestrActive = true))
-                add(Route.WaypointLeg(1, 12000, 5000, null, legActive = true, altRestrActive = false, spdRestrActive = true, phase = Route.Leg.APP))
-                add(Route.VectorLeg(250))
-                add(Route.HoldLeg(2, null, 4000, 230, 240, 45, 5, CommandTarget.TURN_RIGHT))
-                add(Route.DiscontinuityLeg())
-            }).ActingClearance())
-            val act1FromJson = clearanceActAdapter.fromJson(clearanceActAdapter.toJson(act1))?.actingClearance?.clearanceState?.shouldNotBeNull()
-            if (act1FromJson != null) checkClearanceEquality(act1FromJson, act1.actingClearance.clearanceState, true).shouldBeTrue()
-            val act2FromJson = clearanceActAdapter.fromJson(clearanceActAdapter.toJson(act2))?.actingClearance?.clearanceState?.shouldNotBeNull()
-            if (act2FromJson != null) checkClearanceEquality(act2FromJson, act2.actingClearance.clearanceState, true).shouldBeTrue()
+            val act2 = ClearanceAct(ClearanceState(vectorHdg = 200, clearedAlt = 5000, clearedIas = 220, route = route1.shouldNotBeNull()).ActingClearance())
+            val act1FromJson = clearanceActAdapter.fromJson(clearanceActAdapter.toJson(act1))?.actingClearance?.clearanceState.shouldNotBeNull()
+            checkClearanceEquality(act1FromJson, act1.actingClearance.clearanceState, true).shouldBeTrue()
+            val act2FromJson = clearanceActAdapter.fromJson(clearanceActAdapter.toJson(act2))?.actingClearance?.clearanceState.shouldNotBeNull()
+            checkClearanceEquality(act2FromJson, act2.actingClearance.clearanceState, true).shouldBeTrue()
         }
 
         test("RecentGoAround serialization") {
@@ -493,9 +543,9 @@ object JsonTest: FunSpec() {
             val gPolygon1 = GPolygon(floatArrayOf(12.3f, 43.1f, 5.6f, 3.5f, 8.2f, 90.3f))
             val gPolygon2 = GPolygon(floatArrayOf(0f, 111.1f, 222.2f, 333.3f, 444.4f, 555.5f))
             val gPolygon3 = GPolygon(floatArrayOf(-90.3f, -45.1f, -34f, -56.1f, 23.1f, -90.6f))
-            gPolygonAdapter.fromJson(gPolygonAdapter.toJson(gPolygon1))?.vertices?.contentEquals(gPolygon1.vertices)?.shouldNotBeNull()?.shouldBeTrue()
-            gPolygonAdapter.fromJson(gPolygonAdapter.toJson(gPolygon2))?.vertices?.contentEquals(gPolygon2.vertices)?.shouldNotBeNull()?.shouldBeTrue()
-            gPolygonAdapter.fromJson(gPolygonAdapter.toJson(gPolygon3))?.vertices?.contentEquals(gPolygon3.vertices)?.shouldNotBeNull()?.shouldBeTrue()
+            gPolygonAdapter.fromJson(gPolygonAdapter.toJson(gPolygon1))?.vertices?.contentEquals(gPolygon1.vertices).shouldNotBeNull().shouldBeTrue()
+            gPolygonAdapter.fromJson(gPolygonAdapter.toJson(gPolygon2))?.vertices?.contentEquals(gPolygon2.vertices).shouldNotBeNull().shouldBeTrue()
+            gPolygonAdapter.fromJson(gPolygonAdapter.toJson(gPolygon3))?.vertices?.contentEquals(gPolygon3.vertices).shouldNotBeNull().shouldBeTrue()
         }
 
         test("Position serialization") {
@@ -604,78 +654,126 @@ object JsonTest: FunSpec() {
 
         test("RunwayChildren serialization") {
             val rwyChildrenAdapter = testMoshi.adapter<RunwayChildren>()
-            val rwyChildren = arpt?.entity?.get(RunwayChildren.mapper)?.shouldNotBeNull()
-            if (rwyChildren != null) {
-                rwyChildrenAdapter.fromJson(rwyChildrenAdapter.toJson(rwyChildren))?.apply {
-                    rwyMap should matchMap(rwyChildren.rwyMap)
-                    updatedRwyMapping should matchMap(GdxArrayMap())
-                }?.shouldNotBeNull()
-            }
+            val rwyChildren = arpt?.entity?.get(RunwayChildren.mapper).shouldNotBeNull()
+            rwyChildrenAdapter.fromJson(rwyChildrenAdapter.toJson(rwyChildren))?.apply {
+                rwyMap should matchMap(rwyChildren.rwyMap)
+                updatedRwyMapping should matchMap(GdxArrayMap())
+            }.shouldNotBeNull()
         }
 
         test("ApproachChildren serialization") {
             val appChildrenAdapter = testMoshi.adapter<ApproachChildren>()
-            val appChildren = arpt?.entity?.get(ApproachChildren.mapper)?.shouldNotBeNull()
-            if (appChildren != null) {
-                appChildrenAdapter.fromJson(appChildrenAdapter.toJson(appChildren))?.apply {
-                    approachMap should matchMap(appChildren.approachMap)
-                }?.shouldNotBeNull()
-            }
+            val appChildren = arpt?.entity?.get(ApproachChildren.mapper).shouldNotBeNull()
+            appChildrenAdapter.fromJson(appChildrenAdapter.toJson(appChildren))?.apply {
+                approachMap should matchMap(appChildren.approachMap)
+            }.shouldNotBeNull()
         }
 
         test("VisualApproach serialization") {
             val visAppAdapter = testMoshi.adapter<VisualApproach>()
-            val visApp1 = rwy1?.entity?.get(VisualApproach.mapper)?.shouldNotBeNull()
-            val visApp2 = rwy2?.entity?.get(VisualApproach.mapper)?.shouldNotBeNull()
-            val visApp1FromJson = visAppAdapter.fromJson(visAppAdapter.toJson(visApp1))?.shouldNotBeNull()
-            val visApp2FromJson = visAppAdapter.fromJson(visAppAdapter.toJson(visApp2))?.shouldNotBeNull()
-            if (visApp1 != null && visApp1FromJson != null) visApp1.visual should matchEntityExactly(visApp1FromJson.visual)
-            if (visApp2 != null && visApp2FromJson != null) visApp2.visual should matchEntityExactly(visApp2FromJson.visual)
+            val visApp1 = rwy1?.entity?.get(VisualApproach.mapper).shouldNotBeNull()
+            val visApp2 = rwy2?.entity?.get(VisualApproach.mapper).shouldNotBeNull()
+            val visApp1FromJson = visAppAdapter.fromJson(visAppAdapter.toJson(visApp1)).shouldNotBeNull()
+            val visApp2FromJson = visAppAdapter.fromJson(visAppAdapter.toJson(visApp2)).shouldNotBeNull()
+            visApp1.visual should matchEntityExactly(visApp1FromJson.visual)
+            visApp2.visual should matchEntityExactly(visApp2FromJson.visual)
         }
 
         test("DependentOppositeRunway serialization") {
             val depOppRwyAdapter = testMoshi.adapter<DependentOppositeRunway>()
-            val depOppRwy1 = rwy1?.entity?.get(DependentOppositeRunway.mapper)?.shouldNotBeNull()
-            val depOppRwy2 = rwy2?.entity?.get(DependentOppositeRunway.mapper)?.shouldNotBeNull()
-            val depOppRwy1FromJson = depOppRwyAdapter.fromJson(depOppRwyAdapter.toJson(depOppRwy1))?.shouldNotBeNull()
-            val depOppRwy2FromJson = depOppRwyAdapter.fromJson(depOppRwyAdapter.toJson(depOppRwy2))?.shouldNotBeNull()
+            val depOppRwy1 = rwy1?.entity?.get(DependentOppositeRunway.mapper).shouldNotBeNull()
+            val depOppRwy2 = rwy2?.entity?.get(DependentOppositeRunway.mapper).shouldNotBeNull()
+            val depOppRwy1FromJson = depOppRwyAdapter.fromJson(depOppRwyAdapter.toJson(depOppRwy1)).shouldNotBeNull()
+            val depOppRwy2FromJson = depOppRwyAdapter.fromJson(depOppRwyAdapter.toJson(depOppRwy2)).shouldNotBeNull()
             runDelayedEntityRetrieval()
-            if (depOppRwy1 != null && depOppRwy1FromJson != null) for ((index, rwy) in depOppRwy1FromJson.depOppRwys.withIndex()) {
+            for ((index, rwy) in depOppRwy1FromJson.depOppRwys.withIndex()) {
                 rwy should matchRunway(depOppRwy1.depOppRwys[index])
             }
-            if (depOppRwy2 != null && depOppRwy2FromJson != null) for ((index, rwy) in depOppRwy2FromJson.depOppRwys.withIndex()) {
+            for ((index, rwy) in depOppRwy2FromJson.depOppRwys.withIndex()) {
                 rwy should matchRunway(depOppRwy2.depOppRwys[index])
             }
         }
 
         test("DependentParallelRunway serialization") {
             val depParRwyAdapter = testMoshi.adapter<DependentParallelRunway>()
-            val depParRwy1 = rwy1?.entity?.get(DependentParallelRunway.mapper)?.shouldNotBeNull()
-            val depParRwy2 = rwy2?.entity?.get(DependentParallelRunway.mapper)?.shouldNotBeNull()
-            val depParRwy1FromJson = depParRwyAdapter.fromJson(depParRwyAdapter.toJson(depParRwy1))?.shouldNotBeNull()
-            val depParRwy2FromJson = depParRwyAdapter.fromJson(depParRwyAdapter.toJson(depParRwy2))?.shouldNotBeNull()
+            val depParRwy1 = rwy1?.entity?.get(DependentParallelRunway.mapper).shouldNotBeNull()
+            val depParRwy2 = rwy2?.entity?.get(DependentParallelRunway.mapper).shouldNotBeNull()
+            val depParRwy1FromJson = depParRwyAdapter.fromJson(depParRwyAdapter.toJson(depParRwy1)).shouldNotBeNull()
+            val depParRwy2FromJson = depParRwyAdapter.fromJson(depParRwyAdapter.toJson(depParRwy2)).shouldNotBeNull()
             runDelayedEntityRetrieval()
-            if (depParRwy1 != null && depParRwy1FromJson != null) for ((index, rwy) in depParRwy1FromJson.depParRwys.withIndex()) {
+            for ((index, rwy) in depParRwy1FromJson.depParRwys.withIndex()) {
                 rwy should matchRunway(depParRwy1.depParRwys[index])
             }
-            if (depParRwy2 != null && depParRwy2FromJson != null) for ((index, rwy) in depParRwy2FromJson.depParRwys.withIndex()) {
+            for ((index, rwy) in depParRwy2FromJson.depParRwys.withIndex()) {
                 rwy should matchRunway(depParRwy2.depParRwys[index])
             }
         }
 
         test("CrossingRunway serialization") {
             val crossingRwyAdapter = testMoshi.adapter<CrossingRunway>()
-            val crossingRwy1 = rwy1?.entity?.get(CrossingRunway.mapper)?.shouldNotBeNull()
-            val crossingRwy2 = rwy2?.entity?.get(CrossingRunway.mapper)?.shouldNotBeNull()
-            val crossingRwy1FromJson = crossingRwyAdapter.fromJson(crossingRwyAdapter.toJson(crossingRwy1))?.shouldNotBeNull()
-            val crossingRwy2FromJson = crossingRwyAdapter.fromJson(crossingRwyAdapter.toJson(crossingRwy2))?.shouldNotBeNull()
+            val crossingRwy1 = rwy1?.entity?.get(CrossingRunway.mapper).shouldNotBeNull()
+            val crossingRwy2 = rwy2?.entity?.get(CrossingRunway.mapper).shouldNotBeNull()
+            val crossingRwy1FromJson = crossingRwyAdapter.fromJson(crossingRwyAdapter.toJson(crossingRwy1)).shouldNotBeNull()
+            val crossingRwy2FromJson = crossingRwyAdapter.fromJson(crossingRwyAdapter.toJson(crossingRwy2)).shouldNotBeNull()
             runDelayedEntityRetrieval()
-            if (crossingRwy1 != null && crossingRwy1FromJson != null) for ((index, rwy) in crossingRwy1FromJson.crossRwys.withIndex()) {
+            for ((index, rwy) in crossingRwy1FromJson.crossRwys.withIndex()) {
                 rwy should matchRunway(crossingRwy1.crossRwys[index])
             }
-            if (crossingRwy2 != null && crossingRwy2FromJson != null) for ((index, rwy) in crossingRwy2FromJson.crossRwys.withIndex()) {
+            for ((index, rwy) in crossingRwy2FromJson.crossRwys.withIndex()) {
                 rwy should matchRunway(crossingRwy2.crossRwys[index])
             }
+        }
+
+        test("ArrivalRouteZone serialization") {
+            val arrivalRouteZoneAdapter = testMoshi.adapter<ArrivalRouteZone>()
+            val arrivalRouteZone1 = ArrivalRouteZone().apply {
+                starZone.addAll(getZonesForRoute(route1.shouldNotBeNull()))
+                appZone.addAll(app1.shouldNotBeNull().transitionRouteZones["TESTT"])
+                appZone.addAll(app1.shouldNotBeNull().routeZones)
+                appZone.addAll(app1.shouldNotBeNull().missedRouteZones)
+            }
+            val arrivalRouteZone2 = ArrivalRouteZone().apply {
+                appZone.addAll(app2.shouldNotBeNull().routeZones)
+                appZone.addAll(app2.shouldNotBeNull().missedRouteZones)
+            }
+            arrivalRouteZoneAdapter.fromJson(arrivalRouteZoneAdapter.toJson(arrivalRouteZone1)).shouldNotBeNull() should matchArrivalZone(arrivalRouteZone1)
+            arrivalRouteZoneAdapter.fromJson(arrivalRouteZoneAdapter.toJson(arrivalRouteZone2)).shouldNotBeNull() should matchArrivalZone(arrivalRouteZone2)
+        }
+
+        test("DepartureRouteZone serialization") {
+            val departureRouteZoneAdapter = testMoshi.adapter<DepartureRouteZone>()
+            val departureRouteZone = DepartureRouteZone().apply {
+                sidZone.addAll(getZonesForRoute(route1.shouldNotBeNull()))
+            }
+            departureRouteZoneAdapter.fromJson(departureRouteZoneAdapter.toJson(departureRouteZone)).shouldNotBeNull() should matchDepartureZone(departureRouteZone)
+        }
+
+        test("RandomAirlineData serialization") {
+            val randomAirlineAdapter = testMoshi.adapter<RandomAirlineData>()
+            val cumDist = CumulativeDistribution<Triple<String, Boolean, GdxArray<String>>>().apply {
+                for (i in 0 until 25) {
+                    var randomString = ""
+                    for (j in 0 until MathUtils.random(8)) randomString += "A"
+                    for (j in 0 until MathUtils.random(8)) randomString += "B"
+                    for (j in 0 until MathUtils.random(8)) randomString += "C"
+                    val possibleTypes = arrayOf("A321", "A333", "A359", "A388", "B739", "B77W", "B78X", "B748")
+                    val typeArray = GdxArray<String>()
+                    for (j in 0 until MathUtils.random(5) + 1) typeArray.add(possibleTypes[MathUtils.random(7)])
+                    add(Triple(randomString, MathUtils.randomBoolean(0.1f), typeArray))
+                }
+            }
+            val randomAirlineData = RandomAirlineData(cumDist)
+            randomAirlineAdapter.fromJson(randomAirlineAdapter.toJson(randomAirlineData)).shouldNotBeNull().airlineDistribution should matchCumDist(cumDist)
+        }
+
+        test("ActiveRunwayConfig serialization") {
+            val activeRwyConfigAdapter = testMoshi.adapter<ActiveRunwayConfig>()
+            val activeRwyConfig1 = ActiveRunwayConfig(0)
+            val activeRwyConfig2 = ActiveRunwayConfig(1)
+            val activeRwyConfig3 = ActiveRunwayConfig(3)
+            activeRwyConfigAdapter.fromJson(activeRwyConfigAdapter.toJson(activeRwyConfig1)) shouldBe activeRwyConfig1
+            activeRwyConfigAdapter.fromJson(activeRwyConfigAdapter.toJson(activeRwyConfig2)) shouldBe activeRwyConfig2
+            activeRwyConfigAdapter.fromJson(activeRwyConfigAdapter.toJson(activeRwyConfig3)) shouldBe activeRwyConfig3
         }
     }
 
@@ -774,11 +872,8 @@ object JsonTest: FunSpec() {
      * [Matcher]
      */
     private fun matchRunway(otherRunway: Entity) = Matcher<Entity> {
-        val rwyInfo1 = otherRunway[RunwayInfo.mapper]?.shouldNotBeNull()
-        val rwyInfo2 = it[RunwayInfo.mapper]?.shouldNotBeNull()
-        if (rwyInfo1 == null || rwyInfo2 == null) return@Matcher MatcherResult(false, {
-            "Both runways should have a RunwayInfo component"
-        }, { "Runway should not have matched" })
+        val rwyInfo1 = otherRunway[RunwayInfo.mapper].shouldNotBeNull()
+        val rwyInfo2 = it[RunwayInfo.mapper].shouldNotBeNull()
         if (rwyInfo1.rwyId != rwyInfo2.rwyId ||
             rwyInfo1.rwyName != rwyInfo2.rwyName || rwyInfo1.lengthM != rwyInfo2.lengthM ||
             rwyInfo1.displacedThresholdM != rwyInfo2.displacedThresholdM ||
@@ -821,5 +916,54 @@ object JsonTest: FunSpec() {
             }
         }
         return@Matcher MatcherResult(true, { "Entity matched" }, { "Entity should not have matched" })
+    }
+
+    /**
+     * Matcher for checking contents of a [ArrivalRouteZone] are equal
+     * @param otherArrZone the other arrival zone to check for equality with; the existing runway to check is accessed
+     * from [Matcher]
+     */
+    private fun matchArrivalZone(otherArrZone: ArrivalRouteZone) = Matcher<ArrivalRouteZone> {
+        val arr1 = it.starZone
+        val arr2 = otherArrZone.starZone
+        val app1 = it.appZone
+        val app2 = otherArrZone.appZone
+        if (arr1.size != arr2.size) return@Matcher MatcherResult(false, {
+            "STAR zone size did not match: ${arr1.size} != ${arr2.size}"
+        }, { "Arrival route zone should not have matched" })
+        if (app1.size != app2.size) return@Matcher MatcherResult(false, {
+            "Approach zone size did not match: ${arr1.size} != ${arr2.size}"
+        }, { "Arrival route zone should not have matched" })
+        for ((index, starZone) in arr1.withIndex()) {
+            starZone.entity[GPolygon.mapper].shouldNotBeNull().vertices.contentEquals(arr2[index].entity[GPolygon.mapper].shouldNotBeNull().vertices)
+            starZone.entity[Altitude.mapper].shouldNotBeNull() shouldBe arr2[index].entity[Altitude.mapper].shouldNotBeNull()
+        }
+        for ((index, appZone) in app1.withIndex()) {
+            appZone.entity[GPolygon.mapper].shouldNotBeNull().vertices.contentEquals(app2[index].entity[GPolygon.mapper].shouldNotBeNull().vertices)
+            appZone.entity[Altitude.mapper].shouldNotBeNull() shouldBe app2[index].entity[Altitude.mapper].shouldNotBeNull()
+        }
+        return@Matcher MatcherResult(true, {
+            "Arrival route zone matched"
+        }, { "Arrival route zone should not have matched" })
+    }
+
+    /**
+     * Matcher for checking contents of a [DepartureRouteZone] are equal
+     * @param otherDepZone the other departure zone to check for equality with; the existing runway to check is accessed
+     * from [Matcher]
+     */
+    private fun matchDepartureZone(otherDepZone: DepartureRouteZone) = Matcher<DepartureRouteZone> {
+        val dep1 = it.sidZone
+        val dep2 = otherDepZone.sidZone
+        if (dep1.size != dep2.size) return@Matcher MatcherResult(false, {
+            "SID zone size did not match: ${dep1.size} != ${dep2.size}"
+        }, { "Departure route zone should not have matched" })
+        for ((index, depZone) in dep1.withIndex()) {
+            depZone.entity[GPolygon.mapper].shouldNotBeNull().vertices.contentEquals(dep2[index].entity[GPolygon.mapper].shouldNotBeNull().vertices)
+            depZone.entity[Altitude.mapper].shouldNotBeNull() shouldBe dep2[index].entity[Altitude.mapper].shouldNotBeNull()
+        }
+        return@Matcher MatcherResult(true, {
+            "Departure route zone matched"
+        }, { "Departure route zone should not have matched" })
     }
 }
