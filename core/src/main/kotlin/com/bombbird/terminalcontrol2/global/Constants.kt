@@ -5,7 +5,6 @@ import com.badlogic.gdx.Gdx
 import com.bombbird.terminalcontrol2.TerminalControl2
 import com.bombbird.terminalcontrol2.screens.RadarScreen
 import com.bombbird.terminalcontrol2.utilities.GRAVITY_ACCELERATION_MPS2
-import ktx.collections.GdxArray
 
 /** Global constants for use, cannot/should not be modified */
 
@@ -66,8 +65,8 @@ const val WAKE_WIDTH_NM = 0.15f
 const val WAKE_DOT_SPACING_NM = 0.5f
 const val MAX_WAKE_DOTS = 16
 
-/** List of available airports (can be modified, but don't) */
-val AVAIL_AIRPORTS = GdxArray<String>(arrayOf("TCTP", "TCWS", "TCTT", "TCBB", "TCHH", "TCBD", "TCMD", "TCPG"))
+/** List of available airports */
+val AVAIL_AIRPORTS = arrayOf("TCTP", "TCWS", "TCTT", "TCBB", "TCHH", "TCBD", "TCMD", "TCPG")
 
 /** Application platform type */
 val APP_TYPE = Gdx.app?.type

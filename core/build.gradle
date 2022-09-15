@@ -1,5 +1,6 @@
 plugins {
 	id "kotlin-kapt"
+	id 'java-test-fixtures'
 }
 
 [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
@@ -33,7 +34,9 @@ dependencies {
 
 	kapt "com.squareup.moshi:moshi-kotlin-codegen:$moshiKotlinVersion"
 
-	testImplementation "io.kotest:kotest-runner-junit5:$kotestVersion"
+	testFixturesApi "io.kotest:kotest-runner-junit5:$kotestVersion"
+	testFixturesApi "io.kotest:kotest-framework-datatest:$kotestVersion"
+
 }
 
 test {

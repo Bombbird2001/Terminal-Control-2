@@ -12,6 +12,8 @@ dependencies {
 	implementation "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
 	implementation project(':core')
 
+	testImplementation(testFixtures(project(':core')))
+
 	runtimeClasspath files("../core/build/classes/kotlin/main")
 	runtimeClasspath files("build/classes/kotlin/main")
 }
@@ -55,5 +57,16 @@ task dist(dependsOn: [jar]) {
 }
 
 test {
+	// Enable JUnit 5 (Gradle 4.6+).
+	useJUnitPlatform()
+
+	// Always run tests, even when nothing changed.
+	dependsOn 'cleanTest'
+
+	// Show test results.
+	testLogging {
+		events "passed", "skipped", "failed"
+	}
+
 	workingDir "../assetsDesktop"
 }
