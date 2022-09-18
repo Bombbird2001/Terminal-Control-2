@@ -1,6 +1,5 @@
 package com.bombbird.terminalcontrol2.files
 
-import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.utils.Array
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.*
@@ -9,13 +8,11 @@ import com.bombbird.terminalcontrol2.navigation.Approach
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.navigation.SidStar
 import com.bombbird.terminalcontrol2.navigation.getZonesForRoute
-import com.bombbird.terminalcontrol2.utilities.UsabilityFilter
 import com.bombbird.terminalcontrol2.networking.GameServer
 import com.bombbird.terminalcontrol2.traffic.RunwayConfiguration
-import com.bombbird.terminalcontrol2.utilities.AircraftTypeData
-import com.bombbird.terminalcontrol2.utilities.byte
 import com.bombbird.terminalcontrol2.traffic.disallowedCallsigns
-import com.bombbird.terminalcontrol2.utilities.nmToPx
+import com.bombbird.terminalcontrol2.utilities.*
+import com.esotericsoftware.minlog.Log
 import ktx.ashley.get
 import ktx.ashley.plusAssign
 import ktx.assets.toInternalFile
@@ -76,7 +73,7 @@ private const val NIGHT_ONLY = "NIGHT_ONLY"
 
 /** Loads the "aircraft.perf" file located in the "Data" subfolder in the assets into aircraft performance map */
 fun loadAircraftData() {
-    aircraftPerfPath.toInternalFile().readString().split("\\r?\\n".toRegex()).toTypedArray().apply {
+    aircraftPerfPath.toInternalFile().readString().toLines().toTypedArray().apply {
         for (line in this) {
             val lineData = line.trim().split(" ")
             val type = lineData[0]
@@ -104,14 +101,14 @@ fun loadAircraftData() {
 
 /** Loads the "disallowed.callsign" file located in the "Data" subfolder in the assets into the set of disallowed callsigns */
 fun loadDisallowedCallsigns() {
-    disallowedCallsignPath.toInternalFile().readString().split("\\r?\\n".toRegex()).toTypedArray().apply {
+    disallowedCallsignPath.toInternalFile().readString().toLines().toTypedArray().apply {
         for (line in this) disallowedCallsigns.add(line.trim())
     }
 }
 
 /** Loads the "[mainName].arpt" file located in the "Airports" subfolder in the assets */
 fun loadWorldData(mainName: String, gameServer: GameServer) {
-    "Airports/$mainName.arpt".toInternalFile().readString().split("\\r?\\n".toRegex()).toTypedArray().apply {
+    "Airports/$mainName.arpt".toInternalFile().readString().toLines().toTypedArray().apply {
         var parseMode = ""
         var currAirport: Airport? = null
         var currSid: SidStar.SID? = null
@@ -119,10 +116,10 @@ fun loadWorldData(mainName: String, gameServer: GameServer) {
         var currSectorCount = 0.byte
         var currApp: Approach? = null
         var currRwyConfig: RunwayConfiguration? = null
-        for (line in this) {
+        for ((index, line) in withIndex()) {
             val lineData = line.trim().split(" ")
             when (lineData[0]) {
-                AIRPORT_OBJ -> currAirport = parseAirport(lineData, gameServer)
+                "$AIRPORT_OBJ/" -> currAirport = parseAirport(lineData, gameServer)
                 "/$AIRPORT_OBJ" -> {
                     currAirport = null
                     currSid = null
@@ -132,14 +129,14 @@ fun loadWorldData(mainName: String, gameServer: GameServer) {
                 AIRPORT_VIS -> if (currAirport != null) parseVisibility(lineData, currAirport)
                 AIRPORT_CEIL -> if (currAirport != null) parseCeiling(lineData, currAirport)
                 AIRPORT_WS -> if (currAirport != null) parseWindshear(lineData, currAirport)
-                AIRPORT_RWY_CONFIG_OBJ -> if (currAirport != null) currRwyConfig = parseRunwayConfiguration(lineData, currAirport)
+                "$AIRPORT_RWY_CONFIG_OBJ/" -> if (currAirport != null) currRwyConfig = parseRunwayConfiguration(lineData, currAirport)
                 "/$AIRPORT_RWY_CONFIG_OBJ" -> currRwyConfig = null
                 RWY_CONFIG_DEP -> if (currAirport != null && currRwyConfig != null) parseRwyConfigRunways(lineData, currAirport, currRwyConfig, true)
                 RWY_CONFIG_ARR -> if (currAirport != null && currRwyConfig != null) parseRwyConfigRunways(lineData, currAirport, currRwyConfig, false)
                 RWY_CONFIG_NTZ -> if (currRwyConfig != null) parseRwyConfigNTZ(lineData, currRwyConfig)
-                SID_OBJ -> currSid = parseSID(lineData, currAirport ?: continue)
+                "$SID_OBJ/" -> currSid = parseSID(lineData, currAirport ?: continue)
                 "/$SID_OBJ" -> currSid = null
-                STAR_OBJ -> currStar = parseSTAR(lineData, currAirport ?: continue)
+                "$STAR_OBJ/" -> currStar = parseSTAR(lineData, currAirport ?: continue)
                 "/$STAR_OBJ" -> currStar = null
                 SID_STAR_RWY -> if (currSid != null) parseSIDRwyRoute(lineData, currSid) else if (currStar != null) parseSTARRwyRoute(lineData, currStar)
                 SID_STAR_APP_ROUTE -> {
@@ -149,7 +146,7 @@ fun loadWorldData(mainName: String, gameServer: GameServer) {
                 }
                 SID_OUTBOUND -> if (currSid != null) parseSIDSTARinOutboundRoute(lineData, currSid)
                 STAR_INBOUND -> if (currStar != null) parseSIDSTARinOutboundRoute(lineData, currStar)
-                APCH_OBJ -> currApp = parseApproach(lineData, currAirport ?: continue)
+                "$APCH_OBJ/" -> currApp = parseApproach(lineData, currAirport ?: continue)
                 "/$APCH_OBJ" -> currApp = null
                 APCH_LOC -> if (currApp != null) parseAppLocalizer(lineData, currApp)
                 APCH_GS -> if (currApp != null) parseAppGlideslope(lineData, currApp)
@@ -178,7 +175,7 @@ fun loadWorldData(mainName: String, gameServer: GameServer) {
                         AIRPORT_APP_NOZ -> parseApproachNOZ(lineData, currAirport ?: continue)
                         AIRPORT_DEP_NOZ -> parseDepartureNOZ(lineData, currAirport ?: continue)
                         WORLD_SECTORS -> {
-                            if (currSectorCount == 0.byte) currSectorCount = lineData[0].toByte()
+                            if (currSectorCount == 0.byte) currSectorCount = lineData[0].split("/")[0].toByte()
                             else parseSector(lineData, currSectorCount, gameServer)
                         }
                         "" -> when (lineData[0]) {
@@ -198,9 +195,9 @@ fun loadWorldData(mainName: String, gameServer: GameServer) {
                                 if (lineData[0] in arrayOf(
                                         WORLD_WAYPOINTS, WORLD_HOLDS, WORLD_MIN_ALT_SECTORS, WORLD_SHORELINE, AIRPORT_RWYS,
                                         WORLD_SECTORS, AIRPORT_TFC, AIRPORT_DEP_PARALLEL, AIRPORT_DEP_OPP, AIRPORT_CROSSING,
-                                        AIRPORT_APP_NOZ, AIRPORT_DEP_NOZ))
-                                    parseMode = lineData[0]
-                                else if (lineData[0] != "") Gdx.app.log("GameLoader", "Unknown parse mode ${lineData[0]}")
+                                        AIRPORT_APP_NOZ, AIRPORT_DEP_NOZ).map { "$it/" })
+                                    parseMode = lineData[0].substringBefore("/")
+                                else if (lineData[0] != "") Log.info("GameLoader", "Unknown parse mode ${lineData[0]} in line ${index + 1}")
                             }
                         }
                     }
@@ -251,7 +248,7 @@ private fun parseSector(data: List<String>, currSectorCount: Byte, gameServer: G
 private fun parseMinAltSector(data: List<String>, gameServer: GameServer) {
     val type = data[0]
     val enforced = if (data[1] == "RESTR") true else if (data[1] == "MVA") false else {
-        Gdx.app.log("GameLoader", "Unknown minAltSector restriction ${data[1]} provided")
+        Log.info("GameLoader", "Unknown minAltSector restriction ${data[1]} provided")
         false
     }
     val minAlt = if (data[2] == "UNL") null else data[2].toInt()
@@ -279,7 +276,7 @@ private fun parseMinAltSector(data: List<String>, gameServer: GameServer) {
             val radius = nmToPx(data[4].toFloat())
             gameServer.minAltSectors.add(MinAltSector(minAlt, null, posX, posY, radius, null, null, enforced, false))
         }
-        else -> Gdx.app.log("GameLoader", "Unknown minAltSector type $type")
+        else -> Log.info("GameLoader", "Unknown minAltSector type $type")
     }
 }
 
@@ -298,7 +295,7 @@ private fun parseShoreline(data: List<String>, gameServer: GameServer) {
 private fun parseHold(data: List<String>, gameServer: GameServer) {
     val wptName = data[0]
     val wptId = gameServer.updatedWaypointMapping[wptName] ?: run {
-        Gdx.app.log("GameLoader", "Unknown hold waypoint $wptName")
+        Log.info("GameLoader", "Unknown hold waypoint $wptName")
         return
     }
     val inboundHdg = data[1].toShort()
@@ -309,17 +306,15 @@ private fun parseHold(data: List<String>, gameServer: GameServer) {
         "LEFT" -> CommandTarget.TURN_LEFT
         "RIGHT" -> CommandTarget.TURN_RIGHT
         else -> {
-            Gdx.app.log("GameLoader", "Unknown hold direction ${data[5]} for $wptName")
+            Log.info("GameLoader", "Unknown hold direction ${data[5]} for $wptName")
             CommandTarget.TURN_RIGHT
         }
     }
     var minAlt: Int? = null
     var maxAlt: Int? = null
     if (data.size >= 7) data[6].let {
-        val aboveAltRegex = "A(-?\\d+)".toRegex() // Altitude values of at least 1 digit, with "A" as a prefix
-        val belowAltRegex = "B(-?\\d+)".toRegex() // Altitude values of at least 1 digit, with "B" as a prefix
-        minAlt = aboveAltRegex.find(it)?.groupValues?.get(1)?.toInt()
-        maxAlt = belowAltRegex.find(it)?.groupValues?.get(1)?.toInt()
+        minAlt = ABOVE_ALT_REGEX.find(it)?.groupValues?.get(1)?.toInt()
+        maxAlt = BELOW_ALT_REGEX.find(it)?.groupValues?.get(1)?.toInt()
     }
     gameServer.publishedHolds[wptName] = PublishedHold(wptId, maxAlt, minAlt, maxSpdLower, maxSpdHigher, inboundHdg, legDist, dir, false)
 }
@@ -329,7 +324,7 @@ private fun parseHold(data: List<String>, gameServer: GameServer) {
  * Returns the constructed [Airport]
  * */
 private fun parseAirport(data: List<String>, gameServer: GameServer): Airport {
-    if (data.size != 8) Gdx.app.log("GameLoader", "Airport data has ${data.size} elements instead of 8")
+    if (data.size != 8) Log.info("GameLoader", "Airport data has ${data.size} elements instead of 8")
     val id = data[1].toByte()
     val icao = data[2]
     val name = data[3]
@@ -357,7 +352,7 @@ private fun parseAirport(data: List<String>, gameServer: GameServer): Airport {
 
 /** Parse the given [data] into a runway, and adds it to the supplied [airport] */
 private fun parseRunway(data: List<String>, airport: Airport) {
-    if (data.size != 11) Gdx.app.log("GameLoader", "Runway data has ${data.size} elements instead of 11")
+    if (data.size != 11) Log.info("GameLoader", "Runway data has ${data.size} elements instead of 11")
     val id = data[0].toByte()
     val name = data[1]
     val pos = data[2].split(",")
@@ -373,7 +368,7 @@ private fun parseRunway(data: List<String>, airport: Airport) {
         "LABEL_RIGHT" -> RunwayLabel.RIGHT
         "LABEL_LEFT" -> RunwayLabel.LEFT
         else -> {
-            Gdx.app.log("GameLoader", "Unknown runway label placement for runway $name: ${data[6]}")
+            Log.info("GameLoader", "Unknown runway label placement for runway $name: ${data[6]}")
             RunwayLabel.BEFORE
         }
     }
@@ -391,7 +386,7 @@ private fun parseRunway(data: List<String>, airport: Airport) {
  * @param airport the airport to apply this to
  */
 private fun parseDependentParallelRunways(data: List<String>, airport: Airport) {
-    if (data.size != 2) Gdx.app.log("GameLoader", "Dependent parallel runway data has ${data.size} elements instead of 2")
+    if (data.size != 2) Log.info("GameLoader", "Dependent parallel runway data has ${data.size} elements instead of 2")
     val rwy1 = airport.getRunway(data[0])?.entity ?: return logMissingRunway(data[0])
     val rwy2 = airport.getRunway(data[1])?.entity ?: return logMissingRunway(data[1])
     (rwy1[DependentParallelRunway.mapper] ?: DependentParallelRunway().apply { rwy1 += this }).depParRwys.add(rwy2)
@@ -405,7 +400,7 @@ private fun parseDependentParallelRunways(data: List<String>, airport: Airport) 
  * @param airport the airport to apply this to
  */
 private fun parseDependentOppositeRunways(data: List<String>, airport: Airport) {
-    if (data.size != 2) Gdx.app.log("GameLoader", "Dependent opposite runway data has ${data.size} elements instead of 2")
+    if (data.size != 2) Log.info("GameLoader", "Dependent opposite runway data has ${data.size} elements instead of 2")
     val rwy1 = airport.getRunway(data[0])?.entity ?: return logMissingRunway(data[0])
     val rwy2 = airport.getRunway(data[1])?.entity ?: return logMissingRunway(data[1])
     (rwy1[DependentOppositeRunway.mapper] ?: DependentOppositeRunway().apply { rwy1 += this }).depOppRwys.add(rwy2)
@@ -419,7 +414,7 @@ private fun parseDependentOppositeRunways(data: List<String>, airport: Airport) 
  * @param airport the airport to apply this to
  */
 private fun parseCrossingRunways(data: List<String>, airport: Airport) {
-    if (data.size != 2) Gdx.app.log("GameLoader", "Crossing runway data has ${data.size} elements instead of 2")
+    if (data.size != 2) Log.info("GameLoader", "Crossing runway data has ${data.size} elements instead of 2")
     val rwy1 = airport.getRunway(data[0])?.entity ?: return logMissingRunway(data[0])
     val rwy2 = airport.getRunway(data[1])?.entity ?: return logMissingRunway(data[1])
     (rwy1[CrossingRunway.mapper] ?: CrossingRunway().apply { rwy1 += this }).crossRwys.add(rwy2)
@@ -432,7 +427,7 @@ private fun parseCrossingRunways(data: List<String>, airport: Airport) {
  * @param airport the airport that the parent runway belongs to
  */
 private fun parseApproachNOZ(data: List<String>, airport: Airport) {
-    if (data.size != 5) Gdx.app.log("GameLoader", "Approach NOZ data has ${data.size} elements instead of 5")
+    if (data.size != 5) Log.info("GameLoader", "Approach NOZ data has ${data.size} elements instead of 5")
     val name = data[0]
     val pos = data[1].split(",")
     val posX = nmToPx(pos[0].toFloat())
@@ -449,7 +444,7 @@ private fun parseApproachNOZ(data: List<String>, airport: Airport) {
  * @param airport the airport that the parent runway belongs to
  */
 private fun parseDepartureNOZ(data: List<String>, airport: Airport) {
-    if (data.size != 5) Gdx.app.log("GameLoader", "Departure NOZ data has ${data.size} elements instead of 5")
+    if (data.size != 5) Log.info("GameLoader", "Departure NOZ data has ${data.size} elements instead of 5")
     val name = data[0]
     val pos = data[1].split(",")
     val posX = nmToPx(pos[0].toFloat())
@@ -474,7 +469,7 @@ private fun parseRunwayConfiguration(data: List<String>, airport: Airport): Runw
         DAY_ONLY -> UsabilityFilter.DAY_ONLY
         NIGHT_ONLY -> UsabilityFilter.NIGHT_ONLY
         else -> {
-            Gdx.app.log("GameLoader", "Unknown dayNight for runway configuration")
+            Log.info("GameLoader", "Unknown dayNight for runway configuration")
             UsabilityFilter.DAY_AND_NIGHT
         }
     }
@@ -501,7 +496,7 @@ private fun parseRwyConfigRunways(data: List<String>, airport: Airport, currRwyC
  * @param currRwyConfig the current runway configuration
  */
 private fun parseRwyConfigNTZ(data: List<String>, currRwyConfig: RunwayConfiguration) {
-    if (data.size != 5) Gdx.app.log("GameLoader", "NTZ data has ${data.size} elements instead of 5")
+    if (data.size != 5) Log.info("GameLoader", "NTZ data has ${data.size} elements instead of 5")
     val pos = data[1].split(",")
     val posX = nmToPx(pos[0].toFloat())
     val posY = nmToPx(pos[1].toFloat())
@@ -518,20 +513,20 @@ private fun parseRwyConfigNTZ(data: List<String>, currRwyConfig: RunwayConfigura
  * @return the constructed [Approach] or null if an invalid runway is specified
  * */
 private fun parseApproach(data: List<String>, airport: Airport): Approach? {
-    if (data.size != 7) Gdx.app.log("GameLoader", "Approach data has ${data.size} elements instead of 7")
+    if (data.size != 7) Log.info("GameLoader", "Approach data has ${data.size} elements instead of 7")
     val name = data[1].replace("-", " ")
     val dayNight = when (data[2]) {
         DAY_NIGHT -> UsabilityFilter.DAY_AND_NIGHT
         DAY_ONLY -> UsabilityFilter.DAY_ONLY
         NIGHT_ONLY -> UsabilityFilter.NIGHT_ONLY
         else -> {
-            Gdx.app.log("GameLoader", "Unknown dayNight for SID $name: ${data[2]}")
+            Log.info("GameLoader", "Unknown dayNight for SID $name: ${data[2]}")
             UsabilityFilter.DAY_AND_NIGHT
         }
     }
     val arptId = airport.entity[AirportInfo.mapper]?.arptId ?: return null
     val rwyId = airport.entity[RunwayChildren.mapper]?.updatedRwyMapping?.get(data[3]) ?: run {
-        Gdx.app.log("GameLoader", "Runway ${data[3]} not found for approach $name")
+        Log.info("GameLoader", "Runway ${data[3]} not found for approach $name")
         return null
     }
     val pos = data[4].split(",")
@@ -550,7 +545,7 @@ private fun parseApproach(data: List<String>, airport: Airport): Approach? {
  * @param approach the approach to add the localizer to
  * */
 private fun parseAppLocalizer(data: List<String>, approach: Approach) {
-    if (data.size != 3) Gdx.app.log("GameLoader", "Localizer data has ${data.size} elements instead of 3")
+    if (data.size != 3) Log.info("GameLoader", "Localizer data has ${data.size} elements instead of 3")
     val heading = data[1].toShort()
     val locDistNm = data[2].toByte()
     approach.addLocalizer(heading, locDistNm)
@@ -562,7 +557,7 @@ private fun parseAppLocalizer(data: List<String>, approach: Approach) {
  * @param approach the approach to add the glideslope to
  * */
 private fun parseAppGlideslope(data: List<String>, approach: Approach) {
-    if (data.size != 4) Gdx.app.log("GameLoader", "Glideslope data has ${data.size} elements instead of 4")
+    if (data.size != 4) Log.info("GameLoader", "Glideslope data has ${data.size} elements instead of 4")
     val angleDeg = data[1].toFloat()
     val offsetNm = data[2].toFloat()
     val maxInterceptAltFt = data[3].toShort()
@@ -590,7 +585,7 @@ private fun parseAppStepDown(data: List<String>, approach: Approach) {
  * @param approach the approach to add the line-up distance to
  */
 private fun parseAppLineUp(data: List<String>, approach: Approach) {
-    if (data.size != 2) Gdx.app.log("GameLoader", "Lineup data has ${data.size} elements instead of 2")
+    if (data.size != 2) Log.info("GameLoader", "Lineup data has ${data.size} elements instead of 2")
     approach.addLineUpDist(data[1].toFloat())
 }
 
@@ -600,14 +595,14 @@ private fun parseAppLineUp(data: List<String>, approach: Approach) {
  * @param approach the approach to add the circling approach data to
  */
 private fun parseCircling(data: List<String>, approach: Approach) {
-    if (data.size != 4) Gdx.app.log("GameLoader", "Circling data has ${data.size} elements instead of 4")
+    if (data.size != 4) Log.info("GameLoader", "Circling data has ${data.size} elements instead of 4")
     val minBreakoutAlt = data[1].toInt()
     val maxBreakoutAlt = data[2].toInt()
     val turnDir = when (data[3]) {
         "LEFT" -> CommandTarget.TURN_LEFT
         "RIGHT" -> CommandTarget.TURN_RIGHT
         else -> {
-            Gdx.app.log("GameLoader", "Unknown circling breakout turn direction for ${data[0]}")
+            Log.info("GameLoader", "Unknown circling breakout turn direction for ${data[0]}")
             CommandTarget.TURN_LEFT
         }
     }
@@ -617,7 +612,7 @@ private fun parseCircling(data: List<String>, approach: Approach) {
 /** Parse the given [data] into the route legs data, and adds it to the supplied [approach]'s [Approach.routeLegs] */
 private fun parseApproachRoute(data: List<String>, approach: Approach) {
     if (approach.routeLegs.size > 0) {
-        Gdx.app.log("GameLoader", "Multiple routes for approach: ${approach.entity[ApproachInfo.mapper]?.approachName}")
+        Log.info("GameLoader", "Multiple routes for approach: ${approach.entity[ApproachInfo.mapper]?.approachName}")
     }
     approach.routeLegs.extendRoute(parseLegs(data.subList(1, data.size), Route.Leg.APP))
     approach.routeZones.clear()
@@ -638,7 +633,7 @@ private fun parseApproachTransition(data: List<String>, approach: Approach) {
  * */
 private fun parseApproachMissed(data: List<String>, approach: Approach) {
     if (approach.missedLegs.size > 0) {
-        Gdx.app.log("GameLoader", "Multiple missed approach procedures for approach: ${approach.entity[ApproachInfo.mapper]?.approachName}")
+        Log.info("GameLoader", "Multiple missed approach procedures for approach: ${approach.entity[ApproachInfo.mapper]?.approachName}")
     }
     approach.missedLegs.add(Route.DiscontinuityLeg(Route.Leg.MISSED_APP))
     approach.missedLegs.extendRoute(parseLegs(data.subList(1, data.size), Route.Leg.MISSED_APP))
@@ -652,14 +647,14 @@ private fun parseApproachMissed(data: List<String>, approach: Approach) {
  * @return the constructed [SidStar.SID]
  * */
 private fun parseSID(data: List<String>, airport: Airport): SidStar.SID {
-    if (data.size != 4) Gdx.app.log("GameLoader", "SID data has ${data.size} elements instead of 4")
+    if (data.size != 4) Log.info("GameLoader", "SID data has ${data.size} elements instead of 4")
     val name = data[1]
     val dayNight = when (data[2]) {
         DAY_NIGHT -> UsabilityFilter.DAY_AND_NIGHT
         DAY_ONLY -> UsabilityFilter.DAY_ONLY
         NIGHT_ONLY -> UsabilityFilter.NIGHT_ONLY
         else -> {
-            Gdx.app.log("GameLoader", "Unknown dayNight for SID $name: ${data[2]}")
+            Log.info("GameLoader", "Unknown dayNight for SID $name: ${data[2]}")
             UsabilityFilter.DAY_AND_NIGHT
         }
     }
@@ -690,14 +685,14 @@ private fun parseSIDRwyRoute(data: List<String>, sid: SidStar.SID) {
  * @return the constructed [SidStar.STAR]
  * */
 private fun parseSTAR(data: List<String>, airport: Airport): SidStar.STAR {
-    if (data.size != 4) Gdx.app.log("GameLoader", "STAR data has ${data.size} elements instead of 4")
+    if (data.size != 4) Log.info("GameLoader", "STAR data has ${data.size} elements instead of 4")
     val name = data[1]
     val dayNight = when (data[2]) {
         DAY_NIGHT -> UsabilityFilter.DAY_AND_NIGHT
         DAY_ONLY -> UsabilityFilter.DAY_ONLY
         NIGHT_ONLY -> UsabilityFilter.NIGHT_ONLY
         else -> {
-            Gdx.app.log("GameLoader", "Unknown dayNight for SID $name: ${data[2]}")
+            Log.info("GameLoader", "Unknown dayNight for SID $name: ${data[2]}")
             UsabilityFilter.DAY_AND_NIGHT
         }
     }
@@ -727,7 +722,7 @@ private fun parseSTARRwyRoute(data: List<String>, star: SidStar.STAR) {
  * */
 private fun parseSIDSTARRoute(data: List<String>, sidStar: SidStar) {
     if (sidStar.routeLegs.size > 0) {
-        Gdx.app.log("GameLoader", "Multiple routes for SID/STAR: ${sidStar.name}")
+        Log.info("GameLoader", "Multiple routes for SID/STAR: ${sidStar.name}")
     }
     sidStar.routeLegs.extendRoute(parseLegs(data.subList(1, data.size), Route.Leg.NORMAL))
     sidStar.routeZones.clear()
@@ -760,7 +755,7 @@ private fun parseLegs(data: List<String>, flightPhase: Byte): Route {
                 "INITCLIMB", "HDNG", "WYPT", "HOLD" -> {
                     dataStream += " $part "
                 }
-                else -> Gdx.app.log("GameLoader", "Unknown leg type: $legType")
+                else -> Log.info("GameLoader", "Unknown leg type: $legType")
             }
         }
     }
@@ -769,15 +764,18 @@ private fun parseLegs(data: List<String>, flightPhase: Byte): Route {
     return route
 }
 
-/** Parses a single leg from the given [data], [flightPhase]
- *
- * [data] should be a string of the required parameters for the relevant leg
+/**
+ * Parses a single leg from the given [data], [flightPhase]
+ * @param legType the type of leg to parse
+ * @param data the data portion of the leg
+ * @param flightPhase the phase of flight of this leg
+ * @return a [Route.Leg] of the corresponding leg type
  * */
 private fun parseLeg(legType: String, data: String, flightPhase: Byte): Route.Leg? {
     val hdgRegex = " (\\d{1,3}) ".toRegex() // Heading values of 1 to 3 digits
-    val atAltRegex = " (-?\\d+) ".toRegex() // Altitude values of at least 1 digit
-    val aboveAltRegex = " A(-?\\d+) ".toRegex() // Altitude values of at least 1 digit, with "A" as a prefix
-    val belowAltRegex = " B(-?\\d+) ".toRegex() // Altitude values of at least 1 digit, with "B" as a prefix
+    val atAltRegex = " $AT_ALT_REGEX ".toRegex() // Altitude values of at least 1 digit
+    val aboveAltRegex = " $ABOVE_ALT_REGEX ".toRegex() // Altitude values of at least 1 digit, with "A" as a prefix
+    val belowAltRegex = " $BELOW_ALT_REGEX ".toRegex() // Altitude values of at least 1 digit, with "B" as a prefix
     val spdRegex = " S(\\d{3}) ".toRegex() // Speed values of 3 digits, with "S" as a prefix
     val wptRegex = " ([A-Z]{2}|[A-Z]{3}|[A-Z]{5}) ".toRegex() // Only waypoints with 2, 3 or 5 letters allowed
     val foRegex = " FLYOVER ".toRegex() // For flyover waypoints
@@ -795,7 +793,7 @@ private fun parseLeg(legType: String, data: String, flightPhase: Byte): Route.Le
                     "LEFT" -> CommandTarget.TURN_LEFT
                     "RIGHT" -> CommandTarget.TURN_RIGHT
                     else -> {
-                        Gdx.app.log("GameLoader", "Unknown turn direction for HDG ${it.groupValues[0]}")
+                        Log.info("GameLoader", "Unknown turn direction for HDG ${it.groupValues[0]}")
                         CommandTarget.TURN_DEFAULT
                     }
                 }
@@ -814,7 +812,7 @@ private fun parseLeg(legType: String, data: String, flightPhase: Byte): Route.Le
                     "LEFT" -> CommandTarget.TURN_LEFT
                     "RIGHT" -> CommandTarget.TURN_RIGHT
                     else -> {
-                        Gdx.app.log("GameLoader", "Unknown turn direction for $wptName: ${it.groupValues[0]}")
+                        Log.info("GameLoader", "Unknown turn direction for $wptName: ${it.groupValues[0]}")
                         CommandTarget.TURN_DEFAULT
                     }
                 }
@@ -827,7 +825,7 @@ private fun parseLeg(legType: String, data: String, flightPhase: Byte): Route.Le
             return Route.HoldLeg(wptName, publishedHold.maxAltFt, publishedHold.minAltFt, publishedHold.maxSpdKtLower, publishedHold.maxSpdKtHigher, publishedHold.inboundHdgDeg, publishedHold.legDistNm, publishedHold.turnDir, flightPhase)
         }
         else -> {
-            if (legType.isNotEmpty()) Gdx.app.log("GameLoader", "Unknown leg type: $legType")
+            if (legType.isNotEmpty()) Log.info("GameLoader", "Unknown leg type: $legType")
             return null
         }
     }
@@ -840,7 +838,7 @@ private fun parseLeg(legType: String, data: String, flightPhase: Byte): Route.Le
  * @param airport the airport to add the data to
  * */
 private fun parseWindDir(data: List<String>, airport: Airport) {
-    if (data.size != 38) Gdx.app.log("GameLoader", "Wind direction data has ${data.size} elements instead of 38")
+    if (data.size != 38) Log.info("GameLoader", "Wind direction data has ${data.size} elements instead of 38")
     airport.entity[RandomMetarInfo.mapper]?.apply {
         for (i in 1 until data.size) {
             windDirDist.add((i * 10 - 10).toShort(), data[i].toFloat())
@@ -856,7 +854,7 @@ private fun parseWindDir(data: List<String>, airport: Airport) {
  * @param airport the airport to add the data to
  * */
 private fun parseWindSpd(data: List<String>, airport: Airport) {
-    if (data.size < 32) Gdx.app.log("GameLoader", "Wind speed data has only ${data.size} elements; recommended at least 32")
+    if (data.size < 32) Log.info("GameLoader", "Wind speed data has only ${data.size} elements; recommended at least 32")
     airport.entity[RandomMetarInfo.mapper]?.apply {
         for (i in 1 until data.size) {
             windSpdDist.add((i - 1).toShort(), data[i].toFloat())
@@ -872,7 +870,7 @@ private fun parseWindSpd(data: List<String>, airport: Airport) {
  * @param airport the airport to add the data to
  * */
 private fun parseVisibility(data: List<String>, airport: Airport) {
-    if (data.size != 21) Gdx.app.log("GameLoader", "Visibility data has ${data.size} elements instead of 21")
+    if (data.size != 21) Log.info("GameLoader", "Visibility data has ${data.size} elements instead of 21")
     airport.entity[RandomMetarInfo.mapper]?.apply {
         for (i in 1 until data.size) {
             visibilityDist.add((i * 500).toShort(), data[i].toFloat())
@@ -888,7 +886,7 @@ private fun parseVisibility(data: List<String>, airport: Airport) {
  * @param airport the airport to add the data to
  */
 private fun parseCeiling(data: List<String>, airport: Airport) {
-    if (data.size != 16) Gdx.app.log("GameLoader", "Ceiling data has ${data.size} elements instead of 16")
+    if (data.size != 16) Log.info("GameLoader", "Ceiling data has ${data.size} elements instead of 16")
     airport.entity[RandomMetarInfo.mapper]?.apply {
         for (i in 1 until data.size) {
             val hundredFtDist = shortArrayOf(-1, 0, 1, 2, 5, 10, 20, 30, 50, 80, 120, 170, 230, 300, 380)
@@ -905,7 +903,7 @@ private fun parseCeiling(data: List<String>, airport: Airport) {
  * @param airport the airport to add the data to
  * */
 private fun parseWindshear(data: List<String>, airport: Airport) {
-    if (data.size != 3) Gdx.app.log("GameLoader", "Windshear data has ${data.size} elements instead of 3")
+    if (data.size != 3) Log.info("GameLoader", "Windshear data has ${data.size} elements instead of 3")
     airport.entity[RandomMetarInfo.mapper]?.apply {
         windshearLogCoefficients = Pair(data[1].toFloat(), data[2].toFloat())
     }
@@ -918,7 +916,7 @@ private fun parseWindshear(data: List<String>, airport: Airport) {
  */
 private fun parseTraffic(data: List<String>, airport: Airport) {
     val private = data[0] == "PRIVATE"
-    if (private && data.size != 4) Gdx.app.log("GameLoader", "Private aircraft data has ${data.size} elements instead of 4")
+    if (private && data.size != 4) Log.info("GameLoader", "Private aircraft data has ${data.size} elements instead of 4")
     val airline = if (private) data[1] else data[0]
     val chance = (if (private) data[2] else data[1]).toFloat()
     val aircraftList = GdxArray<String>()
@@ -944,5 +942,5 @@ private fun generateTrafficDistribution(airport: Airport) {
  * @param rwyName name of the missing runway
  */
 private fun logMissingRunway(rwyName: String) {
-    Gdx.app.log("GameLoader", "Missing runway $rwyName: Did you try to access it before creating it in the data file?")
+    Log.info("GameLoader", "Missing runway $rwyName: Did you try to access it before creating it in the data file?")
 }

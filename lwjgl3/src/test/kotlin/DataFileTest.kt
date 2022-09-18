@@ -1,13 +1,34 @@
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Files
+import com.badlogic.gdx.math.Polygon
 import com.bombbird.terminalcontrol2.global.AVAIL_AIRPORTS
+import com.bombbird.terminalcontrol2.utilities.ABOVE_ALT_REGEX
+import com.bombbird.terminalcontrol2.utilities.BELOW_ALT_REGEX
+import com.bombbird.terminalcontrol2.utilities.toLines
+import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.FunSpec
+import io.kotest.core.spec.style.scopes.ContainerScope
 import io.kotest.datatest.withData
+import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
+import io.kotest.matchers.bytes.shouldBeBetween
 import io.kotest.matchers.collections.shouldBeIn
-import io.kotest.matchers.comparables.shouldBeGreaterThan
+import io.kotest.matchers.collections.shouldContain
+import io.kotest.matchers.collections.shouldNotBeIn
+import io.kotest.matchers.collections.shouldNotContain
 import io.kotest.matchers.comparables.shouldBeLessThan
+import io.kotest.matchers.floats.shouldBeBetween
+import io.kotest.matchers.ints.shouldBeBetween
+import io.kotest.matchers.ints.shouldBeGreaterThan
+import io.kotest.matchers.ints.shouldBeGreaterThanOrEqual
+import io.kotest.matchers.ints.shouldNotBeBetween
+import io.kotest.matchers.nulls.shouldBeNull
+import io.kotest.matchers.nulls.shouldNotBeNull
+import io.kotest.matchers.short.shouldBeBetween
 import io.kotest.matchers.shouldBe
+import ktx.assets.toInternalFile
+import java.lang.NumberFormatException
+import java.lang.RuntimeException
 
 /** Kotest FunSpec class for checking data file validity */
 object DataFileTest: FunSpec() {
@@ -15,9 +36,9 @@ object DataFileTest: FunSpec() {
         Gdx.files = Lwjgl3Files()
 
         context("Aircraft data file check") {
-            val handle = Gdx.files.internal("Data/aircraft.perf")
+            val handle = "Data/aircraft.perf".toInternalFile()
             handle.exists().shouldBeTrue()
-            val allAircraft = handle.readString().split("\\r?\\n".toRegex()).map { it.trim() }.filter {
+            val allAircraft = handle.readString().toLines().map { it.trim() }.filter {
                 it.length shouldBeGreaterThan 0
                 it[0] != '#'
             }.toList()
@@ -27,25 +48,470 @@ object DataFileTest: FunSpec() {
                 acData[0].length shouldBe 4
                 acData[1] shouldBeIn arrayOf("L", "M", "H", "J")
                 acData[2] shouldBeIn arrayOf("A", "B", "C", "D", "E", "F")
-                acData[3].toInt()
-                acData[4].toInt()
-                acData[5].toFloat()
-                acData[6].toFloat()
-                acData[7].toFloat()
-                acData[8].toShort() shouldBeLessThan 390
-                acData[9].toFloat() shouldBeLessThan 1f
-                acData[10].toShort() shouldBeLessThan 200
-                acData[11].toShort() shouldBeLessThan 200
-                acData[12].toInt()
-                acData[13].toInt()
+                try {
+                    acData[3].toInt()
+                    acData[4].toInt()
+                    acData[5].toFloat()
+                    acData[6].toFloat()
+                    acData[7].toFloat()
+                    acData[8].toShort() shouldBeLessThan 390
+                    acData[9].toFloat() shouldBeLessThan 1f
+                    acData[10].toShort() shouldBeLessThan 200
+                    acData[11].toShort() shouldBeLessThan 200
+                    acData[12].toInt()
+                    acData[13].toInt()
+                } catch (e: NumberFormatException) {
+                    e.stackTraceToString().shouldBeNull()
+                }
             }
         }
 
         context("Airport data file check") {
             withData(AVAIL_AIRPORTS.toList()) {
-                val handle = Gdx.files.internal("Airports/${it}.arpt")
+                val handle = "Airports/${it}.arpt".toInternalFile()
                 handle.exists().shouldBeTrue()
+                val data = handle.readString()
+                try {
+                    // 1. Check all global values are present and within acceptable range
+                    val minAlt = getAllTextAfterHeader("MIN_ALT", data).toInt()
+                    withData(arrayListOf("World Minimum Altitude")) {
+                        minAlt.shouldBeBetween(500, 16500)
+                        minAlt % 100 shouldBe 0
+                    }
+                    val maxAlt = getAllTextAfterHeader("MAX_ALT", data).toInt()
+                    withData(arrayListOf("World Maximum Altitude")) {
+                        maxAlt.shouldBeBetween(18000, 26000)
+                        maxAlt shouldBeGreaterThan minAlt
+                        maxAlt % 100 shouldBe 0
+                    }
+                    withData(arrayListOf("Intermediate Altitudes")) interAlt@ {
+                        for ((index, value) in (" (.+)".toRegex().find(data)?.groupValues?.get(1)?.split(" ") ?: return@interAlt).withIndex()) {
+                            if (index == 0) continue
+                            val interAlt = value.trim().toInt()
+                            interAlt.shouldBeBetween(minAlt, maxAlt)
+                            interAlt % 100 shouldBe 0
+                        }
+                    }
+                    val transAlt = "TRANS_ALT (.+)".toRegex().find(data).shouldNotBeNull().groupValues[1].toInt()
+                    withData(arrayListOf("Transition Altitude")) {
+                        transAlt.shouldBeBetween(minAlt, maxAlt)
+                        transAlt % 100 shouldBe 0
+                    }
+                    val transLvl = "TRANS_LVL (.+)".toRegex().find(data).shouldNotBeNull().groupValues[1].toInt() * 100
+                    withData(arrayListOf("Transition Level")) {
+                        transLvl.shouldBeBetween(minAlt, maxAlt)
+                        transLvl shouldBeGreaterThanOrEqual transAlt
+                    }
+                    withData(arrayListOf("Minimum Separation")) {
+                        "MIN_SEP (.+)".toRegex().find(data).shouldNotBeNull().groupValues[1].toFloat()
+                            .shouldBeBetween(1f, 10f, 0.0001f)
+                    }
+                    withData(arrayListOf("Magnetic Heading Deviation")) {
+                        "MAG_HDG_DEV (.+)".toRegex().find(data).shouldNotBeNull().groupValues[1].toFloat()
+                            .shouldBeBetween(-180f, 180f, 0.0001f)
+                    }
+                    withData(arrayListOf("Max Arrivals")) {
+                        "MAX_ARRIVALS (.+)".toRegex().find(data).shouldNotBeNull().groupValues[1].toInt().shouldBeBetween(10, 35)
+                    }
 
+                    // 2. Check waypoints
+                    val wpts = testWaypoints(data)
+
+                    // 3. Check sectors, including that all sub-sectors are within the primary sector
+                    testSectors(data)
+
+                    // 4. Check min alt sectors
+                    testMinAltSectors(data)
+
+                    // 5. Check shoreline
+                    testShoreline(data)
+
+                    // 6. Check hold waypoints
+                    testHolds(data, wpts)
+
+                    // 7. Check airports
+                    testAirports(data, wpts)
+                } catch (e: RuntimeException) {
+                    e.stackTraceToString().shouldBeNull()
+                }
+            }
+        }
+    }
+
+    /**
+     * Parses the data to return the string that exists between the opening and closing of a tag;
+     * e.g. using tag WAYPOINTS will search for text between WAYPOINTS and /WAYPOINTS, and return it with leading and
+     * trailing whitespace trimmed
+     * @param tag the tag to check for
+     * @param data the text to check for text between the tag
+     * @return the string between the tag, with leading and trailing whitespace trimmed; if no tag found in text, empty
+     * string is returned
+     */
+    private fun getStringBetweenTags(tag: String, data: String): String {
+        val split1 = data.split("$tag/\\s".toRegex(), limit = 2)
+        if (split1.size < 2) return ""
+        return split1[1].split("\\s/$tag".toRegex(), limit = 2)[0].trim()
+    }
+
+    /**
+     * Parses the data to return the lines of text that exist between the opening and closing of a tag;
+     * e.g. using tag WAYPOINTS will search for text between WAYPOINTS and /WAYPOINTS, and return non-blank lines
+     * between them
+     * @param tag the tag to check for
+     * @param data the text to check for text between the tag
+     * @return the lines of text between the tag, with blank lines removed
+     */
+    private fun getLinesBetweenTags(tag: String, data: String): List<String> {
+        return getStringBetweenTags(tag, data).toLines().filter { it.isNotBlank() }
+    }
+
+    /**
+     * Gets blocks between multiple tags with the same name
+     * @param tag the tag to check for
+     * @param data the text to check for text between the tag
+     * @return a List of strings between each instance of the tag, with leading and trailing whitespace removed;
+     * if no tag found in text, empty string is returned
+     */
+    private fun getBlocksBetweenTags(tag: String, data: String): List<String> {
+        fun recursiveGetBlock(data: String, accumulator: ArrayList<String> = arrayListOf()): ArrayList<String> {
+            val split1 = data.split("$tag/\\s".toRegex(), limit = 2)
+            if (split1.size < 2) return accumulator
+            val split2 = split1[1].split("\\s/$tag".toRegex(), limit = 2)
+            accumulator.add(split2[0].trim())
+            if (split2.size > 1) recursiveGetBlock(split2[1], accumulator)
+            return accumulator
+        }
+
+        return recursiveGetBlock(data)
+    }
+
+    /**
+     * Gets all text following a header with leading and trailing whitespace trimmed; e.g. if the header is SHIBA, then
+     * for a text "SHIBA 123 43 1234" will return "123 43 1234"
+     * @param header the header to search for
+     * @param data the text to check for text after the header
+     * @return the text following the header with leading and trailing whitespace trimmed
+     */
+    private fun getAllTextAfterHeader(header: String, data: String): String {
+        return "$header (.+)".toRegex().find(data).shouldNotBeNull().groupValues[1].trim()
+    }
+
+    /**
+     * Gets all text following a header with leading and trailing whitespace trimmed; this will return multiple strings
+     * that match the header
+     * @param header the header to search for
+     * @param data the text to check for text after the header
+     * @return the List of text following the header with leading and trailing whitespace trimmed
+     */
+    private fun getAllTextAfterHeaderMultiple(header: String, data: String): List<String> {
+        val allGroups = "$header (.+)".toRegex().find(data)?.groupValues ?: return ArrayList()
+        return allGroups.subList(1, allGroups.size).map { it.trim() }
+    }
+
+    /**
+     * Tests the waypoint data validity for the input data, and returns the set of all waypoint IDs encountered, with
+     * the calling ContainerScope as the scope for the tests
+     * @param data the string text to parse
+     * @return a HashSet of all the waypoint IDs
+     */
+    private suspend fun ContainerScope.testWaypoints(data: String): HashSet<String> {
+        val wptNames = HashSet<String>()
+        val wptIds = HashSet<Short>()
+        withData(arrayListOf("Waypoints")) { withData(getLinesBetweenTags("WAYPOINTS", data)) { line ->
+            val wptData = line.split(" ")
+            val id = wptData[0].toShort()
+            withClue("Duplicate waypoint ID $id") { if (wptIds.isNotEmpty()) wptIds shouldNotBeIn wptIds }
+            wptIds.add(id)
+            val wptName = wptData[1]
+            withClue("Duplicate waypoint name $wptName") { if (wptNames.isNotEmpty()) wptName shouldNotBeIn wptNames }
+            wptNames.add(wptName)
+            val coordArray = wptData[2].split(",")
+            coordArray.size shouldBe 2
+            coordArray.forEach { coord -> coord.toFloat() }
+        }}
+
+        return wptNames
+    }
+
+    /**
+     * Tests the sector data validity for the input data, with the calling ContainerScope as the scope for the tests
+     * @param data the string text to parse
+     */
+    private suspend fun ContainerScope.testSectors(data: String) {
+        withData(arrayListOf("Sectors")) {
+            val sectorData = getStringBetweenTags("SECTORS", data)
+            sectorData.isBlank().shouldBeFalse()
+            val primarySector = Polygon()
+            var sectorIndex = 1
+            while (true) {
+                val sectorArrangements = getLinesBetweenTags(sectorIndex.toString(), sectorData)
+                if (sectorArrangements.isEmpty()) break
+                withData(sectorArrangements) { sector ->
+                    val polygonVertices = ArrayList<Float>()
+                    val indivSectorData = sector.split(" ")
+                    indivSectorData.size shouldBeGreaterThanOrEqual 6
+                    indivSectorData[0].toFloat()
+                    for (i in 3 until indivSectorData.size) {
+                        val coordArray = indivSectorData[i].split(",")
+                        coordArray.size shouldBe 2
+                        coordArray.forEach { coord -> polygonVertices.add(coord.toFloat()) }
+                    }
+                    if (sectorIndex == 1) primarySector.vertices = polygonVertices.toFloatArray()
+                    else {
+                        var x: Float? = null
+                        var y: Float? = null
+                        for (point in polygonVertices) {
+                            if (x == null) x = point
+                            else if (y == null) y = point
+                            if (y != null) {
+                                var found = false
+                                // Test +- 1px for both x, y axis due to imprecise Polygon.contains calculation
+                                for (i in -1..1) {
+                                    for (j in -1..1) {
+                                        if (primarySector.contains(x + i, y + j)) found = true
+                                    }
+                                }
+                                found.shouldBeTrue()
+                            }
+                        }
+                    }
+                }
+                sectorIndex++
+            }
+        }
+    }
+
+    /**
+     * Tests the minimum altitude sector data validity for the input data, with the calling ContainerScope as the scope
+     * for the tests
+     * @param data the string text to parse
+     */
+    private suspend fun ContainerScope.testMinAltSectors(data: String) {
+        withData(arrayListOf("Minimum Altitude Sectors")) {
+            withData(getLinesBetweenTags("MIN_ALT_SECTORS", data)) {
+                val minAltSectorData = it.split(" ")
+                minAltSectorData[0] shouldBeIn arrayOf("POLYGON", "CIRCLE")
+                minAltSectorData[1] shouldBeIn arrayOf("MVA", "RESTR")
+                if (minAltSectorData[2] != "UNL") minAltSectorData[2].toInt()
+                if (minAltSectorData[0] == "POLYGON") {
+                    // For polygon sectors
+                    minAltSectorData.size shouldBeGreaterThan 5
+                    for (i in 3 until minAltSectorData.size) {
+                        val coordData = minAltSectorData[i].split(",")
+                        if (coordData[0] == "LABEL") {
+                            coordData.size shouldBe 3
+                            coordData[1].toFloat()
+                            coordData[2].toFloat()
+                            minAltSectorData.size shouldBeGreaterThan 6
+                        } else {
+                            coordData.size shouldBe 2
+                            coordData[0].toFloat()
+                            coordData[1].toFloat()
+                        }
+                    }
+                } else if (minAltSectorData[1] == "CIRCLE") {
+                    // For circle sectors
+                    minAltSectorData.size shouldBe 5
+                    val coord = minAltSectorData[3].split(",")
+                    coord.size shouldBe 2
+                    coord[0].toFloat()
+                    coord[1].toFloat()
+                    minAltSectorData[4].toFloat()
+                }
+            }
+        }
+    }
+
+    /**
+     * Tests the shoreline data validity for the input data, with the calling ContainerScope as the scope for the tests
+     * @param data the string text to parse
+     */
+    private suspend fun ContainerScope.testShoreline(data: String) {
+        withData(arrayListOf("Shoreline")) {
+            withData(getLinesBetweenTags("SHORELINE", data)) {
+                val coords = it.split(" ")
+                coords.size shouldBeGreaterThan 2
+                coords.forEach { coord ->
+                    val coordData = coord.split(",")
+                    coordData.size shouldBe 2
+                    coordData[0].toFloat()
+                    coordData[1].toFloat()
+                }
+            }
+        }
+    }
+
+    /**
+     * Tests the hold waypoint data validity for the input data, with the calling ContainerScope as the scope for the
+     * tests
+     * @param data the string text to parse
+     * @param wpts the set of waypoint names available, and the hold waypoint name should be in this set
+     */
+    private suspend fun ContainerScope.testHolds(data: String, wpts: HashSet<String>) {
+        withData(arrayListOf("Hold Waypoints")) {
+            withData(getLinesBetweenTags("HOLDS", data)) {
+                val holdArray = it.split(" ")
+                holdArray.size shouldBeGreaterThan 5
+                holdArray[0] shouldBeIn wpts
+                holdArray[1].toInt().shouldBeBetween(1, 360)
+                holdArray[2].toByte().shouldBeBetween(3, 12)
+                holdArray[3].toShort().toInt().shouldNotBeBetween(0, 149)
+                holdArray[4].toShort().toInt().shouldNotBeBetween(0, 179)
+                holdArray[5] shouldBeIn arrayOf("RIGHT", "LEFT")
+                if (holdArray.size == 7) (ABOVE_ALT_REGEX.find(holdArray[6]) ?: BELOW_ALT_REGEX.find(holdArray[6])).shouldNotBeNull()
+            }
+        }
+    }
+
+    /**
+     * Tests the airport data validity for all airports, with the calling ContainerScope as the scope for the tests
+     * @param data the string text to parse
+     * @param wpts the set of waypoint names available, and the hold waypoint name should be in this set
+     */
+    private suspend fun ContainerScope.testAirports(data: String, wpts: HashSet<String>) {
+        val arptIds = HashSet<Byte>()
+        getBlocksBetweenTags("AIRPORT", data).forEach { airport ->
+            val header = airport.split(" ", limit = 3) // Get only the first 2 identifiers (ID, ICAO)
+            header.size shouldBe 3
+            withData(arrayListOf("Airport ${header[0]} ${header[1]}")) {
+                val id = header[0].toByte()
+                val icao = header[1]
+                arptIds shouldNotContain id
+                arptIds.add(id)
+                withClue("ICAO code format invalid: $icao") { "^[A-Z]{4}\$".toRegex().find(icao).shouldNotBeNull() }
+                testAirport(airport, wpts)
+            }
+        }
+    }
+
+    /**
+     * Tests the airport data validity for each airport data block, with the calling ContainerScope as the scope for the
+     * tests
+     * @param data the string text to parse
+     * @param wpts the set of waypoint names available, and the hold waypoint name should be in this set
+     */
+    private suspend fun ContainerScope.testAirport(data: String, wpts: HashSet<String>) {
+        withData(arrayListOf("Wind Direction")) {
+            getAllTextAfterHeader("WINDDIR", data).split(" ").map { it.toFloat() }.size shouldBe 37
+        }
+        withData(arrayListOf("Wind Speed")) {
+            getAllTextAfterHeader("WINDSPD", data).split(" ").map { it.toFloat() }.size shouldBeGreaterThan 30
+        }
+        withData(arrayListOf("Visibility")) {
+            getAllTextAfterHeader("VISIBILITY", data).split(" ").map { it.toFloat() }.size shouldBe 20
+        }
+        withData(arrayListOf("Ceiling")) {
+            getAllTextAfterHeader("CEILING", data).split(" ").map { it.toFloat() }.size shouldBe 15
+        }
+        withData(arrayListOf("Windshear")) {
+            getAllTextAfterHeader("WINDSHEAR", data).split(" ").map { it.toFloat() }.size shouldBe 2
+        }
+        val allRwys = testRunways(data)
+        testDependentRunways("Dependent Parallel Runways", "DEPENDENT_PARALLEL", data, allRwys)
+        testDependentRunways("Dependent Opposite Runways", "DEPENDENT_OPPOSITE", data, allRwys)
+        testDependentRunways("Crossing Runways", "CROSSING", data, allRwys)
+        testRunwayZones("Approach NOZ", "APP_NOZ", data, allRwys)
+        testRunwayZones("Departure NOZ", "DEP_NOZ", data, allRwys)
+        testRunwayConfigs(data, allRwys)
+    }
+
+    /**
+     * Tests the runways for the input airport data block, with the calling ContainerScope as the scope for the
+     * tests
+     * @param data the string text to parse
+     * @return a HashSet of all runway names for this airport
+     */
+    private suspend fun ContainerScope.testRunways(data: String): HashSet<String> {
+        val rwyNames = HashSet<String>()
+        withData(arrayListOf("Runways")) {
+            val rwyIds = HashSet<Byte>()
+            withData(getLinesBetweenTags("RWYS", data)) {
+                val rwyData = it.split(" ")
+                rwyData.size shouldBe 11
+                rwyIds shouldNotContain rwyData[0].toByte()
+                val rwyName = rwyData[1]
+                if (rwyName.last() !in arrayOf('L', 'C', 'R')) rwyName.toByte().shouldBeBetween(1, 36)
+                else rwyName.substring(0, rwyName.length - 1).toByte().shouldBeBetween(1, 36)
+                rwyNames.add(rwyName)
+                rwyData[2].split(",").forEach { coord -> coord.toFloat() }
+                rwyData[3].toFloat().shouldBeBetween(0f, 360f, 0.0001f)
+                val rwyLength = rwyData[4].toShort()
+                rwyLength.shouldBeBetween(400, 7000)
+                rwyData[5].toShort().shouldBeBetween(0, rwyLength)
+                rwyData[6].toShort().shouldBeBetween(0, rwyLength)
+                rwyData[7].toShort()
+                rwyData[8] shouldBeIn arrayOf("LABEL_LEFT", "LABEL_RIGHT", "LABEL_BEFORE")
+                rwyData[10].toFloat()
+            }
+        }
+        return rwyNames
+    }
+
+    /**
+     * Tests the dependent runways for the input airport data block, with the calling ContainerScope as the scope for
+     * the tests
+     * @param data the string text to parse
+     * @return a HashSet of all runway names for this airport
+     */
+    private suspend fun ContainerScope.testDependentRunways(testName: String, tag: String, data: String, allRwys: HashSet<String>) {
+        withData(arrayListOf(testName)) {
+            withData(getLinesBetweenTags(tag, data)) {
+                val rwys = it.split(" ")
+                rwys.size shouldBe 2
+                allRwys shouldContain rwys[0]
+                allRwys shouldContain rwys[1]
+            }
+        }
+    }
+
+    /**
+     * Tests the runway zones for the input airport data block, with the calling ContainerScope as the scope for the
+     * tests
+     * @param data the string text to parse
+     * @return a HashSet of all runway names for this airport
+     */
+    private suspend fun ContainerScope.testRunwayZones(testName: String, tag: String, data: String, allRwys: HashSet<String>) {
+        withData(arrayListOf(testName)) {
+            withData(getLinesBetweenTags(tag, data)) {
+                val nozData = it.split(" ")
+                nozData.size shouldBe 5
+                allRwys shouldContain nozData[0]
+                nozData[1].split(",").forEach { coord -> coord.toFloat() }
+                nozData[2].toShort().shouldBeBetween(1, 360)
+                nozData[3].toFloat()
+                nozData[4].toFloat()
+            }
+        }
+    }
+
+    private suspend fun ContainerScope.testRunwayConfigs(data: String, allRwys: HashSet<String>) {
+        withData(arrayListOf("Runway Configurations")) {
+            val configIds = HashSet<Byte>()
+            getBlocksBetweenTags("CONFIG", data).forEach { config ->
+                val header = config.toLines()[0].split(" ")
+                header.size shouldBe 2
+                withData(arrayListOf("Config ${header[0]} ${header[1]}")) {
+                    val configId = header[0].toByte()
+                    configIds shouldNotContain configId
+                    configIds.add(configId)
+                    header[1] shouldBeIn arrayOf("DAY_NIGHT", "DAY_ONLY", "NIGHT_ONLY")
+                    val dep = getAllTextAfterHeader("DEP", config)
+                    withData(arrayListOf("DEP $dep")) {
+                        dep.split(" ").forEach { rwy -> allRwys shouldContain rwy }
+                    }
+                    val arr = getAllTextAfterHeader("ARR", config)
+                    withData(arrayListOf("ARR $arr")) {
+                        arr.split(" ").forEach { rwy -> allRwys shouldContain rwy }
+                    }
+                    withData(getAllTextAfterHeaderMultiple("NTZ", config).map { "NTZ $it" }) {ntz ->
+                        val ntzData = ntz.split(" ")
+                        ntzData.size shouldBe 5
+                        ntzData[1].split(",").forEach { coord -> coord.toFloat() }
+                        ntzData[2].toShort().shouldBeBetween(1, 360)
+                        ntzData[3].toFloat()
+                        ntzData[4].toFloat()
+                    }
+                }
             }
         }
     }
