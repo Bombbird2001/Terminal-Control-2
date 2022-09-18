@@ -1,11 +1,11 @@
 package com.bombbird.terminalcontrol2.entities
 
-import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.math.GeometryUtils
 import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.getEngine
+import com.esotericsoftware.minlog.Log
 import ktx.ashley.entity
 import ktx.ashley.get
 import ktx.ashley.with
@@ -108,7 +108,7 @@ class MinAltSector(minAlt: Int?, polygonBoundary: ShortArray?, circleX: Short = 
      * @param missingComponent the missing aircraft component
      */
     override fun emptySerialisableObject(missingComponent: String): SerialisedMinAltSector {
-        Gdx.app.log("MinAltSector", "Empty serialised minAltSector returned due to missing $missingComponent component")
+        Log.info("MinAltSector", "Empty serialised minAltSector returned due to missing $missingComponent component")
         return SerialisedMinAltSector()
     }
 

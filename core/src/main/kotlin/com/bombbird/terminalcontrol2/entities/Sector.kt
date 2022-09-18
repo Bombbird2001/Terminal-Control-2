@@ -1,6 +1,5 @@
 package com.bombbird.terminalcontrol2.entities
 
-import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.Color
 import com.bombbird.terminalcontrol2.components.GPolygon
 import com.bombbird.terminalcontrol2.components.RenderLast
@@ -9,6 +8,7 @@ import com.bombbird.terminalcontrol2.components.SectorInfo
 import com.bombbird.terminalcontrol2.global.CLIENT_SCREEN
 import com.bombbird.terminalcontrol2.global.SECTOR_GREEN
 import com.bombbird.terminalcontrol2.global.getEngine
+import com.esotericsoftware.minlog.Log
 import ktx.ashley.entity
 import ktx.ashley.get
 import ktx.ashley.with
@@ -56,7 +56,7 @@ class Sector(id: Byte, freq: String, arrCallsign: String, depCallsign: String, s
      * @param missingComponent the missing aircraft component
      */
     override fun emptySerialisableObject(missingComponent: String): SerialisedSector {
-        Gdx.app.log("Sector", "Empty serialised sector returned due to missing $missingComponent component")
+        Log.info("Sector", "Empty serialised sector returned due to missing $missingComponent component")
         return SerialisedSector()
     }
 

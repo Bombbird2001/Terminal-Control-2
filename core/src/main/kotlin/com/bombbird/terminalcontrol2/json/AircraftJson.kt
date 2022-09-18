@@ -1,12 +1,12 @@
 package com.bombbird.terminalcontrol2.json
 
 import com.badlogic.ashley.core.Component
-import com.badlogic.gdx.Gdx
 import com.bombbird.terminalcontrol2.components.AircraftInfo
 import com.bombbird.terminalcontrol2.components.Altitude
 import com.bombbird.terminalcontrol2.components.FlightType
 import com.bombbird.terminalcontrol2.components.Position
 import com.bombbird.terminalcontrol2.entities.Aircraft
+import com.esotericsoftware.minlog.Log
 import com.squareup.moshi.FromJson
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.ToJson
@@ -41,7 +41,7 @@ object AircraftAdapter {
      * @return the empty default Aircraft
      */
     private fun emptyAircraft(missingComponent: String): Aircraft {
-        Gdx.app.log("AircraftJSON", "Empty aircraft returned due to missing $missingComponent")
+        Log.info("AircraftJSON", "Empty aircraft returned due to missing $missingComponent")
         return Aircraft()
     }
 }

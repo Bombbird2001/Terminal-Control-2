@@ -1,10 +1,10 @@
 package com.bombbird.terminalcontrol2.utilities
 
-import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.math.Intersector
 import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.CommandTarget
+import com.esotericsoftware.minlog.Log
 import ktx.math.minus
 import ktx.math.plusAssign
 import ktx.math.times
@@ -267,7 +267,7 @@ fun findTurnDistance(deltaHeading: Float, turnRateDps: Float, groundSpeedPxps: F
  * */
 fun findClosestIntersectionBetweenSegmentAndPolygon(originX: Float, originY: Float, endX: Float, endY: Float, vertices: FloatArray, extendLengthPx: Float): Vector2? {
     if (vertices.size % 2 != 0) {
-        Gdx.app.log("MathTools", "Coordinates cannot be odd in number: ${vertices.size}")
+        Log.info("MathTools", "Coordinates cannot be odd in number: ${vertices.size}")
         return null
     }
     if (vertices.size < 4) return null

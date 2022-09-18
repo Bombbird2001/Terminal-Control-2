@@ -1,6 +1,5 @@
 package com.bombbird.terminalcontrol2.screens.settings
 
-import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.utils.Align
 import com.bombbird.terminalcontrol2.files.savePlayerSettings
 import com.bombbird.terminalcontrol2.global.*
@@ -8,6 +7,7 @@ import com.bombbird.terminalcontrol2.ui.addChangeListener
 import com.bombbird.terminalcontrol2.ui.defaultSettingsLabel
 import com.bombbird.terminalcontrol2.ui.defaultSettingsSelectBox
 import com.bombbird.terminalcontrol2.ui.newSettingsRow
+import com.esotericsoftware.minlog.Log
 import ktx.scene2d.*
 
 /** Settings screen for display settings */
@@ -117,7 +117,7 @@ class DisplaySettings: BaseSettings() {
             UNCONTROLLED_AIRCRAFT_TRAIL_SELECTED -> WHEN_SELECTED
             UNCONTROLLED_AIRCRAFT_TRAIL_SHOW -> ALWAYS
             else -> {
-                Gdx.app.log("DisplaySettings", "Unknown uncontrolled aircraft trail setting $SHOW_UNCONTROLLED_AIRCRAFT_TRAIL")
+                Log.info("DisplaySettings", "Unknown uncontrolled aircraft trail setting $SHOW_UNCONTROLLED_AIRCRAFT_TRAIL")
                 WHEN_SELECTED
             }
         }
@@ -130,7 +130,7 @@ class DisplaySettings: BaseSettings() {
             SHOW_DIST_TO_GO_ARRIVALS -> ARRIVALS_ONLY
             SHOW_DIST_TO_GO_ALL -> ALL_AIRCRAFT
             else -> {
-                Gdx.app.log("DisplaySettings", "Unknown dist to go display setting $SHOW_DIST_TO_GO")
+                Log.info("DisplaySettings", "Unknown dist to go display setting $SHOW_DIST_TO_GO")
                 ALL_AIRCRAFT
             }
         }
@@ -155,7 +155,7 @@ class DisplaySettings: BaseSettings() {
             WHEN_SELECTED -> UNCONTROLLED_AIRCRAFT_TRAIL_SELECTED
             ALWAYS -> UNCONTROLLED_AIRCRAFT_TRAIL_SHOW
             else -> {
-                Gdx.app.log("DisplaySettings", "Unknown uncontrolled aircraft trail selection ${uncontrolledTrailSelectBox.selected}")
+                Log.info("DisplaySettings", "Unknown uncontrolled aircraft trail selection ${uncontrolledTrailSelectBox.selected}")
                 UNCONTROLLED_AIRCRAFT_TRAIL_SELECTED
             }
         }
@@ -168,7 +168,7 @@ class DisplaySettings: BaseSettings() {
             ARRIVALS_ONLY -> SHOW_DIST_TO_GO_ARRIVALS
             ALL_AIRCRAFT -> SHOW_DIST_TO_GO_ALL
             else -> {
-                Gdx.app.log("DisplaySettings", "Unknown dist to go selection ${distToGoSelectBox.selected}")
+                Log.info("DisplaySettings", "Unknown dist to go selection ${distToGoSelectBox.selected}")
                 SHOW_DIST_TO_GO_ALL
             }
         }

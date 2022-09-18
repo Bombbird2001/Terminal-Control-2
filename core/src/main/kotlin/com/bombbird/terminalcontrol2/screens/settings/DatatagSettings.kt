@@ -1,6 +1,5 @@
 package com.bombbird.terminalcontrol2.screens.settings
 
-import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.scenes.scene2d.ui.Label
 import com.badlogic.gdx.scenes.scene2d.ui.SelectBox
 import com.badlogic.gdx.scenes.scene2d.ui.Slider
@@ -11,6 +10,7 @@ import com.bombbird.terminalcontrol2.ui.addChangeListener
 import com.bombbird.terminalcontrol2.ui.defaultSettingsLabel
 import com.bombbird.terminalcontrol2.ui.defaultSettingsSelectBox
 import com.bombbird.terminalcontrol2.ui.newSettingsRow
+import com.esotericsoftware.minlog.Log
 import ktx.scene2d.*
 import kotlin.math.roundToInt
 
@@ -87,7 +87,7 @@ class DatatagSettings: BaseSettings() {
             DATATAG_BACKGROUND_SELECTED -> WHEN_SELECTED
             DATATAG_BACKGROUND_ALWAYS -> ALWAYS
             else -> {
-                Gdx.app.log("DatatagSettings", "Unknown datatag background setting $DATATAG_BACKGROUND")
+                Log.info("DatatagSettings", "Unknown datatag background setting $DATATAG_BACKGROUND")
                 ALWAYS
             }
         }
@@ -96,7 +96,7 @@ class DatatagSettings: BaseSettings() {
             DATATAG_BORDER_SELECTED -> WHEN_SELECTED
             DATATAG_BORDER_ALWAYS -> ALWAYS
             else -> {
-                Gdx.app.log("DatatagSettings", "Unknown datatag border setting $DATATAG_BORDER")
+                Log.info("DatatagSettings", "Unknown datatag border setting $DATATAG_BORDER")
                 ALWAYS
             }
         }
@@ -113,7 +113,7 @@ class DatatagSettings: BaseSettings() {
             WHEN_SELECTED -> DATATAG_BACKGROUND_SELECTED
             ALWAYS -> DATATAG_BACKGROUND_ALWAYS
             else -> {
-                Gdx.app.log("DatatagSettings", "Unknown datatag background selection ${backgroundSelectBox.selected}")
+                Log.info("DatatagSettings", "Unknown datatag background selection ${backgroundSelectBox.selected}")
                 DATATAG_BACKGROUND_ALWAYS
             }
         }
@@ -122,7 +122,7 @@ class DatatagSettings: BaseSettings() {
             WHEN_SELECTED -> DATATAG_BORDER_SELECTED
             ALWAYS -> DATATAG_BORDER_ALWAYS
             else -> {
-                Gdx.app.log("DatatagSettings", "Unknown datatag border selection ${borderSelectBox.selected}")
+                Log.info("DatatagSettings", "Unknown datatag border selection ${borderSelectBox.selected}")
                 DATATAG_BORDER_ALWAYS
             }
         }

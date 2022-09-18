@@ -3,7 +3,6 @@ package com.bombbird.terminalcontrol2.systems
 import com.badlogic.ashley.core.Entity
 import com.badlogic.ashley.core.EntitySystem
 import com.badlogic.ashley.core.Family
-import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.OrthographicCamera
 import com.badlogic.gdx.graphics.g2d.TextureRegion
@@ -18,6 +17,7 @@ import com.bombbird.terminalcontrol2.ui.LABEL_PADDING
 import com.bombbird.terminalcontrol2.ui.UIPane
 import com.bombbird.terminalcontrol2.ui.updateDatatagLabelSize
 import com.bombbird.terminalcontrol2.utilities.*
+import com.esotericsoftware.minlog.Log
 import ktx.ashley.*
 import ktx.collections.GdxArray
 import ktx.math.*
@@ -341,7 +341,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
                                 else -> {
                                     dirUnitVector = dirUnitVector.withRotation90(0)
                                     dirUnitVector = dirUnitVector.withRotation90(0)
-                                    if (positionToRunway != 0.byte) Gdx.app.log("Render runway label", "Invalid positionToRunway $positionToRunway set, using default value 0")
+                                    if (positionToRunway != 0.byte) Log.info("Render runway label", "Invalid positionToRunway $positionToRunway set, using default value 0")
                                 }
                             }
                             dirSet = true
@@ -418,7 +418,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
                 val datatag = get(Datatag.mapper) ?: return@apply
                 val radarData = get(RadarData.mapper) ?: return@apply
                 if (datatag.renderLast) {
-                    if (lastRenderDatatagAircraft != null) Gdx.app.log("RenderingSystem", "Multiple render last aircraft datatags found")
+                    if (lastRenderDatatagAircraft != null) Log.info("RenderingSystem", "Multiple render last aircraft datatags found")
                     lastRenderDatatagAircraft = this
                 }
                 if (!datatag.smallLabelFont && camZoom > DATATAG_ZOOM_THRESHOLD) updateDatatagLabelSize(datatag, true)
@@ -498,7 +498,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
                             FlightType.ARRIVAL -> dotBlue
                             FlightType.DEPARTURE -> dotGreen
                             else -> {
-                                Gdx.app.log("RenderingSystem", "Invalid flight type ${flightType.type} for contact dot rendering")
+                                Log.info("RenderingSystem", "Invalid flight type ${flightType.type} for contact dot rendering")
                                 null
                             }
                         }

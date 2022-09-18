@@ -1,6 +1,5 @@
 package com.bombbird.terminalcontrol2.screens.settings
 
-import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.scenes.scene2d.ui.CheckBox
 import com.badlogic.gdx.scenes.scene2d.ui.Label
 import com.badlogic.gdx.scenes.scene2d.ui.Slider
@@ -11,6 +10,7 @@ import com.bombbird.terminalcontrol2.components.DepartureInfo
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.traffic.TrafficMode
 import com.bombbird.terminalcontrol2.ui.*
+import com.esotericsoftware.minlog.Log
 import ktx.ashley.get
 import ktx.ashley.has
 import ktx.ashley.plusAssign
@@ -90,7 +90,7 @@ class TrafficSettings: BaseGameSettings() {
                 TrafficMode.ARRIVALS_TO_CONTROL -> ARRIVALS_TO_CONTROL
                 TrafficMode.FLOW_RATE -> ARRIVAL_FLOW_RATE
                 else -> {
-                    Gdx.app.log("TrafficSettings", "Unknown traffic mode setting $trafficMode")
+                    Log.info("TrafficSettings", "Unknown traffic mode setting $trafficMode")
                     NORMAL
                 }
             }
@@ -118,7 +118,7 @@ class TrafficSettings: BaseGameSettings() {
                 ARRIVALS_TO_CONTROL -> TrafficMode.ARRIVALS_TO_CONTROL
                 ARRIVAL_FLOW_RATE -> TrafficMode.FLOW_RATE
                 else -> {
-                    Gdx.app.log("TrafficSettings", "Unknown traffic mode selection $selectedMode")
+                    Log.info("TrafficSettings", "Unknown traffic mode selection $selectedMode")
                     TrafficMode.NORMAL
                 }
             }

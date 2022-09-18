@@ -1,7 +1,6 @@
 package com.bombbird.terminalcontrol2.networking
 
 import com.badlogic.ashley.core.Engine
-import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.math.Polygon
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.*
@@ -15,6 +14,7 @@ import com.bombbird.terminalcontrol2.utilities.*
 import com.esotericsoftware.kryonet.Connection
 import com.esotericsoftware.kryonet.Listener
 import com.esotericsoftware.kryonet.Server
+import com.esotericsoftware.minlog.Log
 import ktx.collections.GdxArray
 import ktx.collections.GdxArrayMap
 import java.util.UUID
@@ -185,7 +185,7 @@ class GameServer {
             loadGame(mainName, saveId)
             startNetworkingServer()
             startTime = -1L
-            Gdx.app.log("GameServer", "Starting game server")
+            Log.info("GameServer", "Starting game server")
             loopRunning.set(true)
             gameLoop()
             stopNetworkingServer()
@@ -195,7 +195,7 @@ class GameServer {
 
     /** Stops the game loop and exits server */
     fun stopServer() {
-        Gdx.app.log("GameServer", "Stopping game server")
+        Log.info("GameServer", "Stopping game server")
         loopRunning.set(false)
         engine.removeAllEntities()
         engine.removeAllSystems()

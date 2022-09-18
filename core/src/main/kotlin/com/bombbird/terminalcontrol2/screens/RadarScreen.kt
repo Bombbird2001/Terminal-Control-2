@@ -28,6 +28,7 @@ import com.bombbird.terminalcontrol2.utilities.nmToPx
 import com.bombbird.terminalcontrol2.ui.safeStage
 import com.bombbird.terminalcontrol2.ui.updateDatatagLineSpacing
 import com.bombbird.terminalcontrol2.ui.updateDatatagStyle
+import com.esotericsoftware.minlog.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import ktx.app.KtxScreen
@@ -320,7 +321,7 @@ class RadarScreen(private val connectionHost: String?, airportToHost: String?, s
             try {
                 client.stop()
             } catch (e: ClosedSelectorException) {
-                Gdx.app.log("RadarScreen", "Client channel selector already closed before disposal")
+                Log.info("RadarScreen", "Client channel selector already closed before disposal")
             }
             GAME.gameServer?.stopServer()
         }

@@ -1,7 +1,6 @@
 package com.bombbird.terminalcontrol2.utilities
 
 import com.badlogic.ashley.core.Entity
-import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable
@@ -12,6 +11,7 @@ import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.navigation.*
 import com.bombbird.terminalcontrol2.navigation.Route.*
 import com.bombbird.terminalcontrol2.networking.AircraftControlStateUpdateData
+import com.esotericsoftware.minlog.Log
 import ktx.ashley.get
 import ktx.ashley.has
 import ktx.ashley.plusAssign
@@ -34,7 +34,7 @@ fun getAircraftIcon(flightType: Byte, sectorID: Byte): TextureRegionDrawable {
                 FlightType.ARRIVAL -> "aircraftArrival"
                 FlightType.EN_ROUTE -> "aircraftEnroute"
                 else -> {
-                    Gdx.app.log("ControlState", "Unknown flight type $flightType")
+                    Log.info("ControlState", "Unknown flight type $flightType")
                     "aircraftEnroute"
                 }
             }

@@ -1,8 +1,8 @@
 package com.bombbird.terminalcontrol2.utilities
 
-import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.math.MathUtils
 import com.bombbird.terminalcontrol2.components.FlightType
+import com.esotericsoftware.minlog.Log
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import kotlin.math.roundToInt
@@ -29,7 +29,7 @@ object AircraftTypeData {
      * */
     fun getAircraftPerf(icaoType: String, flightType: Byte): AircraftPerfData {
         return aircraftPerfMap[icaoType]?.newInstance(flightType) ?: run {
-            Gdx.app.log("AircraftTypeData", "No performance data found for $icaoType, returning default data")
+            Log.info("AircraftTypeData", "No performance data found for $icaoType, returning default data")
             return AircraftPerfData()
         }
     }

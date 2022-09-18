@@ -1,11 +1,11 @@
 package com.bombbird.terminalcontrol2.networking
 
 import com.badlogic.ashley.core.Entity
-import com.badlogic.gdx.Gdx
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.Secrets
 import com.bombbird.terminalcontrol2.utilities.generateRandomWeather
 import com.bombbird.terminalcontrol2.utilities.updateAirportMetar
+import com.esotericsoftware.minlog.Log
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -29,7 +29,7 @@ object HttpRequest {
             .build()
         client.newCall(request).enqueue(object: Callback {
             override fun onFailure(call: Call, e: IOException) {
-                Gdx.app.log("HttpRequest", "Request failed")
+                Log.info("HttpRequest", "Request failed")
                 println(e)
                 if (!checkGameServerRunningStatus()) return
                 if (retry) sendMetarRequest(reqString, false, airportsForRandom)
@@ -39,7 +39,7 @@ object HttpRequest {
             override fun onResponse(call: Call, response: Response) {
                 if (!response.isSuccessful) {
                     if (response.code == 503 && retry) {
-                        Gdx.app.log("HttpRequest", "503 received: trying again")
+                        Log.info("HttpRequest", "503 received: trying again")
                         response.close()
                         if (!checkGameServerRunningStatus()) return
                         sendMetarRequest(reqString, false, airportsForRandom)
@@ -53,7 +53,7 @@ object HttpRequest {
                     response.close()
 
                     if (responseText == null) {
-                        Gdx.app.log("HttpRequest", "Null sendMetarRequest response")
+                        Log.info("HttpRequest", "Null sendMetarRequest response")
                         generateRandomWeather(false, airportsForRandom)
                         return
                     }

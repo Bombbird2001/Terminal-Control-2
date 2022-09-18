@@ -1,6 +1,5 @@
 package com.bombbird.terminalcontrol2.screens.settings
 
-import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.scenes.scene2d.ui.Label
 import com.badlogic.gdx.utils.Align
 import com.bombbird.terminalcontrol2.global.*
@@ -17,6 +16,7 @@ import com.bombbird.terminalcontrol2.networking.GameServer.Companion.WEATHER_LIV
 import com.bombbird.terminalcontrol2.networking.GameServer.Companion.WEATHER_RANDOM
 import com.bombbird.terminalcontrol2.networking.GameServer.Companion.WEATHER_STATIC
 import com.bombbird.terminalcontrol2.ui.*
+import com.esotericsoftware.minlog.Log
 import ktx.collections.GdxArray
 import ktx.scene2d.*
 
@@ -148,7 +148,7 @@ class GameSettings: BaseGameSettings() {
                 WEATHER_RANDOM -> RANDOM_WEATHER
                 WEATHER_STATIC -> SET_CUSTOM_WEATHER
                 else -> {
-                    Gdx.app.log("GameSettings", "Unknown weather mode setting $weatherMode")
+                    Log.info("GameSettings", "Unknown weather mode setting $weatherMode")
                     LIVE_WEATHER
                 }
             }
@@ -158,7 +158,7 @@ class GameSettings: BaseGameSettings() {
                 EMERGENCY_MEDIUM -> MEDIUM
                 EMERGENCY_HIGH -> HIGH
                 else -> {
-                    Gdx.app.log("GameSettings", "Unknown emergency rate setting $weatherMode")
+                    Log.info("GameSettings", "Unknown emergency rate setting $weatherMode")
                     LOW
                 }
             }
@@ -169,7 +169,7 @@ class GameSettings: BaseGameSettings() {
                 STORMS_HIGH -> HIGH
                 STORMS_NIGHTMARE -> NIGHTMARE
                 else -> {
-                    Gdx.app.log("GameSettings", "Unknown storm density setting $weatherMode")
+                    Log.info("GameSettings", "Unknown storm density setting $weatherMode")
                     OFF
                 }
             }
@@ -204,7 +204,7 @@ class GameSettings: BaseGameSettings() {
                 RANDOM_WEATHER -> WEATHER_RANDOM
                 STATIC_WEATHER -> WEATHER_STATIC
                 else -> {
-                    Gdx.app.log("GameSettings", "Unknown weather mode selection ${weatherSelectBox.selected}")
+                    Log.info("GameSettings", "Unknown weather mode selection ${weatherSelectBox.selected}")
                     WEATHER_LIVE
                 }
             }
@@ -214,7 +214,7 @@ class GameSettings: BaseGameSettings() {
                 MEDIUM -> EMERGENCY_MEDIUM
                 HIGH -> EMERGENCY_HIGH
                 else -> {
-                    Gdx.app.log("GameSettings", "Unknown emergency rate selection ${emergencySelectBox.selected}")
+                    Log.info("GameSettings", "Unknown emergency rate selection ${emergencySelectBox.selected}")
                     EMERGENCY_LOW
                 }
             }
@@ -225,7 +225,7 @@ class GameSettings: BaseGameSettings() {
                 HIGH -> STORMS_HIGH
                 NIGHTMARE -> STORMS_NIGHTMARE
                 else -> {
-                    Gdx.app.log("GameSettings", "Unknown storm density selection ${stormSelectBox.selected}")
+                    Log.info("GameSettings", "Unknown storm density selection ${stormSelectBox.selected}")
                     STORMS_OFF
                 }
             }

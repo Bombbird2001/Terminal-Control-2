@@ -1,6 +1,5 @@
 package com.bombbird.terminalcontrol2.entities
 
-import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
@@ -11,6 +10,7 @@ import com.bombbird.terminalcontrol2.navigation.Approach
 import com.bombbird.terminalcontrol2.navigation.SidStar
 import com.bombbird.terminalcontrol2.traffic.RunwayConfiguration
 import com.bombbird.terminalcontrol2.utilities.*
+import com.esotericsoftware.minlog.Log
 import ktx.ashley.*
 import ktx.math.times
 
@@ -114,7 +114,7 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
      * @param missingComponent the missing aircraft component
      */
     override fun emptySerialisableObject(missingComponent: String): SerialisedAirport {
-        Gdx.app.log("Airport", "Empty serialised airport returned due to missing $missingComponent component")
+        Log.info("Airport", "Empty serialised airport returned due to missing $missingComponent component")
         return SerialisedAirport()
     }
 
@@ -224,7 +224,7 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
                 if (labelPos in RunwayLabel.LEFT..RunwayLabel.RIGHT) positionToRunway = labelPos
                 else {
                     positionToRunway = 0
-                    Gdx.app.log("Runway", "Invalid labelPos $labelPos set, using default value 0")
+                    Log.info("Runway", "Invalid labelPos $labelPos set, using default value 0")
                 }
             }
             if (onClient) {
@@ -284,7 +284,7 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
          * @param missingComponent the missing aircraft component
          */
         override fun emptySerialisableObject(missingComponent: String): SerialisedRunway {
-            Gdx.app.log("Airport", "Empty serialised runway returned due to missing $missingComponent component")
+            Log.info("Airport", "Empty serialised runway returned due to missing $missingComponent component")
             return SerialisedRunway()
         }
 

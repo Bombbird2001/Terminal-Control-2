@@ -1,9 +1,9 @@
 package com.bombbird.terminalcontrol2.entities
 
-import com.badlogic.gdx.Gdx
 import com.bombbird.terminalcontrol2.components.CommandTarget
 import com.bombbird.terminalcontrol2.components.PublishedHoldInfo
 import com.bombbird.terminalcontrol2.global.getEngine
+import com.esotericsoftware.minlog.Log
 import ktx.ashley.entity
 import ktx.ashley.get
 import ktx.ashley.with
@@ -47,7 +47,7 @@ class PublishedHold(id: Short, maxAlt: Int?, minAlt: Int?,
      * @param missingComponent the missing aircraft component
      */
     override fun emptySerialisableObject(missingComponent: String): SerialisedPublishedHold {
-        Gdx.app.log("PublishedHold", "Empty serialised publishedHold returned due to missing $missingComponent component")
+        Log.info("PublishedHold", "Empty serialised publishedHold returned due to missing $missingComponent component")
         return SerialisedPublishedHold()
     }
 

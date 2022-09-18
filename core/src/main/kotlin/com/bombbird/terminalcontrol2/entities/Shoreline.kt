@@ -1,10 +1,10 @@
 package com.bombbird.terminalcontrol2.entities
 
-import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.Color
 import com.bombbird.terminalcontrol2.components.GLineArray
 import com.bombbird.terminalcontrol2.components.SRColor
 import com.bombbird.terminalcontrol2.global.getEngine
+import com.esotericsoftware.minlog.Log
 import ktx.ashley.entity
 import ktx.ashley.get
 import ktx.ashley.with
@@ -34,7 +34,7 @@ class Shoreline(lineArray: ShortArray, onClient: Boolean = true): SerialisableEn
      * @param missingComponent the missing aircraft component
      */
     override fun emptySerialisableObject(missingComponent: String): SerialisedShoreline {
-        Gdx.app.log("Shoreline", "Empty serialised shoreline returned due to missing $missingComponent component")
+        Log.info("Shoreline", "Empty serialised shoreline returned due to missing $missingComponent component")
         return SerialisedShoreline()
     }
 

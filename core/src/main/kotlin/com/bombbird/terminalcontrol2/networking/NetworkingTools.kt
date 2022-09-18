@@ -1,6 +1,5 @@
 package com.bombbird.terminalcontrol2.networking
 
-import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.*
@@ -16,6 +15,7 @@ import com.bombbird.terminalcontrol2.ui.*
 import com.bombbird.terminalcontrol2.utilities.*
 import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryonet.Connection
+import com.esotericsoftware.minlog.Log
 import ktx.ashley.*
 import java.util.*
 import kotlin.math.min
@@ -139,7 +139,7 @@ fun registerClassesToKryo(kryo: Kryo?) {
         register(ScoreData::class.java)
         register(TrafficSettingsData::class.java)
 
-    } ?: Gdx.app.log("NetworkingTools", "Null kryo passed, unable to register classes")
+    } ?: Log.info("NetworkingTools", "Null kryo passed, unable to register classes")
 }
 
 /**
@@ -403,13 +403,13 @@ fun handleIncomingRequestClient(rs: RadarScreen, obj: Any?) {
             rs.uiPane.sectorPane.updateSectorDisplay(rs.sectors)
         } ?: (obj as? CustomWaypointData)?.apply {
             if (rs.waypoints.containsKey(customWpt.id)) {
-                Gdx.app.log("NetworkingTools", "Existing waypoint with ID ${customWpt.id} found, ignoring this custom waypoint")
+                Log.info("NetworkingTools", "Existing waypoint with ID ${customWpt.id} found, ignoring this custom waypoint")
                 return@apply
             }
             rs.waypoints[customWpt.id] = Waypoint.fromSerialisedObject(customWpt)
         } ?: (obj as? RemoveCustomWaypointData)?.apply {
             if (wptId >= -1) {
-                Gdx.app.log("NetworkingTools", "Custom waypoint must have ID < -1; $wptId was provided")
+                Log.info("NetworkingTools", "Custom waypoint must have ID < -1; $wptId was provided")
                 return@apply
             }
             rs.waypoints[wptId]?.let { getEngine(true).removeEntity(it.entity) }

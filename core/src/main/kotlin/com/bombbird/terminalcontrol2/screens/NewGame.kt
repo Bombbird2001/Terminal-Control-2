@@ -1,9 +1,9 @@
 package com.bombbird.terminalcontrol2.screens
 
-import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.utils.Align
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.ui.addChangeListener
+import com.esotericsoftware.minlog.Log
 import ktx.scene2d.*
 
 /** New game screen which extends [BasicUIScreen] */
@@ -48,7 +48,7 @@ class NewGame: BasicUIScreen() {
                             start = textButton("Start", "NewGameStart").cell(width = 400f, height = 100f).apply {
                                 isVisible = false
                                 addChangeListener { event, _ ->
-                                    if (currSelectedAirport == null) Gdx.app.log("NewGame", "Start button pressed when airport selected is null")
+                                    if (currSelectedAirport == null) Log.info("NewGame", "Start button pressed when airport selected is null")
                                     else {
                                         // TODO Call loading function
                                         GAME.addScreen(GameLoading(LOCALHOST, currSelectedAirport?.text?.toString()))

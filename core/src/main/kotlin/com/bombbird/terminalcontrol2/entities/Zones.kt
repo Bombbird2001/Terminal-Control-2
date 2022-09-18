@@ -1,6 +1,5 @@
 package com.bombbird.terminalcontrol2.entities
 
-import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
@@ -9,6 +8,7 @@ import com.bombbird.terminalcontrol2.global.WAKE_WIDTH_NM
 import com.bombbird.terminalcontrol2.global.getEngine
 import com.bombbird.terminalcontrol2.utilities.convertWorldAndRenderDeg
 import com.bombbird.terminalcontrol2.utilities.nmToPx
+import com.esotericsoftware.minlog.Log
 import ktx.ashley.*
 import kotlin.math.roundToInt
 
@@ -55,7 +55,7 @@ class ApproachNormalOperatingZone(posX: Float, posY: Float, appHdg: Short, priva
      * @param missingComponent the missing aircraft component
      */
     override fun emptySerialisableObject(missingComponent: String): SerialisedApproachNOZ {
-        Gdx.app.log("Zones", "Empty serialised approachNOZ returned due to missing $missingComponent component")
+        Log.info("Zones", "Empty serialised approachNOZ returned due to missing $missingComponent component")
         return SerialisedApproachNOZ()
     }
 
@@ -128,7 +128,7 @@ class DepartureNormalOperatingZone(posX: Float, posY: Float, appHdg: Short, priv
      * @param missingComponent the missing aircraft component
      */
     override fun emptySerialisableObject(missingComponent: String): SerialisedDepartureNOZ {
-        Gdx.app.log("Zones", "Empty serialised departureNOZ returned due to missing $missingComponent component")
+        Log.info("Zones", "Empty serialised departureNOZ returned due to missing $missingComponent component")
         return SerialisedDepartureNOZ()
     }
 
@@ -205,7 +205,7 @@ class NoTransgressionZone(posX: Float, posY: Float, appHdg: Short, private val w
      * @param missingComponent the missing aircraft component
      */
     override fun emptySerialisableObject(missingComponent: String): SerialisedNTZ {
-        Gdx.app.log("Zones", "Empty serialised NTZ returned due to missing $missingComponent component")
+        Log.info("Zones", "Empty serialised NTZ returned due to missing $missingComponent component")
         return SerialisedNTZ()
     }
 

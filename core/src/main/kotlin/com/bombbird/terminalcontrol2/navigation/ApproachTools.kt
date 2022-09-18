@@ -1,12 +1,12 @@
 package com.bombbird.terminalcontrol2.navigation
 
 import com.badlogic.ashley.core.Entity
-import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.VIS_GLIDE_ANGLE_DEG
 import com.bombbird.terminalcontrol2.global.VIS_MAX_DIST_NM
 import com.bombbird.terminalcontrol2.utilities.*
+import com.esotericsoftware.minlog.Log
 import ktx.ashley.get
 import ktx.ashley.hasNot
 import ktx.math.plus
@@ -49,7 +49,7 @@ fun getAppAltAtPos(approach: Entity, posX: Float, posY: Float, gsKt: Float): Flo
         val distNm = pxToNm(distPx)
         for (i in npa.altAtDist.size - 1 downTo 0) if (distNm > npa.altAtDist[i].dist) return npa.altAtDist[i].alt.toFloat()
     } else {
-        Gdx.app.log("ApproachTools", "No suitable approach type for ${appInfo.approachName}")
+        Log.info("ApproachTools", "No suitable approach type for ${appInfo.approachName}")
         return null
     }
 

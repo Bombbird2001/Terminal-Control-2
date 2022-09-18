@@ -1,7 +1,6 @@
 package com.bombbird.terminalcontrol2.ui
 
 import com.badlogic.ashley.core.Entity
-import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.scenes.scene2d.Actor
 import com.badlogic.gdx.scenes.scene2d.ui.Label
@@ -12,6 +11,7 @@ import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.utilities.AircraftTypeData
+import com.esotericsoftware.minlog.Log
 import ktx.ashley.get
 import ktx.scene2d.*
 import java.time.LocalTime
@@ -77,7 +77,7 @@ class CommsPane {
             ALERT -> "Alert"
             WARNING -> "Warning"
             else -> {
-                Gdx.app.log("CommsPane", "Unknown message type $msgType")
+                Log.info("CommsPane", "Unknown message type $msgType")
                 "Others"
             }
         }
@@ -313,7 +313,7 @@ class CommsPane {
             FlightType.ARRIVAL, FlightType.EN_ROUTE -> sectorInfo.arrivalCallsign
             FlightType.DEPARTURE -> sectorInfo.departureCallsign
             else -> {
-                Gdx.app.log("CommsPane", "Unknown flight type $flightType")
+                Log.info("CommsPane", "Unknown flight type $flightType")
                 sectorInfo.arrivalCallsign
             }
         }
@@ -385,7 +385,7 @@ class CommsPane {
             FlightType.DEPARTURE -> DEPARTURE
             FlightType.EN_ROUTE -> OTHERS
             else -> {
-                Gdx.app.log("CommsPane", "Unknown flight type $flightType")
+                Log.info("CommsPane", "Unknown flight type $flightType")
                 OTHERS
             }
         }

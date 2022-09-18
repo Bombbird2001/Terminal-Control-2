@@ -1,8 +1,8 @@
 package com.bombbird.terminalcontrol2.json
 
 import com.badlogic.ashley.core.Component
-import com.badlogic.gdx.Gdx
 import com.bombbird.terminalcontrol2.entities.Airport
+import com.esotericsoftware.minlog.Log
 import com.squareup.moshi.FromJson
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.ToJson
@@ -32,7 +32,7 @@ object AirportAdapter {
      * @return the empty default Airport
      */
     private fun emptyAirport(missingComponent: String): Airport {
-        Gdx.app.log("AirportJSON", "Empty airport returned due to missing $missingComponent")
+        Log.info("AirportJSON", "Empty airport returned due to missing $missingComponent")
         return Airport()
     }
 }
@@ -61,7 +61,7 @@ object RunwayAdapter {
      * @return the empty default Runway
      */
     private fun emptyRunway(missingComponent: String): Airport.Runway {
-        Gdx.app.log("AirportJSON", "Empty runway returned due to missing $missingComponent")
+        Log.info("AirportJSON", "Empty runway returned due to missing $missingComponent")
         return Airport.Runway()
     }
 }

@@ -1,6 +1,5 @@
 package com.bombbird.terminalcontrol2.ui
 
-import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.scenes.scene2d.Actor
 import com.badlogic.gdx.scenes.scene2d.ui.Label
@@ -15,6 +14,7 @@ import com.bombbird.terminalcontrol2.global.UI_HEIGHT
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.navigation.findFirstHoldLegWithID
 import com.bombbird.terminalcontrol2.utilities.modulateHeading
+import com.esotericsoftware.minlog.Log
 import ktx.ashley.get
 import ktx.collections.GdxArray
 import ktx.scene2d.*
@@ -235,7 +235,7 @@ class HoldSubpane {
             }
             updateHoldParameterChangedState(this)
         } ?: run {
-            Gdx.app.log("ControlPane", "Null selectedHoldLeg; should not be null")
+            Log.info("ControlPane", "Null selectedHoldLeg; should not be null")
             holdSelectBox.selectedIndex = 0
             holdLegDistLabel.setText("5 nm")
             holdInboundHdgLabel.setText("360")

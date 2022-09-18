@@ -1,7 +1,6 @@
 package com.bombbird.terminalcontrol2.navigation
 
 import com.badlogic.ashley.core.Entity
-import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.math.Polygon
 import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
@@ -16,6 +15,7 @@ import com.bombbird.terminalcontrol2.utilities.calculateDistanceBetweenPoints
 import com.bombbird.terminalcontrol2.utilities.ftToPx
 import com.bombbird.terminalcontrol2.utilities.getRequiredTrack
 import com.bombbird.terminalcontrol2.utilities.mToPx
+import com.esotericsoftware.minlog.Log
 import ktx.ashley.get
 import ktx.collections.GdxArray
 import ktx.math.plus
@@ -94,7 +94,7 @@ fun checkLegChanged(route: Route, leg: Leg): Boolean {
             return true
         }
         else -> {
-            Gdx.app.log("ControlStateTools", "Unknown leg type ${leg::class}")
+            Log.info("ControlStateTools", "Unknown leg type ${leg::class}")
             return true
         }
     }
@@ -131,7 +131,7 @@ fun createCustomHoldWaypoint(posX: Float, posY: Float): Short {
         break
     }
     if (wptId == null) {
-        Gdx.app.log("ControlStateTools", "Could not find a custom waypoint ID to use")
+        Log.info("ControlStateTools", "Could not find a custom waypoint ID to use")
         return 0
     }
     // Create the waypoint, add to gameServer, and send data to clients
@@ -149,7 +149,7 @@ fun createCustomHoldWaypoint(posX: Float, posY: Float): Short {
  * */
 fun removeCustomHoldWaypoint(wptId: Short) {
     if (wptId >= -1) {
-        Gdx.app.log("ControlStateTools", "Custom waypoint must have ID < -1; $wptId was provided")
+        Log.info("ControlStateTools", "Custom waypoint must have ID < -1; $wptId was provided")
         return
     }
     // Remove the custom waypoint with specified ID

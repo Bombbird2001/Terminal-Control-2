@@ -2,7 +2,6 @@ package com.bombbird.terminalcontrol2.traffic
 
 import com.badlogic.ashley.core.Entity
 import com.badlogic.ashley.utils.ImmutableArray
-import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.math.Circle
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.RouteZone
@@ -12,6 +11,7 @@ import com.bombbird.terminalcontrol2.navigation.establishedOnFinalApproachTrack
 import com.bombbird.terminalcontrol2.utilities.calculateDistanceBetweenPoints
 import com.bombbird.terminalcontrol2.utilities.getLatestClearanceState
 import com.bombbird.terminalcontrol2.utilities.nmToPx
+import com.esotericsoftware.minlog.Log
 import ktx.ashley.get
 import ktx.ashley.has
 import ktx.collections.GdxArray
@@ -338,7 +338,7 @@ class ConflictManager {
          * @param missingComponent the missing aircraft component
          */
         override fun emptySerialisableObject(missingComponent: String): SerialisedConflict {
-            Gdx.app.log("ConflictManager", "Empty serialised conflict returned due to missing $missingComponent component")
+            Log.info("ConflictManager", "Empty serialised conflict returned due to missing $missingComponent component")
             return SerialisedConflict()
         }
 
@@ -376,7 +376,7 @@ class ConflictManager {
          * @param missingComponent the missing aircraft component
          */
         override fun emptySerialisableObject(missingComponent: String): SerialisedPotentialConflict {
-            Gdx.app.log("ConflictManager", "Empty serialised potential conflict returned due to missing $missingComponent component")
+            Log.info("ConflictManager", "Empty serialised potential conflict returned due to missing $missingComponent component")
             return SerialisedPotentialConflict()
         }
 

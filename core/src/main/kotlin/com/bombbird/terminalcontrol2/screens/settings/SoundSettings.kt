@@ -1,12 +1,12 @@
 package com.bombbird.terminalcontrol2.screens.settings
 
-import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.utils.Align
 import com.bombbird.terminalcontrol2.files.savePlayerSettings
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.ui.addChangeListener
 import com.bombbird.terminalcontrol2.ui.defaultSettingsLabel
 import com.bombbird.terminalcontrol2.ui.defaultSettingsSelectBox
+import com.esotericsoftware.minlog.Log
 import ktx.scene2d.*
 
 /** Settings screen for sound settings */
@@ -62,7 +62,7 @@ class SoundSettings: BaseSettings() {
             COMMS_SOUND_EFFECTS -> SOUND_EFFECTS
             COMMS_PILOT_VOICES -> PILOT_VOICES
             else -> {
-                Gdx.app.log("SoundSettings", "Unknown communication voice setting $COMMUNICATIONS_SOUND")
+                Log.info("SoundSettings", "Unknown communication voice setting $COMMUNICATIONS_SOUND")
                 PILOT_VOICES
             }
         }
@@ -79,7 +79,7 @@ class SoundSettings: BaseSettings() {
             SOUND_EFFECTS -> COMMS_SOUND_EFFECTS
             PILOT_VOICES -> COMMS_PILOT_VOICES
             else -> {
-                Gdx.app.log("SoundSettings", "Unknown communication voice selection ${commsSelectBox.selected}")
+                Log.info("SoundSettings", "Unknown communication voice selection ${commsSelectBox.selected}")
                 COMMS_PILOT_VOICES
             }
         }

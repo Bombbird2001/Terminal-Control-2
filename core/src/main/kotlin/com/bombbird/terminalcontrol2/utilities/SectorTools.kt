@@ -1,11 +1,11 @@
 package com.bombbird.terminalcontrol2.utilities
 
-import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.utils.ArrayMap
 import com.bombbird.terminalcontrol2.entities.Sector
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.PLAYER_SIZE
 import com.esotericsoftware.kryonet.Connection
+import com.esotericsoftware.minlog.Log
 import ktx.collections.GdxArray
 import ktx.collections.GdxArrayMap
 import ktx.collections.set
@@ -24,7 +24,7 @@ fun assignSectorsToPlayers(connections: Collection<Connection>, currentIdMap: Gd
                            connectionUUIDMap: GdxArrayMap<Connection, UUID>, sectorUUIDMap: GdxArrayMap<Byte, UUID>,
                            sectorCount: Byte, sectors: GdxArrayMap<Byte, GdxArray<Sector>>) {
     if (connections.size != sectorCount.toInt())
-        return Gdx.app.log("SectorTools", "Connection size ${connections.size} is not equal to sector count $sectorCount")
+        return Log.info("SectorTools", "Connection size ${connections.size} is not equal to sector count $sectorCount")
     val newSectorArray = sectors[sectorCount].toArray().map { it.getSerialisableObject() }.toTypedArray()
     val emptySectors = GdxArray<Byte>(PLAYER_SIZE)
     // If the ID map no longer contains the sector, add it to the empty sector array

@@ -2,7 +2,6 @@ package com.bombbird.terminalcontrol2.systems
 
 import com.badlogic.ashley.core.Entity
 import com.badlogic.ashley.systems.IntervalSystem
-import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.math.MathUtils
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.WakeZone
@@ -11,6 +10,7 @@ import com.bombbird.terminalcontrol2.global.MAX_ALT
 import com.bombbird.terminalcontrol2.global.VERT_SEP
 import com.bombbird.terminalcontrol2.traffic.*
 import com.bombbird.terminalcontrol2.utilities.calculateDistanceBetweenPoints
+import com.esotericsoftware.minlog.Log
 import ktx.ashley.*
 import ktx.collections.GdxArray
 import kotlin.math.ceil
@@ -60,7 +60,7 @@ class TrafficSystemInterval: IntervalSystem(1f) {
                         previousArrivalOffsetS = defaultRate * MathUtils.random(-0.1f, 0.1f)
                         arrivalSpawnTimerS += previousArrivalOffsetS
                     }
-                    else -> Gdx.app.log("TrafficSystem", "Invalid traffic mode $trafficMode")
+                    else -> Log.info("TrafficSystem", "Invalid traffic mode $trafficMode")
                 }
                 createRandomArrival(airports.values().toArray(), this)
             }

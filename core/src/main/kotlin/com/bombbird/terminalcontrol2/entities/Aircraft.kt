@@ -1,6 +1,5 @@
 package com.bombbird.terminalcontrol2.entities
 
-import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.math.Vector2
@@ -20,6 +19,7 @@ import com.bombbird.terminalcontrol2.ui.updateDatatagStyle
 import com.bombbird.terminalcontrol2.ui.updateDatatagText
 import com.bombbird.terminalcontrol2.utilities.AircraftTypeData
 import com.bombbird.terminalcontrol2.utilities.getAircraftIcon
+import com.esotericsoftware.minlog.Log
 import ktx.ashley.*
 import ktx.scene2d.Scene2DSkin
 import java.util.*
@@ -69,7 +69,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                     FlightType.ARRIVAL, FlightType.EN_ROUTE -> "aircraftEnroute"
                     FlightType.DEPARTURE -> "aircraftTower"
                     else -> {
-                        Gdx.app.log("Aircraft", "Unknown flight type $flightType")
+                        Log.info("Aircraft", "Unknown flight type $flightType")
                         "aircraftTower"
                     }
                 }))
@@ -92,7 +92,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                 FlightType.DEPARTURE -> SectorInfo.TOWER
                 FlightType.ARRIVAL, FlightType.EN_ROUTE -> SectorInfo.CENTRE
                 else -> {
-                    Gdx.app.log("Aircraft", "Unknown flight type $flightType")
+                    Log.info("Aircraft", "Unknown flight type $flightType")
                     SectorInfo.CENTRE
                 }
             }
@@ -205,7 +205,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
      * @param missingComponent the missing aircraft component
      */
     private fun emptySerialisableUDPObject(missingComponent: String): SerialisedAircraftUDP {
-        Gdx.app.log("Aircraft", "Empty serialised UDP aircraft returned due to missing $missingComponent component")
+        Log.info("Aircraft", "Empty serialised UDP aircraft returned due to missing $missingComponent component")
         return SerialisedAircraftUDP()
     }
 
@@ -316,7 +316,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
      * @param missingComponent the missing aircraft component
      */
     override fun emptySerialisableObject(missingComponent: String): SerialisedAircraft {
-        Gdx.app.log("Aircraft", "Empty serialised aircraft returned due to missing $missingComponent component")
+        Log.info("Aircraft", "Empty serialised aircraft returned due to missing $missingComponent component")
         return SerialisedAircraft()
     }
 

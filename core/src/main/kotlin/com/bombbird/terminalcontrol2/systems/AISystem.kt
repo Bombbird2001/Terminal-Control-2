@@ -3,7 +3,6 @@ package com.bombbird.terminalcontrol2.systems
 import com.badlogic.ashley.core.Entity
 import com.badlogic.ashley.core.EntitySystem
 import com.badlogic.ashley.core.Family
-import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.math.Intersector
 import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.math.Vector2
@@ -12,6 +11,7 @@ import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.*
 import com.bombbird.terminalcontrol2.traffic.TrafficMode
 import com.bombbird.terminalcontrol2.utilities.*
+import com.esotericsoftware.minlog.Log
 import ktx.ashley.*
 import ktx.math.plusAssign
 import ktx.math.times
@@ -298,7 +298,7 @@ class AISystem: EntitySystem() {
                 val clearanceAct = get(ClearanceAct.mapper)?.actingClearance?.clearanceState ?: return@apply
                 val pos = get(Position.mapper) ?: return@apply
                 val wpt = GAME.gameServer?.waypoints?.get(cmdDir.wptId)?.entity?.get(Position.mapper) ?: run {
-                    Gdx.app.log("AISystem", "Unknown command direct waypoint with ID ${cmdDir.wptId}")
+                    Log.info("AISystem", "Unknown command direct waypoint with ID ${cmdDir.wptId}")
                     return@apply
                 }
                 val spd = get(Speed.mapper) ?: return@apply
@@ -584,7 +584,7 @@ class AISystem: EntitySystem() {
                             CommandTarget.TURN_LEFT -> -45
                             CommandTarget.TURN_RIGHT -> 45
                             else -> {
-                                Gdx.app.log("AISystem", "Unknown circling breakout direction ${circleInfo.breakoutDir}")
+                                Log.info("AISystem", "Unknown circling breakout direction ${circleInfo.breakoutDir}")
                                 -45
                             }
                         })
@@ -840,7 +840,7 @@ class AISystem: EntitySystem() {
                         return@apply
                     }
                     else -> {
-                        Gdx.app.log("AISystem", "Unknown leg type ${it::class}")
+                        Log.info("AISystem", "Unknown leg type ${it::class}")
                         removeIndex(0)
                         return@let
                     }
@@ -917,7 +917,7 @@ class AISystem: EntitySystem() {
         }
 
         if (minAlt != null && maxAlt != null && minAlt > maxAlt) {
-            Gdx.app.log("AISystem", "minAlt ($minAlt) should not > maxAlt ($maxAlt)")
+            Log.info("AISystem", "minAlt ($minAlt) should not > maxAlt ($maxAlt)")
             maxAlt = minAlt
         }
 
@@ -1002,7 +1002,7 @@ class AISystem: EntitySystem() {
             CommandTarget.TURN_RIGHT -> if (offset > -1 && offset < 129) 1 else if (offset < -1 && offset > -69) 2 else 3
             CommandTarget.TURN_LEFT -> if (offset < 1 && offset > -129) 1 else if (offset > 1 && offset < 69) 2 else 3
             else -> {
-                Gdx.app.log("AISystem", "Invalid turn direction $legDir specified for holding pattern")
+                Log.info("AISystem", "Invalid turn direction $legDir specified for holding pattern")
                 if (offset > -1 && offset < 129) 1 else if (offset < -1 && offset > -69) 2 else 3
             }
         }

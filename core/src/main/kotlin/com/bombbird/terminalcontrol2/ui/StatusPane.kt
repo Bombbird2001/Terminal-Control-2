@@ -1,13 +1,13 @@
 package com.bombbird.terminalcontrol2.ui
 
 import com.badlogic.ashley.core.Family
-import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.scenes.scene2d.Actor
 import com.badlogic.gdx.scenes.scene2d.ui.Label
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.traffic.ConflictManager
 import com.bombbird.terminalcontrol2.traffic.TrafficMode
+import com.esotericsoftware.minlog.Log
 import ktx.ashley.allOf
 import ktx.ashley.exclude
 import ktx.ashley.get
@@ -78,7 +78,7 @@ class StatusPane {
             ALERT -> "Alert"
             WARNING -> "Warning"
             else -> {
-                Gdx.app.log("StatusPane", "Unknown message type $msgType")
+                Log.info("StatusPane", "Unknown message type $msgType")
                 "Info"
             }
         }
@@ -106,7 +106,7 @@ class StatusPane {
                         ConflictManager.Conflict.WAKE_INFRINGE -> "Wake separation infringement"
                         ConflictManager.Conflict.STORM -> "Flying in bad weather"
                         else -> {
-                            Gdx.app.log("StatusPane", "Unknown conflict reason $reason")
+                            Log.info("StatusPane", "Unknown conflict reason $reason")
                             "???"
                         }
                     }}"
@@ -159,7 +159,7 @@ class StatusPane {
                     FlightType.ARRIVAL, FlightType.EN_ROUTE -> NOTIFICATION_ARRIVAL
                     FlightType.DEPARTURE -> NOTIFICATION_DEPARTURE
                     else -> {
-                        Gdx.app.log("StatusPane", "Unknown flight type $flightType")
+                        Log.info("StatusPane", "Unknown flight type $flightType")
                         NOTIFICATION_ARRIVAL
                     }
                 })
@@ -180,7 +180,7 @@ class StatusPane {
                 TrafficMode.ARRIVALS_TO_CONTROL -> "Arrivals to control - $serverTrafficValue"
                 TrafficMode.FLOW_RATE -> "Arrival flow rate - ${serverTrafficValue}/hr"
                 else -> {
-                    Gdx.app.log("StatusPane", "Unknown server traffic mode $serverTrafficMode")
+                    Log.info("StatusPane", "Unknown server traffic mode $serverTrafficMode")
                     "Unknown"
                 }
             }

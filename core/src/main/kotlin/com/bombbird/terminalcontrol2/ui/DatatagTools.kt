@@ -14,6 +14,7 @@ import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.utilities.convertWorldAndRenderDeg
 import com.bombbird.terminalcontrol2.utilities.modulateHeading
 import com.bombbird.terminalcontrol2.utilities.pxpsToKt
+import com.esotericsoftware.minlog.Log
 import ktx.ashley.get
 import ktx.ashley.has
 import ktx.scene2d.Scene2DSkin
@@ -60,7 +61,7 @@ fun updateDatatagStyle(datatag: Datatag, flightType: Byte, selected: Boolean) {
         FlightType.ARRIVAL -> "Blue"
         FlightType.EN_ROUTE -> "Gray"
         else -> {
-            Gdx.app.log("Datatag", "Unknown flight type $flightType")
+            Log.info("Datatag", "Unknown flight type $flightType")
             ""
         }
     } else ""

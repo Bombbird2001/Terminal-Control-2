@@ -1,9 +1,9 @@
 package com.bombbird.terminalcontrol2.entities
 
-import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.Color
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.getEngine
+import com.esotericsoftware.minlog.Log
 import ktx.ashley.entity
 import ktx.ashley.get
 import ktx.ashley.with
@@ -57,7 +57,7 @@ class Waypoint(id: Short, name: String, posX: Short, posY: Short, onClient: Bool
      * @param missingComponent the missing aircraft component
      */
     override fun emptySerialisableObject(missingComponent: String): SerialisedWaypoint {
-        Gdx.app.log("Waypoint", "Empty serialised waypoint returned due to missing $missingComponent component")
+        Log.info("Waypoint", "Empty serialised waypoint returned due to missing $missingComponent component")
         return SerialisedWaypoint()
     }
 
