@@ -18,12 +18,10 @@ import io.kotest.matchers.collections.shouldBeIn
 import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.collections.shouldNotBeIn
 import io.kotest.matchers.collections.shouldNotContain
+import io.kotest.matchers.comparables.shouldBeGreaterThanOrEqualTo
 import io.kotest.matchers.comparables.shouldBeLessThan
 import io.kotest.matchers.floats.shouldBeBetween
-import io.kotest.matchers.ints.shouldBeBetween
-import io.kotest.matchers.ints.shouldBeGreaterThan
-import io.kotest.matchers.ints.shouldBeGreaterThanOrEqual
-import io.kotest.matchers.ints.shouldNotBeBetween
+import io.kotest.matchers.ints.*
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.short.shouldBeBetween
@@ -216,8 +214,21 @@ object DataFileTest: FunSpec() {
      * @return the List of text following the header with leading and trailing whitespace trimmed
      */
     private fun getAllTextAfterHeaderMultiple(header: String, data: String): List<String> {
-        val allGroups = "$header (.+)".toRegex().find(data)?.groupValues ?: return ArrayList()
-        return allGroups.subList(1, allGroups.size).map { it.trim() }
+        val arrayList = ArrayList<String>()
+        "$header (.+)".toRegex().findAll(data).forEach { arrayList.add(it.groupValues[1]) }
+        return arrayList.map { it.trim() }
+    }
+
+    /**
+     * Tests that the input string follows the format [Float],[Float]
+     * @param coords the string to test for coordinate format
+     */
+    private fun testCoordsString(coords: String) {
+        coords.split(",").let {
+            it.size shouldBe 2
+            it[0].toFloat()
+            it[1].toFloat()
+        }
     }
 
     /**
@@ -237,9 +248,7 @@ object DataFileTest: FunSpec() {
             val wptName = wptData[1]
             withClue("Duplicate waypoint name $wptName") { if (wptNames.isNotEmpty()) wptName shouldNotBeIn wptNames }
             wptNames.add(wptName)
-            val coordArray = wptData[2].split(",")
-            coordArray.size shouldBe 2
-            coordArray.forEach { coord -> coord.toFloat() }
+            testCoordsString(wptData[2])
         }}
 
         return wptNames
@@ -264,8 +273,8 @@ object DataFileTest: FunSpec() {
                     indivSectorData.size shouldBeGreaterThanOrEqual 6
                     indivSectorData[0].toFloat()
                     for (i in 3 until indivSectorData.size) {
+                        testCoordsString(indivSectorData[i])
                         val coordArray = indivSectorData[i].split(",")
-                        coordArray.size shouldBe 2
                         coordArray.forEach { coord -> polygonVertices.add(coord.toFloat()) }
                     }
                     if (sectorIndex == 1) primarySector.vertices = polygonVertices.toFloatArray()
@@ -324,10 +333,7 @@ object DataFileTest: FunSpec() {
                 } else if (minAltSectorData[1] == "CIRCLE") {
                     // For circle sectors
                     minAltSectorData.size shouldBe 5
-                    val coord = minAltSectorData[3].split(",")
-                    coord.size shouldBe 2
-                    coord[0].toFloat()
-                    coord[1].toFloat()
+                    testCoordsString(minAltSectorData[3])
                     minAltSectorData[4].toFloat()
                 }
             }
@@ -343,12 +349,7 @@ object DataFileTest: FunSpec() {
             withData(getLinesBetweenTags("SHORELINE", data)) {
                 val coords = it.split(" ")
                 coords.size shouldBeGreaterThan 2
-                coords.forEach { coord ->
-                    val coordData = coord.split(",")
-                    coordData.size shouldBe 2
-                    coordData[0].toFloat()
-                    coordData[1].toFloat()
-                }
+                coords.forEach { coord -> testCoordsString(coord) }
             }
         }
     }
@@ -384,15 +385,20 @@ object DataFileTest: FunSpec() {
     private suspend fun ContainerScope.testAirports(data: String, wpts: HashSet<String>, minAlt: Int) {
         val arptIds = HashSet<Byte>()
         getBlocksBetweenTags("AIRPORT", data).forEach { airport ->
-            val header = airport.split(" ", limit = 3) // Get only the first 2 identifiers (ID, ICAO)
-            header.size shouldBe 3
+            val arptLines = airport.toLines(2)
+            val header = arptLines[0].split(" ") // Get only the first 2 identifiers (ID, ICAO)
+            header.size shouldBe 7
             withData(arrayListOf("Airport ${header[0]} ${header[1]}")) {
                 val id = header[0].toByte()
                 val icao = header[1]
                 arptIds shouldNotContain id
                 arptIds.add(id)
                 withClue("ICAO code format invalid: $icao") { "^[A-Z]{4}\$".toRegex().find(icao).shouldNotBeNull() }
-                testAirport(airport, wpts, minAlt)
+                header[3].toByte()
+                testCoordsString(header[4])
+                val arptElevation = header[5].toShort()
+                withClue("Real life weather ICAO code format invalid: ${header[6]}") { "^[A-Z]{4}\$".toRegex().find(header[6]).shouldNotBeNull() }
+                testAirport(arptLines[1], wpts, minAlt, arptElevation)
             }
         }
     }
@@ -403,8 +409,9 @@ object DataFileTest: FunSpec() {
      * @param arptData the airport text to parse
      * @param wpts the set of waypoint names available, and the hold waypoint name should be in this set
      * @param minAlt the minimum altitude of the game world
+     * @param arptElevation the elevation of the airport
      */
-    private suspend fun ContainerScope.testAirport(arptData: String, wpts: HashSet<String>, minAlt: Int) {
+    private suspend fun ContainerScope.testAirport(arptData: String, wpts: HashSet<String>, minAlt: Int, arptElevation: Short) {
         withData(arrayListOf("Wind Direction")) {
             getAllTextAfterHeader("WINDDIR", arptData).split(" ").map { it.toFloat() }.size shouldBe 37
         }
@@ -429,6 +436,7 @@ object DataFileTest: FunSpec() {
         testRunwayConfigs(arptData, allRwys)
         testSid(arptData, allRwys, wpts, minAlt)
         testStar(arptData, allRwys, wpts)
+        testApp(arptData, allRwys, wpts, arptElevation)
     }
 
     /**
@@ -449,7 +457,7 @@ object DataFileTest: FunSpec() {
                 if (rwyName.last() !in RWY_POS) rwyName.toByte().shouldBeBetween(1, 36)
                 else rwyName.substring(0, rwyName.length - 1).toByte().shouldBeBetween(1, 36)
                 rwyNames.add(rwyName)
-                rwyData[2].split(",").forEach { coord -> coord.toFloat() }
+                testCoordsString(rwyData[2])
                 rwyData[3].toFloat().shouldBeBetween(0f, 360f, 0.0001f)
                 val rwyLength = rwyData[4].toShort()
                 rwyLength.shouldBeBetween(400, 7000)
@@ -492,7 +500,7 @@ object DataFileTest: FunSpec() {
                 val nozData = it.split(" ")
                 nozData.size shouldBe 5
                 allRwys shouldContain nozData[0]
-                nozData[1].split(",").forEach { coord -> coord.toFloat() }
+                testCoordsString(nozData[1])
                 nozData[2].toShort().shouldBeBetween(1, 360)
                 nozData[3].toFloat()
                 nozData[4].toFloat()
@@ -528,7 +536,7 @@ object DataFileTest: FunSpec() {
                     withData(getAllTextAfterHeaderMultiple("NTZ", config).map { "NTZ $it" }) {ntz ->
                         val ntzData = ntz.split(" ")
                         ntzData.size shouldBe 5
-                        ntzData[1].split(",").forEach { coord -> coord.toFloat() }
+                        testCoordsString(ntzData[1])
                         ntzData[2].toShort().shouldBeBetween(1, 360)
                         ntzData[3].toFloat()
                         ntzData[4].toFloat()
@@ -550,29 +558,29 @@ object DataFileTest: FunSpec() {
     private suspend fun ContainerScope.testSid(data: String, allRwys: HashSet<String>, allWpts: HashSet<String>, minAlt: Int) {
         withData(arrayListOf("SIDs")) {
             getBlocksBetweenTags("SID", data).forEach {
-                val sidStarLines = it.toLines()
-                sidStarLines.size shouldBeGreaterThanOrEqual 4
-                val infoLine = sidStarLines[0].split(" ")
+                val sidLines = it.toLines(2)
+                val infoLine = sidLines[0].split(" ")
                 infoLine.size shouldBe 3
                 withData(arrayListOf(infoLine[0])) {
                     infoLine[1] shouldBeIn TIME_SLOTS
 
-                    val rwyLine = sidStarLines[1].split(" ")
-                    rwyLine.size shouldBeGreaterThanOrEqual 3
-                    rwyLine[0] shouldBe "RWY"
-                    rwyLine[1] shouldBeIn allRwys
-                    rwyLine[2].toInt() shouldBeGreaterThanOrEqual minAlt
-                    testParseLegs(rwyLine.subList(3, rwyLine.size), allWpts, Route.Leg.NORMAL, WARNING_SHOULD_BE_EMPTY)
+                    val rwyLines = getAllTextAfterHeaderMultiple("RWY", sidLines[1])
+                    rwyLines.size shouldBe 1
+                    val rwyLine = rwyLines[0].split(" ")
+                    rwyLine.size shouldBeGreaterThanOrEqual 2
+                    rwyLine[0] shouldBeIn allRwys
+                    rwyLine[1].toInt() shouldBeGreaterThanOrEqual minAlt
+                    testParseLegs(rwyLine.subList(2, rwyLine.size), allWpts, Route.Leg.NORMAL, WARNING_SHOULD_BE_EMPTY)
 
-                    val routeLine = sidStarLines[2].split(" ")
-                    routeLine[0] shouldBe "ROUTE"
-                    testParseLegs(routeLine.subList(1, routeLine.size), allWpts, Route.Leg.NORMAL, WARNING_SHOULD_BE_EMPTY)
+                    val routeLines = getAllTextAfterHeaderMultiple("ROUTE", sidLines[1])
+                    routeLines.size shouldBe 1
+                    val routeLine = routeLines[0].split(" ")
+                    testParseLegs(routeLine, allWpts, Route.Leg.NORMAL, WARNING_SHOULD_BE_EMPTY)
 
-                    for (i in 3 until sidStarLines.size) {
-                        val outboundLine = sidStarLines[i].split(" ")
-                        outboundLine.size shouldBeGreaterThanOrEqual 1
-                        outboundLine[0] shouldBe "OUTBOUND"
-                        testParseLegs(outboundLine.subList(1, outboundLine.size), allWpts, Route.Leg.NORMAL, WARNING_SHOULD_BE_EMPTY)
+                    val outbounds = getAllTextAfterHeaderMultiple("OUTBOUND", sidLines[1])
+                    for (outbound in outbounds) {
+                        val outboundLine = outbound.split(" ")
+                        testParseLegs(outboundLine, allWpts, Route.Leg.NORMAL, WARNING_SHOULD_BE_EMPTY)
                     }
                 }
             }
@@ -590,33 +598,128 @@ object DataFileTest: FunSpec() {
     private suspend fun ContainerScope.testStar(data: String, allRwys: HashSet<String>, allWpts: HashSet<String>) {
         withData(arrayListOf("STARs")) {
             getBlocksBetweenTags("STAR", data).forEach {
-                val sidStarLines = it.toLines()
-                sidStarLines.size shouldBeGreaterThanOrEqual 4
-                val infoLine = sidStarLines[0].split(" ")
+                val starLines = it.toLines(2)
+                val infoLine = starLines[0].split(" ")
                 infoLine.size shouldBe 3
                 withData(arrayListOf(infoLine[0])) {
                     infoLine[1] shouldBeIn TIME_SLOTS
 
-                    var inboundLineCount = 0
-                    for (i in 1 until sidStarLines.size) {
-                        val lineData = sidStarLines[i].split(" ")
-                        if (lineData[0] == "INBOUND") {
-                            inboundLineCount++
-                            testParseLegs(lineData.subList(1, lineData.size), allWpts, Route.Leg.NORMAL, WARNING_SHOULD_BE_EMPTY)
-                        } else break
+                    val inbounds = getAllTextAfterHeaderMultiple("INBOUND", starLines[1])
+                    for (inbound in inbounds) {
+                        val inboundLine = inbound.split(" ")
+                        testParseLegs(inboundLine, allWpts, Route.Leg.NORMAL, WARNING_SHOULD_BE_EMPTY)
                     }
-                    inboundLineCount shouldBeGreaterThanOrEqual 1
 
-                    val routeLine = sidStarLines[inboundLineCount + 1].split(" ")
-                    routeLine[0] shouldBe "ROUTE"
-                    testParseLegs(routeLine.subList(1, routeLine.size), allWpts, Route.Leg.NORMAL, WARNING_SHOULD_BE_EMPTY)
+                    val routeLines = getAllTextAfterHeaderMultiple("ROUTE", starLines[1])
+                    routeLines.size shouldBe 1
+                    val routeLine = routeLines[0].split(" ")
+                    testParseLegs(routeLine, allWpts, Route.Leg.NORMAL, WARNING_SHOULD_BE_EMPTY)
 
-                    for (i in inboundLineCount + 2 until sidStarLines.size) {
-                        val rwyLine = sidStarLines[i].split(" ")
-                        rwyLine.size shouldBe 2
-                        rwyLine[0] shouldBe "RWY"
-                        rwyLine[1] shouldBeIn allRwys
+                    val rwyLines = getAllTextAfterHeaderMultiple("RWY", starLines[1])
+                    rwyLines.size shouldBeGreaterThanOrEqual 1
+                    for (rwy in rwyLines) {
+                        val rwyLine = rwy.split(" ")
+                        rwyLine.size shouldBe 1
+                        rwyLine[0] shouldBeIn allRwys
                     }
+                }
+            }
+        }
+    }
+
+    /**
+     * Tests the STARs for the input airport data block, with the calling ContainerScope as the scope for the
+     * tests
+     * @param data the string text to parse
+     * @param allRwys all runways in this airport
+     * @param allWpts all waypoints in this game world
+     * @param arptElevation the elevation of this airport
+     * @return a HashSet of all runway names for this airport
+     */
+    private suspend fun ContainerScope.testApp(data: String, allRwys: HashSet<String>, allWpts: HashSet<String>, arptElevation: Short) {
+        withData(arrayListOf("Approaches")) {
+            getBlocksBetweenTags("APCH", data).forEach {
+                val apchLines = it.toLines(2)
+                val infoLine = apchLines[0].split(" ")
+                infoLine.size shouldBe 6
+                withData(arrayListOf(infoLine[0])) {
+                    infoLine[1] shouldBeIn TIME_SLOTS
+                    infoLine[2] shouldBeIn allRwys
+                    testCoordsString(infoLine[3])
+                    infoLine[4].toShort() shouldBeGreaterThanOrEqualTo arptElevation
+                    infoLine[5].toShort() shouldBeGreaterThanOrEqualTo 0
+
+                    val locLines = getAllTextAfterHeaderMultiple("LOC", apchLines[1])
+                    locLines.size shouldBe 1
+                    val locData = locLines[0].split(" ")
+                    locData.size shouldBe 2
+                    locData[0].toShort()
+                    locData[1].toByte()
+
+                    val gsLines = getAllTextAfterHeaderMultiple("GS", apchLines[1])
+                    gsLines.size shouldBeLessThanOrEqual 1
+                    if (gsLines.isNotEmpty()) {
+                        val gsData = gsLines[0].split(" ")
+                        gsData.size shouldBe 3
+                        gsData[0].toFloat()
+                        gsData[1].toFloat()
+                        gsData[2].toShort()
+                    }
+
+                    val stepDownLines = getAllTextAfterHeaderMultiple("STEPDOWN", apchLines[1])
+                    stepDownLines.size shouldBeLessThanOrEqual 1
+                    if (stepDownLines.isNotEmpty()) {
+                        val stepDownData = stepDownLines[0].split(" ")
+                        stepDownData.size shouldBeGreaterThanOrEqual 1
+                        for (step in stepDownData) {
+                            val stepData = step.split("@")
+                            stepData.size shouldBe 2
+                            stepData[0].toShort()
+                            stepData[1].toFloat()
+                        }
+                    }
+
+                    gsLines.size + stepDownLines.size shouldBe 1
+
+                    val appLineUpLines = getAllTextAfterHeaderMultiple("LINEUP", apchLines[1])
+                    appLineUpLines.size shouldBeLessThanOrEqual 1
+                    if (appLineUpLines.isNotEmpty()) {
+                        val lineUpData = appLineUpLines[0].split(" ")
+                        lineUpData.size shouldBe 1
+                        lineUpData[0].toFloat()
+                    }
+
+                    val circleLines = getAllTextAfterHeaderMultiple("CIRCLING", apchLines[1])
+                    circleLines.size shouldBeLessThanOrEqual 1
+                    if (circleLines.isNotEmpty()) {
+                        val circleData = circleLines[0].split(" ")
+                        circleData.size shouldBe 3
+                        circleData[0].toInt() shouldBeGreaterThanOrEqual arptElevation + 500
+                        circleData[1].toInt() shouldBeGreaterThanOrEqual circleData[0].toInt() + 250
+                        circleData[2] shouldBeIn DIRECTION
+                    }
+
+                    val transitions = getAllTextAfterHeaderMultiple("TRANSITION", apchLines[1])
+                    transitions.size shouldBeGreaterThanOrEqual 1
+                    var vectorTransPresent = false
+                    for (trans in transitions) {
+                        val inboundLine = trans.split(" ")
+                        inboundLine.size shouldBeGreaterThanOrEqual 1
+                        if (inboundLine[0] != "vectors") inboundLine[0] shouldBeIn allWpts
+                        else vectorTransPresent = true
+                        testParseLegs(inboundLine.subList(1, inboundLine.size), allWpts, Route.Leg.NORMAL, WARNING_SHOULD_BE_EMPTY)
+                    }
+                    vectorTransPresent.shouldBeTrue()
+
+                    val routeLines = getAllTextAfterHeaderMultiple("ROUTE", apchLines[1])
+                    routeLines.size shouldBe 1
+                    val routeLine = routeLines[0].split(" ")
+                    testParseLegs(routeLine, allWpts, Route.Leg.NORMAL, WARNING_SHOULD_BE_EMPTY)
+
+                    val missedLines = getAllTextAfterHeaderMultiple("MISSED", apchLines[1])
+                    missedLines.size shouldBe 1
+                    val missedLine = routeLines[0].split(" ")
+                    testParseLegs(missedLine, allWpts, Route.Leg.NORMAL, WARNING_SHOULD_BE_EMPTY)
                 }
             }
         }

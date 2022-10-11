@@ -8,6 +8,6 @@ val BELOW_ALT_REGEX = "B(-?\\d+)".toRegex() // Altitude values of at least 1 dig
  * Gets this string split by new lines
  * @return the string split into lines by the new line separator(s)
  */
-fun String.toLines(): List<String> {
-    return split("\\r?\\n".toRegex())
+fun String.toLines(limit: Int = 0): List<String> {
+    return split("\\r?\\n".toRegex(), limit)
 }
