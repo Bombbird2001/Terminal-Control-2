@@ -1,7 +1,9 @@
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Files
 import com.badlogic.gdx.math.Polygon
+import com.bombbird.terminalcontrol2.files.testParseLegs
 import com.bombbird.terminalcontrol2.global.AVAIL_AIRPORTS
+import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.utilities.ABOVE_ALT_REGEX
 import com.bombbird.terminalcontrol2.utilities.BELOW_ALT_REGEX
 import com.bombbird.terminalcontrol2.utilities.toLines
@@ -32,6 +34,16 @@ import java.lang.RuntimeException
 
 /** Kotest FunSpec class for checking data file validity */
 object DataFileTest: FunSpec() {
+    private val WAKE_CATS = arrayOf("L", "M", "H", "J")
+    private val RECAT_CATS = arrayOf("A", "B", "C", "D", "E", "F")
+    private val MVA_SECTOR_SHAPE = arrayOf("POLYGON", "CIRCLE")
+    private val MVA_SECTOR_TYPE = arrayOf("MVA", "RESTR")
+    private val DIRECTION = arrayOf("RIGHT", "LEFT")
+    private val RWY_POS = arrayOf('L', 'C', 'R')
+    private val LABEL_POS = arrayOf("LABEL_LEFT", "LABEL_RIGHT", "LABEL_BEFORE")
+    private val TIME_SLOTS = arrayOf("DAY_ONLY", "NIGHT_ONLY", "DAY_NIGHT")
+    private val WARNING_SHOULD_BE_EMPTY = { type: String, warning: String -> "[$type] $warning" shouldBe "" }
+
     init {
         Gdx.files = Lwjgl3Files()
 
@@ -46,8 +58,8 @@ object DataFileTest: FunSpec() {
                 val acData = it.split(" ")
                 acData.size shouldBe 14
                 acData[0].length shouldBe 4
-                acData[1] shouldBeIn arrayOf("L", "M", "H", "J")
-                acData[2] shouldBeIn arrayOf("A", "B", "C", "D", "E", "F")
+                acData[1] shouldBeIn WAKE_CATS
+                acData[2] shouldBeIn RECAT_CATS
                 try {
                     acData[3].toInt()
                     acData[4].toInt()
@@ -130,7 +142,7 @@ object DataFileTest: FunSpec() {
                     testHolds(data, wpts)
 
                     // 7. Check airports
-                    testAirports(data, wpts)
+                    testAirports(data, wpts, minAlt)
                 } catch (e: RuntimeException) {
                     e.stackTraceToString().shouldBeNull()
                 }
@@ -290,8 +302,8 @@ object DataFileTest: FunSpec() {
         withData(arrayListOf("Minimum Altitude Sectors")) {
             withData(getLinesBetweenTags("MIN_ALT_SECTORS", data)) {
                 val minAltSectorData = it.split(" ")
-                minAltSectorData[0] shouldBeIn arrayOf("POLYGON", "CIRCLE")
-                minAltSectorData[1] shouldBeIn arrayOf("MVA", "RESTR")
+                minAltSectorData[0] shouldBeIn MVA_SECTOR_SHAPE
+                minAltSectorData[1] shouldBeIn MVA_SECTOR_TYPE
                 if (minAltSectorData[2] != "UNL") minAltSectorData[2].toInt()
                 if (minAltSectorData[0] == "POLYGON") {
                     // For polygon sectors
@@ -357,7 +369,7 @@ object DataFileTest: FunSpec() {
                 holdArray[2].toByte().shouldBeBetween(3, 12)
                 holdArray[3].toShort().toInt().shouldNotBeBetween(0, 149)
                 holdArray[4].toShort().toInt().shouldNotBeBetween(0, 179)
-                holdArray[5] shouldBeIn arrayOf("RIGHT", "LEFT")
+                holdArray[5] shouldBeIn DIRECTION
                 if (holdArray.size == 7) (ABOVE_ALT_REGEX.find(holdArray[6]) ?: BELOW_ALT_REGEX.find(holdArray[6])).shouldNotBeNull()
             }
         }
@@ -367,8 +379,9 @@ object DataFileTest: FunSpec() {
      * Tests the airport data validity for all airports, with the calling ContainerScope as the scope for the tests
      * @param data the string text to parse
      * @param wpts the set of waypoint names available, and the hold waypoint name should be in this set
+     * @param minAlt the minimum altitude of the game world
      */
-    private suspend fun ContainerScope.testAirports(data: String, wpts: HashSet<String>) {
+    private suspend fun ContainerScope.testAirports(data: String, wpts: HashSet<String>, minAlt: Int) {
         val arptIds = HashSet<Byte>()
         getBlocksBetweenTags("AIRPORT", data).forEach { airport ->
             val header = airport.split(" ", limit = 3) // Get only the first 2 identifiers (ID, ICAO)
@@ -379,7 +392,7 @@ object DataFileTest: FunSpec() {
                 arptIds shouldNotContain id
                 arptIds.add(id)
                 withClue("ICAO code format invalid: $icao") { "^[A-Z]{4}\$".toRegex().find(icao).shouldNotBeNull() }
-                testAirport(airport, wpts)
+                testAirport(airport, wpts, minAlt)
             }
         }
     }
@@ -387,32 +400,35 @@ object DataFileTest: FunSpec() {
     /**
      * Tests the airport data validity for each airport data block, with the calling ContainerScope as the scope for the
      * tests
-     * @param data the string text to parse
+     * @param arptData the airport text to parse
      * @param wpts the set of waypoint names available, and the hold waypoint name should be in this set
+     * @param minAlt the minimum altitude of the game world
      */
-    private suspend fun ContainerScope.testAirport(data: String, wpts: HashSet<String>) {
+    private suspend fun ContainerScope.testAirport(arptData: String, wpts: HashSet<String>, minAlt: Int) {
         withData(arrayListOf("Wind Direction")) {
-            getAllTextAfterHeader("WINDDIR", data).split(" ").map { it.toFloat() }.size shouldBe 37
+            getAllTextAfterHeader("WINDDIR", arptData).split(" ").map { it.toFloat() }.size shouldBe 37
         }
         withData(arrayListOf("Wind Speed")) {
-            getAllTextAfterHeader("WINDSPD", data).split(" ").map { it.toFloat() }.size shouldBeGreaterThan 30
+            getAllTextAfterHeader("WINDSPD", arptData).split(" ").map { it.toFloat() }.size shouldBeGreaterThan 30
         }
         withData(arrayListOf("Visibility")) {
-            getAllTextAfterHeader("VISIBILITY", data).split(" ").map { it.toFloat() }.size shouldBe 20
+            getAllTextAfterHeader("VISIBILITY", arptData).split(" ").map { it.toFloat() }.size shouldBe 20
         }
         withData(arrayListOf("Ceiling")) {
-            getAllTextAfterHeader("CEILING", data).split(" ").map { it.toFloat() }.size shouldBe 15
+            getAllTextAfterHeader("CEILING", arptData).split(" ").map { it.toFloat() }.size shouldBe 15
         }
         withData(arrayListOf("Windshear")) {
-            getAllTextAfterHeader("WINDSHEAR", data).split(" ").map { it.toFloat() }.size shouldBe 2
+            getAllTextAfterHeader("WINDSHEAR", arptData).split(" ").map { it.toFloat() }.size shouldBe 2
         }
-        val allRwys = testRunways(data)
-        testDependentRunways("Dependent Parallel Runways", "DEPENDENT_PARALLEL", data, allRwys)
-        testDependentRunways("Dependent Opposite Runways", "DEPENDENT_OPPOSITE", data, allRwys)
-        testDependentRunways("Crossing Runways", "CROSSING", data, allRwys)
-        testRunwayZones("Approach NOZ", "APP_NOZ", data, allRwys)
-        testRunwayZones("Departure NOZ", "DEP_NOZ", data, allRwys)
-        testRunwayConfigs(data, allRwys)
+        val allRwys = testRunways(arptData)
+        testDependentRunways("Dependent Parallel Runways", "DEPENDENT_PARALLEL", arptData, allRwys)
+        testDependentRunways("Dependent Opposite Runways", "DEPENDENT_OPPOSITE", arptData, allRwys)
+        testDependentRunways("Crossing Runways", "CROSSING", arptData, allRwys)
+        testRunwayZones("Approach NOZ", "APP_NOZ", arptData, allRwys)
+        testRunwayZones("Departure NOZ", "DEP_NOZ", arptData, allRwys)
+        testRunwayConfigs(arptData, allRwys)
+        testSid(arptData, allRwys, wpts, minAlt)
+        testStar(arptData, allRwys, wpts)
     }
 
     /**
@@ -430,7 +446,7 @@ object DataFileTest: FunSpec() {
                 rwyData.size shouldBe 11
                 rwyIds shouldNotContain rwyData[0].toByte()
                 val rwyName = rwyData[1]
-                if (rwyName.last() !in arrayOf('L', 'C', 'R')) rwyName.toByte().shouldBeBetween(1, 36)
+                if (rwyName.last() !in RWY_POS) rwyName.toByte().shouldBeBetween(1, 36)
                 else rwyName.substring(0, rwyName.length - 1).toByte().shouldBeBetween(1, 36)
                 rwyNames.add(rwyName)
                 rwyData[2].split(",").forEach { coord -> coord.toFloat() }
@@ -440,7 +456,7 @@ object DataFileTest: FunSpec() {
                 rwyData[5].toShort().shouldBeBetween(0, rwyLength)
                 rwyData[6].toShort().shouldBeBetween(0, rwyLength)
                 rwyData[7].toShort()
-                rwyData[8] shouldBeIn arrayOf("LABEL_LEFT", "LABEL_RIGHT", "LABEL_BEFORE")
+                rwyData[8] shouldBeIn LABEL_POS
                 rwyData[10].toFloat()
             }
         }
@@ -484,6 +500,12 @@ object DataFileTest: FunSpec() {
         }
     }
 
+    /**
+     * Tests the runway configs for the input airport data block, with the calling ContainerScope as the scope for the
+     * tests
+     * @param data the string text to parse
+     * @param allRwys all runways in this airport
+     */
     private suspend fun ContainerScope.testRunwayConfigs(data: String, allRwys: HashSet<String>) {
         withData(arrayListOf("Runway Configurations")) {
             val configIds = HashSet<Byte>()
@@ -494,7 +516,7 @@ object DataFileTest: FunSpec() {
                     val configId = header[0].toByte()
                     configIds shouldNotContain configId
                     configIds.add(configId)
-                    header[1] shouldBeIn arrayOf("DAY_NIGHT", "DAY_ONLY", "NIGHT_ONLY")
+                    header[1] shouldBeIn TIME_SLOTS
                     val dep = getAllTextAfterHeader("DEP", config)
                     withData(arrayListOf("DEP $dep")) {
                         dep.split(" ").forEach { rwy -> allRwys shouldContain rwy }
@@ -510,6 +532,90 @@ object DataFileTest: FunSpec() {
                         ntzData[2].toShort().shouldBeBetween(1, 360)
                         ntzData[3].toFloat()
                         ntzData[4].toFloat()
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Tests the SIDs for the input airport data block, with the calling ContainerScope as the scope for the
+     * tests
+     * @param data the string text to parse
+     * @param allRwys all runways in this airport
+     * @param allWpts all waypoints in this game world
+     * @param minAlt the game world's minimum altitude
+     * @return a HashSet of all runway names for this airport
+     */
+    private suspend fun ContainerScope.testSid(data: String, allRwys: HashSet<String>, allWpts: HashSet<String>, minAlt: Int) {
+        withData(arrayListOf("SIDs")) {
+            getBlocksBetweenTags("SID", data).forEach {
+                val sidStarLines = it.toLines()
+                sidStarLines.size shouldBeGreaterThanOrEqual 4
+                val infoLine = sidStarLines[0].split(" ")
+                infoLine.size shouldBe 3
+                withData(arrayListOf(infoLine[0])) {
+                    infoLine[1] shouldBeIn TIME_SLOTS
+
+                    val rwyLine = sidStarLines[1].split(" ")
+                    rwyLine.size shouldBeGreaterThanOrEqual 3
+                    rwyLine[0] shouldBe "RWY"
+                    rwyLine[1] shouldBeIn allRwys
+                    rwyLine[2].toInt() shouldBeGreaterThanOrEqual minAlt
+                    testParseLegs(rwyLine.subList(3, rwyLine.size), allWpts, Route.Leg.NORMAL, WARNING_SHOULD_BE_EMPTY)
+
+                    val routeLine = sidStarLines[2].split(" ")
+                    routeLine[0] shouldBe "ROUTE"
+                    testParseLegs(routeLine.subList(1, routeLine.size), allWpts, Route.Leg.NORMAL, WARNING_SHOULD_BE_EMPTY)
+
+                    for (i in 3 until sidStarLines.size) {
+                        val outboundLine = sidStarLines[i].split(" ")
+                        outboundLine.size shouldBeGreaterThanOrEqual 1
+                        outboundLine[0] shouldBe "OUTBOUND"
+                        testParseLegs(outboundLine.subList(1, outboundLine.size), allWpts, Route.Leg.NORMAL, WARNING_SHOULD_BE_EMPTY)
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Tests the STARs for the input airport data block, with the calling ContainerScope as the scope for the
+     * tests
+     * @param data the string text to parse
+     * @param allRwys all runways in this airport
+     * @param allWpts all waypoints in this game world
+     * @return a HashSet of all runway names for this airport
+     */
+    private suspend fun ContainerScope.testStar(data: String, allRwys: HashSet<String>, allWpts: HashSet<String>) {
+        withData(arrayListOf("STARs")) {
+            getBlocksBetweenTags("STAR", data).forEach {
+                val sidStarLines = it.toLines()
+                sidStarLines.size shouldBeGreaterThanOrEqual 4
+                val infoLine = sidStarLines[0].split(" ")
+                infoLine.size shouldBe 3
+                withData(arrayListOf(infoLine[0])) {
+                    infoLine[1] shouldBeIn TIME_SLOTS
+
+                    var inboundLineCount = 0
+                    for (i in 1 until sidStarLines.size) {
+                        val lineData = sidStarLines[i].split(" ")
+                        if (lineData[0] == "INBOUND") {
+                            inboundLineCount++
+                            testParseLegs(lineData.subList(1, lineData.size), allWpts, Route.Leg.NORMAL, WARNING_SHOULD_BE_EMPTY)
+                        } else break
+                    }
+                    inboundLineCount shouldBeGreaterThanOrEqual 1
+
+                    val routeLine = sidStarLines[inboundLineCount + 1].split(" ")
+                    routeLine[0] shouldBe "ROUTE"
+                    testParseLegs(routeLine.subList(1, routeLine.size), allWpts, Route.Leg.NORMAL, WARNING_SHOULD_BE_EMPTY)
+
+                    for (i in inboundLineCount + 2 until sidStarLines.size) {
+                        val rwyLine = sidStarLines[i].split(" ")
+                        rwyLine.size shouldBe 2
+                        rwyLine[0] shouldBe "RWY"
+                        rwyLine[1] shouldBeIn allRwys
                     }
                 }
             }

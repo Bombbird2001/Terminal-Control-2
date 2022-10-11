@@ -738,16 +738,43 @@ private fun parseSIDSTARinOutboundRoute(data: List<String>, sidStar: SidStar) {
  * Parse the given [data], [flightPhase] into a route and returns it
  * @param data the line array for the legs
  * @param flightPhase the phase of flight for this specific set of legs
+ * @param onWarning the function to invoke when a warning occurs while parsing
+ * @param testingWpts a set of waypoint names to use for checking; leave null if not testing
  * @return a [Route] containing the legs
  * */
-private fun parseLegs(data: List<String>, flightPhase: Byte): Route {
+private fun parseLegs(data: List<String>, flightPhase: Byte, onWarning: (String, String) -> Unit = { type, msg ->
+    Log.info(type, msg)
+}, testingWpts: HashSet<String>? = null): Route {
     val route = Route()
+
+    val onInitClimb = if (testingWpts != null) { _: Short, _: Int -> }
+    else { hdg: Short, minAlt: Int -> route.add(Route.InitClimbLeg(hdg, minAlt, flightPhase)) }
+    val onHdg = if (testingWpts != null) { _: Short, _: Byte -> }
+    else { hdg: Short, turnDir: Byte -> route.add(Route.VectorLeg(hdg, turnDir, flightPhase)) }
+    val onWpt = if (testingWpts != null) { wptName: String, _: Int?, _: Int?, _: Short?, _: Boolean, _: Byte ->
+        if (!testingWpts.contains(wptName)) onWarning("GameDataLoader", "Waypoint $wptName not in game world")
+    }
+    else { wptName: String, maxAlt: Int?, minAlt: Int?, maxSpd: Short?, flyOver: Boolean, turnDir: Byte ->
+        route.add(Route.WaypointLeg(wptName, maxAlt, minAlt, maxSpd,
+            legActive = true, altRestrActive = true, spdRestrActive = true, flyOver, turnDir, flightPhase))
+    }
+    val onHold = if (testingWpts != null) { wptName: String ->
+        if (!testingWpts.contains(wptName)) onWarning("GameDataLoader", "Waypoint $wptName not in game world")
+    }
+    else { wptName: String ->
+        GAME.gameServer?.publishedHolds?.get(wptName)?.entity?.get(PublishedHoldInfo.mapper)?.let { publishedHold ->
+            route.add(Route.HoldLeg(wptName, publishedHold.maxAltFt, publishedHold.minAltFt, publishedHold.maxSpdKtLower,
+                publishedHold.maxSpdKtHigher, publishedHold.inboundHdgDeg, publishedHold.legDistNm,
+                publishedHold.turnDir, flightPhase))
+        } ?: onWarning("GameDataLoader", "Published hold not found for $wptName")
+    }
+
     var legType = ""
     var dataStream = ""
     for (part in data) {
         when (part) {
             "INITCLIMB", "HDNG", "WYPT", "HOLD" -> {
-                parseLeg(legType, dataStream, flightPhase)?.apply { route.add(this) }
+                parseLeg(legType, dataStream, onWarning, onInitClimb, onHdg, onWpt, onHold)
                 legType = part
                 dataStream = ""
             }
@@ -755,23 +782,40 @@ private fun parseLegs(data: List<String>, flightPhase: Byte): Route {
                 "INITCLIMB", "HDNG", "WYPT", "HOLD" -> {
                     dataStream += " $part "
                 }
-                else -> Log.info("GameLoader", "Unknown leg type: $legType")
+                else -> onWarning("GameLoader", "Unknown leg type: $legType")
             }
         }
     }
-    parseLeg(legType, dataStream, flightPhase)?.apply { route.add(this) }
+    parseLeg(legType, dataStream, onWarning, onInitClimb, onHdg, onWpt, onHold)
 
     return route
 }
 
 /**
- * Parses a single leg from the given [data], [flightPhase]
+ * Tries to parse the given [data], [flightPhase] into a route
+ * @param data the line array for the legs
+ * @param allWpts all the waypoint names in the game world
+ * @param flightPhase the phase of flight for this specific set of legs
+ * @param onWarning the function to invoke when a warning occurs while parsing
+ * */
+fun testParseLegs(data: List<String>, allWpts: HashSet<String>, flightPhase: Byte, onWarning: (String, String) -> Unit) {
+    parseLegs(data, flightPhase, onWarning, allWpts)
+}
+
+/**
+ * Parses a single leg from the given [data]
  * @param legType the type of leg to parse
  * @param data the data portion of the leg
- * @param flightPhase the phase of flight of this leg
- * @return a [Route.Leg] of the corresponding leg type
+ * @param onWarning the function to invoke when a warning occurs while parsing
+ * @param onInitClimb the function to invoke when InitCLimb leg data is parsed
+ * @param onHdg the function to invoke when Heading leg data is parsed
+ * @param onWpt the function to invoke when Waypoint leg data is parsed
+ * @param onHold the function to invoke when Hold leg data is parsed
  * */
-private fun parseLeg(legType: String, data: String, flightPhase: Byte): Route.Leg? {
+private fun parseLeg(legType: String, data: String, onWarning: (String, String) -> Unit,
+                     onInitClimb: (Short, Int) -> Unit, onHdg: (Short, Byte) -> Unit,
+                     onWpt: (String, Int?, Int?, Short?, Boolean, Byte) -> Unit,
+                     onHold: (String) -> Unit) {
     val hdgRegex = " (\\d{1,3}) ".toRegex() // Heading values of 1 to 3 digits
     val atAltRegex = " $AT_ALT_REGEX ".toRegex() // Altitude values of at least 1 digit
     val aboveAltRegex = " $ABOVE_ALT_REGEX ".toRegex() // Altitude values of at least 1 digit, with "A" as a prefix
@@ -782,26 +826,26 @@ private fun parseLeg(legType: String, data: String, flightPhase: Byte): Route.Le
     val dirRegex = " (LEFT|RIGHT) ".toRegex() // For forced turn directions
     when (legType) {
         "INITCLIMB" -> {
-            val hdg = hdgRegex.find(data)?.groupValues?.get(1)?.toInt()?.toShort() ?: return null
-            val minAlt = aboveAltRegex.find(data)?.groupValues?.get(1)?.toInt() ?: return null
-            return Route.InitClimbLeg(hdg, minAlt, flightPhase)
+            val hdg = hdgRegex.find(data)?.groupValues?.get(1)?.toInt()?.toShort() ?: return onWarning("GameDataLoader", "Missing heading for InitClimb leg")
+            val minAlt = aboveAltRegex.find(data)?.groupValues?.get(1)?.toInt() ?: return onWarning("GameDataLoader", "Missing altitude for InitClimb leg")
+            return onInitClimb(hdg, minAlt)
         }
         "HDNG" -> {
-            val hdg = hdgRegex.find(data)?.groupValues?.get(1)?.toInt()?.toShort() ?: return null
+            val hdg = hdgRegex.find(data)?.groupValues?.get(1)?.toInt()?.toShort() ?: return onWarning("GameDataLoader", "Missing heading for Heading leg")
             val turnDir = dirRegex.find(data)?.let {
                 when (it.groupValues[1]) {
                     "LEFT" -> CommandTarget.TURN_LEFT
                     "RIGHT" -> CommandTarget.TURN_RIGHT
                     else -> {
-                        Log.info("GameLoader", "Unknown turn direction for HDG ${it.groupValues[0]}")
+                        onWarning("GameDataLoader", "Unknown turn direction for HDG ${it.groupValues[0]}")
                         CommandTarget.TURN_DEFAULT
                     }
                 }
             } ?: CommandTarget.TURN_DEFAULT
-            return Route.VectorLeg(hdg, turnDir, flightPhase)
+            return onHdg(hdg, turnDir)
         }
         "WYPT" -> {
-            val wptName = wptRegex.find(data)?.groupValues?.get(1) ?: return null
+            val wptName = wptRegex.find(data)?.groupValues?.get(1) ?: return onWarning("GameDataLoader", "Missing waypoint name for Waypoint leg")
             val atAlt = atAltRegex.find(data)?.groupValues?.get(1)?.toInt()
             val maxAlt = atAlt ?: belowAltRegex.find(data)?.groupValues?.get(1)?.toInt()
             val minAlt = atAlt ?: aboveAltRegex.find(data)?.groupValues?.get(1)?.toInt()
@@ -812,22 +856,18 @@ private fun parseLeg(legType: String, data: String, flightPhase: Byte): Route.Le
                     "LEFT" -> CommandTarget.TURN_LEFT
                     "RIGHT" -> CommandTarget.TURN_RIGHT
                     else -> {
-                        Log.info("GameLoader", "Unknown turn direction for $wptName: ${it.groupValues[0]}")
+                        onWarning("GameDataLoader", "Unknown turn direction for $wptName: ${it.groupValues[0]}")
                         CommandTarget.TURN_DEFAULT
                     }
                 }
             } ?: CommandTarget.TURN_DEFAULT
-            return Route.WaypointLeg(wptName, maxAlt, minAlt, maxSpd, legActive = true, altRestrActive = true, spdRestrActive = true, flyOver, turnDir, flightPhase)
+            return onWpt(wptName, maxAlt, minAlt, maxSpd, flyOver, turnDir)
         }
         "HOLD" -> {
-            val wptName = wptRegex.find(data)?.groupValues?.get(1) ?: return null
-            val publishedHold = GAME.gameServer?.publishedHolds?.get(wptName)?.entity?.get(PublishedHoldInfo.mapper) ?: return null
-            return Route.HoldLeg(wptName, publishedHold.maxAltFt, publishedHold.minAltFt, publishedHold.maxSpdKtLower, publishedHold.maxSpdKtHigher, publishedHold.inboundHdgDeg, publishedHold.legDistNm, publishedHold.turnDir, flightPhase)
+            val wptName = wptRegex.find(data)?.groupValues?.get(1) ?: return onWarning("GameDataLoader", "Missing waypoint name for Hold leg")
+            return onHold(wptName)
         }
-        else -> {
-            if (legType.isNotEmpty()) Log.info("GameLoader", "Unknown leg type: $legType")
-            return null
-        }
+        else -> if (legType.isNotEmpty()) onWarning("GameDataLoader", "Unknown leg type: $legType")
     }
 }
 
