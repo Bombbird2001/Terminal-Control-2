@@ -42,6 +42,8 @@ object DataFileTest: FunSpec() {
     private val TIME_SLOTS = arrayOf("DAY_ONLY", "NIGHT_ONLY", "DAY_NIGHT")
     private val WARNING_SHOULD_BE_EMPTY = { type: String, warning: String -> "[$type] $warning" shouldBe "" }
 
+    private val aircraftSet = HashSet<String>()
+
     init {
         Gdx.files = Lwjgl3Files()
 
@@ -73,6 +75,7 @@ object DataFileTest: FunSpec() {
                 } catch (e: NumberFormatException) {
                     e.stackTraceToString().shouldBeNull()
                 }
+                aircraftSet.add(acData[0])
             }
         }
 
@@ -437,6 +440,7 @@ object DataFileTest: FunSpec() {
         testSid(arptData, allRwys, wpts, minAlt)
         testStar(arptData, allRwys, wpts)
         testApp(arptData, allRwys, wpts, arptElevation)
+        testTraffic(arptData)
     }
 
     /**
@@ -720,6 +724,37 @@ object DataFileTest: FunSpec() {
                     missedLines.size shouldBe 1
                     val missedLine = routeLines[0].split(" ")
                     testParseLegs(missedLine, allWpts, Route.Leg.NORMAL, WARNING_SHOULD_BE_EMPTY)
+                }
+            }
+        }
+    }
+
+    /**
+     * Tests traffic data for the input airport data block, with the calling ContainerScope as the scope for the tests
+     * @param data the string text to parse
+     */
+    private suspend fun ContainerScope.testTraffic(data: String) {
+        withData(arrayListOf("Traffic")) {
+            getBlocksBetweenTags("TRAFFIC", data).forEach {
+                val tfcLines = it.toLines()
+                for (line in tfcLines) {
+                    val tfcData = line.split(" ")
+                    if (tfcData[0] == "PRIVATE") {
+                        tfcData.size shouldBe 4
+                        withData(arrayListOf(tfcData[1])) {
+                            tfcData[2].toFloat()
+                            tfcData[3] shouldBeIn aircraftSet
+                        }
+                    } else {
+                        tfcData.size shouldBeGreaterThanOrEqual 3
+                        withData(arrayListOf(tfcData[0])) {
+                            tfcData[0].length shouldBe 3
+                            tfcData[1].toFloat()
+                            for (acType in tfcData.subList(2, tfcData.size)) {
+                                acType shouldBeIn aircraftSet
+                            }
+                        }
+                    }
                 }
             }
         }
