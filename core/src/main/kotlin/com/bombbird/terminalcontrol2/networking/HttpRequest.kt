@@ -31,42 +31,51 @@ object HttpRequest {
             override fun onFailure(call: Call, e: IOException) {
                 Log.info("HttpRequest", "Request failed")
                 println(e)
-                if (!checkGameServerRunningStatus()) return
-                if (retry) sendMetarRequest(reqString, false, airportsForRandom)
-                else generateRandomWeather(true, airportsForRandom) // Generate offline weather
+                handleResult(null, retry, reqString, airportsForRandom)
             }
 
             override fun onResponse(call: Call, response: Response) {
-                if (!response.isSuccessful) {
-                    if (response.code == 503 && retry) {
-                        Log.info("HttpRequest", "503 received: trying again")
-                        response.close()
-                        if (!checkGameServerRunningStatus()) return
-                        sendMetarRequest(reqString, false, airportsForRandom)
-                    } else {
-                        // Generate offline weather
-                        response.close()
-                        generateRandomWeather(false, airportsForRandom)
-                    }
-                } else {
-                    val responseText = response.body?.string()
-                    response.close()
-
-                    if (responseText == null) {
-                        Log.info("HttpRequest", "Null sendMetarRequest response")
-                        generateRandomWeather(false, airportsForRandom)
-                        return
-                    }
-
-                    // METAR JSON has been received
-                    updateAirportMetar(responseText)
-                }
+                handleResult(response, retry, reqString, airportsForRandom)
             }
         })
     }
 
     /**
-     * Checks whether the status of the game server allows for a retry in case of failure to retrieve METAR
+     * Handles the resulting response from a weather request
+     * @param response the response received from the server; may be null if request was unsuccessful
+     * @param retry whether to retry if the response is not successful
+     * @param reqString the original request JSON string send in the request
+     * @param airportsForRandom the list of airport entities to generate random weather if needed
+     */
+    private fun handleResult(response: Response?, retry: Boolean, reqString: String, airportsForRandom: List<Entity>) {
+        fun tryGetWeatherAgain() {
+            if (retry) sendMetarRequest(reqString, false, airportsForRandom)
+            else generateRandomWeather(true, airportsForRandom)
+        }
+
+        if (!checkGameServerRunningStatus()) return response?.close() ?: Unit
+        if (response == null) {
+            tryGetWeatherAgain()
+            return
+        }
+        if (!response.isSuccessful) {
+            if (response.code == 503) Log.info("HttpRequest", "Error 503")
+            tryGetWeatherAgain()
+        } else {
+            val responseText = response.body?.string()
+            if (responseText == null) {
+                Log.info("HttpRequest", "Null response body")
+                tryGetWeatherAgain()
+            } else {
+                // METAR JSON has been received
+                updateAirportMetar(responseText)
+            }
+        }
+        response.close()
+    }
+
+    /**
+     * Checks whether the status of the game server is still active for updating of weather
      * @return true if the game server is running or initialising the weather, else false
      */
     private fun checkGameServerRunningStatus(): Boolean {

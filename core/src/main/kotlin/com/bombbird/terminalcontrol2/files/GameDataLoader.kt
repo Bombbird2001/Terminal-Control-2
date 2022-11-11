@@ -71,6 +71,11 @@ private const val DAY_NIGHT = "DAY_NIGHT"
 private const val DAY_ONLY = "DAY_ONLY"
 private const val NIGHT_ONLY = "NIGHT_ONLY"
 
+const val INIT_CLIMB_LEG = "INITCLIMB"
+const val HDNG_LEG = "HDNG"
+const val WYPT_LEG = "WYPT"
+const val HOLD_LEG = "HOLD"
+
 /** Loads the "aircraft.perf" file located in the "Data" subfolder in the assets into aircraft performance map */
 fun loadAircraftData() {
     aircraftPerfPath.toInternalFile().readString().toLines().toTypedArray().apply {
@@ -773,13 +778,13 @@ private fun parseLegs(data: List<String>, flightPhase: Byte, onWarning: (String,
     var dataStream = ""
     for (part in data) {
         when (part) {
-            "INITCLIMB", "HDNG", "WYPT", "HOLD" -> {
+            INIT_CLIMB_LEG, HDNG_LEG, WYPT_LEG, HOLD_LEG -> {
                 parseLeg(legType, dataStream, onWarning, onInitClimb, onHdg, onWpt, onHold)
                 legType = part
                 dataStream = ""
             }
             else -> when (legType) {
-                "INITCLIMB", "HDNG", "WYPT", "HOLD" -> {
+                INIT_CLIMB_LEG, HDNG_LEG, WYPT_LEG, HOLD_LEG -> {
                     dataStream += " $part "
                 }
                 else -> onWarning("GameLoader", "Unknown leg type: $legType")
@@ -825,12 +830,12 @@ private fun parseLeg(legType: String, data: String, onWarning: (String, String) 
     val foRegex = " FLYOVER ".toRegex() // For flyover waypoints
     val dirRegex = " (LEFT|RIGHT) ".toRegex() // For forced turn directions
     when (legType) {
-        "INITCLIMB" -> {
+        INIT_CLIMB_LEG -> {
             val hdg = hdgRegex.find(data)?.groupValues?.get(1)?.toInt()?.toShort() ?: return onWarning("GameDataLoader", "Missing heading for InitClimb leg")
             val minAlt = aboveAltRegex.find(data)?.groupValues?.get(1)?.toInt() ?: return onWarning("GameDataLoader", "Missing altitude for InitClimb leg")
             return onInitClimb(hdg, minAlt)
         }
-        "HDNG" -> {
+        HDNG_LEG -> {
             val hdg = hdgRegex.find(data)?.groupValues?.get(1)?.toInt()?.toShort() ?: return onWarning("GameDataLoader", "Missing heading for Heading leg")
             val turnDir = dirRegex.find(data)?.let {
                 when (it.groupValues[1]) {
@@ -844,7 +849,7 @@ private fun parseLeg(legType: String, data: String, onWarning: (String, String) 
             } ?: CommandTarget.TURN_DEFAULT
             return onHdg(hdg, turnDir)
         }
-        "WYPT" -> {
+        WYPT_LEG -> {
             val wptName = wptRegex.find(data)?.groupValues?.get(1) ?: return onWarning("GameDataLoader", "Missing waypoint name for Waypoint leg")
             val atAlt = atAltRegex.find(data)?.groupValues?.get(1)?.toInt()
             val maxAlt = atAlt ?: belowAltRegex.find(data)?.groupValues?.get(1)?.toInt()
@@ -863,7 +868,7 @@ private fun parseLeg(legType: String, data: String, onWarning: (String, String) 
             } ?: CommandTarget.TURN_DEFAULT
             return onWpt(wptName, maxAlt, minAlt, maxSpd, flyOver, turnDir)
         }
-        "HOLD" -> {
+        HOLD_LEG -> {
             val wptName = wptRegex.find(data)?.groupValues?.get(1) ?: return onWarning("GameDataLoader", "Missing waypoint name for Hold leg")
             return onHold(wptName)
         }

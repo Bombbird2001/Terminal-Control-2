@@ -12,6 +12,7 @@ import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.math.Polygon
 import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.scenes.scene2d.Actor
+import com.bombbird.terminalcontrol2.components.AircraftInfo
 import com.bombbird.terminalcontrol2.components.Datatag
 import com.bombbird.terminalcontrol2.components.FlightType
 import com.bombbird.terminalcontrol2.entities.*
@@ -540,8 +541,23 @@ class RadarScreen(private val connectionHost: String?, airportToHost: String?, s
         client.sendTCP(SectorSwapRequest(null, playerSector))
     }
 
-    /** Sends a request to decline an incoming swap request */
+    /**
+     * Sends a request to decline an incoming swap request
+     * @param requestingSector the ID of the sector being declined
+     * */
     fun declineSectorSwapRequest(requestingSector: Byte) {
         client.sendTCP(DeclineSwapRequest(requestingSector, playerSector))
+    }
+
+    /**
+     * Sends the datatag position of the aircraft on client to the server
+     * @param aircraft the aircraft whose datatag position is being sent
+     * @param xOffset the x position offset of the datatag from the aircraft radar blip
+     * @param yOffset the y position offset of the datatag from the aircraft radar blip
+     * @param minimised whether the datatag has been minimized
+     */
+    fun sendAircraftDatatagPositionUpdate(aircraft: Aircraft, xOffset: Float, yOffset: Float, minimised: Boolean) {
+        val callsign = aircraft.entity[AircraftInfo.mapper]?.icaoCallsign ?: return Log.info("RadarScreen", "Missing AircraftInfo component")
+        client.sendTCP(AircraftDatatagPositionUpdateData(callsign, xOffset, yOffset, minimised))
     }
 }

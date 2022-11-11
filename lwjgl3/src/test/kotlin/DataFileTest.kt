@@ -1,7 +1,7 @@
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Files
 import com.badlogic.gdx.math.Polygon
-import com.bombbird.terminalcontrol2.files.testParseLegs
+import com.bombbird.terminalcontrol2.files.*
 import com.bombbird.terminalcontrol2.global.AVAIL_AIRPORTS
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.utilities.ABOVE_ALT_REGEX
@@ -585,7 +585,9 @@ object DataFileTest: FunSpec() {
                     for (outbound in outbounds) {
                         val outboundLine = outbound.split(" ")
                         testParseLegs(outboundLine, allWpts, Route.Leg.NORMAL, WARNING_SHOULD_BE_EMPTY)
+                        testWaypointLegStartEnd(outboundLine, false)
                     }
+                    if (outbounds.isEmpty()) testWaypointLegStartEnd(routeLine, false)
                 }
             }
         }
@@ -612,12 +614,14 @@ object DataFileTest: FunSpec() {
                     for (inbound in inbounds) {
                         val inboundLine = inbound.split(" ")
                         testParseLegs(inboundLine, allWpts, Route.Leg.NORMAL, WARNING_SHOULD_BE_EMPTY)
+                        testWaypointLegStartEnd(inboundLine, true)
                     }
 
                     val routeLines = getAllTextAfterHeaderMultiple("ROUTE", starLines[1])
                     routeLines.size shouldBe 1
                     val routeLine = routeLines[0].split(" ")
                     testParseLegs(routeLine, allWpts, Route.Leg.NORMAL, WARNING_SHOULD_BE_EMPTY)
+                    if (inbounds.isEmpty()) testWaypointLegStartEnd(routeLine, true)
 
                     val rwyLines = getAllTextAfterHeaderMultiple("RWY", starLines[1])
                     rwyLines.size shouldBeGreaterThanOrEqual 1
@@ -628,6 +632,33 @@ object DataFileTest: FunSpec() {
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * Checks if the input route string ends/starts with a waypoint leg
+     * @param routeLine The route string list to check
+     * @param start Whether to check the start (true) or the end (false)
+     */
+    private fun testWaypointLegStartEnd(routeLine: List<String>, start: Boolean) {
+        if (start) {
+            val firstWypt = routeLine.indexOfFirst { it == WYPT_LEG }
+            firstWypt shouldBeGreaterThan -1
+            val firstHdng = routeLine.indexOfFirst { it == HDNG_LEG }
+            firstHdng shouldBeGreaterThan firstWypt
+            val firstHold = routeLine.indexOfFirst { it == HOLD_LEG }
+            firstHold shouldBeGreaterThan firstWypt
+            val firstInitClimb = routeLine.indexOfFirst { it == INIT_CLIMB_LEG }
+            firstInitClimb shouldBeGreaterThan firstWypt
+        } else {
+            val lastWypt = routeLine.lastIndexOf(WYPT_LEG)
+            lastWypt shouldBeGreaterThan -1
+            val lastHdng = routeLine.lastIndexOf(HDNG_LEG)
+            lastHdng shouldBeLessThan lastWypt
+            val lastHold = routeLine.lastIndexOf(HOLD_LEG)
+            lastHold shouldBeLessThan lastWypt
+            val lastInitClimb = routeLine.lastIndexOf(INIT_CLIMB_LEG)
+            lastInitClimb shouldBeLessThan lastWypt
         }
     }
 

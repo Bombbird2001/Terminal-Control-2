@@ -850,6 +850,14 @@ object JsonTest: FunSpec() {
             wakeInfoAdapter.fromJson(wakeInfoAdapter.toJson(wakeInfo1)) shouldBe wakeInfo1
             wakeInfoAdapter.fromJson(wakeInfoAdapter.toJson(wakeInfo2)) shouldBe wakeInfo2
         }
+
+        test("InitialClientDatatagPosition serialization") {
+            val datatagPosAdapter = testMoshi.adapter<InitialClientDatatagPosition>()
+            val pos1 = InitialClientDatatagPosition(123.45f, 246.89f, false)
+            val pos2 = InitialClientDatatagPosition(-98.76f, -126.42f, true)
+            datatagPosAdapter.fromJson(datatagPosAdapter.toJson(pos1)) shouldBe pos1
+            datatagPosAdapter.fromJson(datatagPosAdapter.toJson(pos2)) shouldBe pos2
+        }
     }
 
     /**

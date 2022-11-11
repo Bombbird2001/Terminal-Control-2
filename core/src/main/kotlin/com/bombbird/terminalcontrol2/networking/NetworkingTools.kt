@@ -131,6 +131,7 @@ fun registerClassesToKryo(kryo: Kryo?) {
         register(HandoverRequest::class.java)
         register(SectorSwapRequest::class.java)
         register(DeclineSwapRequest::class.java)
+        register(AircraftDatatagPositionUpdateData::class.java)
         register(CustomWaypointData::class.java)
         register(RemoveCustomWaypointData::class.java)
         register(GameRunningStatus::class.java)
@@ -221,6 +222,10 @@ data class SectorSwapRequest(val requestedSector: Byte? = null, val sendingSecto
 
 /** Class representing client request to decline the incoming swap request from another sector */
 data class DeclineSwapRequest(val requestingSector: Byte = -1, val decliningSector: Byte = -1)
+
+/** Class representing aircraft datatag position data (on client) sent to server */
+data class AircraftDatatagPositionUpdateData(val aircraft: String = "", val xOffset: Float = 0f,
+                                             val yOffset: Float = 0f, val minimised: Boolean = false)
 
 /** Class representing data sent during creation of a new custom waypoint */
 data class CustomWaypointData(val customWpt: Waypoint.SerialisedWaypoint = Waypoint.SerialisedWaypoint())
@@ -477,7 +482,6 @@ fun handleIncomingRequestServer(gs: GameServer, connection: Connection, obj: Any
             connection.sendTCP(InitialAirspaceData(MAG_HDG_DEV, MIN_ALT, MAX_ALT, MIN_SEP, TRANS_ALT, TRANS_LVL))
             assignSectorsToPlayers(gs.server.connections, gs.sectorMap, gs.connectionUUIDMap, gs.sectorUUIDMap, currPlayerNo, gs.sectors)
             gs.sectorSwapRequests.clear()
-            // connection.sendTCP(InitialAircraftData(gs.aircraft.values().toArray().map { it.getSerialisableObject() }.toTypedArray()))
             val aircraftArray = gs.aircraft.values().toArray()
             var itemsRemaining = aircraftArray.size
             while (itemsRemaining > 0) {
@@ -584,5 +588,17 @@ fun handleIncomingRequestServer(gs: GameServer, connection: Connection, obj: Any
         if (!gs.sectorSwapRequests.contains(Pair(obj.decliningSector, obj.requestingSector), false)) return@apply
         gs.sectorSwapRequests.removeValue(Pair(obj.decliningSector, obj.requestingSector), false)
         getConnectionFromSector(obj.requestingSector, gs.sectorMap)?.sendTCP(obj)
+    } ?: (obj as? AircraftDatatagPositionUpdateData)?.apply {
+        val aircraft = gs.aircraft[obj.aircraft] ?: return@apply
+        // Validate that the sector controlling the aircraft is indeed the sector who sent the request
+        val sendingSector = gs.sectorMap[connection] ?: return@apply
+        val controllingSector = aircraft.entity[Controllable.mapper]?.sectorId ?: return@apply
+        if (sendingSector != controllingSector) return@apply
+        // Update the aircraft's initial datatag position component
+        aircraft.entity[InitialClientDatatagPosition.mapper]?.let {
+            it.xOffset = obj.xOffset
+            it.yOffset = obj.yOffset
+            it.minimised = obj.minimised
+        }
     }
 }

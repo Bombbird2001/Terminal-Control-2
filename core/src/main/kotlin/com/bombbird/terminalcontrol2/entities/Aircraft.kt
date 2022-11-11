@@ -5,10 +5,7 @@ import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable
 import com.bombbird.terminalcontrol2.components.*
-import com.bombbird.terminalcontrol2.global.ARRIVAL_BLUE
-import com.bombbird.terminalcontrol2.global.DEPARTURE_GREEN
-import com.bombbird.terminalcontrol2.global.MAX_ALT
-import com.bombbird.terminalcontrol2.global.getEngine
+import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.systems.updateAircraftDatatagText
@@ -53,6 +50,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
         }
         with<CommandTarget>()
         with<AffectedByWind>()
+        with<InitialClientDatatagPosition>()
         if (onClient) {
             with<RadarData> {
                 position.x = posX
@@ -176,7 +174,12 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                     val datatag = get(Datatag.mapper)
                     if (serialisedAircraft.waitingTakeoff) this += WaitingTakeoff()
                     else if (datatag != null) addDatatagInputListeners(datatag, it)
-                    datatag?.let { tag -> updateDatatagText(tag, getNewDatatagLabelText(this, tag.minimised))}
+                    datatag?.let { tag ->
+                        tag.minimised = serialisedAircraft.initialDatatagMinimised
+                        updateDatatagText(tag, getNewDatatagLabelText(this, tag.minimised))
+                        tag.xOffset = serialisedAircraft.initialDatatagXOffset
+                        tag.yOffset = serialisedAircraft.initialDatatagYOffset
+                    }
                 }
             }
         }
@@ -308,7 +311,8 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                              val gsCap: Boolean = false, val locCap: Boolean = false, val visCap: Boolean = false,
                              val waitingTakeoff: Boolean = false,
                              val contactToCentre: Boolean = false,
-                             val recentGoAround: Boolean = false
+                             val recentGoAround: Boolean = false,
+                             val initialDatatagXOffset: Float = 0f, val initialDatatagYOffset: Float = 0f, val initialDatatagMinimised: Boolean = false
     )
 
     /**
@@ -336,6 +340,8 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
             return emptySerialisableObject("PendingClearances")
             val arrArptId = get(ArrivalAirport.mapper)?.arptId
             val controllable = get(Controllable.mapper) ?: return emptySerialisableObject("Controllable")
+            val initialDatatagPosition = get(InitialClientDatatagPosition.mapper) ?:
+            return emptySerialisableObject("InitialClientDatatagPosition")
             return SerialisedAircraft(
                 position.x, position.y,
                 altitude.altitudeFt,
@@ -353,7 +359,8 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                 has(VisualCaptured.mapper) || (get(CirclingApproach.mapper)?.phase ?: 0) >= 1,
                 has(WaitingTakeoff.mapper),
                 has(ContactToCentre.mapper),
-                has(RecentGoAround.mapper)
+                has(RecentGoAround.mapper),
+                initialDatatagPosition.xOffset, initialDatatagPosition.yOffset, initialDatatagPosition.minimised
             )
         }
     }

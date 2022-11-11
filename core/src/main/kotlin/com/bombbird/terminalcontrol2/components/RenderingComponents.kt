@@ -8,6 +8,8 @@ import com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle
 import com.badlogic.gdx.scenes.scene2d.utils.BaseDrawable
 import com.badlogic.gdx.scenes.scene2d.utils.Drawable
 import com.badlogic.gdx.utils.Timer
+import com.bombbird.terminalcontrol2.json.BaseComponentJSONInterface
+import com.squareup.moshi.JsonClass
 import ktx.ashley.Mapper
 import ktx.math.ImmutableVector2
 import ktx.scene2d.Scene2DSkin
@@ -107,4 +109,12 @@ class Datatag(var xOffset: Float = 0f, var yOffset: Float = 0f, var minimised: B
     var smallLabelFont = false
     var renderLast = false
     companion object: Mapper<Datatag>()
+}
+
+/** Component for storing the datatag position to be sent to client on initial connection */
+@JsonClass(generateAdapter = true)
+data class InitialClientDatatagPosition(var xOffset: Float = 0f, var yOffset: Float = 0f, var minimised: Boolean = false): Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.INITIAL_CLIENT_DATATAG_POSITION
+
+    companion object: Mapper<InitialClientDatatagPosition>()
 }

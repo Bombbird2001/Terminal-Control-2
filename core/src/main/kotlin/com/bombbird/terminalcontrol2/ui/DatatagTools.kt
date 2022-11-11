@@ -148,6 +148,11 @@ fun addDatatagInputListeners(datatag: Datatag, aircraft: Aircraft) {
                 datatag.dragging = true
                 event?.handle()
             }
+
+            override fun dragStop(event: InputEvent?, x: Float, y: Float, pointer: Int) {
+                CLIENT_SCREEN?.sendAircraftDatatagPositionUpdate(aircraft, datatag.xOffset, datatag.yOffset, datatag.minimised)
+                event?.handle()
+            }
         })
         addChangeListener { _, _ ->
             if (aircraft.entity.has(WaitingTakeoff.mapper)) return@addChangeListener
