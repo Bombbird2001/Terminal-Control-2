@@ -9,6 +9,10 @@ import com.bombbird.terminalcontrol2.files.loadPlayerUUID
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.networking.*
 import com.bombbird.terminalcontrol2.screens.*
+import com.bombbird.terminalcontrol2.screens.settings.CustomWeatherSettings
+import com.bombbird.terminalcontrol2.screens.settings.GameSettings
+import com.bombbird.terminalcontrol2.screens.settings.MainSettings
+import com.bombbird.terminalcontrol2.screens.settings.TrafficSettings
 import com.esotericsoftware.kryonet.Client
 import com.esotericsoftware.kryonet.Connection
 import com.esotericsoftware.kryonet.Listener
@@ -42,6 +46,22 @@ class TerminalControl2 : KtxGame<KtxScreen>(clearScreen = false) {
                 } ?: handleIncomingRequestClient(gameClientScreen ?: return, obj)
             }
         })
+    }
+
+    /** Quits the current game running */
+    fun quitCurrentGame() {
+        // Quit the client, and if this client is also hosting the server it will be automatically closed
+        // as part of the radarScreen's disposal process
+        GAME.setScreen<MainMenu>()
+        // Send the resume signal before quitting game, so the server doesn't remain paused and unable to quit
+        gameClientScreen?.resumeGame()
+        gameClientScreen?.disposeSafely()
+        GAME.removeScreen<RadarScreen>()
+        gameClientScreen = null
+        GAME.removeScreen<MainSettings>()
+        GAME.removeScreen<GameSettings>()
+        GAME.removeScreen<CustomWeatherSettings>()
+        GAME.removeScreen<TrafficSettings>()
     }
 
     /**

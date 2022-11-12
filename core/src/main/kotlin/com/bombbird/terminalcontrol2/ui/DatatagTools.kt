@@ -215,7 +215,9 @@ private fun getMinimisedLabelText(entity: Entity): Array<String> {
     val recat = aircraftInfo.aircraftPerf.recat
     val alt = (radarData.altitude.altitudeFt / 100).roundToInt()
     val groundSpd = pxpsToKt(groundTrack.trackVectorPxps.len()).roundToInt()
-    val clearedAlt = if (entity.has(VisualCaptured.mapper)) "VIS" else latestClearance?.let { it.clearedAlt / 100 }?.toString() ?: ""
+    val clearedAlt = if (entity.has(VisualCaptured.mapper)) "VIS"
+    else if (entity.has(GlideSlopeCaptured.mapper)) "GS"
+    else latestClearance?.let { it.clearedAlt / 100 }?.toString() ?: ""
     val icaoType = aircraftInfo.icaoType
 
     labelText[0] = "$callsign/$recat"

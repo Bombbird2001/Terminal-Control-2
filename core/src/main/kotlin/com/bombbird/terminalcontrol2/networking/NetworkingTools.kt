@@ -38,6 +38,7 @@ fun registerClassesToKryo(kryo: Kryo?) {
         // Initial load classes
         register(RequestClientUUID::class.java)
         register(ClientUUIDData::class.java)
+        register(ConnectionError::class.java)
         register(ClearAllClientData::class.java)
         register(InitialAirspaceData::class.java)
         register(IndividualSectorData::class.java)
@@ -155,6 +156,12 @@ class RequestClientUUID
 data class ClientUUIDData(val uuid: String? = null)
 
 /**
+ * Class representing an error when a player is attempting to connect - this could be caused by a few different reasons,
+ * such as duplicate or missing UUID
+ */
+data class ConnectionError(val cause: String = "Unknown cause")
+
+/**
  * Class representing a request to the client to clear all currently data, such as objects stored in the game engine
  *
  * This should always be sent before initial loading data (those below) to ensure no duplicate objects become present
@@ -261,8 +268,10 @@ data class GameRunningStatus(val running: Boolean = true)
 fun handleIncomingRequestClient(rs: RadarScreen, obj: Any?) {
     rs.postRunnableAfterEngineUpdate(obj is IndividualSectorData) {
         if (obj is IndividualSectorData) println("IndividualSectorData scheduled")
-        (obj as? String)?.apply {
-            println(this)
+        (obj as? ConnectionError)?.apply {
+            // TODO error dialog
+            Log.info("NetworkingTools", "Connection failed - $cause")
+            GAME.quitCurrentGame()
         } ?: (obj as? FastUDPData)?.apply {
             aircraft.forEach {
                 rs.aircraft[it.icaoCallsign]?.apply { updateFromUDPData(it) }
@@ -471,9 +480,16 @@ fun handleIncomingRequestServer(gs: GameServer, connection: Connection, obj: Any
         gs.handleGameRunningRequest(obj.running)
     } ?: (obj as? ClientUUIDData)?.apply {
         // If the UUID is null or the map already contains the UUID, do not send the data
-        if (uuid == null) return
+        if (uuid == null) {
+            connection.sendTCP(ConnectionError("Missing player UUID"))
+            return
+        }
         val uuidObj = UUID.fromString(uuid)
-        if (gs.connectionUUIDMap.containsValue(uuidObj, false)) return
+        if (gs.connectionUUIDMap.containsValue(uuidObj, false)) {
+            Log.info("NetworkingTools", "UUID $uuid is already in game")
+            connection.sendTCP(ConnectionError("Player with same UUID already in server"))
+            return
+        }
         val currPlayerNo = gs.playerNo.incrementAndGet().toByte()
         gs.postRunnableAfterEngineUpdate {
             // Get data only after engine has completed this update to prevent threading issues
@@ -489,7 +505,7 @@ fun handleIncomingRequestServer(gs: GameServer, connection: Connection, obj: Any
                     aircraftArray[aircraftArray.size - itemsRemaining + it].getSerialisableObject()
                 }
                 itemsRemaining -= SERVER_AIRCRAFT_TCP_UDP_MAX_COUNT
-                gs.server.sendToAllTCP(InitialAircraftData(serialisedAircraftArray))
+                connection.sendTCP(InitialAircraftData(serialisedAircraftArray))
             }
             connection.sendTCP(AirportData(gs.airports.values().toArray().map { it.getSerialisableObject() }.toTypedArray()))
             val wptArray = gs.waypoints.values.toTypedArray()
