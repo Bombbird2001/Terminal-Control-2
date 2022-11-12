@@ -643,13 +643,7 @@ object DataFileTest: FunSpec() {
     private fun testWaypointLegStartEnd(routeLine: List<String>, start: Boolean) {
         if (start) {
             val firstWypt = routeLine.indexOfFirst { it == WYPT_LEG }
-            firstWypt shouldBeGreaterThan -1
-            val firstHdng = routeLine.indexOfFirst { it == HDNG_LEG }
-            firstHdng shouldBeGreaterThan firstWypt
-            val firstHold = routeLine.indexOfFirst { it == HOLD_LEG }
-            firstHold shouldBeGreaterThan firstWypt
-            val firstInitClimb = routeLine.indexOfFirst { it == INIT_CLIMB_LEG }
-            firstInitClimb shouldBeGreaterThan firstWypt
+            firstWypt shouldBe 0
         } else {
             val lastWypt = routeLine.lastIndexOf(WYPT_LEG)
             lastWypt shouldBeGreaterThan -1
