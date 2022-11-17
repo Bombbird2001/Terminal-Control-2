@@ -9,6 +9,7 @@ import com.bombbird.terminalcontrol2.navigation.Approach
 import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.navigation.SidStar
+import com.bombbird.terminalcontrol2.screens.MainMenu
 import com.bombbird.terminalcontrol2.screens.RadarScreen
 import com.bombbird.terminalcontrol2.traffic.*
 import com.bombbird.terminalcontrol2.ui.*
@@ -269,11 +270,9 @@ fun handleIncomingRequestClient(rs: RadarScreen, obj: Any?) {
     rs.postRunnableAfterEngineUpdate(obj is IndividualSectorData) {
         if (obj is IndividualSectorData) println("IndividualSectorData scheduled")
         (obj as? ConnectionError)?.apply {
-            // TODO error dialog
-            rs.showDialog(object: CustomDialog("Failed to connect", cause, "", "Ok") {
-                override fun result(`object`: Any?) { GAME.quitCurrentGame() }
-            })
             Log.info("NetworkingTools", "Connection failed - $cause")
+            GAME.quitCurrentGame()
+            GAME.getScreen<MainMenu>().showDialog(CustomDialog("Failed to connect", cause, "", "Ok"))
         } ?: (obj as? FastUDPData)?.apply {
             aircraft.forEach {
                 rs.aircraft[it.icaoCallsign]?.apply { updateFromUDPData(it) }

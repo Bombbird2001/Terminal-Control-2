@@ -4,6 +4,7 @@ import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.Texture
 import com.badlogic.gdx.scenes.scene2d.Actor
+import com.badlogic.gdx.scenes.scene2d.ui.Dialog
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.graphics.ScreenSize
 import com.bombbird.terminalcontrol2.ui.safeStage
@@ -16,7 +17,7 @@ import kotlin.math.max
  *
  * Should not be instantiated on its own, but rather extended from in other screen classes to implement their full functionality
  * */
-abstract class BasicUIScreen: KtxScreen {
+abstract class BasicUIScreen: KtxScreen, ShowsDialog {
     val stage = safeStage(GAME.batch)
     lateinit var container: KContainer<Actor>
 
@@ -29,6 +30,14 @@ abstract class BasicUIScreen: KtxScreen {
                 y = WORLD_HEIGHT / 2 - height * scaleY / 2
             }
         }
+    }
+
+    /**
+     * Overrides [ShowsDialog.showDialog] to show the dialog on [stage]
+     * @param dialog the dialog to show
+     */
+    override fun showDialog(dialog: Dialog) {
+        dialog.show(stage)
     }
 
     /** Sets [Gdx.input]'s inputProcessors to [stage] of this screen */

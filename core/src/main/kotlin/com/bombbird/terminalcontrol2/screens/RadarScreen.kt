@@ -12,7 +12,6 @@ import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.math.Polygon
 import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.scenes.scene2d.Actor
-import com.badlogic.gdx.scenes.scene2d.ui.Dialog
 import com.bombbird.terminalcontrol2.components.AircraftInfo
 import com.bombbird.terminalcontrol2.components.Datatag
 import com.bombbird.terminalcontrol2.components.FlightType
@@ -275,14 +274,6 @@ class RadarScreen(private val connectionHost: String?, airportToHost: String?, s
                 updateDatatagLineSpacing(datatag)
             }
         }
-    }
-
-    /**
-     * Shows the input dialog in the UI stage
-     * @param dialog the dialog to show
-     */
-    fun showDialog(dialog: Dialog) {
-        dialog.show(uiStage)
     }
 
     /**
