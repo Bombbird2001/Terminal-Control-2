@@ -270,8 +270,10 @@ fun handleIncomingRequestClient(rs: RadarScreen, obj: Any?) {
         if (obj is IndividualSectorData) println("IndividualSectorData scheduled")
         (obj as? ConnectionError)?.apply {
             // TODO error dialog
+            rs.showDialog(object: CustomDialog("Failed to connect", cause, "", "Ok") {
+                override fun result(`object`: Any?) { GAME.quitCurrentGame() }
+            })
             Log.info("NetworkingTools", "Connection failed - $cause")
-            GAME.quitCurrentGame()
         } ?: (obj as? FastUDPData)?.apply {
             aircraft.forEach {
                 rs.aircraft[it.icaoCallsign]?.apply { updateFromUDPData(it) }
