@@ -6,9 +6,10 @@ import com.badlogic.gdx.scenes.scene2d.ui.TextButton
 import com.badlogic.gdx.utils.Align
 import ktx.scene2d.Scene2DSkin
 
+/** Class for a custom dialog box; extend this class to  */
 open class CustomDialog(title: String, val text: String, private val negative: String, private val positive: String,
                         val height: Int = 500, val width: Int = 1200, private val fontScale: Float = 1f):
-    Dialog(title, WindowStyle(Scene2DSkin.defaultSkin["DialogWindow", WindowStyle::class.java])) {
+    Dialog(title, Scene2DSkin.defaultSkin["DialogWindow", WindowStyle::class.java]) {
     companion object {
         // Dialog constants
         const val DIALOG_NEGATIVE = 0

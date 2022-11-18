@@ -4,11 +4,10 @@ import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.math.GeometryUtils
 import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
+import com.bombbird.terminalcontrol2.global.SHOW_MVA_ALTITUDE
 import com.bombbird.terminalcontrol2.global.getEngine
 import com.esotericsoftware.minlog.Log
-import ktx.ashley.entity
-import ktx.ashley.get
-import ktx.ashley.with
+import ktx.ashley.*
 import kotlin.math.roundToInt
 
 /** Sector class that creates a sector entity with the required components for implementing an MVA or restricted area */
@@ -61,7 +60,17 @@ class MinAltSector(minAlt: Int?, polygonBoundary: ShortArray?, circleX: Short = 
                 yOffset = 0f
             }
             with<ConstantZoomSize>()
+            if (!SHOW_MVA_ALTITUDE) with<DoNotRenderLabel>()
         }
+    }
+
+    /**
+     * Sets the visibility of the MVA labels
+     * @param show Shows the label if true, else hides it
+     * */
+    fun setMVALabelVisibility(show: Boolean) {
+        if (show) entity.remove<DoNotRenderLabel>()
+        else entity += DoNotRenderLabel()
     }
 
     companion object {

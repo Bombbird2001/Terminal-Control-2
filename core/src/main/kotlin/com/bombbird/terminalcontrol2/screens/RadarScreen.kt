@@ -99,6 +99,9 @@ class RadarScreen(private val connectionHost: String?, airportToHost: String?, s
     // The primary TMA sector polygon without being split up into sub-sectors
     val primarySector = Polygon()
 
+    // Range ring entities
+    private val rangeRings = GdxArray<RangeRing>()
+
     // The current active configuration of polygons
     val sectors = GdxArray<Sector>(SECTOR_COUNT_SIZE)
     var playerSector: Byte = 0
@@ -273,6 +276,29 @@ class RadarScreen(private val connectionHost: String?, airportToHost: String?, s
                 updateDatatagStyle(datatag, flightType.type, false)
                 updateDatatagLineSpacing(datatag)
             }
+        }
+    }
+
+    /** Object initialization ot be called after the client received a ClearAllData request from server */
+    fun afterClearData() {
+        updateRangeRings()
+    }
+
+    /** Updates the range rings for the selected range ring interval; call after range ring interval is changed */
+    fun updateRangeRings() {
+        for (i in 0 until rangeRings.size) rangeRings[i].removeRing()
+        rangeRings.clear()
+        if (RANGE_RING_INTERVAL_NM == 0) return
+        for (i in 0..50 step RANGE_RING_INTERVAL_NM) {
+            if (i == 0) continue
+            rangeRings.add(RangeRing(i))
+        }
+    }
+
+    /** Updates the labels for the MVAs; call after MVA altitude display is changed */
+    fun updateMVADisplay() {
+        for (i in 0 until minAltSectors.size) {
+            minAltSectors[i].setMVALabelVisibility(SHOW_MVA_ALTITUDE)
         }
     }
 

@@ -19,7 +19,10 @@ data class RSSprite(var drawable: Drawable = BaseDrawable(), var width: Float = 
     companion object: Mapper<RSSprite>()
 }
 
-/** Component for rendering a generic label with position offsets on radarScreen, functions included to update text/style of underlying label */
+/**
+ * Component for rendering a generic label with position offsets on radarScreen, functions included to update text/style
+ * of underlying label
+ * */
 class GenericLabel(var xOffset: Float = 0f, var yOffset: Float = 0f): Component {
     val label: Label = Label("", Scene2DSkin.defaultSkin)
     companion object: Mapper<GenericLabel>()
@@ -31,6 +34,11 @@ class GenericLabel(var xOffset: Float = 0f, var yOffset: Float = 0f): Component 
     fun updateStyle(newStyle: String) {
         label.style = Scene2DSkin.defaultSkin.get(newStyle, LabelStyle::class.java)
     }
+}
+
+/** Component for storing multiple labels to render */
+class GenericLabels(var labels: Array<GenericLabel> = arrayOf()): Component {
+    companion object: Mapper<GenericLabels>()
 }
 
 /**
@@ -77,13 +85,13 @@ class RenderLast: Component {
 }
 
 /** Component for tagging generic shapes that should not be rendered for whatever reason */
-class DoNotRender: Component {
-    companion object: Mapper<DoNotRender>()
+class DoNotRenderShape: Component {
+    companion object: Mapper<DoNotRenderShape>()
 }
 
-/** Component for tagging labels that do not need to be shown (by default, all [GenericLabel]s are rendered) */
-class HideLabel: Component {
-    companion object: Mapper<HideLabel>()
+/** Component for tagging [GenericLabel]s, [GenericLabels] that should not be rendered for whatever reason */
+class DoNotRenderLabel: Component {
+    companion object: Mapper<DoNotRenderLabel>()
 }
 
 /**

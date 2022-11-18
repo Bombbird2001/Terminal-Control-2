@@ -46,7 +46,7 @@ class ApproachNormalOperatingZone(posX: Float, posY: Float, appHdg: Short, priva
             with<SRColor> {
                 color = Color.GREEN
             }
-            with<DoNotRender>()
+            with<DoNotRenderShape>()
         }
     }
 
@@ -119,7 +119,7 @@ class DepartureNormalOperatingZone(posX: Float, posY: Float, appHdg: Short, priv
             with<SRColor> {
                 color = Color.CYAN
             }
-            with<DoNotRender>()
+            with<DoNotRenderShape>()
         }
     }
 
@@ -196,7 +196,7 @@ class NoTransgressionZone(posX: Float, posY: Float, appHdg: Short, private val w
             with<SRColor> {
                 color = Color.RED
             }
-            with<DoNotRender>()
+            with<DoNotRenderShape>()
         }
     }
 

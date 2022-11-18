@@ -173,5 +173,9 @@ class DisplaySettings: BaseSettings() {
             }
         }
         savePlayerSettings()
+        CLIENT_SCREEN?.apply {
+            updateRangeRings()
+            updateMVADisplay()
+        }
     }
 }

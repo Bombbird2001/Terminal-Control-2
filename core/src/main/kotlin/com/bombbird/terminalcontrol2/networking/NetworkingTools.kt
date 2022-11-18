@@ -286,7 +286,8 @@ fun handleIncomingRequestClient(rs: RadarScreen, obj: Any?) {
             rs.updatedWaypointMapping.clear()
             rs.publishedHolds.clear()
             rs.minAltSectors.clear()
-            GAME.engine.removeAllEntities()
+            getEngine(true).removeAllEntities()
+            rs.afterClearData()
         } ?: (obj as? InitialAirspaceData)?.apply {
             MAG_HDG_DEV = magHdgDev
             MIN_ALT = minAlt
@@ -298,7 +299,7 @@ fun handleIncomingRequestClient(rs: RadarScreen, obj: Any?) {
             // Remove all existing sector mapping and entities
             println("Individual sector received")
             rs.sectors.clear()
-            GAME.engine.removeAllEntities(sectorFamily)
+            getEngine(true).removeAllEntities(sectorFamily)
             rs.playerSector = obj.assignedSectorId
             sectors.onEach { sector -> rs.sectors.add(Sector.fromSerialisedObject(sector)) }
             rs.primarySector.vertices = primarySector

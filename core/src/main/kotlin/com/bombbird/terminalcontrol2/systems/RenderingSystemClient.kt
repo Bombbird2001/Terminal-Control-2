@@ -33,13 +33,13 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
                             private val stage: Stage, private val constZoomStage: Stage, private val uiStage: Stage,
                             private val uiPane: UIPane): EntitySystem() {
     private val lineArrayFamily: Family = allOf(GLineArray::class, SRColor::class)
-        .exclude(DoNotRender::class.java).get()
+        .exclude(DoNotRenderShape::class.java).get()
     private val polygonFamily: Family = allOf(GPolygon::class, SRColor::class)
-        .exclude(RenderLast::class, DoNotRender::class).get()
+        .exclude(RenderLast::class, DoNotRenderShape::class).get()
     private val polygonLastFamily: Family = allOf(GPolygon::class, SRColor::class, RenderLast::class)
-        .exclude(DoNotRender::class).get()
+        .exclude(DoNotRenderShape::class).get()
     private val circleFamily: Family = allOf(Position::class, GCircle::class, SRColor::class)
-        .exclude(SRConstantZoomSize::class, DoNotRender::class).get()
+        .exclude(SRConstantZoomSize::class, DoNotRenderShape::class).get()
     private val runwayFamily: Family = allOf(RunwayInfo::class, SRColor::class).get()
     private val locFamily: Family = allOf(Position::class, Localizer::class, Direction::class, ApproachInfo::class).get()
     private val trajectoryFamily: Family = allOf(RadarData::class, Controllable::class, SRColor::class)
@@ -50,10 +50,15 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
     private val constCircleFamily: Family = allOf(Position::class, GCircle::class, SRColor::class, SRConstantZoomSize::class).get()
     private val rwyLabelFamily: Family = allOf(GenericLabel::class, RunwayInfo::class, RunwayLabel::class).get()
     private val labelFamily: Family = allOf(GenericLabel::class, Position::class)
-        .exclude(ConstantZoomSize::class).get()
+        .exclude(ConstantZoomSize::class, DoNotRenderLabel::class).get()
+    private val labelArrayFamily: Family = allOf(GenericLabels::class, Position::class)
+        .exclude(ConstantZoomSize::class, DoNotRenderLabel::class).get()
     private val aircraftFamily: Family = allOf(AircraftInfo::class, RadarData::class, RSSprite::class)
         .exclude(WaitingTakeoff::class).get()
-    private val constSizeLabelFamily: Family = allOf(GenericLabel::class, Position::class, ConstantZoomSize::class).get()
+    private val constSizeLabelFamily: Family = allOf(GenericLabel::class, Position::class, ConstantZoomSize::class)
+        .exclude(DoNotRenderLabel::class).get()
+    private val constSizeLabelArrayFamily: Family = allOf(GenericLabels::class, Position::class, ConstantZoomSize::class)
+        .exclude(DoNotRenderLabel::class).get()
     private val datatagFamily: Family = allOf(Datatag::class, RadarData::class)
         .exclude(WaitingTakeoff::class).get()
     private val contactDotFamily: Family = allOf(ContactNotification::class, RadarData::class, FlightType::class).get()
@@ -367,6 +372,22 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
             }
         }
 
+        // Render array of generic labels (non-constant size)
+        val labelArray = engine.getEntitiesFor(labelArrayFamily)
+        for (i in 0 until labelArray.size()) {
+            labelArray[i]?.apply {
+                val pos = get(Position.mapper) ?: return@apply
+                val genericLabels = get(GenericLabels.mapper) ?: return@apply
+                for (j in 0 until genericLabels.labels.size) {
+                    val labelInfo = genericLabels.labels[j]
+                    labelInfo.label.apply {
+                        setPosition(pos.x + labelInfo.xOffset, pos.y + labelInfo.yOffset)
+                        draw(GAME.batch, 1f)
+                    }
+                }
+            }
+        }
+
         // Render aircraft blip
         val blipSize = if (camZoom <= 1) AIRCRAFT_BLIP_LENGTH_PX_ZOOM_1 * camZoom else AIRCRAFT_BLIP_LENGTH_PX_ZOOM_1 + (camZoom - 1) * AIRCRAFT_BLIP_LENGTH_CHANGE_PX_PER_ZOOM
         val allAircraft = engine.getEntitiesFor(aircraftFamily)
@@ -392,8 +413,24 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
             }
         }
 
+        // Render generic constant size label arrays
+        val constLabelArray = engine.getEntitiesFor(constSizeLabelArrayFamily)
+        for (i in 0 until constLabelArray.size()) {
+            constLabelArray[i].apply {
+                val pos = get(Position.mapper) ?: return@apply
+                val genericLabels = get(GenericLabels.mapper) ?: return@apply
+                for (j in 0 until genericLabels.labels.size) {
+                    val labelInfo = genericLabels.labels[j]
+                    labelInfo.label.apply {
+                        setPosition((pos.x - camX) / camZoom + labelInfo.xOffset, (pos.y - camY) / camZoom + labelInfo.yOffset)
+                        draw(GAME.batch, 1f)
+                    }
+                }
+            }
+        }
+
         // Render conflicting min alt sector labels in red
-        CLIENT_SCREEN?.also {
+        if (SHOW_MVA_ALTITUDE) CLIENT_SCREEN?.also {
             for (i in 0 until it.conflicts.size) {
                 it.conflicts[i]?.apply {
                     if (minAltSectorIndex != null) {

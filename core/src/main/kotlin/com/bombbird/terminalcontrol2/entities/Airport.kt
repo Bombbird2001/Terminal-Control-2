@@ -400,20 +400,20 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
                     rwyObj.entity.let { rwy ->
                         rwy.remove<ActiveLanding>()
                         rwy.remove<ActiveTakeoff>()
-                        rwy[ApproachNOZ.mapper]?.appNoz?.entity?.plusAssign(DoNotRender())
-                        rwy[DepartureNOZ.mapper]?.depNoz?.entity?.plusAssign(DoNotRender())
+                        rwy[ApproachNOZ.mapper]?.appNoz?.entity?.plusAssign(DoNotRenderShape())
+                        rwy[DepartureNOZ.mapper]?.depNoz?.entity?.plusAssign(DoNotRenderShape())
                     }
                 }
                 for (i in 0 until it.arrRwys.size) {
                     rwyMap[it.arrRwys[i]?.entity?.get(RunwayInfo.mapper)?.rwyId]?.entity?.let { rwy ->
                         rwy += ActiveLanding()
-                        rwy[ApproachNOZ.mapper]?.appNoz?.entity?.remove<DoNotRender>()
+                        rwy[ApproachNOZ.mapper]?.appNoz?.entity?.remove<DoNotRenderShape>()
                     }
                 }
                 for (i in 0 until it.depRwys.size) {
                     rwyMap[it.depRwys[i]?.entity?.get(RunwayInfo.mapper)?.rwyId]?.entity?.let {  rwy ->
                         rwy += ActiveTakeoff()
-                        rwy[DepartureNOZ.mapper]?.depNoz?.entity?.remove<DoNotRender>()
+                        rwy[DepartureNOZ.mapper]?.depNoz?.entity?.remove<DoNotRenderShape>()
                     }
                 }
                 it.setNTZVisibility(true)

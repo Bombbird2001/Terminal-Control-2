@@ -1,6 +1,6 @@
 package com.bombbird.terminalcontrol2.traffic
 
-import com.bombbird.terminalcontrol2.components.DoNotRender
+import com.bombbird.terminalcontrol2.components.DoNotRenderShape
 import com.bombbird.terminalcontrol2.components.RunwayInfo
 import com.bombbird.terminalcontrol2.components.RunwayWindComponents
 import com.bombbird.terminalcontrol2.entities.Airport
@@ -61,8 +61,8 @@ class RunwayConfiguration(val id: Byte, override val timeRestriction: Byte): Com
     fun setNTZVisibility(show: Boolean) {
         for (i in 0 until ntzs.size) {
             ntzs[i]?.entity?.apply {
-                if (show) remove<DoNotRender>()
-                else this += DoNotRender()
+                if (show) remove<DoNotRenderShape>()
+                else this += DoNotRenderShape()
             }
         }
     }
