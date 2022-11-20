@@ -51,6 +51,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
         with<CommandTarget>()
         with<AffectedByWind>()
         with<InitialClientDatatagPosition>()
+        with<TrailInfo>()
         if (onClient) {
             with<RadarData> {
                 position.x = posX

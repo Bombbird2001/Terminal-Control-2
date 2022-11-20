@@ -1,9 +1,7 @@
 package com.bombbird.terminalcontrol2.json
 
 import com.badlogic.gdx.math.CumulativeDistribution
-import com.bombbird.terminalcontrol2.components.AirportInfo
-import com.bombbird.terminalcontrol2.components.RandomMetarInfo
-import com.bombbird.terminalcontrol2.components.RunwayInfo
+import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.GAME
 import com.squareup.moshi.FromJson
 import com.squareup.moshi.JsonClass
@@ -96,5 +94,23 @@ object RandomMetarDistributionAdapter {
         val dist = CumulativeDistribution<Short>()
         distJson.forEach { dist.add(it.value, it.interval) }
         return dist
+    }
+}
+
+/** Data class storing data for each trail dot position for the aircraft */
+@JsonClass(generateAdapter = true)
+data class TrailInfoJSON(val trails: List<Position>)
+
+/** Adapter object for serialization between [TrailInfo] and [TrailInfoJSON] */
+object TrailInfoAdapter {
+    @ToJson
+    fun toJson(trailInfo: TrailInfo) {
+        val trails = ArrayList<Position>()
+        val trailInfoJSON = TrailInfoJSON()
+    }
+
+    @FromJson
+    fun fromJson(trailInfoJSON: TrailInfoJSON): TrailInfo {
+
     }
 }

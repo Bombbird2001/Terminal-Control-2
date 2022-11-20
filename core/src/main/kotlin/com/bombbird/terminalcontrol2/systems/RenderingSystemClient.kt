@@ -53,7 +53,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         .exclude(ConstantZoomSize::class, DoNotRenderLabel::class).get()
     private val labelArrayFamily: Family = allOf(GenericLabels::class, Position::class)
         .exclude(ConstantZoomSize::class, DoNotRenderLabel::class).get()
-    private val aircraftFamily: Family = allOf(AircraftInfo::class, RadarData::class, RSSprite::class)
+    private val aircraftFamily: Family = allOf(AircraftInfo::class, RadarData::class, RSSprite::class, TrailInfo::class, FlightType::class)
         .exclude(WaitingTakeoff::class).get()
     private val constSizeLabelFamily: Family = allOf(GenericLabel::class, Position::class, ConstantZoomSize::class)
         .exclude(DoNotRenderLabel::class).get()
@@ -388,13 +388,30 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
             }
         }
 
-        // Render aircraft blip
-        val blipSize = if (camZoom <= 1) AIRCRAFT_BLIP_LENGTH_PX_ZOOM_1 * camZoom else AIRCRAFT_BLIP_LENGTH_PX_ZOOM_1 + (camZoom - 1) * AIRCRAFT_BLIP_LENGTH_CHANGE_PX_PER_ZOOM
+        // Render aircraft blip, aircraft trail if needed
+        val blipSize = if (camZoom <= 1) AIRCRAFT_BLIP_LENGTH_PX_ZOOM_1 * camZoom
+        else AIRCRAFT_BLIP_LENGTH_PX_ZOOM_1 + (camZoom - 1) * AIRCRAFT_BLIP_LENGTH_CHANGE_PX_PER_ZOOM
+        val trailSize = if (camZoom <= 1) AIRCRAFT_TRAIL_LENGTH_PX_ZOOM_1 * camZoom
+        else AIRCRAFT_TRAIL_LENGTH_PX_ZOOM_1 + (camZoom - 1) * AIRCRAFT_TRAIL_LENGTH_CHANGE_PX_PER_ZOOM
         val allAircraft = engine.getEntitiesFor(aircraftFamily)
         for (i in 0 until allAircraft.size()) {
             allAircraft[i]?.apply {
+                val trailInfo = get(TrailInfo.mapper) ?: return@apply
                 val rsSprite = get(RSSprite.mapper) ?: return@apply
                 val radarData = get(RadarData.mapper) ?: return@apply
+                val flightType = get(FlightType.mapper) ?: return@apply
+                for (j in 0 until trailInfo.positions.size) {
+                    val pos = trailInfo.positions[j]
+                    val textureToDraw = when (flightType.type) {
+                        FlightType.ARRIVAL -> dotBlue
+                        FlightType.DEPARTURE -> dotGreen
+                        else -> {
+                            Log.info("RenderingSystem", "Invalid flight type ${flightType.type} for trail dot rendering")
+                            null
+                        }
+                    }
+                    GAME.batch.draw(textureToDraw, pos.x - trailSize / 2, pos.y - trailSize / 2, trailSize, trailSize)
+                }
                 rsSprite.drawable.draw(GAME.batch, radarData.position.x - blipSize / 2, radarData.position.y - blipSize / 2, blipSize, blipSize)
             }
         }

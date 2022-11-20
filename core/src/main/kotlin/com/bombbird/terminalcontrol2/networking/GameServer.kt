@@ -162,6 +162,7 @@ class GameServer {
         engine.addSystem(ControlStateSystem())
         engine.addSystem(ControlStateSystemInterval())
         engine.addSystem(TrafficSystemInterval())
+        engine.addSystem(DataSystem())
 
         if (saveId != null) loadSave(this, saveId)
         loadWorldData(mainName, this)
@@ -488,6 +489,15 @@ class GameServer {
     fun sendTrafficSettings() {
         server.sendToAllTCP(TrafficSettingsData(trafficMode, trafficValue,
             getArrivalClosedAirports(), getDepartureClosedAirports()))
+    }
+
+    /**
+     * Sends the trail dot updates for each aircraft
+     * @param trails the array containing trail position data for each aircraft
+     */
+    fun sendAircraftTrailDotUpdate(trails: GdxArray<Pair<String, Position>>) {
+        val trailArray = trails.toArray().map { TrailDotData(it.first, it.second.x, it.second.y) }.toTypedArray()
+        server.sendToAllTCP(AllTrailDotData(trailArray))
     }
 
     /**

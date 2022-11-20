@@ -29,6 +29,8 @@ const val RWY_WIDTH_PX_ZOOM_1 = 5f
 const val RWY_WIDTH_CHANGE_PX_PER_ZOOM = 3f
 const val AIRCRAFT_BLIP_LENGTH_PX_ZOOM_1 = 20f
 const val AIRCRAFT_BLIP_LENGTH_CHANGE_PX_PER_ZOOM = 4f
+const val AIRCRAFT_TRAIL_LENGTH_PX_ZOOM_1 = 5f
+const val AIRCRAFT_TRAIL_LENGTH_CHANGE_PX_PER_ZOOM = 1f
 
 /** Physics */
 const val MAX_VERT_ACC = 0.25f * GRAVITY_ACCELERATION_MPS2
@@ -119,3 +121,6 @@ const val RUNWAY_SIZE = 6
 
 /** Zoom threshold to switch between small and large datatag fonts */
 const val DATATAG_ZOOM_THRESHOLD = 1f
+
+/** Trail dot update rate */
+const val TRAIL_DOT_UPDATE_INTERVAL_S = 10

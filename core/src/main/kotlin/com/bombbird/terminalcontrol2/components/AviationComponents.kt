@@ -3,6 +3,7 @@ package com.bombbird.terminalcontrol2.components
 import com.badlogic.ashley.core.Component
 import com.badlogic.gdx.math.CumulativeDistribution
 import com.badlogic.gdx.math.Vector2
+import com.badlogic.gdx.utils.Queue
 import com.bombbird.terminalcontrol2.entities.Airport
 import com.bombbird.terminalcontrol2.json.BaseComponentJSONInterface
 import com.bombbird.terminalcontrol2.utilities.AircraftTypeData
@@ -121,4 +122,11 @@ data class DepartureAirport(var arptId: Byte, var rwyId: Byte): Component, BaseC
     override val componentType = BaseComponentJSONInterface.ComponentType.DEPARTURE_AIRPORT
 
     companion object: Mapper<DepartureAirport>()
+}
+
+/** Component for tagging aircraft trail positions */
+data class TrailInfo(val positions: Queue<Position> = Queue()): Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.TRAIL_INFO
+
+    companion object: Mapper<TrailInfo>()
 }

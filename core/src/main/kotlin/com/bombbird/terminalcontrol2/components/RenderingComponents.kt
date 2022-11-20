@@ -11,19 +11,12 @@ import com.badlogic.gdx.utils.Timer
 import com.bombbird.terminalcontrol2.json.BaseComponentJSONInterface
 import com.squareup.moshi.JsonClass
 import ktx.ashley.Mapper
-import ktx.collections.GdxArray
 import ktx.math.ImmutableVector2
 import ktx.scene2d.Scene2DSkin
 
 /** Component for rendering a sprite/drawable on radarScreen */
 data class RSSprite(var drawable: Drawable = BaseDrawable(), var width: Float = 0f, var height: Float = 0f): Component {
     companion object: Mapper<RSSprite>()
-}
-
-/** Component for rendering the same sprite/drawable on radarScreen at different positions */
-data class RSSpriteMultiple(var drawable: Drawable = BaseDrawable(), var width: Float = 0f, var height: Float = 0f,
-                            val positions: GdxArray<Position> = GdxArray()): Component {
-    companion object: Mapper<RSSpriteMultiple>()
 }
 
 /**

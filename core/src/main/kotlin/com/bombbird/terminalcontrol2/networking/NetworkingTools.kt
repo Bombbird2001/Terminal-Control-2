@@ -141,6 +141,9 @@ fun registerClassesToKryo(kryo: Kryo?) {
         register(ActiveRunwayUpdateData::class.java)
         register(ScoreData::class.java)
         register(TrafficSettingsData::class.java)
+        register(TrailDotData::class.java)
+        register(Array<TrailDotData>::class.java)
+        register(AllTrailDotData::class.java)
 
     } ?: Log.info("NetworkingTools", "Null kryo passed, unable to register classes")
 }
@@ -260,6 +263,12 @@ class TrafficSettingsData(val trafficMode: Byte = TrafficMode.NORMAL, val traffi
 
 /** Class representing data sent on a client request to pause/run the game */
 data class GameRunningStatus(val running: Boolean = true)
+
+/** Class representing data sent from server to clients to add a trail dot to the aircraft */
+data class TrailDotData(val callsign: String = "", val posX: Float = 0f, val posY: Float = 0f)
+
+/** Class representing all trail dot data to be sent */
+class AllTrailDotData(val trails: Array<TrailDotData> = arrayOf())
 
 /**
  * Handles an incoming request from the server to client, and performs the appropriate actions
@@ -460,6 +469,10 @@ fun handleIncomingRequestClient(rs: RadarScreen, obj: Any?) {
                 obj.arrivalClosed.forEach { id -> it.airports[id]?.entity?.plusAssign(ArrivalClosed()) }
                 obj.departureClosed.forEach { id -> it.airports[id]?.entity?.plusAssign(DepartureInfo(closed = true)) }
             }
+        } ?: (obj as? AllTrailDotData)?.apply {
+            CLIENT_SCREEN?.also { trails.forEach { trail ->
+                it.aircraft[trail.callsign].entity[TrailInfo.mapper]?.positions?.addFirst(Position(trail.posX, trail.posY))
+            }}
         }
     }
 }
