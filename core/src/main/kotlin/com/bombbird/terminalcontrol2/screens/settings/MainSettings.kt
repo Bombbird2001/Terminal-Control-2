@@ -11,7 +11,9 @@ import ktx.scene2d.table
 import ktx.scene2d.textButton
 
 /** The parent settings screen that allows the user to select the subcategory of settings they wish to modify */
-class MainSettings(prevScreen: KtxScreen): BasicUIScreen() {
+class MainSettings: BasicUIScreen() {
+    lateinit var prevScreen: KtxScreen
+
     init {
         stage.actors {
             // UI Container

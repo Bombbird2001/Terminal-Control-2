@@ -27,7 +27,7 @@ class PauseScreen: BasicUIScreen() {
                         }
                     textButton("Settings", "PauseScreen").cell(padRight = 20f, width = BUTTON_WIDTH_MEDIUM, height = BUTTON_HEIGHT_BIG)
                         .addChangeListener { _, _ ->
-                            if (!GAME.containsScreen<MainSettings>()) GAME.addScreen(MainSettings(this@PauseScreen))
+                            GAME.getScreen<MainSettings>().prevScreen = this@PauseScreen
                             GAME.setScreen<MainSettings>()
                         }
                     textButton("Save & Quit", "PauseScreen").cell(width = BUTTON_WIDTH_MEDIUM, height = BUTTON_HEIGHT_BIG)

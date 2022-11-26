@@ -13,9 +13,6 @@ import com.bombbird.terminalcontrol2.screens.settings.CustomWeatherSettings
 import com.bombbird.terminalcontrol2.screens.settings.GameSettings
 import com.bombbird.terminalcontrol2.screens.settings.MainSettings
 import com.bombbird.terminalcontrol2.screens.settings.TrafficSettings
-import com.esotericsoftware.kryonet.Client
-import com.esotericsoftware.kryonet.Connection
-import com.esotericsoftware.kryonet.Listener
 import kotlinx.coroutines.launch
 import ktx.app.KtxGame
 import ktx.app.KtxScreen
@@ -36,17 +33,7 @@ class TerminalControl2 : KtxGame<KtxScreen>(clearScreen = false) {
     var gameServer: GameServer? = null
     var gameClientScreen: RadarScreen? = null
     val gameClientDiscoveryHandler = GameClientDiscoveryHandler()
-    var gameClient = Client(CLIENT_WRITE_BUFFER_SIZE, CLIENT_READ_BUFFER_SIZE).apply {
-        setDiscoveryHandler(gameClientDiscoveryHandler)
-        addListener(object: Listener {
-            override fun received(connection: Connection, obj: Any?) {
-                if (obj != null && obj is IndividualSectorData) println("Handling ${obj::class.simpleName}")
-                (obj as? RequestClientUUID)?.apply {
-                    connection.sendTCP(ClientUUIDData(uuid.toString()))
-                } ?: handleIncomingRequestClient(gameClientScreen ?: return, obj)
-            }
-        })
-    }
+    val gameClient = getGameClientInstance(gameClientDiscoveryHandler)
 
     /** Quits the current game running */
     fun quitCurrentGame() {
@@ -58,7 +45,6 @@ class TerminalControl2 : KtxGame<KtxScreen>(clearScreen = false) {
         gameClientScreen?.disposeSafely()
         GAME.removeScreen<RadarScreen>()
         gameClientScreen = null
-        GAME.removeScreen<MainSettings>()
         GAME.removeScreen<GameSettings>()
         GAME.removeScreen<CustomWeatherSettings>()
         GAME.removeScreen<TrafficSettings>()
@@ -93,6 +79,7 @@ class TerminalControl2 : KtxGame<KtxScreen>(clearScreen = false) {
             addScreen(JoinGame())
             addScreen(LoadGame())
             addScreen(PauseScreen())
+            addScreen(MainSettings())
             setScreen<MainMenu>()
         }
 

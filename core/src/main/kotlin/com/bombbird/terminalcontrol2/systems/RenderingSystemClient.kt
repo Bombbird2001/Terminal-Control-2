@@ -570,7 +570,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
                                 null
                             }
                         }
-                        if (textureToDraw != null) GAME.batch.draw(textureToDraw, intersectionVector.x - 10, intersectionVector.y - 10)
+                        if (textureToDraw != null) GAME.batch.draw(textureToDraw, intersectionVector.x - 7, intersectionVector.y - 7, 14f, 14f)
                     }
                 }
             }

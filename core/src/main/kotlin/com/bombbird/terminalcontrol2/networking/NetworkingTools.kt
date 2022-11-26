@@ -13,7 +13,9 @@ import com.bombbird.terminalcontrol2.traffic.*
 import com.bombbird.terminalcontrol2.ui.*
 import com.bombbird.terminalcontrol2.utilities.*
 import com.esotericsoftware.kryo.Kryo
+import com.esotericsoftware.kryonet.Client
 import com.esotericsoftware.kryonet.Connection
+import com.esotericsoftware.kryonet.Listener
 import com.esotericsoftware.minlog.Log
 import ktx.ashley.*
 import java.util.*
@@ -144,11 +146,28 @@ fun registerClassesToKryo(kryo: Kryo?) {
 }
 
 /**
+ * Gets an instance of the game client for connection to server
+ * @return the [Client] object
+ */
+fun getGameClientInstance(gameClientDiscoveryHandler: GameClientDiscoveryHandler): Client {
+    return Client(CLIENT_WRITE_BUFFER_SIZE, CLIENT_READ_BUFFER_SIZE).apply {
+        setDiscoveryHandler(gameClientDiscoveryHandler)
+        addListener(object: Listener {
+            override fun received(connection: Connection, obj: Any?) {
+                (obj as? RequestClientUUID)?.apply {
+                    connection.sendTCP(ClientUUIDData(uuid.toString()))
+                } ?: handleIncomingRequestClient(GAME.gameClientScreen ?: return, obj)
+            }
+        })
+    }
+}
+
+/**
  * Handles an incoming request from the server to client, and performs the appropriate actions
  * @param rs the [RadarScreen] to apply changes to
  * @param obj the incoming data object whose class should have been registered to [Kryo]
  * */
-fun handleIncomingRequestClient(rs: RadarScreen, obj: Any?) {
+private fun handleIncomingRequestClient(rs: RadarScreen, obj: Any?) {
     if (obj !is ClientReceive) return
     if (obj is IndividualSectorData) println("IndividualSectorData scheduled")
     rs.postRunnableAfterEngineUpdate(obj is IndividualSectorData) {
