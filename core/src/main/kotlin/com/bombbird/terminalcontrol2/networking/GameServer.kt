@@ -134,6 +134,8 @@ class GameServer {
     var landed = 0
     var departed = 0
 
+    var trailDotTimer = 0f
+
     /** Game specific settings */
     var weatherMode = WEATHER_LIVE
     var emergencyRate = EMERGENCY_LOW

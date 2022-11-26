@@ -38,6 +38,7 @@ data class GameServerSave(
     val nightModeStart: Int,
     val nightModeEnd: Int,
     val useRecat: Boolean,
+    val trailDotTimer: Float,
     val aircraft: List<Aircraft>,
     val airports: List<Airport>,
     val waypoints: List<Waypoint>
@@ -61,7 +62,7 @@ fun saveGame(gs: GameServer) {
     // Save main game information
     val saveObject = GameServerSave(gs.mainName, gs.arrivalSpawnTimerS, gs.previousArrivalOffsetS, gs.trafficValue,
         gs.trafficMode, gs.score, gs.highScore, gs.landed, gs.departed, gs.weatherMode, gs.emergencyRate, gs.stormsDensity,
-        gs.gameSpeed, gs.nightModeStart, gs.nightModeEnd, gs.useRecat,
+        gs.gameSpeed, gs.nightModeStart, gs.nightModeEnd, gs.useRecat, gs.trailDotTimer,
         gs.aircraft.values().toList(), gs.airports.values().toList(), gs.waypoints.values.toList())
     val saveFolderHandle = getExtDir("Saves") ?: return
     if (!saveFolderHandle.exists()) saveFolderHandle.mkdirs()
@@ -93,6 +94,7 @@ fun loadSave(gs: GameServer, saveId: Int) {
     val saveHandle = saveFolderHandle.child("${saveId}.json")
     if (!saveHandle.exists()) return
     val saveObject = moshi.adapter<GameServerSave>().fromJson(saveHandle.readString()) ?: return
+    setGameServerFields(gs, saveObject)
     saveObject.aircraft.forEach {
         val callsign = it.entity[AircraftInfo.mapper]?.icaoCallsign ?: return@forEach
         gs.aircraft[callsign] = it
@@ -111,4 +113,28 @@ fun loadSave(gs: GameServer, saveId: Int) {
         for (point in QueueIterator(wakeTrail.wakeZones)) point.second?.let { zone -> trafficSystem.addWakeZone(zone) }
     }
     runDelayedEntityRetrieval()
+}
+
+/**
+ * Sets the individual fields in the gameServer from the save
+ * @param gs the [GameServer] to set
+ * @param save the [GameServerSave] object to load from
+ * */
+private fun setGameServerFields(gs: GameServer, save: GameServerSave) {
+    gs.arrivalSpawnTimerS = save.arrivalSpawnTimerS
+    gs.previousArrivalOffsetS = save.previousArrivalOffsetS
+    gs.trafficValue = save.trafficValue
+    gs.trafficMode = save.trafficMode
+    gs.score = save.score
+    gs.highScore = save.highScore
+    gs.landed = save.landed
+    gs.departed = save.departed
+    gs.weatherMode = save.weatherMode
+    gs.emergencyRate = save.emergencyRate
+    gs.stormsDensity = save.stormsDensity
+    gs.gameSpeed = save.gameSpeed
+    gs.nightModeStart = save.nightModeStart
+    gs.nightModeEnd = save.nightModeEnd
+    gs.useRecat = save.useRecat
+    gs.trailDotTimer = save.trailDotTimer
 }

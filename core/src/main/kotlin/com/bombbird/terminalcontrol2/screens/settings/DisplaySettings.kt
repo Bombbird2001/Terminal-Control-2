@@ -107,10 +107,10 @@ class DisplaySettings: BaseSettings() {
         trajectorySelectBox.selected = if (TRAJECTORY_DURATION_S == 0) OFF else "$TRAJECTORY_DURATION_S$SECONDS_SUFFIX"
         val removeTrailingZeroes = "\\.?0+$".toRegex()
         radarSweepSelectBox.selected = "${RADAR_REFRESH_INTERVAL_S.toString().replace(removeTrailingZeroes, "")}$SECONDS_SUFFIX"
-        aircraftTrailSelectBox.selected = when (TRAIL_DURATION_S){
+        aircraftTrailSelectBox.selected = when (TRAIL_DURATION_S) {
             0 -> OFF
             Int.MAX_VALUE -> ALL
-            else -> "$TRAJECTORY_DURATION_S$SECONDS_SUFFIX"
+            else -> "$TRAIL_DURATION_S$SECONDS_SUFFIX"
         }
         uncontrolledTrailSelectBox.selected = when (SHOW_UNCONTROLLED_AIRCRAFT_TRAIL) {
             UNCONTROLLED_AIRCRAFT_TRAIL_OFF -> OFF

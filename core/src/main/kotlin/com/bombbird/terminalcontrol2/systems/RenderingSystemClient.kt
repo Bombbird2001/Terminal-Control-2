@@ -22,6 +22,7 @@ import ktx.ashley.*
 import ktx.collections.GdxArray
 import ktx.math.*
 import ktx.scene2d.Scene2DSkin
+import kotlin.math.min
 import kotlin.math.sqrt
 
 /**
@@ -53,7 +54,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         .exclude(ConstantZoomSize::class, DoNotRenderLabel::class).get()
     private val labelArrayFamily: Family = allOf(GenericLabels::class, Position::class)
         .exclude(ConstantZoomSize::class, DoNotRenderLabel::class).get()
-    private val aircraftFamily: Family = allOf(AircraftInfo::class, RadarData::class, RSSprite::class, TrailInfo::class, FlightType::class)
+    private val aircraftFamily: Family = allOf(AircraftInfo::class, RadarData::class, RSSprite::class, TrailInfo::class, FlightType::class, Controllable::class)
         .exclude(WaitingTakeoff::class).get()
     private val constSizeLabelFamily: Family = allOf(GenericLabel::class, Position::class, ConstantZoomSize::class)
         .exclude(DoNotRenderLabel::class).get()
@@ -400,8 +401,15 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
                 val rsSprite = get(RSSprite.mapper) ?: return@apply
                 val radarData = get(RadarData.mapper) ?: return@apply
                 val flightType = get(FlightType.mapper) ?: return@apply
-                for (j in 0 until trailInfo.positions.size) {
-                    val pos = trailInfo.positions[j]
+                val controllable = get(Controllable.mapper) ?: return@apply
+                run {
+                    // If player has turned off trail for uncontrolled aircraft
+                    if (SHOW_UNCONTROLLED_AIRCRAFT_TRAIL == UNCONTROLLED_AIRCRAFT_TRAIL_OFF
+                        && controllable.sectorId != CLIENT_SCREEN?.playerSector) return@run
+                    // If player enables trail for uncontrolled aircraft only when selected
+                    if (SHOW_UNCONTROLLED_AIRCRAFT_TRAIL == UNCONTROLLED_AIRCRAFT_TRAIL_SELECTED
+                        && controllable.sectorId != CLIENT_SCREEN?.playerSector
+                        && CLIENT_SCREEN?.selectedAircraft?.entity != this) return@run
                     val textureToDraw = when (flightType.type) {
                         FlightType.ARRIVAL -> dotBlue
                         FlightType.DEPARTURE -> dotGreen
@@ -410,7 +418,13 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
                             null
                         }
                     }
-                    GAME.batch.draw(textureToDraw, pos.x - trailSize / 2, pos.y - trailSize / 2, trailSize, trailSize)
+                    val maxSize = min(trailInfo.positions.size, TRAIL_DURATION_S / TRAIL_DOT_UPDATE_INTERVAL_S)
+                    var index = 0
+                    for (pos in trailInfo.positions) {
+                        if (index >= maxSize) break
+                        GAME.batch.draw(textureToDraw, pos.x - trailSize / 2, pos.y - trailSize / 2, trailSize, trailSize)
+                        index++
+                    }
                 }
                 rsSprite.drawable.draw(GAME.batch, radarData.position.x - blipSize / 2, radarData.position.y - blipSize / 2, blipSize, blipSize)
             }

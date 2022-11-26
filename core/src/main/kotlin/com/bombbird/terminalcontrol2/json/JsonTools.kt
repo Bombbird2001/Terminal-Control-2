@@ -19,8 +19,8 @@ fun getMoshiWithAllAdapters(): Moshi {
         .add(VisualApproachAdapter).add(DependentOppositeRunwayAdapter).add(DependentParallelRunwayAdapter)
         .add(CrossingRunwayAdapter).add(RandomAirlineDataAdapter).add(AirportNextDepartureAdapter)
         .add(WakeTrailAdapter).add(RouteAdapter).add(WaypointAdapter).add(ArrivalRouteZoneAdapter)
-        .add(DepartureRouteZoneAdapter).add(RouteZoneAdapter).add(WakeZoneAdapter).add(getPolymorphicComponentAdapter())
-        .add(getPolymorphicLegAdapter()).build()
+        .add(DepartureRouteZoneAdapter).add(RouteZoneAdapter).add(WakeZoneAdapter).add(TrailInfoAdapter)
+        .add(getPolymorphicComponentAdapter()).add(getPolymorphicLegAdapter()).build()
 }
 
 /**
@@ -144,6 +144,7 @@ private fun getPolymorphicComponentAdapter(): PolymorphicJsonAdapterFactory<Base
         .withSubtype(WakeTrail::class.java, BaseComponentJSONInterface.ComponentType.WAKE_TRAIL.name)
         .withSubtype(WakeInfo::class.java, BaseComponentJSONInterface.ComponentType.WAKE_INFO.name)
         .withSubtype(InitialClientDatatagPosition::class.java, BaseComponentJSONInterface.ComponentType.INITIAL_CLIENT_DATATAG_POSITION.name)
+        .withSubtype(TrailInfo::class.java, BaseComponentJSONInterface.ComponentType.TRAIL_INFO.name)
 }
 
 /** Interface for implementing JSON serialization for subclasses of Leg */

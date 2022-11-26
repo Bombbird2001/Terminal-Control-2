@@ -1,6 +1,7 @@
 package com.bombbird.terminalcontrol2.json
 
 import com.badlogic.gdx.math.CumulativeDistribution
+import com.badlogic.gdx.utils.Queue
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.GAME
 import com.squareup.moshi.FromJson
@@ -104,13 +105,20 @@ data class TrailInfoJSON(val trails: List<Position>)
 /** Adapter object for serialization between [TrailInfo] and [TrailInfoJSON] */
 object TrailInfoAdapter {
     @ToJson
-    fun toJson(trailInfo: TrailInfo) {
+    fun toJson(trailInfo: TrailInfo): TrailInfoJSON {
         val trails = ArrayList<Position>()
-        val trailInfoJSON = TrailInfoJSON()
+        for (trail in Queue.QueueIterator(trailInfo.positions)) {
+            trails.add(trail)
+        }
+        return TrailInfoJSON(trails)
     }
 
     @FromJson
     fun fromJson(trailInfoJSON: TrailInfoJSON): TrailInfo {
-
+        val trailInfo = TrailInfo()
+        for (trail in trailInfoJSON.trails) {
+            trailInfo.positions.addLast(trail)
+        }
+        return trailInfo
     }
 }

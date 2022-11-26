@@ -4,6 +4,7 @@ import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable
+import com.badlogic.gdx.utils.Queue.QueueIterator
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.ClearanceState
@@ -20,6 +21,7 @@ import com.esotericsoftware.minlog.Log
 import ktx.ashley.*
 import ktx.scene2d.Scene2DSkin
 import java.util.*
+import kotlin.collections.ArrayList
 import kotlin.math.roundToInt
 
 /** Aircraft class that creates an aircraft entity with the required components on instantiation */
@@ -181,6 +183,12 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                         tag.xOffset = serialisedAircraft.initialDatatagXOffset
                         tag.yOffset = serialisedAircraft.initialDatatagYOffset
                     }
+
+                    get(TrailInfo.mapper)?.apply {
+                        val trailX = serialisedAircraft.trailX
+                        val trailY = serialisedAircraft.trailY
+                        for (i in trailX.indices) positions.addLast(Position(trailX[i], trailY[i]))
+                    }
                 }
             }
         }
@@ -313,7 +321,8 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                              val waitingTakeoff: Boolean = false,
                              val contactToCentre: Boolean = false,
                              val recentGoAround: Boolean = false,
-                             val initialDatatagXOffset: Float = 0f, val initialDatatagYOffset: Float = 0f, val initialDatatagMinimised: Boolean = false
+                             val initialDatatagXOffset: Float = 0f, val initialDatatagYOffset: Float = 0f, val initialDatatagMinimised: Boolean = false,
+                             val trailX: FloatArray = floatArrayOf(), val trailY: FloatArray = floatArrayOf()
     )
 
     /**
@@ -343,6 +352,9 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
             val controllable = get(Controllable.mapper) ?: return emptySerialisableObject("Controllable")
             val initialDatatagPosition = get(InitialClientDatatagPosition.mapper) ?:
             return emptySerialisableObject("InitialClientDatatagPosition")
+            val trails = get(TrailInfo.mapper) ?: return emptySerialisableObject("TrailInfo")
+            val trailArray = ArrayList<Position>()
+            for (trail in QueueIterator(trails.positions)) trailArray.add(trail)
             return SerialisedAircraft(
                 position.x, position.y,
                 altitude.altitudeFt,
@@ -361,7 +373,8 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                 has(WaitingTakeoff.mapper),
                 has(ContactToCentre.mapper),
                 has(RecentGoAround.mapper),
-                initialDatatagPosition.xOffset, initialDatatagPosition.yOffset, initialDatatagPosition.minimised
+                initialDatatagPosition.xOffset, initialDatatagPosition.yOffset, initialDatatagPosition.minimised,
+                trailArray.map { it.x }.toFloatArray(), trailArray.map { it.y }.toFloatArray()
             )
         }
     }
