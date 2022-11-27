@@ -651,9 +651,11 @@ class ControlPane {
         }
         val leg2 = directLeg ?: if (parentPane.userClearanceState.route.size > 0) parentPane.userClearanceState.route[0] else null
         val defaultDirect = if (parentPane.clearanceState.route.size > 0) parentPane.clearanceState.route[0] else null
-        calculateRouteSegments(parentPane.clearanceState.route, parentPane.clearanceRouteSegments, defaultDirect)
         calculateRouteSegments(parentPane.userClearanceState.route, parentPane.userClearanceRouteSegments, directLeg)
-        checkRouteSegmentChanged(parentPane.clearanceRouteSegments, parentPane.userClearanceRouteSegments)
+        parentPane.selAircraft?.entity?.get(RouteSegment.mapper)?.segments?.let { segments ->
+            calculateRouteSegments(parentPane.clearanceState.route, segments, defaultDirect)
+            checkRouteSegmentChanged(segments, parentPane.userClearanceRouteSegments)
+        }
         // Direct changed if the 2 legs are not equal to each other, unless both are hold legs with wptId < 0 (i.e. both are custom hold legs)
         val directChanged = if ((leg1 == null && leg2 == null) || leg2 is Route.DiscontinuityLeg ||
             (leg1 is Route.HoldLeg && leg2 is Route.HoldLeg && leg1.wptId < 0 && leg2.wptId < 0)) false

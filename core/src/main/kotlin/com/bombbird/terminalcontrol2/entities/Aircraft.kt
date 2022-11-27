@@ -82,6 +82,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                     else -> Color.WHITE
                 }
             }
+            with<RouteSegment>()
         } else {
             with<ConflictAble>()
             with<WakeTrail>()
@@ -354,7 +355,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
             return emptySerialisableObject("InitialClientDatatagPosition")
             val trails = get(TrailInfo.mapper) ?: return emptySerialisableObject("TrailInfo")
             val trailArray = ArrayList<Position>()
-            for (trail in QueueIterator(trails.positions)) trailArray.add(trail)
+            // TODO remove when overflow fixed: for (trail in QueueIterator(trails.positions)) trailArray.add(trail)
             return SerialisedAircraft(
                 position.x, position.y,
                 altitude.altitudeFt,

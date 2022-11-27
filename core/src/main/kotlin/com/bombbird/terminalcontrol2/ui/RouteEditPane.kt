@@ -6,6 +6,7 @@ import com.badlogic.gdx.scenes.scene2d.Actor
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton.TextButtonStyle
 import com.badlogic.gdx.utils.Align
 import com.bombbird.terminalcontrol2.components.CommandTarget
+import com.bombbird.terminalcontrol2.components.RouteSegment
 import com.bombbird.terminalcontrol2.components.STARChildren
 import com.bombbird.terminalcontrol2.components.WaypointInfo
 import com.bombbird.terminalcontrol2.global.CHANGED_YELLOW
@@ -258,7 +259,9 @@ class RouteEditPane {
      */
     private fun updateRouteLegSegments(route: Route) {
         calculateRouteSegments(route, parentPane.userClearanceRouteSegments, if (route.size > 0) route[0] else null)
-        checkRouteSegmentChanged(parentPane.clearanceRouteSegments, parentPane.userClearanceRouteSegments)
+        parentPane.selAircraft?.entity?.get(RouteSegment.mapper)?.segments?.let { segments ->
+            checkRouteSegmentChanged(segments, parentPane.userClearanceRouteSegments)
+        }
     }
 
     /**

@@ -1,14 +1,18 @@
 package com.bombbird.terminalcontrol2.networking
 
 import com.bombbird.terminalcontrol2.components.*
+import com.bombbird.terminalcontrol2.global.getEngine
 import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.navigation.Route
+import com.bombbird.terminalcontrol2.navigation.calculateRouteSegments
 import com.bombbird.terminalcontrol2.screens.RadarScreen
+import com.bombbird.terminalcontrol2.systems.RenderingSystemClient
 import com.bombbird.terminalcontrol2.ui.getNewDatatagLabelText
 import com.bombbird.terminalcontrol2.ui.updateDatatagText
 import com.bombbird.terminalcontrol2.utilities.*
 import com.esotericsoftware.kryonet.Connection
 import ktx.ashley.get
+import ktx.ashley.getSystem
 import ktx.ashley.plusAssign
 
 /** Class representing control state data sent when the aircraft command state is updated (either through player command, or due to leg being reached) */
@@ -33,12 +37,17 @@ data class AircraftControlStateUpdateData(val callsign: String = "", val primary
 
     override fun handleClientReceive(rs: RadarScreen) {
         rs.aircraft[callsign]?.let { aircraft ->
+            val route = Route.fromSerialisedObject(route)
             aircraft.entity += ClearanceAct(
-                ClearanceState(primaryName, Route.fromSerialisedObject(route), Route.fromSerialisedObject(hiddenLegs),
+                ClearanceState(primaryName, route, Route.fromSerialisedObject(hiddenLegs),
                     vectorHdg, vectorTurnDir, clearedAlt, expedite,
                     clearedIas, minIas, maxIas, optimalIas, clearedApp, clearedTrans).ActingClearance())
             aircraft.entity[Datatag.mapper]?.let { updateDatatagText(it, getNewDatatagLabelText(aircraft.entity, it.minimised)) }
             if (rs.selectedAircraft == aircraft) rs.uiPane.updateSelectedAircraft(aircraft)
+            getEngine(true).getSystem<RenderingSystemClient>().updateWaypointDisplay(rs.selectedAircraft)
+            aircraft.entity[RouteSegment.mapper]?.segments?.let { segments ->
+                calculateRouteSegments(route, segments, null)
+            }
         }
     }
 }

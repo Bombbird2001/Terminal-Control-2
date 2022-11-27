@@ -35,6 +35,7 @@ import kotlinx.coroutines.launch
 import ktx.app.KtxScreen
 import ktx.ashley.allOf
 import ktx.ashley.get
+import ktx.ashley.getSystem
 import ktx.assets.disposeSafely
 import ktx.async.KtxAsync
 import ktx.collections.GdxArray
@@ -194,6 +195,7 @@ class RadarScreen(private val connectionHost: String?, airportToHost: String?, s
             val flightType = get(FlightType.mapper) ?: return@apply
             updateDatatagStyle(datatag, flightType.type, true)
         }
+        clientEngine.getSystem<RenderingSystemClient>().updateWaypointDisplay(aircraft)
     }
 
     /** Deselects the currently selected aircraft in [uiPane] */
@@ -205,6 +207,7 @@ class RadarScreen(private val connectionHost: String?, airportToHost: String?, s
             updateDatatagStyle(datatag, flightType.type, false)
         }
         selectedAircraft = null
+        clientEngine.getSystem<RenderingSystemClient>().updateWaypointDisplay(null)
     }
 
     /** Ensures [radarDisplayStage]'s camera parameters are within limits, then updates the camera (and [shapeRenderer]) */

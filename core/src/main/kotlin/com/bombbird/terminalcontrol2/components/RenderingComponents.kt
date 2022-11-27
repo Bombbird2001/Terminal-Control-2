@@ -9,8 +9,10 @@ import com.badlogic.gdx.scenes.scene2d.utils.BaseDrawable
 import com.badlogic.gdx.scenes.scene2d.utils.Drawable
 import com.badlogic.gdx.utils.Timer
 import com.bombbird.terminalcontrol2.json.BaseComponentJSONInterface
+import com.bombbird.terminalcontrol2.navigation.Route
 import com.squareup.moshi.JsonClass
 import ktx.ashley.Mapper
+import ktx.collections.GdxArray
 import ktx.math.ImmutableVector2
 import ktx.scene2d.Scene2DSkin
 
@@ -125,4 +127,9 @@ data class InitialClientDatatagPosition(var xOffset: Float = 0f, var yOffset: Fl
     override val componentType = BaseComponentJSONInterface.ComponentType.INITIAL_CLIENT_DATATAG_POSITION
 
     companion object: Mapper<InitialClientDatatagPosition>()
+}
+
+/** Component for storing route leg segments to be rendered by the rendering system */
+data class RouteSegment(val segments: GdxArray<Route.LegSegment> = GdxArray()): Component {
+    companion object: Mapper<RouteSegment>()
 }

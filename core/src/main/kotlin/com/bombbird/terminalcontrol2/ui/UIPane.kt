@@ -50,7 +50,6 @@ class UIPane(private val uiStage: Stage) {
 
     // Clearance state of the UI pane
     val clearanceState: ClearanceState = ClearanceState() // Aircraft's current state (without user changes)
-    val clearanceRouteSegments: GdxArray<Route.LegSegment> = GdxArray() // The calculated route segments of aircraft's current route state
     val userClearanceState: ClearanceState = ClearanceState() // User's chosen state
     val userClearanceRouteSegments: GdxArray<Route.LegSegment> = GdxArray() // The calculated route segments of user's chosen route state
 
@@ -201,7 +200,6 @@ class UIPane(private val uiStage: Stage) {
         routeEditPane.isVisible = false
         mainInfoPane.isVisible = true
         clearanceState.route.clear()
-        clearanceRouteSegments.clear()
         clearanceState.vectorHdg = null
         userClearanceState.route.clear()
         userClearanceRouteSegments.clear()

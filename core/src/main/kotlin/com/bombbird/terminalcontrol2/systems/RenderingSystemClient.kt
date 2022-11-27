@@ -11,6 +11,7 @@ import com.badlogic.gdx.math.Intersector
 import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.scenes.scene2d.Stage
 import com.bombbird.terminalcontrol2.components.*
+import com.bombbird.terminalcontrol2.entities.Aircraft
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.ui.LABEL_PADDING
@@ -20,6 +21,8 @@ import com.bombbird.terminalcontrol2.utilities.*
 import com.esotericsoftware.minlog.Log
 import ktx.ashley.*
 import ktx.collections.GdxArray
+import ktx.collections.GdxMap
+import ktx.collections.set
 import ktx.math.*
 import ktx.scene2d.Scene2DSkin
 import kotlin.math.min
@@ -48,7 +51,8 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
     private val visualFamily: Family = allOf(VisualCaptured::class, RadarData::class).get()
     private val datatagLineFamily: Family = allOf(Datatag::class, RadarData::class)
         .exclude(WaitingTakeoff::class).get()
-    private val constCircleFamily: Family = allOf(Position::class, GCircle::class, SRColor::class, SRConstantZoomSize::class).get()
+    private val constCircleFamily: Family = allOf(Position::class, GCircle::class, SRColor::class, SRConstantZoomSize::class)
+        .exclude(DoNotRenderShape::class).get()
     private val rwyLabelFamily: Family = allOf(GenericLabel::class, RunwayInfo::class, RunwayLabel::class).get()
     private val labelFamily: Family = allOf(GenericLabel::class, Position::class)
         .exclude(ConstantZoomSize::class, DoNotRenderLabel::class).get()
@@ -63,6 +67,8 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
     private val datatagFamily: Family = allOf(Datatag::class, RadarData::class)
         .exclude(WaitingTakeoff::class).get()
     private val contactDotFamily: Family = allOf(ContactNotification::class, RadarData::class, FlightType::class).get()
+    private val waypointFamily: Family = allOf(WaypointInfo::class).get()
+    private val routeFamily: Family = oneOf(PendingClearances::class, ClearanceAct::class).get()
 
     private val dotBlue: TextureRegion = Scene2DSkin.defaultSkin["DotBlue", TextureRegion::class.java]
     private val dotGreen: TextureRegion = Scene2DSkin.defaultSkin["DotGreen", TextureRegion::class.java]
@@ -207,8 +213,8 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
             val vectorUnchanged = uiPane.clearanceState.vectorHdg == uiPane.userClearanceState.vectorHdg
             val noVector = uiPane.userClearanceState.vectorHdg == null
             uiPane.clearanceState.vectorHdg?.let { hdg -> renderVector(aircraftPos.x, aircraftPos.y, hdg, false) } ?:
-            run { renderRouteSegments(aircraftPos.x, aircraftPos.y, uiPane.clearanceRouteSegments, skipAircraftToFirstWaypoint = false,
-                forceRenderChangedAircraftToFirstWaypoint = false) }
+            run { renderRouteSegments(aircraftPos.x, aircraftPos.y, it.entity[RouteSegment.mapper]?.segments ?: GdxArray(),
+                skipAircraftToFirstWaypoint = false, forceRenderChangedAircraftToFirstWaypoint = false) }
             if (!vectorUnchanged && !uiPane.appTrackCaptured) uiPane.userClearanceState.vectorHdg?.let { newHdg ->
                 // Render new vector if changed and is not null, and aircraft has not captured approach track
                 renderVector(aircraftPos.x, aircraftPos.y, newHdg, true)
@@ -688,5 +694,47 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         val lineEnd = pointsAtBorder(floatArrayOf(sectorBoundingRectangle.x, sectorBoundingRectangle.x  + sectorBoundingRectangle.width),
             floatArrayOf(sectorBoundingRectangle.y, sectorBoundingRectangle.y + sectorBoundingRectangle.height), posX, posY, hdg - MAG_HDG_DEV)
         shapeRenderer.line(posX, posY, lineEnd[0], lineEnd[1])
+    }
+
+    /**
+     * Refreshes the rendering status for each waypoint, so that each waypoint is only shown when the aircraft's current
+     * direct is it, or if the selected aircraft has a waypoint in its route
+     * @param selectedAircraft the currently selected aircraft, or null if no aircraft selected
+     */
+    fun updateWaypointDisplay(selectedAircraft: Aircraft?) {
+        val waypoints = engine.getEntitiesFor(waypointFamily)
+        val wptMap = GdxMap<Short, Entity>()
+        for (i in 0 until waypoints.size()) {
+            val wpt = waypoints[i]
+            wpt += DoNotRenderShape()
+            wpt += DoNotRenderLabel()
+            wpt[WaypointInfo.mapper]?.wptId?.let { id -> wptMap[id] = wpt }
+        }
+        val clearanceRoutes = engine.getEntitiesFor(routeFamily)
+        // Check all aircraft routes for the first waypoint
+        for (i in 0 until clearanceRoutes.size()) {
+            clearanceRoutes[i]?.apply {
+                val latest = get(PendingClearances.mapper)?.clearanceQueue?.last()?.clearanceState ?:
+                get(ClearanceAct.mapper)?.actingClearance?.clearanceState ?: return@apply
+                if (latest.route.size < 1) return@apply
+                val firstWpt = latest.route[0]
+                if (firstWpt !is Route.WaypointLeg) return@apply
+                val wptEntity = wptMap[firstWpt.wptId] ?: return@apply
+                wptEntity.remove<DoNotRenderShape>()
+                wptEntity.remove<DoNotRenderLabel>()
+            }
+        }
+        // Check currently selected aircraft route
+        if (selectedAircraft == null) return
+        val latestClearance = selectedAircraft.entity[PendingClearances.mapper]?.clearanceQueue?.last()?.clearanceState ?:
+        selectedAircraft.entity[ClearanceAct.mapper]?.actingClearance?.clearanceState ?: return
+        val route = latestClearance.route
+        for (i in 0 until route.size) {
+            val leg = route[i]
+            if (leg !is Route.WaypointLeg) continue
+            val wptEntity = wptMap[leg.wptId] ?: continue
+            wptEntity.remove<DoNotRenderShape>()
+            wptEntity.remove<DoNotRenderLabel>()
+        }
     }
 }
