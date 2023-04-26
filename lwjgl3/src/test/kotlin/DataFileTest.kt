@@ -40,7 +40,7 @@ object DataFileTest: FunSpec() {
     private val RWY_POS = arrayOf('L', 'C', 'R')
     private val LABEL_POS = arrayOf("LABEL_LEFT", "LABEL_RIGHT", "LABEL_BEFORE")
     private val TIME_SLOTS = arrayOf("DAY_ONLY", "NIGHT_ONLY", "DAY_NIGHT")
-    private val WARNING_SHOULD_BE_EMPTY = { type: String, warning: String -> "[$type] $warning" shouldBe "" }
+    private val WARNING_SHOULD_BE_EMPTY: (String, String) -> Unit = { type: String, warning: String -> "[$type] $warning" shouldBe "" }
 
     private val aircraftSet = HashSet<String>()
 
