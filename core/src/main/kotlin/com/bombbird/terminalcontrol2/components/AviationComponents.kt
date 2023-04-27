@@ -5,6 +5,7 @@ import com.badlogic.gdx.math.CumulativeDistribution
 import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.utils.Queue
 import com.bombbird.terminalcontrol2.entities.Airport
+import com.bombbird.terminalcontrol2.global.MAX_TRAIL_DOTS
 import com.bombbird.terminalcontrol2.json.BaseComponentJSONInterface
 import com.bombbird.terminalcontrol2.utilities.AircraftTypeData
 import com.squareup.moshi.JsonClass
@@ -125,7 +126,7 @@ data class DepartureAirport(var arptId: Byte, var rwyId: Byte): Component, BaseC
 }
 
 /** Component for tagging aircraft trail positions */
-data class TrailInfo(val positions: Queue<Position> = Queue()): Component, BaseComponentJSONInterface {
+data class TrailInfo(val positions: Queue<Position> = Queue(MAX_TRAIL_DOTS)): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.TRAIL_INFO
 
     companion object: Mapper<TrailInfo>()

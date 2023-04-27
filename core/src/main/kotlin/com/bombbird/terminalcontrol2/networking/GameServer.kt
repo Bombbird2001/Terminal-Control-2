@@ -183,8 +183,8 @@ class GameServer {
     fun initiateServer(mainName: String, saveId: Int?) {
         thread {
             saveID = saveId
-            startNetworkingServer()
             loadGame(mainName, saveId)
+            startNetworkingServer()
             startTime = -1L
             Log.info("GameServer", "Starting game server")
             loopRunning.set(true)
@@ -449,7 +449,8 @@ class GameServer {
 
     /** Send non-frequent METAR updates */
     fun sendMetarTCPToAll() {
-        server.sendToAllTCP(MetarData(airports.values().map { it.getSerialisedMetar() }.toTypedArray()))
+        if (gameRunning)
+            server.sendToAllTCP(MetarData(airports.values().map { it.getSerialisedMetar() }.toTypedArray()))
     }
 
     /**

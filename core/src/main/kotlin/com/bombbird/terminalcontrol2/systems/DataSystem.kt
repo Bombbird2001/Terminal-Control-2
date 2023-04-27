@@ -4,6 +4,7 @@ import com.badlogic.ashley.core.EntitySystem
 import com.badlogic.ashley.core.Family
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.GAME
+import com.bombbird.terminalcontrol2.global.MAX_TRAIL_DOTS
 import com.bombbird.terminalcontrol2.global.TRAIL_DOT_UPDATE_INTERVAL_S
 import ktx.ashley.allOf
 import ktx.ashley.exclude
@@ -32,6 +33,9 @@ class DataSystem: EntitySystem() {
                         val acInfo = get(AircraftInfo.mapper) ?: return@apply
                         val trailInfo = get(TrailInfo.mapper) ?: return@apply
                         val pos = get(Position.mapper) ?: return@apply
+                        // Cap dots at MAX_TRAIL_DOTS
+                        while (trailInfo.positions.size >= MAX_TRAIL_DOTS)
+                            trailInfo.positions.removeLast()
                         trailInfo.positions.addFirst(pos.copy())
                         trailUpdates.add(Pair(acInfo.icaoCallsign, pos))
                     }

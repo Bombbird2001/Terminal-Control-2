@@ -127,3 +127,4 @@ const val DATATAG_ZOOM_THRESHOLD = 1f
 
 /** Trail dot update rate */
 const val TRAIL_DOT_UPDATE_INTERVAL_S = 10
+const val MAX_TRAIL_DOTS = 240 / TRAIL_DOT_UPDATE_INTERVAL_S

@@ -52,7 +52,7 @@ class DisplaySettings: BaseSettings() {
                             newSettingsRow()
                             defaultSettingsLabel("Aircraft trail:")
                             aircraftTrailSelectBox = defaultSettingsSelectBox<String>().apply {
-                                setItems(OFF, "60$SECONDS_SUFFIX", "90$SECONDS_SUFFIX", ALL)
+                                setItems(OFF, "60$SECONDS_SUFFIX", "90$SECONDS_SUFFIX", "120$SECONDS_SUFFIX", "180$SECONDS_SUFFIX", "240$SECONDS_SUFFIX")
                             }
                             defaultSettingsLabel("Show trail for uncontrolled aircraft:")
                             uncontrolledTrailSelectBox = defaultSettingsSelectBox<String>().apply {
@@ -109,7 +109,6 @@ class DisplaySettings: BaseSettings() {
         radarSweepSelectBox.selected = "${RADAR_REFRESH_INTERVAL_S.toString().replace(removeTrailingZeroes, "")}$SECONDS_SUFFIX"
         aircraftTrailSelectBox.selected = when (TRAIL_DURATION_S) {
             0 -> OFF
-            Int.MAX_VALUE -> ALL
             else -> "$TRAIL_DURATION_S$SECONDS_SUFFIX"
         }
         uncontrolledTrailSelectBox.selected = when (SHOW_UNCONTROLLED_AIRCRAFT_TRAIL) {

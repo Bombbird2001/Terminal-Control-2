@@ -611,8 +611,8 @@ fun calculateArrivalSpawnAltitude(aircraft: Entity, airport: Entity, origRoute: 
         }
     }
 
-    // 6 - 10nm leeway
-    val effectiveDistPxToAlt = max(distPxToAlt - nmToPx(MathUtils.random(6, 10)), 0f)
+    // 12 - 16nm leeway
+    val effectiveDistPxToAlt = max(distPxToAlt - nmToPx(MathUtils.random(12, 16)), 0f)
     val aircraftPerf = aircraft[AircraftInfo.mapper]?.aircraftPerf ?: run {
         Log.info("PhysicsTools", "No aircraft performance data found")
         AircraftTypeData.AircraftPerfData()
