@@ -33,8 +33,8 @@ class TerminalControl2 : KtxGame<KtxScreen>(clearScreen = false) {
     val assetStorage = AssetStorage()
     var gameServer: GameServer? = null
     var gameClientScreen: RadarScreen? = null
-    val LANClientDiscoveryHandler = LANClientDiscoveryHandler()
-    val gameClient = getGameClientInstance(LANClientDiscoveryHandler)
+    val lanClientDiscoveryHandler = LANClientDiscoveryHandler()
+    val gameClient = getGameClientInstance(lanClientDiscoveryHandler)
 
     /** Quits the current game running */
     fun quitCurrentGame() {

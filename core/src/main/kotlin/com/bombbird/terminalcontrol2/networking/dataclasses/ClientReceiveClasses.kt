@@ -198,7 +198,9 @@ class MetarData(private val metars: Array<Airport.SerialisedMetar> = arrayOf()):
 }
 
 /** Class representing data sent during aircraft sector update */
-data class AircraftSectorUpdateData(private val callsign: String = "", private val newSector: Byte = 0, private val newUUID: String? = null):
+data class AircraftSectorUpdateData(private val callsign: String = "", private val newSector: Byte = 0,
+                                    private val newUUID: String? = null, private val ignoreInitialContact: Boolean = false,
+                                    private val tagFlashing: Boolean = false):
     ClientReceive {
     override fun handleClientReceive(rs: RadarScreen) {
         // If the client has not received the initial load data, ignore this sector update
@@ -215,12 +217,17 @@ data class AircraftSectorUpdateData(private val callsign: String = "", private v
             }
             if (newSector == rs.playerSector && controllable.controllerUUID.toString() != newUUID && newUUID == myUuid.toString()) {
                 // Send message only if aircraft is in player's sector, old UUID is not the player's UUID and the new UUID is the player's UUID
-                rs.uiPane.commsPane.also { commsPane ->
+                // If ignore initial contact, will not perform contact, but will flash if needed
+                if (!ignoreInitialContact) rs.uiPane.commsPane.also { commsPane ->
                     if (aircraft.entity.has(RecentGoAround.mapper)) commsPane.goAround(aircraft.entity)
                     else commsPane.initialContact(aircraft.entity)
                 }
-                aircraft.entity += ContactNotification()
-                aircraft.entity[Datatag.mapper]?.let { setDatatagFlash(it, aircraft, true) }
+                if (!ignoreInitialContact || tagFlashing) {
+                    aircraft.entity += ContactNotification()
+                    aircraft.entity[Datatag.mapper]?.let {
+                        setDatatagFlash(it, aircraft, true)
+                    }
+                }
             } else if (newSector != rs.playerSector || newUUID != myUuid.toString()) {
                 aircraft.entity.remove<ContactNotification>()
                 aircraft.entity[Datatag.mapper]?.let { setDatatagFlash(it, aircraft, false) }

@@ -121,6 +121,9 @@ class GameServer {
      * */
     val sectorSwapRequests = GdxArray<Pair<Byte, Byte>>(SECTOR_COUNT_SIZE * (SECTOR_COUNT_SIZE + 1) / 2)
 
+    /** Flag for when a sector swap/player join has just occurred */
+    var sectorJustSwapped = false
+
     var arrivalSpawnTimerS = 0f
     var previousArrivalOffsetS = 0f
     var trafficValue = 6f
@@ -460,7 +463,8 @@ class GameServer {
      * @param newUUID the UUID of the new player the aircraft is under control of, or null if tower/ACC
      * */
     fun sendAircraftSectorUpdateTCPToAll(callsign: String, newSector: Byte, newUUID: String?) {
-        server.sendToAllTCP(AircraftSectorUpdateData(callsign, newSector, newUUID))
+        val tagFlashing = aircraft[callsign]?.entity?.get(InitialClientDatatagPosition.mapper)?.flashing == true
+        server.sendToAllTCP(AircraftSectorUpdateData(callsign, newSector, newUUID, sectorJustSwapped, tagFlashing))
     }
 
     /**
@@ -568,7 +572,8 @@ class GameServer {
      * @param configId the new ID of the active configuration
      */
     fun sendActiveRunwayUpdateToAll(airportId: Byte, configId: Byte) {
-        server.sendToAllTCP(ActiveRunwayUpdateData(airportId, configId))
+        if (gameRunning)
+            server.sendToAllTCP(ActiveRunwayUpdateData(airportId, configId))
     }
 
     /** Sends a message to clients to inform them of a change in scores */

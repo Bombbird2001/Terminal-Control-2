@@ -51,7 +51,8 @@ data class HandoverRequest(private val callsign: String = "", private val newSec
 
 /** Class representing aircraft datatag position data (on client) sent to server */
 data class AircraftDatatagPositionUpdateData(private val aircraft: String = "", private val xOffset: Float = 0f,
-                                             private val yOffset: Float = 0f, private val minimised: Boolean = false):
+                                             private val yOffset: Float = 0f, private val minimised: Boolean = false,
+                                             private val flashing: Boolean = false):
     ServerReceive {
     override fun handleServerReceive(gs: GameServer, connection: ConnectionMeta) {
         val aircraft = gs.aircraft[aircraft] ?: return
@@ -64,6 +65,7 @@ data class AircraftDatatagPositionUpdateData(private val aircraft: String = "", 
             it.xOffset = xOffset
             it.yOffset = yOffset
             it.minimised = minimised
+            it.flashing = flashing
         }
     }
 }

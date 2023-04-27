@@ -589,8 +589,8 @@ class RadarScreen(private val connectionHost: String?, airportToHost: String?, s
      * @param yOffset the y position offset of the datatag from the aircraft radar blip
      * @param minimised whether the datatag has been minimized
      */
-    fun sendAircraftDatatagPositionUpdate(aircraft: Aircraft, xOffset: Float, yOffset: Float, minimised: Boolean) {
+    fun sendAircraftDatatagPositionUpdate(aircraft: Aircraft, xOffset: Float, yOffset: Float, minimised: Boolean, flashing: Boolean) {
         val callsign = aircraft.entity[AircraftInfo.mapper]?.icaoCallsign ?: return Log.info("RadarScreen", "Missing AircraftInfo component")
-        client.sendTCP(AircraftDatatagPositionUpdateData(callsign, xOffset, yOffset, minimised))
+        client.sendTCP(AircraftDatatagPositionUpdateData(callsign, xOffset, yOffset, minimised, flashing))
     }
 }

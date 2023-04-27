@@ -220,6 +220,9 @@ class ControlStateSystemInterval: IntervalSystem(1f) {
             }
         }
 
+        // Reset flag to stop suppressing sector change notification
+        if (GAME.gameServer?.sectorJustSwapped == true) GAME.gameServer?.sectorJustSwapped = false
+
         // Check recent go-around and decrement the timer counter
         val goAround = engine.getEntitiesFor(goAroundFamily)
         for (i in 0 until goAround.size()) {

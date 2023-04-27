@@ -41,6 +41,7 @@ fun assignSectorsToPlayers(connections: Collection<ConnectionMeta>, currentIdMap
         // Update the sector to connection and UUID map
         currentIdMap[it.uuid] = newId
         sectorUUIDMap[newId] = it.uuid
+        GAME.gameServer?.sectorJustSwapped = true
         GAME.gameServer?.sendIndividualSectorUpdateTCP(it.uuid, newId, newSectorArray)
     }
 }

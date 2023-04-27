@@ -83,6 +83,7 @@ fun updateDatatagStyle(datatag: Datatag, flightType: Byte, selected: Boolean) {
 fun setDatatagFlash(datatag: Datatag, aircraft: Aircraft, flash: Boolean) {
     if (datatag.flashing == flash) return
     datatag.flashing = flash
+    CLIENT_SCREEN?.sendAircraftDatatagPositionUpdate(aircraft, datatag.xOffset, datatag.yOffset, datatag.minimised, flash)
     if (flash) {
         datatag.flashTimer.scheduleTask(object: Timer.Task() {
             override fun run() {
@@ -154,7 +155,7 @@ fun addDatatagInputListeners(datatag: Datatag, aircraft: Aircraft) {
             }
 
             override fun dragStop(event: InputEvent?, x: Float, y: Float, pointer: Int) {
-                CLIENT_SCREEN?.sendAircraftDatatagPositionUpdate(aircraft, datatag.xOffset, datatag.yOffset, datatag.minimised)
+                CLIENT_SCREEN?.sendAircraftDatatagPositionUpdate(aircraft, datatag.xOffset, datatag.yOffset, datatag.minimised, datatag.flashing)
                 event?.handle()
             }
         })

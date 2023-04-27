@@ -123,7 +123,8 @@ class Datatag(var xOffset: Float = 0f, var yOffset: Float = 0f, var minimised: B
 
 /** Component for storing the datatag position to be sent to client on initial connection */
 @JsonClass(generateAdapter = true)
-data class InitialClientDatatagPosition(var xOffset: Float = 0f, var yOffset: Float = 0f, var minimised: Boolean = false): Component, BaseComponentJSONInterface {
+data class InitialClientDatatagPosition(var xOffset: Float = 0f, var yOffset: Float = 0f, var minimised: Boolean = false,
+                                        var flashing: Boolean = false): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.INITIAL_CLIENT_DATATAG_POSITION
 
     companion object: Mapper<InitialClientDatatagPosition>()
