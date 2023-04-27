@@ -65,9 +65,13 @@ fun updateDatatagStyle(datatag: Datatag, flightType: Byte, selected: Boolean) {
             ""
         }
     } else ""
-    if (!datatag.flashingOrange) datatag.imgButton.style = Scene2DSkin.defaultSkin.get("Datatag${colour}${background}", ImageButton.ImageButtonStyle::class.java)
-    else datatag.imgButton.style = Scene2DSkin.defaultSkin.get("DatatagOrange${background}", ImageButton.ImageButtonStyle::class.java)
+    datatag.imgButton.style = Scene2DSkin.defaultSkin.get("Datatag${colour}${background}", ImageButton.ImageButtonStyle::class.java)
     datatag.currentDatatagStyle = "Datatag${colour}${background}"
+
+    // Try to fix when datatag remains orange
+    if (!datatag.flashingOrange && colour == "Orange") {
+        updateDatatagStyle(datatag, flightType, false)
+    }
 }
 
 /**
