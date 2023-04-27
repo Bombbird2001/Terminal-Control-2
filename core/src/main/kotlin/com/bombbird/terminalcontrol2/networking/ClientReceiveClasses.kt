@@ -204,12 +204,12 @@ data class AircraftSectorUpdateData(private val callsign: String = "", private v
             controllable.sectorId = newSector
             aircraft.entity[RSSprite.mapper]?.drawable = getAircraftIcon(aircraft.entity[FlightType.mapper]?.type ?: return, newSector)
             aircraft.entity[Datatag.mapper]?.let { updateDatatagText(it, getNewDatatagLabelText(aircraft.entity, it.minimised)) }
-            if (newSector != rs.playerSector && controllable.controllerUUID.toString() == uuid.toString() && newUUID != uuid.toString()) {
+            if (newSector != rs.playerSector && controllable.controllerUUID.toString() == myUuid.toString() && newUUID != myUuid.toString()) {
                 // Send contact other sector message only if aircraft is not in player's sector, old UUID is this
                 // player's UUID, and new UUID is not this player's UUID
                 rs.uiPane.commsPane.contactOther(aircraft.entity, newSector)
             }
-            if (newSector == rs.playerSector && controllable.controllerUUID.toString() != newUUID && newUUID == uuid.toString()) {
+            if (newSector == rs.playerSector && controllable.controllerUUID.toString() != newUUID && newUUID == myUuid.toString()) {
                 // Send message only if aircraft is in player's sector, old UUID is not the player's UUID and the new UUID is the player's UUID
                 rs.uiPane.commsPane.also { commsPane ->
                     if (aircraft.entity.has(RecentGoAround.mapper)) commsPane.goAround(aircraft.entity)
@@ -217,7 +217,7 @@ data class AircraftSectorUpdateData(private val callsign: String = "", private v
                 }
                 aircraft.entity += ContactNotification()
                 aircraft.entity[Datatag.mapper]?.let { setDatatagFlash(it, aircraft, true) }
-            } else if (newSector != rs.playerSector || newUUID != uuid.toString()) {
+            } else if (newSector != rs.playerSector || newUUID != myUuid.toString()) {
                 aircraft.entity.remove<ContactNotification>()
                 aircraft.entity[Datatag.mapper]?.let { setDatatagFlash(it, aircraft, false) }
             }

@@ -155,7 +155,7 @@ fun getGameClientInstance(gameClientDiscoveryHandler: GameClientDiscoveryHandler
         addListener(object: Listener {
             override fun received(connection: Connection, obj: Any?) {
                 (obj as? RequestClientUUID)?.apply {
-                    connection.sendTCP(ClientUUIDData(uuid.toString()))
+                    connection.sendTCP(ClientUUIDData(myUuid.toString()))
                 } ?: handleIncomingRequestClient(GAME.gameClientScreen ?: return, obj)
             }
         })
@@ -178,9 +178,10 @@ private fun handleIncomingRequestClient(rs: RadarScreen, obj: Any?) {
 /**
  * Handles an incoming request from the client to server, and performs the appropriate actions
  * @param gs the [GameServer] to apply changes to
+ * @param connection the [ConnectionMeta] data of the incoming connection
  * @param obj the incoming data object whose class should have been registered to [Kryo]
  * */
-fun handleIncomingRequestServer(gs: GameServer, connection: Connection, obj: Any?) {
+fun handleIncomingRequestServer(gs: GameServer, connection: ConnectionMeta, obj: Any?) {
     if (obj !is ServerReceive) return
     obj.handleServerReceive(gs, connection)
 }

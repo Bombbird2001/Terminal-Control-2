@@ -129,7 +129,7 @@ private object UUIDAdapter {
 @OptIn(ExperimentalStdlibApi::class)
 fun loadPlayerUUID() {
     val uuidHandle = getExtDir(uuidPath) ?: return
-    uuid = if (uuidHandle.exists()) {
+    myUuid = if (uuidHandle.exists()) {
         // File exists, read from it
         val jsonString = uuidHandle.readString()
         val moshi = Moshi.Builder().add(UUIDAdapter).build()

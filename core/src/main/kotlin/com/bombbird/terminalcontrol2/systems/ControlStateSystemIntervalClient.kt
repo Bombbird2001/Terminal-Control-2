@@ -26,7 +26,7 @@ class ControlStateSystemIntervalClient: IntervalSystem(1f) {
                 val track = get(GroundTrack.mapper) ?: return@apply
                 val controllable = get(Controllable.mapper) ?: return@apply
                 CLIENT_SCREEN?.let {
-                    if (controllable.sectorId == it.playerSector && controllable.controllerUUID == uuid) {
+                    if (controllable.sectorId == it.playerSector && controllable.controllerUUID == myUuid) {
                         if (has(LocalizerCaptured.mapper) || has(GlideSlopeCaptured.mapper) || has(VisualCaptured.mapper)) {
                             // Aircraft has captured localizer/glide slope/visual approach path, allow handover to tower
                             this += CanBeHandedOver(SectorInfo.TOWER)

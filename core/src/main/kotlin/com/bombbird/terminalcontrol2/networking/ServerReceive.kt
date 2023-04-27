@@ -6,7 +6,7 @@ interface ServerReceive {
     /**
      * Handles this data received on the server
      * @param gs the [GameServer] object
-     * @param connection the [Connection] of the player sending this data
+     * @param connection the [ConnectionMeta] of the player sending this data
      */
-    fun handleServerReceive(gs: GameServer, connection: Connection)
+    fun handleServerReceive(gs: GameServer, connection: ConnectionMeta)
 }

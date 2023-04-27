@@ -323,8 +323,11 @@ class RadarScreen(private val connectionHost: String?, airportToHost: String?, s
         Gdx.gl.glClearColor(0f, 0f, 0f, 1f)
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT or GL20.GL_DEPTH_BUFFER_BIT or if (Gdx.graphics.bufferFormat.coverageSampling) GL20.GL_COVERAGE_BUFFER_BIT_NV else 0)
 
-        runCameraAnimations(delta)
-        if (running) clientEngine.update(delta)
+        // Prevent lag spikes from causing huge deviations in simulation
+        val cappedDelta = min(delta, 1f / 30)
+
+        runCameraAnimations(cappedDelta)
+        if (running) clientEngine.update(cappedDelta)
 
         // Process pending runnables
         while (true) { pendingRunnablesQueue.poll()?.run() ?: break }

@@ -1,10 +1,9 @@
 package com.bombbird.terminalcontrol2.utilities
 
-import com.badlogic.gdx.utils.ArrayMap
 import com.bombbird.terminalcontrol2.entities.Sector
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.PLAYER_SIZE
-import com.esotericsoftware.kryonet.Connection
+import com.bombbird.terminalcontrol2.networking.ConnectionMeta
 import com.esotericsoftware.minlog.Log
 import ktx.collections.GdxArray
 import ktx.collections.GdxArrayMap
@@ -20,8 +19,8 @@ import java.util.UUID
  * @param sectorCount the number of sectors assignable
  * @param sectors mapping of each sector configuration to the number of players
  */
-fun assignSectorsToPlayers(connections: Collection<Connection>, currentIdMap: GdxArrayMap<Connection, Byte>,
-                           connectionUUIDMap: GdxArrayMap<Connection, UUID>, sectorUUIDMap: GdxArrayMap<Byte, UUID>,
+fun assignSectorsToPlayers(connections: Collection<ConnectionMeta>, currentIdMap: GdxArrayMap<UUID, Byte>,
+                           sectorUUIDMap: GdxArrayMap<Byte, UUID>,
                            sectorCount: Byte, sectors: GdxArrayMap<Byte, GdxArray<Sector>>) {
     if (connections.size != sectorCount.toInt())
         return Log.info("SectorTools", "Connection size ${connections.size} is not equal to sector count $sectorCount")
@@ -32,7 +31,7 @@ fun assignSectorsToPlayers(connections: Collection<Connection>, currentIdMap: Gd
         if (!currentIdMap.containsValue(i.byte, false)) emptySectors.add(i.byte)
     }
     connections.forEach {
-        val newId = currentIdMap[it]?.let { currId ->
+        val newId = currentIdMap[it.uuid]?.let { currId ->
             // Check existing mappings: If their sector ID no longer exists, give them a new ID from the empty sectors
             if (currId >= sectorCount) {
                 sectorUUIDMap.removeKey(currId)
@@ -40,53 +39,36 @@ fun assignSectorsToPlayers(connections: Collection<Connection>, currentIdMap: Gd
             } else currId
         } ?: emptySectors.pop() // If the connection has not been mapped to an ID, give them a new ID from the empty sectors
         // Update the sector to connection and UUID map
-        currentIdMap[it] = newId
-        sectorUUIDMap[newId] = connectionUUIDMap[it]
-        GAME.gameServer?.sendIndividualSectorUpdateTCP(it, newId, newSectorArray)
+        currentIdMap[it.uuid] = newId
+        sectorUUIDMap[newId] = it.uuid
+        GAME.gameServer?.sendIndividualSectorUpdateTCP(it.uuid, newId, newSectorArray)
     }
 }
 
 /**
  * Performs a sector swap between the 2 connections
- * @param connection1 the first connection
+ * @param player1 the first player
  * @param currentSector1 the existing assigned sector of the first connection
- * @param connection2 the second connection
+ * @param player2 the second player
  * @param currentSector2 the existing assigned sector of the second connection
+ * @param connectionSectorMap map from [ConnectionMeta] to sector ID
+ * @param sectorUUIDMap map from sector ID to UUID
  */
-fun swapPlayerSectors(connection1: Connection, currentSector1: Byte, connection2: Connection, currentSector2: Byte,
-                      connectionSectorMap: GdxArrayMap<Connection, Byte>, sectorUUIDMap: GdxArrayMap<Byte, UUID>) {
+fun swapPlayerSectors(player1: UUID, currentSector1: Byte, player2: UUID, currentSector2: Byte,
+                      connectionSectorMap: GdxArrayMap<UUID, Byte>, sectorUUIDMap: GdxArrayMap<Byte, UUID>) {
     // Ensure both connections' existing sector matches with the map
-    if (connectionSectorMap[connection1] != currentSector1) return
-    if (connectionSectorMap[connection2] != currentSector2) return
+    if (connectionSectorMap[player1] != currentSector1) return
+    if (connectionSectorMap[player2] != currentSector2) return
     // Swap the connection to sector mappings
-    connectionSectorMap[connection1] = currentSector2
-    connectionSectorMap[connection2] = currentSector1
+    connectionSectorMap[player1] = currentSector2
+    connectionSectorMap[player2] = currentSector1
     // Swap the sector to UUID mappings
     val tmp = sectorUUIDMap[currentSector1]
     sectorUUIDMap[currentSector1] = sectorUUIDMap[currentSector2]
     sectorUUIDMap[currentSector2] = tmp
     GAME.gameServer?.apply {
         val sectorArray = sectors[playerNo.get().toByte()].toArray().map { it.getSerialisableObject() }.toTypedArray()
-        sendIndividualSectorUpdateTCP(connection1, currentSector2, sectorArray)
-        sendIndividualSectorUpdateTCP(connection2, currentSector1, sectorArray)
+        sendIndividualSectorUpdateTCP(player1, currentSector2, sectorArray)
+        sendIndividualSectorUpdateTCP(player2, currentSector1, sectorArray)
     }
-}
-
-/**
- * Gets the connection that owns the sector ID
- * @param sector the sector to search the connection for
- * @param connectionSectorMap the connection to sector ID map
- * @return the connection that owns the sector currently, or null if none found
- */
-fun getConnectionFromSector(sector: Byte, connectionSectorMap: GdxArrayMap<Connection, Byte>): Connection? {
-    var connection: Connection? = null
-    // Loop through map to find connection corresponding to the requesting sector
-    for (entry in ArrayMap.Entries(connectionSectorMap)) {
-        if (entry.value == sector) {
-            connection = entry.key
-            break
-        }
-    }
-
-    return connection
 }
