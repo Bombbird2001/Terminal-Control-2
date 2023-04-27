@@ -1,6 +1,7 @@
-package com.bombbird.terminalcontrol2.networking
+package com.bombbird.terminalcontrol2.networking.dataclasses
 
-import com.esotericsoftware.kryonet.Connection
+import com.bombbird.terminalcontrol2.networking.ConnectionMeta
+import com.bombbird.terminalcontrol2.networking.GameServer
 
 interface ServerReceive {
     /**

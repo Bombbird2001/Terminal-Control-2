@@ -698,7 +698,8 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
 
     /**
      * Refreshes the rendering status for each waypoint, so that each waypoint is only shown when the aircraft's current
-     * direct is it, or if the selected aircraft has a waypoint in its route
+     * direct is it, or if the selected aircraft has a waypoint in its route, or the modified selected route has the
+     * waypoint in it
      * @param selectedAircraft the currently selected aircraft, or null if no aircraft selected
      */
     fun updateWaypointDisplay(selectedAircraft: Aircraft?) {
@@ -731,6 +732,15 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         val route = latestClearance.route
         for (i in 0 until route.size) {
             val leg = route[i]
+            if (leg !is Route.WaypointLeg) continue
+            val wptEntity = wptMap[leg.wptId] ?: continue
+            wptEntity.remove<DoNotRenderShape>()
+            wptEntity.remove<DoNotRenderLabel>()
+        }
+        // Check selected aircraft modified route - need to call this function in UI pane every time route is updated
+        val uiSelectedClearanceRoute = uiPane.userClearanceState.route
+        for (i in 0 until uiSelectedClearanceRoute.size) {
+            val leg = uiSelectedClearanceRoute[i]
             if (leg !is Route.WaypointLeg) continue
             val wptEntity = wptMap[leg.wptId] ?: continue
             wptEntity.remove<DoNotRenderShape>()

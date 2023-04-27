@@ -1,7 +1,9 @@
-package com.bombbird.terminalcontrol2.networking
+package com.bombbird.terminalcontrol2.networking.dataclasses
 
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.*
+import com.bombbird.terminalcontrol2.networking.ConnectionMeta
+import com.bombbird.terminalcontrol2.networking.GameServer
 import com.bombbird.terminalcontrol2.utilities.getSectorForExtrapolatedPosition
 import ktx.ashley.get
 import ktx.ashley.hasNot
@@ -17,7 +19,8 @@ data class GameRunningStatus(private val running: Boolean = true): ServerReceive
 data class ClientUUIDData(val uuid: String? = null)
 
 /** Class representing client request to hand over an aircraft to the new sector */
-data class HandoverRequest(private val callsign: String = "", private val newSector: Byte = 0, private val sendingSector: Byte = 0): ServerReceive {
+data class HandoverRequest(private val callsign: String = "", private val newSector: Byte = 0, private val sendingSector: Byte = 0):
+    ServerReceive {
     override fun handleServerReceive(gs: GameServer, connection: ConnectionMeta) {
         val aircraft = gs.aircraft[callsign]?.entity ?: return
         // Validate the sender
@@ -48,7 +51,8 @@ data class HandoverRequest(private val callsign: String = "", private val newSec
 
 /** Class representing aircraft datatag position data (on client) sent to server */
 data class AircraftDatatagPositionUpdateData(private val aircraft: String = "", private val xOffset: Float = 0f,
-                                             private val yOffset: Float = 0f, private val minimised: Boolean = false): ServerReceive {
+                                             private val yOffset: Float = 0f, private val minimised: Boolean = false):
+    ServerReceive {
     override fun handleServerReceive(gs: GameServer, connection: ConnectionMeta) {
         val aircraft = gs.aircraft[aircraft] ?: return
         // Validate that the sector controlling the aircraft is indeed the sector who sent the request

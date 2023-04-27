@@ -1,4 +1,4 @@
-package com.bombbird.terminalcontrol2.networking
+package com.bombbird.terminalcontrol2.networking.dataclasses
 
 import com.bombbird.terminalcontrol2.screens.RadarScreen
 

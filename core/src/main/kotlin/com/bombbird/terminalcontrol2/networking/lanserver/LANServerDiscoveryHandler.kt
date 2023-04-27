@@ -1,12 +1,13 @@
-package com.bombbird.terminalcontrol2.networking
+package com.bombbird.terminalcontrol2.networking.lanserver
 
+import com.bombbird.terminalcontrol2.networking.GameServer
 import com.esotericsoftware.kryonet.ServerDiscoveryHandler
 import java.net.InetSocketAddress
 import java.nio.Buffer
 import java.nio.ByteBuffer
 import java.nio.channels.DatagramChannel
 
-class GameServerDiscoveryHandler(val gameServer: GameServer): ServerDiscoveryHandler {
+class LANServerDiscoveryHandler(val gameServer: GameServer): ServerDiscoveryHandler {
 
     /**
      * Overrides [ServerDiscoveryHandler.onDiscoverHost] to send information about the server, such as the main airport

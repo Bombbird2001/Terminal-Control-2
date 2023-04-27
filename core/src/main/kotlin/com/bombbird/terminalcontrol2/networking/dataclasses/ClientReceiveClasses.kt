@@ -1,4 +1,4 @@
-package com.bombbird.terminalcontrol2.networking
+package com.bombbird.terminalcontrol2.networking.dataclasses
 
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.*
@@ -68,7 +68,8 @@ class ClearAllClientData: ClientReceive {
 
 /** Class representing airspace data sent on initial connection, loading of the game on a client */
 data class InitialAirspaceData(private val magHdgDev: Float = 0f, private val minAlt: Int = 2000, private val maxAlt: Int = 20000,
-                               private val minSep: Float = 3f, private val transAlt: Int = 18000, private val transLvl: Int = 180): ClientReceive {
+                               private val minSep: Float = 3f, private val transAlt: Int = 18000, private val transLvl: Int = 180):
+    ClientReceive {
     override fun handleClientReceive(rs: RadarScreen) {
         MAG_HDG_DEV = magHdgDev
         MIN_ALT = minAlt
@@ -147,7 +148,8 @@ class WaypointData(private val waypoints: Array<Waypoint.SerialisedWaypoint> = a
 }
 
 /** Class representing waypoint mapping data sent on initial connection, loading of the game on a client */
-class WaypointMappingData(private val waypointMapping: Array<Waypoint.SerialisedWaypointMapping> = arrayOf()): ClientReceive {
+class WaypointMappingData(private val waypointMapping: Array<Waypoint.SerialisedWaypointMapping> = arrayOf()):
+    ClientReceive {
     override fun handleClientReceive(rs: RadarScreen) {
         rs.updatedWaypointMapping.clear()
         waypointMapping.onEach { rs.updatedWaypointMapping[it.name] = it.wptId }
@@ -155,7 +157,8 @@ class WaypointMappingData(private val waypointMapping: Array<Waypoint.Serialised
 }
 
 /** Class representing published hold data sent on initial connection, loading of the game on a client */
-class PublishedHoldData(private val publishedHolds: Array<PublishedHold.SerialisedPublishedHold> = arrayOf()): ClientReceive {
+class PublishedHoldData(private val publishedHolds: Array<PublishedHold.SerialisedPublishedHold> = arrayOf()):
+    ClientReceive {
     override fun handleClientReceive(rs: RadarScreen) {
         publishedHolds.onEach {
             PublishedHold.fromSerialisedObject(it).apply {
@@ -195,7 +198,8 @@ class MetarData(private val metars: Array<Airport.SerialisedMetar> = arrayOf()):
 }
 
 /** Class representing data sent during aircraft sector update */
-data class AircraftSectorUpdateData(private val callsign: String = "", private val newSector: Byte = 0, private val newUUID: String? = null): ClientReceive {
+data class AircraftSectorUpdateData(private val callsign: String = "", private val newSector: Byte = 0, private val newUUID: String? = null):
+    ClientReceive {
     override fun handleClientReceive(rs: RadarScreen) {
         // If the client has not received the initial load data, ignore this sector update
         if (rs.sectors.isEmpty) return
@@ -231,7 +235,8 @@ data class AircraftSectorUpdateData(private val callsign: String = "", private v
 }
 
 /** Class representing sent when an aircraft spawns in the game */
-data class AircraftSpawnData(private val newAircraft: Aircraft.SerialisedAircraft = Aircraft.SerialisedAircraft()): ClientReceive {
+data class AircraftSpawnData(private val newAircraft: Aircraft.SerialisedAircraft = Aircraft.SerialisedAircraft()):
+    ClientReceive {
     override fun handleClientReceive(rs: RadarScreen) {
         Aircraft.fromSerialisedObject(newAircraft).apply {
             entity[AircraftInfo.mapper]?.icaoCallsign?.let { callsign ->
@@ -250,7 +255,8 @@ data class AircraftDespawnData(private val callsign: String = ""): ClientReceive
 }
 
 /** Class representing data sent during creation of a new custom waypoint */
-data class CustomWaypointData(private val customWpt: Waypoint.SerialisedWaypoint = Waypoint.SerialisedWaypoint()): ClientReceive {
+data class CustomWaypointData(private val customWpt: Waypoint.SerialisedWaypoint = Waypoint.SerialisedWaypoint()):
+    ClientReceive {
     override fun handleClientReceive(rs: RadarScreen) {
         if (rs.waypoints.containsKey(customWpt.id)) {
             Log.info("NetworkingTools", "Existing waypoint with ID ${customWpt.id} found, ignoring this custom waypoint")
@@ -296,7 +302,8 @@ data class ScoreData(private val score: Int = 0, private val highScore: Int = 0)
 
 /** Class representing data sent for ongoing conflicts and potential conflicts */
 class ConflictData(private val conflicts: Array<ConflictManager.Conflict.SerialisedConflict> = arrayOf(),
-                   private val potentialConflicts: Array<ConflictManager.PotentialConflict.SerialisedPotentialConflict> = arrayOf()): ClientReceive {
+                   private val potentialConflicts: Array<ConflictManager.PotentialConflict.SerialisedPotentialConflict> = arrayOf()):
+    ClientReceive {
     override fun handleClientReceive(rs: RadarScreen) {
         rs.conflicts.clear()
         rs.potentialConflicts.clear()
@@ -311,7 +318,8 @@ class ConflictData(private val conflicts: Array<ConflictManager.Conflict.Seriali
 
 /** Class representing data sent for traffic settings on the server */
 class TrafficSettingsData(private val trafficMode: Byte = TrafficMode.NORMAL, private val trafficValue: Float = 0f,
-                          private val arrivalClosed: ByteArray = byteArrayOf(), private val departureClosed: ByteArray = byteArrayOf()): ClientReceive {
+                          private val arrivalClosed: ByteArray = byteArrayOf(), private val departureClosed: ByteArray = byteArrayOf()):
+    ClientReceive {
     override fun handleClientReceive(rs: RadarScreen) {
         rs.serverTrafficMode = trafficMode
         rs.serverTrafficValue = trafficValue

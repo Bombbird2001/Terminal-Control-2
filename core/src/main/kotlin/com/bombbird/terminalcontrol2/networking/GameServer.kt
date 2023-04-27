@@ -8,6 +8,8 @@ import com.bombbird.terminalcontrol2.files.*
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.navigation.Route
+import com.bombbird.terminalcontrol2.networking.dataclasses.*
+import com.bombbird.terminalcontrol2.networking.lanserver.LANServer
 import com.bombbird.terminalcontrol2.systems.*
 import com.bombbird.terminalcontrol2.traffic.*
 import com.bombbird.terminalcontrol2.utilities.*

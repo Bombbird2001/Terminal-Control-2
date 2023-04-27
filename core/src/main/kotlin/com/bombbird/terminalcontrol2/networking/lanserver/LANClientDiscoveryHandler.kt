@@ -1,10 +1,10 @@
-package com.bombbird.terminalcontrol2.networking
+package com.bombbird.terminalcontrol2.networking.lanserver
 
 import com.esotericsoftware.kryonet.ClientDiscoveryHandler
 import ktx.collections.GdxArray
 import java.net.DatagramPacket
 
-class GameClientDiscoveryHandler: ClientDiscoveryHandler {
+class LANClientDiscoveryHandler: ClientDiscoveryHandler {
     var onDiscoveredHostDataMap: GdxArray<Pair<String, ByteArray>>? = null
 
     /**

@@ -1,10 +1,12 @@
-package com.bombbird.terminalcontrol2.networking
+package com.bombbird.terminalcontrol2.networking.dataclasses
 
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.getEngine
 import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.navigation.calculateRouteSegments
+import com.bombbird.terminalcontrol2.networking.ConnectionMeta
+import com.bombbird.terminalcontrol2.networking.GameServer
 import com.bombbird.terminalcontrol2.screens.RadarScreen
 import com.bombbird.terminalcontrol2.systems.RenderingSystemClient
 import com.bombbird.terminalcontrol2.ui.getNewDatatagLabelText
@@ -52,7 +54,8 @@ data class AircraftControlStateUpdateData(val callsign: String = "", val primary
 }
 
 /** Class representing client request to swap sectors */
-data class SectorSwapRequest(private val requestedSector: Byte? = null, private val sendingSector: Byte = -1): ServerReceive, ClientReceive {
+data class SectorSwapRequest(private val requestedSector: Byte? = null, private val sendingSector: Byte = -1): ServerReceive,
+    ClientReceive {
     override fun handleServerReceive(gs: GameServer, connection: ConnectionMeta) {
         // Validate the sender
         if (gs.sectorMap[connection.uuid] != sendingSector) return
@@ -110,7 +113,8 @@ data class SectorSwapRequest(private val requestedSector: Byte? = null, private 
 }
 
 /** Class representing client request to decline the incoming swap request from another sector */
-data class DeclineSwapRequest(private val requestingSector: Byte = -1, private val decliningSector: Byte = -1): ServerReceive, ClientReceive {
+data class DeclineSwapRequest(private val requestingSector: Byte = -1, private val decliningSector: Byte = -1): ServerReceive,
+    ClientReceive {
     override fun handleServerReceive(gs: GameServer, connection: ConnectionMeta) {
         // Validate the declining player
         if (gs.sectorMap[connection.uuid] != decliningSector) return

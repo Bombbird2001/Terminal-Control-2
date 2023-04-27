@@ -1,6 +1,11 @@
-package com.bombbird.terminalcontrol2.networking
+package com.bombbird.terminalcontrol2.networking.lanserver
 
 import com.bombbird.terminalcontrol2.global.*
+import com.bombbird.terminalcontrol2.networking.*
+import com.bombbird.terminalcontrol2.networking.dataclasses.ClientUUIDData
+import com.bombbird.terminalcontrol2.networking.dataclasses.ConnectionError
+import com.bombbird.terminalcontrol2.networking.dataclasses.RequestClientUUID
+import com.bombbird.terminalcontrol2.networking.publicserver.PublicServer
 import com.esotericsoftware.kryonet.Connection
 import com.esotericsoftware.kryonet.Listener
 import com.esotericsoftware.minlog.Log
@@ -29,7 +34,7 @@ class LANServer(
 
     override fun start(tcpPort: Int, udpPort: Int) {
         registerClassesToKryo(server.kryo)
-        server.setDiscoveryHandler(GameServerDiscoveryHandler(gameServer))
+        server.setDiscoveryHandler(LANServerDiscoveryHandler(gameServer))
         server.bind(tcpPort, udpPort)
         server.start()
         server.addListener(object : Listener {

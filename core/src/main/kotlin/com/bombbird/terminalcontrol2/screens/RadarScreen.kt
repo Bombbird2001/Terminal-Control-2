@@ -21,6 +21,7 @@ import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.graphics.ScreenSize
 import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.networking.*
+import com.bombbird.terminalcontrol2.networking.dataclasses.*
 import com.bombbird.terminalcontrol2.systems.*
 import com.bombbird.terminalcontrol2.traffic.ConflictManager
 import com.bombbird.terminalcontrol2.traffic.TrafficMode

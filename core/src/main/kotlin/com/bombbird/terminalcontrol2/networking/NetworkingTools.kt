@@ -8,6 +8,8 @@ import com.bombbird.terminalcontrol2.json.BaseLegJSONInterface
 import com.bombbird.terminalcontrol2.navigation.Approach
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.navigation.SidStar
+import com.bombbird.terminalcontrol2.networking.dataclasses.*
+import com.bombbird.terminalcontrol2.networking.lanserver.LANClientDiscoveryHandler
 import com.bombbird.terminalcontrol2.screens.RadarScreen
 import com.bombbird.terminalcontrol2.traffic.*
 import com.bombbird.terminalcontrol2.ui.*
@@ -149,9 +151,9 @@ fun registerClassesToKryo(kryo: Kryo?) {
  * Gets an instance of the game client for connection to server
  * @return the [Client] object
  */
-fun getGameClientInstance(gameClientDiscoveryHandler: GameClientDiscoveryHandler): Client {
+fun getGameClientInstance(LANClientDiscoveryHandler: LANClientDiscoveryHandler): Client {
     return Client(CLIENT_WRITE_BUFFER_SIZE, CLIENT_READ_BUFFER_SIZE).apply {
-        setDiscoveryHandler(gameClientDiscoveryHandler)
+        setDiscoveryHandler(LANClientDiscoveryHandler)
         addListener(object: Listener {
             override fun received(connection: Connection, obj: Any?) {
                 (obj as? RequestClientUUID)?.apply {

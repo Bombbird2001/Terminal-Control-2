@@ -10,7 +10,7 @@ import com.bombbird.terminalcontrol2.global.CLIENT_SCREEN
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.navigation.*
 import com.bombbird.terminalcontrol2.navigation.Route.*
-import com.bombbird.terminalcontrol2.networking.AircraftControlStateUpdateData
+import com.bombbird.terminalcontrol2.networking.dataclasses.AircraftControlStateUpdateData
 import com.esotericsoftware.minlog.Log
 import ktx.ashley.get
 import ktx.ashley.has
