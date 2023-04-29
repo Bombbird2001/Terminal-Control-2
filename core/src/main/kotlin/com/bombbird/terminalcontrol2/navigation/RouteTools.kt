@@ -182,6 +182,7 @@ fun getFirstWaypointLegInSector(sector: Polygon, route: Route): Int? {
  * @return a Pair, the first being a float denoting the track, the second being a byte representing the turn direction
  * */
 fun findNextWptLegTrackAndDirection(route: Route): Pair<Float, Byte>? {
+    if (route.size == 0) return null
     (route[0] as? WaypointLeg)?.let { wpt1 ->
         for (i in 1 until route.size) {
             (route[i] as? WaypointLeg)?.also { wpt2 ->
