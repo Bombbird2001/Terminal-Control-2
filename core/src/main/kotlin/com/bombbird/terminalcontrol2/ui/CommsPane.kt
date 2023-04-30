@@ -1,6 +1,7 @@
 package com.bombbird.terminalcontrol2.ui
 
 import com.badlogic.ashley.core.Entity
+import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.scenes.scene2d.Actor
 import com.badlogic.gdx.scenes.scene2d.ui.Label
@@ -116,9 +117,6 @@ class CommsPane {
 
         val yourCallsign = getControllerCallsign(flightType.type, thisSectorInfo)
 
-        // Random whether to say "with you" or not
-        val withYou = if (MathUtils.randomBoolean(0.3f)) "with you" else ""
-
         // Get the wake category of the aircraft
         val aircraftWake = getWakePhraseology(acInfo.aircraftPerf.wakeCategory)
 
@@ -157,8 +155,16 @@ class CommsPane {
             }
         } else ""
 
-        val preFinalMsg = "$yourCallsign $randomGreeting, ${acInfo.icaoCallsign} $aircraftWake $withYou, $altitudeAction $starSid$inbound$atis"
+        val preFinalMsg = "$yourCallsign $randomGreeting, ${acInfo.icaoCallsign} $aircraftWake, $altitudeAction $starSid$inbound$atis"
         addMessage(removeExtraCharacters(preFinalMsg), getMessageTypeForAircraftType(flightType.type))
+
+        // If datatag is minimised, un-minimise it
+        aircraft[Datatag.mapper]?.apply {
+            if (minimised) {
+                minimised = false
+                Gdx.app.postRunnable { updateDatatagText(this, getNewDatatagLabelText(aircraft, minimised)) }
+            }
+        }
     }
 
     /**

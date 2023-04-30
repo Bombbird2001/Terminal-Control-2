@@ -10,6 +10,7 @@ import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.*
 import com.bombbird.terminalcontrol2.traffic.TrafficMode
+import com.bombbird.terminalcontrol2.traffic.despawnAircraft
 import com.bombbird.terminalcontrol2.utilities.*
 import com.esotericsoftware.minlog.Log
 import ktx.ashley.*
@@ -129,7 +130,6 @@ class AISystem: EntitySystem() {
                 val gsKt = pxpsToKt(get(GroundTrack.mapper)?.trackVectorPxps?.len() ?: return@apply)
                 acc.dSpeedMps2 = if (gsKt > 60) -1.5f else -1f
                 if (gsKt < 35) {
-                    engine.removeEntity(this)
                     GAME.gameServer?.let {
                         get(LandingRoll.mapper)?.rwy?.let { landingRwy ->
                             landingRwy[RunwayNextArrival.mapper]?.also { nextArr ->
@@ -142,9 +142,6 @@ class AISystem: EntitySystem() {
                             landingRwy[OppositeRunway.mapper]?.oppRwy?.remove<RunwayOccupied>()
                         }
 
-                        val callsign = get(AircraftInfo.mapper)?.icaoCallsign ?: return@let
-                        it.aircraft.removeKey(callsign) // Remove from aircraft map
-                        it.sendAircraftDespawn(callsign) // Send removal data to all clients
                         if (it.trafficMode == TrafficMode.NORMAL) {
                             var points = 0.6f - it.trafficValue / 30
                             points = MathUtils.clamp(points, 0.15f, 0.5f)
@@ -155,6 +152,8 @@ class AISystem: EntitySystem() {
                         if (it.score > it.highScore) it.highScore = it.score
                         it.sendScoreUpdate()
                     }
+
+                    despawnAircraft(this)
                 }
             }
         }
@@ -530,12 +529,20 @@ class AISystem: EntitySystem() {
         for (i in 0 until gsArmed.size()) {
             gsArmed[i]?.apply {
                 val pos = get(Position.mapper) ?: return@apply
+                val cmd = get(CommandTarget.mapper) ?: return@apply
                 val alt = get(Altitude.mapper) ?: return@apply
                 val gsApp = get(GlideSlopeArmed.mapper)?.gsApp ?: return@apply
-                // Capture glide slope when within 20 feet and below the max intercept altitude (and localizer is captured)
-                if (alt.altitudeFt < (gsApp[GlideSlope.mapper]?.maxInterceptAlt ?: return@apply) && abs(alt.altitudeFt - (getAppAltAtPos(gsApp, pos.x, pos.y, 0f) ?: return@apply)) < 20) {
-                    remove<GlideSlopeArmed>()
-                    this += GlideSlopeCaptured(gsApp)
+                if (alt.altitudeFt < (gsApp[GlideSlope.mapper]?.maxInterceptAlt ?: return@apply)) {
+                    val gsAltAtPos = getAppAltAtPos(gsApp, pos.x, pos.y, 0f) ?: return@apply
+                    // Maintain altitude if below the GS capture altitude
+                    if (alt.altitudeFt < gsAltAtPos) {
+                        cmd.targetAltFt = alt.altitudeFt.toInt()
+                    }
+                    // Capture glide slope when within 20 feet and below the max intercept altitude (and localizer is captured)
+                    if (abs(alt.altitudeFt - gsAltAtPos) < 20) {
+                        remove<GlideSlopeArmed>()
+                        this += GlideSlopeCaptured(gsApp)
+                    }
                 }
             }
         }
@@ -923,8 +930,14 @@ class AISystem: EntitySystem() {
 
         entity[Altitude.mapper]?.apply {
             var targetAlt = actingClearance.clearedAlt
-            minAlt?.let { if (targetAlt < it && altitudeFt > it) targetAlt = it }
-            maxAlt?.let { if (targetAlt > it && altitudeFt < it) targetAlt = it }
+            minAlt?.let {
+                if (targetAlt < it && altitudeFt >= it) targetAlt = it
+                else if (targetAlt < it && altitudeFt < it && flightType?.type == FlightType.ARRIVAL) targetAlt = altitudeFt.toInt()
+            }
+            maxAlt?.let {
+                if (targetAlt > it && altitudeFt <= it) targetAlt = it
+                else if (targetAlt > it && altitudeFt > it && flightType?.type == FlightType.DEPARTURE) targetAlt = altitudeFt.toInt()
+            }
 
             commandTarget.targetAltFt = targetAlt // Update command target to the new calculated target altitude
         }

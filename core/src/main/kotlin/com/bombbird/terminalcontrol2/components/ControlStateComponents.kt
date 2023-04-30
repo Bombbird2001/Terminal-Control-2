@@ -182,11 +182,11 @@ data class CanBeHandedOver(val nextSector: Byte = 0): Component {
 }
 
 /**
- * Component for tagging aircraft that did a go around recently (i.e. < 45 seconds); a timer comes with the component
+ * Component for tagging aircraft that did a go around recently (i.e. < 60 seconds); a timer comes with the component
  * to keep track of when to remove this component from the aircraft
  */
 @JsonClass(generateAdapter = true)
-data class RecentGoAround(var timeLeft: Float = 45f): Component, BaseComponentJSONInterface {
+data class RecentGoAround(var timeLeft: Float = 60f): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.RECENT_GO_AROUND
 
     companion object: Mapper<RecentGoAround>()

@@ -10,6 +10,8 @@ import com.bombbird.terminalcontrol2.global.MAX_ALT
 import com.bombbird.terminalcontrol2.global.VERT_SEP
 import com.bombbird.terminalcontrol2.traffic.*
 import com.bombbird.terminalcontrol2.utilities.calculateDistanceBetweenPoints
+import com.bombbird.terminalcontrol2.utilities.findClosestIntersectionBetweenSegmentAndPolygon
+import com.bombbird.terminalcontrol2.utilities.nmToPx
 import com.esotericsoftware.minlog.Log
 import ktx.ashley.*
 import ktx.collections.GdxArray
@@ -26,8 +28,11 @@ class TrafficSystemInterval: IntervalSystem(1f) {
     private val pendingRunwayChangeFamily = allOf(PendingRunwayConfig::class, AirportInfo::class, RunwayConfigurationChildren::class).get()
     private val arrivalFamily = allOf(AircraftInfo::class, ArrivalAirport::class).get()
     private val runwayTakeoffFamily = allOf(RunwayInfo::class).get()
-    private val closestArrivalFamily = allOf(Position::class, AircraftInfo::class).oneOf(LocalizerCaptured::class, GlideSlopeCaptured::class, VisualCaptured::class).get()
+    private val closestArrivalFamily = allOf(Position::class, AircraftInfo::class)
+        .oneOf(LocalizerCaptured::class, GlideSlopeCaptured::class, VisualCaptured::class).get()
     private val conflictAbleFamily = allOf(Position::class, Altitude::class, ConflictAble::class)
+        .exclude(WaitingTakeoff::class, TakeoffRoll::class, LandingRoll::class).get()
+    private val despawnFamily = allOf(Position::class, AircraftInfo::class, Controllable::class)
         .exclude(WaitingTakeoff::class, TakeoffRoll::class, LandingRoll::class).get()
 
     private val startingAltitude = floor(getLowestAirportElevation() / VERT_SEP).roundToInt() * VERT_SEP
@@ -153,6 +158,28 @@ class TrafficSystemInterval: IntervalSystem(1f) {
                 // All related checks passed - clear next departure for takeoff
                 val nextDep = airport.entity[AirportNextDeparture.mapper] ?: return@apply
                 clearForTakeoff(nextDep.aircraft, this)
+            }
+        }
+
+        // Despawn checker
+        val checkDespawn = engine.getEntitiesFor(despawnFamily)
+        for (i in 0 until checkDespawn.size()) {
+            checkDespawn[i]?.apply {
+                val pos = get(Position.mapper) ?: return@apply
+                val controllable = get(Controllable.mapper) ?: return@apply
+
+                // Check that aircraft is under control only by center/ACC
+                if (controllable.sectorId != SectorInfo.CENTRE) return@apply
+                // Check that aircraft is not in the control sector
+                val primarySector = GAME.gameServer?.primarySector ?: return@apply
+                if (primarySector.contains(pos.x, pos.y)) return@apply
+                // Check if aircraft is more than 20nm away the intersection between primary sector and line joining
+                // airport position and present position
+                val sectorExitPoint = findClosestIntersectionBetweenSegmentAndPolygon(0f, 0f, pos.x, pos.y,
+                    primarySector.vertices, 0f) ?: return@apply
+                if (calculateDistanceBetweenPoints(pos.x, pos.y, sectorExitPoint.x, sectorExitPoint.y) <= nmToPx(20)) return@apply
+
+                despawnAircraft(this)
             }
         }
 

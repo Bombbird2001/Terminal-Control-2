@@ -122,6 +122,19 @@ fun createArrival(callsign: String, icaoType: String, airport: Entity, gs: GameS
 }
 
 /**
+ * Removes the aircraft from the game world, and deletes related information from data structures
+ * @param aircraft the aircraft to remove
+ */
+fun despawnAircraft(aircraft: Entity) {
+    getEngine(false).removeEntity(aircraft)
+    GAME.gameServer?.let {
+        val callsign = aircraft[AircraftInfo.mapper]?.icaoCallsign ?: return
+        it.aircraft.removeKey(callsign) // Remove from aircraft map
+        it.sendAircraftDespawn(callsign) // Send removal data to all clients
+    }
+}
+
+/**
  * Chooses a random STAR from all STARs available for the input airport
  *
  * This also takes into account any noise restrictions

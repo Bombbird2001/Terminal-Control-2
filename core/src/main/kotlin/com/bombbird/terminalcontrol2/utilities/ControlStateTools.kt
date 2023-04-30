@@ -192,7 +192,7 @@ fun calculateArrivalSpawnIAS(origStarRoute: Route, aircraftRoute: Route, spawnAl
     }}
 
     val crossOverAlt = calculateCrossoverAltitude(aircraftPerf.tripIas, aircraftPerf.tripMach)
-    return min((maxSpd ?: aircraftPerf.maxIas).toInt(), (if (spawnAlt > crossOverAlt) calculateIASFromMach(spawnAlt, aircraftPerf.tripMach).roundToInt().toShort()
+    return min((maxSpd ?: aircraftPerf.maxIas).toInt(), (if (spawnAlt > crossOverAlt) max(250, calculateIASFromMach(spawnAlt, aircraftPerf.tripMach).roundToInt())
     else aircraftPerf.tripIas).toInt()).toShort()
 }
 
