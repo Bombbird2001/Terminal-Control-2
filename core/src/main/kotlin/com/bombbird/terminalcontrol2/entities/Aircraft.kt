@@ -1,7 +1,6 @@
 package com.bombbird.terminalcontrol2.entities
 
 import com.badlogic.gdx.graphics.Color
-import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable
 import com.badlogic.gdx.utils.Queue.QueueIterator
@@ -97,18 +96,6 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                     Log.info("Aircraft", "Unknown flight type $flightType")
                     SectorInfo.CENTRE
                 }
-            }
-        }
-        if (flightType == FlightType.DEPARTURE) {
-            with<ContactFromTower> {
-                altitudeFt = alt.roundToInt() + MathUtils.random(600, 1100)
-            }
-            with<ContactToCentre> {
-                altitudeFt = (MAX_ALT - MathUtils.random(500, 900))
-            }
-        } else if (flightType == FlightType.ARRIVAL) {
-            with<ContactFromCentre> {
-                altitudeFt = (MAX_ALT + MathUtils.random(400, 1500))
             }
         }
     }

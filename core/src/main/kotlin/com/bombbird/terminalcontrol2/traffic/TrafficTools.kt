@@ -117,6 +117,7 @@ fun createArrival(callsign: String, icaoType: String, airport: Entity, gs: GameS
         }
         entity += InitialArrivalSpawn()
         if (alt > 10000) entity += DecelerateTo240kts()
+        entity += ContactFromCentre(MAX_ALT + MathUtils.random(400, 1500))
         gs.sendAircraftSpawn(this)
     })
 }
@@ -300,6 +301,9 @@ fun clearForTakeoff(aircraft: Entity, rwy: Entity) {
             it.targetHdgDeg = convertWorldAndRenderDeg(rwyDir.trackUnitVector.angleDeg()) + MAG_HDG_DEV
         }
         aircraft += DepartureAirport(arptId, rwyId)
+        // Set altitude to contact from tower, to centre
+        aircraft += ContactFromTower(rwyAlt.roundToInt() + MathUtils.random(600, 1100))
+        aircraft += ContactToCentre(MAX_ALT - MathUtils.random(500, 900))
 
         // Set runway as occupied
         rwy += RunwayOccupied()

@@ -155,7 +155,7 @@ class CommsPane {
             }
         } else ""
 
-        val preFinalMsg = "$yourCallsign $randomGreeting, ${acInfo.icaoCallsign} $aircraftWake, $altitudeAction $starSid$inbound$atis"
+        val preFinalMsg = "$yourCallsign $randomGreeting, ${acInfo.icaoCallsign}$aircraftWake, $altitudeAction $starSid$inbound$atis"
         addMessage(removeExtraCharacters(preFinalMsg), getMessageTypeForAircraftType(flightType.type))
 
         // If datatag is minimised, un-minimise it
@@ -202,7 +202,7 @@ class CommsPane {
         val lateralClearance = if (clearanceState.vectorHdg != null) "heading ${clearanceState.vectorHdg}"
         else ""
 
-        val preFinalMsg = "$yourCallsign hello, ${acInfo.icaoCallsign} $aircraftWake, missed approach, $altitudeAction, $lateralClearance"
+        val preFinalMsg = "$yourCallsign hello, ${acInfo.icaoCallsign}$aircraftWake, missed approach, $altitudeAction, $lateralClearance"
         addMessage(removeExtraCharacters(preFinalMsg), ARRIVAL)
     }
 
@@ -258,7 +258,7 @@ class CommsPane {
         }
         val nextCallsign = getControllerCallsign(flightType.type, nextSectorInfo)
 
-        val finalMsg = "${acInfo.icaoCallsign} $aircraftWake, contact $nextCallsign on ${nextSectorInfo.frequency}"
+        val finalMsg = "${acInfo.icaoCallsign}$aircraftWake, contact $nextCallsign on ${nextSectorInfo.frequency}"
         addMessage(finalMsg, OTHERS)
 
         // Aircraft read-back segment
@@ -332,8 +332,8 @@ class CommsPane {
      */
     private fun getWakePhraseology(wakeCat: Char): String {
         return when (wakeCat) {
-            AircraftTypeData.AircraftPerfData.WAKE_SUPER -> "super"
-            AircraftTypeData.AircraftPerfData.WAKE_HEAVY -> "heavy"
+            AircraftTypeData.AircraftPerfData.WAKE_SUPER -> " super"
+            AircraftTypeData.AircraftPerfData.WAKE_HEAVY -> " heavy"
             else -> ""
         }
     }
