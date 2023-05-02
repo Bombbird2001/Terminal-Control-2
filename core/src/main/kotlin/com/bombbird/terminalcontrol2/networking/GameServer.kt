@@ -576,6 +576,14 @@ class GameServer {
             server.sendToAllTCP(ActiveRunwayUpdateData(airportId, configId))
     }
 
+    fun incrementScoreBy(inc: Int, flightType: Byte) {
+        score += inc
+        if (flightType == FlightType.DEPARTURE) departed++
+        else if (flightType == FlightType.ARRIVAL) landed++
+        if (score > highScore) highScore = score
+        sendScoreUpdate()
+    }
+
     /** Sends a message to clients to inform them of a change in scores */
     fun sendScoreUpdate() {
         server.sendToAllTCP(ScoreData(score, highScore))

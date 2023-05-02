@@ -33,8 +33,8 @@ class ControlStateSystemIntervalClient: IntervalSystem(1f) {
                             updateUIPaneHandover(this)
                             return@apply
                         }
-                        if (has(ContactToCentre.mapper) && alt.altitudeFt >= MAX_ALT - 1500) {
-                            // Aircraft is expected to contact ACC, and is less than 1500 feet below the max TMA altitude,
+                        if (has(ContactToCentre.mapper) && alt.altitudeFt >= MAX_ALT - 1900) {
+                            // Aircraft is expected to contact ACC, and is less than 1900 feet below the max TMA altitude,
                             // allow handover to ACC
                             this += CanBeHandedOver(SectorInfo.CENTRE)
                             updateUIPaneHandover(this)

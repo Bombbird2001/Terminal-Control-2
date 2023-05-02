@@ -170,7 +170,7 @@ class ControlStateSystemInterval: IntervalSystem(1f) {
             contactToCentre[i]?.apply {
                 val alt = get(Altitude.mapper) ?: return@apply
                 val pos = get(Position.mapper) ?: return@apply
-                val contact = get(ContactFromCentre.mapper) ?: return@apply
+                val contact = get(ContactToCentre.mapper) ?: return@apply
                 val controllable = get(Controllable.mapper) ?: return@apply
                 if (alt.altitudeFt > contact.altitudeFt || getSectorForPosition(pos.x, pos.y, true) == null) {
                     controllable.sectorId = SectorInfo.CENTRE
@@ -178,12 +178,9 @@ class ControlStateSystemInterval: IntervalSystem(1f) {
                         get(AircraftInfo.mapper)?.icaoCallsign?.let { callsign ->
                             server.sendAircraftSectorUpdateTCPToAll(callsign, controllable.sectorId, null)
                         }
-                        server.score++
-                        server.departed++
-                        if (server.score > server.highScore) server.highScore = server.score
-                        server.sendScoreUpdate()
+                        server.incrementScoreBy(1, FlightType.DEPARTURE)
                     }
-                    remove<ContactFromCentre>()
+                    remove<ContactToCentre>()
                 }
             }
         }

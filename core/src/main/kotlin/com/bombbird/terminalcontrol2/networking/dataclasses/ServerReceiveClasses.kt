@@ -36,6 +36,7 @@ data class HandoverRequest(private val callsign: String = "", private val newSec
             // Validate aircraft altitude
             val alt = aircraft[Altitude.mapper]?.altitudeFt ?: return
             if (alt < MAX_ALT - 1500) return
+            gs.incrementScoreBy(1, FlightType.DEPARTURE)
         } else {
             // Validate the extrapolated position
             val pos = aircraft[Position.mapper] ?: return
