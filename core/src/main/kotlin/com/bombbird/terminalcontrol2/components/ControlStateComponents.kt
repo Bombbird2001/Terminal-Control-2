@@ -191,3 +191,14 @@ data class RecentGoAround(var timeLeft: Float = 60f): Component, BaseComponentJS
 
     companion object: Mapper<RecentGoAround>()
 }
+
+/**
+ * Component for tagging aircraft that has just been handed over to the ACC and is pending clearance to their cruise
+ * altitude
+ */
+@JsonClass(generateAdapter = true)
+data class PendingCruiseAltitude(var timeLeft: Float = 10f): Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.PENDING_CRUISE_ALTITUDE
+
+    companion object: Mapper<PendingCruiseAltitude>()
+}

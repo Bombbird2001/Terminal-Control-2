@@ -1,5 +1,6 @@
 package com.bombbird.terminalcontrol2.networking.dataclasses
 
+import com.badlogic.gdx.math.MathUtils
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.networking.ConnectionMeta
@@ -7,6 +8,7 @@ import com.bombbird.terminalcontrol2.networking.GameServer
 import com.bombbird.terminalcontrol2.utilities.getSectorForExtrapolatedPosition
 import ktx.ashley.get
 import ktx.ashley.hasNot
+import ktx.ashley.plusAssign
 
 /** Class representing data sent on a client request to pause/run the game */
 data class GameRunningStatus(private val running: Boolean = true): ServerReceive {
@@ -35,8 +37,9 @@ data class HandoverRequest(private val callsign: String = "", private val newSec
         } else if (newSector == SectorInfo.CENTRE) {
             // Validate aircraft altitude
             val alt = aircraft[Altitude.mapper]?.altitudeFt ?: return
-            if (alt < MAX_ALT - 1500) return
+            if (alt < MAX_ALT - 1900) return
             gs.incrementScoreBy(1, FlightType.DEPARTURE)
+            aircraft += PendingCruiseAltitude(MathUtils.random(6f, 12f))
         } else {
             // Validate the extrapolated position
             val pos = aircraft[Position.mapper] ?: return

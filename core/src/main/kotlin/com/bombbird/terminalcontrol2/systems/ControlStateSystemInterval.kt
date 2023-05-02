@@ -2,14 +2,18 @@ package com.bombbird.terminalcontrol2.systems
 
 import com.badlogic.ashley.core.Family
 import com.badlogic.ashley.systems.IntervalSystem
+import com.badlogic.gdx.math.MathUtils
+import com.badlogic.gdx.utils.Queue
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.TRACK_EXTRAPOLATE_TIME_S
+import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.navigation.calculateDistToGo
 import com.bombbird.terminalcontrol2.navigation.getNextWaypointWithSpdRestr
 import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.*
+import kotlin.math.max
 
 /**
  * System that is responsible for aircraft control states, updating at a lower frequency of 1hz
@@ -25,6 +29,7 @@ class ControlStateSystemInterval: IntervalSystem(1f) {
     private val contactToCentreFamily: Family = allOf(Altitude::class, Position::class, ContactToCentre::class).get()
     private val checkSectorFamily: Family = allOf(Position::class, GroundTrack::class, Controllable::class).get()
     private val goAroundFamily: Family = allOf(RecentGoAround::class).get()
+    private val pendingCruiseFamily: Family = allOf(PendingCruiseAltitude::class, ClearanceAct::class, AircraftInfo::class).get()
 
     /**
      * Secondary update system, for operations that can be updated at a lower frequency and do not rely on deltaTime
@@ -179,6 +184,7 @@ class ControlStateSystemInterval: IntervalSystem(1f) {
                             server.sendAircraftSectorUpdateTCPToAll(callsign, controllable.sectorId, null)
                         }
                         server.incrementScoreBy(1, FlightType.DEPARTURE)
+                        this += PendingCruiseAltitude(MathUtils.random(6f, 12f))
                     }
                     remove<ContactToCentre>()
                 }
@@ -227,6 +233,34 @@ class ControlStateSystemInterval: IntervalSystem(1f) {
                 val recentGA = get(RecentGoAround.mapper) ?: return@apply
                 recentGA.timeLeft -= interval
                 if (recentGA.timeLeft < 0) remove<RecentGoAround>()
+            }
+        }
+
+        // Clear departures up to their cruising altitude automatically (ACC)
+        val pendingCruise = engine.getEntitiesFor(pendingCruiseFamily)
+        for (i in 0 until pendingCruise.size()) {
+            pendingCruise[i]?.apply {
+                val pendingCruiseAltitude = get(PendingCruiseAltitude.mapper) ?: return@apply
+                val acInfo = get(AircraftInfo.mapper) ?: return@apply
+                pendingCruiseAltitude.timeLeft -= interval
+                if (pendingCruiseAltitude.timeLeft < 0) {
+                    val currClearance = getLatestClearanceState(this) ?: return@apply
+                    val newClearance = ClearanceState(currClearance.routePrimaryName,
+                        Route.fromSerialisedObject(currClearance.route.getSerialisedObject()),
+                        Route.fromSerialisedObject(currClearance.hiddenLegs.getSerialisedObject()),
+                        currClearance.vectorHdg, currClearance.vectorTurnDir, acInfo.aircraftPerf.maxAlt, false,
+                        acInfo.aircraftPerf.tripIas, currClearance.minIas, currClearance.maxIas, currClearance.optimalIas,
+                        currClearance.clearedApp, currClearance.clearedTrans)
+                    val pendingClearances = get(PendingClearances.mapper)
+                    if (pendingClearances == null) this += PendingClearances(Queue<ClearanceState.PendingClearanceState>().apply {
+                        addLast(ClearanceState.PendingClearanceState(2f, newClearance))
+                    })
+                    else pendingClearances.clearanceQueue.apply {
+                        val lastTime = last().timeLeft
+                        addLast(ClearanceState.PendingClearanceState(max(2f - lastTime, 0.01f), newClearance))
+                    }
+                    remove<PendingCruiseAltitude>()
+                }
             }
         }
     }

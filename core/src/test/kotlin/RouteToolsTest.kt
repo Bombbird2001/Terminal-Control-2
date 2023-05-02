@@ -202,10 +202,16 @@ object RouteToolsTest: FunSpec() {
         }
 
         test("Find next waypoint with speed restriction") {
-            getNextWaypointWithSpdRestr(route1) shouldBe wpt1
-            getNextWaypointWithSpdRestr(route2) shouldBe wpt1
-            getNextWaypointWithSpdRestr(route3).shouldBeNull()
-            getNextWaypointWithSpdRestr(route4).shouldBeNull()
+            val pair1 = getNextWaypointWithSpdRestr(route1, 10000f)
+            pair1?.first shouldBe wpt1
+            pair1?.second shouldBe 240
+            val pair2 = getNextWaypointWithSpdRestr(route2, 10000f)
+            pair2?.first shouldBe wpt1
+            pair2?.second shouldBe 240
+            val pair3 = getNextWaypointWithSpdRestr(route3, 10000f)
+            pair3?.first shouldBe hold1
+            pair3?.second shouldBe 230
+            getNextWaypointWithSpdRestr(route4, 10000f).shouldBeNull()
         }
 
         test("Find next maximum speed restriction") {
