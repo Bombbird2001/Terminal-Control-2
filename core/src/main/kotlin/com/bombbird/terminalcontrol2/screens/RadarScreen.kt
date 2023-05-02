@@ -166,6 +166,7 @@ class RadarScreen(private val connectionHost: String?, airportToHost: String?, s
         clientEngine.addSystem(DataSystemClient())
         clientEngine.addSystem(DataSystemIntervalClient())
         clientEngine.addSystem(ControlStateSystemIntervalClient())
+        clientEngine.addSystem(TrafficSystemIntervalClient())
 
         registerClassesToKryo(client.kryo)
         client.start()
@@ -348,6 +349,8 @@ class RadarScreen(private val connectionHost: String?, airportToHost: String?, s
         uiStage.disposeSafely()
         shapeRenderer.disposeSafely()
 
+        GAME.soundManager.stop()
+
         clientEngine.removeAllEntities()
         clientEngine.removeAllSystems()
 
@@ -526,6 +529,7 @@ class RadarScreen(private val connectionHost: String?, airportToHost: String?, s
      */
     fun pauseGame() {
         client.sendTCP(GameRunningStatus(false))
+        GAME.soundManager.pause()
         GAME.getScreen<PauseScreen>().radarScreen = this
         GAME.setScreen<PauseScreen>()
     }
@@ -533,6 +537,7 @@ class RadarScreen(private val connectionHost: String?, airportToHost: String?, s
     /** Resumes the game, and sends a resume game signal to the server */
     fun resumeGame() {
         client.sendTCP(GameRunningStatus(true))
+        GAME.soundManager.resume()
         if (!client.isConnected) client.reconnect()
     }
 

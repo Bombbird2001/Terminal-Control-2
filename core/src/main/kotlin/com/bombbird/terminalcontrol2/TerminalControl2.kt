@@ -1,6 +1,7 @@
 package com.bombbird.terminalcontrol2
 
 import com.badlogic.ashley.core.Engine
+import com.badlogic.gdx.audio.Sound
 import com.badlogic.gdx.graphics.Texture
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.math.MathUtils
@@ -14,6 +15,7 @@ import com.bombbird.terminalcontrol2.screens.settings.CustomWeatherSettings
 import com.bombbird.terminalcontrol2.screens.settings.GameSettings
 import com.bombbird.terminalcontrol2.screens.settings.MainSettings
 import com.bombbird.terminalcontrol2.screens.settings.TrafficSettings
+import com.bombbird.terminalcontrol2.sounds.SoundManager
 import kotlinx.coroutines.launch
 import ktx.app.KtxGame
 import ktx.app.KtxScreen
@@ -30,6 +32,7 @@ import ktx.scene2d.*
 class TerminalControl2 : KtxGame<KtxScreen>(clearScreen = false) {
     lateinit var batch: SpriteBatch
     lateinit var engine: Engine
+    lateinit var soundManager: SoundManager
     val assetStorage = AssetStorage()
     var gameServer: GameServer? = null
     var gameClientScreen: RadarScreen? = null
@@ -65,6 +68,12 @@ class TerminalControl2 : KtxGame<KtxScreen>(clearScreen = false) {
                 for (i in 1..8) load<Texture>("Images/$i.png")
                 load<Texture>("Images/MainMenuIcon.png")
 
+                // Loading audio files
+                load<Sound>("Audio/alert.wav")
+                load<Sound>("Audio/conflict.wav")
+                load<Sound>("Audio/initial_contact.wav")
+                load<Sound>("Audio/rwy_change.wav")
+
                 // Loading settings and player UUID
                 loadPlayerSettings()
                 loadPlayerUUID()
@@ -74,6 +83,7 @@ class TerminalControl2 : KtxGame<KtxScreen>(clearScreen = false) {
 
             batch = SpriteBatch()
             engine = Engine()
+            soundManager = SoundManager()
 
             addScreen(MainMenu())
             addScreen(NewGame())
@@ -87,11 +97,12 @@ class TerminalControl2 : KtxGame<KtxScreen>(clearScreen = false) {
         BG_INDEX = MathUtils.random(1, 8)
     }
 
-    /** Overrides [KtxGame.dispose] to also dispose of [batch] and [assetStorage] */
+    /** Overrides [KtxGame.dispose] to also dispose of [batch], [assetStorage] and [soundManager] */
     override fun dispose() {
         super.dispose()
         batch.disposeSafely()
         assetStorage.disposeSafely()
+        soundManager.disposeSafely()
         gameClient.dispose()
     }
 }

@@ -289,6 +289,7 @@ data class RemoveCustomWaypointData(private val wptId: Short = -1): ClientReceiv
 data class PendingRunwayUpdateData(private val airportId: Byte = 0, private val configId: Byte? = null): ClientReceive {
     override fun handleClientReceive(rs: RadarScreen) {
         rs.airports[airportId]?.pendingRunwayConfigClient(configId)
+        GAME.soundManager.playAlert()
     }
 }
 
@@ -297,6 +298,7 @@ data class ActiveRunwayUpdateData(private val airportId: Byte = 0, private val c
     override fun handleClientReceive(rs: RadarScreen) {
         rs.airports[airportId]?.activateRunwayConfig(configId)
         rs.uiPane.mainInfoObj.updateAtisInformation()
+        GAME.soundManager.playRunwayChange()
     }
 }
 

@@ -158,6 +158,9 @@ class CommsPane {
         val preFinalMsg = "$yourCallsign $randomGreeting, ${acInfo.icaoCallsign} $aircraftWake, $altitudeAction $starSid$inbound$atis"
         addMessage(removeExtraCharacters(preFinalMsg), getMessageTypeForAircraftType(flightType.type))
 
+        // Play contact sound
+        GAME.soundManager.playInitialContact()
+
         // If datatag is minimised, un-minimise it
         aircraft[Datatag.mapper]?.apply {
             if (minimised) {
