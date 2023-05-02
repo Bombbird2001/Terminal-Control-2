@@ -6,10 +6,7 @@ import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.RouteZone
 import com.bombbird.terminalcontrol2.entities.Waypoint
-import com.bombbird.terminalcontrol2.global.CLIENT_SCREEN
-import com.bombbird.terminalcontrol2.global.GAME
-import com.bombbird.terminalcontrol2.global.MAG_HDG_DEV
-import com.bombbird.terminalcontrol2.global.ROUTE_RNP_NM
+import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.Route.*
 import com.bombbird.terminalcontrol2.utilities.calculateDistanceBetweenPoints
 import com.bombbird.terminalcontrol2.utilities.ftToPx
@@ -283,13 +280,23 @@ fun findFirstHoldLegWithID(wptId: Short, route: Route): HoldLeg? {
 }
 
 /**
- * Gets the first upcoming waypoint leg with a speed restriction; if a non-waypoint leg is reached before finding any
- * waypoint legs with a restriction, null is returned
+ * Gets the first upcoming waypoint leg with a speed restriction; if a non-waypoint/hold leg is reached before finding
+ * any waypoint/hold legs with a restriction, null is returned
  * @param route the route to refer to
- * @return a [WaypointLeg], or null if no legs with a speed restriction are found
+ * @param altitude present altitude of the aircraft
+ * @return a [WaypointLeg] or [HoldLeg], or null if no legs with a speed restriction are found
  * */
-fun getNextWaypointWithSpdRestr(route: Route): WaypointLeg? {
-    for (i in 0 until route.size) (route[i] as? WaypointLeg)?.let { if (it.maxSpdKt != null && it.legActive && it.spdRestrActive) return it } ?: return null
+fun getNextWaypointWithSpdRestr(route: Route, altitude: Float): Pair<Leg, Short>? {
+    for (i in 0 until route.size) {
+        (route[i] as? WaypointLeg)?.let {
+            if (it.maxSpdKt != null && it.legActive && it.spdRestrActive) return Pair(it, it.maxSpdKt)
+        } ?: (route[i] as? HoldLeg)?.let {
+            val maxHigher = it.maxSpdKtHigher
+            val maxLower = it.maxSpdKtLower
+            if (altitude > HOLD_THRESHOLD_ALTITUDE && maxHigher != null) return Pair(it, maxHigher)
+            else if (altitude < HOLD_THRESHOLD_ALTITUDE && maxLower != null) return Pair(it, maxLower)
+        } ?: return null
+    }
     return null
 }
 

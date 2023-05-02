@@ -8,6 +8,7 @@ import com.badlogic.gdx.utils.Queue
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.CLIENT_SCREEN
 import com.bombbird.terminalcontrol2.global.GAME
+import com.bombbird.terminalcontrol2.global.HOLD_THRESHOLD_ALTITUDE
 import com.bombbird.terminalcontrol2.navigation.*
 import com.bombbird.terminalcontrol2.navigation.Route.*
 import com.bombbird.terminalcontrol2.networking.dataclasses.AircraftControlStateUpdateData
@@ -141,7 +142,7 @@ fun getMinMaxOptimalIAS(entity: Entity): Triple<Short, Short, Short> {
         actingClearance.route.let {
             if (it.size > 0) holdMaxSpd = (it[0] as? HoldLeg)?.let { holdLeg ->
                 holding = true
-                if (altitude.altitudeFt > 14050) holdLeg.maxSpdKtHigher else holdLeg.maxSpdKtLower
+                if (altitude.altitudeFt > HOLD_THRESHOLD_ALTITUDE) holdLeg.maxSpdKtHigher else holdLeg.maxSpdKtLower
             }
         }
         // If aircraft is not holding, get restrictions for the SID/STAR

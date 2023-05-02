@@ -71,8 +71,8 @@ class ControlStateSystemInterval: IntervalSystem(1f) {
                 // If no waypoints in route, this check is not needed
                 val nextLeg = if (actingClearance.route.size > 0) actingClearance.route[0] else return@apply
                 // Get the first upcoming waypoint with a speed restriction; if no waypoints with speed restriction, this check is not needed
-                val nextRestrWpt = getNextWaypointWithSpdRestr(actingClearance.route) ?: return@apply
-                val nextMaxSpd = nextRestrWpt.maxSpdKt ?: return@apply // This value shouldn't be null in the first place, but just in case
+                val nextRestr = getNextWaypointWithSpdRestr(actingClearance.route, alt.altitudeFt) ?: return@apply
+                val nextMaxSpd = nextRestr.second
                 val currMaxSpd = lastRestriction.maxSpdKt
                 if (currMaxSpd != null && currMaxSpd <= nextMaxSpd) return@apply // Not required if next max speed is not lower than current max speed
                 if (actingClearance.clearedIas <= nextMaxSpd) return@apply // Not required if next max speed is not lower than current cleared IAS
@@ -90,7 +90,7 @@ class ControlStateSystemInterval: IntervalSystem(1f) {
                     calculateMinAcceleration(acInfo.aircraftPerf, alt.altitudeFt, calculateTASFromIAS(alt.altitudeFt, nextMaxSpd.toFloat()), -500f, approach, takingOff = false, takeoffClimb = false)
                     ) + 2000)
                 // Calculate distance remaining on route from the waypoint with speed restriction
-                val distToGoPx = calculateDistToGo(pos, nextLeg, nextRestrWpt, actingClearance.route)
+                val distToGoPx = calculateDistToGo(pos, nextLeg, nextRestr.first, actingClearance.route)
                 if (distToGoPx < distReqPx) {
                     // lastRestriction.maxSpdKt = nextMaxSpd
                     if (actingClearance.clearedIas > nextMaxSpd) cmdTarget.targetIasKt = nextMaxSpd
