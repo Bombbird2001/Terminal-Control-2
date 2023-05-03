@@ -1,5 +1,6 @@
 package com.bombbird.terminalcontrol2.screens
 
+import com.badlogic.ashley.core.Entity
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.InputMultiplexer
 import com.badlogic.gdx.InputProcessor
@@ -542,6 +543,15 @@ class RadarScreen(private val connectionHost: String?, airportToHost: String?, s
     }
 
     /**
+     * Quits the game, which will resume the game (from paused screen) and set the running flag to false if the player
+     * is also the host
+     * */
+    fun quitGame() {
+        GAME.gameServer?.setLoopingFalse()
+        resumeGame()
+    }
+
+    /**
      * Sends a new player clearance for the aircraft
      * @param callsign the callsign of the aircraft to send the instructions to
      * @param newClearanceState the new clearance to send to the aircraft
@@ -589,13 +599,13 @@ class RadarScreen(private val connectionHost: String?, airportToHost: String?, s
 
     /**
      * Sends the datatag position of the aircraft on client to the server
-     * @param aircraft the aircraft whose datatag position is being sent
+     * @param aircraft the aircraft entity whose datatag position is being sent
      * @param xOffset the x position offset of the datatag from the aircraft radar blip
      * @param yOffset the y position offset of the datatag from the aircraft radar blip
      * @param minimised whether the datatag has been minimized
      */
-    fun sendAircraftDatatagPositionUpdate(aircraft: Aircraft, xOffset: Float, yOffset: Float, minimised: Boolean, flashing: Boolean) {
-        val callsign = aircraft.entity[AircraftInfo.mapper]?.icaoCallsign ?: return Log.info("RadarScreen", "Missing AircraftInfo component")
+    fun sendAircraftDatatagPositionUpdate(aircraft: Entity, xOffset: Float, yOffset: Float, minimised: Boolean, flashing: Boolean) {
+        val callsign = aircraft[AircraftInfo.mapper]?.icaoCallsign ?: return Log.info("RadarScreen", "Missing AircraftInfo component")
         client.sendTCP(AircraftDatatagPositionUpdateData(callsign, xOffset, yOffset, minimised, flashing))
     }
 }

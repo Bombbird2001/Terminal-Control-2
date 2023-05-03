@@ -170,7 +170,7 @@ class PhysicsSystem: EntitySystem() {
 
                 // Reach target heading within 5 seconds, capped by turn rate limit
                 var targetAngSpd = deltaHeading / 5
-                val maxTurnRate = if (ias.iasKt > 250) MAX_HIGH_SPD_ANGULAR_SPD else MAX_LOW_SPD_ANGULAR_SPD
+                val maxTurnRate = if (ias.iasKt > HALF_TURN_RATE_THRESHOLD_IAS) MAX_HIGH_SPD_ANGULAR_SPD else MAX_LOW_SPD_ANGULAR_SPD
                 targetAngSpd = MathUtils.clamp(targetAngSpd, -maxTurnRate, maxTurnRate)
 
                 // Reach target angular speed within 1.5 seconds

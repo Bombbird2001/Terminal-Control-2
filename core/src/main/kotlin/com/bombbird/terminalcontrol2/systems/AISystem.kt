@@ -319,7 +319,8 @@ class AISystem: EntitySystem() {
                     else null
                 }
                 val requiredDist = if (cmdDir.flyOver || nextWptLegTrack == null) 3f
-                else findTurnDistance(findDeltaHeading(targetTrack, nextWptLegTrack.first, nextWptLegTrack.second), if (ias.iasKt > 250) 1.5f else 3f, ktToPxps(groundSpeed))
+                else findTurnDistance(findDeltaHeading(targetTrack, nextWptLegTrack.first, nextWptLegTrack.second),
+                    if (ias.iasKt > HALF_TURN_RATE_THRESHOLD_IAS) MAX_HIGH_SPD_ANGULAR_SPD else MAX_LOW_SPD_ANGULAR_SPD, ktToPxps(groundSpeed))
                 // If aircraft is within the required distance, or aircraft is within 1nm of the waypoint but is travelling away from it
                 if (requiredDist * requiredDist > deltaX * deltaX + deltaY * deltaY ||
                     (deltaX * deltaX + deltaY * deltaY < 625 && groundTrack.trackVectorPxps.dot(Vector2(deltaX, deltaY)) < 0)) {
@@ -513,7 +514,8 @@ class AISystem: EntitySystem() {
                 val deltaX = intersectionPoint.x - pos.x
                 val deltaY = intersectionPoint.y - pos.y
                 val requiredDist = max(5f, findTurnDistance(findDeltaHeading(convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()),
-                    locCourseHdg, CommandTarget.TURN_DEFAULT), if (ias.iasKt > 250) 1.5f else 3f, groundTrack.trackVectorPxps.len()))
+                    locCourseHdg, CommandTarget.TURN_DEFAULT),
+                    if (ias.iasKt > HALF_TURN_RATE_THRESHOLD_IAS) MAX_HIGH_SPD_ANGULAR_SPD else MAX_LOW_SPD_ANGULAR_SPD, groundTrack.trackVectorPxps.len()))
                 if (requiredDist * requiredDist > deltaX * deltaX + deltaY * deltaY) {
                     remove<LocalizerArmed>()
                     this += LocalizerCaptured(locApp)

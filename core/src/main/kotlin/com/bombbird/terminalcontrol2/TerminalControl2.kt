@@ -45,7 +45,7 @@ class TerminalControl2 : KtxGame<KtxScreen>(clearScreen = false) {
         // as part of the radarScreen's disposal process
         GAME.setScreen<MainMenu>()
         // Send the resume signal before quitting game, so the server doesn't remain paused and unable to quit
-        gameClientScreen?.resumeGame()
+        gameClientScreen?.quitGame()
         gameClientScreen?.disposeSafely()
         GAME.removeScreen<RadarScreen>()
         gameClientScreen = null

@@ -200,7 +200,7 @@ class GameServer {
     /** Stops the game loop and exits server */
     fun stopServer() {
         Log.info("GameServer", "Stopping game server")
-        loopRunning.set(false)
+        setLoopingFalse()
         engine.removeAllEntities()
         engine.removeAllSystems()
     }
@@ -631,5 +631,10 @@ class GameServer {
      * */
     fun postRunnableAfterEngineUpdate(runnable: Runnable) {
         pendingRunnablesQueue.offer(runnable)
+    }
+
+    /** Sets the looping flag to false */
+    fun setLoopingFalse() {
+        loopRunning.set(false)
     }
 }

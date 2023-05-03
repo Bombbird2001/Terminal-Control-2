@@ -222,4 +222,14 @@ class TrafficSystemInterval: IntervalSystem(1f) {
     fun removeWakeZone(wakeZone: WakeZone) {
         conflictManager.wakeManager.removeWakeZone(wakeZone)
     }
+
+    /**
+     * Removes the aircraft from conflict levels on despawn
+     * @param aircraft the aircraft being despawned
+     */
+    fun removeAircraftOnDespawn(aircraft: Entity) {
+        val conflict = aircraft[ConflictAble.mapper] ?: return
+        if (conflict.conflictLevel >= 0 && conflict.conflictLevel < conflictLevels.size)
+            conflictLevels[conflict.conflictLevel].removeValue(aircraft, false)
+    }
 }

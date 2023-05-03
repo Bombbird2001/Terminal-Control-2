@@ -165,7 +165,10 @@ class CommsPane {
         aircraft[Datatag.mapper]?.apply {
             if (minimised) {
                 minimised = false
-                Gdx.app.postRunnable { updateDatatagText(this, getNewDatatagLabelText(aircraft, minimised)) }
+                Gdx.app.postRunnable {
+                    updateDatatagText(this, getNewDatatagLabelText(aircraft, minimised))
+                    CLIENT_SCREEN?.sendAircraftDatatagPositionUpdate(aircraft, xOffset, yOffset, minimised, flashing)
+                }
             }
         }
     }

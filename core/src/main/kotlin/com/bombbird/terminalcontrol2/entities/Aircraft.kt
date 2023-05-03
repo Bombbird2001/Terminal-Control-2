@@ -151,7 +151,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                         serialisedAircraft.minIas, serialisedAircraft.maxIas, serialisedAircraft.optimalIas,
                     ).ActingClearance())
                     serialisedAircraft.arrivalArptId?.let { arrId -> this += ArrivalAirport(arrId) }
-                    get(Controllable.mapper)?.apply {
+                    val controllable = get(Controllable.mapper)?.apply {
                         sectorId = serialisedAircraft.controlSectorId
                         controllerUUID = serialisedAircraft.controllerUUID?.let { controlId -> UUID.fromString(controlId) }
                     }
@@ -166,10 +166,11 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                     if (serialisedAircraft.waitingTakeoff) this += WaitingTakeoff()
                     else if (datatag != null) addDatatagInputListeners(datatag, it)
                     datatag?.let { tag ->
-                        tag.minimised = serialisedAircraft.initialDatatagMinimised
+                        tag.minimised = controllable?.sectorId != CLIENT_SCREEN?.playerSector || serialisedAircraft.initialDatatagMinimised
                         updateDatatagText(tag, getNewDatatagLabelText(this, tag.minimised))
                         tag.xOffset = serialisedAircraft.initialDatatagXOffset
                         tag.yOffset = serialisedAircraft.initialDatatagYOffset
+                        CLIENT_SCREEN?.sendAircraftDatatagPositionUpdate(this, tag.xOffset, tag.yOffset, tag.minimised, tag.flashing)
                     }
 
                     get(TrailInfo.mapper)?.apply {
