@@ -24,7 +24,7 @@ class LANServer(
     onConnect: (ConnectionMeta) -> Unit,
     onDisconnect: (ConnectionMeta) -> Unit
 ) : Server(gameServer, onReceive, onConnect, onDisconnect) {
-    private val server = com.esotericsoftware.kryonet.Server()
+    private val server = com.esotericsoftware.kryonet.Server(SERVER_WRITE_BUFFER_SIZE, SERVER_READ_BUFFER_SIZE)
 
     /** Maps [Connection] to [ConnectionMeta] */
     private val connectionMetaMap = GdxArrayMap<Connection, ConnectionMeta>(PLAYER_SIZE)

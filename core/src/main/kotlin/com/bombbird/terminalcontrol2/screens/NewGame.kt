@@ -50,8 +50,7 @@ class NewGame: BasicUIScreen() {
                                 addChangeListener { event, _ ->
                                     if (currSelectedAirport == null) Log.info("NewGame", "Start button pressed when airport selected is null")
                                     else {
-                                        // TODO Call loading function
-                                        GAME.addScreen(GameLoading(LOCALHOST, currSelectedAirport?.text?.toString()))
+                                        GAME.addScreen(GameLoading(LOCALHOST, currSelectedAirport?.text?.toString(), null, null))
                                         GAME.setScreen<GameLoading>()
                                     }
                                     event?.handle()

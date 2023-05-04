@@ -23,6 +23,7 @@ import com.bombbird.terminalcontrol2.graphics.ScreenSize
 import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.networking.*
 import com.bombbird.terminalcontrol2.networking.dataclasses.*
+import com.bombbird.terminalcontrol2.networking.relayserver.JoinGameRequest
 import com.bombbird.terminalcontrol2.systems.*
 import com.bombbird.terminalcontrol2.traffic.ConflictManager
 import com.bombbird.terminalcontrol2.traffic.TrafficMode
@@ -61,8 +62,9 @@ import kotlin.math.min
  * @param connectionHost the address of the host server to connect to; if null, no connection will be initiated
  * @param airportToHost the main map airport name to be hosted; must be null if not hosting the server
  * @param saveId the ID of the save to load from; if null, no save is loaded to the GameServer
+ * @param roomId the ID of the room to join (public multiplayer)
  * */
-class RadarScreen(private val connectionHost: String?, airportToHost: String?, saveId: Int?): KtxScreen, GestureListener, InputProcessor {
+class RadarScreen(private val connectionHost: String?, airportToHost: String?, saveId: Int?, private val roomId: Short?): KtxScreen, GestureListener, InputProcessor {
     private val clientEngine = getEngine(true)
     private val radarDisplayStage = safeStage(GAME.batch)
     private val constZoomStage = safeStage(GAME.batch)
@@ -170,6 +172,7 @@ class RadarScreen(private val connectionHost: String?, airportToHost: String?, s
         clientEngine.addSystem(TrafficSystemIntervalClient())
 
         registerClassesToKryo(client.kryo)
+        registerRelayClassesToClientKryo(client.kryo)
         client.start()
         KtxAsync.launch(Dispatchers.IO) {
             attemptConnectionToServer()
@@ -607,5 +610,11 @@ class RadarScreen(private val connectionHost: String?, airportToHost: String?, s
     fun sendAircraftDatatagPositionUpdate(aircraft: Entity, xOffset: Float, yOffset: Float, minimised: Boolean, flashing: Boolean) {
         val callsign = aircraft[AircraftInfo.mapper]?.icaoCallsign ?: return Log.info("RadarScreen", "Missing AircraftInfo component")
         client.sendTCP(AircraftDatatagPositionUpdateData(callsign, xOffset, yOffset, minimised, flashing))
+    }
+
+    /** Requests to join a game room */
+    fun requestToJoinRoom() {
+        if (roomId == null) return
+        client.sendTCP(JoinGameRequest(roomId))
     }
 }

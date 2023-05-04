@@ -18,5 +18,5 @@ internal fun testInitialiseGameAndServer() {
 
 /** Initialises the game client screen for test purposes, if not already initialised */
 internal fun testInitialiseGameClient() {
-    if (CLIENT_SCREEN == null) GAME.gameClientScreen = RadarScreen(null, null, null)
+    if (CLIENT_SCREEN == null) GAME.gameClientScreen = RadarScreen(null, null, null, null)
 }

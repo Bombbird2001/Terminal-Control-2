@@ -10,6 +10,10 @@ import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.navigation.SidStar
 import com.bombbird.terminalcontrol2.networking.dataclasses.*
 import com.bombbird.terminalcontrol2.networking.lanserver.LANClientDiscoveryHandler
+import com.bombbird.terminalcontrol2.networking.relayserver.ClientToServer
+import com.bombbird.terminalcontrol2.networking.relayserver.JoinGameRequest
+import com.bombbird.terminalcontrol2.networking.relayserver.NewGameRequest
+import com.bombbird.terminalcontrol2.networking.relayserver.ServerToClient
 import com.bombbird.terminalcontrol2.screens.RadarScreen
 import com.bombbird.terminalcontrol2.traffic.*
 import com.bombbird.terminalcontrol2.ui.*
@@ -148,12 +152,38 @@ fun registerClassesToKryo(kryo: Kryo?) {
 }
 
 /**
+ * Registers relay specific classes to the relay server's Kryo instance
+ * @param kryo the relay server's [Kryo] instance
+ */
+fun registerRelayClassesToRelayServerKryo(kryo: Kryo?) {
+    kryo?.apply {
+        register(ByteArray::class.java)
+        register(NewGameRequest::class.java)
+        register(JoinGameRequest::class.java)
+        register(ClientToServer::class.java)
+        register(ServerToClient::class.java)
+    }
+}
+
+/**
+ * Registers relay specific classes to the client's (those connected to relay server) Kryo instance
+ * @param kryo the client's [Kryo] instance
+ */
+fun registerRelayClassesToClientKryo(kryo: Kryo?) {
+    kryo?.apply {
+        register(ByteArray::class.java)
+        register(ClientToServer::class.java)
+        register(ServerToClient::class.java)
+    }
+}
+
+/**
  * Gets an instance of the game client for connection to server
  * @return the [Client] object
  */
-fun getGameClientInstance(LANClientDiscoveryHandler: LANClientDiscoveryHandler): Client {
+fun getGameClientInstance(lanClientDiscoveryHandler: LANClientDiscoveryHandler): Client {
     return Client(CLIENT_WRITE_BUFFER_SIZE, CLIENT_READ_BUFFER_SIZE).apply {
-        setDiscoveryHandler(LANClientDiscoveryHandler)
+        setDiscoveryHandler(lanClientDiscoveryHandler)
         addListener(object: Listener {
             override fun received(connection: Connection, obj: Any?) {
                 (obj as? RequestClientUUID)?.apply {

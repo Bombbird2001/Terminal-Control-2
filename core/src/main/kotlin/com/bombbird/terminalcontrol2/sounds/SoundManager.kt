@@ -3,6 +3,7 @@ package com.bombbird.terminalcontrol2.sounds
 import com.badlogic.gdx.audio.Sound
 import com.badlogic.gdx.utils.Disposable
 import com.badlogic.gdx.utils.Timer
+import com.bombbird.terminalcontrol2.global.ALERT_SOUND_ON
 import com.bombbird.terminalcontrol2.global.COMMS_OFF
 import com.bombbird.terminalcontrol2.global.COMMUNICATIONS_SOUND
 import com.bombbird.terminalcontrol2.global.GAME
@@ -34,7 +35,7 @@ class SoundManager: Disposable {
 
     /** Plays a runway change sound effect if not playing  */
     fun playRunwayChange() {
-        if (!runwayChangePlaying && canPlaySoundEffect()) {
+        if (!runwayChangePlaying && canPlayAlerts()) {
             runwayChangeAudio.play(0.8f)
             runwayChangePlaying = true
             timer.scheduleTask(object : Timer.Task() {
@@ -69,7 +70,7 @@ class SoundManager: Disposable {
 
     /** Plays alert sound effect if not playing  */
     fun playAlert() {
-        if (!alertPlaying && canPlaySoundEffect()) {
+        if (!alertPlaying && canPlayAlerts()) {
             alertAudio.play(0.8f)
             alertPlaying = true
             timer.scheduleTask(object : Timer.Task() {
@@ -83,6 +84,10 @@ class SoundManager: Disposable {
     /** Returns true if player settings allow for sound effects to be played */
     private fun canPlaySoundEffect(): Boolean {
         return COMMUNICATIONS_SOUND > COMMS_OFF
+    }
+
+    private fun canPlayAlerts(): Boolean {
+        return ALERT_SOUND_ON
     }
 
     /** Pauses playing all sounds  */
