@@ -1,10 +1,10 @@
 package com.bombbird.terminalcontrol2.networking.relayserver
 
 import com.bombbird.terminalcontrol2.global.GAME
-import com.bombbird.terminalcontrol2.networking.ConnectionMeta
-import com.bombbird.terminalcontrol2.networking.publicserver.PublicServer
-import com.bombbird.terminalcontrol2.screens.RadarScreen
+import com.bombbird.terminalcontrol2.networking.hostserver.PublicServer
+import com.bombbird.terminalcontrol2.networking.playerclient.PublicClient
 import com.esotericsoftware.kryonet.Connection
+import com.esotericsoftware.minlog.Log
 import java.util.*
 
 /** Class representing data sent to the relay server to open a new room for a new game */
@@ -28,8 +28,8 @@ data class RoomCreationStatus(val roomId: Short = Short.MAX_VALUE): RelayHostRec
  * relay server
  * */
 class RequestRelayAction: RelayHostReceive, RelayClientReceive {
-    override fun handleRelayClientReceive(rs: RadarScreen) {
-        rs.requestToJoinRoom()
+    override fun handleRelayClientReceive(client: PublicClient) {
+        client.requestToJoinRoom()
     }
 
     override fun handleRelayHostReceive(host: PublicServer) {
@@ -41,7 +41,8 @@ class RequestRelayAction: RelayHostReceive, RelayClientReceive {
 data class JoinGameRequest(val roomId: Short = Short.MAX_VALUE, val uuid: String? = null): RelayServerReceive {
     override fun handleRelayServerReceive(rs: RelayServer, conn: Connection) {
         if (uuid == null) return
-        rs.addPlayerToRoom(roomId, UUID.fromString(uuid), conn)
+        val res = rs.addPlayerToRoom(roomId, UUID.fromString(uuid), conn)
+        rs.sendAddPlayerResult(res, conn)
     }
 }
 
@@ -49,25 +50,36 @@ data class JoinGameRequest(val roomId: Short = Short.MAX_VALUE, val uuid: String
 data class PlayerConnect(val uuid: String? = null): RelayHostReceive {
     override fun handleRelayHostReceive(host: PublicServer) {
         if (uuid == null) return
-        host.onConnect(ConnectionMeta(UUID.fromString(uuid)))
+        host.onConnect(UUID.fromString(uuid))
+        Log.info("PublicServer", "Player $uuid connected")
     }
 }
 
 /** Class representing data sent to the client after the relay server processes the [PlayerConnect] request */
 data class PlayerConnectStatus(val addStatus: Byte = 0): RelayClientReceive {
-    override fun handleRelayClientReceive(rs: RadarScreen) {
+    override fun handleRelayClientReceive(client: PublicClient) {
         if (addStatus > 0) GAME.quitCurrentGame()
     }
 }
 
+/** Class representing data sent to the host when a player disconnects from the game */
+data class PlayerDisconnect(val uuid: String? = null): RelayHostReceive {
+    override fun handleRelayHostReceive(host: PublicServer) {
+        if (uuid == null) return
+        host.onDisconnect(UUID.fromString(uuid))
+        Log.info("PublicServer", "Player $uuid disconnected")
+    }
+}
+
 /** Class representing data sent by a client to the server. */
-class ClientToServer(val roomId: Short = Short.MAX_VALUE, val data: ByteArray = byteArrayOf()): RelayServerReceive, RelayHostReceive {
+class ClientToServer(val roomId: Short = Short.MAX_VALUE, val sendingUUID: String? = null, val data: ByteArray = byteArrayOf()): RelayServerReceive, RelayHostReceive {
     override fun handleRelayServerReceive(rs: RelayServer, conn: Connection) {
         rs.forwardToServer(this, conn)
     }
 
     override fun handleRelayHostReceive(host: PublicServer) {
-        TODO("Not yet implemented")
+        val uuid = UUID.fromString(sendingUUID ?: return)
+        host.decodeRelayMessageObject(data, uuid)
     }
 }
 
@@ -79,7 +91,7 @@ class ServerToClient(val roomId: Short = Short.MAX_VALUE, val uuid: String? = nu
         rs.forwardToClient(this, conn)
     }
 
-    override fun handleRelayClientReceive(rs: RadarScreen) {
-        TODO("Not yet implemented")
+    override fun handleRelayClientReceive(client: PublicClient) {
+        client.decodeRelayMessageObject(data)
     }
 }

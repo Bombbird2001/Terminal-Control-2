@@ -1,13 +1,13 @@
-package com.bombbird.terminalcontrol2.networking.lanserver
+package com.bombbird.terminalcontrol2.networking.hostserver
 
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.networking.*
 import com.bombbird.terminalcontrol2.networking.dataclasses.ClientUUIDData
 import com.bombbird.terminalcontrol2.networking.dataclasses.ConnectionError
 import com.bombbird.terminalcontrol2.networking.dataclasses.RequestClientUUID
-import com.bombbird.terminalcontrol2.networking.publicserver.PublicServer
 import com.esotericsoftware.kryonet.Connection
 import com.esotericsoftware.kryonet.Listener
+import com.esotericsoftware.kryonet.Server
 import com.esotericsoftware.minlog.Log
 import ktx.collections.GdxArrayMap
 import java.util.*
@@ -23,8 +23,8 @@ class LANServer(
     onReceive: (ConnectionMeta, Any?) -> Unit,
     onConnect: (ConnectionMeta) -> Unit,
     onDisconnect: (ConnectionMeta) -> Unit
-) : Server(gameServer, onReceive, onConnect, onDisconnect) {
-    private val server = com.esotericsoftware.kryonet.Server(SERVER_WRITE_BUFFER_SIZE, SERVER_READ_BUFFER_SIZE)
+) : NetworkServer(gameServer, onReceive, onConnect, onDisconnect) {
+    private val server = Server(SERVER_WRITE_BUFFER_SIZE, SERVER_READ_BUFFER_SIZE)
 
     /** Maps [Connection] to [ConnectionMeta] */
     private val connectionMetaMap = GdxArrayMap<Connection, ConnectionMeta>(PLAYER_SIZE)

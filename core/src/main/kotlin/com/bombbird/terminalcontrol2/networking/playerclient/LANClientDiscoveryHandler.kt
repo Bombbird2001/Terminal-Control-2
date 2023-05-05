@@ -1,4 +1,4 @@
-package com.bombbird.terminalcontrol2.networking.lanserver
+package com.bombbird.terminalcontrol2.networking.playerclient
 
 import com.esotericsoftware.kryonet.ClientDiscoveryHandler
 import ktx.collections.GdxArray

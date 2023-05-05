@@ -64,7 +64,7 @@ data class SectorSwapRequest(private val requestedSector: Byte? = null, private 
         // Clear all existing requests from the sending sector
         for (i in gs.sectorSwapRequests.size - 1 downTo 0) {
             if (gs.sectorSwapRequests[i].second == sendingSector && gs.sectorSwapRequests[i].first != requestedSector) {
-                gs.server.sendTCPToConnection(connection.uuid, SectorSwapRequest(null, sendingSector))
+                gs.networkServer.sendTCPToConnection(connection.uuid, SectorSwapRequest(null, sendingSector))
                 gs.sectorSwapRequests.removeIndex(i)
             }
         }
@@ -82,10 +82,10 @@ data class SectorSwapRequest(private val requestedSector: Byte? = null, private 
                 gs.sectorSwapRequests[i]?.let {
                     // Request originally bound for player who initiated the swap request
                     if (it.first == requestedSector)
-                        gs.server.sendTCPToConnection(connection.uuid, SectorSwapRequest(it.first, it.second))
+                        gs.networkServer.sendTCPToConnection(connection.uuid, SectorSwapRequest(it.first, it.second))
                     // Request originally bound for player who accepted the swap request
                     if (it.first == sendingSector)
-                        gs.server.sendTCPToConnection(requestedUUID, SectorSwapRequest(it.first, it.second))
+                        gs.networkServer.sendTCPToConnection(requestedUUID, SectorSwapRequest(it.first, it.second))
                     // Request from one of the players (there shouldn't be any, but just in case)
                     if (it.second == requestedSector || it.second == sendingSector)
                         gs.sectorSwapRequests.removeIndex(i)
@@ -96,7 +96,7 @@ data class SectorSwapRequest(private val requestedSector: Byte? = null, private 
         // Not found - store new request in array
         gs.sectorSwapRequests.add(Pair(requestedSector, sendingSector))
         // Send the request notification to target sector
-        gs.server.sendTCPToConnection(requestedUUID, this)
+        gs.networkServer.sendTCPToConnection(requestedUUID, this)
     }
 
     override fun handleClientReceive(rs: RadarScreen) {
@@ -121,7 +121,7 @@ data class DeclineSwapRequest(private val requestingSector: Byte = -1, private v
         // Ensure requesting sector did indeed request the sector
         if (!gs.sectorSwapRequests.contains(Pair(decliningSector, requestingSector), false)) return
         gs.sectorSwapRequests.removeValue(Pair(decliningSector, requestingSector), false)
-        gs.server.sendTCPToConnection(gs.sectorUUIDMap[requestingSector], this)
+        gs.networkServer.sendTCPToConnection(gs.sectorUUIDMap[requestingSector], this)
     }
 
     override fun handleClientReceive(rs: RadarScreen) {

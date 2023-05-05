@@ -3,7 +3,7 @@ import com.bombbird.terminalcontrol2.global.CLIENT_SCREEN
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.isGameInitialised
 import com.bombbird.terminalcontrol2.networking.GameServer
-import com.bombbird.terminalcontrol2.networking.lanserver.LANServer
+import com.bombbird.terminalcontrol2.networking.hostserver.LANServer
 import com.bombbird.terminalcontrol2.screens.RadarScreen
 
 /** Initialises the game and game server for test purposes, if not already initialised */
@@ -11,7 +11,7 @@ internal fun testInitialiseGameAndServer() {
     if (!isGameInitialised) GAME = TerminalControl2()
     if (GAME.gameServer == null) {
         val newGameServer = GameServer()
-        newGameServer.server = LANServer(newGameServer, {_, _ -> }, {_ -> }, {_ -> })
+        newGameServer.networkServer = LANServer(newGameServer, { _, _ -> }, { _ -> }, { _ -> })
         GAME.gameServer = newGameServer
     }
 }

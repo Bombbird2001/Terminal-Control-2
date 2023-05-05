@@ -1,25 +1,30 @@
-package com.bombbird.terminalcontrol2.networking.publicserver
+package com.bombbird.terminalcontrol2.networking.hostserver
 
 import com.bombbird.terminalcontrol2.global.*
-import com.bombbird.terminalcontrol2.networking.ConnectionMeta
-import com.bombbird.terminalcontrol2.networking.GameServer
-import com.bombbird.terminalcontrol2.networking.Server
+import com.bombbird.terminalcontrol2.networking.*
 import com.bombbird.terminalcontrol2.networking.relayserver.NewGameRequest
 import com.bombbird.terminalcontrol2.networking.relayserver.RelayHostReceive
 import com.bombbird.terminalcontrol2.networking.relayserver.ServerToClient
+import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
 import com.esotericsoftware.kryonet.Client
 import com.esotericsoftware.kryonet.Connection
 import com.esotericsoftware.kryonet.Listener
+import com.esotericsoftware.minlog.Log
 import ktx.collections.GdxArrayMap
 import java.util.*
 
+/**
+ * Server for handling public multiplayer relay games
+ *
+ * Cannot be used for LAN multiplayer games, use [LANServer] for that
+ */
 class PublicServer(
     gameServer: GameServer,
     onReceive: (ConnectionMeta, Any?) -> Unit,
     onConnect: (ConnectionMeta) -> Unit,
     onDisconnect: (ConnectionMeta) -> Unit
-) : Server(gameServer, onReceive, onConnect, onDisconnect) {
+) : NetworkServer(gameServer, onReceive, onConnect, onDisconnect) {
     private var roomId: Short = Short.MAX_VALUE
     private val relayServerConnector = Client(SERVER_WRITE_BUFFER_SIZE, SERVER_READ_BUFFER_SIZE).apply {
         addListener(object: Listener {
@@ -35,6 +40,8 @@ class PublicServer(
     private val uuidConnectionMap = GdxArrayMap<UUID, ConnectionMeta>(PLAYER_SIZE)
 
     override fun start(tcpPort: Int, udpPort: Int) {
+        registerClassesToKryo(relayServerConnector.kryo)
+        registerRelayClassesToKryo(relayServerConnector.kryo)
         relayServerConnector.connect(5000, Secrets.RELAY_URL, TCP_PORT, UDP_PORT)
     }
 
@@ -62,6 +69,28 @@ class PublicServer(
             }
             return conns
         }
+
+    /**
+     * Function to be called when [PublicServer] receives message from relay server that player has connected
+     * @param uuid [UUID] of the player joining
+     */
+    fun onConnect(uuid: UUID) {
+        val newConn = ConnectionMeta(uuid)
+        uuidConnectionMap.put(uuid, newConn)
+        onConnect(newConn)
+    }
+
+    /**
+     * Function to be called when [PublicServer] receives message from relay server that player has disconnected
+     * @param uuid [UUID] of the player disconnecting
+     */
+    fun onDisconnect(uuid: UUID) {
+        val removedConn = uuidConnectionMap.removeKey(uuid) ?: run {
+            Log.info("PublicServer", "Failed to remove $uuid from connection map - it is not a key")
+            return
+        }
+        onDisconnect(removedConn)
+    }
 
     /** Requests for the relay server to create a game room */
     fun requestGameCreation() {
@@ -92,5 +121,17 @@ class PublicServer(
         val serialisationOutput = Output(SERVER_WRITE_BUFFER_SIZE)
         relayServerConnector.kryo.writeClassAndObject(serialisationOutput, data)
         return serialisationOutput.toBytes()
+    }
+
+    /**
+     * De-serializes the byte array in relay object received by relay host, and notifies [GameServer] of the received
+     * object
+     * @param data serialised bytes of object to decode
+     * @param sendingUUID the UUID of the sender
+     */
+    fun decodeRelayMessageObject(data: ByteArray, sendingUUID: UUID) {
+        val sendingConnection = uuidConnectionMap[sendingUUID] ?: return
+        val obj = relayServerConnector.kryo.readClassAndObject(Input(data))
+        onReceive(sendingConnection, obj)
     }
 }

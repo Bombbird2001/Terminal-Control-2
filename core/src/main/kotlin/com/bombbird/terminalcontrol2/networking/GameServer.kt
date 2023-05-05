@@ -9,7 +9,7 @@ import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.networking.dataclasses.*
-import com.bombbird.terminalcontrol2.networking.lanserver.LANServer
+import com.bombbird.terminalcontrol2.networking.hostserver.LANServer
 import com.bombbird.terminalcontrol2.systems.*
 import com.bombbird.terminalcontrol2.traffic.*
 import com.bombbird.terminalcontrol2.utilities.*
@@ -61,7 +61,7 @@ class GameServer {
     val initialisingWeather = AtomicBoolean(true)
     private val initialWeatherCondition = lock.newCondition()
     val playerNo = AtomicInteger(0)
-    lateinit var server: Server
+    lateinit var networkServer: NetworkServer
     val engine = Engine()
     var saveID: Int? = null
 
@@ -190,6 +190,8 @@ class GameServer {
             startNetworkingServer()
             startTime = -1L
             Log.info("GameServer", "Starting game server")
+            // Pause the game initially (until at least 1 player connects)
+            handleGameRunningRequest(false)
             loopRunning.set(true)
             gameLoop()
             stopNetworkingServer()
@@ -208,7 +210,7 @@ class GameServer {
     /** Initiates the KryoNet server for networking */
     private fun startNetworkingServer() {
         // Log.set(Log.LEVEL_DEBUG)
-        server = LANServer(this, { conn, data ->
+        networkServer = LANServer(this, { conn, data ->
             // Called on data receive
             handleIncomingRequestServer(this, conn, data)
         }, { conn ->
@@ -216,13 +218,13 @@ class GameServer {
             val uuid = conn.uuid
             postRunnableAfterEngineUpdate {
                 // Get data only after engine has completed this update to prevent threading issues
-                server.sendTCPToConnection(uuid, ClearAllClientData())
-                server.sendTCPToConnection(
+                networkServer.sendTCPToConnection(uuid, ClearAllClientData())
+                networkServer.sendTCPToConnection(
                     uuid,
                     InitialAirspaceData(MAG_HDG_DEV, MIN_ALT, MAX_ALT, MIN_SEP, TRANS_ALT, TRANS_LVL)
                 )
                 assignSectorsToPlayers(
-                    server.connections,
+                    networkServer.connections,
                     sectorMap,
                     sectorUUIDMap,
                     currPlayerNo,
@@ -236,42 +238,42 @@ class GameServer {
                         aircraftArray[aircraftArray.size - itemsRemaining + it].getSerialisableObject()
                     }
                     itemsRemaining -= SERVER_AIRCRAFT_TCP_UDP_MAX_COUNT
-                    server.sendTCPToConnection(uuid, InitialAircraftData(serialisedAircraftArray))
+                    networkServer.sendTCPToConnection(uuid, InitialAircraftData(serialisedAircraftArray))
                 }
-                server.sendTCPToConnection(
+                networkServer.sendTCPToConnection(
                     uuid,
                     AirportData(airports.values().toArray().map { it.getSerialisableObject() }
                         .toTypedArray()))
                 val wptArray = waypoints.values.toTypedArray()
-                server.sendTCPToConnection(
+                networkServer.sendTCPToConnection(
                     uuid,
                     WaypointData(wptArray.map { it.getSerialisableObject() }.toTypedArray())
                 )
-                server.sendTCPToConnection(
+                networkServer.sendTCPToConnection(
                     uuid,
                     WaypointMappingData(wptArray.map { it.getMappingSerialisableObject() }.toTypedArray())
                 )
-                server.sendTCPToConnection(
+                networkServer.sendTCPToConnection(
                     uuid,
                     PublishedHoldData(publishedHolds.values().toArray().map { it.getSerialisableObject() }
                         .toTypedArray()))
-                server.sendTCPToConnection(
+                networkServer.sendTCPToConnection(
                     uuid,
                     MinAltData(minAltSectors.toArray().map { it.getSerialisableObject() }.toTypedArray())
                 )
-                server.sendTCPToConnection(
+                networkServer.sendTCPToConnection(
                     uuid,
                     ShorelineData(shoreline.toArray().map { it.getSerialisableObject() }.toTypedArray())
                 )
 
                 // Send current METAR
-                server.sendTCPToConnection(
+                networkServer.sendTCPToConnection(
                     uuid,
                     MetarData(airports.values().map { it.getSerialisedMetar() }.toTypedArray())
                 )
 
                 // Send current traffic settings
-                server.sendTCPToConnection(
+                networkServer.sendTCPToConnection(
                     uuid,
                     TrafficSettingsData(
                         trafficMode, trafficValue,
@@ -282,22 +284,24 @@ class GameServer {
                 // Send runway configs
                 airports.values().toArray().forEach {
                     val arptId = it.entity[AirportInfo.mapper]?.arptId ?: return@forEach
-                    server.sendTCPToConnection(
+                    networkServer.sendTCPToConnection(
                         uuid,
                         ActiveRunwayUpdateData(
                             arptId,
                             it.entity[ActiveRunwayConfig.mapper]?.configId ?: return@forEach
                         )
                     )
-                    server.sendTCPToConnection(
+                    networkServer.sendTCPToConnection(
                         uuid,
                         PendingRunwayUpdateData(arptId, it.entity[PendingRunwayConfig.mapper]?.pendingId)
                     )
                 }
 
                 // Send score data
-                server.sendTCPToConnection(uuid, ScoreData(score, highScore))
+                networkServer.sendTCPToConnection(uuid, ScoreData(score, highScore))
             }
+            // Unpause the game if it is currently paused
+            handleGameRunningRequest(true)
         }, { conn ->
             // Called on disconnect
             val newPlayerNo = playerNo.decrementAndGet().toByte()
@@ -306,7 +310,7 @@ class GameServer {
                 sectorUUIDMap.removeKey(sectorMap[conn.uuid])
                 sectorMap.removeKey(conn.uuid)
                 if (newPlayerNo > 0) assignSectorsToPlayers(
-                    server.connections,
+                    networkServer.connections,
                     sectorMap,
                     sectorUUIDMap,
                     newPlayerNo,
@@ -315,12 +319,12 @@ class GameServer {
                 sectorSwapRequests.clear()
             }
         })
-        server.start(TCP_PORT, UDP_PORT)
+        networkServer.start(TCP_PORT, UDP_PORT)
     }
 
     /** Closes server and stops its thread */
     private fun stopNetworkingServer() {
-        server.stop()
+        networkServer.stop()
     }
 
     /** Main game loop */
@@ -427,7 +431,7 @@ class GameServer {
                 aircraftArray[aircraftArray.size - itemsRemaining + it].getSerialisableObjectUDP()
             }
             itemsRemaining -= SERVER_AIRCRAFT_TCP_UDP_MAX_COUNT
-            server.sendToAllUDP(FastUDPData(serialisedAircraftArray))
+            networkServer.sendToAllUDP(FastUDPData(serialisedAircraftArray))
         }
     }
 
@@ -453,7 +457,7 @@ class GameServer {
     /** Send non-frequent METAR updates */
     fun sendMetarTCPToAll() {
         if (gameRunning)
-            server.sendToAllTCP(MetarData(airports.values().map { it.getSerialisedMetar() }.toTypedArray()))
+            networkServer.sendToAllTCP(MetarData(airports.values().map { it.getSerialisedMetar() }.toTypedArray()))
     }
 
     /**
@@ -464,7 +468,7 @@ class GameServer {
      * */
     fun sendAircraftSectorUpdateTCPToAll(callsign: String, newSector: Byte, newUUID: String?) {
         val tagFlashing = aircraft[callsign]?.entity?.get(InitialClientDatatagPosition.mapper)?.flashing == true
-        server.sendToAllTCP(AircraftSectorUpdateData(callsign, newSector, newUUID, sectorJustSwapped, tagFlashing))
+        networkServer.sendToAllTCP(AircraftSectorUpdateData(callsign, newSector, newUUID, sectorJustSwapped, tagFlashing))
     }
 
     /**
@@ -479,7 +483,7 @@ class GameServer {
         newSectorArray: Array<Sector.SerialisedSector>
     ) {
         println("Individual sector send to $connUuid")
-        server.sendTCPToConnection(
+        networkServer.sendTCPToConnection(
             connUuid,
             IndividualSectorData(newId, newSectorArray, primarySector.vertices ?: floatArrayOf())
         )
@@ -490,7 +494,7 @@ class GameServer {
      * @param aircraft the aircraft that spawned
      * */
     fun sendAircraftSpawn(aircraft: Aircraft) {
-        server.sendToAllTCP(AircraftSpawnData(aircraft.getSerialisableObject()))
+        networkServer.sendToAllTCP(AircraftSpawnData(aircraft.getSerialisableObject()))
     }
 
     /**
@@ -498,7 +502,7 @@ class GameServer {
      * @param callsign the callsign of the aircraft to despawn
      * */
     fun sendAircraftDespawn(callsign: String) {
-        server.sendToAllTCP(AircraftDespawnData(callsign))
+        networkServer.sendToAllTCP(AircraftDespawnData(callsign))
     }
 
     /**
@@ -521,7 +525,7 @@ class GameServer {
         clearedIas: Short, minIas: Short, maxIas: Short, optimalIas: Short,
         clearedApp: String?, clearedTrans: String?
     ) {
-        server.sendToAllTCP(
+        networkServer.sendToAllTCP(
             AircraftControlStateUpdateData(
                 callsign,
                 primaryName,
@@ -547,7 +551,7 @@ class GameServer {
      * @param waypoint the new custom waypoint
      * */
     fun sendCustomWaypointAdditionToAll(waypoint: Waypoint) {
-        server.sendToAllTCP(CustomWaypointData(waypoint.getSerialisableObject()))
+        networkServer.sendToAllTCP(CustomWaypointData(waypoint.getSerialisableObject()))
     }
 
     /**
@@ -555,7 +559,7 @@ class GameServer {
      * @param wptId the new ID of the custom waypoint to remove
      * */
     fun sendCustomWaypointRemovalToAll(wptId: Short) {
-        server.sendToAllTCP(RemoveCustomWaypointData(wptId))
+        networkServer.sendToAllTCP(RemoveCustomWaypointData(wptId))
     }
 
     /**
@@ -563,7 +567,8 @@ class GameServer {
      * @param configId the new ID of the pending configuration, or null if the pending change is cancelled
      */
     fun sendPendingRunwayUpdateToAll(airportId: Byte, configId: Byte?) {
-        server.sendToAllTCP(PendingRunwayUpdateData(airportId, configId))
+        if (gameRunning)
+            networkServer.sendToAllTCP(PendingRunwayUpdateData(airportId, configId))
     }
 
     /**
@@ -573,7 +578,7 @@ class GameServer {
      */
     fun sendActiveRunwayUpdateToAll(airportId: Byte, configId: Byte) {
         if (gameRunning)
-            server.sendToAllTCP(ActiveRunwayUpdateData(airportId, configId))
+            networkServer.sendToAllTCP(ActiveRunwayUpdateData(airportId, configId))
     }
 
     fun incrementScoreBy(inc: Int, flightType: Byte) {
@@ -586,7 +591,7 @@ class GameServer {
 
     /** Sends a message to clients to inform them of a change in scores */
     fun sendScoreUpdate() {
-        server.sendToAllTCP(ScoreData(score, highScore))
+        networkServer.sendToAllTCP(ScoreData(score, highScore))
     }
 
     /**
@@ -598,7 +603,7 @@ class GameServer {
         conflicts: GdxArray<ConflictManager.Conflict>,
         potentialConflicts: GdxArray<ConflictManager.PotentialConflict>
     ) {
-        server.sendToAllTCP(
+        networkServer.sendToAllTCP(
             ConflictData(
                 conflicts.toArray().map { it.getSerialisableObject() }.toTypedArray(),
                 potentialConflicts.toArray().map { it.getSerialisableObject() }.toTypedArray()
@@ -608,7 +613,7 @@ class GameServer {
 
     /** Sends a message to clients to inform them of the server's traffic settings */
     fun sendTrafficSettings() {
-        server.sendToAllTCP(
+        networkServer.sendToAllTCP(
             TrafficSettingsData(
                 trafficMode, trafficValue,
                 getArrivalClosedAirports(), getDepartureClosedAirports()
@@ -622,7 +627,7 @@ class GameServer {
      */
     fun sendAircraftTrailDotUpdate(trails: GdxArray<Pair<String, Position>>) {
         val trailArray = trails.toArray().map { TrailDotData(it.first, it.second.x, it.second.y) }.toTypedArray()
-        server.sendToAllTCP(AllTrailDotData(trailArray))
+        networkServer.sendToAllTCP(AllTrailDotData(trailArray))
     }
 
     /**

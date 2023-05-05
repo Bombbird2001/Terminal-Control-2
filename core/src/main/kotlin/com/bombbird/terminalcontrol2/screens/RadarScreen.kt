@@ -23,7 +23,7 @@ import com.bombbird.terminalcontrol2.graphics.ScreenSize
 import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.networking.*
 import com.bombbird.terminalcontrol2.networking.dataclasses.*
-import com.bombbird.terminalcontrol2.networking.relayserver.JoinGameRequest
+import com.bombbird.terminalcontrol2.networking.NetworkClient
 import com.bombbird.terminalcontrol2.systems.*
 import com.bombbird.terminalcontrol2.traffic.ConflictManager
 import com.bombbird.terminalcontrol2.traffic.TrafficMode
@@ -131,7 +131,7 @@ class RadarScreen(private val connectionHost: String?, airportToHost: String?, s
     private val datatagFamily = allOf(Datatag::class, FlightType::class).get()
 
     // Networking client
-    private val client = GAME.gameClient
+    private val networkClient: NetworkClient = if (roomId == null) GAME.lanClient else GAME.publicClient
 
     // Blocking queue to store runnables to be run in the main thread after engine update
     private val pendingRunnablesQueue = ConcurrentLinkedQueue<Runnable>()
@@ -171,9 +171,6 @@ class RadarScreen(private val connectionHost: String?, airportToHost: String?, s
         clientEngine.addSystem(ControlStateSystemIntervalClient())
         clientEngine.addSystem(TrafficSystemIntervalClient())
 
-        registerClassesToKryo(client.kryo)
-        registerRelayClassesToClientKryo(client.kryo)
-        client.start()
         KtxAsync.launch(Dispatchers.IO) {
             attemptConnectionToServer()
             running = true
@@ -340,7 +337,7 @@ class RadarScreen(private val connectionHost: String?, airportToHost: String?, s
     }
 
     /**
-     * Clears and disposes of [radarDisplayStage], [constZoomStage], [uiStage], [shapeRenderer], stops the [client] and
+     * Clears and disposes of [radarDisplayStage], [constZoomStage], [uiStage], [shapeRenderer], stops the [networkClient] and
      * [GameServer] if present
      * */
     override fun dispose() {
@@ -360,7 +357,7 @@ class RadarScreen(private val connectionHost: String?, airportToHost: String?, s
 
         thread {
             try {
-                client.stop()
+                networkClient.stop()
             } catch (e: ClosedSelectorException) {
                 Log.info("RadarScreen", "Client channel selector already closed before disposal")
             }
@@ -511,15 +508,17 @@ class RadarScreen(private val connectionHost: String?, airportToHost: String?, s
      * */
     private fun attemptConnectionToServer() {
         if (connectionHost == null) return
-        if (client.isConnected) return
+        if (networkClient.isConnected) return
         while (true) {
             try {
-                client.connect(5000, connectionHost, TCP_PORT, UDP_PORT)
+                if (roomId != null) networkClient.setRoomId(roomId)
+                networkClient.start()
+                networkClient.connect(5000, connectionHost, TCP_PORT, UDP_PORT)
                 break
             } catch (_: IOException) {
                 // Workaround for strange behaviour on some devices where the 5000ms timeout is ignored,
                 // an IOException is thrown instantly as server has not started up
-                Thread.sleep(1000)
+                Thread.sleep(4000)
             }
         }
     }
@@ -532,17 +531,17 @@ class RadarScreen(private val connectionHost: String?, airportToHost: String?, s
      * 1 player is present
      */
     fun pauseGame() {
-        client.sendTCP(GameRunningStatus(false))
+        networkClient.sendTCP(GameRunningStatus(false))
         GAME.soundManager.pause()
         GAME.getScreen<PauseScreen>().radarScreen = this
         GAME.setScreen<PauseScreen>()
     }
 
     /** Resumes the game, and sends a resume game signal to the server */
-    fun resumeGame() {
-        client.sendTCP(GameRunningStatus(true))
+    fun resumeGame(reconnect: Boolean = true) {
+        networkClient.sendTCP(GameRunningStatus(true))
         GAME.soundManager.resume()
-        if (!client.isConnected) client.reconnect()
+        if (!networkClient.isConnected && reconnect) networkClient.reconnect()
     }
 
     /**
@@ -551,7 +550,7 @@ class RadarScreen(private val connectionHost: String?, airportToHost: String?, s
      * */
     fun quitGame() {
         GAME.gameServer?.setLoopingFalse()
-        resumeGame()
+        resumeGame(false)
     }
 
     /**
@@ -560,7 +559,7 @@ class RadarScreen(private val connectionHost: String?, airportToHost: String?, s
      * @param newClearanceState the new clearance to send to the aircraft
      * */
     fun sendAircraftControlStateClearance(callsign: String, newClearanceState: ClearanceState) {
-        client.sendTCP(
+        networkClient.sendTCP(
             AircraftControlStateUpdateData(callsign, newClearanceState.routePrimaryName,
             newClearanceState.route.getSerialisedObject(), newClearanceState.hiddenLegs.getSerialisedObject(),
             newClearanceState.vectorHdg, newClearanceState.vectorTurnDir, newClearanceState.clearedAlt, newClearanceState.expedite, newClearanceState.clearedIas,
@@ -576,7 +575,7 @@ class RadarScreen(private val connectionHost: String?, airportToHost: String?, s
      * @param newSector the ID of the new sector to hand over to
      */
     fun sendAircraftHandOverRequest(callsign: String, newSector: Byte) {
-        client.sendTCP(HandoverRequest(callsign, newSector, playerSector))
+        networkClient.sendTCP(HandoverRequest(callsign, newSector, playerSector))
     }
 
     /**
@@ -584,12 +583,12 @@ class RadarScreen(private val connectionHost: String?, airportToHost: String?, s
      * @param requestedSector the ID of the sector the user wishes to swap with
      */
     fun sendSectorSwapRequest(requestedSector: Byte) {
-        client.sendTCP(SectorSwapRequest(requestedSector, playerSector))
+        networkClient.sendTCP(SectorSwapRequest(requestedSector, playerSector))
     }
 
     /** Sends a request to cancel the current pending sector swap request to the server */
     fun cancelSectorSwapRequest() {
-        client.sendTCP(SectorSwapRequest(null, playerSector))
+        networkClient.sendTCP(SectorSwapRequest(null, playerSector))
     }
 
     /**
@@ -597,7 +596,7 @@ class RadarScreen(private val connectionHost: String?, airportToHost: String?, s
      * @param requestingSector the ID of the sector being declined
      * */
     fun declineSectorSwapRequest(requestingSector: Byte) {
-        client.sendTCP(DeclineSwapRequest(requestingSector, playerSector))
+        networkClient.sendTCP(DeclineSwapRequest(requestingSector, playerSector))
     }
 
     /**
@@ -609,12 +608,6 @@ class RadarScreen(private val connectionHost: String?, airportToHost: String?, s
      */
     fun sendAircraftDatatagPositionUpdate(aircraft: Entity, xOffset: Float, yOffset: Float, minimised: Boolean, flashing: Boolean) {
         val callsign = aircraft[AircraftInfo.mapper]?.icaoCallsign ?: return Log.info("RadarScreen", "Missing AircraftInfo component")
-        client.sendTCP(AircraftDatatagPositionUpdateData(callsign, xOffset, yOffset, minimised, flashing))
-    }
-
-    /** Requests to join a game room */
-    fun requestToJoinRoom() {
-        if (roomId == null) return
-        client.sendTCP(JoinGameRequest(roomId))
+        networkClient.sendTCP(AircraftDatatagPositionUpdateData(callsign, xOffset, yOffset, minimised, flashing))
     }
 }

@@ -1,4 +1,4 @@
-package com.bombbird.terminalcontrol2.networking.lanserver
+package com.bombbird.terminalcontrol2.networking.hostserver
 
 import com.bombbird.terminalcontrol2.networking.GameServer
 import com.esotericsoftware.kryonet.ServerDiscoveryHandler

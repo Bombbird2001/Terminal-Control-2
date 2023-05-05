@@ -1,7 +1,7 @@
 package com.bombbird.terminalcontrol2.networking.relayserver
 
-import com.bombbird.terminalcontrol2.networking.publicserver.PublicServer
-import com.bombbird.terminalcontrol2.screens.RadarScreen
+import com.bombbird.terminalcontrol2.networking.hostserver.PublicServer
+import com.bombbird.terminalcontrol2.networking.playerclient.PublicClient
 import com.esotericsoftware.kryonet.Connection
 import java.util.UUID
 
@@ -72,9 +72,9 @@ interface RelayServerReceive {
 interface RelayClientReceive {
     /**
      * Handles this data received on the relay client
-     * @param rs the [RadarScreen] object to handle the request
+     * @param client the [PublicClient] object to handle the request
      */
-    fun handleRelayClientReceive(rs: RadarScreen)
+    fun handleRelayClientReceive(client: PublicClient)
 }
 
 interface RelayHostReceive {

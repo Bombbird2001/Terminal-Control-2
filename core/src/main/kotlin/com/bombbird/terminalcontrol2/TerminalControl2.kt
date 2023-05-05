@@ -9,7 +9,9 @@ import com.bombbird.terminalcontrol2.files.loadPlayerSettings
 import com.bombbird.terminalcontrol2.files.loadPlayerUUID
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.networking.*
-import com.bombbird.terminalcontrol2.networking.lanserver.LANClientDiscoveryHandler
+import com.bombbird.terminalcontrol2.networking.playerclient.LANClient
+import com.bombbird.terminalcontrol2.networking.playerclient.LANClientDiscoveryHandler
+import com.bombbird.terminalcontrol2.networking.playerclient.PublicClient
 import com.bombbird.terminalcontrol2.screens.*
 import com.bombbird.terminalcontrol2.screens.settings.CustomWeatherSettings
 import com.bombbird.terminalcontrol2.screens.settings.GameSettings
@@ -37,7 +39,8 @@ class TerminalControl2 : KtxGame<KtxScreen>(clearScreen = false) {
     var gameServer: GameServer? = null
     var gameClientScreen: RadarScreen? = null
     val lanClientDiscoveryHandler = LANClientDiscoveryHandler()
-    val gameClient = getGameClientInstance(lanClientDiscoveryHandler)
+    val lanClient = LANClient(lanClientDiscoveryHandler)
+    val publicClient = PublicClient()
 
     /** Quits the current game running */
     fun quitCurrentGame() {
@@ -103,6 +106,6 @@ class TerminalControl2 : KtxGame<KtxScreen>(clearScreen = false) {
         batch.disposeSafely()
         assetStorage.disposeSafely()
         soundManager.disposeSafely()
-        gameClient.dispose()
+        lanClient.dispose()
     }
 }

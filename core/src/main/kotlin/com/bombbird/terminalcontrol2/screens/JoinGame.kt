@@ -14,7 +14,7 @@ import ktx.scene2d.*
 class JoinGame: BasicUIScreen() {
     private val refreshButton: KTextButton
     private val lanGamesTable: KTableWidget
-    private val addressData = GdxArray<Pair<String, ByteArray>>()
+    private val lanAddressData = GdxArray<Pair<String, ByteArray>>()
     @Volatile
     private var searching = false
 
@@ -73,16 +73,16 @@ class JoinGame: BasicUIScreen() {
     /**
      * Search for multiplayer games open on the LAN
      *
-     * Before running discover hosts, [addressData] is passed to the client discovery handler so that it can add newly
+     * Before running discover hosts, [lanAddressData] is passed to the client discovery handler so that it can add newly
      * discovered servers and their data packets to the array, which is used after discovery times out to display the games
      * found
      * */
     private fun searchLanGames() {
         if (searching) return
         Gdx.app.postRunnable { setSearchingGames() }
-        addressData.clear()
-        GAME.lanClientDiscoveryHandler.onDiscoveredHostDataMap = addressData
-        GAME.gameClient.discoverHosts(UDP_PORT, 2000)
+        lanAddressData.clear()
+        GAME.lanClientDiscoveryHandler.onDiscoveredHostDataMap = lanAddressData
+        GAME.lanClient.discoverHosts(UDP_PORT)
         Gdx.app.postRunnable { showFoundGames() }
     }
 
@@ -91,7 +91,7 @@ class JoinGame: BasicUIScreen() {
         Timer.instance().clear()
         lanGamesTable.apply {
             clear()
-            for (i in 0 until addressData.size) { addressData[i]?.let { game ->
+            for (i in 0 until lanAddressData.size) { lanAddressData[i]?.let { game ->
                 val decodedData = decodePacketData(game.second) ?: return@let
                 val players = decodedData.first
                 val airport = decodedData.second
@@ -101,7 +101,7 @@ class JoinGame: BasicUIScreen() {
                 }
                 row()
             }}
-            if (addressData.size == 0) label("No games found", "SearchingGame")
+            if (lanAddressData.size == 0) label("No games found", "SearchingGame")
         }
         searching = false
         refreshButton.isDisabled = false

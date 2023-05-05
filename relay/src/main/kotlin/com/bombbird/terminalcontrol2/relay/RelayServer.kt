@@ -1,6 +1,6 @@
 package com.bombbird.terminalcontrol2.relay
 
-import com.bombbird.terminalcontrol2.networking.registerRelayClassesToRelayServerKryo
+import com.bombbird.terminalcontrol2.networking.registerRelayClassesToKryo
 import com.bombbird.terminalcontrol2.networking.relayserver.*
 import com.bombbird.terminalcontrol2.networking.relayserver.RelayServer
 import com.esotericsoftware.kryonet.Connection
@@ -44,9 +44,9 @@ object RelayServer: RelayServer {
              * @param connection the disconnecting client
              */
             override fun disconnected(connection: Connection) {
-                // If connection is from a host
                 val hostRoom = hostConnectionToRoomMap[connection]
                 if (hostRoom != null) {
+                    // If connection is from a host
                     val connections = roomToConnectionsMap[hostRoom]?.first ?: return
                     for (conn in connections.values) {
                         if (conn != connection) conn.close()
@@ -56,12 +56,14 @@ object RelayServer: RelayServer {
                     roomToHostConnectionMap.remove(hostRoom)
                     hostUUIDs.remove(connectionToRoomUUID[connection]?.second)
                 } else  {
+                    // Connection is from non-host player
                     val uuidRoom = connectionToRoomUUID[connection] ?: return
                     val uuid = uuidRoom.second
                     val room = uuidRoom.first
                     roomToConnectionsMap[room]?.first?.remove(uuid)
                     connectionToRoomUUID.remove(connection)
                     uuidToRoom.remove(uuid)
+                    roomToHostConnectionMap[room]?.sendTCP(PlayerDisconnect(uuid.toString()))
                 }
             }
         })
@@ -93,7 +95,7 @@ object RelayServer: RelayServer {
             server.stop()
         })
 
-        registerRelayClassesToRelayServerKryo(server.kryo)
+        registerRelayClassesToKryo(server.kryo)
         server.bind(57773, 57779)
         server.start()
     }
