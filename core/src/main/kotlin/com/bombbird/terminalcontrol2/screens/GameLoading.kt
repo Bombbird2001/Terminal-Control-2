@@ -13,10 +13,11 @@ import ktx.scene2d.*
  * @param hostAddress the address of the host server; set to 127.0.0.1 if opening the game as a host
  * @param airportToHost the main airport name being hosted; needed only if opening the game as a host, otherwise set to
  * @param saveId the ID of the save file to load, or null if no save is being loaded
+ * @param publicServer whether the game server should use public or LAN server; this is ignored if saveId is null
  * @param roomId the ID of the room to join
  */
 class GameLoading(private val hostAddress: String, private val airportToHost: String?, private val saveId: Int? = null,
-                  private val roomId: Short? = null): BasicUIScreen() {
+                  private val publicServer: Boolean, private val roomId: Short? = null): BasicUIScreen() {
     private var pBar: ProgressBar
 
     init {
@@ -52,7 +53,7 @@ class GameLoading(private val hostAddress: String, private val airportToHost: St
         super.show()
 
         pBar.value = 0.2f
-        GAME.gameClientScreen = RadarScreen(hostAddress, airportToHost, saveId, roomId).apply {
+        GAME.gameClientScreen = RadarScreen(hostAddress, airportToHost, saveId, publicServer, roomId).apply {
             GAME.addScreen(this)
             dataLoadedCallback = { pBar.value = 0.5f }
             connectedToHostCallback = { pBar.value = 1f }

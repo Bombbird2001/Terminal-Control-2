@@ -41,7 +41,7 @@ class PublicServer(
 
     override fun start(tcpPort: Int, udpPort: Int) {
         registerClassesToKryo(relayServerConnector.kryo)
-        registerRelayClassesToKryo(relayServerConnector.kryo)
+        relayServerConnector.start()
         relayServerConnector.connect(5000, Secrets.RELAY_URL, TCP_PORT, UDP_PORT)
     }
 
@@ -59,6 +59,10 @@ class PublicServer(
 
     override fun sendTCPToConnection(uuid: UUID, data: Any) {
         relayServerConnector.sendTCP(ServerToClient(roomId, uuid.toString(), getSerialisedBytes(data), true))
+    }
+
+    override fun getRoomId(): Short {
+        return roomId
     }
 
     override val connections: Collection<ConnectionMeta>
@@ -126,9 +130,12 @@ class PublicServer(
     /**
      * De-serializes the byte array in relay object received by relay host, and notifies [GameServer] of the received
      * object
+     *
+     * Method is synchronized as Kryo is not thread-safe
      * @param data serialised bytes of object to decode
      * @param sendingUUID the UUID of the sender
      */
+    @Synchronized
     fun decodeRelayMessageObject(data: ByteArray, sendingUUID: UUID) {
         val sendingConnection = uuidConnectionMap[sendingUUID] ?: return
         val obj = relayServerConnector.kryo.readClassAndObject(Input(data))

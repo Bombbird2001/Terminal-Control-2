@@ -141,24 +141,19 @@ fun registerClassesToKryo(kryo: Kryo?) {
         register(Array<TrailDotData>::class.java)
         register(AllTrailDotData::class.java)
 
-    } ?: Log.info("NetworkingTools", "Null kryo passed, unable to register classes")
-}
-
-/**
- * Registers relay specific classes to the relay server's Kryo instance
- * @param kryo the relay server's [Kryo] instance
- */
-fun registerRelayClassesToKryo(kryo: Kryo?) {
-    kryo?.apply {
+        // Relay classes
         register(ByteArray::class.java)
         register(NewGameRequest::class.java)
         register(RoomCreationStatus::class.java)
         register(RequestRelayAction::class.java)
         register(JoinGameRequest::class.java)
+        register(PlayerConnect::class.java)
         register(PlayerConnectStatus::class.java)
+        register(PlayerDisconnect::class.java)
         register(ClientToServer::class.java)
         register(ServerToClient::class.java)
-    }
+
+    } ?: Log.info("NetworkingTools", "Null kryo passed, unable to register classes")
 }
 
 /**

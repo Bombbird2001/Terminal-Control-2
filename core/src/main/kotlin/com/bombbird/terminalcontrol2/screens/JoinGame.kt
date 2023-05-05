@@ -96,7 +96,7 @@ class JoinGame: BasicUIScreen() {
                 val players = decodedData.first
                 val airport = decodedData.second
                 textButton("$airport - $players player${if (players > 1) "s" else ""}          ${game.first}          Join", "JoinGameAirport").addChangeListener { _, _ ->
-                    GAME.addScreen(GameLoading(game.first, null, null, null))
+                    GAME.addScreen(GameLoading(game.first, null, null, false, null))
                     GAME.setScreen<GameLoading>()
                 }
                 row()

@@ -10,6 +10,7 @@ import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.networking.dataclasses.*
 import com.bombbird.terminalcontrol2.networking.hostserver.LANServer
+import com.bombbird.terminalcontrol2.networking.hostserver.PublicServer
 import com.bombbird.terminalcontrol2.systems.*
 import com.bombbird.terminalcontrol2.traffic.*
 import com.bombbird.terminalcontrol2.utilities.*
@@ -31,7 +32,7 @@ import kotlin.math.roundToLong
  * Main game server class, responsible for handling all game logic, updates, sending required game data information to
  * clients and handling incoming client inputs
  * */
-class GameServer {
+class GameServer(val publicServer: Boolean) {
     companion object {
         const val UPDATE_INTERVAL = 1000.0 / SERVER_UPDATE_RATE
         const val SERVER_TO_CLIENT_UPDATE_INTERVAL_FAST = 1000.0 / SERVER_TO_CLIENT_UPDATE_RATE_FAST
@@ -207,13 +208,14 @@ class GameServer {
         engine.removeAllSystems()
     }
 
-    /** Initiates the KryoNet server for networking */
+    /** Initiates the host server for networking */
     private fun startNetworkingServer() {
-        // Log.set(Log.LEVEL_DEBUG)
-        networkServer = LANServer(this, { conn, data ->
+        val onReceive = { conn: ConnectionMeta, data: Any? ->
             // Called on data receive
             handleIncomingRequestServer(this, conn, data)
-        }, { conn ->
+        }
+
+        val onConnect = { conn: ConnectionMeta ->
             val currPlayerNo = playerNo.incrementAndGet().toByte()
             val uuid = conn.uuid
             postRunnableAfterEngineUpdate {
@@ -302,7 +304,9 @@ class GameServer {
             }
             // Unpause the game if it is currently paused
             handleGameRunningRequest(true)
-        }, { conn ->
+        }
+
+        val onDisconnect = { conn: ConnectionMeta ->
             // Called on disconnect
             val newPlayerNo = playerNo.decrementAndGet().toByte()
             postRunnableAfterEngineUpdate {
@@ -318,7 +322,11 @@ class GameServer {
                 )
                 sectorSwapRequests.clear()
             }
-        })
+        }
+
+        // Log.set(Log.LEVEL_DEBUG)
+        networkServer = if (publicServer) PublicServer(this, onReceive, onConnect, onDisconnect)
+        else LANServer(this, onReceive, onConnect, onDisconnect)
         networkServer.start(TCP_PORT, UDP_PORT)
     }
 
@@ -641,5 +649,13 @@ class GameServer {
     /** Sets the looping flag to false */
     fun setLoopingFalse() {
         loopRunning.set(false)
+    }
+
+    /**
+     * Returns the room ID of the underlying multiplayer server; if is LAN server, null is returned
+     * @return ID of room
+     */
+    fun getRoomId(): Short? {
+        return networkServer.getRoomId()
     }
 }

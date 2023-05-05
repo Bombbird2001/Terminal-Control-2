@@ -1,16 +1,16 @@
 package com.bombbird.terminalcontrol2.networking.playerclient
 
-import com.bombbird.terminalcontrol2.global.CLIENT_READ_BUFFER_SIZE
-import com.bombbird.terminalcontrol2.global.CLIENT_WRITE_BUFFER_SIZE
-import com.bombbird.terminalcontrol2.global.GAME
-import com.bombbird.terminalcontrol2.global.myUuid
+import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.networking.*
 import com.bombbird.terminalcontrol2.networking.dataclasses.ClientUUIDData
 import com.bombbird.terminalcontrol2.networking.dataclasses.RequestClientUUID
+import com.bombbird.terminalcontrol2.networking.relayserver.ClientToServer
 import com.bombbird.terminalcontrol2.networking.relayserver.JoinGameRequest
+import com.bombbird.terminalcontrol2.networking.relayserver.RelayClientReceive
 import com.bombbird.terminalcontrol2.networking.relayserver.ServerToClient
 import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.io.Input
+import com.esotericsoftware.kryo.io.Output
 import com.esotericsoftware.kryonet.Client
 import com.esotericsoftware.kryonet.Connection
 import com.esotericsoftware.kryonet.Listener
@@ -26,7 +26,7 @@ class PublicClient: NetworkClient() {
     private val client = Client(CLIENT_WRITE_BUFFER_SIZE, CLIENT_READ_BUFFER_SIZE).apply {
         addListener(object: Listener {
             override fun received(connection: Connection, obj: Any?) {
-                (obj as? ServerToClient)?.apply {
+                (obj as? RelayClientReceive)?.apply {
                     handleRelayClientReceive(this@PublicClient)
                 } ?: onReceiveNonRelayData(obj)
             }
@@ -48,7 +48,8 @@ class PublicClient: NetworkClient() {
     }
 
     override fun sendTCP(data: Any) {
-        client.sendTCP(data)
+        // Serialize and wrap in ClientToServer
+        client.sendTCP(ClientToServer(roomId, myUuid.toString(), getSerialisedBytes(data)))
     }
 
     override fun setRoomId(roomId: Short) {
@@ -58,7 +59,6 @@ class PublicClient: NetworkClient() {
 
     override fun start() {
         registerClassesToKryo(kryo)
-        registerRelayClassesToKryo(kryo)
         client.start()
     }
 
@@ -71,9 +71,23 @@ class PublicClient: NetworkClient() {
     }
 
     /**
+     * Serialises the input object with Kryo and returns the byte array
+     * @param data the object to serialise; it should have been registered with Kryo first
+     * @return a byte array containing the serialised object
+     */
+    private fun getSerialisedBytes(data: Any): ByteArray {
+        val serialisationOutput = Output(SERVER_WRITE_BUFFER_SIZE)
+        client.kryo.writeClassAndObject(serialisationOutput, data)
+        return serialisationOutput.toBytes()
+    }
+
+    /**
      * De-serializes the byte array in relay object received by relay host, and performs actions on the received object
+     *
+     * Method is synchronized as Kryo is not thread-safe
      * @param data serialised bytes of object to decode
      */
+    @Synchronized
     fun decodeRelayMessageObject(data: ByteArray) {
         val obj = client.kryo.readClassAndObject(Input(data))
         onReceiveNonRelayData(obj)
@@ -82,7 +96,7 @@ class PublicClient: NetworkClient() {
     /** Requests to join a game room */
     fun requestToJoinRoom() {
         if (roomId == Short.MAX_VALUE) return
-        sendTCP(JoinGameRequest(roomId))
+        client.sendTCP(JoinGameRequest(roomId, myUuid.toString()))
     }
 
     /**

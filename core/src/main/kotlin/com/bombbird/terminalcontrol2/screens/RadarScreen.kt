@@ -62,9 +62,10 @@ import kotlin.math.min
  * @param connectionHost the address of the host server to connect to; if null, no connection will be initiated
  * @param airportToHost the main map airport name to be hosted; must be null if not hosting the server
  * @param saveId the ID of the save to load from; if null, no save is loaded to the GameServer
+ * @param publicServer whether the host will be a public or LAN server; this is ignored if saveId is null
  * @param roomId the ID of the room to join (public multiplayer)
  * */
-class RadarScreen(private val connectionHost: String?, airportToHost: String?, saveId: Int?, private val roomId: Short?): KtxScreen, GestureListener, InputProcessor {
+class RadarScreen(private val connectionHost: String?, airportToHost: String?, saveId: Int?, publicServer: Boolean, private var roomId: Short?): KtxScreen, GestureListener, InputProcessor {
     private val clientEngine = getEngine(true)
     private val radarDisplayStage = safeStage(GAME.batch)
     private val constZoomStage = safeStage(GAME.batch)
@@ -131,7 +132,8 @@ class RadarScreen(private val connectionHost: String?, airportToHost: String?, s
     private val datatagFamily = allOf(Datatag::class, FlightType::class).get()
 
     // Networking client
-    private val networkClient: NetworkClient = if (roomId == null) GAME.lanClient else GAME.publicClient
+    private val networkClient: NetworkClient
+        get() = if (roomId == null) GAME.lanClient else GAME.publicClient
 
     // Blocking queue to store runnables to be run in the main thread after engine update
     private val pendingRunnablesQueue = ConcurrentLinkedQueue<Runnable>()
@@ -143,7 +145,7 @@ class RadarScreen(private val connectionHost: String?, airportToHost: String?, s
     init {
         KtxAsync.launch(Dispatchers.IO) {
             if (airportToHost != null) {
-                GAME.gameServer = GameServer()
+                GAME.gameServer = GameServer(publicServer)
                 GAME.gameServer?.initiateServer(airportToHost, saveId)
             } else {
                 // Aircraft data must be loaded on client side as well
@@ -510,8 +512,18 @@ class RadarScreen(private val connectionHost: String?, airportToHost: String?, s
         if (connectionHost == null) return
         if (networkClient.isConnected) return
         while (true) {
+            val gs = GAME.gameServer
+            // If the game server is not yet running, or if the game server is a public server and has yet to receive
+            // its room ID
+            if (gs != null && (!gs.gameRunning || (gs.publicServer && gs.getRoomId() == null))) {
+                Thread.sleep(4000)
+                continue
+            }
             try {
-                if (roomId != null) networkClient.setRoomId(roomId)
+                // Check if game server is public server, if it is, set to its room ID
+                if (gs != null && gs.publicServer && gs.getRoomId() != null) roomId = gs.getRoomId()
+                val finalRoomId = roomId
+                if (finalRoomId != null) networkClient.setRoomId(finalRoomId)
                 networkClient.start()
                 networkClient.connect(5000, connectionHost, TCP_PORT, UDP_PORT)
                 break

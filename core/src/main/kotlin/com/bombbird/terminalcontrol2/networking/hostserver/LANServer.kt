@@ -94,6 +94,10 @@ class LANServer(
         conn.sendTCP(data)
     }
 
+    override fun getRoomId(): Short? {
+        return null
+    }
+
     override val connections: Collection<ConnectionMeta>
         get() {
             val conns = HashSet<ConnectionMeta>()

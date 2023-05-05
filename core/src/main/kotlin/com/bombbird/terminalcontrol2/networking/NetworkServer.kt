@@ -44,5 +44,11 @@ abstract class NetworkServer(
      */
     abstract fun sendTCPToConnection(uuid: UUID, data: Any)
 
+    /**
+     * Returns the room ID of the server (after it is allocated one by relay server); null for LAN servers
+     * @return ID of the room if this is a public multiplayer game, else null
+     */
+    abstract fun getRoomId(): Short?
+
     abstract val connections: Collection<ConnectionMeta>
 }

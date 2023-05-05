@@ -102,7 +102,7 @@ const val LOCALHOST = "127.0.0.1"
 
 /** Server target refresh rates (in Hz) */
 const val SERVER_UPDATE_RATE = 60 // Server game loop
-const val SERVER_TO_CLIENT_UPDATE_RATE_FAST = 20 // Frequently updated data such as aircraft position, navigation, etc.
+const val SERVER_TO_CLIENT_UPDATE_RATE_FAST = 10 // Frequently updated data such as aircraft position, navigation, etc.
 const val SERVER_TO_CLIENT_UPDATE_RATE_SLOW = 0.1f // Not so frequently updated data such as thunderstorm cells
 const val SERVER_METAR_UPDATE_INTERVAL_MINS = 5 // Check for METAR update every 5 minutes
 
@@ -111,6 +111,7 @@ const val CLIENT_WRITE_BUFFER_SIZE = 4096
 const val CLIENT_READ_BUFFER_SIZE = 16384
 const val SERVER_WRITE_BUFFER_SIZE = CLIENT_READ_BUFFER_SIZE
 const val SERVER_READ_BUFFER_SIZE = CLIENT_WRITE_BUFFER_SIZE
+const val RELAY_BUFFER_SIZE = CLIENT_READ_BUFFER_SIZE
 const val SERVER_AIRCRAFT_TCP_UDP_MAX_COUNT = 20
 
 /** Default Gdx collections initial sizes */

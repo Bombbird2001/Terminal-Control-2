@@ -1,6 +1,7 @@
 package com.bombbird.terminalcontrol2.relay
 
-import com.bombbird.terminalcontrol2.networking.registerRelayClassesToKryo
+import com.bombbird.terminalcontrol2.global.RELAY_BUFFER_SIZE
+import com.bombbird.terminalcontrol2.networking.registerClassesToKryo
 import com.bombbird.terminalcontrol2.networking.relayserver.*
 import com.bombbird.terminalcontrol2.networking.relayserver.RelayServer
 import com.esotericsoftware.kryonet.Connection
@@ -17,7 +18,7 @@ import java.util.concurrent.ConcurrentHashMap
  * the player is the host, the room is also automatically closed and all connections to it closed
  */
 object RelayServer: RelayServer {
-    private val server = Server().apply {
+    private val server = Server(RELAY_BUFFER_SIZE, RELAY_BUFFER_SIZE).apply {
         addListener(object : Listener {
             /**
              * Called when the server receives a TCP/UDP request from a client
@@ -25,9 +26,8 @@ object RelayServer: RelayServer {
              * @param obj the serialised network object
              */
             override fun received(connection: Connection, obj: Any?) {
-                // Check if is initial connection response
-                if (obj is RelayServerReceive) {
-                    obj.handleRelayServerReceive(this@RelayServer, connection)
+                (obj as? RelayServerReceive)?.apply {
+                    handleRelayServerReceive(this@RelayServer, connection)
                 }
             }
 
@@ -55,6 +55,7 @@ object RelayServer: RelayServer {
                     hostConnectionToRoomMap.remove(connection)
                     roomToHostConnectionMap.remove(hostRoom)
                     hostUUIDs.remove(connectionToRoomUUID[connection]?.second)
+                    println("Room $hostRoom closed")
                 } else  {
                     // Connection is from non-host player
                     val uuidRoom = connectionToRoomUUID[connection] ?: return
@@ -95,7 +96,7 @@ object RelayServer: RelayServer {
             server.stop()
         })
 
-        registerRelayClassesToKryo(server.kryo)
+        registerClassesToKryo(server.kryo)
         server.bind(57773, 57779)
         server.start()
     }
@@ -113,6 +114,7 @@ object RelayServer: RelayServer {
                 roomToConnectionsMap[i.toShort()] = Pair(ConcurrentHashMap(maxPlayers.toInt()), maxPlayers)
                 hostConnectionToRoomMap[hostConnection] = i.toShort()
                 roomToHostConnectionMap[i.toShort()] = hostConnection
+                println("Room $i created")
                 return i.toShort()
             }
         }
