@@ -47,10 +47,8 @@ object RelayServer: RelayServer {
                 val hostRoom = hostConnectionToRoomMap[connection]
                 if (hostRoom != null) {
                     // If connection is from a host
-                    val connections = roomToConnectionsMap[hostRoom]?.first ?: return
-                    for (conn in connections.values) {
-                        if (conn != connection) conn.close()
-                    }
+                    val room = roomToConnectionsMap[hostRoom] ?: return
+                    room.disconnectAllPlayers(connection)
                     roomToConnectionsMap.remove(hostRoom)
                     hostConnectionToRoomMap.remove(connection)
                     roomToHostConnectionMap.remove(hostRoom)
@@ -61,7 +59,7 @@ object RelayServer: RelayServer {
                     val uuidRoom = connectionToRoomUUID[connection] ?: return
                     val uuid = uuidRoom.second
                     val room = uuidRoom.first
-                    roomToConnectionsMap[room]?.first?.remove(uuid)
+                    roomToConnectionsMap[room]?.removePlayer(uuid)
                     connectionToRoomUUID.remove(connection)
                     uuidToRoom.remove(uuid)
                     roomToHostConnectionMap[room]?.sendTCP(PlayerDisconnect(uuid.toString()))
@@ -71,7 +69,7 @@ object RelayServer: RelayServer {
     }
 
     /** Map of room ID to map of UUID to connection, excluding the 2nd connection from a host */
-    private val roomToConnectionsMap = ConcurrentHashMap<Short, Pair<ConcurrentHashMap<UUID, Connection>, Byte>>(32)
+    private val roomToConnectionsMap = ConcurrentHashMap<Short, Room>(32)
 
     /** Maps of connection to room ID and vice versa, only including the 2nd host connection */
     private val hostConnectionToRoomMap = ConcurrentHashMap<Connection, Short>(32)
@@ -111,7 +109,7 @@ object RelayServer: RelayServer {
         for (i in Short.MIN_VALUE until Short.MAX_VALUE) {
             if (!roomToConnectionsMap.containsKey(i.toShort())) {
                 connectionToRoomUUID[hostConnection] = Pair(i.toShort(), newUUID)
-                roomToConnectionsMap[i.toShort()] = Pair(ConcurrentHashMap(maxPlayers.toInt()), maxPlayers)
+                roomToConnectionsMap[i.toShort()] = Room(i.toShort(), maxPlayers, hostConnection)
                 hostConnectionToRoomMap[hostConnection] = i.toShort()
                 roomToHostConnectionMap[i.toShort()] = hostConnection
                 println("Room $i created")
@@ -133,9 +131,9 @@ object RelayServer: RelayServer {
         clientConnection: Connection
     ): Byte {
         val room = roomToConnectionsMap[roomId] ?: return 1 // No such room
-        if (room.second <= room.first.size) return 2 // Room is full
+        if (room.isFull()) return 2 // Room is full
         if (uuidToRoom.containsKey(newUUID)) return 3 // UUID already in a room
-        room.first[newUUID] = clientConnection
+        room.addPlayer(newUUID, clientConnection)
         connectionToRoomUUID[clientConnection] = Pair(roomId, newUUID)
         uuidToRoom[newUUID] = roomId
         roomToHostConnectionMap[roomId]?.sendTCP(PlayerConnect(newUUID.toString()))
@@ -160,19 +158,12 @@ object RelayServer: RelayServer {
         }
 
         val targetUUID = obj.uuid
-        if (targetUUID == null) {
-            for (connectedPlayer in roomToConnectionsMap[roomId]?.first?.values ?: return) {
-                if (conn == connectedPlayer) continue // Forward to all clients except host
-                if (obj.tcp) connectedPlayer.sendTCP(obj)
-                else connectedPlayer.sendUDP(obj)
-            }
-        } else {
-            // Forward to only 1 client
-            val targetConnection = roomToConnectionsMap[roomId]?.first?.get(UUID.fromString(targetUUID)) ?: return
-            if (conn == targetConnection) return // If somehow sent to host, ignore it
-            if (obj.tcp) targetConnection.sendTCP(obj)
-            else targetConnection.sendUDP(obj)
+        val roomObj = roomToConnectionsMap[roomId] ?: run {
+            Log.info("RelayServer", "Forward to client failed - Room ID $roomId not found")
+            return
         }
+        if (targetUUID == null) roomObj.forwardFromHostToAllClientConnections(obj, conn)
+        else roomObj.forwardFromHostToAClient(obj, conn, UUID.fromString(targetUUID))
     }
 
     override fun forwardToServer(obj: ClientToServer, conn: Connection) {
@@ -186,5 +177,81 @@ object RelayServer: RelayServer {
         val hostConn = roomToHostConnectionMap[roomId] ?: return
         if (conn == hostConn) return // Host should not be sending to itself
         hostConn.sendTCP(obj)
+    }
+
+    class Room(val id: Short, val maxPlayers: Byte, val hostConnection: Connection) {
+        private val connectedPlayers = ConcurrentHashMap<UUID, Connection>(maxPlayers.toInt())
+
+        /**
+         * Removes a player and their associated connection from the room
+         * @param uuid UUID of the player who disconnected
+         */
+        fun removePlayer(uuid: UUID) {
+            connectedPlayers.remove(uuid)
+        }
+
+        /**
+         * Forces all connections in this room to close after the host disconnects
+         * @param hostConn connection belonging to the disconnecting host
+         */
+        fun disconnectAllPlayers(hostConn: Connection) {
+            for (conn in connectedPlayers) {
+                if (conn.value != hostConn) conn.value.close()
+            }
+        }
+
+        /**
+         * Checks if the room has reached the max number of players
+         * @return true if full, else false
+         */
+        fun isFull(): Boolean {
+            return connectedPlayers.size >= maxPlayers
+        }
+
+        /**
+         * Adds the provided player UUID to the room
+         * @param uuid UUID of the player who wants to join
+         */
+        fun addPlayer(uuid: UUID, conn: Connection) {
+            if (connectedPlayers.containsKey(uuid)) return
+            connectedPlayers[uuid] = conn
+        }
+
+        /**
+         * Forwards the data to all client connections in this room
+         * @param obj the [ServerToClient] to forward
+         * @param senderConn the connection of the host (for verification)
+         */
+        fun forwardFromHostToAllClientConnections(obj: ServerToClient, senderConn: Connection) {
+            if (senderConn != hostConnection) return
+            for (connectedPlayer in connectedPlayers.values) {
+                if (senderConn == connectedPlayer) continue // Forward to all clients except host
+                if (obj.tcp) connectedPlayer.sendTCP(obj)
+                else connectedPlayer.sendUDP(obj)
+            }
+        }
+
+        /**
+         * Forwards the data to a client connection in this room
+         * @param obj the [ServerToClient] to forward
+         * @param senderConn the connection of the host (for verification)
+         * @param targetUUID UUID of the player to send to
+         */
+        fun forwardFromHostToAClient(obj: ServerToClient, senderConn: Connection, targetUUID: UUID) {
+            if (senderConn != hostConnection) return
+            // Forward to only 1 client
+            val targetConnection = connectedPlayers[targetUUID] ?: return
+            if (senderConn == targetConnection) return // If somehow sent to host, ignore it
+            if (obj.tcp) targetConnection.sendTCP(obj)
+            else targetConnection.sendUDP(obj)
+        }
+    }
+
+    /**
+     * Gets all available games that other players can join as of now
+     * @return a list of all Room objects that are open and are not full yet
+     */
+    fun getAvailableGames(): List<Room> {
+        return arrayListOf()
     }
 }
