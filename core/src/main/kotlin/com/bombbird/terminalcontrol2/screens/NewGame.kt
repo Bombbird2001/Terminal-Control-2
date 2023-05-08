@@ -51,7 +51,7 @@ class NewGame: BasicUIScreen() {
                                     if (currSelectedAirport == null) Log.info("NewGame", "Start button pressed when airport selected is null")
                                     else {
                                         // GAME.addScreen(GameLoading(LOCALHOST, currSelectedAirport?.text?.toString(), null, false, null))
-                                        GAME.addScreen(GameLoading(Secrets.RELAY_URL, currSelectedAirport?.text?.toString(), null, true, null))
+                                        GAME.addScreen(GameLoading(Secrets.RELAY_ADDRESS, currSelectedAirport?.text?.toString(), null, true, null))
                                         GAME.setScreen<GameLoading>()
                                     }
                                     event?.handle()

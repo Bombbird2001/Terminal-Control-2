@@ -4,7 +4,11 @@ import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.utils.Align
 import com.badlogic.gdx.utils.Timer
 import com.bombbird.terminalcontrol2.global.*
+import com.bombbird.terminalcontrol2.networking.HttpRequest
 import com.bombbird.terminalcontrol2.ui.addChangeListener
+import com.squareup.moshi.JsonClass
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.Types
 import kotlinx.coroutines.*
 import ktx.async.KtxAsync
 import ktx.collections.GdxArray
@@ -13,10 +17,11 @@ import ktx.scene2d.*
 /** Screen for searching and joining multiplayer games on the LAN */
 class JoinGame: BasicUIScreen() {
     private val refreshButton: KTextButton
-    private val lanGamesTable: KTableWidget
-    private val lanAddressData = GdxArray<Pair<String, ByteArray>>()
+    private val gamesTable: KTableWidget
+    private val lanGamesData = GdxArray<MultiplayerGameInfo>()
     @Volatile
     private var searching = false
+    private val publicGamesData = GdxArray<MultiplayerGameInfo>()
 
     init {
         stage.actors {
@@ -27,12 +32,12 @@ class JoinGame: BasicUIScreen() {
                 table {
                     refreshButton = textButton("Refresh", "JoinGameRefresh").cell(padTop = 70f).apply {
                         addChangeListener { _, _ ->
-                            KtxAsync.launch(Dispatchers.IO) { searchLanGames() }
+                            KtxAsync.launch(Dispatchers.IO) { searchGames() }
                         }
                     }
                     row()
                     scrollPane("JoinGame") {
-                        lanGamesTable = table { }
+                        gamesTable = table { }
                         setOverscroll(false, false)
                     }.cell(width = 800f, padTop = 100f, expandY = true)
                     row().padTop(100f)
@@ -44,6 +49,14 @@ class JoinGame: BasicUIScreen() {
         }
     }
 
+    /** Refresh the LAN games available everytime the screen is shown */
+    override fun show() {
+        super.show()
+
+        // Don't wait for the search to complete, so use a non-default dispatcher (I love KtxAsync)
+        KtxAsync.launch(Dispatchers.IO) { searchGames() }
+    }
+
     /**
      * Sets the scroll pane to display a label telling the user games are being searched, and sets the searching flag
      * to true
@@ -51,8 +64,8 @@ class JoinGame: BasicUIScreen() {
     private fun setSearchingGames() {
         refreshButton.isDisabled = true
         searching = true
-        lanGamesTable.clear()
-        val loadingLabel = lanGamesTable.label("Searching games.", "SearchingGame")
+        gamesTable.clear()
+        val loadingLabel = gamesTable.label("Searching games.", "SearchingGame")
         Timer.schedule(object: Timer.Task() {
             override fun run() {
                 Gdx.app.postRunnable { loadingLabel.setText("Searching games..") }
@@ -71,71 +84,71 @@ class JoinGame: BasicUIScreen() {
     }
 
     /**
-     * Search for multiplayer games open on the LAN
+     * Search for multiplayer games open on the LAN as well as the public relay server
      *
-     * Before running discover hosts, [lanAddressData] is passed to the client discovery handler so that it can add newly
+     * Before discovering LAN hosts, [lanGamesData] is passed to the client discovery handler so that it can add newly
      * discovered servers and their data packets to the array, which is used after discovery times out to display the games
      * found
+     *
+     * For relay games, an HTTP request is sent to the relay server endpoint to get game data
      * */
-    private fun searchLanGames() {
+    private fun searchGames() {
         if (searching) return
         Gdx.app.postRunnable { setSearchingGames() }
-        lanAddressData.clear()
-        GAME.lanClientDiscoveryHandler.onDiscoveredHostDataMap = lanAddressData
-        GAME.lanClient.discoverHosts(UDP_PORT)
+        publicGamesData.clear()
+        HttpRequest.sendPublicGamesRequest(this) // Non-blocking
+        lanGamesData.clear()
+        GAME.lanClientDiscoveryHandler.onDiscoveredHostDataMap = lanGamesData
+        GAME.lanClient.discoverHosts(UDP_PORT) // Blocks this thread
         Gdx.app.postRunnable { showFoundGames() }
     }
 
-    /** Displays all games found on the LAN, and sets the searching flag to false */
+    /**
+     * Class encapsulating the info related to a multiplayer game
+     * @param address the address to connect to
+     * @param players the current number of players in game
+     * @param maxPlayers the max number of players allowed in game
+     * @param airportName the name of the airport being hosted
+     * @param roomId the ID of the room (only for public multiplayer relay servers)
+     */
+    @JsonClass(generateAdapter = true)
+    class MultiplayerGameInfo(val address: String, val players: Byte, val maxPlayers: Byte, val airportName: String,
+                              val roomId: Short?)
+
+    /**
+     * Parses the provided response JSON into multiplayer game info
+     * @param responseJSON the JSON response from endpoint
+     */
+    fun parsePublicGameInfo(responseJSON: String) {
+        val type = Types.newParameterizedType(List::class.java, MultiplayerGameInfo::class.java)
+        Moshi.Builder().build().adapter<List<MultiplayerGameInfo>>(type).fromJson(responseJSON)?.apply {
+            for (game in this) publicGamesData.add(game)
+        }
+    }
+
+    /** Displays all games found on LAN and public relay server, and sets the searching flag to false */
     private fun showFoundGames() {
         Timer.instance().clear()
-        lanGamesTable.apply {
+        gamesTable.apply {
             clear()
-            for (i in 0 until lanAddressData.size) { lanAddressData[i]?.let { game ->
-                val decodedData = decodePacketData(game.second) ?: return@let
-                val players = decodedData.first
-                val airport = decodedData.second
-                textButton("$airport - $players player${if (players > 1) "s" else ""}          ${game.first}          Join", "JoinGameAirport").addChangeListener { _, _ ->
-                    GAME.addScreen(GameLoading(game.first, null, null, false, null))
+            for (i in 0 until lanGamesData.size) { lanGamesData[i]?.let { game ->
+                textButton("${game.airportName} - ${game.players}/${game.maxPlayers} player${if (game.maxPlayers > 1) "s" else ""}          ${game.address}          Join", "JoinGameAirport").addChangeListener { _, _ ->
+                    GAME.addScreen(GameLoading(game.address, null, null, false, null))
                     GAME.setScreen<GameLoading>()
                 }
                 row()
             }}
-            if (lanAddressData.size == 0) label("No games found", "SearchingGame")
+            for (i in 0 until publicGamesData.size) { publicGamesData[i]?.let { game ->
+                val roomId = game.roomId ?: return@let // Public games should have a room ID
+                textButton("${game.airportName} - ${game.players}/${game.maxPlayers} player${if (game.maxPlayers > 1) "s" else ""}          Public server           Join", "JoinGameAirport").addChangeListener { _, _ ->
+                    GAME.addScreen(GameLoading(game.address, null, null, false, roomId))
+                    GAME.setScreen<GameLoading>()
+                }
+                row()
+            }}
+            if (lanGamesData.size == 0 && publicGamesData.size == 0) label("No games found", "SearchingGame")
         }
         searching = false
         refreshButton.isDisabled = false
-    }
-
-    /** Refresh the LAN games available everytime the screen is shown */
-    override fun show() {
-        super.show()
-
-        // Don't wait for the search to complete, so use a non-default dispatcher (I love KtxAsync)
-        KtxAsync.launch(Dispatchers.IO) { searchLanGames() }
-    }
-
-    /**
-     * Decodes the byte array into player count and airport name data
-     * @param byteArray the byte array received from the server
-     * @return a pair, the first being a byte that represents the current number of players in game, the second being a
-     * string that represents the current game world's main airport; returns null if the byte array length does not match
-     * */
-    private fun decodePacketData(byteArray: ByteArray): Pair<Byte, String>? {
-        if (byteArray.size != 9) return null
-        var players: Byte = -1
-        var airport = ""
-        var pos = 0
-        while (pos < byteArray.size - 1) {
-            if (pos == 0) {
-                players = byteArray[0]
-                pos++
-            } else {
-                airport += Char(byteArray[pos] * 255 + byteArray[pos + 1])
-                pos += 2
-            }
-        }
-
-        return Pair(players, airport)
     }
 }

@@ -60,7 +60,7 @@ data class SectorSwapRequest(private val requestedSector: Byte? = null, private 
         // Validate the sender
         if (gs.sectorMap[connection.uuid] != sendingSector) return
         // Validate requested sector (either requested sector is null or it must be in the sector map)
-        if (requestedSector != null && !gs.sectorMap.containsValue(requestedSector, false)) return
+        if (requestedSector != null && !gs.sectorUUIDMap.containsKey(requestedSector)) return
         // Clear all existing requests from the sending sector
         for (i in gs.sectorSwapRequests.size - 1 downTo 0) {
             if (gs.sectorSwapRequests[i].second == sendingSector && gs.sectorSwapRequests[i].first != requestedSector) {

@@ -115,13 +115,17 @@ class LANServer(
     private fun receiveClientData(connection: Connection, data: ClientUUIDData) {
         // If the UUID is null or the map already contains the UUID, do not send the data
         if (data.uuid == null) {
-            connection.sendTCP(ConnectionError("Missing player UUID"))
+            connection.sendTCP(ConnectionError("Missing player ID"))
+            return
+        }
+        if (gameServer.playersInGame == gameServer.maxPlayers) {
+            connection.sendTCP(ConnectionError("Game is full"))
             return
         }
         val connUuid = UUID.fromString(data.uuid)
         if (gameServer.sectorMap.containsKey(connUuid)) {
             Log.info("NetworkingTools", "UUID $connUuid is already in game")
-            sendTCPToConnection(connUuid, ConnectionError("Player with same UUID already in server"))
+            connection.sendTCP(ConnectionError("Player with same ID already in server"))
             return
         }
         val connMeta = ConnectionMeta(connUuid, 0)

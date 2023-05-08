@@ -17,9 +17,10 @@ interface RelayServer {
      * @param newUUID UUID of the requesting player
      * @param hostConnection connection of the requesting player
      * @param maxPlayers maximum number of players to allow in the room
+     * @param mapName the map being played
      * @return ID of the created room, or [Short.MAX_VALUE] if no room can be added or UUID already in an existing room
      */
-    fun createNewRoom(newUUID: UUID, hostConnection: Connection, maxPlayers: Byte): Short
+    fun createNewRoom(newUUID: UUID, hostConnection: Connection, maxPlayers: Byte, mapName: String): Short
 
     /**
      * Method to be called after [createNewRoom] returns to inform the requesting host of the status of room creation

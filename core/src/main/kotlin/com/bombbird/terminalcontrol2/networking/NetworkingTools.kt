@@ -148,7 +148,6 @@ fun registerClassesToKryo(kryo: Kryo?) {
         register(RequestRelayAction::class.java)
         register(JoinGameRequest::class.java)
         register(PlayerConnect::class.java)
-        register(PlayerConnectStatus::class.java)
         register(PlayerDisconnect::class.java)
         register(ClientToServer::class.java)
         register(ServerToClient::class.java)

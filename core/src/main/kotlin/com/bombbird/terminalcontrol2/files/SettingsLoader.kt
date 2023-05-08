@@ -11,6 +11,9 @@ import java.util.UUID
 private const val settingsPath = "Player/settings.json"
 private const val uuidPath = "Player/uuid.json"
 
+@OptIn(ExperimentalStdlibApi::class)
+val settingsAdapter = Moshi.Builder().build().adapter<PlayerSettingsJSON>()
+
 /** Data class for storing player's global settings, which will be used for serializing to and from JSON */
 @JsonClass(generateAdapter = true)
 data class PlayerSettingsJSON(
@@ -42,14 +45,11 @@ data class PlayerSettingsJSON(
 )
 
 /** Loads the player's existing global settings and sets the global variables to them if available */
-@OptIn(ExperimentalStdlibApi::class)
 fun loadPlayerSettings() {
     val settingsHandle = getExtDir(settingsPath) ?: return
     if (settingsHandle.exists()) {
         // File exists, read from it
         val jsonString = settingsHandle.readString()
-        val moshi = Moshi.Builder().build()
-        val settingsAdapter = moshi.adapter<PlayerSettingsJSON>()
         settingsAdapter.fromJson(jsonString)?.let { loadPlayerSettingsFromJson(it) }
     } else {
         // File does not exist, create new file with the default settings

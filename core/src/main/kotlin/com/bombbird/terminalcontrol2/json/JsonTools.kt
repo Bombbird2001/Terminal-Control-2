@@ -23,20 +23,6 @@ fun getMoshiWithAllAdapters(): Moshi {
         .add(getPolymorphicComponentAdapter()).add(getPolymorphicLegAdapter()).build()
 }
 
-/**
- * Gets a Moshi instance that contains adapters for serialization of Aircraft objects
- * @return a [Moshi] that contains only adapters required to serialize Aircraft
- */
-fun getMoshiWithAircraftAdapters(): Moshi {
-    return Moshi.Builder().add(TakeoffRollAdapter).add(LandingRollAdapter).add(VisualCapturedAdapter)
-        .add(LocalizerArmedAdapter).add(LocalizerCapturedAdapter).add(GlideSlopeArmedAdapter)
-        .add(GlideSlopeCapturedAdapter).add(StepDownApproachAdapter).add(CirclingApproachAdapter)
-        .add(AircraftAdapter).add(Vector2Adapter).add(ControllableAdapter).add(PendingClearanceAdapter)
-        .add(ClearanceActAdapter).add(RouteAdapter).add(ArrivalRouteZoneAdapter).add(DepartureRouteZoneAdapter)
-        .add(RouteZoneAdapter).add(WakeTrailAdapter).add(getPolymorphicComponentAdapter())
-        .add(getPolymorphicLegAdapter()).build()
-}
-
 /** Interface for implementing JSON serialization for subclasses of Component */
 interface BaseComponentJSONInterface {
     enum class ComponentType {

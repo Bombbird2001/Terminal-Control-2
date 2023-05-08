@@ -23,7 +23,8 @@ class PublicServer(
     gameServer: GameServer,
     onReceive: (ConnectionMeta, Any?) -> Unit,
     onConnect: (ConnectionMeta) -> Unit,
-    onDisconnect: (ConnectionMeta) -> Unit
+    onDisconnect: (ConnectionMeta) -> Unit,
+    private val mapName: String
 ) : NetworkServer(gameServer, onReceive, onConnect, onDisconnect) {
     private var roomId: Short = Short.MAX_VALUE
     private val relayServerConnector = Client(SERVER_WRITE_BUFFER_SIZE, SERVER_READ_BUFFER_SIZE).apply {
@@ -42,7 +43,7 @@ class PublicServer(
     override fun start(tcpPort: Int, udpPort: Int) {
         registerClassesToKryo(relayServerConnector.kryo)
         relayServerConnector.start()
-        relayServerConnector.connect(5000, Secrets.RELAY_URL, TCP_PORT, UDP_PORT)
+        relayServerConnector.connect(5000, Secrets.RELAY_ADDRESS, TCP_PORT, UDP_PORT)
     }
 
     override fun stop() {
@@ -98,7 +99,7 @@ class PublicServer(
 
     /** Requests for the relay server to create a game room */
     fun requestGameCreation() {
-        relayServerConnector.sendTCP(NewGameRequest(4, myUuid.toString()))
+        relayServerConnector.sendTCP(NewGameRequest(gameServer.maxPlayers, mapName, myUuid.toString()))
     }
 
     /**

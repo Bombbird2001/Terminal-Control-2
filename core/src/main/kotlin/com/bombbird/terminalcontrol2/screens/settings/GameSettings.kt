@@ -78,7 +78,7 @@ class GameSettings: BaseGameSettings() {
                             stormSelectBox = defaultSettingsSelectBox<String>().apply {
                                 setItems(OFF, LOW, MEDIUM, HIGH, NIGHTMARE)
                             }
-                            if (GAME.gameServer?.playerNo?.get() == 1) {
+                            if (GAME.gameServer?.playersInGame == 1.toByte()) {
                                 defaultSettingsLabel("Game speed:")
                                 gameSpeedSelectBox = defaultSettingsSelectBox<String>().apply {
                                     setItems("1x", "2x", "4x", "8x")
@@ -173,7 +173,7 @@ class GameSettings: BaseGameSettings() {
                     OFF
                 }
             }
-            if (playerNo.get() > 1) gameSpeedSelectBox?.selected = "1x"
+            if (playersInGame > 1) gameSpeedSelectBox?.selected = "1x"
             else gameSpeedSelectBox?.selected = "${gameSpeed}x"
             nightModeSelectBox.selected = if (nightModeStart == -1 || nightModeEnd == -1) OFF else ON
             setNightModeTimeElementsVisibility(nightModeStart != -1 && nightModeEnd != -1)
@@ -229,7 +229,7 @@ class GameSettings: BaseGameSettings() {
                     STORMS_OFF
                 }
             }
-            gameSpeed = if (playerNo.get() > 1) 1
+            gameSpeed = if (playersInGame > 1) 1
             else gameSpeedSelectBox?.selected?.replace("x", "")?.toInt() ?: 1
             nightModeStart = if (nightModeSelectBox.selected == ON) {
                 nightModeStartHourSelectBox.selected.toInt() * 100 + nightModeStartMinSelectBox.selected.toInt()

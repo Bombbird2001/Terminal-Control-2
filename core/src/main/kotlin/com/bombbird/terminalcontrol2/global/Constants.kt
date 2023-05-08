@@ -100,6 +100,9 @@ fun getEngine(onClient: Boolean): Engine {
 /** Constant addresses */
 const val LOCALHOST = "127.0.0.1"
 
+/** Relay server HTTP endpoint port */
+var RELAY_ENDPOINT_PORT = 57775
+
 /** Server target refresh rates (in Hz) */
 const val SERVER_UPDATE_RATE = 60 // Server game loop
 const val SERVER_TO_CLIENT_UPDATE_RATE_FAST = 10 // Frequently updated data such as aircraft position, navigation, etc.

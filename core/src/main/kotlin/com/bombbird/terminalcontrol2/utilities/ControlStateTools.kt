@@ -224,7 +224,7 @@ fun removeAllApproachComponents(aircraft: Entity) {
  * @return the sector ID of the sector the aircraft is in, or null if none found
  */
 fun getSectorForPosition(posX: Float, posY: Float, useServerSectors: Boolean): Byte? {
-    val allSectors = if (useServerSectors) GAME.gameServer?.let { it.sectors[it.playerNo.get().toByte()] } ?: return null
+    val allSectors = if (useServerSectors) GAME.gameServer?.let { it.sectors[it.playersInGame] } ?: return null
     else CLIENT_SCREEN?.sectors ?: return null
     for (j in 0 until allSectors.size) allSectors[j]?.let { sector ->
         if (sector.entity[GPolygon.mapper]?.polygonObj?.contains(posX, posY) == true) {

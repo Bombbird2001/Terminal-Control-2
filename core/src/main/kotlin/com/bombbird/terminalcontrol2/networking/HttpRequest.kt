@@ -2,7 +2,9 @@ package com.bombbird.terminalcontrol2.networking
 
 import com.badlogic.ashley.core.Entity
 import com.bombbird.terminalcontrol2.global.GAME
+import com.bombbird.terminalcontrol2.global.RELAY_ENDPOINT_PORT
 import com.bombbird.terminalcontrol2.global.Secrets
+import com.bombbird.terminalcontrol2.screens.JoinGame
 import com.bombbird.terminalcontrol2.utilities.generateRandomWeather
 import com.bombbird.terminalcontrol2.utilities.updateAirportMetar
 import com.esotericsoftware.minlog.Log
@@ -22,20 +24,19 @@ object HttpRequest {
      * @param airportsForRandom the list of airports to generate random weather for in case of failure
      * */
     fun sendMetarRequest(reqString: String, retry: Boolean, airportsForRandom: List<Entity>) {
-        // return generateRandomWeather(false, airportsForRandom)
         val request = Request.Builder()
             .url(Secrets.GET_METAR_URL)
             .post(reqString.toRequestBody(JSON_MEDIA_TYPE))
             .build()
         client.newCall(request).enqueue(object: Callback {
             override fun onFailure(call: Call, e: IOException) {
-                Log.info("HttpRequest", "Request failed")
+                Log.info("HttpRequest", "METAR request failed")
                 println(e)
-                handleResult(null, retry, reqString, airportsForRandom)
+                handleMetarResult(null, retry, reqString, airportsForRandom)
             }
 
             override fun onResponse(call: Call, response: Response) {
-                handleResult(response, retry, reqString, airportsForRandom)
+                handleMetarResult(response, retry, reqString, airportsForRandom)
             }
         })
     }
@@ -47,7 +48,7 @@ object HttpRequest {
      * @param reqString the original request JSON string send in the request
      * @param airportsForRandom the list of airport entities to generate random weather if needed
      */
-    private fun handleResult(response: Response?, retry: Boolean, reqString: String, airportsForRandom: List<Entity>) {
+    private fun handleMetarResult(response: Response?, retry: Boolean, reqString: String, airportsForRandom: List<Entity>) {
         fun tryGetWeatherAgain() {
             if (retry) sendMetarRequest(reqString, false, airportsForRandom)
             else generateRandomWeather(true, airportsForRandom)
@@ -59,12 +60,12 @@ object HttpRequest {
             return
         }
         if (!response.isSuccessful) {
-            if (response.code == 503) Log.info("HttpRequest", "Error 503")
+            Log.info("HttpRequest", "METAR request error ${response.code}")
             tryGetWeatherAgain()
         } else {
             val responseText = response.body?.string()
             if (responseText == null) {
-                Log.info("HttpRequest", "Null response body")
+                Log.info("HttpRequest", "METAR request null response body")
                 tryGetWeatherAgain()
             } else {
                 // METAR JSON has been received
@@ -80,5 +81,48 @@ object HttpRequest {
      */
     private fun checkGameServerRunningStatus(): Boolean {
         return GAME.gameServer?.let { it.gameRunning || it.initialisingWeather.get() } ?: false
+    }
+
+    /**
+     * Sends an HTTP request to the relay server
+     * @param joinGame the [JoinGame] screen to handle the response
+     * */
+    fun sendPublicGamesRequest(joinGame: JoinGame) {
+        val request = Request.Builder()
+            .url("${Secrets.RELAY_ENDPOINT_URL}:${RELAY_ENDPOINT_PORT}/games")
+            .get()
+            .build()
+        client.newCall(request).enqueue(object: Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                Log.info("HttpRequest", "Public games request failed")
+                println(e)
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                handlePublicGamesResult(response, joinGame)
+            }
+        })
+    }
+
+    /**
+     * Handles the response from the public games endpoint query
+     * @param response the response received from the server; may be null if request was unsuccessful
+     * @param joinGame the [JoinGame] screen to handle the response
+     */
+    private fun handlePublicGamesResult(response: Response?, joinGame: JoinGame) {
+        if (response == null) return
+
+        if (!response.isSuccessful) {
+            Log.info("HttpRequest", "Public games request error ${response.code}")
+        } else {
+            val responseText = response.body?.string()
+            if (responseText == null) {
+                Log.info("HttpRequest", "Public games request null response body")
+            } else {
+                // Parse JSON to multiplayer games info
+                joinGame.parsePublicGameInfo(responseText)
+            }
+        }
+        response.close()
     }
 }

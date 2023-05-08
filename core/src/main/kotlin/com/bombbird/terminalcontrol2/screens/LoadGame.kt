@@ -102,7 +102,7 @@ class LoadGame: BasicUIScreen() {
                 val meta = game.second
                 textButton("${meta.mainName} - Score: ${meta.score}   High score: ${meta.highScore}\nLanded: ${meta.landed}   Departed: ${meta.departed}", "JoinGameAirport").addChangeListener { _, _ ->
                     // GAME.addScreen(GameLoading(LOCALHOST, meta.mainName, game.first, null))
-                    GAME.addScreen(GameLoading(Secrets.RELAY_URL, meta.mainName, null, false, 0))
+                    GAME.addScreen(GameLoading(Secrets.RELAY_ADDRESS, meta.mainName, null, false, 0))
                     GAME.setScreen<GameLoading>()
                 }
                 row()

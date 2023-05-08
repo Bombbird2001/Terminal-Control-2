@@ -23,6 +23,8 @@ import java.time.LocalTime
 import kotlin.math.*
 
 /** Helper functions and classes for dealing with METAR shenanigans */
+private val airportMetarMapType = Types.newParameterizedType(Map::class.java, Byte::class.javaObjectType, MetarResponse::class.java)
+private val airportMetarMoshiAdapter = Moshi.Builder().build().adapter<Map<Byte, MetarResponse>>(airportMetarMapType)
 
 /** Helper class that specifies the JSON format to send METAR requests to the server */
 @JsonClass(generateAdapter = true)
@@ -77,8 +79,7 @@ class MetarResponse(
 
 /** Updates the in-game airports' METAR with the supplied [metarJson] string */
 fun updateAirportMetar(metarJson: String) {
-    val type = Types.newParameterizedType(Map::class.java, Byte::class.javaObjectType, MetarResponse::class.java)
-    Moshi.Builder().build().adapter<Map<Byte, MetarResponse>>(type).fromJson(metarJson)?.apply {
+    airportMetarMoshiAdapter.fromJson(metarJson)?.apply {
         for (entry in entries) {
             entry.value.let { GAME.gameServer?.airports?.get(entry.key)?.entity?.also { arpt ->
                 arpt[MetarInfo.mapper]?.apply {

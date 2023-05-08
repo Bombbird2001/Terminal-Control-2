@@ -61,7 +61,11 @@ class GameServer(val publicServer: Boolean) {
     private val pauseCondition = lock.newCondition()
     val initialisingWeather = AtomicBoolean(true)
     private val initialWeatherCondition = lock.newCondition()
-    val playerNo = AtomicInteger(0)
+    private val playerNo = AtomicInteger(0)
+    val playersInGame: Byte
+        get() = playerNo.get().toByte()
+    val maxPlayers: Byte
+        get() = sectors.size.toByte()
     lateinit var networkServer: NetworkServer
     val engine = Engine()
     var saveID: Int? = null
@@ -325,7 +329,7 @@ class GameServer(val publicServer: Boolean) {
         }
 
         // Log.set(Log.LEVEL_DEBUG)
-        networkServer = if (publicServer) PublicServer(this, onReceive, onConnect, onDisconnect)
+        networkServer = if (publicServer) PublicServer(this, onReceive, onConnect, onDisconnect, mainName)
         else LANServer(this, onReceive, onConnect, onDisconnect)
         networkServer.start(TCP_PORT, UDP_PORT)
     }

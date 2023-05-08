@@ -8,14 +8,18 @@ import java.nio.ByteBuffer
 import java.nio.channels.DatagramChannel
 
 class LANServerDiscoveryHandler(val gameServer: GameServer): ServerDiscoveryHandler {
+    companion object {
+        const val DISCOVERY_PACKET_SIZE = 10
+    }
 
     /**
      * Overrides [ServerDiscoveryHandler.onDiscoverHost] to send information about the server, such as the main airport
-     * name as well as number of currently connected players
+     * name, number of currently connected players and maximum number of players
      */
     override fun onDiscoverHost(datagramChannel: DatagramChannel?, fromAddress: InetSocketAddress?): Boolean {
-        val byteBuffer = ByteBuffer.allocate(9)
-        if (byteBuffer.position() + 1 <= byteBuffer.capacity()) byteBuffer.put(gameServer.playerNo.get().toByte())
+        val byteBuffer = ByteBuffer.allocate(DISCOVERY_PACKET_SIZE)
+        if (byteBuffer.position() + 1 <= byteBuffer.capacity()) byteBuffer.put(gameServer.playersInGame)
+        if (byteBuffer.position() + 1 <= byteBuffer.capacity()) byteBuffer.put(gameServer.maxPlayers)
         for (c in gameServer.mainName) {
             if (byteBuffer.position() + 2 > byteBuffer.capacity()) break
             byteBuffer.putChar(c)

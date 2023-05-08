@@ -16,6 +16,7 @@ import java.util.UUID
  * @param connections the list of connections to the server
  * @param currentIdMap the map of connections to their current sector IDs; this function will attempt to keep players
  * assigned to their previously assigned ID if it exists
+ * @param sectorUUIDMap the map of sectors to the UUID of the current controlling player
  * @param sectorCount the number of sectors assignable
  * @param sectors mapping of each sector configuration to the number of players
  */
@@ -28,7 +29,7 @@ fun assignSectorsToPlayers(connections: Collection<ConnectionMeta>, currentIdMap
     val emptySectors = GdxArray<Byte>(PLAYER_SIZE)
     // If the ID map no longer contains the sector, add it to the empty sector array
     for (i in 0 until sectorCount) {
-        if (!currentIdMap.containsValue(i.byte, false)) emptySectors.add(i.byte)
+        if (!sectorUUIDMap.containsKey(i.byte)) emptySectors.add(i.byte)
     }
     connections.forEach {
         val newId = currentIdMap[it.uuid]?.let { currId ->
@@ -68,7 +69,7 @@ fun swapPlayerSectors(player1: UUID, currentSector1: Byte, player2: UUID, curren
     sectorUUIDMap[currentSector1] = sectorUUIDMap[currentSector2]
     sectorUUIDMap[currentSector2] = tmp
     GAME.gameServer?.apply {
-        val sectorArray = sectors[playerNo.get().toByte()].toArray().map { it.getSerialisableObject() }.toTypedArray()
+        val sectorArray = sectors[playersInGame].toArray().map { it.getSerialisableObject() }.toTypedArray()
         sendIndividualSectorUpdateTCP(player1, currentSector2, sectorArray)
         sendIndividualSectorUpdateTCP(player2, currentSector1, sectorArray)
     }

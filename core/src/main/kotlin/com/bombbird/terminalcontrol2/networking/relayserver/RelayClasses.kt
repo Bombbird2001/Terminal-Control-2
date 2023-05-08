@@ -1,6 +1,5 @@
 package com.bombbird.terminalcontrol2.networking.relayserver
 
-import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.networking.hostserver.PublicServer
 import com.bombbird.terminalcontrol2.networking.playerclient.PublicClient
 import com.esotericsoftware.kryonet.Connection
@@ -8,10 +7,10 @@ import com.esotericsoftware.minlog.Log
 import java.util.*
 
 /** Class representing data sent to the relay server to open a new room for a new game */
-data class NewGameRequest(val maxPlayers: Byte = 1, val uuid: String? = null): RelayServerReceive {
+data class NewGameRequest(val maxPlayers: Byte = 1, val mapName: String = "", val uuid: String? = null): RelayServerReceive {
     override fun handleRelayServerReceive(rs: RelayServer, conn: Connection) {
         if (uuid == null) return
-        val res = rs.createNewRoom(UUID.fromString(uuid), conn, maxPlayers)
+        val res = rs.createNewRoom(UUID.fromString(uuid), conn, maxPlayers, mapName)
         rs.sendCreateRoomResult(res, conn)
     }
 }
@@ -52,13 +51,6 @@ data class PlayerConnect(val uuid: String? = null): RelayHostReceive {
         if (uuid == null) return
         host.onConnect(UUID.fromString(uuid))
         Log.info("PublicServer", "Player $uuid connected")
-    }
-}
-
-/** Class representing data sent to the client after the relay server processes the [PlayerConnect] request */
-data class PlayerConnectStatus(val addStatus: Byte = 0): RelayClientReceive {
-    override fun handleRelayClientReceive(client: PublicClient) {
-        if (addStatus > 0) GAME.quitCurrentGame()
     }
 }
 
