@@ -1,8 +1,10 @@
 package com.bombbird.terminalcontrol2.global
 
 object Secrets {
-    val GET_METAR_URL = ""
-    val GET_METAR_PW = ""
-    val SEND_ERROR_URL = ""
-    val SEND_ERROR_PW = ""
+    const val GET_METAR_URL = ""
+    const val GET_METAR_PW = ""
+    const val SEND_ERROR_URL = ""
+    const val SEND_ERROR_PW = ""
+    const val RELAY_ADDRESS = ""
+    const val RELAY_ENDPOINT_URL = ""
 }
