@@ -6,6 +6,7 @@ import com.squareup.moshi.Types
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpHandler
 import com.sun.net.httpserver.HttpServer
+import java.net.Inet4Address
 import java.net.InetSocketAddress
 import java.util.concurrent.Executors
 
@@ -43,7 +44,7 @@ object AvailableGamesEndpoint {
      */
     fun launch(rs: RelayServer) {
         relayServer = rs
-        httpServer = HttpServer.create(InetSocketAddress(RELAY_ENDPOINT_PORT), 10)
+        httpServer = HttpServer.create(InetSocketAddress(Inet4Address.getLocalHost(), RELAY_ENDPOINT_PORT - 1), 10)
         httpServer.createContext("/games", RequestHandler)
         httpServer.executor = Executors.newFixedThreadPool(2)
         httpServer.start()

@@ -100,7 +100,7 @@ fun getEngine(onClient: Boolean): Engine {
 /** Constant addresses */
 const val LOCALHOST = "127.0.0.1"
 
-/** Relay server HTTP endpoint port */
+/** Relay server HTTPS endpoint port */
 var RELAY_ENDPOINT_PORT = 57775
 
 /** Server target refresh rates (in Hz) */
