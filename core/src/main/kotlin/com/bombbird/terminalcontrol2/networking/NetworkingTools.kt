@@ -144,7 +144,6 @@ fun registerClassesToKryo(kryo: Kryo?) {
         // Relay classes
         register(ByteArray::class.java)
         register(NewGameRequest::class.java)
-        register(RoomCreationStatus::class.java)
         register(RequestRelayAction::class.java)
         register(JoinGameRequest::class.java)
         register(PlayerConnect::class.java)

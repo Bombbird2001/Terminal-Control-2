@@ -13,7 +13,7 @@ object RoomJSONAdapter {
     }
 
     @FromJson
-    fun fromJson(str: String): RelayServer.Room {
-        return RelayServer.Room(Short.MAX_VALUE, 0, null, "")
+    fun fromJson(str: String): RelayServer.Room? {
+        return null
     }
 }

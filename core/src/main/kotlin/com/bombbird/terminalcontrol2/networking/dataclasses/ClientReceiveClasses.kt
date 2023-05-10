@@ -3,6 +3,7 @@ package com.bombbird.terminalcontrol2.networking.dataclasses
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.*
 import com.bombbird.terminalcontrol2.global.*
+import com.bombbird.terminalcontrol2.networking.encryption.NeedsEncryption
 import com.bombbird.terminalcontrol2.screens.MainMenu
 import com.bombbird.terminalcontrol2.screens.RadarScreen
 import com.bombbird.terminalcontrol2.traffic.ConflictManager
@@ -22,7 +23,7 @@ import java.util.*
  * This will always be sent by the server on initial client connection, and a reply by the client (see below [ClientUUIDData])
  * must be received in order for the server to send the client initialisation data
  * */
-class RequestClientUUID
+class RequestClientUUID: NeedsEncryption
 
 /**
  * Class representing an error when a player is attempting to connect - this could be caused by a few different reasons,
@@ -51,7 +52,7 @@ class FastUDPData(private val aircraft: Array<Aircraft.SerialisedAircraftUDP> = 
  * This should always be sent before initial loading data (those below) to ensure no duplicate objects become present
  * on the client
  * */
-class ClearAllClientData: ClientReceive {
+class ClearAllClientData: ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
         // Nuke everything
         rs.sectors.clear()
@@ -69,7 +70,7 @@ class ClearAllClientData: ClientReceive {
 /** Class representing airspace data sent on initial connection, loading of the game on a client */
 data class InitialAirspaceData(private val magHdgDev: Float = 0f, private val minAlt: Int = 2000, private val maxAlt: Int = 20000,
                                private val minSep: Float = 3f, private val transAlt: Int = 18000, private val transLvl: Int = 180):
-    ClientReceive {
+    ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
         MAG_HDG_DEV = magHdgDev
         MIN_ALT = minAlt
@@ -82,7 +83,7 @@ data class InitialAirspaceData(private val magHdgDev: Float = 0f, private val mi
 
 /** Class representing sector data sent on new player connections, disconnections */
 class IndividualSectorData(private val assignedSectorId: Byte = 0, private val sectors: Array<Sector.SerialisedSector> = arrayOf(),
-                           private val primarySector: FloatArray = floatArrayOf()): ClientReceive {
+                           private val primarySector: FloatArray = floatArrayOf()): ClientReceive, NeedsEncryption {
     companion object {
         private val sectorFamily = allOf(SectorInfo::class).get()
     }
@@ -102,7 +103,7 @@ class IndividualSectorData(private val assignedSectorId: Byte = 0, private val s
 }
 
 /** Class representing aircraft data sent on initial connection, loading of the game on a client */
-class InitialAircraftData(private val aircraft: Array<Aircraft.SerialisedAircraft> = arrayOf()): ClientReceive {
+class InitialAircraftData(private val aircraft: Array<Aircraft.SerialisedAircraft> = arrayOf()): ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
         aircraft.onEach {
             Aircraft.fromSerialisedObject(it).apply {
@@ -115,7 +116,7 @@ class InitialAircraftData(private val aircraft: Array<Aircraft.SerialisedAircraf
 }
 
 /** Class representing airport data sent on initial connection, loading of the game on a client */
-class AirportData(private val airports: Array<Airport.SerialisedAirport> = arrayOf()): ClientReceive {
+class AirportData(private val airports: Array<Airport.SerialisedAirport> = arrayOf()): ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
         airports.forEach {
             Airport.fromSerialisedObject(it).apply {
@@ -135,7 +136,7 @@ class AirportData(private val airports: Array<Airport.SerialisedAirport> = array
 }
 
 /** Class representing waypoint data sent on initial connection, loading of the game on a client */
-class WaypointData(private val waypoints: Array<Waypoint.SerialisedWaypoint> = arrayOf()): ClientReceive {
+class WaypointData(private val waypoints: Array<Waypoint.SerialisedWaypoint> = arrayOf()): ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
         waypoints.onEach {
             Waypoint.fromSerialisedObject(it).apply {
@@ -149,7 +150,7 @@ class WaypointData(private val waypoints: Array<Waypoint.SerialisedWaypoint> = a
 
 /** Class representing waypoint mapping data sent on initial connection, loading of the game on a client */
 class WaypointMappingData(private val waypointMapping: Array<Waypoint.SerialisedWaypointMapping> = arrayOf()):
-    ClientReceive {
+    ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
         rs.updatedWaypointMapping.clear()
         waypointMapping.onEach { rs.updatedWaypointMapping[it.name] = it.wptId }
@@ -158,7 +159,7 @@ class WaypointMappingData(private val waypointMapping: Array<Waypoint.Serialised
 
 /** Class representing published hold data sent on initial connection, loading of the game on a client */
 class PublishedHoldData(private val publishedHolds: Array<PublishedHold.SerialisedPublishedHold> = arrayOf()):
-    ClientReceive {
+    ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
         publishedHolds.onEach {
             PublishedHold.fromSerialisedObject(it).apply {
@@ -171,7 +172,7 @@ class PublishedHoldData(private val publishedHolds: Array<PublishedHold.Serialis
 }
 
 /** Class representing minimum altitude sector data sent on initial connection, loading of the game on a client */
-class MinAltData(private val minAltSectors: Array<MinAltSector.SerialisedMinAltSector> = arrayOf()): ClientReceive {
+class MinAltData(private val minAltSectors: Array<MinAltSector.SerialisedMinAltSector> = arrayOf()): ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
         minAltSectors.onEach {
             rs.minAltSectors.add(MinAltSector.fromSerialisedObject(it))
@@ -181,14 +182,14 @@ class MinAltData(private val minAltSectors: Array<MinAltSector.SerialisedMinAltS
 }
 
 /** Class representing shoreline data sent on initial connection, loading of the game on a client */
-class ShorelineData(private val shoreline: Array<Shoreline.SerialisedShoreline> = arrayOf()): ClientReceive {
+class ShorelineData(private val shoreline: Array<Shoreline.SerialisedShoreline> = arrayOf()): ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
         shoreline.onEach { Shoreline.fromSerialisedObject(it) }
     }
 }
 
 /** Class representing the data to be sent during METAR updates */
-class MetarData(private val metars: Array<Airport.SerialisedMetar> = arrayOf()): ClientReceive {
+class MetarData(private val metars: Array<Airport.SerialisedMetar> = arrayOf()): ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
         metars.forEach {
             rs.airports[it.arptId]?.updateFromSerialisedMetar(it)
@@ -201,7 +202,7 @@ class MetarData(private val metars: Array<Airport.SerialisedMetar> = arrayOf()):
 data class AircraftSectorUpdateData(private val callsign: String = "", private val newSector: Byte = 0,
                                     private val newUUID: String? = null, private val ignoreInitialContact: Boolean = false,
                                     private val tagFlashing: Boolean = false):
-    ClientReceive {
+    ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
         // If the client has not received the initial load data, ignore this sector update
         if (rs.sectors.isEmpty) return
@@ -247,7 +248,7 @@ data class AircraftSectorUpdateData(private val callsign: String = "", private v
 
 /** Class representing sent when an aircraft spawns in the game */
 data class AircraftSpawnData(private val newAircraft: Aircraft.SerialisedAircraft = Aircraft.SerialisedAircraft()):
-    ClientReceive {
+    ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
         Aircraft.fromSerialisedObject(newAircraft).apply {
             entity[AircraftInfo.mapper]?.icaoCallsign?.let { callsign ->
@@ -258,7 +259,7 @@ data class AircraftSpawnData(private val newAircraft: Aircraft.SerialisedAircraf
 }
 
 /** Class representing de-spawn data sent when an aircraft is removed from the game */
-data class AircraftDespawnData(private val callsign: String = ""): ClientReceive {
+data class AircraftDespawnData(private val callsign: String = ""): ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
         GAME.engine.removeEntity(rs.aircraft[callsign]?.entity)
         rs.aircraft.removeKey(callsign)
@@ -267,7 +268,7 @@ data class AircraftDespawnData(private val callsign: String = ""): ClientReceive
 
 /** Class representing data sent during creation of a new custom waypoint */
 data class CustomWaypointData(private val customWpt: Waypoint.SerialisedWaypoint = Waypoint.SerialisedWaypoint()):
-    ClientReceive {
+    ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
         if (rs.waypoints.containsKey(customWpt.id)) {
             Log.info("NetworkingTools", "Existing waypoint with ID ${customWpt.id} found, ignoring this custom waypoint")
@@ -278,7 +279,7 @@ data class CustomWaypointData(private val customWpt: Waypoint.SerialisedWaypoint
 }
 
 /** Class representing data sent during removal of a custom waypoint */
-data class RemoveCustomWaypointData(private val wptId: Short = -1): ClientReceive {
+data class RemoveCustomWaypointData(private val wptId: Short = -1): ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
         if (wptId >= -1) {
             Log.info("NetworkingTools", "Custom waypoint must have ID < -1; $wptId was provided")
@@ -290,7 +291,7 @@ data class RemoveCustomWaypointData(private val wptId: Short = -1): ClientReceiv
 }
 
 /** Class representing data sent during setting/un-setting of a pending runway change */
-data class PendingRunwayUpdateData(private val airportId: Byte = 0, private val configId: Byte? = null): ClientReceive {
+data class PendingRunwayUpdateData(private val airportId: Byte = 0, private val configId: Byte? = null): ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
         rs.airports[airportId]?.pendingRunwayConfigClient(configId)
         GAME.soundManager.playAlert()
@@ -298,7 +299,7 @@ data class PendingRunwayUpdateData(private val airportId: Byte = 0, private val 
 }
 
 /** Class representing data sent during a runway change */
-data class ActiveRunwayUpdateData(private val airportId: Byte = 0, private val configId: Byte = 0): ClientReceive {
+data class ActiveRunwayUpdateData(private val airportId: Byte = 0, private val configId: Byte = 0): ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
         rs.airports[airportId]?.activateRunwayConfig(configId)
         rs.uiPane.mainInfoObj.updateAtisInformation()
@@ -307,7 +308,7 @@ data class ActiveRunwayUpdateData(private val airportId: Byte = 0, private val c
 }
 
 /** Class representing data sent when the score is updated */
-data class ScoreData(private val score: Int = 0, private val highScore: Int = 0): ClientReceive {
+data class ScoreData(private val score: Int = 0, private val highScore: Int = 0): ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
         rs.uiPane.mainInfoObj.updateScoreDisplay(score, highScore)
     }
@@ -316,7 +317,7 @@ data class ScoreData(private val score: Int = 0, private val highScore: Int = 0)
 /** Class representing data sent for ongoing conflicts and potential conflicts */
 class ConflictData(private val conflicts: Array<ConflictManager.Conflict.SerialisedConflict> = arrayOf(),
                    private val potentialConflicts: Array<ConflictManager.PotentialConflict.SerialisedPotentialConflict> = arrayOf()):
-    ClientReceive {
+    ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
         rs.conflicts.clear()
         rs.potentialConflicts.clear()
@@ -332,7 +333,7 @@ class ConflictData(private val conflicts: Array<ConflictManager.Conflict.Seriali
 /** Class representing data sent for traffic settings on the server */
 class TrafficSettingsData(private val trafficMode: Byte = TrafficMode.NORMAL, private val trafficValue: Float = 0f,
                           private val arrivalClosed: ByteArray = byteArrayOf(), private val departureClosed: ByteArray = byteArrayOf()):
-    ClientReceive {
+    ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
         rs.serverTrafficMode = trafficMode
         rs.serverTrafficValue = trafficValue
@@ -350,7 +351,7 @@ class TrafficSettingsData(private val trafficMode: Byte = TrafficMode.NORMAL, pr
 data class TrailDotData(val callsign: String = "", val posX: Float = 0f, val posY: Float = 0f)
 
 /** Class representing all trail dot data to be sent */
-class AllTrailDotData(private val trails: Array<TrailDotData> = arrayOf()): ClientReceive {
+class AllTrailDotData(private val trails: Array<TrailDotData> = arrayOf()): ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
         trails.forEach { trail ->
             rs.aircraft[trail.callsign].entity[TrailInfo.mapper]?.positions?.addFirst(Position(trail.posX, trail.posY))

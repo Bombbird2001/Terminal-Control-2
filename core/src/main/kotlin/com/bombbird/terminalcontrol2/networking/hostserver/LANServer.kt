@@ -5,12 +5,17 @@ import com.bombbird.terminalcontrol2.networking.*
 import com.bombbird.terminalcontrol2.networking.dataclasses.ClientUUIDData
 import com.bombbird.terminalcontrol2.networking.dataclasses.ConnectionError
 import com.bombbird.terminalcontrol2.networking.dataclasses.RequestClientUUID
+import com.bombbird.terminalcontrol2.networking.encryption.*
+import com.esotericsoftware.kryo.Kryo
+import com.esotericsoftware.kryo.io.Input
+import com.esotericsoftware.kryo.io.Output
 import com.esotericsoftware.kryonet.Connection
 import com.esotericsoftware.kryonet.Listener
 import com.esotericsoftware.kryonet.Server
 import com.esotericsoftware.minlog.Log
 import ktx.collections.GdxArrayMap
 import java.util.*
+import javax.crypto.SecretKey
 import kotlin.collections.HashSet
 
 /**
@@ -24,6 +29,11 @@ class LANServer(
     onConnect: (ConnectionMeta) -> Unit,
     onDisconnect: (ConnectionMeta) -> Unit
 ) : NetworkServer(gameServer, onReceive, onConnect, onDisconnect) {
+    override val encryptor: Encryptor = AESGCMEncryptor(::getSerialisedBytes)
+    override val decrypter: Decrypter = AESGCMDecrypter(::fromSerializedBytes)
+    override val kryo: Kryo
+        get() = server.kryo
+
     private val server = Server(SERVER_WRITE_BUFFER_SIZE, SERVER_READ_BUFFER_SIZE)
 
     /** Maps [Connection] to [ConnectionMeta] */
@@ -44,14 +54,23 @@ class LANServer(
              * @param obj the serialised network object
              */
             override fun received(connection: Connection, obj: Any?) {
+                if (obj is NeedsEncryption) {
+                    Log.info("LANServer", "Received unencrypted data of class ${obj.javaClass.name}")
+                    return
+                }
+
+                val decrypted = if (obj is EncryptedData) {
+                    decrypter.decrypt(obj)
+                } else obj
+
                 // Check if is initial connection response
-                if (obj is ClientUUIDData) {
-                    receiveClientData(connection, obj)
+                if (decrypted is ClientUUIDData) {
+                    receiveClientData(connection, decrypted)
                 }
 
                 val conn = connectionMetaMap[connection] ?: return
                 conn.returnTripTime = connection.returnTripTime
-                onReceive(conn, obj)
+                onReceive(conn, decrypted)
             }
 
             /**
@@ -82,16 +101,28 @@ class LANServer(
     }
 
     override fun sendToAllTCP(data: Any) {
-        server.sendToAllTCP(data)
+        val encrypted = encryptIfNeeded(data)
+        server.sendToAllTCP(encrypted)
     }
 
     override fun sendToAllUDP(data: Any) {
+        // Will not be encrypted
         server.sendToAllUDP(data)
     }
 
     override fun sendTCPToConnection(uuid: UUID, data: Any) {
         val conn = uuidConnectionMap[uuid] ?: return
-        conn.sendTCP(data)
+        val encrypted = encryptIfNeeded(data)
+        conn.sendTCP(encrypted)
+    }
+
+    override fun setRoomId(roomId: Short) {
+        // Not applicable for LAN server
+        return
+    }
+
+    override fun setSymmetricKey(key: SecretKey) {
+        TODO("Not yet implemented")
     }
 
     override fun getRoomId(): Short? {
@@ -132,5 +163,27 @@ class LANServer(
         connectionMetaMap.put(connection, connMeta)
         uuidConnectionMap.put(connUuid, connection)
         onConnect(connMeta)
+    }
+
+    /**
+     * Serialises the input object with Kryo and returns the byte array
+     * @param data the object to serialise; it should have been registered with Kryo first
+     * @return a byte array containing the serialised object
+     */
+    @Synchronized
+    private fun getSerialisedBytes(data: Any): ByteArray {
+        val serialisationOutput = Output(SERVER_WRITE_BUFFER_SIZE)
+        server.kryo.writeClassAndObject(serialisationOutput, data)
+        return serialisationOutput.toBytes()
+    }
+
+    /**
+     * De-serialises the input byte array with Kryo and returns the object
+     * @param data the byte array to de-serialise
+     * @return the de-serialised object
+     */
+    @Synchronized
+    private fun fromSerializedBytes(data: ByteArray): Any? {
+        return server.kryo.readClassAndObject(Input(data))
     }
 }

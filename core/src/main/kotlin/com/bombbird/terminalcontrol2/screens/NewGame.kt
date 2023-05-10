@@ -48,12 +48,11 @@ class NewGame: BasicUIScreen() {
                             start = textButton("Start", "NewGameStart").cell(width = 400f, height = 100f).apply {
                                 isVisible = false
                                 addChangeListener { event, _ ->
-                                    if (currSelectedAirport == null) Log.info("NewGame", "Start button pressed when airport selected is null")
-                                    else {
-                                        // GAME.addScreen(GameLoading(LOCALHOST, currSelectedAirport?.text?.toString(), null, false, null))
-                                        GAME.addScreen(GameLoading(Secrets.RELAY_ADDRESS, currSelectedAirport?.text?.toString(), null, true, null))
+                                    currSelectedAirport?.let {
+                                        // GAME.addScreen(GameLoading(LOCALHOST, it.text.toString(), null, false, null))
+                                        GAME.addScreen(GameLoading(Secrets.RELAY_ADDRESS, it.text.toString(), null, true, null))
                                         GAME.setScreen<GameLoading>()
-                                    }
+                                    } ?: Log.info("NewGame", "Start button pressed when airport selected is null")
                                     event?.handle()
                                 }
                             }

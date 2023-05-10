@@ -1,5 +1,6 @@
 package com.bombbird.terminalcontrol2.networking.relayserver
 
+import com.bombbird.terminalcontrol2.networking.HttpRequest
 import com.bombbird.terminalcontrol2.networking.hostserver.PublicServer
 import com.bombbird.terminalcontrol2.networking.playerclient.PublicClient
 import com.esotericsoftware.kryonet.Connection
@@ -14,20 +15,14 @@ import java.util.UUID
 interface RelayServer {
     /**
      * Method to be called to instruct the server to create a new relay room
+     * @param roomID ID of the room to be created
      * @param newUUID UUID of the requesting player
      * @param hostConnection connection of the requesting player
      * @param maxPlayers maximum number of players to allow in the room
      * @param mapName the map being played
-     * @return ID of the created room, or [Short.MAX_VALUE] if no room can be added or UUID already in an existing room
+     * @return true if the room is created, or false if no room can be added or UUID already in an existing room
      */
-    fun createNewRoom(newUUID: UUID, hostConnection: Connection, maxPlayers: Byte, mapName: String): Short
-
-    /**
-     * Method to be called after [createNewRoom] returns to inform the requesting host of the status of room creation
-     * @param createdRoomId the ID of the room created
-     * @param hostConnection the [Connection] of the requesting host
-     */
-    fun sendCreateRoomResult(createdRoomId: Short, hostConnection: Connection)
+    fun createNewRoom(roomID: Short, newUUID: UUID, hostConnection: Connection, maxPlayers: Byte, mapName: String): Boolean
 
     /**
      * Method to be called to instruct the server to add the player to the relay room, and notifies the host of the
@@ -54,11 +49,38 @@ interface RelayServer {
     fun forwardToClient(obj: ServerToClient, conn: Connection)
 
     /**
+     * Forwards the UDP object to all clients using data in the [ServerToAllClientsUDP] object received
+     * @param obj the [ServerToAllClientsUDP] object containing application data
+     * @param conn the [Connection] that sent this object (which should be the connection from host "client"
+     */
+    fun forwardToAllClientsUDP(obj: ServerToAllClientsUDP, conn: Connection)
+
+    /**
      * Forwards the TCP object to the server using data in the [ClientToServer] object received
      * @param obj the [ClientToServer] object containing routing and application data
      * @param conn the [Connection] that sent this object
      */
     fun forwardToServer(obj: ClientToServer, conn: Connection)
+}
+
+/**
+ * Interface for performing authorization on the relay server
+ */
+interface RelayAuthorization {
+    /**
+     * Attempts to add the UUID to the list of authorized UUID for the room
+     * @param roomID ID of the room
+     * @param uuid UUID of the player to authorize
+     * @return the secret symmetric key if authorization is successful, else null if it fails or room is not found
+     */
+    fun authorizeUUIDToRoom(roomID: Short, uuid: UUID): String?
+
+    /**
+     * Creates a new pending room
+     * @return a [HttpRequest.RoomCreationStatus] object with the ID of the room created, and the symmetric encryption
+     * key to be used for data encryption in the room
+     */
+    fun createPendingRoom(): HttpRequest.RoomCreationStatus?
 }
 
 interface RelayServerReceive {

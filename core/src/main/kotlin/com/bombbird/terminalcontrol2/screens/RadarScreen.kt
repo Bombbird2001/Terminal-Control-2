@@ -516,7 +516,7 @@ class RadarScreen(private val connectionHost: String?, airportToHost: String?, s
             // If the game server is not yet running, or if the game server is a public server and has yet to receive
             // its room ID
             if (gs != null && (!gs.gameRunning || (gs.publicServer && gs.getRoomId() == null))) {
-                Thread.sleep(4000)
+                Thread.sleep(3000)
                 continue
             }
             try {

@@ -7,6 +7,7 @@ import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.navigation.calculateRouteSegments
 import com.bombbird.terminalcontrol2.networking.ConnectionMeta
 import com.bombbird.terminalcontrol2.networking.GameServer
+import com.bombbird.terminalcontrol2.networking.encryption.NeedsEncryption
 import com.bombbird.terminalcontrol2.screens.RadarScreen
 import com.bombbird.terminalcontrol2.systems.RenderingSystemClient
 import com.bombbird.terminalcontrol2.ui.getNewDatatagLabelText
@@ -25,7 +26,7 @@ data class AircraftControlStateUpdateData(val callsign: String = "", val primary
                                           val clearedIas: Short = 0, val minIas: Short = 0,
                                           val maxIas: Short = 0, val optimalIas: Short = 0,
                                           val clearedApp: String? = null, val clearedTrans: String? = null,
-                                          val sendingSector: Byte = -5): ServerReceive, ClientReceive {
+                                          val sendingSector: Byte = -5): ServerReceive, ClientReceive, NeedsEncryption {
     override fun handleServerReceive(gs: GameServer, connection: ConnectionMeta) {
         gs.postRunnableAfterEngineUpdate {
             gs.aircraft[callsign]?.entity?.let {
@@ -55,7 +56,7 @@ data class AircraftControlStateUpdateData(val callsign: String = "", val primary
 
 /** Class representing client request to swap sectors */
 data class SectorSwapRequest(private val requestedSector: Byte? = null, private val sendingSector: Byte = -1): ServerReceive,
-    ClientReceive {
+    ClientReceive, NeedsEncryption {
     override fun handleServerReceive(gs: GameServer, connection: ConnectionMeta) {
         // Validate the sender
         if (gs.sectorMap[connection.uuid] != sendingSector) return
@@ -114,7 +115,7 @@ data class SectorSwapRequest(private val requestedSector: Byte? = null, private 
 
 /** Class representing client request to decline the incoming swap request from another sector */
 data class DeclineSwapRequest(private val requestingSector: Byte = -1, private val decliningSector: Byte = -1): ServerReceive,
-    ClientReceive {
+    ClientReceive, NeedsEncryption {
     override fun handleServerReceive(gs: GameServer, connection: ConnectionMeta) {
         // Validate the declining player
         if (gs.sectorMap[connection.uuid] != decliningSector) return

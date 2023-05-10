@@ -101,7 +101,10 @@ fun getEngine(onClient: Boolean): Engine {
 const val LOCALHOST = "127.0.0.1"
 
 /** Relay server HTTPS endpoint port */
-var RELAY_ENDPOINT_PORT = 57775
+const val RELAY_ENDPOINT_PORT = 57775
+const val RELAY_GAMES_PATH = "/games"
+const val RELAY_GAME_AUTH_PATH = "/gameAuth"
+const val RELAY_GAME_CREATE_PATH = "/gameCreate"
 
 /** Server target refresh rates (in Hz) */
 const val SERVER_UPDATE_RATE = 60 // Server game loop

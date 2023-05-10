@@ -4,6 +4,7 @@ import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.networking.*
 import com.bombbird.terminalcontrol2.networking.dataclasses.ClientUUIDData
 import com.bombbird.terminalcontrol2.networking.dataclasses.RequestClientUUID
+import com.bombbird.terminalcontrol2.networking.encryption.*
 import com.bombbird.terminalcontrol2.networking.relayserver.ClientToServer
 import com.bombbird.terminalcontrol2.networking.relayserver.JoinGameRequest
 import com.bombbird.terminalcontrol2.networking.relayserver.RelayClientReceive
@@ -14,6 +15,7 @@ import com.esotericsoftware.kryo.io.Output
 import com.esotericsoftware.kryonet.Client
 import com.esotericsoftware.kryonet.Connection
 import com.esotericsoftware.kryonet.Listener
+import com.esotericsoftware.minlog.Log
 
 /**
  * Server for handling public multiplayer relay games
@@ -21,23 +23,34 @@ import com.esotericsoftware.kryonet.Listener
  * Cannot be used for LAN multiplayer games, use [LANClient] for that
  */
 class PublicClient: NetworkClient() {
+    override val isConnected: Boolean
+        get() = client.isConnected
+
+    override val encryptor: Encryptor = AESGCMEncryptor(::getSerialisedBytes)
+    override val decrypter: Decrypter = AESGCMDecrypter(::fromSerializedBytes)
+    override val kryo: Kryo
+        get() = client.kryo
+
     private var roomId: Short = Short.MAX_VALUE
 
     private val client = Client(CLIENT_WRITE_BUFFER_SIZE, CLIENT_READ_BUFFER_SIZE).apply {
         addListener(object: Listener {
             override fun received(connection: Connection, obj: Any?) {
-                (obj as? RelayClientReceive)?.apply {
+                if (obj is NeedsEncryption) {
+                    Log.info("PublicClient", "Received unencrypted data of class ${obj.javaClass.name}")
+                    return
+                }
+
+                val decrypted = if (obj is EncryptedData) {
+                    decrypter.decrypt(obj)
+                } else obj
+
+                (decrypted as? RelayClientReceive)?.apply {
                     handleRelayClientReceive(this@PublicClient)
-                } ?: onReceiveNonRelayData(obj)
+                } ?: onReceiveNonRelayData(decrypted)
             }
         })
     }
-
-    override val isConnected: Boolean
-        get() = client.isConnected
-
-    override val kryo: Kryo
-        get() = client.kryo
 
     override fun connect(timeout: Int, connectionHost: String, tcpPort: Int, udpPort: Int) {
         client.connect(timeout, connectionHost, tcpPort, udpPort)
@@ -48,8 +61,9 @@ class PublicClient: NetworkClient() {
     }
 
     override fun sendTCP(data: Any) {
-        // Serialize and wrap in ClientToServer
-        client.sendTCP(ClientToServer(roomId, myUuid.toString(), getSerialisedBytes(data)))
+        // Serialize, wrap in ClientToServer and encrypt
+        val encrypted = encryptIfNeeded(ClientToServer(roomId, myUuid.toString(), getSerialisedBytes(data))) ?: return
+        client.sendTCP(encrypted)
     }
 
     override fun setRoomId(roomId: Short) {
@@ -75,10 +89,21 @@ class PublicClient: NetworkClient() {
      * @param data the object to serialise; it should have been registered with Kryo first
      * @return a byte array containing the serialised object
      */
+    @Synchronized
     private fun getSerialisedBytes(data: Any): ByteArray {
         val serialisationOutput = Output(SERVER_WRITE_BUFFER_SIZE)
         client.kryo.writeClassAndObject(serialisationOutput, data)
         return serialisationOutput.toBytes()
+    }
+
+    /**
+     * De-serialises the input byte array with Kryo and returns the object
+     * @param data the byte array to de-serialise
+     * @return the de-serialised object
+     */
+    @Synchronized
+    private fun fromSerializedBytes(data: ByteArray): Any? {
+        return client.kryo.readClassAndObject(Input(data))
     }
 
     /**
@@ -96,7 +121,8 @@ class PublicClient: NetworkClient() {
     /** Requests to join a game room */
     fun requestToJoinRoom() {
         if (roomId == Short.MAX_VALUE) return
-        client.sendTCP(JoinGameRequest(roomId, myUuid.toString()))
+        val encrypted = encryptIfNeeded(JoinGameRequest(roomId, myUuid.toString())) ?: return
+        client.sendTCP(encrypted)
     }
 
     /**

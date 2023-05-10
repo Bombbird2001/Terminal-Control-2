@@ -9,6 +9,7 @@ import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.networking.dataclasses.*
+import com.bombbird.terminalcontrol2.networking.encryption.AESGCMEncryptor
 import com.bombbird.terminalcontrol2.networking.hostserver.LANServer
 import com.bombbird.terminalcontrol2.networking.hostserver.PublicServer
 import com.bombbird.terminalcontrol2.systems.*
@@ -18,11 +19,13 @@ import com.esotericsoftware.minlog.Log
 import ktx.ashley.get
 import ktx.collections.GdxArray
 import ktx.collections.GdxArrayMap
+import org.apache.commons.codec.binary.Base64
 import java.util.UUID
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.ReentrantLock
+import javax.crypto.spec.SecretKeySpec
 import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
 import kotlin.math.min
@@ -331,6 +334,16 @@ class GameServer(val publicServer: Boolean) {
         // Log.set(Log.LEVEL_DEBUG)
         networkServer = if (publicServer) PublicServer(this, onReceive, onConnect, onDisconnect, mainName)
         else LANServer(this, onReceive, onConnect, onDisconnect)
+
+        // Blocking HTTP request
+        if (publicServer) {
+            val roomCreation = HttpRequest.sendCreateGameRequest() ?: return GAME.quitCurrentGame()
+            if (!roomCreation.success) return GAME.quitCurrentGame()
+            networkServer.setRoomId(roomCreation.roomId)
+            networkServer.setSymmetricKey(SecretKeySpec(Base64.decodeBase64(roomCreation.key), 0,
+                AESGCMEncryptor.AES_KEY_LENGTH_BYTES, "AES"))
+        }
+
         networkServer.start(TCP_PORT, UDP_PORT)
     }
 

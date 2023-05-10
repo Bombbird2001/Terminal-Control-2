@@ -1,13 +1,15 @@
 package com.bombbird.terminalcontrol2.networking
 
 import com.badlogic.ashley.core.Entity
-import com.bombbird.terminalcontrol2.global.GAME
-import com.bombbird.terminalcontrol2.global.RELAY_ENDPOINT_PORT
-import com.bombbird.terminalcontrol2.global.Secrets
+import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.screens.JoinGame
 import com.bombbird.terminalcontrol2.utilities.generateRandomWeather
 import com.bombbird.terminalcontrol2.utilities.updateAirportMetar
 import com.esotericsoftware.minlog.Log
+import com.squareup.moshi.JsonClass
+import com.squareup.moshi.JsonDataException
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.adapter
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -15,6 +17,7 @@ import java.io.IOException
 
 object HttpRequest {
     private val JSON_MEDIA_TYPE: MediaType = "application/json; charset=utf-8".toMediaType()
+    private val TEXT_MEDIA_TYPE: MediaType = "text/plain; charset=utf-8".toMediaType()
     private val client = OkHttpClient()
 
     /**
@@ -89,8 +92,8 @@ object HttpRequest {
      * */
     fun sendPublicGamesRequest(joinGame: JoinGame) {
         val request = Request.Builder()
-            .url("${Secrets.RELAY_ENDPOINT_URL}:${RELAY_ENDPOINT_PORT}/games")
-            .get()
+            .url("${Secrets.RELAY_ENDPOINT_URL}:$RELAY_ENDPOINT_PORT$RELAY_GAMES_PATH")
+            .post("".toRequestBody(TEXT_MEDIA_TYPE))
             .build()
         client.newCall(request).enqueue(object: Callback {
             override fun onFailure(call: Call, e: IOException) {
@@ -124,5 +127,58 @@ object HttpRequest {
             }
         }
         response.close()
+    }
+
+    /** Class representing data sent to authorization endpoint to obtain symmetric key for room data encryption */
+    @JsonClass(generateAdapter = true)
+    data class AuthorizationRequest(val roomId: Short, val uuid: String)
+
+    /** Class representing data sent by authorization endpoint with symmetric key for room data encryption */
+    @JsonClass(generateAdapter = true)
+    data class AuthorizationResponse(val success: Boolean, val key: String)
+
+    /**
+     * Class representing data sent to the host with the new room data for a new game with symmetric key for room data
+     * encryption (in Base64 encoding)
+     */
+    @JsonClass(generateAdapter = true)
+    data class RoomCreationStatus(val success: Boolean, val roomId: Short, val key: String)
+
+    @OptIn(ExperimentalStdlibApi::class)
+    private val moshiRoomCreationAdapter = Moshi.Builder().build().adapter<RoomCreationStatus>()
+
+    /**
+     * Sends a request to the relay endpoint to create a game, and retrieve the room ID and the symmetric key for
+     * encrypting data in the room
+     */
+    fun sendCreateGameRequest(): RoomCreationStatus? {
+        val request = Request.Builder()
+            .url("${Secrets.RELAY_ENDPOINT_URL}:$RELAY_ENDPOINT_PORT$RELAY_GAME_CREATE_PATH")
+            .post("".toRequestBody(TEXT_MEDIA_TYPE))
+            .build()
+        // Blocking call
+        val response = client.newCall(request).execute()
+
+        val roomCreationStatus = if (!response.isSuccessful) {
+            Log.info("HttpRequest", "Public games creation error ${response.code}")
+            null
+        } else {
+            val responseText = response.body?.string()
+            if (responseText == null) {
+                Log.info("HttpRequest", "Public games creation null response body")
+                null
+            } else {
+                // Parse JSON to room creation status
+                try {
+                    moshiRoomCreationAdapter.fromJson(responseText)
+                } catch (e: JsonDataException) {
+                    Log.info("HttpRequest", "Public games creation failed to parse response $responseText")
+                    null
+                }
+            }
+        }
+        response.close()
+
+        return roomCreationStatus
     }
 }

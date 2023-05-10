@@ -5,24 +5,25 @@ import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.networking.ConnectionMeta
 import com.bombbird.terminalcontrol2.networking.GameServer
+import com.bombbird.terminalcontrol2.networking.encryption.NeedsEncryption
 import com.bombbird.terminalcontrol2.utilities.getSectorForExtrapolatedPosition
 import ktx.ashley.get
 import ktx.ashley.hasNot
 import ktx.ashley.plusAssign
 
 /** Class representing data sent on a client request to pause/run the game */
-data class GameRunningStatus(private val running: Boolean = true): ServerReceive {
+data class GameRunningStatus(private val running: Boolean = true): ServerReceive, NeedsEncryption {
     override fun handleServerReceive(gs: GameServer, connection: ConnectionMeta) {
         gs.handleGameRunningRequest(running)
     }
 }
 
 /** Class representing response to the above UUID request, containing the UUID of the client */
-data class ClientUUIDData(val uuid: String? = null)
+data class ClientUUIDData(val uuid: String? = null): NeedsEncryption
 
 /** Class representing client request to hand over an aircraft to the new sector */
 data class HandoverRequest(private val callsign: String = "", private val newSector: Byte = 0, private val sendingSector: Byte = 0):
-    ServerReceive {
+    ServerReceive, NeedsEncryption {
     override fun handleServerReceive(gs: GameServer, connection: ConnectionMeta) {
         val aircraft = gs.aircraft[callsign]?.entity ?: return
         // Validate the sender
@@ -57,7 +58,7 @@ data class HandoverRequest(private val callsign: String = "", private val newSec
 data class AircraftDatatagPositionUpdateData(private val aircraft: String = "", private val xOffset: Float = 0f,
                                              private val yOffset: Float = 0f, private val minimised: Boolean = false,
                                              private val flashing: Boolean = false):
-    ServerReceive {
+    ServerReceive, NeedsEncryption {
     override fun handleServerReceive(gs: GameServer, connection: ConnectionMeta) {
         val aircraft = gs.aircraft[aircraft] ?: return
         // Validate that the sector controlling the aircraft is indeed the sector who sent the request

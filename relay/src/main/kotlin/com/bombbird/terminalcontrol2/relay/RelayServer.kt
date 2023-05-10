@@ -1,16 +1,29 @@
 package com.bombbird.terminalcontrol2.relay
 
 import com.bombbird.terminalcontrol2.global.RELAY_BUFFER_SIZE
+import com.bombbird.terminalcontrol2.global.SERVER_WRITE_BUFFER_SIZE
+import com.bombbird.terminalcontrol2.networking.HttpRequest
 import com.bombbird.terminalcontrol2.networking.dataclasses.ConnectionError
+import com.bombbird.terminalcontrol2.networking.encryption.AESGCMDecrypter
+import com.bombbird.terminalcontrol2.networking.encryption.AESGCMEncryptor
+import com.bombbird.terminalcontrol2.networking.encryption.EncryptedData
+import com.bombbird.terminalcontrol2.networking.encryption.NeedsEncryption
 import com.bombbird.terminalcontrol2.networking.registerClassesToKryo
 import com.bombbird.terminalcontrol2.networking.relayserver.*
 import com.bombbird.terminalcontrol2.networking.relayserver.RelayServer
+import com.esotericsoftware.kryo.io.Input
+import com.esotericsoftware.kryo.io.Output
 import com.esotericsoftware.kryonet.Connection
 import com.esotericsoftware.kryonet.Listener
 import com.esotericsoftware.kryonet.Server
 import com.esotericsoftware.minlog.Log
+import org.apache.commons.codec.binary.Base64
+import java.util.Timer
+import java.util.TimerTask
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
+import javax.crypto.KeyGenerator
+import javax.crypto.SecretKey
 
 /**
  * Implementation of [RelayServer] interface with Kryo server providing the underlying networking.
@@ -18,7 +31,10 @@ import java.util.concurrent.ConcurrentHashMap
  * When a disconnection occurs at the networking server level, the player is automatically removed from the room, and if
  * the player is the host, the room is also automatically closed and all connections to it closed
  */
-object RelayServer: RelayServer {
+object RelayServer: RelayServer, RelayAuthorization {
+    private val encryptor = AESGCMEncryptor(::getSerialisedBytes)
+    private val decrypter = AESGCMDecrypter(::fromSerializedBytes)
+
     private val server = Server(RELAY_BUFFER_SIZE, RELAY_BUFFER_SIZE).apply {
         addListener(object : Listener {
             /**
@@ -27,7 +43,16 @@ object RelayServer: RelayServer {
              * @param obj the serialised network object
              */
             override fun received(connection: Connection, obj: Any?) {
-                (obj as? RelayServerReceive)?.apply {
+                if (obj is NeedsEncryption) {
+                    Log.info("RelayServer", "Received unencrypted data of class ${obj.javaClass.name}")
+                    return
+                }
+
+                val decrypted = if (obj is EncryptedData) {
+                    decrypter.decrypt(obj)
+                } else obj
+
+                (decrypted as? RelayServerReceive)?.apply {
                     handleRelayServerReceive(this@RelayServer, connection)
                 }
             }
@@ -82,6 +107,33 @@ object RelayServer: RelayServer {
     /** Set of UUIDs that are hosts */
     private val hostUUIDs = HashSet<UUID>(32)
 
+    /** 128-bit AES key generator */
+    private val keyGenerator = KeyGenerator.getInstance("AES").apply { init(128) }
+
+    /**
+     * Inner class for encapsulating a pending room connection, initiated after a request is sent to the create room
+     * endpoint
+     * @param secretKey the secret key generated for the room
+     * @param timerTask the timer task to remove the pending room if no room is created in time
+     */
+    private class PendingRoom(val secretKey: SecretKey, private val timerTask: TimerTask) {
+        /** Function to be called when the associated room is actually created */
+        fun roomCreated() {
+            // Perform the removal now
+            timerTask.cancel()
+            timerTask.run()
+        }
+    }
+
+    /**
+     * Symmetric key storage for pending room creations - will be removed after 20 seconds if no room creation
+     * occurs by then
+     */
+    private val pendingRoomKeys = ConcurrentHashMap<Short, PendingRoom>(32)
+
+    /** Timer responsible for closing pending rooms that are not connected to within 20 seconds */
+    private val timer = Timer()
+
     @JvmStatic
     fun main(args: Array<String>) {
         println("Hello world from RelayServer!")
@@ -90,40 +142,36 @@ object RelayServer: RelayServer {
         Runtime.getRuntime().addShutdownHook(Thread {
             println("Server shutdown signal received")
             server.stop()
-            AvailableGamesEndpoint.stop()
+            RelayEndpoint.stop()
         })
 
         registerClassesToKryo(server.kryo)
         server.bind(57773, 57779)
         server.start()
 
-        AvailableGamesEndpoint.launch(this)
+        RelayEndpoint.launch(this)
     }
 
     override fun createNewRoom(
+        roomID: Short,
         newUUID: UUID,
         hostConnection: Connection,
         maxPlayers: Byte,
         mapName: String
-    ): Short {
-        if (hostUUIDs.contains(newUUID)) return Short.MAX_VALUE
+    ): Boolean {
+        if (hostUUIDs.contains(newUUID)) return false
 
-        for (i in Short.MIN_VALUE until Short.MAX_VALUE) {
-            if (!idToRoom.containsKey(i.toShort())) {
-                connectionToRoomUUID[hostConnection] = Pair(i.toShort(), newUUID)
-                idToRoom[i.toShort()] = Room(i.toShort(), maxPlayers, hostConnection, mapName)
-                hostConnectionToRoomMap[hostConnection] = i.toShort()
-                println("Room $i created - $mapName")
-                return i.toShort()
-            }
+        if (!idToRoom.containsKey(roomID)) {
+            val pendingRoom = pendingRoomKeys[roomID] ?: return false
+            pendingRoom.roomCreated()
+            connectionToRoomUUID[hostConnection] = Pair(roomID, newUUID)
+            idToRoom[roomID] = Room(roomID, maxPlayers, hostConnection, mapName, pendingRoom.secretKey)
+            hostConnectionToRoomMap[hostConnection] = roomID
+            println("Room $roomID created - $mapName")
+            return true
         }
 
-        // If no rooms found (in the highly unlikely situation that all 65535 rooms are taken)
-        return Short.MAX_VALUE
-    }
-
-    override fun sendCreateRoomResult(createdRoomId: Short, hostConnection: Connection) {
-        hostConnection.sendTCP(RoomCreationStatus(createdRoomId))
+        return false
     }
 
     override fun addPlayerToRoom(
@@ -134,7 +182,7 @@ object RelayServer: RelayServer {
         val room = idToRoom[roomId] ?: return 1 // No such room
         if (room.isFull()) return 2 // Room is full
         if (uuidToRoom.containsKey(newUUID)) return 3 // UUID already in a room
-        room.addPlayer(newUUID, clientConnection)
+        if (!room.addPlayer(newUUID, clientConnection)) return 4 // UUID authorization failed
         connectionToRoomUUID[clientConnection] = Pair(roomId, newUUID)
         uuidToRoom[newUUID] = roomId
         return 0
@@ -146,6 +194,7 @@ object RelayServer: RelayServer {
             1 -> "Game room is no longer available"
             2 -> "Game room is full"
             3 -> "Player with same ID already exists in game"
+            4 -> "PLayer authorization failed"
             else -> "Unknown reason"
         }
         clientConnection.sendTCP(ConnectionError(failedReason))
@@ -158,24 +207,38 @@ object RelayServer: RelayServer {
             Log.info("RelayServer", "Forward to client failed - Connection does not match room ID")
             return
         }
-        // Verify connection is host
-        if (hostConnectionToRoomMap[conn] != roomId) {
-            Log.info("RelayServer", "Forward to client failed - Connection UUID is not host of room")
-            return
-        }
 
         val targetUUID = obj.uuid
         val roomObj = idToRoom[roomId] ?: run {
             Log.info("RelayServer", "Forward to client failed - Room ID $roomId not found")
             return
         }
+
+        // Verify connection is host
+        if (!roomObj.isHost(conn)) {
+            Log.info("RelayServer", "Forward to client failed - Connection UUID is not host of room")
+            return
+        }
+
         if (targetUUID == null) roomObj.forwardFromHostToAllClientConnections(obj, conn)
         else roomObj.forwardFromHostToAClient(obj, conn, UUID.fromString(targetUUID))
     }
 
+    override fun forwardToAllClientsUDP(obj: ServerToAllClientsUDP, conn: Connection) {
+        val roomObj = idToRoom[hostConnectionToRoomMap[conn]]
+        if (roomObj == null) {
+            Log.info("RelayServer", "Forward to all clients failed - Connection does not belong to a room")
+            return
+        }
+        if (!roomObj.isHost(conn)) {
+            Log.info("RelayServer", "Forward to client failed - Connection UUID is not host of room")
+            return
+        }
+    }
+
     override fun forwardToServer(obj: ClientToServer, conn: Connection) {
         val roomId = obj.roomId
-        // Verify roomId matches connection
+        // Verify roomId matches connection - prevents malicious modification of roomID
         if (connectionToRoomUUID[conn]?.first != roomId) {
             Log.info("RelayServer", "Forward to host failed - Connection does not match room ID")
             return
@@ -189,6 +252,28 @@ object RelayServer: RelayServer {
     }
 
     /**
+     * Serialises the input object with Kryo and returns the byte array
+     * @param data the object to serialise; it should have been registered with Kryo first
+     * @return a byte array containing the serialised object
+     */
+    @Synchronized
+    private fun getSerialisedBytes(data: Any): ByteArray {
+        val serialisationOutput = Output(SERVER_WRITE_BUFFER_SIZE)
+        server.kryo.writeClassAndObject(serialisationOutput, data)
+        return serialisationOutput.toBytes()
+    }
+
+    /**
+     * De-serialises the input byte array with Kryo and returns the object
+     * @param data the byte array to de-serialise
+     * @return the de-serialised object
+     */
+    @Synchronized
+    private fun fromSerializedBytes(data: ByteArray): Any? {
+        return server.kryo.readClassAndObject(Input(data))
+    }
+
+    /**
      * Inner class encapsulating an instance of a game room on the relay server, containing a host and associated
      * client connections
      * @param id ID of the room
@@ -196,8 +281,10 @@ object RelayServer: RelayServer {
      * @param hostConnection the connection to the host
      * @param mapName the name of the airport map being hosted
      */
-    class Room(val id: Short, val maxPlayers: Byte, private val hostConnection: Connection?, val mapName: String) {
+    class Room(val id: Short, val maxPlayers: Byte, private val hostConnection: Connection?, val mapName: String,
+               private val symmetricKey: SecretKey) {
         private val connectedPlayers = ConcurrentHashMap<UUID, Connection>(maxPlayers.toInt())
+        private val authorizedUUIDs = ConcurrentHashMap<UUID, Boolean>(maxPlayers.toInt())
 
         /**
          * Removes a player and their associated connection from the room
@@ -206,6 +293,7 @@ object RelayServer: RelayServer {
         fun removePlayer(uuid: UUID) {
             connectedPlayers.remove(uuid)
             hostConnection?.sendTCP(PlayerDisconnect(uuid.toString()))
+            authorizedUUIDs.remove(uuid)
         }
 
         /**
@@ -231,10 +319,12 @@ object RelayServer: RelayServer {
          * @param uuid UUID of the player who wants to join
          * @param conn connection of the joining player
          */
-        fun addPlayer(uuid: UUID, conn: Connection) {
-            if (connectedPlayers.containsKey(uuid)) return
+        fun addPlayer(uuid: UUID, conn: Connection): Boolean {
+            if (!authorizedUUIDs.containsKey(uuid)) return false
+            if (connectedPlayers.containsKey(uuid)) return false
             connectedPlayers[uuid] = conn
             hostConnection?.sendTCP(PlayerConnect(uuid.toString()))
+            return true
         }
 
         /**
@@ -283,6 +373,35 @@ object RelayServer: RelayServer {
         fun getConnectedPlayerCount(): Byte {
             return connectedPlayers.size.toByte()
         }
+
+        /**
+         * Adds the UUID to the list of authorized players to join the room
+         * @return the secret symmetric key if the UUID was successfully added, else null (if UUID already exists, or
+         * room is full)
+         */
+        fun authorizeUUID(uuid: UUID): String? {
+            if (isFull()) return null
+            if (authorizedUUIDs.putIfAbsent(uuid, true) == true) {
+                return getSymmetricKeyBase64()
+            }
+            return null
+        }
+
+        /**
+         * Checks whether the provided connection is the host of this room
+         * @param conn the connection to check
+         */
+        fun isHost(conn: Connection): Boolean {
+            return conn == hostConnection
+        }
+
+        /**
+         * Returns the Base64 encoded string of the symmetric key of the room
+         * @return Base64 encoded key
+         */
+        private fun getSymmetricKeyBase64(): String {
+            return Base64.encodeBase64String(symmetricKey.encoded)
+        }
     }
 
     /**
@@ -291,5 +410,34 @@ object RelayServer: RelayServer {
      */
     fun getAvailableGames(): List<Room> {
         return idToRoom.filter { entry -> !entry.value.isFull() }.map { entry -> entry.value }
+    }
+
+    override fun authorizeUUIDToRoom(roomID: Short, uuid: UUID): String? {
+        idToRoom[roomID]?.let {
+            return it.authorizeUUID(uuid)
+        } ?: run {
+            Log.info("RelayServer", "Authorization failed - Room ID $roomID does not exist")
+            return null
+        }
+    }
+
+    override fun createPendingRoom(): HttpRequest.RoomCreationStatus {
+        for (i in Short.MIN_VALUE until Short.MAX_VALUE) {
+            if (!idToRoom.containsKey(i.toShort()) && !pendingRoomKeys.containsKey(i.toShort())) {
+                val cancelTask = object : TimerTask() {
+                    override fun run() {
+                        pendingRoomKeys.remove(i.toShort())
+                    }
+                }
+                timer.schedule(cancelTask, 20000)
+                val newPendingRoom = PendingRoom(keyGenerator.generateKey(), cancelTask)
+                pendingRoomKeys[i.toShort()] = newPendingRoom
+                println("Pending room $i created")
+                return HttpRequest.RoomCreationStatus(true, i.toShort(), Base64.encodeBase64String(newPendingRoom.secretKey.encoded))
+            }
+        }
+
+        // If no rooms found (in the highly unlikely situation that all 65535 rooms are taken)
+        return HttpRequest.RoomCreationStatus(false, Short.MAX_VALUE, "")
     }
 }
