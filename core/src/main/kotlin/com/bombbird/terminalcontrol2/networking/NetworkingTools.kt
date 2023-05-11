@@ -142,7 +142,8 @@ fun registerClassesToKryo(kryo: Kryo?) {
         register(AllTrailDotData::class.java)
 
         // Relay classes
-        register(ByteArray::class.java)
+        register(RelayNonce::class.java)
+        register(RelayChallenge::class.java)
         register(NewGameRequest::class.java)
         register(RequestRelayAction::class.java)
         register(JoinGameRequest::class.java)

@@ -29,11 +29,10 @@ class RequestClientUUID: NeedsEncryption
  * Class representing an error when a player is attempting to connect - this could be caused by a few different reasons,
  * such as duplicate or missing UUID
  */
-data class ConnectionError(private val cause: String = "Unknown cause"): ClientReceive {
+data class ConnectionError(private val cause: String = "Unknown cause"): ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
         Log.info("NetworkingTools", "Connection failed - $cause")
-        GAME.quitCurrentGame()
-        GAME.getScreen<MainMenu>().showDialog(CustomDialog("Failed to connect", cause, "", "Ok"))
+        GAME.quitCurrentGameWithDialog(CustomDialog("Failed to connect", cause, "", "Ok"))
     }
 }
 

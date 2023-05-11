@@ -7,6 +7,25 @@ import com.esotericsoftware.kryonet.Connection
 import com.esotericsoftware.minlog.Log
 import java.util.*
 
+/** Class to wrap the nonce in a [NeedsEncryption] interface to be encrypted */
+data class RelayNonce(val id: String): NeedsEncryption
+
+/** Special class representing data sent to the relay server to authenticate the client */
+data class RelayChallenge(val challenge: ByteArray = byteArrayOf()) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as RelayChallenge
+
+        return challenge.contentEquals(other.challenge)
+    }
+
+    override fun hashCode(): Int {
+        return challenge.contentHashCode()
+    }
+}
+
 /** Class representing data sent to the relay server to open a new room for a new game */
 data class NewGameRequest(val roomId: Short = Short.MAX_VALUE, val maxPlayers: Byte = 1, val mapName: String = "",
                           val uuid: String? = null): RelayServerReceive, NeedsEncryption {

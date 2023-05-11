@@ -47,6 +47,10 @@ class LANClient(lanClientDiscoveryHandler: LANClientDiscoveryHandler): NetworkCl
                     connection.sendTCP(ClientUUIDData(myUuid.toString()))
                 } ?: handleIncomingRequestClient(GAME.gameClientScreen ?: return, decrypted)
             }
+
+            override fun connected(connection: Connection?) {
+                // TODO Perform DH key exchange here
+            }
         })
     }
 

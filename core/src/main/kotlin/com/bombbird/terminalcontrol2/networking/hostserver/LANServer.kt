@@ -15,7 +15,6 @@ import com.esotericsoftware.kryonet.Server
 import com.esotericsoftware.minlog.Log
 import ktx.collections.GdxArrayMap
 import java.util.*
-import javax.crypto.SecretKey
 import kotlin.collections.HashSet
 
 /**
@@ -78,6 +77,10 @@ class LANServer(
              * @param connection the incoming connection
              */
             override fun connected(connection: Connection) {
+                // TODO DH key exchange
+                // encryptor.setKey(key)
+                // decrypter.setKey(key)
+
                 connection.sendTCP(RequestClientUUID())
             }
 
@@ -116,14 +119,9 @@ class LANServer(
         conn.sendTCP(encrypted)
     }
 
-    override fun setRoomId(roomId: Short) {
-        // Not applicable for LAN server
+    override fun beforeConnect() {
+        // Nothing else to do for LAN server
         return
-    }
-
-    override fun setSymmetricKey(key: SecretKey) {
-        encryptor.setKey(key)
-        decrypter.setKey(key)
     }
 
     override fun getRoomId(): Short? {
@@ -147,17 +145,17 @@ class LANServer(
     private fun receiveClientData(connection: Connection, data: ClientUUIDData) {
         // If the UUID is null or the map already contains the UUID, do not send the data
         if (data.uuid == null) {
-            connection.sendTCP(ConnectionError("Missing player ID"))
+            encryptIfNeeded(ConnectionError("Missing player ID"))?.let { connection.sendTCP(it) }
             return
         }
         if (gameServer.playersInGame == gameServer.maxPlayers) {
-            connection.sendTCP(ConnectionError("Game is full"))
+            encryptIfNeeded(ConnectionError("Game is full"))?.let { connection.sendTCP(it) }
             return
         }
         val connUuid = UUID.fromString(data.uuid)
         if (gameServer.sectorMap.containsKey(connUuid)) {
             Log.info("NetworkingTools", "UUID $connUuid is already in game")
-            connection.sendTCP(ConnectionError("Player with same ID already in server"))
+            encryptIfNeeded(ConnectionError("Player with same ID already in server"))?.let { connection.sendTCP(it) }
             return
         }
         val connMeta = ConnectionMeta(connUuid, 0)

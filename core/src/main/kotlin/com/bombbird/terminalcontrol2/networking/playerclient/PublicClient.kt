@@ -50,6 +50,10 @@ class PublicClient: NetworkClient() {
                     handleRelayClientReceive(this@PublicClient)
                 } ?: onReceiveNonRelayData(decrypted)
             }
+
+            override fun connected(connection: Connection?) {
+                // TODO Send challenge responses
+            }
         })
     }
 

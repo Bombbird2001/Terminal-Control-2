@@ -53,17 +53,8 @@ abstract class NetworkServer(
      */
     abstract fun sendTCPToConnection(uuid: UUID, data: Any)
 
-    /**
-     * Updates the room ID of the game created, only if not set before; ignored on LAN server
-     * @param roomId the ID of the new room created
-     */
-    abstract fun setRoomId(roomId: Short)
-
-    /**
-     * Sets the symmetric key value of the room to be used by this server
-     * @param key the symmetric key [SecretKey] object
-     */
-    abstract fun setSymmetricKey(key: SecretKey)
+    /** Performs necessary actions for this server before connecting to the relay server */
+    abstract fun beforeConnect()
 
     /**
      * Returns the room ID of the server (after it is allocated one by relay server); null for LAN servers

@@ -135,14 +135,57 @@ object HttpRequest {
 
     /** Class representing data sent by authorization endpoint with symmetric key for room data encryption */
     @JsonClass(generateAdapter = true)
-    data class AuthorizationResponse(val success: Boolean, val key: String)
+    data class AuthorizationResponse(val success: Boolean, val key: String, val nonce: String, val iv: String)
+
+    private val moshi = Moshi.Builder().build()
+
+    @OptIn(ExperimentalStdlibApi::class)
+    private val moshiAuthReqAdapter = moshi.adapter<AuthorizationRequest>()
+
+    @OptIn(ExperimentalStdlibApi::class)
+    private val moshiRoomAuthAdapter = moshi.adapter<AuthorizationResponse>()
+
+    /**
+     * Sends a request to the relay endpoint to join a game, and retrieve the symmetric key for encrypting data in the
+     * room
+     */
+    fun sendGameAuthorizationRequest(roomId: Short): AuthorizationResponse? {
+        val request = Request.Builder()
+            .url("${Secrets.RELAY_ENDPOINT_URL}:$RELAY_ENDPOINT_PORT$RELAY_GAME_AUTH_PATH")
+            .post(moshiAuthReqAdapter.toJson(AuthorizationRequest(roomId, myUuid.toString())).toRequestBody(TEXT_MEDIA_TYPE))
+            .build()
+        // Blocking call
+        val response = client.newCall(request).execute()
+
+        val roomAuthResponse = if (!response.isSuccessful) {
+            Log.info("HttpRequest", "Public games authorization error ${response.code}")
+            null
+        } else {
+            val responseText = response.body?.string()
+            if (responseText == null) {
+                Log.info("HttpRequest", "Public games authorization null response body")
+                null
+            } else {
+                // Parse JSON to room creation status
+                try {
+                    moshiRoomAuthAdapter.fromJson(responseText)
+                } catch (e: JsonDataException) {
+                    Log.info("HttpRequest", "Public games authorization failed to parse response $responseText")
+                    null
+                }
+            }
+        }
+        response.close()
+
+        return roomAuthResponse
+    }
 
     /**
      * Class representing data sent to the host with the new room data for a new game with symmetric key for room data
      * encryption (in Base64 encoding)
      */
     @JsonClass(generateAdapter = true)
-    data class RoomCreationStatus(val success: Boolean, val roomId: Short, val key: String)
+    data class RoomCreationStatus(val success: Boolean, val roomId: Short, val authResponse: AuthorizationResponse)
 
     @OptIn(ExperimentalStdlibApi::class)
     private val moshiRoomCreationAdapter = Moshi.Builder().build().adapter<RoomCreationStatus>()

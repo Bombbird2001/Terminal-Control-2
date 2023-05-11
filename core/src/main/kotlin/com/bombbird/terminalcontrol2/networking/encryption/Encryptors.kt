@@ -16,6 +16,14 @@ interface Encryptor {
     fun encrypt(dataToEncrypt: NeedsEncryption): EncryptedData?
 
     /**
+     * Encrypts the given [NeedsEncryption] object to be encrypted into an [EncryptedData] instance, using the provided
+     * IV
+     * @param iv the IV to use for encryption; it should be generated randomly and securely
+     * @param dataToEncrypt the data object to be encrypted
+     */
+    fun encryptWithIV(iv: ByteArray, dataToEncrypt: NeedsEncryption): EncryptedData?
+
+    /**
      * Sets the key used for decryption
      * @param key secret key for encryption
      */
@@ -49,11 +57,16 @@ class AESGCMEncryptor(private val serializeObj: (Any) -> ByteArray): Encryptor {
 
     private lateinit var secretKey: SecretKey
     private val cipher = Cipher.getInstance(ENCRYPTION_MODE)
+    private val random = SecureRandom()
 
     override fun encrypt(dataToEncrypt: NeedsEncryption): EncryptedData? {
+        val iv = ByteArray(GCM_TAG_LENGTH_BYTES)
+        random.nextBytes(iv)
+        return encryptWithIV(iv, dataToEncrypt)
+    }
+
+    override fun encryptWithIV(iv: ByteArray, dataToEncrypt: NeedsEncryption): EncryptedData? {
         try {
-            val iv = ByteArray(GCM_TAG_LENGTH_BYTES)
-            SecureRandom().nextBytes(iv)
             val gcmPara = GCMParameterSpec(8 * iv.size, iv)
             cipher.init(Cipher.ENCRYPT_MODE, secretKey, gcmPara)
             return EncryptedData(iv, cipher.doFinal(serializeObj(dataToEncrypt)))

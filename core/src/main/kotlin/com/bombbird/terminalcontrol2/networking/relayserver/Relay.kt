@@ -71,9 +71,10 @@ interface RelayAuthorization {
      * Attempts to add the UUID to the list of authorized UUID for the room
      * @param roomID ID of the room
      * @param uuid UUID of the player to authorize
-     * @return the secret symmetric key if authorization is successful, else null if it fails or room is not found
+     * @return a pair containing the secret symmetric key, challenge nonce and random IV if authorization is successful,
+     * else null if it fails or room is not found
      */
-    fun authorizeUUIDToRoom(roomID: Short, uuid: UUID): String?
+    fun authorizeUUIDToRoom(roomID: Short, uuid: UUID): Triple<String, String, String>?
 
     /**
      * Creates a new pending room

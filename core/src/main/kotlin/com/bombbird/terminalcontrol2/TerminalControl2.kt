@@ -1,6 +1,7 @@
 package com.bombbird.terminalcontrol2
 
 import com.badlogic.ashley.core.Engine
+import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.audio.Sound
 import com.badlogic.gdx.graphics.Texture
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
@@ -18,6 +19,7 @@ import com.bombbird.terminalcontrol2.screens.settings.GameSettings
 import com.bombbird.terminalcontrol2.screens.settings.MainSettings
 import com.bombbird.terminalcontrol2.screens.settings.TrafficSettings
 import com.bombbird.terminalcontrol2.sounds.SoundManager
+import com.bombbird.terminalcontrol2.ui.CustomDialog
 import kotlinx.coroutines.launch
 import ktx.app.KtxGame
 import ktx.app.KtxScreen
@@ -55,6 +57,17 @@ class TerminalControl2 : KtxGame<KtxScreen>(clearScreen = false) {
         GAME.removeScreen<GameSettings>()
         GAME.removeScreen<CustomWeatherSettings>()
         GAME.removeScreen<TrafficSettings>()
+    }
+
+    /**
+     * Quits the current game, and show an additional dialog in the main menu upon exit
+     * @param dialog the dialog to show
+     */
+    fun quitCurrentGameWithDialog(dialog: CustomDialog) {
+        Gdx.app.postRunnable {
+            quitCurrentGame()
+            GAME.getScreen<MainMenu>().showDialog(dialog)
+        }
     }
 
     /**

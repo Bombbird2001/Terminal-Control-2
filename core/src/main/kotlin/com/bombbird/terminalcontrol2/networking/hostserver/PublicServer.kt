@@ -3,10 +3,8 @@ package com.bombbird.terminalcontrol2.networking.hostserver
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.networking.*
 import com.bombbird.terminalcontrol2.networking.encryption.*
-import com.bombbird.terminalcontrol2.networking.relayserver.NewGameRequest
-import com.bombbird.terminalcontrol2.networking.relayserver.RelayHostReceive
-import com.bombbird.terminalcontrol2.networking.relayserver.ServerToAllClientsUnencryptedUDP
-import com.bombbird.terminalcontrol2.networking.relayserver.ServerToClient
+import com.bombbird.terminalcontrol2.networking.relayserver.*
+import com.bombbird.terminalcontrol2.ui.CustomDialog
 import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
@@ -15,8 +13,9 @@ import com.esotericsoftware.kryonet.Connection
 import com.esotericsoftware.kryonet.Listener
 import com.esotericsoftware.minlog.Log
 import ktx.collections.GdxArrayMap
+import org.apache.commons.codec.binary.Base64
 import java.util.*
-import javax.crypto.SecretKey
+import javax.crypto.spec.SecretKeySpec
 
 /**
  * Server for handling public multiplayer relay games
@@ -35,6 +34,7 @@ class PublicServer(
     override val kryo: Kryo
         get() = relayServerConnector.kryo
     private var roomId: Short = Short.MAX_VALUE
+    private lateinit var relayChallenge: RelayChallenge
 
     private val relayServerConnector = Client(SERVER_WRITE_BUFFER_SIZE, SERVER_READ_BUFFER_SIZE).apply {
         addListener(object: Listener {
@@ -51,6 +51,10 @@ class PublicServer(
                 (decrypted as? RelayHostReceive)?.apply {
                     handleRelayHostReceive(this@PublicServer)
                 }
+            }
+
+            override fun connected(connection: Connection) {
+                connection.sendTCP(relayChallenge)
             }
         })
     }
@@ -83,21 +87,31 @@ class PublicServer(
         relayServerConnector.sendTCP(dataToSend)
     }
 
-    override fun setRoomId(roomId: Short) {
+    override fun beforeConnect() {
+        val roomCreation = HttpRequest.sendCreateGameRequest()
+        if (roomCreation?.success != true) {
+            GAME.quitCurrentGameWithDialog(CustomDialog("Failed to connect", "Room creation failed", "", "Ok"))
+            return
+        }
+        setRoomId(roomCreation.roomId)
+        val key = SecretKeySpec(Base64.decodeBase64(roomCreation.authResponse.key), 0, AESGCMEncryptor.AES_KEY_LENGTH_BYTES, "AES")
+        encryptor.setKey(key)
+        decrypter.setKey(key)
+
+        val iv = Base64.decodeBase64(roomCreation.authResponse.iv)
+        val ciphertext = encryptor.encryptWithIV(iv, RelayNonce(roomCreation.authResponse.nonce))?.ciphertext ?: return
+        relayChallenge = RelayChallenge(ciphertext)
+    }
+
+    private fun setRoomId(roomId: Short) {
         if (roomId == Short.MAX_VALUE) {
             // Failed to create room, stop server
-            GAME.quitCurrentGame()
+            GAME.quitCurrentGameWithDialog(CustomDialog("Failed to connect", "Room creation failed", "", "Ok"))
             return
         }
 
         if (this.roomId == Short.MAX_VALUE)
             this.roomId = roomId
-    }
-
-
-    override fun setSymmetricKey(key: SecretKey) {
-        encryptor.setKey(key)
-        decrypter.setKey(key)
     }
 
     override fun getRoomId(): Short {

@@ -24,14 +24,12 @@ import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.networking.*
 import com.bombbird.terminalcontrol2.networking.dataclasses.*
 import com.bombbird.terminalcontrol2.networking.NetworkClient
+import com.bombbird.terminalcontrol2.networking.encryption.AESGCMEncryptor
 import com.bombbird.terminalcontrol2.systems.*
 import com.bombbird.terminalcontrol2.traffic.ConflictManager
 import com.bombbird.terminalcontrol2.traffic.TrafficMode
-import com.bombbird.terminalcontrol2.ui.UIPane
+import com.bombbird.terminalcontrol2.ui.*
 import com.bombbird.terminalcontrol2.utilities.nmToPx
-import com.bombbird.terminalcontrol2.ui.safeStage
-import com.bombbird.terminalcontrol2.ui.updateDatatagLineSpacing
-import com.bombbird.terminalcontrol2.ui.updateDatatagStyle
 import com.esotericsoftware.minlog.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -45,9 +43,11 @@ import ktx.collections.GdxArray
 import ktx.collections.GdxArrayMap
 import ktx.graphics.moveTo
 import ktx.math.ImmutableVector2
+import org.apache.commons.codec.binary.Base64
 import java.io.IOException
 import java.nio.channels.ClosedSelectorException
 import java.util.concurrent.ConcurrentLinkedQueue
+import javax.crypto.spec.SecretKeySpec
 import kotlin.concurrent.thread
 import kotlin.math.min
 
@@ -522,8 +522,16 @@ class RadarScreen(private val connectionHost: String?, airportToHost: String?, s
             try {
                 // Check if game server is public server, if it is, set to its room ID
                 if (gs != null && gs.publicServer && gs.getRoomId() != null) roomId = gs.getRoomId()
-                val finalRoomId = roomId
-                if (finalRoomId != null) networkClient.setRoomId(finalRoomId)
+                val finalRoomId = roomId ?: continue
+                networkClient.setRoomId(finalRoomId)
+                // Send game join request to endpoint to retrieve symmetric key
+                val authResponse = HttpRequest.sendGameAuthorizationRequest(finalRoomId)
+                if (authResponse?.success != true) {
+                    GAME.quitCurrentGameWithDialog(CustomDialog("Failed to connect", "Endpoint authorization failed", "", "Ok"))
+                    return
+                }
+                networkClient.setSymmetricKey(SecretKeySpec(Base64.decodeBase64(authResponse.key), 0,
+                    AESGCMEncryptor.AES_KEY_LENGTH_BYTES, "AES"))
                 networkClient.start()
                 networkClient.connect(5000, connectionHost, TCP_PORT, UDP_PORT)
                 break

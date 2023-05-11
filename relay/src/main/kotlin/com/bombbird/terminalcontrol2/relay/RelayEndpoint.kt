@@ -51,6 +51,7 @@ object RelayEndpoint {
                 output.close()
             } catch (e: Exception) {
                 if (exchange != null) sendError(exchange, 500)
+                e.printStackTrace()
             }
         }
     }
@@ -73,10 +74,10 @@ object RelayEndpoint {
 
                 if (authReq == null) return sendError(exchange, 400)
 
-                // Get symmetric key and output to JSON
-                val key = relayServer?.authorizeUUIDToRoom(authReq.roomId, UUID.fromString(authReq.uuid))
-                val authResponse = if (key == null) HttpRequest.AuthorizationResponse(false, "")
-                else HttpRequest.AuthorizationResponse(true, key)
+                // Get symmetric key, nonce and output to JSON
+                val res = relayServer?.authorizeUUIDToRoom(authReq.roomId, UUID.fromString(authReq.uuid))
+                val authResponse = if (res == null) HttpRequest.AuthorizationResponse(false, "", "", "")
+                else HttpRequest.AuthorizationResponse(true, res.first, res.second, res.third)
                 val responseJson = moshiAuthResponseAdapter.toJson(authResponse)
 
                 val output = exchange.responseBody
@@ -86,6 +87,7 @@ object RelayEndpoint {
                 output.close()
             } catch (e: Exception) {
                 if (exchange != null) sendError(exchange, 500)
+                e.printStackTrace()
             }
         }
     }
@@ -100,7 +102,8 @@ object RelayEndpoint {
                 if (exchange.requestMethod != "POST") return sendError(exchange, 405)
 
                 // Get symmetric key and output to JSON
-                val roomResponse = relayServer?.createPendingRoom() ?: HttpRequest.RoomCreationStatus(false, Short.MAX_VALUE, "")
+                val roomResponse = relayServer?.createPendingRoom() ?:
+                HttpRequest.RoomCreationStatus(false, Short.MAX_VALUE, HttpRequest.AuthorizationResponse(false, "", "", ""))
                 val responseJson = moshiRoomCreationsStatusAdapter.toJson(roomResponse)
 
                 val output = exchange.responseBody
@@ -110,6 +113,7 @@ object RelayEndpoint {
                 output.close()
             } catch (e: Exception) {
                 if (exchange != null) sendError(exchange, 500)
+                e.printStackTrace()
             }
         }
     }

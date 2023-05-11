@@ -32,9 +32,6 @@ import javax.crypto.SecretKey
  * the player is the host, the room is also automatically closed and all connections to it closed
  */
 object RelayServer: RelayServer, RelayAuthorization {
-    private val encryptor = AESGCMEncryptor(::getSerialisedBytes)
-    private val decrypter = AESGCMDecrypter(::fromSerializedBytes)
-
     private val server = Server(RELAY_BUFFER_SIZE, RELAY_BUFFER_SIZE).apply {
         addListener(object : Listener {
             /**
@@ -43,26 +40,34 @@ object RelayServer: RelayServer, RelayAuthorization {
              * @param obj the serialised network object
              */
             override fun received(connection: Connection, obj: Any?) {
+                if (obj is RelayChallenge) {
+                    // Verify challenge
+                    if (!AuthenticationChecker.authenticateConnection(connection, obj)) return connection.close()
+                    connection.sendTCP(RequestRelayAction())
+                    return
+                }
+
                 if (obj is NeedsEncryption) {
                     Log.info("RelayServer", "Received unencrypted data of class ${obj.javaClass.name}")
                     return
                 }
 
-                val decrypted = if (obj is EncryptedData) {
-                    decrypter.decrypt(obj)
-                } else obj
+                val decrypted = if (AuthenticationChecker.isPendingRoom(connection)) {
+                    // If the connection is authorised but pending room connection, use AuthenticationChecker
+                    if (obj is EncryptedData) {
+                        AuthenticationChecker.decryptForConn(connection, obj)
+                    } else obj
+                } else {
+                    // Decrypt using key belonging to the room the connection is in
+                    val connRoom = idToRoom[connectionToRoomUUID[connection]?.first] ?: return
+                    if (obj is EncryptedData) {
+                        connRoom.decryptForRoom(obj)
+                    } else obj
+                }
 
                 (decrypted as? RelayServerReceive)?.apply {
                     handleRelayServerReceive(this@RelayServer, connection)
                 }
-            }
-
-            /**
-             * Called when a client connects to the server
-             * @param connection the incoming connection
-             */
-            override fun connected(connection: Connection) {
-                connection.sendTCP(RequestRelayAction())
             }
 
             /**
@@ -78,7 +83,7 @@ object RelayServer: RelayServer, RelayAuthorization {
                     idToRoom.remove(hostRoom)
                     hostConnectionToRoomMap.remove(connection)
                     hostUUIDs.remove(connectionToRoomUUID[connection]?.second)
-                    println("Room $hostRoom closed")
+                    Log.info("RelayServer", "Room $hostRoom closed")
                 } else  {
                     // Connection is from non-host player
                     val uuidRoom = connectionToRoomUUID[connection] ?: return
@@ -117,11 +122,34 @@ object RelayServer: RelayServer, RelayAuthorization {
      * @param timerTask the timer task to remove the pending room if no room is created in time
      */
     private class PendingRoom(val secretKey: SecretKey, private val timerTask: TimerTask) {
+        private val encryptor = AESGCMEncryptor(::getSerialisedBytes).apply { setKey(secretKey) }
+        private val decrypter = AESGCMDecrypter(::fromSerializedBytes).apply { setKey(secretKey) }
+
         /** Function to be called when the associated room is actually created */
         fun roomCreated() {
             // Perform the removal now
             timerTask.cancel()
             timerTask.run()
+        }
+
+        /**
+         * Performs encryption on the input data if needed using the server's encryptor, and returns the encrypted result
+         *
+         * If encryption not needed, returns the object itself
+         */
+        fun encryptIfNeeded(data: Any): Any? {
+            (data as? NeedsEncryption)?.let {
+                return encryptor.encrypt(it)
+            } ?: return data
+        }
+
+        /**
+         * Performs decryption on the received data using the room's key
+         * @param data ciphertext to be decrypted
+         * @return the decrypted object
+         */
+        fun decryptForRoom(data: EncryptedData): Any? {
+            return decrypter.decrypt(data)
         }
     }
 
@@ -129,7 +157,87 @@ object RelayServer: RelayServer, RelayAuthorization {
      * Symmetric key storage for pending room creations - will be removed after 20 seconds if no room creation
      * occurs by then
      */
-    private val pendingRoomKeys = ConcurrentHashMap<Short, PendingRoom>(32)
+    private val pendingRooms = ConcurrentHashMap<Short, PendingRoom>(32)
+
+    private object AuthenticationChecker {
+        private val encryptor = AESGCMEncryptor(::getSerialisedBytes)
+
+        /**
+         * Stores the random encrypted nonce mapped to room ID which is used to verify the challenge response sent by the
+         * client upon encryption
+         */
+        private val randomNonceChallenge = ConcurrentHashMap<RelayChallenge, Short>(32)
+
+        /**
+         * Stores connections which have been authorised and pending relay action, mapping to the ID of the room for
+         * subsequent decryption
+         */
+        private val authorisedConnectionsPendingAction = ConcurrentHashMap<Connection, Short>(32)
+
+        /**
+         * Attempts to authenticate the connection based on the sent challenge data
+         * @param conn the connection to authenticate
+         * @param relayChallenge the [RelayChallenge] object with challenge data
+         * @return true if authentication succeeds, else false
+         */
+        fun authenticateConnection(conn: Connection, relayChallenge: RelayChallenge): Boolean {
+            if (connectionToRoomUUID.containsKey(conn)) return false
+            val roomId = randomNonceChallenge[relayChallenge] ?: return false
+            authorisedConnectionsPendingAction[conn] = roomId
+            return true
+        }
+
+        /**
+         * Encrypts the object based on the authorised connection's room
+         */
+        fun encryptBasedOnConnectionPendingRoom(conn: Connection, obj: NeedsEncryption): Any? {
+            // Try to find an open room first
+            val id = authorisedConnectionsPendingAction[conn] ?: return null
+            idToRoom[id]?.let {
+                return it.encryptIfNeeded(obj)
+            } ?: pendingRooms[id]?.let {
+                // Otherwise, find the pending room
+                return it.encryptIfNeeded(obj)
+            }
+
+            return null
+        }
+
+        /**
+         * Creates and adds a new challenge nonce to validate new incoming connections
+         * @param key the key used by the room for encryption
+         * @param roomId the ID of the room the connection is authorized to
+         * @return a pair consisting of the random nonce and IV (in Base64) to be encrypted and sent by the client
+         */
+        fun addChallengeNonce(key: SecretKey, roomId: Short): Pair<String, String>? {
+            val uuid = UUID.randomUUID().toString()
+            encryptor.setKey(key)
+            val encrypted = encryptor.encrypt(RelayNonce(uuid)) ?: return null
+            val ivBase64 = Base64.encodeBase64String(encrypted.iv)
+            randomNonceChallenge[RelayChallenge(encrypted.ciphertext)] = roomId
+            return Pair(uuid, ivBase64)
+        }
+
+        /**
+         * Checks if the connection has been authorised but is still pending further action (joining/creating room)
+         * @param conn the connection to check
+         * @return true if pending, else false
+         */
+        fun isPendingRoom(conn: Connection): Boolean {
+            return authorisedConnectionsPendingAction.containsKey(conn)
+        }
+
+        /**
+         * Performs decryption on the received data using the pending connection's stored key
+         * @param conn the connection to decrypt for
+         * @param data ciphertext to be decrypted
+         * @return the decrypted object
+         */
+        fun decryptForConn(conn: Connection, data: EncryptedData): Any? {
+            val room = authorisedConnectionsPendingAction[conn]
+            return idToRoom[room]?.decryptForRoom(data) ?: pendingRooms[room]?.decryptForRoom(data)
+        }
+    }
 
     /** Timer responsible for closing pending rooms that are not connected to within 20 seconds */
     private val timer = Timer()
@@ -162,12 +270,12 @@ object RelayServer: RelayServer, RelayAuthorization {
         if (hostUUIDs.contains(newUUID)) return false
 
         if (!idToRoom.containsKey(roomID)) {
-            val pendingRoom = pendingRoomKeys[roomID] ?: return false
+            val pendingRoom = pendingRooms[roomID] ?: return false
             pendingRoom.roomCreated()
             connectionToRoomUUID[hostConnection] = Pair(roomID, newUUID)
             idToRoom[roomID] = Room(roomID, maxPlayers, hostConnection, mapName, pendingRoom.secretKey)
             hostConnectionToRoomMap[hostConnection] = roomID
-            println("Room $roomID created - $mapName")
+            Log.info("RelayServer", "Room $roomID created - $mapName")
             return true
         }
 
@@ -194,10 +302,11 @@ object RelayServer: RelayServer, RelayAuthorization {
             1 -> "Game room is no longer available"
             2 -> "Game room is full"
             3 -> "Player with same ID already exists in game"
-            4 -> "PLayer authorization failed"
+            4 -> "Player authorization failed"
             else -> "Unknown reason"
         }
-        clientConnection.sendTCP(ConnectionError(failedReason))
+        val encrypted = AuthenticationChecker.encryptBasedOnConnectionPendingRoom(clientConnection, ConnectionError(failedReason)) ?: return
+        clientConnection.sendTCP(encrypted)
     }
 
     override fun forwardToClient(obj: ServerToClient, conn: Connection) {
@@ -285,7 +394,10 @@ object RelayServer: RelayServer, RelayAuthorization {
     class Room(val id: Short, val maxPlayers: Byte, private val hostConnection: Connection?, val mapName: String,
                private val symmetricKey: SecretKey) {
         private val connectedPlayers = ConcurrentHashMap<UUID, Connection>(maxPlayers.toInt())
-        private val authorizedUUIDs = ConcurrentHashMap<UUID, Boolean>(maxPlayers.toInt())
+        private val authorizedUUIDs = ConcurrentHashMap<UUID, TimerTask>(maxPlayers.toInt())
+
+        private val encryptor = AESGCMEncryptor(::getSerialisedBytes).apply { setKey(symmetricKey) }
+        private val decrypter = AESGCMDecrypter(::fromSerializedBytes).apply { setKey(symmetricKey) }
 
         /**
          * Removes a player and their associated connection from the room
@@ -395,10 +507,18 @@ object RelayServer: RelayServer, RelayAuthorization {
          * @return the secret symmetric key if the UUID was successfully added, else null (if UUID already exists, or
          * room is full)
          */
-        fun authorizeUUID(uuid: UUID): String? {
+        fun authorizeUUID(uuid: UUID): SecretKey? {
             if (isFull()) return null
-            if (authorizedUUIDs.putIfAbsent(uuid, true) == true) {
-                return getSymmetricKeyBase64()
+            val cancelTask = object : TimerTask() {
+                override fun run() {
+                    authorizedUUIDs.remove(uuid)
+                    Log.info("RelayServer", "Pending player $uuid removed")
+                }
+            }
+            timer.schedule(cancelTask, 10000)
+            if (authorizedUUIDs.putIfAbsent(uuid, cancelTask) == null) {
+                Log.info("RelayServer", "Pending player $uuid added")
+                return symmetricKey
             }
             return null
         }
@@ -412,11 +532,23 @@ object RelayServer: RelayServer, RelayAuthorization {
         }
 
         /**
-         * Returns the Base64 encoded string of the symmetric key of the room
-         * @return Base64 encoded key
+         * Performs encryption on the input data if needed using the server's encryptor, and returns the encrypted result
+         *
+         * If encryption not needed, returns the object itself
          */
-        private fun getSymmetricKeyBase64(): String {
-            return Base64.encodeBase64String(symmetricKey.encoded)
+        fun encryptIfNeeded(data: Any): Any? {
+            (data as? NeedsEncryption)?.let {
+                return encryptor.encrypt(it)
+            } ?: return data
+        }
+
+        /**
+         * Performs decryption on the received data using the room's key
+         * @param data ciphertext to be decrypted
+         * @return the decrypted object
+         */
+        fun decryptForRoom(data: EncryptedData): Any? {
+            return decrypter.decrypt(data)
         }
     }
 
@@ -428,43 +560,39 @@ object RelayServer: RelayServer, RelayAuthorization {
         return idToRoom.filter { entry -> !entry.value.isFull() }.map { entry -> entry.value }
     }
 
-    override fun authorizeUUIDToRoom(roomID: Short, uuid: UUID): String? {
+    override fun authorizeUUIDToRoom(roomID: Short, uuid: UUID): Triple<String, String, String>? {
         idToRoom[roomID]?.let {
-            return it.authorizeUUID(uuid)
+            val key = it.authorizeUUID(uuid) ?: return null
+            val nonce = AuthenticationChecker.addChallengeNonce(key, roomID) ?: return null
+            return Triple(Base64.encodeBase64String(key.encoded), nonce.first, nonce.second)
         } ?: run {
             Log.info("RelayServer", "Authorization failed - Room ID $roomID does not exist")
             return null
         }
     }
 
-    override fun createPendingRoom(): HttpRequest.RoomCreationStatus {
+    override fun createPendingRoom(): HttpRequest.RoomCreationStatus? {
         for (i in Short.MIN_VALUE until Short.MAX_VALUE) {
-            if (!idToRoom.containsKey(i.toShort()) && !pendingRoomKeys.containsKey(i.toShort())) {
+            if (!idToRoom.containsKey(i.toShort()) && !pendingRooms.containsKey(i.toShort())) {
                 val cancelTask = object : TimerTask() {
                     override fun run() {
-                        pendingRoomKeys.remove(i.toShort())
+                        pendingRooms.remove(i.toShort())
+                        Log.info("RelayServer", "Pending room $i removed")
                     }
                 }
                 timer.schedule(cancelTask, 20000)
-                val newPendingRoom = PendingRoom(keyGenerator.generateKey(), cancelTask)
-                pendingRoomKeys[i.toShort()] = newPendingRoom
-                println("Pending room $i created")
-                return HttpRequest.RoomCreationStatus(true, i.toShort(), Base64.encodeBase64String(newPendingRoom.secretKey.encoded))
+
+                val key = keyGenerator.generateKey()
+                val newPendingRoom = PendingRoom(key, cancelTask)
+                pendingRooms[i.toShort()] = newPendingRoom
+                val nonce = AuthenticationChecker.addChallengeNonce(key, i.toShort()) ?: return null
+                Log.info("RelayServer", "Pending room $i created")
+                return HttpRequest.RoomCreationStatus(true, i.toShort(),
+                    HttpRequest.AuthorizationResponse(true, Base64.encodeBase64String(key.encoded), nonce.first, nonce.second))
             }
         }
 
         // If no rooms found (in the highly unlikely situation that all 65535 rooms are taken)
-        return HttpRequest.RoomCreationStatus(false, Short.MAX_VALUE, "")
-    }
-
-    /**
-     * Performs encryption on the input data if needed using the server's encryptor, and returns the encrypted result
-     *
-     * If encryption not needed, returns the
-     */
-    private fun encryptIfNeeded(data: Any): Any? {
-        (data as? NeedsEncryption)?.let {
-            return encryptor.encrypt(it)
-        } ?: return data
+        return null
     }
 }
