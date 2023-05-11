@@ -224,7 +224,7 @@ object RelayServer: RelayServer, RelayAuthorization {
         else roomObj.forwardFromHostToAClient(obj, conn, UUID.fromString(targetUUID))
     }
 
-    override fun forwardToAllClientsUDP(obj: ServerToAllClientsUDP, conn: Connection) {
+    override fun forwardToAllClientsUnencryptedUDP(obj: ServerToAllClientsUnencryptedUDP, conn: Connection) {
         val roomObj = idToRoom[hostConnectionToRoomMap[conn]]
         if (roomObj == null) {
             Log.info("RelayServer", "Forward to all clients failed - Connection does not belong to a room")
@@ -234,6 +234,7 @@ object RelayServer: RelayServer, RelayAuthorization {
             Log.info("RelayServer", "Forward to client failed - Connection UUID is not host of room")
             return
         }
+        roomObj.forwardFromHostToAllClientConnectionsUnencryptedUDP(obj, conn)
     }
 
     override fun forwardToServer(obj: ClientToServer, conn: Connection) {
@@ -334,9 +335,23 @@ object RelayServer: RelayServer, RelayAuthorization {
          */
         fun forwardFromHostToAllClientConnections(obj: ServerToClient, senderConn: Connection) {
             if (senderConn != hostConnection) return
+            val encrypted = encryptIfNeeded(obj)
             for (connectedPlayer in connectedPlayers.values) {
                 if (senderConn == connectedPlayer) continue // Forward to all clients except host
-                if (obj.tcp) connectedPlayer.sendTCP(obj)
+                if (obj.tcp) connectedPlayer.sendTCP(encrypted)
+                else connectedPlayer.sendUDP(encrypted)
+            }
+        }
+
+        /**
+         * Forwards the data to all client connections in this room using UDP without encryption
+         * @param obj the [ServerToAllClientsUnencryptedUDP] to forward
+         * @param senderConn the connection of the host (for verification)
+         */
+        fun forwardFromHostToAllClientConnectionsUnencryptedUDP(obj: ServerToAllClientsUnencryptedUDP, senderConn: Connection) {
+            if (senderConn != hostConnection) return
+            for (connectedPlayer in connectedPlayers.values) {
+                if (senderConn == connectedPlayer) continue // Forward to all clients except host
                 else connectedPlayer.sendUDP(obj)
             }
         }
@@ -352,8 +367,9 @@ object RelayServer: RelayServer, RelayAuthorization {
             // Forward to only 1 client
             val targetConnection = connectedPlayers[targetUUID] ?: return
             if (senderConn == targetConnection) return // If somehow sent to host, ignore it
-            if (obj.tcp) targetConnection.sendTCP(obj)
-            else targetConnection.sendUDP(obj)
+            val encrypted = encryptIfNeeded(obj)
+            if (obj.tcp) targetConnection.sendTCP(encrypted)
+            else targetConnection.sendUDP(encrypted)
         }
 
         /**
@@ -439,5 +455,16 @@ object RelayServer: RelayServer, RelayAuthorization {
 
         // If no rooms found (in the highly unlikely situation that all 65535 rooms are taken)
         return HttpRequest.RoomCreationStatus(false, Short.MAX_VALUE, "")
+    }
+
+    /**
+     * Performs encryption on the input data if needed using the server's encryptor, and returns the encrypted result
+     *
+     * If encryption not needed, returns the
+     */
+    private fun encryptIfNeeded(data: Any): Any? {
+        (data as? NeedsEncryption)?.let {
+            return encryptor.encrypt(it)
+        } ?: return data
     }
 }

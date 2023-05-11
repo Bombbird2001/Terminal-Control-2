@@ -5,7 +5,7 @@ import com.bombbird.terminalcontrol2.networking.*
 import com.bombbird.terminalcontrol2.networking.encryption.*
 import com.bombbird.terminalcontrol2.networking.relayserver.NewGameRequest
 import com.bombbird.terminalcontrol2.networking.relayserver.RelayHostReceive
-import com.bombbird.terminalcontrol2.networking.relayserver.ServerToAllClientsUDP
+import com.bombbird.terminalcontrol2.networking.relayserver.ServerToAllClientsUnencryptedUDP
 import com.bombbird.terminalcontrol2.networking.relayserver.ServerToClient
 import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.io.Input
@@ -34,9 +34,8 @@ class PublicServer(
     override val decrypter: Decrypter = AESGCMDecrypter(::fromSerializedBytes)
     override val kryo: Kryo
         get() = relayServerConnector.kryo
-
     private var roomId: Short = Short.MAX_VALUE
-    private var symmetricKey: SecretKey? = null
+
     private val relayServerConnector = Client(SERVER_WRITE_BUFFER_SIZE, SERVER_READ_BUFFER_SIZE).apply {
         addListener(object: Listener {
             override fun received(connection: Connection, obj: Any?) {
@@ -76,7 +75,7 @@ class PublicServer(
 
     override fun sendToAllUDP(data: Any) {
         // Will not be encrypted
-        relayServerConnector.sendUDP(ServerToAllClientsUDP(getSerialisedBytes(data)))
+        relayServerConnector.sendUDP(ServerToAllClientsUnencryptedUDP(getSerialisedBytes(data)))
     }
 
     override fun sendTCPToConnection(uuid: UUID, data: Any) {
@@ -97,7 +96,8 @@ class PublicServer(
 
 
     override fun setSymmetricKey(key: SecretKey) {
-        symmetricKey = key
+        encryptor.setKey(key)
+        decrypter.setKey(key)
     }
 
     override fun getRoomId(): Short {

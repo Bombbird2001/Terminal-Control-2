@@ -42,7 +42,7 @@ interface Decrypter {
  */
 class AESGCMEncryptor(private val serializeObj: (Any) -> ByteArray): Encryptor {
     companion object {
-        const val ENCRYPTION_MODE = "AES/GCM/PKCS5Padding"
+        const val ENCRYPTION_MODE = "AES/GCM/NoPadding"
         const val AES_KEY_LENGTH_BYTES = 16
         const val GCM_TAG_LENGTH_BYTES = 16
     }

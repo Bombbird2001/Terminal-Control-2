@@ -122,7 +122,8 @@ class LANServer(
     }
 
     override fun setSymmetricKey(key: SecretKey) {
-        TODO("Not yet implemented")
+        encryptor.setKey(key)
+        decrypter.setKey(key)
     }
 
     override fun getRoomId(): Short? {

@@ -4,6 +4,7 @@ import com.bombbird.terminalcontrol2.networking.encryption.Decrypter
 import com.bombbird.terminalcontrol2.networking.encryption.Encryptor
 import com.bombbird.terminalcontrol2.networking.encryption.NeedsEncryption
 import com.esotericsoftware.kryo.Kryo
+import javax.crypto.SecretKey
 
 /**
  * Abstraction for handling network activities as a client
@@ -38,6 +39,12 @@ abstract class NetworkClient {
      * @param roomId ID of game room
      */
     abstract fun setRoomId(roomId: Short)
+
+    /**
+     * Sets the symmetric key value of the room to be used by this server
+     * @param key the symmetric key [SecretKey] object
+     */
+    abstract fun setSymmetricKey(key: SecretKey)
 
     /** Starts the client */
     abstract fun start()

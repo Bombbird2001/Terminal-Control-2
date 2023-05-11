@@ -49,11 +49,11 @@ interface RelayServer {
     fun forwardToClient(obj: ServerToClient, conn: Connection)
 
     /**
-     * Forwards the UDP object to all clients using data in the [ServerToAllClientsUDP] object received
-     * @param obj the [ServerToAllClientsUDP] object containing application data
+     * Forwards the UDP object to all clients using data in the [ServerToAllClientsUnencryptedUDP] object received
+     * @param obj the [ServerToAllClientsUnencryptedUDP] object containing application data
      * @param conn the [Connection] that sent this object (which should be the connection from host "client"
      */
-    fun forwardToAllClientsUDP(obj: ServerToAllClientsUDP, conn: Connection)
+    fun forwardToAllClientsUnencryptedUDP(obj: ServerToAllClientsUnencryptedUDP, conn: Connection)
 
     /**
      * Forwards the TCP object to the server using data in the [ClientToServer] object received

@@ -16,6 +16,7 @@ import com.esotericsoftware.kryonet.Client
 import com.esotericsoftware.kryonet.Connection
 import com.esotericsoftware.kryonet.Listener
 import com.esotericsoftware.minlog.Log
+import javax.crypto.SecretKey
 
 /**
  * Server for handling public multiplayer relay games
@@ -69,6 +70,11 @@ class PublicClient: NetworkClient() {
     override fun setRoomId(roomId: Short) {
         stop() // If somehow already connected, disconnect first
         this.roomId = roomId
+    }
+
+    override fun setSymmetricKey(key: SecretKey) {
+        encryptor.setKey(key)
+        decrypter.setKey(key)
     }
 
     override fun start() {

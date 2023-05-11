@@ -84,10 +84,10 @@ class ServerToClient(val roomId: Short = Short.MAX_VALUE, val uuid: String? = nu
 }
 
 /** Class representing data sent by the host to all clients via UDP. Traffic is not encrypted. */
-class ServerToAllClientsUDP(val data: ByteArray = byteArrayOf()): RelayServerReceive, RelayClientReceive {
+class ServerToAllClientsUnencryptedUDP(val data: ByteArray = byteArrayOf()): RelayServerReceive, RelayClientReceive {
     override fun handleRelayServerReceive(rs: RelayServer, conn: Connection) {
         // Forward to all clients using UDP
-        rs.forwardToAllClientsUDP(this, conn)
+        rs.forwardToAllClientsUnencryptedUDP(this, conn)
     }
 
     override fun handleRelayClientReceive(client: PublicClient) {
