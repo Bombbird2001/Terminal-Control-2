@@ -15,6 +15,7 @@ class GameLoading private constructor(): BasicUIScreen() {
         /**
          * Creates a new instance of GameLoading screen and loads the relevant objects for a single player game
          * @param airportToHost the ICAO code of airport to play
+         * @return the GameLoading screen
          */
         fun newSinglePlayerGameLoading(airportToHost: String): GameLoading {
             val gameLoading = GameLoading()
@@ -33,6 +34,7 @@ class GameLoading private constructor(): BasicUIScreen() {
         /**
          * Creates a new instance of GameLoading screen and loads the relevant objects for a LAN multiplayer game
          * @param airportToHost the ICAO code of airport to play
+         * @return the GameLoading screen
          */
         fun newLANMultiplayerGameLoading(airportToHost: String): GameLoading {
             val gameLoading = GameLoading()
@@ -51,6 +53,7 @@ class GameLoading private constructor(): BasicUIScreen() {
         /**
          * Creates a new instance of GameLoading screen and loads the relevant objects for a public multiplayer game
          * @param airportToHost the ICAO code of airport to play
+         * @return the GameLoading screen
          */
         fun newPublicMultiplayerGameLoading(airportToHost: String): GameLoading {
             val gameLoading = GameLoading()
@@ -67,8 +70,69 @@ class GameLoading private constructor(): BasicUIScreen() {
         }
 
         /**
+         * Creates a new instance of GameLoading screen and loads the relevant objects for a single player game
+         * @param airportToHost the ICAO code of airport to play
+         * @param saveId ID of the save file to load
+         * @return the GameLoading screen
+         */
+        fun loadSinglePlayerGameLoading(airportToHost: String, saveId: Int): GameLoading {
+            val gameLoading = GameLoading()
+            GAME.gameServer = GameServer.loadSinglePlayerGameServer(airportToHost, saveId).apply {
+                serverStartedCallback = gameLoading::gameServerLoaded
+            }
+            val rs = RadarScreen.newSinglePlayerRadarScreen().apply {
+                dataLoadedCallback = gameLoading::gameClientLoaded
+                connectedToHostCallback = gameLoading::connectedToGameServer
+            }
+            GAME.gameClientScreen = rs
+            GAME.addScreen(rs)
+            return gameLoading
+        }
+
+        /**
+         * Creates a new instance of GameLoading screen and loads the relevant objects for a LAN multiplayer game
+         * @param airportToHost the ICAO code of airport to play
+         * @param saveId ID of the save file to load
+         * @return the GameLoading screen
+         */
+        fun loadLANMultiplayerGameLoading(airportToHost: String, saveId: Int): GameLoading {
+            val gameLoading = GameLoading()
+            GAME.gameServer = GameServer.loadLANMultiplayerGameServer(airportToHost, saveId).apply {
+                serverStartedCallback = gameLoading::gameServerLoaded
+            }
+            val rs = RadarScreen.newLANMultiplayerRadarScreen(LOCALHOST).apply {
+                dataLoadedCallback = gameLoading::gameClientLoaded
+                connectedToHostCallback = gameLoading::connectedToGameServer
+            }
+            GAME.gameClientScreen = rs
+            GAME.addScreen(rs)
+            return gameLoading
+        }
+
+        /**
+         * Creates a new instance of GameLoading screen and loads the relevant objects for a public multiplayer game
+         * @param airportToHost the ICAO code of airport to play
+         * @param saveId ID of the save file to load
+         * @return the GameLoading screen
+         */
+        fun loadPublicMultiplayerGameLoading(airportToHost: String, saveId: Int): GameLoading {
+            val gameLoading = GameLoading()
+            GAME.gameServer = GameServer.loadPublicMultiplayerGameServer(airportToHost, saveId).apply {
+                serverStartedCallback = gameLoading::gameServerLoaded
+            }
+            val rs = RadarScreen.newPublicMultiplayerRadarScreen().apply {
+                dataLoadedCallback = gameLoading::gameClientLoaded
+                connectedToHostCallback = gameLoading::connectedToGameServer
+            }
+            GAME.gameClientScreen = rs
+            GAME.addScreen(rs)
+            return gameLoading
+        }
+
+        /**
          * Creates a new instance of GameLoading screen and loads the relevant objects to join a LAN multiplayer game
          * @param lanAddress the address of the LAN server to connect to
+         * @return the GameLoading screen
          */
         fun joinLANMultiplayerGameLoading(lanAddress: String): GameLoading {
             val gameLoading = GameLoading()
@@ -84,6 +148,7 @@ class GameLoading private constructor(): BasicUIScreen() {
         /**
          * Creates a new instance of GameLoading screen and loads the relevant objects to join a public multiplayer game
          * @param roomId the ID of the room to join
+         * @return the GameLoading screen
          */
         fun joinPublicMultiplayerGameLoading(roomId: Short): GameLoading {
             val gameLoading = GameLoading()

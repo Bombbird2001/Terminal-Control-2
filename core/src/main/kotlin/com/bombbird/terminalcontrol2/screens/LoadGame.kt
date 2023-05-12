@@ -7,6 +7,7 @@ import com.bombbird.terminalcontrol2.files.GameSaveMeta
 import com.bombbird.terminalcontrol2.files.getExtDir
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.ui.addChangeListener
+import com.esotericsoftware.minlog.Log
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.adapter
 import kotlinx.coroutines.Dispatchers
@@ -24,6 +25,11 @@ class LoadGame: BasicUIScreen() {
     @Volatile
     private var loading = false
 
+    @OptIn(ExperimentalStdlibApi::class)
+    private val moshiGameMetaAdapter = Moshi.Builder().build().adapter<GameSaveMeta>()
+
+    private var currSelectedMode: KTextButton? = null
+
     init {
         stage.actors {
             // UI Container
@@ -31,10 +37,42 @@ class LoadGame: BasicUIScreen() {
                 fill()
                 setSize(UI_WIDTH, UI_HEIGHT)
                 table {
-                    scrollPane("LoadGame") {
-                        savedGamesTable = table { }
-                        setOverscroll(false, false)
-                    }.cell(width = 800f, padTop = 100f, expandY = true)
+                    table {
+                        scrollPane("LoadGame") {
+                            savedGamesTable = table { }
+                            setOverscroll(false, false)
+                        }.cell(width = 800f, padTop = 100f, expandY = true)
+                        table {
+                            currSelectedMode = textButton("Singleplayer", "NewGameAirport").cell(width = 300f, height = 550f / 3).apply {
+                                name = NewGame.SINGLE_PLAYER
+                                addChangeListener { event, _ ->
+                                    currSelectedMode?.isChecked = false
+                                    currSelectedMode = this
+                                    event?.handle()
+                                }
+                                isChecked = true
+                            }
+                            row()
+                            textButton("Multiplayer\n(LAN)", "NewGameAirport").cell(width = 300f, height = 550f / 3).apply {
+                                name = NewGame.LAN_MULTIPLAYER
+                                addChangeListener { event, _ ->
+                                    currSelectedMode?.isChecked = false
+                                    currSelectedMode = this
+                                    event?.handle()
+                                }
+                            }
+                            row()
+                            textButton("Multiplayer\n(Public)", "NewGameAirport").cell(width = 300f, height = 550f / 3).apply {
+                                name = NewGame.PUBLIC_MULTIPLAYER
+                                addChangeListener { event, _ ->
+                                    currSelectedMode?.isChecked = false
+                                    currSelectedMode = this
+                                    event?.handle()
+                                }
+                            }
+                            row()
+                        }.cell(padTop = 100f, expandY = true)
+                    }
                     row().padTop(100f)
                     textButton("Back", "Menu").cell(width = BUTTON_WIDTH_BIG, height = BUTTON_HEIGHT_BIG, padBottom = BOTTOM_BUTTON_MARGIN, expandY = true, align = Align.bottom).addChangeListener { _, _ ->
                         GAME.setScreen<MainMenu>()
@@ -70,23 +108,21 @@ class LoadGame: BasicUIScreen() {
     }
 
     /** Search for saved games open in the user data folder */
-    @OptIn(ExperimentalStdlibApi::class)
     private fun searchSavedGames() {
         if (loading) return
         Gdx.app.postRunnable { setSearchingSaves() }
         gamesFound.clear()
         val saveFolderHandle = getExtDir("Saves") ?: return
         if (saveFolderHandle.exists()) {
-            val moshiAdapter = Moshi.Builder().build().adapter<GameSaveMeta>()
             val metaOrJsonFound = GdxArrayMap<Int, GameSaveMeta?>()
             saveFolderHandle.list().forEach {
                 val id = it.nameWithoutExtension().toInt()
                 if (it.extension() == "json" || it.extension() == "meta") {
                     if (metaOrJsonFound.containsKey(id)) {
-                        val meta: GameSaveMeta = metaOrJsonFound[id] ?: moshiAdapter.fromJson(it.readString()) ?: return@forEach
+                        val meta: GameSaveMeta = metaOrJsonFound[id] ?: moshiGameMetaAdapter.fromJson(it.readString()) ?: return@forEach
                         gamesFound.add(Pair(id, meta))
                     }
-                    else metaOrJsonFound[id] = if (it.extension() == "meta") moshiAdapter.fromJson(it.readString()) else null
+                    else metaOrJsonFound[id] = if (it.extension() == "meta") moshiGameMetaAdapter.fromJson(it.readString()) else null
                 }
             }
         }
@@ -100,9 +136,24 @@ class LoadGame: BasicUIScreen() {
             clear()
             for (i in 0 until gamesFound.size) { gamesFound[i]?.let { game ->
                 val meta = game.second
-                textButton("${meta.mainName} - Score: ${meta.score}   High score: ${meta.highScore}\nLanded: ${meta.landed}   Departed: ${meta.departed}", "JoinGameAirport").addChangeListener { _, _ ->
-                    GAME.addScreen(GameLoading.newLANMultiplayerGameLoading(meta.mainName))
-                    GAME.setScreen<GameLoading>()
+                textButton("${meta.mainName} - Score: ${meta.score}   High score: ${meta.highScore}\nLanded: ${meta.landed}   Departed: ${meta.departed}", "JoinGameAirport").cell(growX = true).addChangeListener { _, _ ->
+                    currSelectedMode?.let { mode ->
+                        when (mode.name) {
+                            NewGame.SINGLE_PLAYER -> {
+                                GAME.addScreen(GameLoading.loadSinglePlayerGameLoading(meta.mainName, game.first))
+                                GAME.setScreen<GameLoading>()
+                            }
+                            NewGame.LAN_MULTIPLAYER -> {
+                                GAME.addScreen(GameLoading.loadLANMultiplayerGameLoading(meta.mainName, game.first))
+                                GAME.setScreen<GameLoading>()
+                            }
+                            NewGame.PUBLIC_MULTIPLAYER -> {
+                                GAME.addScreen(GameLoading.loadPublicMultiplayerGameLoading(meta.mainName, game.first))
+                                GAME.setScreen<GameLoading>()
+                            }
+                            else -> Log.info("LoadGame", "Unknown game mode ${mode.name}")
+                        }
+                    }
                 }
                 row()
             }}

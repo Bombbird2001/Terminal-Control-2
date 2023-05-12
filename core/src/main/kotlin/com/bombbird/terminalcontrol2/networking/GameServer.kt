@@ -75,6 +75,36 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
         fun newPublicMultiplayerGameServer(airportToHost: String): GameServer {
             return GameServer(airportToHost, null, true, 4)
         }
+
+        /**
+         * Creates a new single-player mode game server object, loading an existing save
+         * @param airportToHost name of airport to load
+         * @param saveId ID of the save file to load
+         * @return GameServer in single-player mode
+         */
+        fun loadSinglePlayerGameServer(airportToHost: String, saveId: Int): GameServer {
+            return GameServer(airportToHost, saveId, false, 1)
+        }
+
+        /**
+         * Creates a new multiplayer LAN mode game server object, loading an existing save
+         * @param airportToHost name of airport to load
+         * @param saveId ID of the save file to load
+         * @return GameServer in LAN multiplayer mode
+         */
+        fun loadLANMultiplayerGameServer(airportToHost: String, saveId: Int): GameServer {
+            return GameServer(airportToHost, saveId, false, 4)
+        }
+
+        /**
+         * Creates a new multiplayer public mode game server object, loading an existing save
+         * @param airportToHost name of airport to load
+         * @param saveId ID of the save file to load
+         * @return GameServer in public multiplayer mode
+         */
+        fun loadPublicMultiplayerGameServer(airportToHost: String, saveId: Int): GameServer {
+            return GameServer(airportToHost, saveId, true, 4)
+        }
     }
 
     private val loopRunning = AtomicBoolean(false)
@@ -219,7 +249,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
      * @param mainName the name of the main airport in the map
      * @param saveId the ID of the save file to load, or null if nothing to load
      * */
-    fun initiateServer(mainName: String, saveId: Int?) {
+    private fun initiateServer(mainName: String, saveId: Int?) {
         thread {
             Log.info("GameServer", "Starting game server")
             saveID = saveId

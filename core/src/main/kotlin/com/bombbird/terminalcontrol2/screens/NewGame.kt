@@ -32,7 +32,7 @@ class NewGame: BasicUIScreen() {
                         scrollPane("NewGame") {
                             table {
                                 for (icao in AVAIL_AIRPORTS) {
-                                    textButton(icao,"NewGameAirport").cell(width = 300f, height = 150f).apply {
+                                    textButton(icao,"NewGameAirport").cell(growX = true, height = 150f).apply {
                                         addChangeListener { event, _ ->
                                             if (currSelectedAirport != this@apply) {
                                                 currSelectedAirport?.isChecked = false
@@ -80,36 +80,34 @@ class NewGame: BasicUIScreen() {
                             }
                         }.cell(expandY = true).align(Align.top)
                         table {
-                            table {
-                                currSelectedMode = textButton("Singleplayer", "NewGameAirport").cell(width = 300f, height = 550f / 3).apply {
-                                    name = SINGLE_PLAYER
-                                    addChangeListener { event, _ ->
-                                        currSelectedMode?.isChecked = false
-                                        currSelectedMode = this
-                                        event?.handle()
-                                    }
-                                    isChecked = true
+                            currSelectedMode = textButton("Singleplayer", "NewGameAirport").cell(width = 300f, height = 550f / 3).apply {
+                                name = SINGLE_PLAYER
+                                addChangeListener { event, _ ->
+                                    currSelectedMode?.isChecked = false
+                                    currSelectedMode = this
+                                    event?.handle()
                                 }
-                                row()
-                                textButton("Multiplayer (LAN)", "NewGameAirport").cell(width = 300f, height = 550f / 3).apply {
-                                    name = LAN_MULTIPLAYER
-                                    addChangeListener { event, _ ->
-                                        currSelectedMode?.isChecked = false
-                                        currSelectedMode = this
-                                        event?.handle()
-                                    }
-                                }
-                                row()
-                                textButton("Multiplayer (Public)", "NewGameAirport").cell(width = 300f, height = 550f / 3).apply {
-                                    name = PUBLIC_MULTIPLAYER
-                                    addChangeListener { event, _ ->
-                                        currSelectedMode?.isChecked = false
-                                        currSelectedMode = this
-                                        event?.handle()
-                                    }
-                                }
-                                row()
+                                isChecked = true
                             }
+                            row()
+                            textButton("Multiplayer\n(LAN)", "NewGameAirport").cell(width = 300f, height = 550f / 3).apply {
+                                name = LAN_MULTIPLAYER
+                                addChangeListener { event, _ ->
+                                    currSelectedMode?.isChecked = false
+                                    currSelectedMode = this
+                                    event?.handle()
+                                }
+                            }
+                            row()
+                            textButton("Multiplayer\n(Public)", "NewGameAirport").cell(width = 300f, height = 550f / 3).apply {
+                                name = PUBLIC_MULTIPLAYER
+                                addChangeListener { event, _ ->
+                                    currSelectedMode?.isChecked = false
+                                    currSelectedMode = this
+                                    event?.handle()
+                                }
+                            }
+                            row()
                         }
                     }.cell(expandY = true, padTop = 65f)
                     row().padTop(100f)
