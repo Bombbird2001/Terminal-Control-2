@@ -19,7 +19,7 @@ class LANServerDiscoveryHandler(val gameServer: GameServer): ServerDiscoveryHand
     override fun onDiscoverHost(datagramChannel: DatagramChannel?, fromAddress: InetSocketAddress?): Boolean {
         val byteBuffer = ByteBuffer.allocate(DISCOVERY_PACKET_SIZE)
         if (byteBuffer.position() + 1 <= byteBuffer.capacity()) byteBuffer.put(gameServer.playersInGame)
-        if (byteBuffer.position() + 1 <= byteBuffer.capacity()) byteBuffer.put(gameServer.maxPlayers)
+        if (byteBuffer.position() + 1 <= byteBuffer.capacity()) byteBuffer.put(gameServer.maxPlayersAllowed)
         for (c in gameServer.mainName) {
             if (byteBuffer.position() + 2 > byteBuffer.capacity()) break
             byteBuffer.putChar(c)

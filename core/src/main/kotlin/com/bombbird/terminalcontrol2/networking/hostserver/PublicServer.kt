@@ -153,7 +153,7 @@ class PublicServer(
 
     /** Requests for the relay server to create a game room */
     fun requestGameCreation() {
-        val encrypted = encryptIfNeeded(NewGameRequest(roomId, gameServer.maxPlayers, mapName, myUuid.toString()), encryptor) ?: run {
+        val encrypted = encryptIfNeeded(NewGameRequest(roomId, gameServer.maxPlayersAllowed, mapName, myUuid.toString()), encryptor) ?: run {
             Log.info("PublicServer", "Room creation failed - encryption failed")
             return
         }

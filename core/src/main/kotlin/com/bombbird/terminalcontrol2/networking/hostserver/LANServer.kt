@@ -173,7 +173,7 @@ class LANServer(
             encryptIfNeeded(ConnectionError("Missing player ID"), encryptor)?.let { connection.sendTCP(it) }
             return
         }
-        if (gameServer.playersInGame == gameServer.maxPlayers) {
+        if (gameServer.playersInGame == gameServer.maxPlayersAllowed) {
             encryptIfNeeded(ConnectionError("Game is full"), encryptor)?.let { connection.sendTCP(it) }
             return
         }

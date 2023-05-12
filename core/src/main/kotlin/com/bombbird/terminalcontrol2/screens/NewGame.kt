@@ -8,7 +8,14 @@ import ktx.scene2d.*
 
 /** New game screen which extends [BasicUIScreen] */
 class NewGame: BasicUIScreen() {
+    companion object {
+        const val SINGLE_PLAYER = "single_player"
+        const val LAN_MULTIPLAYER = "multiplayer_lan"
+        const val PUBLIC_MULTIPLAYER = "multiplayer_public"
+    }
+
     private var currSelectedAirport: KTextButton? = null
+    private var currSelectedMode: KTextButton? = null
     private lateinit var start: KTextButton
 
     init {
@@ -49,14 +56,61 @@ class NewGame: BasicUIScreen() {
                                 isVisible = false
                                 addChangeListener { event, _ ->
                                     currSelectedAirport?.let {
-                                        // GAME.addScreen(GameLoading(LOCALHOST, it.text.toString(), null, false, null))
-                                        GAME.addScreen(GameLoading(Secrets.RELAY_ADDRESS, it.text.toString(), null, true, null))
-                                        GAME.setScreen<GameLoading>()
+                                        val airportToHost = it.text.toString()
+                                        currSelectedMode?.let { mode ->
+                                            when (mode.name) {
+                                                SINGLE_PLAYER -> {
+                                                    GAME.addScreen(GameLoading.newSinglePlayerGameLoading(airportToHost))
+                                                    GAME.setScreen<GameLoading>()
+                                                }
+                                                LAN_MULTIPLAYER -> {
+                                                    GAME.addScreen(GameLoading.newLANMultiplayerGameLoading(airportToHost))
+                                                    GAME.setScreen<GameLoading>()
+                                                }
+                                                PUBLIC_MULTIPLAYER -> {
+                                                    GAME.addScreen(GameLoading.newPublicMultiplayerGameLoading(airportToHost))
+                                                    GAME.setScreen<GameLoading>()
+                                                }
+                                                else -> Log.info("NewGame", "Unknown game mode ${mode.name}")
+                                            }
+                                        }
                                     } ?: Log.info("NewGame", "Start button pressed when airport selected is null")
                                     event?.handle()
                                 }
                             }
                         }.cell(expandY = true).align(Align.top)
+                        table {
+                            table {
+                                currSelectedMode = textButton("Singleplayer", "NewGameAirport").cell(width = 300f, height = 550f / 3).apply {
+                                    name = SINGLE_PLAYER
+                                    addChangeListener { event, _ ->
+                                        currSelectedMode?.isChecked = false
+                                        currSelectedMode = this
+                                        event?.handle()
+                                    }
+                                    isChecked = true
+                                }
+                                row()
+                                textButton("Multiplayer (LAN)", "NewGameAirport").cell(width = 300f, height = 550f / 3).apply {
+                                    name = LAN_MULTIPLAYER
+                                    addChangeListener { event, _ ->
+                                        currSelectedMode?.isChecked = false
+                                        currSelectedMode = this
+                                        event?.handle()
+                                    }
+                                }
+                                row()
+                                textButton("Multiplayer (Public)", "NewGameAirport").cell(width = 300f, height = 550f / 3).apply {
+                                    name = PUBLIC_MULTIPLAYER
+                                    addChangeListener { event, _ ->
+                                        currSelectedMode?.isChecked = false
+                                        currSelectedMode = this
+                                        event?.handle()
+                                    }
+                                }
+                                row()
+                            }
+                        }
                     }.cell(expandY = true, padTop = 65f)
                     row().padTop(100f)
                     textButton("Back", "Menu").cell(width = BUTTON_WIDTH_BIG, height = BUTTON_HEIGHT_BIG, padBottom = BOTTOM_BUTTON_MARGIN, expandY = true, align = Align.bottom).addChangeListener { _, _ ->

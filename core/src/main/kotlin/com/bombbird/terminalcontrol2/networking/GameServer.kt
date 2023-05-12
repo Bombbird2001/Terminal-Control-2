@@ -32,7 +32,7 @@ import kotlin.math.roundToLong
  * Main game server class, responsible for handling all game logic, updates, sending required game data information to
  * clients and handling incoming client inputs
  * */
-class GameServer(val publicServer: Boolean) {
+class GameServer private constructor(airportToHost: String, saveId: Int?, val publicServer: Boolean, private val maxPlayersSet: Byte) {
     companion object {
         const val UPDATE_INTERVAL = 1000.0 / SERVER_UPDATE_RATE
         const val SERVER_TO_CLIENT_UPDATE_INTERVAL_FAST = 1000.0 / SERVER_TO_CLIENT_UPDATE_RATE_FAST
@@ -51,6 +51,30 @@ class GameServer(val publicServer: Boolean) {
         const val STORMS_MEDIUM: Byte = 9
         const val STORMS_HIGH: Byte = 10
         const val STORMS_NIGHTMARE: Byte = 11
+
+        /**
+         * Creates a new single-player mode game server object
+         * @return GameServer in single-player mode
+         */
+        fun newSinglePlayerGameServer(airportToHost: String): GameServer {
+            return GameServer(airportToHost, null, false, 1)
+        }
+
+        /**
+         * Creates a new multiplayer LAN mode game server object
+         * @return GameServer in LAN multiplayer mode
+         */
+        fun newLANMultiplayerGameServer(airportToHost: String): GameServer {
+            return GameServer(airportToHost, null, false, 4) // TODO Let user choose max players
+        }
+
+        /**
+         * Creates a new multiplayer public mode game server object
+         * @return GameServer in public multiplayer mode
+         */
+        fun newPublicMultiplayerGameServer(airportToHost: String): GameServer {
+            return GameServer(airportToHost, null, true, 4)
+        }
     }
 
     private val loopRunning = AtomicBoolean(false)
@@ -64,8 +88,8 @@ class GameServer(val publicServer: Boolean) {
     private val playerNo = AtomicInteger(0)
     val playersInGame: Byte
         get() = playerNo.get().toByte()
-    val maxPlayers: Byte
-        get() = sectors.size.toByte()
+    val maxPlayersAllowed: Byte
+        get() = sectors.size.toByte().coerceAtMost(maxPlayersSet)
     lateinit var networkServer: NetworkServer
     val engine = Engine()
     var saveID: Int? = null
@@ -155,6 +179,13 @@ class GameServer(val publicServer: Boolean) {
     // var frames = 0
     private var startTime = -1L
 
+    // Loading screen callbacks
+    var serverStartedCallback: (() -> Unit)? = null
+
+    init {
+        initiateServer(airportToHost, saveId)
+    }
+
     /**
      * Initialises game world
      * @param mainName the ICAO code of the main airport in the game world
@@ -190,11 +221,13 @@ class GameServer(val publicServer: Boolean) {
      * */
     fun initiateServer(mainName: String, saveId: Int?) {
         thread {
+            Log.info("GameServer", "Starting game server")
             saveID = saveId
             loadGame(mainName, saveId)
             startNetworkingServer()
             startTime = -1L
-            Log.info("GameServer", "Starting game server")
+            Log.info("GameServer", "Game server started")
+            serverStartedCallback?.invoke()
             // Pause the game initially (until at least 1 player connects)
             handleGameRunningRequest(false)
             loopRunning.set(true)
@@ -206,10 +239,10 @@ class GameServer(val publicServer: Boolean) {
 
     /** Stops the game loop and exits server */
     fun stopServer() {
-        Log.info("GameServer", "Stopping game server")
         setLoopingFalse()
         engine.removeAllEntities()
         engine.removeAllSystems()
+        Log.info("GameServer", "Game server stopped")
     }
 
     /** Initiates the host server for networking */

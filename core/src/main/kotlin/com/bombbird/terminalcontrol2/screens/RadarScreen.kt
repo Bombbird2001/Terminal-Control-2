@@ -57,12 +57,9 @@ import kotlin.math.min
  *
  * Implements [GestureListener] and [InputProcessor] to handle input/gesture events to it
  * @param connectionHost the address of the host server to connect to; if null, no connection will be initiated
- * @param airportToHost the main map airport name to be hosted; must be null if not hosting the server
- * @param saveId the ID of the save to load from; if null, no save is loaded to the GameServer
- * @param publicServer whether the host will be a public or LAN server; this is ignored if saveId is null
  * @param roomId the ID of the room to join (public multiplayer)
  * */
-class RadarScreen(private val connectionHost: String?, airportToHost: String?, saveId: Int?, publicServer: Boolean, private var roomId: Short?): KtxScreen, GestureListener, InputProcessor {
+class RadarScreen private constructor(private val connectionHost: String, private var roomId: Short?): KtxScreen, GestureListener, InputProcessor {
     private val clientEngine = getEngine(true)
     private val radarDisplayStage = safeStage(GAME.batch)
     private val constZoomStage = safeStage(GAME.batch)
@@ -141,15 +138,46 @@ class RadarScreen(private val connectionHost: String?, airportToHost: String?, s
     var dataLoadedCallback: (() -> Unit)? = null
     var connectedToHostCallback: (() -> Unit)? = null
 
+    companion object {
+        /**
+         * Returns a new instance of single player RadarScreen
+         * @return RadarScreen object in single player mode
+         */
+        fun newSinglePlayerRadarScreen(): RadarScreen {
+            return RadarScreen(LOCALHOST, null)
+        }
+
+        /**
+         * Returns a new instance of LAN multiplayer RadarScreen
+         * @param lanAddress address of the LAN server to connect to
+         * @return RadarScreen object in LAN multiplayer mode
+         */
+        fun newLANMultiplayerRadarScreen(lanAddress: String): RadarScreen {
+            return RadarScreen(lanAddress, null)
+        }
+
+        /**
+         * Returns a new instance of public multiplayer RadarScreen
+         * @return RadarScreen object in public multiplayer mode
+         */
+        fun newPublicMultiplayerRadarScreen(): RadarScreen {
+            return RadarScreen(Secrets.RELAY_ADDRESS, null)
+        }
+
+        /**
+         * Returns a new instance of public multiplayer RadarScreen to join a public multiplayer game
+         * @param roomId ID of the room to join
+         * @return RadarScreen object in public multiplayer mode
+         */
+        fun joinPublicMultiplayerRadarScreen(roomId: Short): RadarScreen {
+            return RadarScreen(Secrets.RELAY_ADDRESS, roomId)
+        }
+    }
+
     init {
         KtxAsync.launch(Dispatchers.IO) {
-            if (airportToHost != null) {
-                GAME.gameServer = GameServer(publicServer)
-                GAME.gameServer?.initiateServer(airportToHost, saveId)
-            } else {
-                // Aircraft data must be loaded on client side as well
-                loadAircraftData()
-            }
+            // Aircraft data must be loaded on client side as well
+            loadAircraftData()
             dataLoadedCallback?.invoke()
         }
 
@@ -508,7 +536,6 @@ class RadarScreen(private val connectionHost: String?, airportToHost: String?, s
      * If client is already connected, the method will return
      * */
     private fun attemptConnectionToServer() {
-        if (connectionHost == null) return
         if (networkClient.isConnected) return
         while (true) {
             val gs = GAME.gameServer

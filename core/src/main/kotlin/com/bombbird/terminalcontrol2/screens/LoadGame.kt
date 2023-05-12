@@ -101,7 +101,7 @@ class LoadGame: BasicUIScreen() {
             for (i in 0 until gamesFound.size) { gamesFound[i]?.let { game ->
                 val meta = game.second
                 textButton("${meta.mainName} - Score: ${meta.score}   High score: ${meta.highScore}\nLanded: ${meta.landed}   Departed: ${meta.departed}", "JoinGameAirport").addChangeListener { _, _ ->
-                    GAME.addScreen(GameLoading(LOCALHOST, meta.mainName, game.first, false, null))
+                    GAME.addScreen(GameLoading.newLANMultiplayerGameLoading(meta.mainName))
                     GAME.setScreen<GameLoading>()
                 }
                 row()

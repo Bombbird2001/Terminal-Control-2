@@ -131,22 +131,27 @@ class JoinGame: BasicUIScreen() {
         Timer.instance().clear()
         gamesTable.apply {
             clear()
+            var added = 0
             for (i in 0 until lanGamesData.size) { lanGamesData[i]?.let { game ->
+                if (game.players >= game.maxPlayers) return@let // Server is full
                 textButton("${game.airportName} - ${game.players}/${game.maxPlayers} player${if (game.maxPlayers > 1) "s" else ""}          ${game.address}          Join", "JoinGameAirport").addChangeListener { _, _ ->
-                    GAME.addScreen(GameLoading(game.address, null, null, false, null))
+                    GAME.addScreen(GameLoading.joinLANMultiplayerGameLoading(game.address))
                     GAME.setScreen<GameLoading>()
                 }
                 row()
+                added++
             }}
             for (i in 0 until publicGamesData.size) { publicGamesData[i]?.let { game ->
                 val roomId = game.roomId ?: return@let // Public games should have a room ID
+                if (game.players >= game.maxPlayers) return@let // Server is full
                 textButton("${game.airportName} - ${game.players}/${game.maxPlayers} player${if (game.maxPlayers > 1) "s" else ""}          Public server           Join", "JoinGameAirport").addChangeListener { _, _ ->
-                    GAME.addScreen(GameLoading(game.address, null, null, false, roomId))
+                    GAME.addScreen(GameLoading.joinPublicMultiplayerGameLoading(roomId))
                     GAME.setScreen<GameLoading>()
                 }
                 row()
+                added++
             }}
-            if (lanGamesData.size == 0 && publicGamesData.size == 0) label("No games found", "SearchingGame")
+            if (added == 0) label("No games found", "SearchingGame")
         }
         searching = false
         refreshButton.isDisabled = false
