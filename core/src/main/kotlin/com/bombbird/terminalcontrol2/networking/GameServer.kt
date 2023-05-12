@@ -305,6 +305,9 @@ class GameServer(val publicServer: Boolean) {
 
                 // Send score data
                 networkServer.sendTCPToConnection(uuid, ScoreData(score, highScore))
+
+                // Initial data sending complete
+                networkServer.sendTCPToConnection(uuid, InitialDataSendComplete())
             }
             // Unpause the game if it is currently paused
             handleGameRunningRequest(true)

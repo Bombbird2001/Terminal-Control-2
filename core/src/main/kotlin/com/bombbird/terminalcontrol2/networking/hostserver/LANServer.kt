@@ -42,7 +42,6 @@ class LANServer(
     private val uuidConnectionMap = GdxArrayMap<UUID, Connection>(PLAYER_SIZE)
 
     override fun start(tcpPort: Int, udpPort: Int) {
-        registerClassesToKryo(server.kryo)
         server.setDiscoveryHandler(LANServerDiscoveryHandler(gameServer))
         server.bind(tcpPort, udpPort)
         server.start()
@@ -120,8 +119,7 @@ class LANServer(
     }
 
     override fun beforeConnect() {
-        // Nothing else to do for LAN server
-        return
+        registerClassesToKryo(server.kryo)
     }
 
     override fun getRoomId(): Short? {

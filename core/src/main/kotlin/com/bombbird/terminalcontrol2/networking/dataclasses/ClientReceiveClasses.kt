@@ -4,7 +4,6 @@ import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.*
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.networking.encryption.NeedsEncryption
-import com.bombbird.terminalcontrol2.screens.MainMenu
 import com.bombbird.terminalcontrol2.screens.RadarScreen
 import com.bombbird.terminalcontrol2.traffic.ConflictManager
 import com.bombbird.terminalcontrol2.traffic.TrafficMode
@@ -197,6 +196,54 @@ class MetarData(private val metars: Array<Airport.SerialisedMetar> = arrayOf()):
     }
 }
 
+/** Class representing data sent for traffic settings on the server */
+class TrafficSettingsData(private val trafficMode: Byte = TrafficMode.NORMAL, private val trafficValue: Float = 0f,
+                          private val arrivalClosed: ByteArray = byteArrayOf(), private val departureClosed: ByteArray = byteArrayOf()):
+    ClientReceive, NeedsEncryption {
+    override fun handleClientReceive(rs: RadarScreen) {
+        rs.serverTrafficMode = trafficMode
+        rs.serverTrafficValue = trafficValue
+        // Remove all airport closed components/flags
+        rs.airports.values().forEach { arpt ->
+            arpt.entity.remove<ArrivalClosed>()
+            arpt.entity += DepartureInfo(closed = false)
+        }
+        arrivalClosed.forEach { id -> rs.airports[id]?.entity?.plusAssign(ArrivalClosed()) }
+        departureClosed.forEach { id -> rs.airports[id]?.entity?.plusAssign(DepartureInfo(closed = true)) }
+    }
+}
+
+/** Class representing data sent during setting/un-setting of a pending runway change */
+data class PendingRunwayUpdateData(private val airportId: Byte = 0, private val configId: Byte? = null): ClientReceive, NeedsEncryption {
+    override fun handleClientReceive(rs: RadarScreen) {
+        rs.airports[airportId]?.pendingRunwayConfigClient(configId)
+        GAME.soundManager.playAlert()
+    }
+}
+
+/** Class representing data sent during a runway change */
+data class ActiveRunwayUpdateData(private val airportId: Byte = 0, private val configId: Byte = 0): ClientReceive, NeedsEncryption {
+    override fun handleClientReceive(rs: RadarScreen) {
+        rs.airports[airportId]?.activateRunwayConfig(configId)
+        rs.uiPane.mainInfoObj.updateAtisInformation()
+        GAME.soundManager.playRunwayChange()
+    }
+}
+
+/** Class representing data sent when the score is updated */
+data class ScoreData(private val score: Int = 0, private val highScore: Int = 0): ClientReceive, NeedsEncryption {
+    override fun handleClientReceive(rs: RadarScreen) {
+        rs.uiPane.mainInfoObj.updateScoreDisplay(score, highScore)
+    }
+}
+
+/** Class notifying client that all initial required data has been sent, they can now accept other transmission data */
+class InitialDataSendComplete: ClientReceive, NeedsEncryption {
+    override fun handleClientReceive(rs: RadarScreen) {
+        rs.notifyInitialDataSendComplete()
+    }
+}
+
 /** Class representing data sent during aircraft sector update */
 data class AircraftSectorUpdateData(private val callsign: String = "", private val newSector: Byte = 0,
                                     private val newUUID: String? = null, private val ignoreInitialContact: Boolean = false,
@@ -289,35 +336,12 @@ data class RemoveCustomWaypointData(private val wptId: Short = -1): ClientReceiv
     }
 }
 
-/** Class representing data sent during setting/un-setting of a pending runway change */
-data class PendingRunwayUpdateData(private val airportId: Byte = 0, private val configId: Byte? = null): ClientReceive, NeedsEncryption {
-    override fun handleClientReceive(rs: RadarScreen) {
-        rs.airports[airportId]?.pendingRunwayConfigClient(configId)
-        GAME.soundManager.playAlert()
-    }
-}
-
-/** Class representing data sent during a runway change */
-data class ActiveRunwayUpdateData(private val airportId: Byte = 0, private val configId: Byte = 0): ClientReceive, NeedsEncryption {
-    override fun handleClientReceive(rs: RadarScreen) {
-        rs.airports[airportId]?.activateRunwayConfig(configId)
-        rs.uiPane.mainInfoObj.updateAtisInformation()
-        GAME.soundManager.playRunwayChange()
-    }
-}
-
-/** Class representing data sent when the score is updated */
-data class ScoreData(private val score: Int = 0, private val highScore: Int = 0): ClientReceive, NeedsEncryption {
-    override fun handleClientReceive(rs: RadarScreen) {
-        rs.uiPane.mainInfoObj.updateScoreDisplay(score, highScore)
-    }
-}
-
 /** Class representing data sent for ongoing conflicts and potential conflicts */
 class ConflictData(private val conflicts: Array<ConflictManager.Conflict.SerialisedConflict> = arrayOf(),
                    private val potentialConflicts: Array<ConflictManager.PotentialConflict.SerialisedPotentialConflict> = arrayOf()):
     ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
+        if (!rs.isInitialDataReceived()) return
         rs.conflicts.clear()
         rs.potentialConflicts.clear()
         conflicts.forEach { conflict ->
@@ -329,29 +353,13 @@ class ConflictData(private val conflicts: Array<ConflictManager.Conflict.Seriali
     }
 }
 
-/** Class representing data sent for traffic settings on the server */
-class TrafficSettingsData(private val trafficMode: Byte = TrafficMode.NORMAL, private val trafficValue: Float = 0f,
-                          private val arrivalClosed: ByteArray = byteArrayOf(), private val departureClosed: ByteArray = byteArrayOf()):
-    ClientReceive, NeedsEncryption {
-    override fun handleClientReceive(rs: RadarScreen) {
-        rs.serverTrafficMode = trafficMode
-        rs.serverTrafficValue = trafficValue
-        // Remove all airport closed components/flags
-        rs.airports.values().forEach { arpt ->
-            arpt.entity.remove<ArrivalClosed>()
-            arpt.entity += DepartureInfo(closed = false)
-        }
-        arrivalClosed.forEach { id -> rs.airports[id]?.entity?.plusAssign(ArrivalClosed()) }
-        departureClosed.forEach { id -> rs.airports[id]?.entity?.plusAssign(DepartureInfo(closed = true)) }
-    }
-}
-
 /** Class representing data sent from server to clients to add a trail dot to the aircraft */
 data class TrailDotData(val callsign: String = "", val posX: Float = 0f, val posY: Float = 0f)
 
 /** Class representing all trail dot data to be sent */
 class AllTrailDotData(private val trails: Array<TrailDotData> = arrayOf()): ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
+        if (!rs.isInitialDataReceived()) return
         trails.forEach { trail ->
             rs.aircraft[trail.callsign].entity[TrailInfo.mapper]?.positions?.addFirst(Position(trail.posX, trail.posY))
         }

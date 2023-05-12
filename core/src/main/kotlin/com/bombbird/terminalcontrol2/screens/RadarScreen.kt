@@ -24,7 +24,6 @@ import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.networking.*
 import com.bombbird.terminalcontrol2.networking.dataclasses.*
 import com.bombbird.terminalcontrol2.networking.NetworkClient
-import com.bombbird.terminalcontrol2.networking.encryption.AESGCMEncryptor
 import com.bombbird.terminalcontrol2.systems.*
 import com.bombbird.terminalcontrol2.traffic.ConflictManager
 import com.bombbird.terminalcontrol2.traffic.TrafficMode
@@ -88,6 +87,8 @@ class RadarScreen(private val connectionHost: String?, airportToHost: String?, s
     // Game running status
     @Volatile
     private var running = false
+    @Volatile
+    private var initialDataReceived = false
 
     // Airport map for access during TCP updates; see GameServer for more details
     val airports = GdxArrayMap<Byte, Airport>(AIRPORT_SIZE)
@@ -522,16 +523,7 @@ class RadarScreen(private val connectionHost: String?, airportToHost: String?, s
             try {
                 // Check if game server is public server, if it is, set to its room ID
                 if (gs != null && gs.publicServer && gs.getRoomId() != null) roomId = gs.getRoomId()
-                val finalRoomId = roomId ?: continue
-                networkClient.setRoomId(finalRoomId)
-                // Send game join request to endpoint to retrieve symmetric key
-                val authResponse = HttpRequest.sendGameAuthorizationRequest(finalRoomId)
-                if (authResponse?.success != true) {
-                    GAME.quitCurrentGameWithDialog(CustomDialog("Failed to connect", "Endpoint authorization failed", "", "Ok"))
-                    return
-                }
-                networkClient.setSymmetricKey(SecretKeySpec(Base64.decodeBase64(authResponse.key), 0,
-                    AESGCMEncryptor.AES_KEY_LENGTH_BYTES, "AES"))
+                networkClient.beforeConnect(roomId)
                 networkClient.start()
                 networkClient.connect(5000, connectionHost, TCP_PORT, UDP_PORT)
                 break
@@ -629,5 +621,18 @@ class RadarScreen(private val connectionHost: String?, airportToHost: String?, s
     fun sendAircraftDatatagPositionUpdate(aircraft: Entity, xOffset: Float, yOffset: Float, minimised: Boolean, flashing: Boolean) {
         val callsign = aircraft[AircraftInfo.mapper]?.icaoCallsign ?: return Log.info("RadarScreen", "Missing AircraftInfo component")
         networkClient.sendTCP(AircraftDatatagPositionUpdateData(callsign, xOffset, yOffset, minimised, flashing))
+    }
+
+    /**
+     * Checks if the client has received all initial data required
+     * @return false if client has not or is in the process of receiving initial data, else true
+     */
+    fun isInitialDataReceived(): Boolean {
+        return initialDataReceived
+    }
+
+    /** Sets the initial data received flag to true, allowing the client to handle other incoming data */
+    fun notifyInitialDataSendComplete() {
+        initialDataReceived = true
     }
 }

@@ -43,8 +43,8 @@ object RelayServer: RelayServer, RelayAuthorization {
                 if (obj is RelayChallenge) {
                     // Verify challenge
                     if (!AuthenticationChecker.authenticateConnection(connection, obj)) return connection.close()
-                    connection.sendTCP(RequestRelayAction())
-                    return
+                    val encryptedRequest = AuthenticationChecker.encryptBasedOnConnectionPendingRoom(connection, RequestRelayAction()) ?: return
+                    connection.sendTCP(encryptedRequest)
                 }
 
                 if (obj is NeedsEncryption) {
@@ -404,9 +404,10 @@ object RelayServer: RelayServer, RelayAuthorization {
          * @param uuid UUID of the player who disconnected
          */
         fun removePlayer(uuid: UUID) {
+            val encrypted = encryptIfNeeded(PlayerDisconnect(uuid.toString())) ?: return
             connectedPlayers.remove(uuid)
-            hostConnection?.sendTCP(PlayerDisconnect(uuid.toString()))
             authorizedUUIDs.remove(uuid)
+            hostConnection?.sendTCP(encrypted)
         }
 
         /**
@@ -433,10 +434,13 @@ object RelayServer: RelayServer, RelayAuthorization {
          * @param conn connection of the joining player
          */
         fun addPlayer(uuid: UUID, conn: Connection): Boolean {
-            if (!authorizedUUIDs.containsKey(uuid)) return false
+            val pending = authorizedUUIDs[uuid] ?: return false
+            pending.cancel()
+            pending.run()
             if (connectedPlayers.containsKey(uuid)) return false
             connectedPlayers[uuid] = conn
-            hostConnection?.sendTCP(PlayerConnect(uuid.toString()))
+            val encrypted = encryptIfNeeded(PlayerConnect(uuid.toString())) ?: return false
+            hostConnection?.sendTCP(encrypted)
             return true
         }
 
@@ -491,7 +495,8 @@ object RelayServer: RelayServer, RelayAuthorization {
          */
         fun forwardFromClientToHost(obj: ClientToServer, senderConn: Connection) {
             if (senderConn == hostConnection) return // Host should not be sending to itself
-            hostConnection?.sendTCP(obj)
+            val encrypted = encryptIfNeeded(obj) ?: return
+            hostConnection?.sendTCP(encrypted)
         }
 
         /**

@@ -33,6 +33,7 @@ class PublicServer(
     override val decrypter: Decrypter = AESGCMDecrypter(::fromSerializedBytes)
     override val kryo: Kryo
         get() = relayServerConnector.kryo
+
     private var roomId: Short = Short.MAX_VALUE
     private lateinit var relayChallenge: RelayChallenge
 
@@ -63,7 +64,6 @@ class PublicServer(
     private val uuidConnectionMap = GdxArrayMap<UUID, ConnectionMeta>(PLAYER_SIZE)
 
     override fun start(tcpPort: Int, udpPort: Int) {
-        registerClassesToKryo(relayServerConnector.kryo)
         relayServerConnector.start()
         relayServerConnector.connect(5000, Secrets.RELAY_ADDRESS, TCP_PORT, UDP_PORT)
     }
@@ -88,6 +88,8 @@ class PublicServer(
     }
 
     override fun beforeConnect() {
+        registerClassesToKryo(relayServerConnector.kryo)
+
         val roomCreation = HttpRequest.sendCreateGameRequest()
         if (roomCreation?.success != true) {
             GAME.quitCurrentGameWithDialog(CustomDialog("Failed to connect", "Room creation failed", "", "Ok"))
@@ -151,7 +153,11 @@ class PublicServer(
 
     /** Requests for the relay server to create a game room */
     fun requestGameCreation() {
-        relayServerConnector.sendTCP(NewGameRequest(roomId, gameServer.maxPlayers, mapName, myUuid.toString()))
+        val encrypted = encryptIfNeeded(NewGameRequest(roomId, gameServer.maxPlayers, mapName, myUuid.toString())) ?: run {
+            Log.info("PublicServer", "Room creation failed - encryption failed")
+            return
+        }
+        relayServerConnector.sendTCP(encrypted)
     }
 
     /**

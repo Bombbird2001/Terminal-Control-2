@@ -5,7 +5,6 @@ import com.bombbird.terminalcontrol2.networking.encryption.Encryptor
 import com.bombbird.terminalcontrol2.networking.encryption.NeedsEncryption
 import com.esotericsoftware.kryo.Kryo
 import java.util.UUID
-import javax.crypto.SecretKey
 
 /**
  * Abstraction for handling network activities as the server

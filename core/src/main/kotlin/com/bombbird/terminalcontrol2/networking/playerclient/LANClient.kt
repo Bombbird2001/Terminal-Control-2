@@ -67,18 +67,11 @@ class LANClient(lanClientDiscoveryHandler: LANClientDiscoveryHandler): NetworkCl
         client.sendTCP(encrypted)
     }
 
-    override fun setRoomId(roomId: Short) {
-        // Not applicable for LANClient
-        return
-    }
-
-    override fun setSymmetricKey(key: SecretKey) {
-        encryptor.setKey(key)
-        decrypter.setKey(key)
+    override fun beforeConnect(roomId: Short?) {
+        registerClassesToKryo(kryo)
     }
 
     override fun start() {
-        registerClassesToKryo(kryo)
         client.start()
     }
 

@@ -35,7 +35,7 @@ class GameLoading(private val hostAddress: String, private val airportToHost: St
                             if (this@apply.percent >= 1) {
                                 Timer.schedule(object: Timer.Task() {
                                     override fun run() {
-                                        GAME.setScreen<RadarScreen>()
+                                        if (GAME.containsScreen<RadarScreen>()) GAME.setScreen<RadarScreen>()
                                         GAME.removeScreen<GameLoading>()
                                     }
                                 }, 0.35f)

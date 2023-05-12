@@ -35,16 +35,10 @@ abstract class NetworkClient {
     abstract fun sendTCP(data: Any)
 
     /**
-     * Sets the ID of the game room, if required
-     * @param roomId ID of game room
-     */
-    abstract fun setRoomId(roomId: Short)
-
-    /**
-     * Sets the symmetric key value of the room to be used by this server
-     * @param key the symmetric key [SecretKey] object
-     */
-    abstract fun setSymmetricKey(key: SecretKey)
+     * Actions to be performed before initiating connection
+     * @param roomId The ID of the room to connect to, applicable only to public multiplayer games
+     * */
+    abstract fun beforeConnect(roomId: Short?)
 
     /** Starts the client */
     abstract fun start()

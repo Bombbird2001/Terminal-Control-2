@@ -9,6 +9,7 @@ import com.bombbird.terminalcontrol2.navigation.Approach
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.navigation.SidStar
 import com.bombbird.terminalcontrol2.networking.dataclasses.*
+import com.bombbird.terminalcontrol2.networking.encryption.EncryptedData
 import com.bombbird.terminalcontrol2.networking.relayserver.*
 import com.bombbird.terminalcontrol2.screens.RadarScreen
 import com.bombbird.terminalcontrol2.traffic.*
@@ -31,12 +32,14 @@ fun registerClassesToKryo(kryo: Kryo?) {
         register(ShortArray::class.java)
         register(FloatArray::class.java)
         register(ByteArray::class.java)
+        register(EncryptedData::class.java)
 
         // Initial load classes
         register(RequestClientUUID::class.java)
         register(ClientUUIDData::class.java)
         register(ConnectionError::class.java)
         register(ClearAllClientData::class.java)
+        register(InitialDataSendComplete::class.java)
         register(InitialAirspaceData::class.java)
         register(IndividualSectorData::class.java)
         register(InitialAircraftData::class.java)
@@ -151,6 +154,7 @@ fun registerClassesToKryo(kryo: Kryo?) {
         register(PlayerDisconnect::class.java)
         register(ClientToServer::class.java)
         register(ServerToClient::class.java)
+        register(ServerToAllClientsUnencryptedUDP::class.java)
 
     } ?: Log.info("NetworkingTools", "Null kryo passed, unable to register classes")
 }

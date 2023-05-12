@@ -124,7 +124,7 @@ object RelayEndpoint {
      */
     fun launch(rs: RelayServer) {
         relayServer = rs
-        httpServer = HttpServer.create(InetSocketAddress(Inet4Address.getByName(LOCALHOST), RELAY_ENDPOINT_PORT), 10)
+        httpServer = HttpServer.create(InetSocketAddress(Inet4Address.getByName(LOCALHOST), RELAY_ENDPOINT_PORT - 1), 10)
         httpServer.createContext(RELAY_GAMES_PATH, GamesRequestHandler)
         httpServer.createContext(RELAY_GAME_AUTH_PATH, AuthorizeRequestHandler)
         httpServer.createContext(RELAY_GAME_CREATE_PATH, CreateGameHandler)
