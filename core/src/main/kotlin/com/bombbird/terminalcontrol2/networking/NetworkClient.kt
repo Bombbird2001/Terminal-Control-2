@@ -4,7 +4,6 @@ import com.bombbird.terminalcontrol2.networking.encryption.Decrypter
 import com.bombbird.terminalcontrol2.networking.encryption.Encryptor
 import com.bombbird.terminalcontrol2.networking.encryption.NeedsEncryption
 import com.esotericsoftware.kryo.Kryo
-import javax.crypto.SecretKey
 
 /**
  * Abstraction for handling network activities as a client
@@ -52,7 +51,7 @@ abstract class NetworkClient {
     /**
      * Performs encryption on the input data if needed using the server's encryptor, and returns the encrypted result
      *
-     * If encryption not needed, returns the
+     * If encryption not needed, returns the object itself
      */
     protected fun encryptIfNeeded(data: Any): Any? {
         (data as? NeedsEncryption)?.let {

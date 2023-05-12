@@ -29,8 +29,8 @@ class PublicServer(
     onDisconnect: (ConnectionMeta) -> Unit,
     private val mapName: String
 ) : NetworkServer(gameServer, onReceive, onConnect, onDisconnect) {
-    override val encryptor: Encryptor = AESGCMEncryptor(::getSerialisedBytes)
-    override val decrypter: Decrypter = AESGCMDecrypter(::fromSerializedBytes)
+    private val encryptor: Encryptor = AESGCMEncryptor(::getSerialisedBytes)
+    private val decrypter: Decrypter = AESGCMDecrypter(::fromSerializedBytes)
     override val kryo: Kryo
         get() = relayServerConnector.kryo
 
@@ -73,7 +73,7 @@ class PublicServer(
     }
 
     override fun sendToAllTCP(data: Any) {
-        val dataToSend = encryptIfNeeded(ServerToClient(roomId, null, getSerialisedBytes(data), true)) ?: return
+        val dataToSend = encryptIfNeeded(ServerToClient(roomId, null, getSerialisedBytes(data), true), encryptor) ?: return
         relayServerConnector.sendTCP(dataToSend)
     }
 
@@ -83,7 +83,7 @@ class PublicServer(
     }
 
     override fun sendTCPToConnection(uuid: UUID, data: Any) {
-        val dataToSend = encryptIfNeeded(ServerToClient(roomId, uuid.toString(), getSerialisedBytes(data), true))
+        val dataToSend = encryptIfNeeded(ServerToClient(roomId, uuid.toString(), getSerialisedBytes(data), true), encryptor)
         relayServerConnector.sendTCP(dataToSend)
     }
 
@@ -153,7 +153,7 @@ class PublicServer(
 
     /** Requests for the relay server to create a game room */
     fun requestGameCreation() {
-        val encrypted = encryptIfNeeded(NewGameRequest(roomId, gameServer.maxPlayers, mapName, myUuid.toString())) ?: run {
+        val encrypted = encryptIfNeeded(NewGameRequest(roomId, gameServer.maxPlayers, mapName, myUuid.toString()), encryptor) ?: run {
             Log.info("PublicServer", "Room creation failed - encryption failed")
             return
         }

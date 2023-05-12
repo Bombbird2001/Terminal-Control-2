@@ -5,6 +5,7 @@ import com.badlogic.gdx.Gdx
 import com.bombbird.terminalcontrol2.TerminalControl2
 import com.bombbird.terminalcontrol2.screens.RadarScreen
 import com.bombbird.terminalcontrol2.utilities.GRAVITY_ACCELERATION_MPS2
+import java.math.BigInteger
 
 /** Global constants for use, cannot/should not be modified */
 
@@ -105,6 +106,22 @@ const val RELAY_ENDPOINT_PORT = 57775
 const val RELAY_GAMES_PATH = "/games"
 const val RELAY_GAME_AUTH_PATH = "/gameAuth"
 const val RELAY_GAME_CREATE_PATH = "/gameCreate"
+
+/** Encryption constants */
+/** 2048-bit DH prime from RFC 7919 ffdhe2048 */
+val DIFFIE_HELLMAN_PRIME = BigInteger(
+    "FFFFFFFFFFFFFFFFADF85458A2BB4A9AAFDC5620273D3CF1" +
+            "D8B9C583CE2D3695A9E13641146433FBCC939DCE249B3EF9" +
+            "7D2FE363630C75D8F681B202AEC4617AD3DF1ED5D5FD6561" +
+            "2433F51F5F066ED0856365553DED1AF3B557135E7F57C935" +
+            "984F0C70E0E68B77E2A689DAF3EFE8721DF158A136ADE735" +
+            "30ACCA4F483A797ABC0AB182B324FB61D108A94BB2C8E3FB" +
+            "B96ADAB760D7F4681D4F42A3DE394DF4AE56EDE76372BB19" +
+            "0B07A7C8EE0A6D709E02FCE1CDF7E2ECC03404CD28342F61" +
+            "9172FE9CE98583FF8E4F1232EEF28183C3FE3B1B4C6FAD73" +
+            "3BB5FCBC2EC22005C58EF1837D1683B2C6F34A26C1B2EFFA" +
+            "886B423861285C97FFFFFFFFFFFFFFFF", 16)
+val DIFFIE_HELLMAN_GENERATOR: BigInteger = BigInteger.valueOf(2)
 
 /** Server target refresh rates (in Hz) */
 const val SERVER_UPDATE_RATE = 60 // Server game loop

@@ -9,6 +9,7 @@ import com.bombbird.terminalcontrol2.navigation.Approach
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.navigation.SidStar
 import com.bombbird.terminalcontrol2.networking.dataclasses.*
+import com.bombbird.terminalcontrol2.networking.encryption.DiffieHellmanValue
 import com.bombbird.terminalcontrol2.networking.encryption.EncryptedData
 import com.bombbird.terminalcontrol2.networking.relayserver.*
 import com.bombbird.terminalcontrol2.screens.RadarScreen
@@ -18,6 +19,7 @@ import com.bombbird.terminalcontrol2.utilities.*
 import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.minlog.Log
 import ktx.ashley.*
+import java.math.BigInteger
 import java.util.*
 
 /**
@@ -32,7 +34,6 @@ fun registerClassesToKryo(kryo: Kryo?) {
         register(ShortArray::class.java)
         register(FloatArray::class.java)
         register(ByteArray::class.java)
-        register(EncryptedData::class.java)
 
         // Initial load classes
         register(RequestClientUUID::class.java)
@@ -155,6 +156,11 @@ fun registerClassesToKryo(kryo: Kryo?) {
         register(ClientToServer::class.java)
         register(ServerToClient::class.java)
         register(ServerToAllClientsUnencryptedUDP::class.java)
+
+        // Encryption classes
+        register(EncryptedData::class.java)
+        register(BigInteger::class.java)
+        register(DiffieHellmanValue::class.java)
 
     } ?: Log.info("NetworkingTools", "Null kryo passed, unable to register classes")
 }

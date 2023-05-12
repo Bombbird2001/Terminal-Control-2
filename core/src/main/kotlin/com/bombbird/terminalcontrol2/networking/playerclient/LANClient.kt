@@ -14,7 +14,6 @@ import com.esotericsoftware.kryonet.Client
 import com.esotericsoftware.kryonet.Connection
 import com.esotericsoftware.kryonet.Listener
 import com.esotericsoftware.minlog.Log
-import javax.crypto.SecretKey
 
 /**
  * Client for handling LAN multiplayer games
@@ -30,10 +29,28 @@ class LANClient(lanClientDiscoveryHandler: LANClientDiscoveryHandler): NetworkCl
     override val kryo: Kryo
         get() = client.kryo
 
+    private var secretKeyCalculated = false
+
     private val client = Client(CLIENT_WRITE_BUFFER_SIZE, CLIENT_READ_BUFFER_SIZE).apply {
         setDiscoveryHandler(lanClientDiscoveryHandler)
         addListener(object: Listener {
             override fun received(connection: Connection, obj: Any?) {
+                if (!secretKeyCalculated && obj is DiffieHellmanValue) {
+                    // Calculate DH values
+                    val dh = DiffieHellman(DIFFIE_HELLMAN_GENERATOR, DIFFIE_HELLMAN_PRIME)
+                    val toSend = dh.getExchangeValue()
+                    val secretKey = dh.getAES128Key(obj.xy)
+                    encryptor.setKey(secretKey)
+                    decrypter.setKey(secretKey)
+
+                    // Key established
+                    secretKeyCalculated = true
+                    connection.sendTCP(DiffieHellmanValue(toSend))
+                    return
+                }
+
+                if (!secretKeyCalculated) return
+
                 if (obj is NeedsEncryption) {
                     Log.info("RelayServer", "Received unencrypted data of class ${obj.javaClass.name}")
                     return
@@ -44,12 +61,8 @@ class LANClient(lanClientDiscoveryHandler: LANClientDiscoveryHandler): NetworkCl
                 } else obj
 
                 (decrypted as? RequestClientUUID)?.apply {
-                    connection.sendTCP(ClientUUIDData(myUuid.toString()))
+                    this@LANClient.sendTCP(ClientUUIDData(myUuid.toString()))
                 } ?: handleIncomingRequestClient(GAME.gameClientScreen ?: return, decrypted)
-            }
-
-            override fun connected(connection: Connection?) {
-                // TODO Perform DH key exchange here
             }
         })
     }

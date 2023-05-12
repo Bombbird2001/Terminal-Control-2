@@ -42,11 +42,9 @@ import ktx.collections.GdxArray
 import ktx.collections.GdxArrayMap
 import ktx.graphics.moveTo
 import ktx.math.ImmutableVector2
-import org.apache.commons.codec.binary.Base64
 import java.io.IOException
 import java.nio.channels.ClosedSelectorException
 import java.util.concurrent.ConcurrentLinkedQueue
-import javax.crypto.spec.SecretKeySpec
 import kotlin.concurrent.thread
 import kotlin.math.min
 

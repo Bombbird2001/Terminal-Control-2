@@ -1,6 +1,5 @@
 package com.bombbird.terminalcontrol2.networking
 
-import com.bombbird.terminalcontrol2.networking.encryption.Decrypter
 import com.bombbird.terminalcontrol2.networking.encryption.Encryptor
 import com.bombbird.terminalcontrol2.networking.encryption.NeedsEncryption
 import com.esotericsoftware.kryo.Kryo
@@ -19,8 +18,6 @@ abstract class NetworkServer(
     protected val onConnect: (ConnectionMeta) -> Unit,
     protected val onDisconnect: (ConnectionMeta) -> Unit
 ) {
-    abstract val encryptor: Encryptor
-    abstract val decrypter: Decrypter
     abstract val kryo: Kryo
 
     /**
@@ -66,9 +63,12 @@ abstract class NetworkServer(
     /**
      * Performs encryption on the input data if needed using the server's encryptor, and returns the encrypted result
      *
-     * If encryption not needed, returns the
+     * If encryption not needed, returns the object itself
+     * @param data the object to encrypt
+     * @param encryptor the [Encryptor] to use (depends on the connection for LAN Server, but is the same for public
+     * server)
      */
-    protected fun encryptIfNeeded(data: Any): Any? {
+    protected fun encryptIfNeeded(data: Any, encryptor: Encryptor): Any? {
         (data as? NeedsEncryption)?.let {
             return encryptor.encrypt(it)
         } ?: return data
