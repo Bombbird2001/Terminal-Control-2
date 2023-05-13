@@ -10,7 +10,7 @@ import com.bombbird.terminalcontrol2.screens.RadarScreen
 internal fun testInitialiseGameAndServer() {
     if (!isGameInitialised) GAME = TerminalControl2()
     if (GAME.gameServer == null) {
-        val newGameServer = GameServer(false)
+        val newGameServer = GameServer.newSinglePlayerGameServer("TCTP")
         newGameServer.networkServer = LANServer(newGameServer, { _, _ -> }, { _ -> }, { _ -> })
         GAME.gameServer = newGameServer
     }
@@ -18,5 +18,5 @@ internal fun testInitialiseGameAndServer() {
 
 /** Initialises the game client screen for test purposes, if not already initialised */
 internal fun testInitialiseGameClient() {
-    if (CLIENT_SCREEN == null) GAME.gameClientScreen = RadarScreen(null, null, null, false, null)
+    if (CLIENT_SCREEN == null) GAME.gameClientScreen = RadarScreen.newSinglePlayerRadarScreen()
 }

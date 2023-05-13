@@ -1,16 +1,22 @@
+import com.bombbird.terminalcontrol2.global.DIFFIE_HELLMAN_GENERATOR
+import com.bombbird.terminalcontrol2.global.DIFFIE_HELLMAN_PRIME
 import com.bombbird.terminalcontrol2.global.SERVER_WRITE_BUFFER_SIZE
 import com.bombbird.terminalcontrol2.networking.dataclasses.ClientUUIDData
 import com.bombbird.terminalcontrol2.networking.encryption.AESGCMDecrypter
 import com.bombbird.terminalcontrol2.networking.encryption.AESGCMEncryptor
+import com.bombbird.terminalcontrol2.networking.encryption.DiffieHellman
 import com.bombbird.terminalcontrol2.networking.encryption.NeedsEncryption
 import com.bombbird.terminalcontrol2.networking.registerClassesToKryo
 import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
+import java.math.BigInteger
 import java.util.UUID
 import javax.crypto.KeyGenerator
 
@@ -65,6 +71,28 @@ object EncryptionTest: FunSpec() {
             val cipherText = encryptor.encrypt(WrappedString(str)).shouldNotBeNull()
             cipherText.iv[6] = (cipherText.iv [6] + 38).toByte()
             decrypter.decrypt(cipherText).shouldBeNull()
+        }
+
+        test("Diffie-Hellman") {
+            val dh1 = DiffieHellman(DIFFIE_HELLMAN_GENERATOR, DIFFIE_HELLMAN_PRIME)
+            val exchange1 = dh1.getExchangeValue()
+            val dh2 = DiffieHellman(DIFFIE_HELLMAN_GENERATOR, DIFFIE_HELLMAN_PRIME)
+            val exchange2 = dh2.getExchangeValue()
+            dh1.getAES128Key(exchange2).encoded shouldBe dh2.getAES128Key(exchange1).encoded
+        }
+
+        test("Diffie-Hellman wrong value") {
+            val dh1 = DiffieHellman(DIFFIE_HELLMAN_GENERATOR, DIFFIE_HELLMAN_PRIME)
+            val exchange1 = dh1.getExchangeValue() + BigInteger.valueOf(4)
+            val dh2 = DiffieHellman(DIFFIE_HELLMAN_GENERATOR, DIFFIE_HELLMAN_PRIME)
+            val exchange2 = dh2.getExchangeValue()
+            dh1.getAES128Key(exchange2).encoded shouldNotBe dh2.getAES128Key(exchange1).encoded
+        }
+
+        test("Diffie-Hellman small prime") {
+            shouldThrow<IllegalArgumentException> {
+                DiffieHellman(DIFFIE_HELLMAN_GENERATOR, BigInteger.valueOf(Int.MAX_VALUE.toLong()))
+            }
         }
     }
 

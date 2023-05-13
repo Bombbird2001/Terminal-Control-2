@@ -1,6 +1,7 @@
 package com.bombbird.terminalcontrol2.networking.encryption
 
 import org.apache.commons.codec.digest.DigestUtils
+import java.lang.IllegalArgumentException
 import java.math.BigInteger
 import java.security.SecureRandom
 import javax.crypto.SecretKey
@@ -18,6 +19,12 @@ class DiffieHellman(private val g: BigInteger, private val p: BigInteger) {
 
     private lateinit var privateExp: BigInteger
     private lateinit var exchangeValue: BigInteger
+
+    init {
+        val bits = p.bitLength()
+        if (bits < 2048)
+            throw IllegalArgumentException("DiffieHellman - Bit count of prime is too low, requires >= 2048, got $bits")
+    }
 
     /**
      * Calculates the value to be sent over the network by generating a random value a, then calculating g^a mod p
