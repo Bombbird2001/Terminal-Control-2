@@ -105,6 +105,7 @@ interface RelayHostReceive {
     /**
      * Handles this data received on the relay host
      * @param host the [PublicServer] object to handle the request
+     * @param conn the connection to the relay server
      */
-    fun handleRelayHostReceive(host: PublicServer)
+    fun handleRelayHostReceive(host: PublicServer, conn: Connection)
 }

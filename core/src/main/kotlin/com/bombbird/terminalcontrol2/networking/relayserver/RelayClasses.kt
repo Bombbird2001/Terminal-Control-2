@@ -44,7 +44,7 @@ class RequestRelayAction: RelayHostReceive, RelayClientReceive, NeedsEncryption 
         client.requestToJoinRoom()
     }
 
-    override fun handleRelayHostReceive(host: PublicServer) {
+    override fun handleRelayHostReceive(host: PublicServer, conn: Connection) {
         host.requestGameCreation()
     }
 }
@@ -60,7 +60,7 @@ data class JoinGameRequest(val roomId: Short = Short.MAX_VALUE, val uuid: String
 
 /** Class representing data sent to the host when a player requests to join the game */
 data class PlayerConnect(val uuid: String? = null): RelayHostReceive, NeedsEncryption {
-    override fun handleRelayHostReceive(host: PublicServer) {
+    override fun handleRelayHostReceive(host: PublicServer, conn: Connection) {
         if (uuid == null) return
         host.onConnect(UUID.fromString(uuid))
         Log.info("PublicServer", "Player $uuid connected")
@@ -69,7 +69,7 @@ data class PlayerConnect(val uuid: String? = null): RelayHostReceive, NeedsEncry
 
 /** Class representing data sent to the host when a player disconnects from the game */
 data class PlayerDisconnect(val uuid: String? = null): RelayHostReceive, NeedsEncryption {
-    override fun handleRelayHostReceive(host: PublicServer) {
+    override fun handleRelayHostReceive(host: PublicServer, conn: Connection) {
         if (uuid == null) return
         host.onDisconnect(UUID.fromString(uuid))
         Log.info("PublicServer", "Player $uuid disconnected")
@@ -78,13 +78,15 @@ data class PlayerDisconnect(val uuid: String? = null): RelayHostReceive, NeedsEn
 
 /** Class representing data sent by a client to the server. */
 class ClientToServer(val roomId: Short = Short.MAX_VALUE, val sendingUUID: String? = null,
-                     val data: ByteArray = byteArrayOf()): RelayServerReceive, RelayHostReceive, NeedsEncryption {
+                     val data: ByteArray = byteArrayOf(), var clientToRelayReturnTripTime: Int = 0): RelayServerReceive, RelayHostReceive, NeedsEncryption {
     override fun handleRelayServerReceive(rs: RelayServer, conn: Connection) {
+        clientToRelayReturnTripTime = conn.returnTripTime
         rs.forwardToServer(this, conn)
     }
 
-    override fun handleRelayHostReceive(host: PublicServer) {
+    override fun handleRelayHostReceive(host: PublicServer, conn: Connection) {
         val uuid = UUID.fromString(sendingUUID ?: return)
+        clientToRelayReturnTripTime += conn.returnTripTime
         host.decodeRelayMessageObject(data, uuid)
     }
 }

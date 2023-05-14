@@ -1,5 +1,6 @@
 package com.bombbird.terminalcontrol2.networking
 
+import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.*
@@ -173,6 +174,9 @@ fun registerClassesToKryo(kryo: Kryo?) {
 fun handleIncomingRequestClient(rs: RadarScreen, obj: Any?) {
     if (obj !is ClientReceive) return
     if (obj is IndividualSectorData) println("IndividualSectorData scheduled")
+    if (obj is InitialDataSendComplete) Gdx.app.postRunnable {
+        rs.notifyInitialDataSendComplete()
+    }
     rs.postRunnableAfterEngineUpdate(obj is IndividualSectorData) {
         obj.handleClientReceive(rs)
     }

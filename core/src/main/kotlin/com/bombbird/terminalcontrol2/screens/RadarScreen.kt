@@ -203,7 +203,6 @@ class RadarScreen private constructor(private val connectionHost: String, privat
         KtxAsync.launch(Dispatchers.IO) {
             attemptConnectionToServer()
             running = true
-            connectedToHostCallback?.invoke()
         }
     }
 
@@ -659,5 +658,6 @@ class RadarScreen private constructor(private val connectionHost: String, privat
     /** Sets the initial data received flag to true, allowing the client to handle other incoming data */
     fun notifyInitialDataSendComplete() {
         initialDataReceived = true
+        connectedToHostCallback?.invoke()
     }
 }

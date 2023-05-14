@@ -142,9 +142,8 @@ class RouteEditPane {
                     (leg as? Route.DiscontinuityLeg)?.let { "Discontinuity" } ?:
                     (leg as? Route.InitClimbLeg)?.heading?.let { hdg -> "Climb on\nHDG $hdg" } ?: return@let
                     val altRestr = (leg as? Route.WaypointLeg)?.let { wptLeg ->
-                        var restr = wptLeg.maxAltFt?.let { maxAltFt -> "${maxAltFt}B" } ?: ""
-                        if (wptLeg.maxAltFt != wptLeg.minAltFt) restr += wptLeg.minAltFt?.toString()?.let { minAlt -> "${if (restr.isNotBlank()) "\n" else ""}${minAlt}A" } ?: ""
-                        restr
+                        if (wptLeg.minAltFt == wptLeg.maxAltFt) wptLeg.minAltFt?.let { "$it" } ?: ""
+                        else (wptLeg.maxAltFt?.let { "${it}B" } ?: "") + (wptLeg.minAltFt?.let { "${it}A" } ?: "")
                     } ?: (leg as? Route.InitClimbLeg)?.minAltFt?.let { minAlt -> "$minAlt" } ?: ""
                     val spdRestr = (leg as? Route.WaypointLeg)?.maxSpdKt?.let { spd -> "${spd}kts" } ?: ""
                     val skipText = when (leg) {

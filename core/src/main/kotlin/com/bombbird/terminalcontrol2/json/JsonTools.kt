@@ -10,8 +10,8 @@ import com.squareup.moshi.adapters.PolymorphicJsonAdapterFactory
  * @return a [Moshi] that contains all adapters
  */
 fun getMoshiWithAllAdapters(): Moshi {
-    return Moshi.Builder().add(TakeoffRollAdapter).add(LandingRollAdapter).add(VisualCapturedAdapter)
-        .add(LocalizerArmedAdapter).add(LocalizerCapturedAdapter).add(GlideSlopeArmedAdapter)
+    return Moshi.Builder().add(TakeoffRollAdapter).add(LandingRollAdapter).add(VisualArmedAdapter)
+        .add(VisualCapturedAdapter).add(LocalizerArmedAdapter).add(LocalizerCapturedAdapter).add(GlideSlopeArmedAdapter)
         .add(GlideSlopeCapturedAdapter).add(StepDownApproachAdapter).add(CirclingApproachAdapter)
         .add(AircraftAdapter).add(AirportAdapter).add(RunwayAdapter).add(ApproachAdapter).add(RunwayInfoAdapter)
         .add(RandomMetarDistributionAdapter).add(Vector2Adapter).add(ControllableAdapter).add(PendingClearanceAdapter)
@@ -27,12 +27,12 @@ fun getMoshiWithAllAdapters(): Moshi {
 interface BaseComponentJSONInterface {
     enum class ComponentType {
         TAKEOFF_ROLL, TAKEOFF_CLIMB, LANDING_ROLL, COMMAND_TARGET, COMMAND_VECTOR, COMMAND_INIT_CLIMB, COMMAND_DIRECT,
-        COMMAND_HOLD, COMMAND_EXPEDITE, COMMAND_CDA, LAST_RESTRICTIONS, VISUAL_CAPTURED, LOCALIZER_ARMED, LOCALIZER_CAPTURED,
-        GLIDE_SLOPE_ARMED, GLIDE_SLOPE_CAPTURED, STEP_DOWN_APPROACH, CIRCLING_APPROACH, APPROACH_INFO, LOCALIZER, LINE_UP_DIST,
-        GLIDE_SLOPE, STEP_DOWN, CIRCLING, MINIMUMS, VISUAL, AIRPORT_INFO, RUNWAY_INFO, RANDOM_METAR_INFO, WAYPOINT_INFO,
-        AIRCRAFT_INFO, ARRIVAL_AIRPORT, DEPARTURE_AIRPORT, CONTROLLABLE, FLIGHT_TYPE, WAITING_TAKEOFF, CONTACT_FROM_TOWER,
-        CONTACT_TO_TOWER, CONTACT_FROM_CENTRE, CONTACT_TO_CENTRE, ACCELERATE_TO_ABOVE_250KTS, DECELERATE_TO_240KTS,
-        APP_DECELERATE_TO_190KTS, DECELERATE_TO_APP_SPD, PENDING_CLEARANCES, CLEARANCE_ACT, LATEST_CLEARANCE_CHANGED,
+        COMMAND_HOLD, COMMAND_EXPEDITE, COMMAND_CDA, LAST_RESTRICTIONS, VISUAL_ARMED, VISUAL_CAPTURED, LOCALIZER_ARMED,
+        LOCALIZER_CAPTURED, GLIDE_SLOPE_ARMED, GLIDE_SLOPE_CAPTURED, STEP_DOWN_APPROACH, CIRCLING_APPROACH, APPROACH_INFO,
+        LOCALIZER, LINE_UP_DIST, GLIDE_SLOPE, STEP_DOWN, CIRCLING, MINIMUMS, VISUAL, AIRPORT_INFO, RUNWAY_INFO,
+        RANDOM_METAR_INFO, WAYPOINT_INFO, AIRCRAFT_INFO, ARRIVAL_AIRPORT, DEPARTURE_AIRPORT, CONTROLLABLE, FLIGHT_TYPE,
+        WAITING_TAKEOFF, CONTACT_FROM_TOWER, CONTACT_TO_TOWER, CONTACT_FROM_CENTRE, CONTACT_TO_CENTRE, ACCELERATE_TO_ABOVE_250KTS,
+        DECELERATE_TO_240KTS, APP_DECELERATE_TO_190KTS, DECELERATE_TO_APP_SPD, PENDING_CLEARANCES, CLEARANCE_ACT, LATEST_CLEARANCE_CHANGED,
         CLEARANCE_ACT_CHANGED, INITIAL_ARRIVAL_SPAWN, RECENT_GO_AROUND, PENDING_CRUISE_ALTITUDE, G_POLYGON, POSITION,
         CUSTOM_POSITION, DIRECTION, SPEED, ALTITUDE, ACCELERATION, INDICATED_AIR_SPEED, GROUND_TRACK, AFFECTED_BY_WIND,
         ON_GROUND, RUNWAY_CHILDREN,  APPROACH_CHILDREN, VISUAL_APPROACH, DEPENDENT_OPPOSITE_RUNWAY, DEPENDENT_PARALLEL_RUNWAY,
@@ -59,6 +59,7 @@ private fun getPolymorphicComponentAdapter(): PolymorphicJsonAdapterFactory<Base
         .withSubtype(CommandExpedite::class.java, BaseComponentJSONInterface.ComponentType.COMMAND_EXPEDITE.name)
         .withSubtype(CommandCDA::class.java, BaseComponentJSONInterface.ComponentType.COMMAND_CDA.name)
         .withSubtype(LastRestrictions::class.java, BaseComponentJSONInterface.ComponentType.LAST_RESTRICTIONS.name)
+        .withSubtype(VisualArmed::class.java, BaseComponentJSONInterface.ComponentType.VISUAL_ARMED.name)
         .withSubtype(VisualCaptured::class.java, BaseComponentJSONInterface.ComponentType.VISUAL_CAPTURED.name)
         .withSubtype(LocalizerArmed::class.java, BaseComponentJSONInterface.ComponentType.LOCALIZER_ARMED.name)
         .withSubtype(LocalizerCaptured::class.java, BaseComponentJSONInterface.ComponentType.LOCALIZER_CAPTURED.name)

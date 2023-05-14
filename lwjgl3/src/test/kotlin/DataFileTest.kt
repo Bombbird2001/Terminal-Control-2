@@ -679,11 +679,13 @@ object DataFileTest: FunSpec() {
                     infoLine[5].toShort() shouldBeGreaterThanOrEqualTo 0
 
                     val locLines = getAllTextAfterHeaderMultiple("LOC", apchLines[1])
-                    locLines.size shouldBe 1
-                    val locData = locLines[0].split(" ")
-                    locData.size shouldBe 2
-                    locData[0].toShort()
-                    locData[1].toByte()
+                    locLines.size shouldBeLessThanOrEqual 1
+                    if (locLines.size == 1) {
+                        val locData = locLines[0].split(" ")
+                        locData.size shouldBe 2
+                        locData[0].toShort()
+                        locData[1].toByte()
+                    }
 
                     val gsLines = getAllTextAfterHeaderMultiple("GS", apchLines[1])
                     gsLines.size shouldBeLessThanOrEqual 1
@@ -708,7 +710,7 @@ object DataFileTest: FunSpec() {
                         }
                     }
 
-                    gsLines.size + stepDownLines.size shouldBe 1
+                    gsLines.size + stepDownLines.size shouldBeLessThanOrEqual 1
 
                     val appLineUpLines = getAllTextAfterHeaderMultiple("LINEUP", apchLines[1])
                     appLineUpLines.size shouldBeLessThanOrEqual 1

@@ -44,6 +44,25 @@ object LandingRollAdapter {
     }
 }
 
+@JsonClass(generateAdapter = true)
+data class VisualArmedJSON(val visApp: ApproachRefJSON, val parentApp: ApproachRefJSON)
+
+/** Adapter object for serialization between [VisualArmed] and [VisualArmedJSON] */
+object VisualArmedAdapter {
+    @ToJson
+    fun toVisualArmedJSON(visualArmed: VisualArmed): VisualArmedJSON {
+        return VisualArmedJSON(toApproachRefJSON(visualArmed.visApp), toApproachRefJSON(visualArmed.parentApp))
+    }
+
+    @FromJson
+    fun fromVisualArmedJSON(visualArmedJSON: VisualArmedJSON): VisualArmed {
+        return VisualArmed().apply {
+            visualArmedJSON.visApp.delayedApproachEntityRetrieval(this)
+            visualArmedJSON.parentApp.delayedApproachEntityRetrieval(this)
+        }
+    }
+}
+
 /** Data class for storing visual approach captured information for JSON serialization */
 @JsonClass(generateAdapter = true)
 data class VisualCapturedJSON(val visApp: ApproachRefJSON, val parentApp: ApproachRefJSON)

@@ -169,6 +169,9 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
                 if (appChanged) removeAllApproachComponents(entity)
                 val app = GAME.gameServer?.airports?.get(entity[ArrivalAirport.mapper]?.arptId)?.entity?.get(ApproachChildren.mapper)?.approachMap?.get(it)?.entity ?: return@let
                 if (app.has(Localizer.mapper)) entity += LocalizerArmed(app)
+                else app[ApproachInfo.mapper]?.rwyObj?.entity?.get(VisualApproach.mapper)?.let { visApp ->
+                    entity += VisualArmed(visApp.visual, app)
+                }
                 if (app.has(GlideSlope.mapper)) entity += GlideSlopeArmed(app)
                 else if (app.has(StepDown.mapper)) entity += StepDownApproach(app)
                 app[Circling.mapper]?.let { circling ->

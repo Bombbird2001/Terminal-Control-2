@@ -240,7 +240,7 @@ data class ScoreData(private val score: Int = 0, private val highScore: Int = 0)
 /** Class notifying client that all initial required data has been sent, they can now accept other transmission data */
 class InitialDataSendComplete: ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
-        rs.notifyInitialDataSendComplete()
+        // rs.notifyInitialDataSendComplete() Handled separately
     }
 }
 

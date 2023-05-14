@@ -241,7 +241,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
             initialWeatherCondition.await()
         }
 
-        if (saveId == null) appTestArrival(this)
+        // if (saveId == null) appTestArrival(this)
     }
 
     /**
@@ -330,9 +330,26 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
                     uuid,
                     MinAltData(minAltSectors.toArray().map { it.getSerialisableObject() }.toTypedArray())
                 )
+                val tmpShoreline = GdxArray<Shoreline>()
+                val maxVertexCountPerSend = (SERVER_WRITE_BUFFER_SIZE / 8f - 2).toInt()
+                var vertexCount = 0
+                for (sentShoreline in 0 until shoreline.size) {
+                    val shorelineArray = shoreline[sentShoreline].entity[GLineArray.mapper] ?: continue
+                    if (vertexCount + shorelineArray.vertices.size / 2 > maxVertexCountPerSend) {
+                        // Send existing data and restart
+                        networkServer.sendTCPToConnection(
+                            uuid,
+                            ShorelineData(tmpShoreline.toArray().map { it.getSerialisableObject() }.toTypedArray())
+                        )
+                        tmpShoreline.clear()
+                        vertexCount = 0
+                    }
+                    tmpShoreline.add(shoreline[sentShoreline])
+                    vertexCount += shorelineArray.vertices.size / 2
+                }
                 networkServer.sendTCPToConnection(
                     uuid,
-                    ShorelineData(shoreline.toArray().map { it.getSerialisableObject() }.toTypedArray())
+                    ShorelineData(tmpShoreline.toArray().map { it.getSerialisableObject() }.toTypedArray())
                 )
 
                 // Send current METAR

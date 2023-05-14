@@ -545,9 +545,8 @@ fun checkSameRunwayTraffic(rwy: Entity, additionalTime: Int): Boolean {
     // Check previous arrival time required
     if (prevArrival != null && WakeMatrix.getTimeRequired(prevArrival.wakeCat, prevArrival.recat,
             nextDeparture.wakeCategory, nextDeparture.recat) > prevArrival.timeSinceTouchdownS) return false
-    // Check time from touchdown - minimum 60s
-    if (nextArrival != null && calculateTimeToThreshold(nextArrival.aircraft, rwy) < 60) return false
-    return true
+    // Check time from touchdown - minimum 100s
+    return nextArrival == null || calculateTimeToThreshold(nextArrival.aircraft, rwy) >= 100
 }
 
 /**
@@ -570,8 +569,7 @@ fun checkOppRunwayTraffic(rwy: Entity, additionalTime: Int): Boolean {
     if (prevArrival != null && WakeMatrix.getTimeRequired(prevArrival.wakeCat, prevArrival.recat,
             nextDeparture.wakeCategory, nextDeparture.recat) > prevArrival.timeSinceTouchdownS) return false
     // Check distance from touchdown - minimum 15nm away
-    if (nextArrival != null && calculateDistFromThreshold(nextArrival.aircraft, rwy) < nmToPx(15)) return false
-    return true
+    return nextArrival == null || calculateDistFromThreshold(nextArrival.aircraft, rwy) >= nmToPx(15)
 }
 
 /**

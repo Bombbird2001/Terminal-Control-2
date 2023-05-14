@@ -246,6 +246,7 @@ class CommsPane {
 
                 SectorInfo(SectorInfo.TOWER, towerFreq, towerCallsign, towerCallsign)
             }
+            // TODO Get correct callsign, frequency of ACC
             SectorInfo.CENTRE -> SectorInfo(SectorInfo.CENTRE, "121.5", "Control", "Control")
             else -> {
                 CLIENT_SCREEN?.let {

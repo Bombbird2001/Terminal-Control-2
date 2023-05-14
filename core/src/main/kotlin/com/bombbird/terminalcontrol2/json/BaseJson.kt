@@ -6,6 +6,7 @@ import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.utilities.byte
+import com.esotericsoftware.minlog.Log
 import com.squareup.moshi.FromJson
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.ToJson
@@ -66,6 +67,10 @@ data class ApproachRefJSON(val arptId: Byte, val appName: String, val visRwyId: 
             else GAME.gameServer?.airports?.get(arptId)?.entity?.get(ApproachChildren.mapper)?.approachMap?.get(appName)?.entity
             if (app == null) return@add
             when (component) {
+                is VisualArmed -> {
+                    if (visRwyId != null) component.visApp = app
+                    else component.parentApp = app
+                }
                 is VisualCaptured -> {
                     if (visRwyId != null) component.visApp = app
                     else component.parentApp = app
@@ -76,6 +81,7 @@ data class ApproachRefJSON(val arptId: Byte, val appName: String, val visRwyId: 
                 is GlideSlopeCaptured -> component.gsApp = app
                 is StepDownApproach -> component.stepDownApp = app
                 is CirclingApproach -> component.circlingApp = app
+                else -> Log.info("BaseJson", "Unknown approach entity type ${component.javaClass.name}")
             }
         }
     }

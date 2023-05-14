@@ -163,6 +163,18 @@ data class LastRestrictions(var minAltFt: Int? = null, var maxAltFt: Int? = null
 }
 
 /**
+ * Component for tagging aircraft that is pending to start a visual approach
+ *
+ * The aircraft will check its current navigation status as well as position relative to the approach position origin
+ * and capture it when within range
+ */
+data class VisualArmed(var visApp: Entity = Entity(), var parentApp: Entity = Entity()): Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.VISUAL_ARMED
+
+    companion object: Mapper<VisualArmed>()
+}
+
+/**
  * Component for tagging aircraft that has captured the extended runway centreline and glide path in a visual approach,
  * and will alter aircraft AI behaviour to follow the extended centreline track and glide path
  * */

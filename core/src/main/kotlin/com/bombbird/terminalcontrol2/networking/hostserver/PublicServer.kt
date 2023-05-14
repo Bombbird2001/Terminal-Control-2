@@ -50,7 +50,7 @@ class PublicServer(
                 } else obj
 
                 (decrypted as? RelayHostReceive)?.apply {
-                    handleRelayHostReceive(this@PublicServer)
+                    handleRelayHostReceive(this@PublicServer, connection)
                 }
             }
 
@@ -192,6 +192,8 @@ class PublicServer(
      */
     fun decodeRelayMessageObject(data: ByteArray, sendingUUID: UUID) {
         val sendingConnection = uuidConnectionMap[sendingUUID] ?: return
-        onReceive(sendingConnection, fromSerializedBytes(data))
+        val decoded = fromSerializedBytes(data)
+        if (decoded is ClientToServer) sendingConnection.returnTripTime = decoded.clientToRelayReturnTripTime
+        onReceive(sendingConnection, decoded)
     }
 }

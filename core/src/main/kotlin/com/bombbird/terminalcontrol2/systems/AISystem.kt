@@ -49,6 +49,7 @@ class AISystem: EntitySystem() {
     private val visAppGlideFamily: Family = allOf(CommandTarget::class, Position::class, GroundTrack::class, VisualCaptured::class).get()
     private val checkGoAroundFamily: Family = allOf(Position::class, Altitude::class, IndicatedAirSpeed::class, AircraftInfo::class)
         .oneOf(GlideSlopeCaptured::class, LocalizerCaptured::class, VisualCaptured::class).exclude(CirclingApproach::class).get()
+    private val visArmedFamily: Family = allOf(Position::class, ClearanceAct::class, VisualArmed::class).get()
     private val locArmedFamily: Family = allOf(Position::class, Direction::class, IndicatedAirSpeed::class, GroundTrack::class, LocalizerArmed::class).get()
     private val gsArmedFamily: Family = allOf(Position::class, Altitude::class, GlideSlopeArmed::class, LocalizerCaptured::class).get()
     private val stepDownAppFamily: Family = allOf(CommandTarget::class, Position::class, LocalizerCaptured::class, StepDownApproach::class).get()
@@ -470,6 +471,29 @@ class AISystem: EntitySystem() {
                     remove<CirclingApproach>()
                     this += VisualCaptured(appEntity[ApproachInfo.mapper]?.rwyObj?.entity?.get(VisualApproach.mapper)?.visual ?: return@let, appEntity)
                 }}
+            }
+        }
+
+        // Update for visual approach armed
+        val visArmed = engine.getEntitiesFor(visArmedFamily)
+        for (i in 0 until visArmed.size()) {
+            visArmed[i]?.apply {
+                val pos = get(Position.mapper) ?: return@apply
+                val clearanceState = get(ClearanceAct.mapper) ?: return@apply
+                val vis = get(VisualArmed.mapper) ?: return@apply
+                val appPos = vis.visApp[Position.mapper] ?: return@apply
+
+                // Return if current clearance state is not vector and route's first leg is not a missed approach leg
+                val state = clearanceState.actingClearance.clearanceState
+                val route = state.route
+                if (state.vectorHdg == null && route.size > 0 && route[0].phase != Route.Leg.MISSED_APP) return@apply
+
+                // Check aircraft position is less than visual approach range
+                if (calculateDistanceBetweenPoints(pos.x, pos.y, appPos.x, appPos.y) > nmToPx(VIS_MAX_DIST_NM.toFloat())) return@apply
+
+                // Change from armed to captured
+                this += VisualCaptured(vis.visApp, vis.parentApp)
+                remove<VisualArmed>()
             }
         }
 
