@@ -8,7 +8,8 @@ import ktx.scene2d.Scene2DSkin
 
 /** Class for a custom dialog box; extend this class to  */
 open class CustomDialog(title: String, val text: String, private val negative: String, private val positive: String,
-                        val height: Int = 500, val width: Int = 1200, private val fontScale: Float = 1f):
+                        val height: Int = 500, val width: Int = 1200, private val fontScale: Float = 1f,
+                        private val onNegative: (() -> Unit)? = null, private val onPositive: (() -> Unit)? = null):
     Dialog(title, Scene2DSkin.defaultSkin["DialogWindow", WindowStyle::class.java]) {
     companion object {
         // Dialog constants
@@ -19,10 +20,10 @@ open class CustomDialog(title: String, val text: String, private val negative: S
     init {
         titleLabel.setAlignment(Align.top)
         titleLabel.setFontScale(fontScale)
-        titleLabel.setScale(fontScale)
-        buttonTable.defaults().width(5f / 12 * width).height(160f * fontScale).padLeft(0.025f * width).padRight(0.025f * width)
+        buttonTable.defaults().width(5f / 12 * width).height(140f * fontScale).padLeft(0.025f * width).padRight(0.025f * width)
         isMovable = false
         initialize()
+        // debugAll()
     }
 
     private fun initialize() {
@@ -37,9 +38,8 @@ open class CustomDialog(title: String, val text: String, private val negative: S
 
     private fun updateText(newText: String) {
         contentTable.clearChildren()
-        val label = Label(newText, Scene2DSkin.defaultSkin, "DialogLabel")
-        label.setScale(fontScale)
-        label.setFontScale(fontScale)
+        val label = Label("$newText\n", Scene2DSkin.defaultSkin, "DialogLabel")
+        label.setFontScale(fontScale * 1.25f)
         label.setAlignment(Align.center)
         text(label)
     }
@@ -57,14 +57,12 @@ open class CustomDialog(title: String, val text: String, private val negative: S
 
         if (negative.isNotEmpty()) {
             val negativeButton = TextButton(negative, Scene2DSkin.defaultSkin, "DialogButton")
-            negativeButton.label.setScale(fontScale)
-            negativeButton.label.setFontScale(fontScale)
+            negativeButton.label.setFontScale(fontScale * 1.25f)
             button(negativeButton, DIALOG_NEGATIVE)
         }
         if (positive.isNotEmpty()) {
             val positiveButton = TextButton(positive, Scene2DSkin.defaultSkin, "DialogButton")
-            positiveButton.label.setScale(fontScale)
-            positiveButton.label.setFontScale(fontScale)
+            positiveButton.label.setFontScale(fontScale * 1.25f)
             button(positiveButton, DIALOG_POSITIVE)
         }
     }
@@ -75,5 +73,10 @@ open class CustomDialog(title: String, val text: String, private val negative: S
 
     override fun getPrefWidth(): Float {
         return width.toFloat()
+    }
+
+    override fun result(res: Any?) {
+        if (res == DIALOG_NEGATIVE && onNegative != null) return onNegative.invoke()
+        if (res == DIALOG_POSITIVE && onPositive != null) return onPositive.invoke()
     }
 }

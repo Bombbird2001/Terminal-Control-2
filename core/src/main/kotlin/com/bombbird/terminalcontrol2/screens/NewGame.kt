@@ -32,7 +32,7 @@ class NewGame: BasicUIScreen() {
                         scrollPane("NewGame") {
                             table {
                                 for (icao in AVAIL_AIRPORTS) {
-                                    textButton(icao,"NewGameAirport").cell(growX = true, height = 150f).apply {
+                                    textButton(icao,"NewLoadGameAirport").cell(growX = true, height = 150f).apply {
                                         addChangeListener { event, _ ->
                                             if (currSelectedAirport != this@apply) {
                                                 currSelectedAirport?.isChecked = false
@@ -52,7 +52,7 @@ class NewGame: BasicUIScreen() {
                             // debugAll()
                             label("Placeholder", "NewGameAirportInfo").cell(width = 800f, expandY = true, preferredHeight = 550f).setAlignment(Align.top)
                             row().padTop(10f)
-                            start = textButton("Start", "NewGameStart").cell(width = 400f, height = 100f).apply {
+                            start = textButton("Start", "NewLoadGameStart").cell(width = 400f, height = 100f).apply {
                                 isVisible = false
                                 addChangeListener { event, _ ->
                                     currSelectedAirport?.let {
@@ -80,7 +80,7 @@ class NewGame: BasicUIScreen() {
                             }
                         }.cell(expandY = true).align(Align.top)
                         table {
-                            currSelectedMode = textButton("Singleplayer", "NewGameAirport").cell(width = 300f, height = 550f / 3).apply {
+                            currSelectedMode = textButton("Singleplayer", "NewLoadGameAirport").cell(width = 300f, height = 550f / 3).apply {
                                 name = SINGLE_PLAYER
                                 addChangeListener { event, _ ->
                                     currSelectedMode?.isChecked = false
@@ -90,7 +90,7 @@ class NewGame: BasicUIScreen() {
                                 isChecked = true
                             }
                             row()
-                            textButton("Multiplayer\n(LAN)", "NewGameAirport").cell(width = 300f, height = 550f / 3).apply {
+                            textButton("Multiplayer\n(LAN)", "NewLoadGameAirport").cell(width = 300f, height = 550f / 3).apply {
                                 name = LAN_MULTIPLAYER
                                 addChangeListener { event, _ ->
                                     currSelectedMode?.isChecked = false
@@ -99,7 +99,7 @@ class NewGame: BasicUIScreen() {
                                 }
                             }
                             row()
-                            textButton("Multiplayer\n(Public)", "NewGameAirport").cell(width = 300f, height = 550f / 3).apply {
+                            textButton("Multiplayer\n(Public)", "NewLoadGameAirport").cell(width = 300f, height = 550f / 3).apply {
                                 name = PUBLIC_MULTIPLAYER
                                 addChangeListener { event, _ ->
                                     currSelectedMode?.isChecked = false

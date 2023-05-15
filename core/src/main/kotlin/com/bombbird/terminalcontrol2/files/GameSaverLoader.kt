@@ -66,12 +66,8 @@ fun saveGame(gs: GameServer) {
         gs.aircraft.values().toList(), gs.airports.values().toList(), gs.waypoints.values.toList())
     val saveFolderHandle = getExtDir("Saves") ?: return
     if (!saveFolderHandle.exists()) saveFolderHandle.mkdirs()
-    var saveIndex = gs.saveID ?: 0
     // Get a new save ID if gameServer's save ID is null
-    if (gs.saveID == null) saveFolderHandle.list().forEach {
-        val fileIndex = it.nameWithoutExtension().toInt()
-        if (saveIndex <= fileIndex) saveIndex = fileIndex + 1
-    }
+    val saveIndex = gs.saveID ?: getNextAvailableSaveID() ?: return
     gs.saveID = saveIndex
     val saveHandle = saveFolderHandle.child("${saveIndex}.json")
     saveHandle.writeString(moshi.adapter<GameServerSave>().toJson(saveObject), false)
