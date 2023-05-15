@@ -6,6 +6,7 @@ import com.badlogic.gdx.audio.Sound
 import com.badlogic.gdx.graphics.Texture
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.math.MathUtils
+import com.bombbird.terminalcontrol2.files.ExternalFileHandler
 import com.bombbird.terminalcontrol2.files.loadPlayerSettings
 import com.bombbird.terminalcontrol2.files.loadPlayerUUID
 import com.bombbird.terminalcontrol2.global.*
@@ -33,7 +34,7 @@ import ktx.scene2d.*
  *
  * [clearScreen] is set to false as it will be handled by the individual screens
  * */
-class TerminalControl2 : KtxGame<KtxScreen>(clearScreen = false) {
+class TerminalControl2(val externalFileHandler: ExternalFileHandler) : KtxGame<KtxScreen>(clearScreen = false) {
     lateinit var batch: SpriteBatch
     lateinit var engine: Engine
     lateinit var soundManager: SoundManager

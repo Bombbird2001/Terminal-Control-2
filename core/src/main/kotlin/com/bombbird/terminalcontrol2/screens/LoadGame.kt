@@ -5,6 +5,7 @@ import com.badlogic.gdx.utils.Align
 import com.badlogic.gdx.utils.Timer
 import com.bombbird.terminalcontrol2.files.GameSaveMeta
 import com.bombbird.terminalcontrol2.files.deleteSave
+import com.bombbird.terminalcontrol2.files.exportSave
 import com.bombbird.terminalcontrol2.files.getExtDir
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.ui.CustomDialog
@@ -54,6 +55,14 @@ class LoadGame: BasicUIScreen() {
                                 isVisible = false
                             }
                             exportButton.addChangeListener { event, _ ->
+                                val saveIdToDelete = currSelectedSaveButton?.name?.toInt()
+                                val meta = currSelectedSaveMeta
+                                if (saveIdToDelete != null && meta != null) {
+                                    if (exportSave(saveIdToDelete))
+                                        showDialog(CustomDialog("Export success", "Exported save ${meta.mainName} successfully", "", "Ok"))
+                                    else
+                                        showDialog(CustomDialog("Export failed", "Could not export save ${meta.mainName}", "", "Ok"))
+                                }
                                 event?.handle()
                             }
                             row()

@@ -10,7 +10,7 @@ import com.bombbird.terminalcontrol2.TerminalControl2
 class AndroidLauncher : AndroidApplication() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        initialize(TerminalControl2(), AndroidApplicationConfiguration().apply {
+        initialize(TerminalControl2(AndroidFileHandler()), AndroidApplicationConfiguration().apply {
             // Configure your application here.
             numSamples = 0
             useAccelerometer = false
