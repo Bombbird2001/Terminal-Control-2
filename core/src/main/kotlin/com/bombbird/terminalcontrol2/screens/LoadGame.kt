@@ -3,10 +3,7 @@ package com.bombbird.terminalcontrol2.screens
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.utils.Align
 import com.badlogic.gdx.utils.Timer
-import com.bombbird.terminalcontrol2.files.GameSaveMeta
-import com.bombbird.terminalcontrol2.files.deleteSave
-import com.bombbird.terminalcontrol2.files.exportSave
-import com.bombbird.terminalcontrol2.files.getExtDir
+import com.bombbird.terminalcontrol2.files.*
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.ui.CustomDialog
 import com.bombbird.terminalcontrol2.ui.addChangeListener
@@ -48,6 +45,12 @@ class LoadGame: BasicUIScreen() {
                     table {
                         table {
                             textButton("Import save", "LoadGameDeleteExportImport").cell(width = 300f, height = 550f / 3).addChangeListener { event, _ ->
+                                importSave({
+                                    showDialog(CustomDialog("Import success", "Imported save $it successfully", "", "Ok"))
+                                    refreshSaveList()
+                                }, {
+                                    showDialog(CustomDialog("Import failed", it, "", "Ok"))
+                                })
                                 event?.handle()
                             }
                             row()
@@ -58,10 +61,11 @@ class LoadGame: BasicUIScreen() {
                                 val saveIdToDelete = currSelectedSaveButton?.name?.toInt()
                                 val meta = currSelectedSaveMeta
                                 if (saveIdToDelete != null && meta != null) {
-                                    if (exportSave(saveIdToDelete))
+                                    exportSave(saveIdToDelete, {
                                         showDialog(CustomDialog("Export success", "Exported save ${meta.mainName} successfully", "", "Ok"))
-                                    else
-                                        showDialog(CustomDialog("Export failed", "Could not export save ${meta.mainName}", "", "Ok"))
+                                    }, {
+                                        showDialog(CustomDialog("Export failed", it, "", "Ok"))
+                                    })
                                 }
                                 event?.handle()
                             }

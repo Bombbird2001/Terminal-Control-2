@@ -31,8 +31,13 @@ import kotlin.math.roundToLong
 /**
  * Main game server class, responsible for handling all game logic, updates, sending required game data information to
  * clients and handling incoming client inputs
- * */
-class GameServer private constructor(airportToHost: String, saveId: Int?, val publicServer: Boolean, private val maxPlayersSet: Byte) {
+ * @param airportToHost name of the airport to host
+ * @param saveId ID of the save file to load, if any
+ * @param publicServer whether to host this game in the public server
+ * @param maxPlayersSet the maximum numbers of player the host as selected
+ * @param testMode whether to start this game server in test mode (i.e. will not initiate any network servers)
+ */
+class GameServer private constructor(airportToHost: String, saveId: Int?, val publicServer: Boolean, private val maxPlayersSet: Byte, testMode: Boolean = false) {
     companion object {
         const val UPDATE_INTERVAL = 1000.0 / SERVER_UPDATE_RATE
         const val SERVER_TO_CLIENT_UPDATE_INTERVAL_FAST = 1000.0 / SERVER_TO_CLIENT_UPDATE_RATE_FAST
@@ -104,6 +109,14 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
          */
         fun loadPublicMultiplayerGameServer(airportToHost: String, saveId: Int): GameServer {
             return GameServer(airportToHost, saveId, true, 4)
+        }
+
+        /**
+         * Creates a new GameServer object for testing only; no network server will be initiated
+         * @return GameServer in testing mode
+         */
+        fun testGameServer(): GameServer {
+            return GameServer("", null, false, 1, true)
         }
     }
 
@@ -213,7 +226,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
     var serverStartedCallback: (() -> Unit)? = null
 
     init {
-        initiateServer(airportToHost, saveId)
+        if (!testMode) initiateServer(airportToHost, saveId)
     }
 
     /**
