@@ -82,6 +82,7 @@ class LANClient(lanClientDiscoveryHandler: LANClientDiscoveryHandler): NetworkCl
 
     override fun beforeConnect(roomId: Short?) {
         registerClassesToKryo(kryo)
+        secretKeyCalculated = false
     }
 
     override fun start() {

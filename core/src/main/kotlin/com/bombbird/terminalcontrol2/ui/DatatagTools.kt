@@ -180,8 +180,8 @@ fun addDatatagInputListeners(datatag: Datatag, aircraft: Aircraft) {
                     datatag.clicks = 0
                 }
             }, 0.2f)
+            CLIENT_SCREEN?.setUISelectedAircraft(aircraft)
             Gdx.app.postRunnable {
-                CLIENT_SCREEN?.setUISelectedAircraft(aircraft)
                 if (!datatag.renderLast) {
                     CLIENT_SCREEN?.aircraft?.values()?.forEach { it.entity[Datatag.mapper]?.renderLast = false }
                     remove()

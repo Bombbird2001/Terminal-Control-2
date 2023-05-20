@@ -219,26 +219,31 @@ class RadarScreen private constructor(private val connectionHost: String, privat
      * @param aircraft the aircraft to display in the UI pane
      * */
     fun setUISelectedAircraft(aircraft: Aircraft) {
-        uiPane.setSelectedAircraft(aircraft)
-        selectedAircraft = aircraft
-        aircraft.entity.apply {
-            val datatag = get(Datatag.mapper) ?: return@apply
-            val flightType = get(FlightType.mapper) ?: return@apply
-            updateDatatagStyle(datatag, flightType.type, true)
+        if (selectedAircraft != null) deselectUISelectedAircraft()
+        Gdx.app.postRunnable {
+            uiPane.setSelectedAircraft(aircraft)
+            selectedAircraft = aircraft
+            aircraft.entity.apply {
+                val datatag = get(Datatag.mapper) ?: return@apply
+                val flightType = get(FlightType.mapper) ?: return@apply
+                updateDatatagStyle(datatag, flightType.type, true)
+            }
+            clientEngine.getSystem<RenderingSystemClient>().updateWaypointDisplay(aircraft)
         }
-        clientEngine.getSystem<RenderingSystemClient>().updateWaypointDisplay(aircraft)
     }
 
     /** Deselects the currently selected aircraft in [uiPane] */
     fun deselectUISelectedAircraft() {
-        uiPane.deselectAircraft()
-        selectedAircraft?.entity?.apply {
-            val datatag = get(Datatag.mapper) ?: return@apply
-            val flightType = get(FlightType.mapper) ?: return@apply
-            updateDatatagStyle(datatag, flightType.type, false)
+        Gdx.app.postRunnable {
+            uiPane.deselectAircraft()
+            selectedAircraft?.entity?.apply {
+                val datatag = get(Datatag.mapper) ?: return@apply
+                val flightType = get(FlightType.mapper) ?: return@apply
+                updateDatatagStyle(datatag, flightType.type, false)
+            }
+            selectedAircraft = null
+            clientEngine.getSystem<RenderingSystemClient>().updateWaypointDisplay(null)
         }
-        selectedAircraft = null
-        clientEngine.getSystem<RenderingSystemClient>().updateWaypointDisplay(null)
     }
 
     /** Ensures [radarDisplayStage]'s camera parameters are within limits, then updates the camera (and [shapeRenderer]) */

@@ -307,7 +307,9 @@ data class AircraftSpawnData(private val newAircraft: Aircraft.SerialisedAircraf
 /** Class representing de-spawn data sent when an aircraft is removed from the game */
 data class AircraftDespawnData(private val callsign: String = ""): ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
-        GAME.engine.removeEntity(rs.aircraft[callsign]?.entity)
+        val entity = rs.aircraft[callsign]?.entity ?: return
+        entity[Datatag.mapper]?.despawn()
+        GAME.engine.removeEntity(entity)
         rs.aircraft.removeKey(callsign)
     }
 }
