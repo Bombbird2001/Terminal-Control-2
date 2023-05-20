@@ -66,8 +66,10 @@ class ClearAllClientData: ClientReceive, NeedsEncryption {
 }
 
 /** Class representing airspace data sent on initial connection, loading of the game on a client */
-data class InitialAirspaceData(private val magHdgDev: Float = 0f, private val minAlt: Int = 2000, private val maxAlt: Int = 20000,
-                               private val minSep: Float = 3f, private val transAlt: Int = 18000, private val transLvl: Int = 180):
+class InitialAirspaceData(private val magHdgDev: Float = 0f, private val minAlt: Int = 2000, private val maxAlt: Int = 20000,
+                               private val minSep: Float = 3f, private val transAlt: Int = 18000, private val transLvl: Int = 180,
+                               private val intermediateAlts: IntArray = intArrayOf()
+):
     ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
         MAG_HDG_DEV = magHdgDev
@@ -76,6 +78,8 @@ data class InitialAirspaceData(private val magHdgDev: Float = 0f, private val mi
         MIN_SEP = minSep
         TRANS_ALT = transAlt
         TRANS_LVL = transLvl
+        INTERMEDIATE_ALTS.clear()
+        intermediateAlts.forEach { INTERMEDIATE_ALTS.add(it) }
     }
 }
 

@@ -35,6 +35,7 @@ fun registerClassesToKryo(kryo: Kryo?) {
         register(ShortArray::class.java)
         register(FloatArray::class.java)
         register(ByteArray::class.java)
+        register(IntArray::class.java)
 
         // Initial load classes
         register(RequestClientUUID::class.java)

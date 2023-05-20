@@ -219,7 +219,8 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
                 renderVector(aircraftPos.x, aircraftPos.y, clearanceStateVectorHdg, false)
             } else {
                 renderRouteSegments(aircraftPos.x, aircraftPos.y, it.entity[RouteSegment.mapper]?.segments ?: GdxArray(),
-                skipAircraftToFirstWaypoint = !controlledByPlayer, forceRenderChangedAircraftToFirstWaypoint = false)
+                skipAircraftToFirstWaypoint = !controlledByPlayer && clearanceStateVectorHdg != null,
+                    forceRenderChangedAircraftToFirstWaypoint = false)
             }
             if (controlledByPlayer) {
                 if (!vectorUnchanged && !uiPane.appTrackCaptured) uiPane.userClearanceState.vectorHdg?.let { newHdg ->

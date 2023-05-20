@@ -54,6 +54,8 @@ class TerminalControl2(val externalFileHandler: ExternalFileHandler) : KtxGame<K
         gameClientScreen?.quitGame()
         gameClientScreen?.disposeSafely()
         GAME.removeScreen<RadarScreen>()
+        GAME.removeScreen<GameLoading>()
+        GAME.removeScreen<PauseScreen>()
         gameClientScreen = null
         GAME.removeScreen<GameSettings>()
         GAME.removeScreen<CustomWeatherSettings>()

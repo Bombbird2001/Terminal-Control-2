@@ -233,7 +233,7 @@ class RadarScreen private constructor(private val connectionHost: String, privat
     }
 
     /** Deselects the currently selected aircraft in [uiPane] */
-    fun deselectUISelectedAircraft() {
+    private fun deselectUISelectedAircraft() {
         Gdx.app.postRunnable {
             uiPane.deselectAircraft()
             selectedAircraft?.entity?.apply {
