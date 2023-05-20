@@ -187,8 +187,9 @@ fun calculateArrivalSpawnIAS(origStarRoute: Route, aircraftRoute: Route, spawnAl
     if (aircraftRoute.size > 0) { (aircraftRoute[0] as? WaypointLeg)?.apply {
         for (i in 0 until origStarRoute.size) { origStarRoute[i].let { wpt ->
             if (compareLegEquality(this, wpt)) return@apply // Stop searching for max speed once current direct is reached
+            if (wpt !is WaypointLeg) return@apply
             val currMaxSpd = maxSpd
-            maxSpdKt?.let { wptMaxSpd -> if (currMaxSpd == null || wptMaxSpd < currMaxSpd) maxSpd = maxSpdKt }
+            wpt.maxSpdKt?.let { wptMaxSpd -> if (currMaxSpd == null || wptMaxSpd < currMaxSpd) maxSpd = wptMaxSpd }
         }}
     }}
 
