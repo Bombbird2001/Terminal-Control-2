@@ -210,17 +210,25 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         // Render current UI selected aircraft's lateral navigation state, accessed via radarScreen's uiPane
         CLIENT_SCREEN?.selectedAircraft?.let {
             val aircraftPos = it.entity[RadarData.mapper]?.position ?: return@let
+            val controllable = it.entity[Controllable.mapper] ?: return@let
             val vectorUnchanged = uiPane.clearanceState.vectorHdg == uiPane.userClearanceState.vectorHdg
             val noVector = uiPane.userClearanceState.vectorHdg == null
-            uiPane.clearanceState.vectorHdg?.let { hdg -> renderVector(aircraftPos.x, aircraftPos.y, hdg, false) } ?:
-            run { renderRouteSegments(aircraftPos.x, aircraftPos.y, it.entity[RouteSegment.mapper]?.segments ?: GdxArray(),
-                skipAircraftToFirstWaypoint = false, forceRenderChangedAircraftToFirstWaypoint = false) }
-            if (!vectorUnchanged && !uiPane.appTrackCaptured) uiPane.userClearanceState.vectorHdg?.let { newHdg ->
-                // Render new vector if changed and is not null, and aircraft has not captured approach track
-                renderVector(aircraftPos.x, aircraftPos.y, newHdg, true)
+            val clearanceStateVectorHdg = uiPane.clearanceState.vectorHdg
+            val controlledByPlayer = controllable.sectorId == CLIENT_SCREEN?.playerSector
+            if (clearanceStateVectorHdg != null && controlledByPlayer) {
+                renderVector(aircraftPos.x, aircraftPos.y, clearanceStateVectorHdg, false)
+            } else {
+                renderRouteSegments(aircraftPos.x, aircraftPos.y, it.entity[RouteSegment.mapper]?.segments ?: GdxArray(),
+                skipAircraftToFirstWaypoint = !controlledByPlayer, forceRenderChangedAircraftToFirstWaypoint = false)
             }
-            renderRouteSegments(aircraftPos.x, aircraftPos.y, uiPane.userClearanceRouteSegments, skipAircraftToFirstWaypoint = !noVector,
-                forceRenderChangedAircraftToFirstWaypoint = !vectorUnchanged && noVector)
+            if (controlledByPlayer) {
+                if (!vectorUnchanged && !uiPane.appTrackCaptured) uiPane.userClearanceState.vectorHdg?.let { newHdg ->
+                    // Render new vector if changed and is not null, and aircraft has not captured approach track
+                    renderVector(aircraftPos.x, aircraftPos.y, newHdg, true)
+                }
+                renderRouteSegments(aircraftPos.x, aircraftPos.y, uiPane.userClearanceRouteSegments, skipAircraftToFirstWaypoint = !noVector,
+                    forceRenderChangedAircraftToFirstWaypoint = !vectorUnchanged && noVector)
+            }
         }
 
         // Render trajectory line for controlled aircraft

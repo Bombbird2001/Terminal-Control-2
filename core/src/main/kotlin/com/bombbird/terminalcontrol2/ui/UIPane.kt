@@ -136,7 +136,10 @@ class UIPane(private val uiStage: Stage) {
         selAircraft = aircraft
         aircraft.entity.apply {
             val controllable = get(Controllable.mapper) ?: return
-            if (controllable.sectorId != CLIENT_SCREEN?.playerSector) return
+            if (controllable.sectorId != CLIENT_SCREEN?.playerSector) {
+                clearanceState.updateUIClearanceState(aircraft.entity[ClearanceAct.mapper]?.actingClearance?.clearanceState ?: return)
+                return
+            }
         }
         aircraftMaxAlt = aircraft.entity[AircraftInfo.mapper]?.aircraftPerf?.maxAlt ?: return
         aircraftArrivalArptId = aircraft.entity[ArrivalAirport.mapper]?.arptId

@@ -284,10 +284,7 @@ data class AircraftSectorUpdateData(private val callsign: String = "", private v
                 aircraft.entity[Datatag.mapper]?.let { setDatatagFlash(it, aircraft, false) }
             }
             controllable.controllerUUID = newUUID?.let { UUID.fromString(it) }
-            if (rs.selectedAircraft == aircraft) {
-                if (newSector == rs.playerSector) rs.setUISelectedAircraft(aircraft)
-                else rs.deselectUISelectedAircraft()
-            }
+            if (rs.selectedAircraft == aircraft) rs.setUISelectedAircraft(aircraft)
         }
     }
 }
