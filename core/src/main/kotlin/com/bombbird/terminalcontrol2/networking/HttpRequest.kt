@@ -154,7 +154,7 @@ object HttpRequest {
 
     /** Class representing data sent to authorization endpoint to obtain symmetric key for room data encryption */
     @JsonClass(generateAdapter = true)
-    data class AuthorizationRequest(val roomId: Short, val uuid: String)
+    data class AuthorizationRequest(val roomId: Short, val uuid: String, val pw: String = Secrets.RELAY_ENDPOINT_AUTH_PW)
 
     /** Class representing data sent by authorization endpoint with symmetric key for room data encryption */
     @JsonClass(generateAdapter = true)
@@ -220,7 +220,7 @@ object HttpRequest {
     fun sendCreateGameRequest(): RoomCreationStatus? {
         val request = Request.Builder()
             .url("${Secrets.RELAY_ENDPOINT_URL}:$RELAY_ENDPOINT_PORT$RELAY_GAME_CREATE_PATH")
-            .post("".toRequestBody(TEXT_MEDIA_TYPE))
+            .post(Secrets.RELAY_ENDPOINT_CREATE_PW.toRequestBody(TEXT_MEDIA_TYPE))
             .build()
         // Blocking call
         val response = client.newCall(request).execute()

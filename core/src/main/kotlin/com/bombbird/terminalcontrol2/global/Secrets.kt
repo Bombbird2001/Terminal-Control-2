@@ -7,4 +7,6 @@ object Secrets {
     const val SEND_ERROR_PW = ""
     const val RELAY_ADDRESS = ""
     const val RELAY_ENDPOINT_URL = ""
+    const val RELAY_ENDPOINT_AUTH_PW = ""
+    const val RELAY_ENDPOINT_CREATE_PW = ""
 }

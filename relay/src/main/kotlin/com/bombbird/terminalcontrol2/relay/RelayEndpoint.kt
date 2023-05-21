@@ -9,6 +9,7 @@ import com.squareup.moshi.adapter
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpHandler
 import com.sun.net.httpserver.HttpServer
+import org.apache.commons.codec.digest.DigestUtils
 import java.net.Inet4Address
 import java.net.InetSocketAddress
 import java.util.UUID
@@ -73,6 +74,8 @@ object RelayEndpoint {
                 }
 
                 if (authReq == null) return sendError(exchange, 400)
+                // Check password
+                if (DigestUtils.sha256Hex(authReq.pw) != Secrets.AUTH_PW_HASH) return sendError(exchange, 403)
 
                 // Get symmetric key, nonce and output to JSON
                 val res = relayServer?.authorizeUUIDToRoom(authReq.roomId, UUID.fromString(authReq.uuid))
@@ -100,6 +103,9 @@ object RelayEndpoint {
 
                 // Only accept POST requests
                 if (exchange.requestMethod != "POST") return sendError(exchange, 405)
+                // Check password
+                val pw = String(exchange.requestBody.readBytes())
+                if (DigestUtils.sha256Hex(pw) != Secrets.CREATE_GAME_PW_HASH) return sendError(exchange, 403)
 
                 // Get symmetric key and output to JSON
                 val roomResponse = relayServer?.createPendingRoom() ?:
