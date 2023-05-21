@@ -1,10 +1,11 @@
 package com.bombbird.terminalcontrol2.entities
 
-import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.Airport.Runway.SerialisedRunway
 import com.bombbird.terminalcontrol2.global.CLIENT_SCREEN
+import com.bombbird.terminalcontrol2.global.RUNWAY_ACTIVE
+import com.bombbird.terminalcontrol2.global.RUNWAY_INACTIVE
 import com.bombbird.terminalcontrol2.global.getEngine
 import com.bombbird.terminalcontrol2.navigation.Approach
 import com.bombbird.terminalcontrol2.navigation.SidStar
@@ -229,7 +230,7 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
             }
             if (onClient) {
                 with<SRColor> {
-                    color = Color.WHITE
+                    color = RUNWAY_INACTIVE
                 }
                 with<GRect> {
                     width = mToPx(runwayLengthM.toInt())
@@ -402,18 +403,24 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
                         rwy.remove<ActiveTakeoff>()
                         rwy[ApproachNOZ.mapper]?.appNoz?.entity?.plusAssign(DoNotRenderShape())
                         rwy[DepartureNOZ.mapper]?.depNoz?.entity?.plusAssign(DoNotRenderShape())
+                        rwy[SRColor.mapper]?.color = RUNWAY_INACTIVE
+                        rwy += DoNotRenderLabel()
                     }
                 }
                 for (i in 0 until it.arrRwys.size) {
                     rwyMap[it.arrRwys[i]?.entity?.get(RunwayInfo.mapper)?.rwyId]?.entity?.let { rwy ->
                         rwy += ActiveLanding()
                         rwy[ApproachNOZ.mapper]?.appNoz?.entity?.remove<DoNotRenderShape>()
+                        rwy[SRColor.mapper]?.color = RUNWAY_ACTIVE
+                        rwy.remove<DoNotRenderLabel>()
                     }
                 }
                 for (i in 0 until it.depRwys.size) {
                     rwyMap[it.depRwys[i]?.entity?.get(RunwayInfo.mapper)?.rwyId]?.entity?.let {  rwy ->
                         rwy += ActiveTakeoff()
                         rwy[DepartureNOZ.mapper]?.depNoz?.entity?.remove<DoNotRenderShape>()
+                        rwy[SRColor.mapper]?.color = RUNWAY_ACTIVE
+                        rwy.remove<DoNotRenderLabel>()
                     }
                 }
                 it.setNTZVisibility(true)
