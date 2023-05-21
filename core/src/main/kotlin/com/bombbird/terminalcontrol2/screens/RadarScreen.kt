@@ -557,6 +557,7 @@ class RadarScreen private constructor(private val connectionHost: String, privat
             try {
                 // Check if game server is public server, if it is, set to its room ID
                 if (gs != null && gs.publicServer && gs.getRoomId() != null) roomId = gs.getRoomId()
+                Thread.sleep(1000)
                 networkClient.beforeConnect(roomId)
                 networkClient.start()
                 networkClient.connect(5000, connectionHost, TCP_PORT, UDP_PORT)
