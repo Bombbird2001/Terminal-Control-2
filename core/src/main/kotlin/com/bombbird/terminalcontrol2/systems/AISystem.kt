@@ -907,18 +907,18 @@ class AISystem: EntitySystem() {
     private fun updateLegRestr(entity: Entity) {
         val actingClearance = entity[ClearanceAct.mapper]?.actingClearance?.clearanceState ?: return
         val commandTarget = entity[CommandTarget.mapper] ?: return
-        val flightType = entity[FlightType.mapper]
+        val flightType = entity[FlightType.mapper] ?: return
         val lastRestriction = entity[LastRestrictions.mapper] ?: LastRestrictions().apply { entity += this }
         val nextRouteMinAlt = getNextMinAlt(actingClearance.route)
         val minAlt = lastRestriction.minAltFt.let { lastMinAlt ->
             when {
                 lastMinAlt != null && nextRouteMinAlt != null -> min(lastMinAlt, nextRouteMinAlt)
-                lastMinAlt != null -> when (flightType?.type) {
+                lastMinAlt != null -> when (flightType.type) {
                     FlightType.DEPARTURE -> lastMinAlt// No further min alts, use the last min alt
                     FlightType.ARRIVAL -> null // No further min alts, but aircraft is an arrival so allow descent below previous min alt
                     else -> null
                 }
-                nextRouteMinAlt != null -> when (flightType?.type) {
+                nextRouteMinAlt != null -> when (flightType.type) {
                     FlightType.DEPARTURE -> null// No min alts before
                     FlightType.ARRIVAL -> nextRouteMinAlt // No min alts before, but aircraft is an arrival so must follow all subsequent min alts
                     else -> null
@@ -932,12 +932,12 @@ class AISystem: EntitySystem() {
         var maxAlt = lastRestriction.maxAltFt.let { lastMaxAlt ->
             when {
                 lastMaxAlt != null && nextRouteMaxAlt != null -> max(lastMaxAlt, nextRouteMaxAlt)
-                lastMaxAlt != null -> when (flightType?.type) {
+                lastMaxAlt != null -> when (flightType.type) {
                     FlightType.DEPARTURE -> null// No further max alts, but aircraft is a departure so allow climb above previous min alt
                     FlightType.ARRIVAL -> lastMaxAlt// No further max alts, use the last min alt
                     else -> null
                 }
-                nextRouteMaxAlt != null -> when (flightType?.type) {
+                nextRouteMaxAlt != null -> when (flightType.type) {
                     FlightType.DEPARTURE -> nextRouteMaxAlt// No max alts before, but aircraft is a departure so must follow all subsequent max alts
                     FlightType.ARRIVAL -> null// No max alts before
                     else -> null
@@ -955,11 +955,11 @@ class AISystem: EntitySystem() {
             var targetAlt = actingClearance.clearedAlt
             minAlt?.let {
                 if (targetAlt < it && altitudeFt >= it) targetAlt = it
-                else if (targetAlt < it && altitudeFt < it && flightType?.type == FlightType.ARRIVAL) targetAlt = altitudeFt.toInt()
+                else if (targetAlt < it && altitudeFt < it && flightType.type == FlightType.ARRIVAL) targetAlt = altitudeFt.toInt()
             }
             maxAlt?.let {
                 if (targetAlt > it && altitudeFt <= it) targetAlt = it
-                else if (targetAlt > it && altitudeFt > it && flightType?.type == FlightType.DEPARTURE) targetAlt = altitudeFt.toInt()
+                else if (targetAlt > it && altitudeFt > it && flightType.type == FlightType.DEPARTURE) targetAlt = altitudeFt.toInt()
             }
 
             commandTarget.targetAltFt = targetAlt // Update command target to the new calculated target altitude
@@ -968,8 +968,11 @@ class AISystem: EntitySystem() {
         val maxSpd = spds.second
         val optimalSpd = spds.third
         // If the cleared IAS is currently at the maximum possible and the new max speed is higher than (or equal to, as in
-        // the event of player clearing speed restriction the acting max speed is already set to maxSpd) it, update it to the new optimal speed
-        if (actingClearance.clearedIas == actingClearance.maxIas && maxSpd >= actingClearance.maxIas) commandTarget.targetIasKt = optimalSpd
+        // the event of player clearing speed restriction the acting max speed is already set to maxSpd) it, and the
+        // aircraft is a departure, update it to the new optimal speed automatically
+        if (actingClearance.clearedIas == actingClearance.maxIas && maxSpd >= actingClearance.maxIas &&
+            flightType.type == FlightType.DEPARTURE)
+            commandTarget.targetIasKt = optimalSpd
         else if (actingClearance.clearedIas > maxSpd) commandTarget.targetIasKt = maxSpd // If currently cleared IAS exceeds max speed restriction
         else commandTarget.targetIasKt = actingClearance.clearedIas // Else just set to the cleared IAS
         val prevMaxIas = actingClearance.maxIas

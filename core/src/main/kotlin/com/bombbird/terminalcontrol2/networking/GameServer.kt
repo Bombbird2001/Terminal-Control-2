@@ -446,6 +446,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
         var fastUpdateSlot = -1L
         var slowUpdateSlot = -1L
         var metarUpdateTime = 0
+        var autosaveTime = 0
         while (loopRunning.get()) {
             var currMs = System.currentTimeMillis()
             if (startTime == -1L) {
@@ -475,6 +476,13 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
                 if (metarUpdateTime > SERVER_METAR_UPDATE_INTERVAL) {
                     requestAllMetar()
                     metarUpdateTime -= SERVER_METAR_UPDATE_INTERVAL
+                }
+
+                // Check if autosave time is up
+                autosaveTime += (currMs - prevMs).toInt()
+                if (autosaveTime > AUTOSAVE_INTERVAL_MIN * 60 * 1000) {
+                    saveGame(this)
+                    autosaveTime -= AUTOSAVE_INTERVAL_MIN * 60 * 1000
                 }
             }
 

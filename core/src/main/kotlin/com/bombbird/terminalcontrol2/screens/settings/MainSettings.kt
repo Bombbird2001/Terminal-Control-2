@@ -61,6 +61,14 @@ class MainSettings: BasicUIScreen() {
                             GAME.setScreen<SoundSettings>()
                         }
                     }.cell(width = BUTTON_WIDTH_BIG, height = BUTTON_HEIGHT_BIG)
+                    row().padTop(30f)
+                    textButton("Others", "MainSettings").apply {
+                        addChangeListener { _, _ ->
+                            if (!GAME.containsScreen<OtherSettings>()) GAME.addScreen(OtherSettings())
+                            GAME.getScreen<OtherSettings>().setToCurrentClientSettings()
+                            GAME.setScreen<OtherSettings>()
+                        }
+                    }.cell(width = BUTTON_WIDTH_BIG, height = BUTTON_HEIGHT_BIG, padRight = 40f)
                     row().padTop(130f)
                     textButton("Back", "Menu").cell(width = BUTTON_WIDTH_BIG, height = BUTTON_HEIGHT_BIG, colspan = 2, expandY = true, padBottom = BOTTOM_BUTTON_MARGIN, align = Align.bottom).addChangeListener { _, _ ->
                         GAME.setScreen(prevScreen::class.java)

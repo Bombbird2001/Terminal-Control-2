@@ -153,7 +153,14 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
             expedite = newClearance.expedite
 
             val spds = getMinMaxOptimalIAS(entity)
-            if (newClearance.clearedIas == newClearance.optimalIas && newClearance.clearedIas != spds.third) newClearance.clearedIas = spds.third
+            val flightType = entity[FlightType.mapper]
+            // Only change the cleared speed if it is equal to the current optimal speed, and, if new optimal speed is
+            // higher than previous optimal speed then aircraft must be departure; if new optimal speed is lower than
+            // previous optimal speed then aircraft must be arrival
+            if (newClearance.clearedIas == newClearance.optimalIas &&
+                ((newClearance.clearedIas < spds.third && flightType?.type == FlightType.DEPARTURE) ||
+                        (newClearance.clearedIas > spds.third && flightType?.type == FlightType.ARRIVAL)))
+                newClearance.clearedIas = spds.third
             newClearance.minIas = spds.first
             newClearance.maxIas = spds.second
             newClearance.optimalIas = spds.third

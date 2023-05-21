@@ -80,6 +80,9 @@ var ADV_TRAJECTORY_DURATION_S = 0
 var APW_DURATION_S = 0
 var STCA_DURATION_S = 0
 
+/** Autosave settings */
+var AUTOSAVE_INTERVAL_MIN = 2
+
 /** Player UUID */
 lateinit var myUuid: UUID
 
