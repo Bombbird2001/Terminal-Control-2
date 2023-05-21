@@ -7,6 +7,7 @@ import com.badlogic.gdx.graphics.Texture
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.math.MathUtils
 import com.bombbird.terminalcontrol2.files.ExternalFileHandler
+import com.bombbird.terminalcontrol2.files.loadBuildVersion
 import com.bombbird.terminalcontrol2.files.loadPlayerSettings
 import com.bombbird.terminalcontrol2.files.loadPlayerUUID
 import com.bombbird.terminalcontrol2.global.*
@@ -94,6 +95,7 @@ class TerminalControl2(val externalFileHandler: ExternalFileHandler) : KtxGame<K
                 load<Sound>("Audio/rwy_change.wav")
 
                 // Loading settings and player UUID
+                loadBuildVersion()
                 loadPlayerSettings()
                 loadPlayerUUID()
             }

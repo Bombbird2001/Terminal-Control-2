@@ -356,17 +356,22 @@ class RadarScreen private constructor(private val connectionHost: String, privat
 
     /** Main rendering function, updates engine which draws using [RenderingSystemClient] every loop */
     override fun render(delta: Float) {
-        Gdx.gl.glClearColor(0f, 0f, 0f, 1f)
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT or GL20.GL_DEPTH_BUFFER_BIT or if (Gdx.graphics.bufferFormat.coverageSampling) GL20.GL_COVERAGE_BUFFER_BIT_NV else 0)
+        try {
+            Gdx.gl.glClearColor(0f, 0f, 0f, 1f)
+            Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT or GL20.GL_DEPTH_BUFFER_BIT or if (Gdx.graphics.bufferFormat.coverageSampling) GL20.GL_COVERAGE_BUFFER_BIT_NV else 0)
 
-        // Prevent lag spikes from causing huge deviations in simulation
-        val cappedDelta = min(delta, 1f / 30)
+            // Prevent lag spikes from causing huge deviations in simulation
+            val cappedDelta = min(delta, 1f / 30)
 
-        runCameraAnimations(cappedDelta)
-        if (running) clientEngine.update(cappedDelta)
+            runCameraAnimations(cappedDelta)
+            if (running) clientEngine.update(cappedDelta)
 
-        // Process pending runnables
-        while (true) { pendingRunnablesQueue.poll()?.run() ?: break }
+            // Process pending runnables
+            while (true) { pendingRunnablesQueue.poll()?.run() ?: break }
+        } catch (e: Exception) {
+            HttpRequest.sendCrashReport(e, "RadarScreen")
+            GAME.quitCurrentGameWithDialog(CustomDialog("Error", "An error occurred", "", "Ok"))
+        }
     }
 
     /**

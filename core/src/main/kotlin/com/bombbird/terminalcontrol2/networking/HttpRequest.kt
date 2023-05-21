@@ -1,9 +1,7 @@
 package com.bombbird.terminalcontrol2.networking
 
-import com.badlogic.ashley.core.Entity
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.screens.JoinGame
-import com.bombbird.terminalcontrol2.utilities.generateRandomWeather
 import com.bombbird.terminalcontrol2.utilities.updateAirportMetar
 import com.esotericsoftware.minlog.Log
 import com.squareup.moshi.JsonClass
@@ -20,13 +18,37 @@ object HttpRequest {
     private val TEXT_MEDIA_TYPE: MediaType = "text/plain; charset=utf-8".toMediaType()
     private val client = OkHttpClient()
 
+    /** Helper class that specifies the JSON format to send METAR requests to the server */
+    @JsonClass(generateAdapter = true)
+    data class MetarRequest(val airports: List<MetarMapper>, val password: String = Secrets.GET_METAR_PW) {
+
+        /** METAR request data format for an airport */
+        @JsonClass(generateAdapter = true)
+        data class MetarMapper(val realIcaoCode: String, val arptId: Byte)
+    }
+
+    @OptIn(ExperimentalStdlibApi::class)
+    private val metarRequestMoshi = Moshi.Builder().build().adapter<MetarRequest>()
+
+    /**
+     * Sends an HTTP request to the METAR server with the list of airports to retrieve live weather for
+     * @param reqList list of airport ICAO codes and their respective in-game airport IDs
+     * @param onGenerateRandom the function to be called to generate random weather if error occurs in retrieving live
+     * weather
+     */
+    fun sendMetarRequest(reqList: List<MetarRequest.MetarMapper>, onGenerateRandom: () -> Unit) {
+        sendMetarRequest(metarRequestMoshi.toJson(MetarRequest(reqList)), true, onGenerateRandom)
+    }
+
     /**
      * Sends an HTTP request to the METAR server, with the string query and whether the program should try another
      * request in case of failure
      * @param reqString the METAR request object in string format
-     * @param airportsForRandom the list of airports to generate random weather for in case of failure
+     * @param retry whether to retry the request a second time if it fails
+     * @param onGenerateRandom the function to be called to generate random weather if error occurs in retrieving live
+     * weather
      * */
-    fun sendMetarRequest(reqString: String, retry: Boolean, airportsForRandom: List<Entity>) {
+    private fun sendMetarRequest(reqString: String, retry: Boolean, onGenerateRandom: () -> Unit) {
         val request = Request.Builder()
             .url(Secrets.GET_METAR_URL)
             .post(reqString.toRequestBody(JSON_MEDIA_TYPE))
@@ -34,12 +56,12 @@ object HttpRequest {
         client.newCall(request).enqueue(object: Callback {
             override fun onFailure(call: Call, e: IOException) {
                 Log.info("HttpRequest", "METAR request failed")
-                println(e)
-                handleMetarResult(null, retry, reqString, airportsForRandom)
+                // println(e)
+                handleMetarResult(null, retry, reqString, onGenerateRandom)
             }
 
             override fun onResponse(call: Call, response: Response) {
-                handleMetarResult(response, retry, reqString, airportsForRandom)
+                handleMetarResult(response, retry, reqString, onGenerateRandom)
             }
         })
     }
@@ -49,12 +71,13 @@ object HttpRequest {
      * @param response the response received from the server; may be null if request was unsuccessful
      * @param retry whether to retry if the response is not successful
      * @param reqString the original request JSON string send in the request
-     * @param airportsForRandom the list of airport entities to generate random weather if needed
+     * @param onGenerateRandom the function to be called to generate random weather if error occurs in retrieving live
+     * weather
      */
-    private fun handleMetarResult(response: Response?, retry: Boolean, reqString: String, airportsForRandom: List<Entity>) {
+    private fun handleMetarResult(response: Response?, retry: Boolean, reqString: String, onGenerateRandom: () -> Unit) {
         fun tryGetWeatherAgain() {
-            if (retry) sendMetarRequest(reqString, false, airportsForRandom)
-            else generateRandomWeather(true, airportsForRandom)
+            if (retry) sendMetarRequest(reqString, false, onGenerateRandom)
+            else onGenerateRandom()
         }
 
         if (!checkGameServerRunningStatus()) return response?.close() ?: Unit
@@ -98,7 +121,7 @@ object HttpRequest {
         client.newCall(request).enqueue(object: Callback {
             override fun onFailure(call: Call, e: IOException) {
                 Log.info("HttpRequest", "Public games request failed")
-                println(e)
+                // println(e)
             }
 
             override fun onResponse(call: Call, response: Response) {
@@ -223,5 +246,36 @@ object HttpRequest {
         response.close()
 
         return roomCreationStatus
+    }
+
+    /** Class representing the error stack trace sent to the crash server together with the password */
+    @JsonClass(generateAdapter = true)
+    data class ErrorRequest(val errorString: String, val crashLocation: String, val gameVersion: String = GAME_VERSION,
+                            val buildVersion: Int = BUILD_VERSION, val password: String = Secrets.SEND_ERROR_PW)
+
+    /**
+     * Sends an HTTP request to the crash report server
+     * @param e the crash exception
+     * @param crashLocation the location where the crash occurred (GameServer, RadarScreen, etc.)
+     */
+    @OptIn(ExperimentalStdlibApi::class)
+    fun sendCrashReport(e: Exception, crashLocation: String) {
+        val jsonString = Moshi.Builder().build().adapter<ErrorRequest>().toJson(ErrorRequest(e.stackTraceToString(), crashLocation))
+
+        val request = Request.Builder()
+            .url(Secrets.SEND_ERROR_URL)
+            .post(jsonString.toRequestBody(JSON_MEDIA_TYPE))
+            .build()
+
+        client.newCall(request).enqueue(object: Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                Log.info("HttpRequest", "Error request failed")
+                // println(e)
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                Log.info("HttpRequest", response.body?.string() ?: "Null response body")
+            }
+        })
     }
 }

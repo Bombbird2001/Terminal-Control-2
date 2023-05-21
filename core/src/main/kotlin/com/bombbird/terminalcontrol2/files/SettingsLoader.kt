@@ -6,10 +6,12 @@ import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.ToJson
 import com.squareup.moshi.adapter
+import ktx.assets.toInternalFile
 import java.util.UUID
 
-private const val settingsPath = "Player/settings.json"
-private const val uuidPath = "Player/uuid.json"
+private const val SETTINGS_PATH = "Player/settings.json"
+private const val UUID_PATH = "Player/uuid.json"
+private const val BUILD_PATH = "BUILD"
 
 @OptIn(ExperimentalStdlibApi::class)
 val settingsAdapter = Moshi.Builder().build().adapter<PlayerSettingsJSON>()
@@ -46,7 +48,7 @@ data class PlayerSettingsJSON(
 
 /** Loads the player's existing global settings and sets the global variables to them if available */
 fun loadPlayerSettings() {
-    val settingsHandle = getExtDir(settingsPath) ?: return
+    val settingsHandle = getExtDir(SETTINGS_PATH) ?: return
     if (settingsHandle.exists()) {
         // File exists, read from it
         val jsonString = settingsHandle.readString()
@@ -60,7 +62,7 @@ fun loadPlayerSettings() {
 /** Saves the player's existing global settings to the user app data directory */
 @OptIn(ExperimentalStdlibApi::class)
 fun savePlayerSettings() {
-    val settingsHandle = getExtDir(settingsPath) ?: return
+    val settingsHandle = getExtDir(SETTINGS_PATH) ?: return
     val moshi = Moshi.Builder().build()
     val settingsAdapter = moshi.adapter<PlayerSettingsJSON>().indent("  ")
     val jsonString = settingsAdapter.toJson(getJsonFromPlayerSettings())
@@ -128,7 +130,7 @@ private object UUIDAdapter {
 /** Loads the player's existing UUID and sets the global variables to it if available */
 @OptIn(ExperimentalStdlibApi::class)
 fun loadPlayerUUID() {
-    val uuidHandle = getExtDir(uuidPath) ?: return
+    val uuidHandle = getExtDir(UUID_PATH) ?: return
     myUuid = if (uuidHandle.exists()) {
         // File exists, read from it
         val jsonString = uuidHandle.readString()
@@ -144,13 +146,21 @@ fun loadPlayerUUID() {
 /**
  * Generates a random UUID, sets the global UUID variable to it, and saves it to the player's app data directory
  * @return the newly generated [UUID]
- * */
+ */
 @OptIn(ExperimentalStdlibApi::class)
 private fun generateRandomUUIDAndSave(): UUID {
     val newUUID = UUID.randomUUID()
     val moshi = Moshi.Builder().add(UUIDAdapter).build()
     val uuidAdapter = moshi.adapter<UUID>()
     val jsonString = uuidAdapter.toJson(newUUID)
-    getExtDir(uuidPath)?.writeString(jsonString, false)
+    getExtDir(UUID_PATH)?.writeString(jsonString, false)
     return newUUID
+}
+
+/** Loads the game version, build version */
+fun loadBuildVersion() {
+    val buildHandle = BUILD_PATH.toInternalFile()
+    val buildInfo = buildHandle.readString().split(" ")
+    GAME_VERSION = buildInfo[0]
+    BUILD_VERSION = buildInfo[1].toInt()
 }

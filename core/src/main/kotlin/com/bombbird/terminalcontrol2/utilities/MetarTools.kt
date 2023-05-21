@@ -6,7 +6,6 @@ import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.MAG_HDG_DEV
-import com.bombbird.terminalcontrol2.global.Secrets
 import com.bombbird.terminalcontrol2.networking.GameServer.Companion.WEATHER_LIVE
 import com.bombbird.terminalcontrol2.networking.GameServer.Companion.WEATHER_RANDOM
 import com.bombbird.terminalcontrol2.networking.GameServer.Companion.WEATHER_STATIC
@@ -26,21 +25,6 @@ import kotlin.math.*
 private val airportMetarMapType = Types.newParameterizedType(Map::class.java, Byte::class.javaObjectType, MetarResponse::class.java)
 private val airportMetarMoshiAdapter = Moshi.Builder().build().adapter<Map<Byte, MetarResponse>>(airportMetarMapType)
 
-/** Helper class that specifies the JSON format to send METAR requests to the server */
-@JsonClass(generateAdapter = true)
-data class MetarRequest(
-    val password: String,
-    val airports: List<MetarMapper>
-) {
-
-    /** METAR request data format for an airport */
-    @JsonClass(generateAdapter = true)
-    data class MetarMapper(
-        val realIcaoCode: String,
-        val arptId: Byte
-    )
-}
-
 /** Requests METAR for all airports in the current gameServer instance */
 fun requestAllMetar() {
     // No need to update for static weather
@@ -50,17 +34,19 @@ fun requestAllMetar() {
     // Check if is a new game that has not yet requested/generated METAR, or the minute of requesting is from 0-4 or 30-34
     val randomUpdateNeeded = GAME.gameServer?.initialisingWeather?.get() == true || (LocalTime.now().minute % 30 < 5)
     val randomWeatherAirportList = ArrayList<Entity>()
-    val metarRequestList = ArrayList<MetarRequest.MetarMapper>().apply {
+    val metarRequestList = ArrayList<HttpRequest.MetarRequest.MetarMapper>().apply {
         (GAME.gameServer?.airports?.values() ?: return).forEach { arpt ->
             val realIcao = arpt.entity[MetarInfo.mapper]?.realLifeIcao ?: return@forEach
             val icao = arpt.entity[AirportInfo.mapper]?.arptId ?: return@forEach
-            add(MetarRequest.MetarMapper(realIcao, icao))
+            add(HttpRequest.MetarRequest.MetarMapper(realIcao, icao))
             if (randomUpdateNeeded) randomWeatherAirportList.add(arpt.entity)
         }
     }
     if (weatherMode == WEATHER_LIVE) {
-        val metarRequest = MetarRequest(Secrets.GET_METAR_PW, metarRequestList)
-        HttpRequest.sendMetarRequest(Moshi.Builder().build().adapter(MetarRequest::class.java).toJson(metarRequest), true, randomWeatherAirportList)
+        HttpRequest.sendMetarRequest(metarRequestList) {
+            // Called on failure
+            generateRandomWeather(true, randomWeatherAirportList)
+        }
     } else if (weatherMode == WEATHER_RANDOM) generateRandomWeather(true, randomWeatherAirportList)
 }
 

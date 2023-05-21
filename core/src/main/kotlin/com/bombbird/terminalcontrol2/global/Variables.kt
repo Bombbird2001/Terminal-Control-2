@@ -82,3 +82,7 @@ var STCA_DURATION_S = 0
 
 /** Player UUID */
 lateinit var myUuid: UUID
+
+/** Build version */
+var GAME_VERSION = "Unknown"
+var BUILD_VERSION = 0

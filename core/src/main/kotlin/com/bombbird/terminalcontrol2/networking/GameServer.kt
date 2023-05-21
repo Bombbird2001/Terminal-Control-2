@@ -13,6 +13,7 @@ import com.bombbird.terminalcontrol2.networking.hostserver.LANServer
 import com.bombbird.terminalcontrol2.networking.hostserver.PublicServer
 import com.bombbird.terminalcontrol2.systems.*
 import com.bombbird.terminalcontrol2.traffic.*
+import com.bombbird.terminalcontrol2.ui.CustomDialog
 import com.bombbird.terminalcontrol2.utilities.*
 import com.esotericsoftware.minlog.Log
 import ktx.ashley.get
@@ -253,8 +254,6 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
             requestAllMetar()
             initialWeatherCondition.await()
         }
-
-        // if (saveId == null) appTestArrival(this)
     }
 
     /**
@@ -264,19 +263,24 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
      * */
     private fun initiateServer(mainName: String, saveId: Int?) {
         thread {
-            Log.info("GameServer", "Starting game server")
-            saveID = saveId
-            loadGame(mainName, saveId)
-            startNetworkingServer()
-            startTime = -1L
-            Log.info("GameServer", "Game server started")
-            serverStartedCallback?.invoke()
-            // Pause the game initially (until at least 1 player connects)
-            handleGameRunningRequest(false)
-            loopRunning.set(true)
-            gameLoop()
-            stopNetworkingServer()
-            saveGame(this)
+            try {
+                Log.info("GameServer", "Starting game server")
+                saveID = saveId
+                loadGame(mainName, saveId)
+                startNetworkingServer()
+                startTime = -1L
+                Log.info("GameServer", "Game server started")
+                serverStartedCallback?.invoke()
+                // Pause the game initially (until at least 1 player connects)
+                handleGameRunningRequest(false)
+                loopRunning.set(true)
+                gameLoop()
+                stopNetworkingServer()
+                saveGame(this)
+            } catch (e: Exception) {
+                HttpRequest.sendCrashReport(e, "GameServer")
+                GAME.quitCurrentGameWithDialog(CustomDialog("Error", "An error occurred", "", "Ok"))
+            }
         }
     }
 
