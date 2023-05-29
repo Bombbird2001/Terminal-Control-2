@@ -8,25 +8,17 @@ import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.ui.CustomDialog
 import com.bombbird.terminalcontrol2.ui.addChangeListener
 import com.esotericsoftware.minlog.Log
-import com.squareup.moshi.Moshi
-import com.squareup.moshi.adapter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import ktx.async.KtxAsync
-import ktx.collections.GdxArray
-import ktx.collections.GdxArrayMap
-import ktx.collections.set
+import ktx.collections.*
 import ktx.scene2d.*
 
 /** Screen for searching game saves in the user app data */
 class LoadGame: BasicUIScreen() {
     private val savedGamesTable: KTableWidget
-    private val gamesFound = GdxArray<Pair<Int, GameSaveMeta>>()
     @Volatile
     private var loading = false
-
-    @OptIn(ExperimentalStdlibApi::class)
-    private val moshiGameMetaAdapter = Moshi.Builder().build().adapter<GameSaveMeta>()
 
     private var currSelectedMode: KTextButton? = null
     private var currSelectedSaveButton: KTextButton? = null
@@ -81,7 +73,8 @@ class LoadGame: BasicUIScreen() {
                                             "Landed: ${meta.landed}   Departed: ${meta.departed}"
                                     showDialog(CustomDialog("Delete save", "Delete save ${meta.mainName}?\n$toDisplay",
                                         "No", "Delete", onPositive = {
-                                            deleteSave(saveIdToDelete)
+                                            deleteMainSave(saveIdToDelete)
+                                            deleteBackupSave(saveIdToDelete)
                                             refreshSaveList()
                                     }))
                                 }
@@ -184,7 +177,7 @@ class LoadGame: BasicUIScreen() {
         }, 1f, 1.5f)
         Timer.schedule(object: Timer.Task() {
             override fun run() {
-                Gdx.app.postRunnable { loadingLabel.setText("Searching games.") }
+                Gdx.app.postRunnable { loadingLabel.setText("Loading saves.") }
             }
         }, 1.5f, 1.5f)
     }
@@ -193,30 +186,24 @@ class LoadGame: BasicUIScreen() {
     private fun searchSavedGames() {
         if (loading) return
         Gdx.app.postRunnable { setSearchingSaves() }
-        gamesFound.clear()
-        val saveFolderHandle = getExtDir("Saves") ?: return
-        if (saveFolderHandle.exists()) {
-            val metaOrJsonFound = GdxArrayMap<Int, GameSaveMeta?>()
-            saveFolderHandle.list().forEach {
-                val id = it.nameWithoutExtension().toInt()
-                if (it.extension() == "json" || it.extension() == "meta") {
-                    if (metaOrJsonFound.containsKey(id)) {
-                        val meta: GameSaveMeta = metaOrJsonFound[id] ?: moshiGameMetaAdapter.fromJson(it.readString()) ?: return@forEach
-                        gamesFound.add(Pair(id, meta))
-                    }
-                    else metaOrJsonFound[id] = if (it.extension() == "meta") moshiGameMetaAdapter.fromJson(it.readString()) else null
-                }
-            }
+        val gamesFound = getAvailableSaveGames()
+        val sortedGameList = GdxArray<Pair<Int, GameSaveMeta>>(gamesFound.size)
+        for (i in 0 until gamesFound.size) {
+            val id = gamesFound.getKeyAt(i)
+            val meta = gamesFound.getValueAt(i)
+            sortedGameList.add(Pair(id, meta))
         }
-        Gdx.app.postRunnable { showFoundGames() }
+        sortedGameList.sort { o1, o2 -> o1.first - o2.first }
+        Gdx.app.postRunnable { showFoundGames(sortedGameList) }
     }
 
     /** Displays all games found on the user data folder, and sets the loading flag to false */
-    private fun showFoundGames() {
+    private fun showFoundGames(sortedGameList: GdxArray<Pair<Int, GameSaveMeta>>) {
         Timer.instance().clear()
+
         savedGamesTable.apply {
             clear()
-            for (i in 0 until gamesFound.size) { gamesFound[i]?.let { game ->
+            for (i in 0 until sortedGameList.size) { sortedGameList[i]?.let { game ->
                 val meta = game.second
                 val saveButton = textButton("${meta.mainName} - Score: ${meta.score}   High score: ${meta.highScore}\nLanded: ${meta.landed}   Departed: ${meta.departed}", "NewLoadGameAirport").cell(growX = true)
                 saveButton.name = game.first.toString()
@@ -230,7 +217,7 @@ class LoadGame: BasicUIScreen() {
                 }
                 row()
             }}
-            if (gamesFound.size == 0) label("No saves found", "SearchingGame")
+            if (sortedGameList.size == 0) label("No saves found", "SearchingGame")
         }
         loading = false
     }

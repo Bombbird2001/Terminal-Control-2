@@ -4,13 +4,17 @@ import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.json.getMoshiWithAllAdapters
 import com.bombbird.terminalcontrol2.networking.GameServer
 import com.squareup.moshi.JsonDataException
+import com.squareup.moshi.Moshi
 import com.squareup.moshi.adapter
+import ktx.collections.GdxArray
+import ktx.collections.GdxArrayMap
+import java.lang.NumberFormatException
 
 /**
- * Deletes the save file with the input ID
- * @param saveId ID of the save to delete
+ * Deletes the main save file with the input ID (does not delete the backup)
+ * @param saveId ID of the main save to delete
  */
-fun deleteSave(saveId: Int) {
+fun deleteMainSave(saveId: Int) {
     val saveFolderHandle = getExtDir("Saves") ?: return
     if (!saveFolderHandle.exists()) return
 
@@ -19,6 +23,21 @@ fun deleteSave(saveId: Int) {
 
     val metaHandle = saveFolderHandle.child("${saveId}.meta")
     if (metaHandle.exists()) metaHandle.delete()
+}
+
+/**
+ * Deletes the backup save files with the input ID (does not delete the main save)
+ * @param saveId ID of the backup save to delete
+ */
+fun deleteBackupSave(saveId: Int) {
+    val saveFolderHandle = getExtDir("Saves") ?: return
+    if (!saveFolderHandle.exists()) return
+
+    val backupHandle = saveFolderHandle.child("${saveId}-backup.json")
+    if (backupHandle.exists()) backupHandle.delete()
+
+    val backupMetaHandle = saveFolderHandle.child("${saveId}-backup.meta")
+    if (backupMetaHandle.exists()) backupMetaHandle.delete()
 }
 
 /**
@@ -76,8 +95,48 @@ fun getNextAvailableSaveID(): Int? {
     val saveFolderHandle = getExtDir("Saves") ?: return null
     var saveIndex = 0
     saveFolderHandle.list().forEach {
-        val fileIndex = it.nameWithoutExtension().toInt()
-        if (saveIndex <= fileIndex) saveIndex = fileIndex + 1
+        try {
+            val fileIndex = it.nameWithoutExtension().toInt()
+            if (saveIndex <= fileIndex) saveIndex = fileIndex + 1
+        } catch (e: NumberFormatException) {
+            return@forEach
+        }
     }
     return saveIndex
+}
+
+/** Gets a [GdxArrayMap] of save IDs mapped to their respective [GameSaveMeta] */
+fun getAvailableSaveGames(): GdxArrayMap<Int, GameSaveMeta> {
+    val gamesFound = GdxArrayMap<Int, GameSaveMeta>()
+    val saveFolderHandle = getExtDir("Saves") ?: return gamesFound
+    if (saveFolderHandle.exists()) {
+        val allSaveHandles = saveFolderHandle.list()
+        val backupsFound = GdxArray<Pair<Int, GameSaveMeta>>(allSaveHandles.size)
+        allSaveHandles.forEach {
+            if (it.extension() != "meta") return@forEach
+            var name = it.nameWithoutExtension()
+            val isBackup = if (name.contains("-backup")) {
+                name = name.replace("-backup", "")
+                true
+            } else false
+            val id: Int
+            try {
+                id = name.toInt()
+            } catch (e: NumberFormatException) {
+                return@forEach
+            }
+            @OptIn(ExperimentalStdlibApi::class)
+            val metaInfo = Moshi.Builder().build().adapter<GameSaveMeta>().fromJson(it.readString()) ?: return@forEach
+            if (!isBackup)
+                gamesFound.put(id, metaInfo)
+            else
+                backupsFound.add(Pair(id, metaInfo))
+        }
+        for (i in 0 until backupsFound.size) {
+            val backupEntry = backupsFound[i]
+            if (!gamesFound.containsKey(backupEntry.first)) gamesFound.put(backupEntry.first, backupEntry.second)
+        }
+    }
+
+    return gamesFound
 }

@@ -8,12 +8,17 @@ import com.bombbird.terminalcontrol2.components.WaypointInfo
 import com.bombbird.terminalcontrol2.entities.Aircraft
 import com.bombbird.terminalcontrol2.entities.Airport
 import com.bombbird.terminalcontrol2.entities.Waypoint
+import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.getEngine
 import com.bombbird.terminalcontrol2.json.getMoshiWithAllAdapters
 import com.bombbird.terminalcontrol2.json.runDelayedEntityRetrieval
 import com.bombbird.terminalcontrol2.networking.GameServer
 import com.bombbird.terminalcontrol2.systems.TrafficSystemInterval
+import com.bombbird.terminalcontrol2.ui.CustomDialog
+import com.esotericsoftware.minlog.Log
 import com.squareup.moshi.JsonClass
+import com.squareup.moshi.JsonDataException
+import com.squareup.moshi.JsonEncodingException
 import com.squareup.moshi.adapter
 import ktx.ashley.get
 import ktx.ashley.getSystem
@@ -66,8 +71,22 @@ fun saveGame(gs: GameServer) {
         gs.aircraft.values().toList(), gs.airports.values().toList(), gs.waypoints.values.toList())
     val saveFolderHandle = getExtDir("Saves") ?: return
     if (!saveFolderHandle.exists()) saveFolderHandle.mkdirs()
+
     // Get a new save ID if gameServer's save ID is null
-    val saveIndex = gs.saveID ?: getNextAvailableSaveID() ?: return
+    val currSaveId = gs.saveID
+    if (currSaveId != null) {
+        // Try to shift existing save to back-up save (if save exists)
+        val saveHandle = saveFolderHandle.child("${currSaveId}.json")
+        val saveMetaHandle = saveFolderHandle.child("${currSaveId}.meta")
+        if (saveHandle.exists() && saveMetaHandle.exists()) {
+            val backupHandle = saveFolderHandle.child("${currSaveId}-backup.json")
+            val backupMetaHandle = saveFolderHandle.child("${currSaveId}-backup.meta")
+            saveHandle.moveTo(backupHandle)
+            saveMetaHandle.moveTo(backupMetaHandle)
+        }
+    }
+
+    val saveIndex = currSaveId ?: getNextAvailableSaveID() ?: return
     gs.saveID = saveIndex
     val saveHandle = saveFolderHandle.child("${saveIndex}.json")
     saveHandle.writeString(moshi.adapter<GameServerSave>().toJson(saveObject), false)
@@ -80,35 +99,71 @@ fun saveGame(gs: GameServer) {
 
 /**
  * Loads the game state for the input GameServer
+ *
+ * If the main save file is corrupted, tries to use the backup save if one exists. If it is missing or corrupted also,
+ * exits to menu with error message
  * @param gs the [GameServer] to load to
+ * @param saveId the ID of the save file to load
+ */
+fun loadSave(gs: GameServer, saveId: Int) {
+    loadSave(gs, saveId, false)
+}
+
+/**
+ * Loads the game state for the input GameServer
+ * @param gs the [GameServer] to load to
+ * @param saveId the ID of the save file to load
+ * @param useBackup whether to use the backup save file (e.g. 1-backup.json)
  */
 @OptIn(ExperimentalStdlibApi::class)
-fun loadSave(gs: GameServer, saveId: Int) {
-    val moshi = getMoshiWithAllAdapters()
-    val saveFolderHandle = getExtDir("Saves") ?: return
-    if (!saveFolderHandle.exists()) return
-    val saveHandle = saveFolderHandle.child("${saveId}.json")
-    if (!saveHandle.exists()) return
-    val saveObject = moshi.adapter<GameServerSave>().fromJson(saveHandle.readString()) ?: return
-    setGameServerFields(gs, saveObject)
-    saveObject.aircraft.forEach {
-        val callsign = it.entity[AircraftInfo.mapper]?.icaoCallsign ?: return@forEach
-        gs.aircraft[callsign] = it
+private fun loadSave(gs: GameServer, saveId: Int, useBackup: Boolean) {
+        val moshi = getMoshiWithAllAdapters()
+        val saveFolderHandle = getExtDir("Saves") ?: return
+        if (!saveFolderHandle.exists()) return
+        val saveHandle = saveFolderHandle.child("${saveId}${if (useBackup) "-backup" else ""}.json")
+        if (!saveHandle.exists()) {
+            Log.warn("GameSaverLoader", "${saveId}.json missing, attempting to use backup")
+            loadSave(gs, saveId, true)
+            return
+        }
+    try {
+        val saveObject = moshi.adapter<GameServerSave>().fromJson(saveHandle.readString()) ?: return
+        setGameServerFields(gs, saveObject)
+        saveObject.aircraft.forEach {
+            val callsign = it.entity[AircraftInfo.mapper]?.icaoCallsign ?: return@forEach
+            gs.aircraft[callsign] = it
+        }
+        saveObject.airports.forEach {
+            val arptId = it.entity[AirportInfo.mapper]?.arptId ?: return@forEach
+            gs.airports[arptId] = it
+        }
+        saveObject.waypoints.forEach {
+            val wptId = it.entity[WaypointInfo.mapper]?.wptId ?: return@forEach
+            gs.waypoints[wptId] = it
+        }
+        val trafficSystem = getEngine(false).getSystem<TrafficSystemInterval>()
+        saveObject.aircraft.forEach {
+            val wakeTrail = it.entity[WakeTrail.mapper] ?: return@forEach
+            for (point in QueueIterator(wakeTrail.wakeZones)) point.second?.let { zone -> trafficSystem.addWakeZone(zone) }
+        }
+        runDelayedEntityRetrieval()
+    } catch (e: Exception) {
+        if (e is JsonDataException || e is JsonEncodingException) {
+            if (!useBackup) {
+                Log.warn("GameSaverLoader", "Encountered JSON parsing error when loading ${saveId}.json, attempting to use backup, deleting corrupted save")
+                deleteMainSave(saveId)
+                loadSave(gs, saveId, true)
+            } else {
+                Log.warn("GameSaverLoader", "Encountered JSON parsing error when loading ${saveId}-backup.json, exiting")
+                deleteBackupSave(saveId)
+                GAME.quitCurrentGameWithDialog(CustomDialog("Failed to load game", "Save files are corrupted", "", "Ok"))
+            }
+            return
+        }
+
+        Log.warn("GameSaverLoader", "Encountered ${e.javaClass.name} when loading ${saveId}${if (useBackup) "-backup" else ""}.json, exiting")
+        GAME.quitCurrentGameWithDialog(CustomDialog("Error loading game", "Please try again.", "", "Ok"))
     }
-    saveObject.airports.forEach {
-        val arptId = it.entity[AirportInfo.mapper]?.arptId ?: return@forEach
-        gs.airports[arptId] = it
-    }
-    saveObject.waypoints.forEach {
-        val wptId = it.entity[WaypointInfo.mapper]?.wptId ?: return@forEach
-        gs.waypoints[wptId] = it
-    }
-    val trafficSystem = getEngine(false).getSystem<TrafficSystemInterval>()
-    saveObject.aircraft.forEach {
-        val wakeTrail = it.entity[WakeTrail.mapper] ?: return@forEach
-        for (point in QueueIterator(wakeTrail.wakeZones)) point.second?.let { zone -> trafficSystem.addWakeZone(zone) }
-    }
-    runDelayedEntityRetrieval()
 }
 
 /**

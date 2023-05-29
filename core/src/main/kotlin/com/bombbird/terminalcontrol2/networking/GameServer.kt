@@ -228,6 +228,21 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
 
     init {
         if (!testMode) initiateServer(airportToHost, saveId)
+        else loadGameTest()
+    }
+
+    /** Initialises game world for testing purposes */
+    private fun loadGameTest() {
+        loadAircraftData()
+        loadDisallowedCallsigns()
+
+        engine.addSystem(PhysicsSystem())
+        engine.addSystem(PhysicsSystemInterval())
+        engine.addSystem(AISystem())
+        engine.addSystem(ControlStateSystem())
+        engine.addSystem(ControlStateSystemInterval())
+        engine.addSystem(TrafficSystemInterval())
+        engine.addSystem(DataSystem())
     }
 
     /** Initialises game world where [mainName] is the ICAO code of the main airport */
