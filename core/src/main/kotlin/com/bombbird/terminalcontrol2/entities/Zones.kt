@@ -19,7 +19,7 @@ interface Zone {
      * @param x the x coordinate
      * @param y the y coordinate
      * @return true if ([x], [y]) is inside the zone polygon, else false
-     * */
+     */
     fun contains(x: Float, y: Float): Boolean
 }
 
@@ -74,7 +74,7 @@ class ApproachNormalOperatingZone(posX: Float, posY: Float, appHdg: Short, priva
      * @param x the x coordinate
      * @param y the y coordinate
      * @return true if ([x], [y]) is inside the zone polygon, else false
-     * */
+     */
     override fun contains(x: Float, y: Float): Boolean {
        return entity[GPolygon.mapper]?.polygonObj?.contains(x, y) == true
     }
@@ -84,7 +84,7 @@ class ApproachNormalOperatingZone(posX: Float, posY: Float, appHdg: Short, priva
          * De-serialises a [SerialisedApproachNOZ] and creates a new [ApproachNormalOperatingZone] object from it
          * @param serialisedApproachNOZ the object to de-serialise
          * @return a newly created [ApproachNormalOperatingZone] object
-         * */
+         */
         fun fromSerialisedObject(serialisedApproachNOZ: SerialisedApproachNOZ): ApproachNormalOperatingZone {
             return ApproachNormalOperatingZone(serialisedApproachNOZ.posX, serialisedApproachNOZ.posY,
                 serialisedApproachNOZ.appHdg, serialisedApproachNOZ.widthNm, serialisedApproachNOZ.lengthNm)
@@ -147,7 +147,7 @@ class DepartureNormalOperatingZone(posX: Float, posY: Float, appHdg: Short, priv
      * @param x the x coordinate
      * @param y the y coordinate
      * @return true if ([x], [y]) is inside the zone polygon, else false
-     * */
+     */
     override fun contains(x: Float, y: Float): Boolean {
         return entity[GPolygon.mapper]?.polygonObj?.contains(x, y) == true
     }
@@ -157,7 +157,7 @@ class DepartureNormalOperatingZone(posX: Float, posY: Float, appHdg: Short, priv
          * De-serialises a [SerialisedDepartureNOZ] and creates a new [DepartureNormalOperatingZone] object from it
          * @param serialisedDepartureNOZ the object to de-serialise
          * @return a newly created [ApproachNormalOperatingZone] object
-         * */
+         */
         fun fromSerialisedObject(serialisedDepartureNOZ: SerialisedDepartureNOZ): DepartureNormalOperatingZone {
             return DepartureNormalOperatingZone(serialisedDepartureNOZ.posX, serialisedDepartureNOZ.posY,
                 serialisedDepartureNOZ.appHdg, serialisedDepartureNOZ.widthNm, serialisedDepartureNOZ.lengthNm)
@@ -173,7 +173,7 @@ class DepartureNormalOperatingZone(posX: Float, posY: Float, appHdg: Short, priv
  * Class for storing NTZ information
  *
  * Note that NTZs are mainly for aesthetic purposes, and will be used for positional checking to detect NTZ transgressions
- * */
+ */
 class NoTransgressionZone(posX: Float, posY: Float, appHdg: Short, private val widthNm: Float, private val lengthNm: Float,
                           onClient: Boolean = true): Zone, SerialisableEntity<NoTransgressionZone.SerialisedNTZ> {
     val entity = getEngine(onClient).entity {
@@ -224,7 +224,7 @@ class NoTransgressionZone(posX: Float, posY: Float, appHdg: Short, private val w
      * @param x the x coordinate
      * @param y the y coordinate
      * @return true if ([x], [y]) is inside the zone polygon, else false
-     * */
+     */
     override fun contains(x: Float, y: Float): Boolean {
         return entity[GPolygon.mapper]?.polygonObj?.contains(x, y) == true
     }
@@ -234,7 +234,7 @@ class NoTransgressionZone(posX: Float, posY: Float, appHdg: Short, private val w
          * De-serialises a [SerialisedNTZ] and creates a new [NoTransgressionZone] object from it
          * @param serialisedNTZ the object to de-serialise
          * @return a newly created [NoTransgressionZone] object
-         * */
+         */
         fun fromSerialisedObject(serialisedNTZ: SerialisedNTZ): NoTransgressionZone {
             return NoTransgressionZone(serialisedNTZ.posX, serialisedNTZ.posY,
                 serialisedNTZ.appHdg, serialisedNTZ.widthNm, serialisedNTZ.lengthNm)
@@ -250,7 +250,7 @@ class NoTransgressionZone(posX: Float, posY: Float, appHdg: Short, private val w
  * Class for storing route segment zone (for waypoint -> waypoint leg segments)
  *
  * This class should be initialized only on the server as it is not required on the client
- * */
+ */
 class RouteZone(posX1: Float, posY1: Float, posX2: Float, posY2: Float, rnpNm: Float, minAlt: Int?): Zone {
     val entity = getEngine(false).entity {
         with<GPolygon> {
@@ -274,7 +274,7 @@ class RouteZone(posX1: Float, posY1: Float, posX2: Float, posY2: Float, rnpNm: F
      * @param x the x coordinate
      * @param y the y coordinate
      * @return true if ([x], [y]) is inside the zone polygon, else false
-     * */
+     */
     override fun contains(x: Float, y: Float): Boolean {
         return entity[GPolygon.mapper]?.polygonObj?.contains(x, y) == true
     }
@@ -284,7 +284,7 @@ class RouteZone(posX1: Float, posY1: Float, posX2: Float, posY2: Float, rnpNm: F
  * Class for storing wake turbulence zones
  *
  * This class should be initialized only on the server as it is not required on the client
- * */
+ */
 class WakeZone(posX1: Float, posY1: Float, posX2: Float, posY2: Float, wakeAlt: Float, callsign: String, leadingWakeCat: Char, leadingRecatCat: Char): Zone {
     val entity = getEngine(false).entity {
         with<GPolygon> {
@@ -312,7 +312,7 @@ class WakeZone(posX1: Float, posY1: Float, posX2: Float, posY2: Float, wakeAlt: 
      * @param x the x coordinate
      * @param y the y coordinate
      * @return true if ([x], [y]) is inside the zone polygon, else false
-     * */
+     */
     override fun contains(x: Float, y: Float): Boolean {
         return entity[GPolygon.mapper]?.polygonObj?.contains(x, y) == true
     }

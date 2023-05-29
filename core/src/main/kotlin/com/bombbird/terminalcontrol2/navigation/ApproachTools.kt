@@ -26,7 +26,7 @@ import kotlin.math.tan
  * @param posY the y coordinate of aircraft position
  * @param gsKt the ground speed of the aircraft; required for visual approaches only
  * @return the altitude the aircraft should be at, or null if aircraft is too far from approach position
- * */
+ */
 fun getAppAltAtPos(approach: Entity, posX: Float, posY: Float, gsKt: Float): Float? {
     val pos = approach[Position.mapper] ?: return null
     val appInfo = approach[ApproachInfo.mapper] ?: return null
@@ -67,7 +67,7 @@ fun getAppAltAtPos(approach: Entity, posX: Float, posY: Float, gsKt: Float): Flo
  * @param posY the y coordinate of aircraft position
  * @return a [Vector2] containing the position the aircraft should target, or null if aircraft is too far from approach
  * position
- * */
+ */
 fun getTargetPos(approach: Entity, posX: Float, posY: Float): Vector2? {
     val pos = approach[Position.mapper] ?: return null
     val dir = approach[Direction.mapper] ?: return null
@@ -91,7 +91,7 @@ fun getTargetPos(approach: Entity, posX: Float, posY: Float): Vector2? {
  * @param posX the x coordinate of aircraft position
  * @param posY the y coordinate of aircraft position
  * @return whether the aircraft position has reached the distance from the runway threshold
- * */
+ */
 fun checkLineUpDistReached(approach: Entity, posX: Float, posY: Float): Boolean {
     val lineUpDist = approach[LineUpDist.mapper]?.lineUpDistNm ?: return false
     val rwyPos = approach[ApproachInfo.mapper]?.rwyObj?.entity?.get(Position.mapper) ?: return false
@@ -107,7 +107,7 @@ fun checkLineUpDistReached(approach: Entity, posX: Float, posY: Float): Boolean 
  * @param angleDeg the maximum angle range on both sides of the localizer course
  * @param distNm the range of the arc
  * @return whether the aircraft is within range of the specified localizer arc
- * */
+ */
 fun isInsideLocArc(locApp: Entity, posX: Float, posY: Float, angleDeg: Float, distNm: Byte): Boolean {
     val pos = locApp[Position.mapper] ?: return false
     val dir = locApp[Direction.mapper] ?: return false

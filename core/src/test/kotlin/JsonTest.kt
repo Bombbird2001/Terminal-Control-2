@@ -864,7 +864,7 @@ object JsonTest: FunSpec() {
      * Matcher for checking contents of a cumulative distribution are equal
      * @param otherDist the other distribution to check for equality with; the existing distribution to check is accessed
      * from [Matcher]
-     * */
+     */
     private fun <T> matchCumDist(otherDist: CumulativeDistribution<T>) = Matcher<CumulativeDistribution<T>> {
         var discrepancyFound = true
         if (otherDist.size() == it.size()) {

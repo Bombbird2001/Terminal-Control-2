@@ -67,7 +67,7 @@ class MinAltSector(minAlt: Int?, polygonBoundary: ShortArray?, circleX: Short = 
     /**
      * Sets the visibility of the MVA labels
      * @param show Shows the label if true, else hides it
-     * */
+     */
     fun setMVALabelVisibility(show: Boolean) {
         if (show) entity.remove<DoNotRenderLabel>()
         else entity += DoNotRenderLabel()

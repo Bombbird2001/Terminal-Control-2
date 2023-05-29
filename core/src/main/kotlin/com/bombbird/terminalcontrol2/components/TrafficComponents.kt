@@ -116,7 +116,7 @@ data class RunwayNextArrival(var aircraft: Entity = Entity(), var distFromThrPx:
 /**
  * Component for tagging a conflict-able entity, and the conflict sector (based on its altitude) that it belongs to; this
  * is updated once every second and used to reduce the number of comparisons required during the conflict check
- * */
+ */
 data class ConflictAble(var conflictLevel: Int = Int.MAX_VALUE): Component {
     companion object: Mapper<ConflictAble>()
 }
@@ -124,7 +124,7 @@ data class ConflictAble(var conflictLevel: Int = Int.MAX_VALUE): Component {
 /**
  * Component for tagging the wake turbulence trails of an aircraft; the trail queue will be updated every 0.5nm travelled
  * by the aircraft
- * */
+ */
 data class WakeTrail(val wakeZones: Queue<Pair<Position, WakeZone?>> = Queue(), var distNmCounter: Float = 0f): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.WAKE_TRAIL
 
@@ -134,7 +134,7 @@ data class WakeTrail(val wakeZones: Queue<Pair<Position, WakeZone?>> = Queue(), 
 /**
  * Component for tagging the wake turbulence zone strength, based on the leading aircraft wake/Recat category and the
  * distance from the leading aircraft
- * */
+ */
 @JsonClass(generateAdapter = true)
 data class WakeInfo(var aircraftCallsign: String = "", var leadingWake: Char = 'M', var leadingRecat: Char = 'D',
                     var distFromAircraft: Float = 0f): Component, BaseComponentJSONInterface {

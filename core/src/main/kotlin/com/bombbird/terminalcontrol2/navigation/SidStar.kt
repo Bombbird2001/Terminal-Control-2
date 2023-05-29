@@ -20,7 +20,7 @@ import ktx.collections.GdxArrayMap
  * [Pronounceable] is implemented to provide adjustments to text for accurate pronunciation by TTS implementations
  *
  * This class is abstract and is extended by [SID] and [STAR]
- * */
+ */
 abstract class SidStar(val name: String,
                        override val timeRestriction: Byte,
                        override val pronunciation: String): UsabilityFilter, Pronounceable {
@@ -40,7 +40,7 @@ abstract class SidStar(val name: String,
      * This will clear any existing route data (there should not be any data in the route to begin with, should this
      * function be used)
      * @param serialisedSidStar the [SerialisedSidStar] object to parse leg data from
-     * */
+     */
     fun setFromSerialisedObject(serialisedSidStar: SerialisedSidStar) {
         routeLegs.clear()
         rwyLegs.clear()
@@ -53,7 +53,7 @@ abstract class SidStar(val name: String,
     /** Object that contains [SidStar] data to be serialised by Kryo
      *
      * This class is abstract and is extended by SerialisedSID and SerialisedSTAR
-     * */
+     */
     abstract class SerialisedSidStar(val name: String = "",
                                      val timeRestriction: Byte = 0,
                                      val pronunciation: String = "",
@@ -71,7 +71,7 @@ abstract class SidStar(val name: String,
      * [outboundLegs] utilises a getter for [inOutboundLegs]
      *
      * [rwyInitialClimbs] stores the initial climb altitude for each available runway
-     * */
+     */
     class SID(name: String,
               timeRestriction: Byte,
               pronunciation: String): SidStar(name, timeRestriction, pronunciation), UsabilityFilter, Pronounceable {
@@ -130,7 +130,7 @@ abstract class SidStar(val name: String,
      * [rwyLegs], [routeLegs], [UsabilityFilter] and [Pronounceable] are directly inherited from [SidStar]
      *
      * [inboundLegs] utilises a getter for [inOutboundLegs]
-     * */
+     */
     class STAR(name: String,
               timeRestriction: Byte,
               pronunciation: String): SidStar(name, timeRestriction, pronunciation), UsabilityFilter, Pronounceable {
@@ -150,7 +150,7 @@ abstract class SidStar(val name: String,
         /**
          * Gets a random STAR route, made up of the [inboundLegs] segment, and the [routeLegs] segment
          * @return the [Route] that is generated for the aircraft
-         * */
+         */
         fun getRandomSTARRouteForRunway(): Route {
             return Route().apply {
                 if (!inboundLegs.isEmpty) extendRouteCopy(inboundLegs.random())

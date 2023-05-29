@@ -16,7 +16,7 @@ import kotlin.math.max
 /** A basic screen extending [KtxScreen], implementing some lower level functionalities
  *
  * Should not be instantiated on its own, but rather extended from in other screen classes to implement their full functionality
- * */
+ */
 abstract class BasicUIScreen: KtxScreen, ShowsDialog {
     val stage = safeStage(GAME.batch)
     lateinit var container: KContainer<Actor>
@@ -62,7 +62,7 @@ abstract class BasicUIScreen: KtxScreen, ShowsDialog {
     /** Updates various global constants, variables upon a screen resize, to ensure UI will fit to the new screen size
      *
      * Updates the [stage]'s viewport, and its camera's projectionMatrix, and resizes the root UI [container] to fit the new dimensions
-     * */
+     */
     override fun resize(width: Int, height: Int) {
         ScreenSize.updateScreenSizeParameters(width, height)
         stage.viewport.update(width, height)

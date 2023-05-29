@@ -80,7 +80,7 @@ val APP_TYPE = Gdx.app?.type
 /**
  * The current game instance (can be modified, but don't), client engine, and server engine (if [TerminalControl2.gameServer]
  * exists, else throws a [RuntimeException] when accessed)
- * */
+ */
 lateinit var GAME: TerminalControl2
 val isGameInitialised: Boolean
     get() = ::GAME.isInitialized

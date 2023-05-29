@@ -36,7 +36,7 @@ abstract class NetworkClient {
     /**
      * Actions to be performed before initiating connection
      * @param roomId The ID of the room to connect to, applicable only to public multiplayer games
-     * */
+     */
     abstract fun beforeConnect(roomId: Short?)
 
     /** Starts the client */

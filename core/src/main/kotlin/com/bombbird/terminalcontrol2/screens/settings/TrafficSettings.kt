@@ -143,7 +143,7 @@ class TrafficSettings: BaseGameSettings() {
     /**
      * Updates the traffic label and slider to show/hide and display the appropriate text depending on the traffic mode
      * selection
-     * */
+     */
     private fun updateTrafficValueElements() {
         val selectedMode = trafficModeSelectBox.selected
         trafficValueLabel.setText(when (selectedMode) {

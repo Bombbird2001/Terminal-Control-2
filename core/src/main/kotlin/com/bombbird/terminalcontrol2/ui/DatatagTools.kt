@@ -113,7 +113,7 @@ fun updateDatatagLabelSize(datatag: Datatag, smaller: Boolean) {
 /**
  * Updates the spacing, in px, between each line label to the new global set datatag spacing
  * @param datatag the datatag to update
- * */
+ */
 fun updateDatatagLineSpacing(datatag: Datatag) {
     updateDatatagSize(datatag)
 }
@@ -198,7 +198,7 @@ fun addDatatagInputListeners(datatag: Datatag, aircraft: Aircraft) {
  * @param entity the aircraft to generate the datatag for
  * @param minimised whether the datatag should be minimised
  * @return an array of string denoting each line in the datatag
- * */
+ */
 fun getNewDatatagLabelText(entity: Entity, minimised: Boolean): Array<String> {
     return if (minimised) getMinimisedLabelText(entity)
     else getExpandedLabelText(entity)
@@ -208,7 +208,7 @@ fun getNewDatatagLabelText(entity: Entity, minimised: Boolean): Array<String> {
  * Gets a new array of strings for the minimised datatag, based on the player's datatag format
  * @param entity the aircraft to generate the minimised datatag for
  * @return an array of string denoting each line in the datatag
- * */
+ */
 private fun getMinimisedLabelText(entity: Entity): Array<String> {
     val labelText = arrayOf("", "", "", "")
     // Temporary label format TODO change based on datatag format in use
@@ -236,7 +236,7 @@ private fun getMinimisedLabelText(entity: Entity): Array<String> {
  * Gets a new array of strings for the expanded datatag, based on the player's datatag format
  * @param entity the aircraft to generate the minimised datatag for
  * @return an array of string denoting each line in the datatag
- * */
+ */
 private fun getExpandedLabelText(entity: Entity): Array<String> {
     val labelText = arrayOf("", "", "", "")
     // Temporary label format TODO change based on datatag format in use

@@ -53,7 +53,7 @@ class StatusPane {
     /**
      * Refreshes the status messages based on the current state of the game; all existing messages will be cleared and
      * replaced with new ones
-     * */
+     */
     fun refreshStatusMessages() {
         statusMsgTable.clear()
         getConflictMessages()
@@ -124,7 +124,7 @@ class StatusPane {
     /**
      * Gets recent go-arounds that have contacted the player (either through a handover from tower, or directly informed
      * if still under the player's control) and adds them as messages to the status pane
-     * */
+     */
     private fun getMissedApproachMessages() {
         val goAroundContacts = getEngine(true).getEntitiesFor(goAroundContactFamily)
         for (i in 0 until goAroundContacts.size()) {

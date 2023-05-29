@@ -68,7 +68,7 @@ fun createRandomArrival(airports: GdxArray<Airport>, gs: GameServer) {
  * @param icaoType the ICAO aircraft type
  * @param airport the airport the arrival is flying into
  * @param gs the gameServer to instantiate the aircraft in
- * */
+ */
 fun createArrival(callsign: String, icaoType: String, airport: Entity, gs: GameServer) {
     if (gs.aircraft.containsKey(callsign)) {
         Log.info("TrafficTools", "Aircraft with callsign $callsign already exists")
@@ -143,7 +143,7 @@ fun despawnAircraft(aircraft: Entity) {
  * This also takes into account any noise restrictions
  * @param airport the airport to use
  * @return the [SidStar.STAR] chosen
- * */
+ */
 private fun randomStar(airport: Entity): SidStar.STAR? {
     val availableStars = GdxArray<SidStar.STAR>()
     val runwaysAvailable = HashSet<String>()
@@ -231,7 +231,7 @@ fun appTestArrival(gs: GameServer) {
  * Creates a new departure aircraft with the input data, but not cleared for takeoff
  * @param airport the airport the departure is flying from
  * @param gs the gameServer to instantiate the aircraft in
- * */
+ */
 fun createRandomDeparture(airport: Entity, gs: GameServer) {
     val spawnData = generateRandomTrafficForAirport(airport) ?: return
     val callsign = generateRandomCallsign(spawnData.first, spawnData.second, gs) ?: return
@@ -329,7 +329,7 @@ fun clearForTakeoff(aircraft: Entity, rwy: Entity) {
  * This also takes into account any noise restrictions
  * @param rwy the runway to use
  * @return the [SidStar.SID] chosen
- * */
+ */
 private fun randomSid(rwy: Entity): SidStar.SID? {
     val availableSids = GdxArray<SidStar.SID>()
     val rwyName = rwy[RunwayInfo.mapper]?.rwyName
@@ -368,7 +368,7 @@ private fun generateRandomTrafficForAirport(airport: Entity): Triple<String, Boo
  * aircraft
  * @param private whether the aircraft is a private aircraft
  * @param gs the gameServer in which to check for duplicate callsigns
- * */
+ */
 private fun generateRandomCallsign(airline: String, private: Boolean, gs: GameServer): String? {
     return if (private) {
         // Check if private aircraft already exists
@@ -395,7 +395,7 @@ private fun generateRandomCallsign(airline: String, private: Boolean, gs: GameSe
  * Gets all available approaches for the input airport
  * @param airport the airport to use
  * @return a [GdxArray] of strings containing the eligible approach names
- * */
+ */
 fun getAvailableApproaches(airport: Entity): GdxArray<String> {
     val array = GdxArray<String>().apply { add("Approach") }
     val rwys = airport[RunwayChildren.mapper]?.rwyMap ?: return array
@@ -665,7 +665,7 @@ fun getSectorIndexForAlt(alt: Float, startingAltitude: Int): Int {
 /**
  * Gets airports that are closed for arrivals
  * @return an array of bytes containing the ID of airports closed for arrivals
- * */
+ */
 fun getArrivalClosedAirports(): ByteArray {
     val airports = GdxArray<Byte>(AIRPORT_SIZE)
     GAME.gameServer?.airports?.values()?.forEach {
@@ -678,7 +678,7 @@ fun getArrivalClosedAirports(): ByteArray {
 /**
  * Gets airports that are closed for departures
  * @return an array of bytes containing the ID of airports closed for departures
- * */
+ */
 fun getDepartureClosedAirports(): ByteArray {
     val airports = GdxArray<Byte>(AIRPORT_SIZE)
     GAME.gameServer?.airports?.values()?.forEach {

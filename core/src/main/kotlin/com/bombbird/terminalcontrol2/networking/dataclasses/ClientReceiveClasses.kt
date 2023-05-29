@@ -21,7 +21,7 @@ import java.util.*
  *
  * This will always be sent by the server on initial client connection, and a reply by the client (see below [ClientUUIDData])
  * must be received in order for the server to send the client initialisation data
- * */
+ */
 class RequestClientUUID: NeedsEncryption
 
 /**
@@ -49,7 +49,7 @@ class FastUDPData(private val aircraft: Array<Aircraft.SerialisedAircraftUDP> = 
  *
  * This should always be sent before initial loading data (those below) to ensure no duplicate objects become present
  * on the client
- * */
+ */
 class ClearAllClientData: ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
         // Nuke everything

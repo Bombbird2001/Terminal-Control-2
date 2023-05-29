@@ -12,7 +12,7 @@ import ktx.ashley.*
  * of 1hz
  *
  * Used only in RadarScreen
- * */
+ */
 class ControlStateSystemIntervalClient: IntervalSystem(1f) {
     private val handoverUpdateFamily = allOf(Controllable::class, GroundTrack::class, Position::class, Altitude::class).get()
 

@@ -17,7 +17,7 @@ import ktx.collections.toGdxArray
  * Class to store runway configuration data, including departure, arrival runways and No transgression zones (NTZs)
  *
  * A score will be calculated for each runway configuration depending on wind conditions
- * */
+ */
 class RunwayConfiguration(val id: Byte, override val timeRestriction: Byte): Comparable<RunwayConfiguration>, UsabilityFilter {
     val depRwys: GdxArray<Airport.Runway> = GdxArray(5)
     val arrRwys: GdxArray<Airport.Runway> = GdxArray(5)
@@ -33,7 +33,7 @@ class RunwayConfiguration(val id: Byte, override val timeRestriction: Byte): Com
      * in the configuration
      *
      * [windScore] is calculated by summing the headwind component of all runways in the configuration
-     * */
+     */
     fun calculateScores() {
         windScore = 0f
 
@@ -73,7 +73,7 @@ class RunwayConfiguration(val id: Byte, override val timeRestriction: Byte): Com
          * @param serialisedRwyConfig the object to de-serialise
          * @param rwyMap the runway ID map of the airport that this runway configuration belongs to
          * @return a newly created [RunwayConfiguration] object
-         * */
+         */
         fun fromSerialisedObject(serialisedRwyConfig: SerialisedRwyConfig, rwyMap: GdxArrayMap<Byte, Airport.Runway>): RunwayConfiguration {
             return RunwayConfiguration(serialisedRwyConfig.id, serialisedRwyConfig.timeRestriction).apply {
                 depRwys.addAll(serialisedRwyConfig.depRwys.map { rwyMap[it] }.filterNotNull().toGdxArray())

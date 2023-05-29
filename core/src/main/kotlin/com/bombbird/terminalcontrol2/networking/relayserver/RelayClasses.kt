@@ -38,7 +38,7 @@ data class NewGameRequest(val roomId: Short = Short.MAX_VALUE, val maxPlayers: B
 /**
  * Class representing data sent to the host/client to request for their intentions, and to identify this entity as the
  * relay server
- * */
+ */
 class RequestRelayAction: RelayHostReceive, RelayClientReceive, NeedsEncryption {
     override fun handleRelayClientReceive(client: PublicClient) {
         client.requestToJoinRoom()

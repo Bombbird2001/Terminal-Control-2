@@ -26,7 +26,7 @@ import java.util.*
 /**
  * Registers all the required classes into the input Kryo
  * @param kryo the [Kryo] instance to register classes to
- * */
+ */
 fun registerClassesToKryo(kryo: Kryo?) {
     // Register all classes to be transmitted
     kryo?.apply {
@@ -171,7 +171,7 @@ fun registerClassesToKryo(kryo: Kryo?) {
  * Handles an incoming request from the server to client, and performs the appropriate actions
  * @param rs the [RadarScreen] to apply changes to
  * @param obj the incoming data object whose class should have been registered to [Kryo]
- * */
+ */
 fun handleIncomingRequestClient(rs: RadarScreen, obj: Any?) {
     if (obj !is ClientReceive) return
     if (obj is IndividualSectorData) println("IndividualSectorData scheduled")
@@ -188,7 +188,7 @@ fun handleIncomingRequestClient(rs: RadarScreen, obj: Any?) {
  * @param gs the [GameServer] to apply changes to
  * @param connection the [ConnectionMeta] data of the incoming connection
  * @param obj the incoming data object whose class should have been registered to [Kryo]
- * */
+ */
 fun handleIncomingRequestServer(gs: GameServer, connection: ConnectionMeta, obj: Any?) {
     if (obj !is ServerReceive) return
     obj.handleServerReceive(gs, connection)

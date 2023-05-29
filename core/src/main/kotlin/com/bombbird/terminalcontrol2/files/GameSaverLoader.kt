@@ -47,7 +47,7 @@ data class GameServerSave(
 /**
  * Data class save for game meta information (displayed in the loading screen) so the full save object does not need to
  * be loaded
- * */
+ */
 @JsonClass(generateAdapter = true)
 data class GameSaveMeta(val mainName: String, val score: Int, val highScore: Int, val landed: Int, val departed: Int)
 
@@ -115,7 +115,7 @@ fun loadSave(gs: GameServer, saveId: Int) {
  * Sets the individual fields in the gameServer from the save
  * @param gs the [GameServer] to set
  * @param save the [GameServerSave] object to load from
- * */
+ */
 private fun setGameServerFields(gs: GameServer, save: GameServerSave) {
     gs.arrivalSpawnTimerS = save.arrivalSpawnTimerS
     gs.previousArrivalOffsetS = save.previousArrivalOffsetS

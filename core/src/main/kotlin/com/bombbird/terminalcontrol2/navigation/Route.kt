@@ -110,7 +110,7 @@ class Route() {
      * de-serialising data, or if it is absolutely certain that two variables or properties are meant to refer to the
      * exact same leg objects
      * @param route the route used to extend this route (via reference)
-     * */
+     */
     fun extendRoute(route: Route) {
         legs.addAll(route.legs)
     }
@@ -118,7 +118,7 @@ class Route() {
     /**
      * Copies all the legs in the provided [route] to the end of the leg array
      * @param route the route used to extend this route (via copying)
-     * */
+     */
     fun extendRouteCopy(route: Route) {
         legs.addAll(route.legs.map { it.copyLeg() }.toGdxArray())
     }
@@ -131,7 +131,7 @@ class Route() {
      * de-serialising data, or if it is absolutely certain that two variables or properties are meant to refer to the
      * exact same leg objects
      * @param route the route to set this route to (via reference)
-     * */
+     */
     fun setToRoute(route: Route) {
         legs.clear()
         legs.addAll(route.legs)
@@ -140,7 +140,7 @@ class Route() {
     /**
      * Clears the existing [legs] and copies all the legs in the provided [route]
      * @param route the route to set this route to (via copying)
-     * */
+     */
     fun setToRouteCopy(route: Route) {
         legs.clear()
         legs.addAll(route.legs.map { it.copyLeg() }.toGdxArray())
@@ -162,7 +162,7 @@ class Route() {
     /**
      * Abstract leg class that is extended to give specific leg functionality, contains abstract property [phase] which
      * specifies which part of the flight the leg is part of
-     * */
+     */
     abstract class Leg {
         abstract var phase: Byte
 
@@ -181,7 +181,7 @@ class Route() {
      * Defines a waypoint leg - waypoint, altitude restrictions and speed restrictions
      *
      * Optional declaration of [flyOver], [turnDir], [phase]
-     * */
+     */
     @JsonClass(generateAdapter = true)
     data class WaypointLeg(val wptId: Short, val maxAltFt: Int?, val minAltFt: Int?, val maxSpdKt: Short?,
                       var legActive: Boolean, var altRestrActive: Boolean, var spdRestrActive: Boolean,
@@ -205,7 +205,7 @@ class Route() {
         /**
          * Makes a copy of this waypoint leg and returns it
          * @return a new instance of this [WaypointLeg]
-         * */
+         */
         override fun copyLeg(): Leg {
             return WaypointLeg(wptId, maxAltFt, minAltFt, maxSpdKt, legActive, altRestrActive, spdRestrActive, flyOver, turnDir, phase)
         }
@@ -221,7 +221,7 @@ class Route() {
      * Defines a vector leg with the [heading] to fly
      *
      * Optional declaration of [phase]
-     * */
+     */
     @JsonClass(generateAdapter = true)
     data class VectorLeg(var heading: Short, var turnDir: Byte = CommandTarget.TURN_DEFAULT, override var phase: Byte = NORMAL): Leg(), BaseLegJSONInterface {
         override val legType = BaseLegJSONInterface.LegType.VECTOR_LEG
@@ -232,7 +232,7 @@ class Route() {
         /**
          * Makes a copy of this vector leg and returns it
          * @return a new instance of this [VectorLeg]
-         * */
+         */
         override fun copyLeg(): Leg {
             return VectorLeg(heading, turnDir, phase)
         }
@@ -246,7 +246,7 @@ class Route() {
     /**
      * Defines an initial climb leg with the [heading] to fly, and the minimum altitude after which the aircraft will
      * continue to the next leg
-     * */
+     */
     @JsonClass(generateAdapter = true)
     data class InitClimbLeg(val heading: Short, val minAltFt: Int, override var phase: Byte = NORMAL): Leg(), BaseLegJSONInterface {
         override val legType = BaseLegJSONInterface.LegType.INIT_CLIMB_LEG
@@ -257,7 +257,7 @@ class Route() {
         /**
          * Makes a copy of this initial climb leg and returns it
          * @return a new instance of this [InitClimbLeg]
-         * */
+         */
         override fun copyLeg(): Leg {
             return InitClimbLeg(heading, minAltFt, phase)
         }
@@ -274,7 +274,7 @@ class Route() {
      * In practice, this is a [VectorLeg] except the aircraft will maintain its present heading upon encountering this
      *
      * Optional declaration of [phase]
-     * */
+     */
     @JsonClass(generateAdapter = true)
     data class DiscontinuityLeg(override var phase: Byte = NORMAL): Leg(), BaseLegJSONInterface {
         override val legType = BaseLegJSONInterface.LegType.DISCONTINUITY_LEG
@@ -282,7 +282,7 @@ class Route() {
         /**
          * Makes a copy of this discontinuity leg and returns it
          * @return a new instance of this [DiscontinuityLeg]
-         * */
+         */
         override fun copyLeg(): Leg {
             return DiscontinuityLeg(phase)
         }
@@ -294,7 +294,7 @@ class Route() {
      * In practice, aircraft will hold indefinitely at the specified waypoint once it reaches there, till further clearance is given
      *
      * Optional declaration of [phase]
-     * */
+     */
     @JsonClass(generateAdapter = true)
     data class HoldLeg(var wptId: Short, var maxAltFt: Int?, var minAltFt: Int?, var maxSpdKtLower: Short?, var maxSpdKtHigher: Short?,
                        var inboundHdg: Short, var legDist: Byte, var turnDir: Byte, override var phase: Byte = NORMAL): Leg(), BaseLegJSONInterface {
@@ -312,7 +312,7 @@ class Route() {
         /**
          * Makes a copy of this hold leg and returns it
          * @return a new instance of this [HoldLeg]
-         * */
+         */
         override fun copyLeg(): Leg {
             return HoldLeg(wptId, maxAltFt, minAltFt, maxSpdKtLower, maxSpdKtHigher, inboundHdg, legDist, turnDir, phase)
         }

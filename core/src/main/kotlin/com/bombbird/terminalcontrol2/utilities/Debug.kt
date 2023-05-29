@@ -79,7 +79,7 @@ fun printAirportApproaches(entity: Entity) {
  * @param y the y coordinate of the screen tap location
  * @param unprojectFromRadarCamera the function that maps tap location to world coordinates
  * @param clientEngine the engine running on the client (not the server engine)
- * */
+ */
 fun toggleMinAltSectorsOnClick(x: Float, y: Float, unprojectFromRadarCamera: (Float, Float) -> Vector2, clientEngine: Engine) {
     unprojectFromRadarCamera(x, y).apply { println("${pxToNm(this.x)} ${pxToNm(this.y)}") }
     for (mva in clientEngine.getEntitiesFor(minAltSectorFamily)) {

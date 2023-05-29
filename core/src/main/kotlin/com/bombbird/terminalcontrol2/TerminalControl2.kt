@@ -34,7 +34,7 @@ import ktx.scene2d.*
  * Main game class, extending the [KtxGame] class
  *
  * [clearScreen] is set to false as it will be handled by the individual screens
- * */
+ */
 class TerminalControl2(val externalFileHandler: ExternalFileHandler) : KtxGame<KtxScreen>(clearScreen = false) {
     lateinit var batch: SpriteBatch
     lateinit var engine: Engine
@@ -77,7 +77,7 @@ class TerminalControl2(val externalFileHandler: ExternalFileHandler) : KtxGame<K
      * Overrides [KtxGame.create] to also initiate [KtxAsync], and load assets using [AssetStorage]
      *
      * Sets the screen to [MainMenu] upon completion
-     * */
+     */
     override fun create() {
         KtxAsync.initiate()
         KtxAsync.launch {

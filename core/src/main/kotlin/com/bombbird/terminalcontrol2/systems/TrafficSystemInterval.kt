@@ -44,7 +44,7 @@ class TrafficSystemInterval: IntervalSystem(1f) {
     /**
      * Update function for operations that can be updated at a lower frequency and do not rely on deltaTime
      * (e.g. can be derived from other values without needing a time variable)
-     * */
+     */
     override fun updateInterval() {
         // Arrival spawning timer
         GAME.gameServer?.apply {

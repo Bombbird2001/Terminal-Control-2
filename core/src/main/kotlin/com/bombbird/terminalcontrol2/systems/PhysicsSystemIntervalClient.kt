@@ -13,7 +13,7 @@ import ktx.ashley.get
  * A lightweight [PhysicsSystemInterval] that only runs certain required calculations on the client device
  *
  * Used only in RadarScreen
- * */
+ */
 class PhysicsSystemIntervalClient: IntervalSystem(1f) {
     private val tasToIasFamily: Family = allOf(Speed::class, IndicatedAirSpeed::class, Altitude::class)
         .exclude(TakeoffRoll::class).get()
@@ -24,7 +24,7 @@ class PhysicsSystemIntervalClient: IntervalSystem(1f) {
      * (e.g. can be derived from other values without needing a time variable)
      *
      * Values that require constant updating or relies on deltaTime should be put in [PhysicsSystemClient]
-     * */
+     */
     override fun updateInterval() {
         // Calculate the IAS of the aircraft
         val tasToIas = engine.getEntitiesFor(tasToIasFamily)

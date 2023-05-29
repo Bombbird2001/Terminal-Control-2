@@ -16,12 +16,12 @@ abstract class BaseSettings: BasicUIScreen() {
     /**
      * Abstract function that should be implemented to take the relevant variables from the global context and sets the
      * settings screen elements from them
-     * */
+     */
     abstract fun setToCurrentClientSettings()
 
     /**
      * Abstract function that should be implemented to take the relevant selections from the settings screen elements
      * and sets the relevant global variables from them
-     * */
+     */
     abstract fun updateClientSettings()
 }

@@ -13,7 +13,7 @@ import ktx.math.times
  * A lightweight [PhysicsSystem] that only runs certain required calculations on the client device
  *
  * Used only in RadarScreen
- * */
+ */
 class PhysicsSystemClient: EntitySystem() {
     private val positionUpdateFamily: Family = allOf(Position::class, Altitude::class, Speed::class, Direction::class)
         .exclude(WaitingTakeoff::class).get()
@@ -24,7 +24,7 @@ class PhysicsSystemClient: EntitySystem() {
      * Main update function, for values that need to be updated frequently
      *
      * For values that can be updated less frequently and are not dependent on [deltaTime], put in [PhysicsSystemIntervalClient]
-     * */
+     */
     override fun update(deltaTime: Float) {
         // Update position with speed, direction
         val positionUpdates = engine.getEntitiesFor(positionUpdateFamily)

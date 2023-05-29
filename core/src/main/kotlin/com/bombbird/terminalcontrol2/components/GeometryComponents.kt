@@ -21,7 +21,7 @@ class GPolygon(var vertices: FloatArray = FloatArray(0)): Component, BaseCompone
  * Component for an array of points to be joined together with lines
  *
  * Essentially the same as [GPolygon] except this does not need to be a closed shape
- * */
+ */
 class GLineArray(var vertices: FloatArray = FloatArray(0)): Component {
     companion object: Mapper<GLineArray>()
 }

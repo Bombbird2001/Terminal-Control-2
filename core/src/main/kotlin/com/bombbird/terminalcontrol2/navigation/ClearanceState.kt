@@ -31,7 +31,7 @@ import kotlin.math.min
  * "Accelerate/Decelerate via SID/STAR"
  *
  * Also contains utility functions for updating the actual aircraft command state
- * */
+ */
 @JsonClass(generateAdapter = true)
 class ClearanceState(var routePrimaryName: String = "", val route: Route = Route(), val hiddenLegs: Route = Route(),
                      var vectorHdg: Short? = null, var vectorTurnDir: Byte? = null,
@@ -43,7 +43,7 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
      * Inner class used solely to denote and store the currently active clearance the aircraft is following
      *
      * Provides functions that interact with new player clearances as well as the aircraft command target state
-     * */
+     */
     inner class ActingClearance {
         val clearanceState: ClearanceState
             get() = this@ClearanceState
@@ -55,7 +55,7 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
          * Also adds the custom waypoint in the event of a hold at present position
          * @param newClearance the new player sent clearance (that is being removed from PendingClearances)
          * @param entity the aircraft entity that the clearance will be applied to
-         * */
+         */
         fun updateClearanceAct(newClearance: ClearanceState, entity: Entity) {
             val starChanged = routePrimaryName != newClearance.routePrimaryName
             routePrimaryName = newClearance.routePrimaryName
@@ -224,7 +224,7 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
     /**
      * Clearance class that also contains a [timeLeft] value that keeps track of the time remaining before the [clearanceState]
      * should be executed
-     * */
+     */
     @JsonClass(generateAdapter = true)
     data class PendingClearanceState(var timeLeft: Float, val clearanceState: ClearanceState)
 
@@ -233,7 +233,7 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
      * @param latestClearance the clearance state to update this state to; should be the aircraft's latest clearance state
      * @param uiClearance the current clearance state stored in the UI, without any player changes; set to null if
      * the updating of this clearance state should not take into account of any existing changes made by the player
-     * */
+     */
     fun updateUIClearanceState(latestClearance: ClearanceState, uiClearance: ClearanceState? = null) {
         uiClearance?.also {
             // Default clearance provided - compare this clearance against it and update the properties conditionally

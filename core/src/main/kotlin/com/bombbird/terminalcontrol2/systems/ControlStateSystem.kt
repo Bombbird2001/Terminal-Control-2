@@ -10,7 +10,7 @@ import ktx.ashley.*
  * System that is responsible for aircraft control states
  *
  * Used only in GameServer
- * */
+ */
 class ControlStateSystem: EntitySystem() {
     private val latestClearanceChangedFamily: Family = allOf(LatestClearanceChanged::class, AircraftInfo::class, ClearanceAct::class).get()
     private val pendingFamily: Family = allOf(PendingClearances::class, ClearanceAct::class).get()

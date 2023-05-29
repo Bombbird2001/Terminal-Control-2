@@ -53,7 +53,7 @@ class MainInfoPane {
     /**
      * @param paneWidth will be used as the reference width of the UI pane when initialising the container
      * @return a [KContainer] used to contain a table with the elements of the main information pane, which has been added to the [KWidget]
-     * */
+     */
     @Scene2dDsl
     fun mainInfoPane(widget: KWidget<Actor>, paneWidth: Float): KContainer<Actor> {
         return widget.container {
@@ -242,7 +242,7 @@ class MainInfoPane {
      *
      * DEP - XXX, XXX     ARR - XXX, XXX
      * @return a string representing the arrival, departure runways in the above format
-     * */
+     */
     private fun getRunwayInformationDisplay(airport: Entity): String {
         var dep = "DEP - "
         var depAdded = false
@@ -369,7 +369,7 @@ class MainInfoPane {
     /**
      * Updates the UI to reflect the current runway configuration state
      * @param airport the airport entity to update for
-     * */
+     */
     fun setAirportRunwayConfigPaneState(airport: Entity) {
         val arptId = airport[AirportInfo.mapper]?.arptId ?: return
         val activeId = airport[ActiveRunwayConfig.mapper]?.configId

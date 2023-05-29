@@ -151,32 +151,32 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
     /**
      * Maps [AirportInfo.arptId] (instead of [AirportInfo.icaoCode]) to the airport for backwards compatibility (in case of airport ICAO code reassignments;
      * Old airport is still available as a separate entity even with the same ICAO code as the new airport)
-     * */
+     */
     val airports = GdxArrayMap<Byte, Airport>(AIRPORT_SIZE)
 
     /**
      * Maps [AirportInfo.icaoCode] to the most updated [AirportInfo.arptId];
      * The new airport with the ICAO code will be chosen instead of the old one after an ICAO code reassignment
-     * */
+     */
     val updatedAirportMapping = GdxArrayMap<String, Byte>(AIRPORT_SIZE)
 
     /**
      * Maps [WaypointInfo.wptId] (instead of [WaypointInfo.wptName]) to the waypoint for backwards compatibility (in case waypoint position is moved;
      * old waypoint is still available as a separate entity even with the same name as the new waypoint)
-     * */
+     */
     val waypoints = HashMap<Short, Waypoint>()
 
     /**
      * Maps [WaypointInfo.wptName] to the most updated [WaypointInfo.wptId];
      * The new waypoint with the name will be chosen instead of the old one after the waypoint has "shifted"
-     * */
+     */
     val updatedWaypointMapping = HashMap<String, Short>()
 
     /**
      * Maps [WaypointInfo.wptName] to the [PublishedHold]
      *
      * This map will map to the most updated published hold, since old holding legs are stored individually with the waypoint ID in the aircraft's [ClearanceState.route]
-     * */
+     */
     val publishedHolds = GdxArrayMap<String, PublishedHold>(PUBLISHED_HOLD_SIZE)
 
     /** Maps [UUID] to [SectorInfo.sectorId] */
@@ -191,7 +191,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
      * First value in the pair is the sector that is being requested
      *
      * Second value in the pair is the sector requesting the swap
-     * */
+     */
     val sectorSwapRequests = GdxArray<Pair<Byte, Byte>>(SECTOR_COUNT_SIZE * (SECTOR_COUNT_SIZE + 1) / 2)
 
     /** Flag for when a sector swap/player join has just occurred */
@@ -230,10 +230,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
         if (!testMode) initiateServer(airportToHost, saveId)
     }
 
-    /**
-     * Initialises game world
-     * @param mainName the ICAO code of the main airport in the game world
-     * */
+    /** Initialises game world where [mainName] is the ICAO code of the main airport */
     private fun loadGame(mainName: String, saveId: Int?) {
         this.mainName = mainName
         loadAircraftData()
@@ -260,7 +257,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
      * Starts the server processes
      * @param mainName the name of the main airport in the map
      * @param saveId the ID of the save file to load, or null if nothing to load
-     * */
+     */
     private fun initiateServer(mainName: String, saveId: Int?) {
         thread {
             try {
@@ -540,7 +537,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
      * Aircraft position
      *
      * (List not exhaustive)
-     * */
+     */
     private fun sendFastUDPToAll() {
         // println("Fast UDP sent, time passed since program start: ${(System.currentTimeMillis() - startTime) / 1000f}s")
         // Split aircraft values into blocks of 25 aircraft max, and send a UDP packet for each, to prevent buffer size
@@ -562,7 +559,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
      * Thunderstorm cells
      *
      * (List not exhaustive)
-     * */
+     */
     private fun sendSlowUDPToAll() {
         // println("Slow UDP sent, time passed since program start: ${(System.currentTimeMillis() - startTime) / 1000f}s")
     }
@@ -586,7 +583,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
      * @param callsign the callsign of the aircraft to update
      * @param newSector the new sector that the aircraft is under control of
      * @param newUUID the UUID of the new player the aircraft is under control of, or null if tower/ACC
-     * */
+     */
     fun sendAircraftSectorUpdateTCPToAll(callsign: String, newSector: Byte, newUUID: String?) {
         val tagFlashing = aircraft[callsign]?.entity?.get(InitialClientDatatagPosition.mapper)?.flashing == true
         networkServer.sendToAllTCP(AircraftSectorUpdateData(callsign, newSector, newUUID, sectorJustSwapped, tagFlashing))
@@ -613,7 +610,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
     /**
      * Sends aircraft spawn data
      * @param aircraft the aircraft that spawned
-     * */
+     */
     fun sendAircraftSpawn(aircraft: Aircraft) {
         networkServer.sendToAllTCP(AircraftSpawnData(aircraft.getSerialisableObject()))
     }
@@ -621,7 +618,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
     /**
      * Sends aircraft despawn data
      * @param callsign the callsign of the aircraft to despawn
-     * */
+     */
     fun sendAircraftDespawn(callsign: String) {
         networkServer.sendToAllTCP(AircraftDespawnData(callsign))
     }
@@ -639,7 +636,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
      * @param minIas the updated minimum IAS that can be cleared
      * @param maxIas the updated maximum IAS that can be cleared
      * @param optimalIas the updated optimal IAS that aircraft will target
-     * */
+     */
     fun sendAircraftClearanceStateUpdateToAll(
         callsign: String, primaryName: String = "", route: Route, hiddenLegs: Route,
         vectorHdg: Short?, vectorTurnDir: Byte?, clearedAlt: Int, expedite: Boolean,
@@ -670,7 +667,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
     /**
      * Sends a new custom waypoint to be added by clients
      * @param waypoint the new custom waypoint
-     * */
+     */
     fun sendCustomWaypointAdditionToAll(waypoint: Waypoint) {
         networkServer.sendToAllTCP(CustomWaypointData(waypoint.getSerialisableObject()))
     }
@@ -678,7 +675,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
     /**
      * Sends a message to clients to remove a custom waypoint
      * @param wptId the new ID of the custom waypoint to remove
-     * */
+     */
     fun sendCustomWaypointRemovalToAll(wptId: Short) {
         networkServer.sendToAllTCP(RemoveCustomWaypointData(wptId))
     }
@@ -719,7 +716,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
      * Sends a message to clients to update them on the ongoing conflicts
      * @param conflicts the list of ongoing conflicts
      * @param potentialConflicts the list of potential conflicts
-     * */
+     */
     fun sendConflicts(
         conflicts: GdxArray<ConflictManager.Conflict>,
         potentialConflicts: GdxArray<ConflictManager.PotentialConflict>
@@ -754,7 +751,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
     /**
      * Adds a runnable to be run on the main server thread after the current engine update
      * @param runnable the runnable to add
-     * */
+     */
     fun postRunnableAfterEngineUpdate(runnable: Runnable) {
         pendingRunnablesQueue.offer(runnable)
     }

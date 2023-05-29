@@ -167,7 +167,7 @@ class LoadGame: BasicUIScreen() {
     /**
      * Sets the scroll pane to display a label telling the user saves are being searched, and sets the searching flag
      * to true
-     * */
+     */
     private fun setSearchingSaves() {
         loading = true
         savedGamesTable.clear()

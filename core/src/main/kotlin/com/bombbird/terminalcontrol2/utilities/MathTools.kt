@@ -139,7 +139,7 @@ fun fpmToMps(fpm: Float): Float {
  * World heading: 360 is up, 90 is right, 180 is down and 270 is left
  *
  * Render degrees: 90 is up, 0 is right, -90 is down and -180 is left
- * */
+ */
 fun convertWorldAndRenderDeg(origDeg: Float): Float {
     return 90 - origDeg
 }
@@ -179,7 +179,7 @@ fun findDeltaHeading(initHdg: Float, targetHdg: Float, turnDir: Byte): Float {
  * @param y2 the y position of the second point
  * @return the distance between ([x1], [y1]) and ([x2], [y2]), units will be the same as whatever units were used in the
  * input
- * */
+ */
 fun calculateDistanceBetweenPoints(x1: Float, y1: Float, x2: Float, y2: Float): Float {
     val deltaX = x2 - x1
     val deltaY = y2 - y1
@@ -207,7 +207,7 @@ fun distanceFromBorder(xBorder: FloatArray, yBorder: FloatArray, x: Float, y: Fl
  * @param y the line origin's y coordinate
  * @param track the track direction of the line
  * @return a float array containing 2 floats denoting the point of intersection between the line and the rectangle borders
- * */
+ */
 fun pointsAtBorder(xBorder: FloatArray, yBorder: FloatArray, x: Float, y: Float, track: Float): FloatArray {
     val dist = distanceFromBorder(xBorder, yBorder, x, y, track)
     return floatArrayOf(x + dist * cos(Math.toRadians(90 - track.toDouble())).toFloat(), y + dist * sin(Math.toRadians(90 - track.toDouble())).toFloat())
@@ -247,7 +247,7 @@ fun getRequiredTrack(x: Int, y: Int, destX: Int, destY: Int): Float {
  * @param turnRateDps the rate of turn of the aircraft
  * @param groundSpeedPxps the ground speed, in px per second, of the aircraft
  * @return the distance, in px, to turn early
- * */
+ */
 fun findTurnDistance(deltaHeading: Float, turnRateDps: Float, groundSpeedPxps: Float): Float {
     val radius = groundSpeedPxps / (MathUtils.degreesToRadians * turnRateDps)
     val halfTheta = (180 - abs(deltaHeading)) / 2f
@@ -264,7 +264,7 @@ fun findTurnDistance(deltaHeading: Float, turnRateDps: Float, groundSpeedPxps: F
  * @param vertices the borders of the polygon
  * @param extendLengthPx how much to extend the point past the intersection point along the line, in px
  * @return a [Vector2] object with the point of intersection, or null if none is found
- * */
+ */
 fun findClosestIntersectionBetweenSegmentAndPolygon(originX: Float, originY: Float, endX: Float, endY: Float, vertices: FloatArray, extendLengthPx: Float): Vector2? {
     if (vertices.size % 2 != 0) {
         Log.info("MathTools", "Coordinates cannot be odd in number: ${vertices.size}")
@@ -306,7 +306,7 @@ fun findClosestIntersectionBetweenSegmentAndPolygon(originX: Float, originY: Flo
  * @param arcAngleRangeDeg the angle to which the arc rotates through towards both sides of the line of symmetry
  * @param posX the x coordinate of the position to test
  * @param posY the y coordinate of the position to test
- * */
+ */
 fun checkInArc(centerX: Float, centreY: Float, centerTrackDeg: Float, arcLengthPx: Float, arcAngleRangeDeg: Float, posX: Float, posY: Float): Boolean {
     if (calculateDistanceBetweenPoints(posX, posY, centerX, centreY) > arcLengthPx) return false
     val centerToPosTrack = getRequiredTrack(centerX, centreY, posX, posY)

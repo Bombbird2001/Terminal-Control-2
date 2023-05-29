@@ -24,7 +24,7 @@ import kotlin.math.*
  * Flight modes will directly alter [CommandTarget], which will then interact with PhysicsSystem to execute the required behaviour
  *
  * Used only in GameServer
- * */
+ */
 class AISystem: EntitySystem() {
     private val takeoffAccFamily: Family = allOf(Acceleration::class, AircraftInfo::class, TakeoffRoll::class, Speed::class, AffectedByWind::class)
         .exclude(WaitingTakeoff::class).get()
@@ -442,7 +442,7 @@ class AISystem: EntitySystem() {
      * Updates aircraft AI behaviour for approaches, which will in most cases override behaviour stipulated by the modes
      * in the [updateCommandTarget] function
      * @param deltaTime time passed, in seconds, since the last update
-     * */
+     */
     private fun updateApproaches(deltaTime: Float) {
         // Update for localizer/extended centreline captured (this will override waypoint direct behaviour)
         val appTrackCaptured = engine.getEntitiesFor(appTrackCapFamily)
@@ -883,7 +883,7 @@ class AISystem: EntitySystem() {
     /**
      * Removes the aircraft's acting route's first leg, and adds the required component for the next leg
      * @param entity the aircraft entity
-     * */
+     */
     private fun setToNextRouteLeg(entity: Entity) {
         entity[ClearanceAct.mapper]?.actingClearance?.clearanceState?.route?.apply { if (size > 0) {
             (get(0) as? Route.WaypointLeg)?.let { prevWpt -> entity[LastRestrictions.mapper]?.let { restr ->
@@ -903,7 +903,7 @@ class AISystem: EntitySystem() {
      * Call this function after the aircraft's next leg has changed (the last restriction component values will need to
      * be updated accordingly prior to calling this function to ensure valid results)
      * @param entity the aircraft entity
-     * */
+     */
     private fun updateLegRestr(entity: Entity) {
         val actingClearance = entity[ClearanceAct.mapper]?.actingClearance?.clearanceState ?: return
         val commandTarget = entity[CommandTarget.mapper] ?: return
@@ -989,7 +989,7 @@ class AISystem: EntitySystem() {
      * Updates the command target parameters with the latest acting clearance; should be called only when the acting
      * clearance has been changed due to player clearance
      * @param entity the aircraft entity to apply the changes to
-     * */
+     */
     private fun setCommandTargetToNewActingClearance(entity: Entity) {
         val actingClearance = entity[ClearanceAct.mapper]?.actingClearance?.clearanceState ?: return
         val commandTarget = entity[CommandTarget.mapper] ?: return
@@ -1028,7 +1028,7 @@ class AISystem: EntitySystem() {
      * @param inboundHdg the inbound leg heading of the hold leg
      * @param legDir the turn direction of the hold leg
      * @return a byte denoting one of 3 possible holding entry procedures
-     * */
+     */
     private fun getEntryProc(targetHeading: Float, inboundHdg: Short, legDir: Byte): Byte {
         // Offset is relative to opposite of inbound heading
         var offset = targetHeading - inboundHdg + 180
@@ -1057,7 +1057,7 @@ class AISystem: EntitySystem() {
      * @param currHeading the heading that the aircraft is flying
      * @param cmdTurnDir the current turn direction
      * @return the appropriate turn direction after taking into account the difference between th target and actual heading
-     * */
+     */
     private fun getAppropriateTurnDir(targetHeading: Float, currHeading: Float, cmdTurnDir: Byte): Byte {
         // Maintain the turn direction until magnitude of deltaHeading is less than 3 degrees
         return if (withinRange(findDeltaHeading(currHeading,
@@ -1068,7 +1068,7 @@ class AISystem: EntitySystem() {
     /**
      * Removes all persistent advanced command modes from the entity
      * @param entity the aircraft entity to remove the modes from
-     * */
+     */
     private fun removeAllAdvancedCommandModes(entity: Entity) {
         entity.remove<CommandHold>()
         entity.remove<CommandDirect>()
@@ -1078,7 +1078,7 @@ class AISystem: EntitySystem() {
     /**
      * Sets the turn direction back to default
      * @param entity the aircraft entity to update the command target turn direction
-     * */
+     */
     private fun unsetTurnDirection(entity: Entity) {
         entity[CommandTarget.mapper]?.turnDir = CommandTarget.TURN_DEFAULT
     }

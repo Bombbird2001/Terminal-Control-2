@@ -60,7 +60,7 @@ class JoinGame: BasicUIScreen() {
     /**
      * Sets the scroll pane to display a label telling the user games are being searched, and sets the searching flag
      * to true
-     * */
+     */
     private fun setSearchingGames() {
         refreshButton.isDisabled = true
         searching = true
@@ -91,7 +91,7 @@ class JoinGame: BasicUIScreen() {
      * found
      *
      * For relay games, an HTTP request is sent to the relay server endpoint to get game data
-     * */
+     */
     private fun searchGames() {
         if (searching) return
         Gdx.app.postRunnable { setSearchingGames() }

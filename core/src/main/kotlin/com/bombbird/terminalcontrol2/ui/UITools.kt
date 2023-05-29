@@ -80,7 +80,7 @@ inline fun Actor.addChangeListener(crossinline function: (ChangeEvent?, Actor?) 
 /**
  * Removes the default click listener, and adds a new click listener which stops the click event even if the select
  * box is disabled to prevent nuisance click through
- * */
+ */
 fun <T> SelectBox<T>.disallowDisabledClickThrough() {
     removeListener(clickListener)
     addListener(object : ClickListener() {
@@ -97,7 +97,7 @@ fun <T> SelectBox<T>.disallowDisabledClickThrough() {
 /**
  * Constructs and returns a default label for settings pages' options
  * @param text the text to display
- * */
+ */
 fun KTableWidget.defaultSettingsLabel(text: String): Label {
     return label(text, "SettingsOption").cell(width = BUTTON_WIDTH_BIG / 2, height = BUTTON_HEIGHT_BIG / 1.5f, padRight = 30f).apply {
         setAlignment(Align.right)

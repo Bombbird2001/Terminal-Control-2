@@ -15,7 +15,7 @@ import com.squareup.moshi.ToJson
  * The only sector IDs that can be stored are -1 (Tower), -2 (ACC) and 0 (player controlled), since when the game server
  * launches it starts with 1 player by default, and subsequent player connections will result in the aircraft automatically
  * being reassigned to the relevant controller
- * */
+ */
 @JsonClass(generateAdapter = true)
 data class ControllableJSON(val sector: Byte)
 
@@ -56,7 +56,7 @@ object PendingClearanceAdapter {
 /**
  * Data class for storing acting clearance information for JSON serialization (adapter for ActingClearance cannot be
  * generated automatically due to it being an inner class)
- * */
+ */
 @JsonClass(generateAdapter = true)
 data class ActingClearanceJSON(val actingClearance: ClearanceState)
 

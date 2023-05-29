@@ -21,7 +21,7 @@ class PhysicsSystemInterval: IntervalSystem(1f) {
      * (e.g. can be derived from other values without needing a time variable)
      *
      * Values that require constant updating or relies on deltaTime should be put in [PhysicsSystem]
-     * */
+     */
     override fun updateInterval() {
         // Calculate the IAS of the aircraft
         val tasToIas = engine.getEntitiesFor(tasToIasFamily)

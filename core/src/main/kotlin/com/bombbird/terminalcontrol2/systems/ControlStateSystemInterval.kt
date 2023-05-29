@@ -19,7 +19,7 @@ import kotlin.math.max
  * System that is responsible for aircraft control states, updating at a lower frequency of 1hz
  *
  * Used only in GameServer
- * */
+ */
 class ControlStateSystemInterval: IntervalSystem(1f) {
     private val contactFromTowerFamily: Family = allOf(Altitude::class, Position::class, ContactFromTower::class, GroundTrack::class, Controllable::class).get()
     private val contactToTowerFamily: Family = allOf(Altitude::class, ContactToTower::class, Controllable::class).get()
@@ -36,7 +36,7 @@ class ControlStateSystemInterval: IntervalSystem(1f) {
      * (e.g. can be derived from other values without needing a time variable)
      *
      * Values that require constant updating or relies on deltaTime should be put in the main [update] function
-     * */
+     */
     override fun updateInterval() {
         // Updating the minimum, maximum and optimal IAS for aircraft
         val minMaxOptIas = engine.getEntitiesFor(minMaxOptIasFamily)

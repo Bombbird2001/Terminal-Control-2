@@ -28,7 +28,7 @@ import kotlin.math.roundToInt
  *
  * Additionally, [UsabilityFilter] is implemented to provide filtering of suitable SIDs depending on conditions;
  * [Pronounceable] is implemented to provide adjustments to text for accurate pronunciation by TTS implementations
- * */
+ */
 class Approach(name: String, arptId: Byte, runwayId: Byte, posX: Float, posY: Float, decisionAlt: Short, rvr: Short,
                onClient: Boolean = true, override val timeRestriction: Byte): UsabilityFilter, Pronounceable {
     override val pronunciation: String
@@ -64,7 +64,7 @@ class Approach(name: String, arptId: Byte, runwayId: Byte, posX: Float, posY: Fl
      * Gets a [SerialisedApproach] from current state
      *
      * This method is abstract and must be implemented by each individual approach class
-     * */
+     */
     fun getSerialisableObject(): SerialisedApproach {
         val appInfo = entity[ApproachInfo.mapper] ?: return SerialisedApproach()
         val pos = entity[Position.mapper] ?: return SerialisedApproach()
@@ -88,7 +88,7 @@ class Approach(name: String, arptId: Byte, runwayId: Byte, posX: Float, posY: Fl
         /**
          * De-serialises a [SerialisedApproach] and creates a new [Approach] object from it
          * @param serialisedApproach the serialised approach object to de-serialise
-         * */
+         */
         fun fromSerialisedObject(serialisedApproach: SerialisedApproach): Approach {
             return Approach(
                 serialisedApproach.name, serialisedApproach.arptId, serialisedApproach.rwyId, serialisedApproach.posX, serialisedApproach.posy,
@@ -116,7 +116,7 @@ class Approach(name: String, arptId: Byte, runwayId: Byte, posX: Float, posY: Fl
      * Object that contains [Approach] data to be serialised by Kryo
      *
      * This class is abstract and is extended by SerialisedIlsGS and SerialisedIlsLOCOffset
-     * */
+     */
     class SerialisedApproach(val name: String = "", val arptId: Byte = 0, val rwyId: Byte = 0, val posX: Float = 0f, val posy: Float = 0f,
                              val timeRestriction: Byte = 0,
                              val transitions: Array<SerialisedTransition> = arrayOf(),
@@ -137,7 +137,7 @@ class Approach(name: String, arptId: Byte, runwayId: Byte, posX: Float, posY: Fl
      *
      * This will clear any existing route data (there should not be any data in the route to begin with, should this function be used)
      * @param serialisedApproach the serialised approach object to refer to
-     * */
+     */
     fun setLegsFromSerialisedObject(serialisedApproach: SerialisedApproach) {
         transitions.clear()
         for (transLeg in serialisedApproach.transitions) transitions.put(transLeg.name, Route.fromSerialisedObject(transLeg.route))
@@ -149,7 +149,7 @@ class Approach(name: String, arptId: Byte, runwayId: Byte, posX: Float, posY: Fl
      * Adds a localizer to the entity of this approach
      * @param heading the track of the localizer
      * @param locDistNm the maximum localizer distance
-     * */
+     */
     fun addLocalizer(heading: Short, locDistNm: Byte) {
         entity += Direction(Vector2(Vector2.Y).rotateDeg(180 - (heading - MAG_HDG_DEV)))
         entity += Localizer(locDistNm)
@@ -161,7 +161,7 @@ class Approach(name: String, arptId: Byte, runwayId: Byte, posX: Float, posY: Fl
      * @param offsetDistNm the negative of the distance, in nm, from the localizer beacon is located away from the glide
      * slope beacon
      * @param maxInterceptAltFt the maximum glideslope intercept altitude
-     * */
+     */
     fun addGlideslope(angleDeg: Float, offsetDistNm: Float, maxInterceptAltFt: Short) {
         entity += GlideSlope(angleDeg, offsetDistNm, maxInterceptAltFt)
     }
@@ -169,7 +169,7 @@ class Approach(name: String, arptId: Byte, runwayId: Byte, posX: Float, posY: Fl
     /**
      * Adds a glideslope to the entity of this approach
      * @param steps the sorted list of step down altitudes at distances from the localizer origin
-     * */
+     */
     fun addStepDown(steps: Array<StepDown.Step>) {
         entity += StepDown(steps)
     }

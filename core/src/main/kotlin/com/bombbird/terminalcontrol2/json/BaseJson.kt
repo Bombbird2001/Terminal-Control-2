@@ -17,7 +17,7 @@ import ktx.collections.GdxArray
 /**
  * Array to store runnables for delayed retrieval of entities based on their references (as per below) till after the entities
  * have been loaded and created
- * */
+ */
 internal val delayedEntityRetrieval = GdxArray<() -> Unit>()
 
 /** Runs all functions stored in the delayed entity retrieval array, and clears the array after running */
@@ -44,7 +44,7 @@ data class RunwayRefJSON(val arptId: Byte, val rwyId: Byte) {
  * Function to get a [RunwayRefJSON] from the input runway entity
  * @param rwy the runway entity to turn into JSON
  * @return the runway JSON reference object
- * */
+ */
 fun toRunwayRefJSON(rwy: Entity): RunwayRefJSON {
     val rwyInfo = rwy[RunwayInfo.mapper]
     val arptId = rwyInfo?.airport?.entity?.get(AirportInfo.mapper)?.arptId ?: (-1).byte

@@ -101,7 +101,7 @@ fun updateAirportMetar(metarJson: String) {
  * the current weather by 3/4, to prevent sudden wind direction or speed changes resulting in runway change
  * @param basedOnCurrent whether to take into account existing weather data when generating random weather
  * @param airports the list of airport entities to generate the random weather for
- * */
+ */
 fun generateRandomWeather(basedOnCurrent: Boolean, airports: List<Entity>) {
     val worldTemp = MathUtils.random(20, 35)
     val worldDewDelta = -MathUtils.random(2, 8)
@@ -186,7 +186,7 @@ fun generateRandomWeather(basedOnCurrent: Boolean, airports: List<Entity>) {
  * @param worldTemp the world temperature, in Celsius
  * @param worldDewDelta the world dew point in comparison to [worldTemp], in Celsius
  * @param worldQnh the world QNH, in hectopascals
- * */
+ */
 fun setAirportStaticWeather(arpt: Entity, windHdg: Short, windSpd: Short, visibility: Short, ceilingHundredFt: Short?, worldTemp: Int, worldDewDelta: Int, worldQnh: Int) {
     arpt[MetarInfo.mapper]?.apply {
         windHeadingDeg = windHdg
@@ -214,7 +214,7 @@ fun setAirportStaticWeather(arpt: Entity, windHdg: Short, windSpd: Short, visibi
  * Generates random gust values based on wind speed, and some curve fitting of a large amount of data
  * @param windSpeedKts the current wind speed, in knots
  * @return the gust speed in knots, or null if no gust is generated
- * */
+ */
 private fun generateRandomGust(windSpeedKts: Short): Short {
     // Magic constants from some curve fitting on Excel of all places
     val prob = 0.00000005 * windSpeedKts.toDouble().pow(4.8615)
@@ -260,7 +260,7 @@ private fun generateRandomWsForAllRwy(airport: Entity): String {
  * @param qnh the QNH, in hectopascals
  * @param windshear the windshear string
  * @return the generated raw METAR
- * */
+ */
 private fun generateRawMetar(windDir: Short, windSpd: Short, windGust: Short, visibility: Short, ceilingHundredFt: Short?,
                              temp: Byte, dewPoint: Byte, qnh: Short, windshear: String): String {
     val sb = StringBuilder()
@@ -303,7 +303,7 @@ private fun generateRawMetar(windDir: Short, windSpd: Short, windGust: Short, vi
  * @param vec the wind vector to update (in pixels per second)
  * @param windDeg the heading, in degrees, of the wind
  * @param windSpdKt the speed, in knots, of the wind
- * */
+ */
 fun updateWindVector(vec: Vector2, windDeg: Short, windSpdKt: Short) {
     if (windDeg == 0.toShort()) {
         vec.setZero()

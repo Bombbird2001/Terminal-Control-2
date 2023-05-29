@@ -20,7 +20,7 @@ import kotlin.math.max
  * The main UI panel display that will integrate the main information pane, and the lateral, altitude and speed panes for controlling of aircraft
  *
  * The overall UI layout is generated on initialisation, and the exact content can be modified by accessing and modifying the relevant UI components stored as variables
- * */
+ */
 class UIPane(private val uiStage: Stage) {
     companion object {
         const val MODE_ROUTE: Byte = 0
@@ -92,7 +92,7 @@ class UIPane(private val uiStage: Stage) {
      * Resize the pane and containers
      * @param width the new width of the application
      * @param height the new height of the application
-     * */
+     */
     fun resize(width: Int, height: Int) {
         uiStage.viewport.update(width, height, true)
         uiStage.camera.apply {
@@ -120,7 +120,7 @@ class UIPane(private val uiStage: Stage) {
     /**
      * Gets the required x offset for radarDisplayStage's camera at a zoom level
      * @param zoom the zoom of the radarDisplayStage camera
-     * */
+     */
     fun getRadarCameraOffsetForZoom(zoom: Float): Float {
         return -paneWidth / 2 * zoom // TODO Change depending on pane position
     }
@@ -130,7 +130,7 @@ class UIPane(private val uiStage: Stage) {
      *
      * The pane is shown only if aircraft has the Controllable component and is in the player's sector
      * @param aircraft the [Aircraft] whose clearance information will be displayed in the pane
-     * */
+     */
     fun setSelectedAircraft(aircraft: Aircraft) {
         deselectAircraft()
         selAircraft = aircraft
@@ -171,7 +171,7 @@ class UIPane(private val uiStage: Stage) {
      *
      * The pane is updated only if aircraft has the Controllable component and is in the player's sector
      * @param aircraft the [Aircraft] whose clearance information will be displayed in the pane
-     * */
+     */
     fun updateSelectedAircraft(aircraft: Aircraft) {
         aircraft.entity.apply {
             val controllable = get(Controllable.mapper) ?: return

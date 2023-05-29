@@ -59,7 +59,7 @@ data class RandomMetarInfo(var windDirDist: CumulativeDistribution<Short> = Cumu
  * [sectorId] = -1 -> tower control
  *
  * [sectorId] = -2 -> ACC control
- * */
+ */
 data class SectorInfo(var sectorId: Byte = 0, var frequency: String = "121.5",
                       var arrivalCallsign: String = "Approach", var departureCallsign: String = "Departure"): Component {
     companion object: Mapper<SectorInfo>() {
@@ -72,7 +72,7 @@ data class SectorInfo(var sectorId: Byte = 0, var frequency: String = "121.5",
  * Component for tagging MVA/Restricted area related information
  *
  * Additional tagging of [GPolygon] or [GCircle] is required for boundary information
- * */
+ */
 data class MinAltSectorInfo(var minAltFt: Int? = null, var restricted: Boolean = false): Component {
     companion object: Mapper<MinAltSectorInfo>()
 }
@@ -96,7 +96,7 @@ data class PublishedHoldInfo(var wptId: Short = 0, var maxAltFt: Int? = null, va
  * Component for tagging aircraft specific information
  *
  * Includes performance determining data - minimum approach speed, rotation speed, weight, others in [aircraftPerf]
- * */
+ */
 @JsonClass(generateAdapter = true)
 data class AircraftInfo(var icaoCallsign: String = "SHIBA1", var icaoType: String = "SHIB"): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.AIRCRAFT_INFO

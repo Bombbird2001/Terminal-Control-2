@@ -231,7 +231,7 @@ private fun parseWaypoint(data: List<String>, gameServer: GameServer) {
  * @param data the line array for the sector
  * @param currSectorCount the number of players this sector configuration is for
  * @param gameServer the [GameServer] to add this sector to
- * */
+ */
 private fun parseSector(data: List<String>, currSectorCount: Byte, gameServer: GameServer) {
     val id = if (!gameServer.sectors.containsKey(currSectorCount)) 0.byte else gameServer.sectors[currSectorCount].size.toByte()
     val freq = data[0]
@@ -327,7 +327,7 @@ private fun parseHold(data: List<String>, gameServer: GameServer) {
 /** Parse the given [data] into an [Airport], and adds it to [GameServer.airports]
  *
  * Returns the constructed [Airport]
- * */
+ */
 private fun parseAirport(data: List<String>, gameServer: GameServer): Airport {
     if (data.size != 8) Log.info("GameLoader", "Airport data has ${data.size} elements instead of 8")
     val id = data[1].toByte()
@@ -466,7 +466,7 @@ private fun parseDepartureNOZ(data: List<String>, airport: Airport) {
  * @param data the line array of runway configuration data
  * @param airport the airport to add the runway configuration to
  * @return the constructed [RunwayConfiguration]
- * */
+ */
 private fun parseRunwayConfiguration(data: List<String>, airport: Airport): RunwayConfiguration {
     val id = data[1].toByte()
     val dayNight = when (data[2]) {
@@ -516,7 +516,7 @@ private fun parseRwyConfigNTZ(data: List<String>, currRwyConfig: RunwayConfigura
  * @param data the line array of approach data
  * @param airport the airport to add the approach to
  * @return the constructed [Approach] or null if an invalid runway is specified
- * */
+ */
 private fun parseApproach(data: List<String>, airport: Airport): Approach? {
     if (data.size != 7) Log.info("GameLoader", "Approach data has ${data.size} elements instead of 7")
     val name = data[1].replace("-", " ")
@@ -548,7 +548,7 @@ private fun parseApproach(data: List<String>, airport: Airport): Approach? {
  * Parse the given data into localizer data, and adds it to the input approach
  * @param data the data containing localizer information
  * @param approach the approach to add the localizer to
- * */
+ */
 private fun parseAppLocalizer(data: List<String>, approach: Approach) {
     if (data.size != 3) Log.info("GameLoader", "Localizer data has ${data.size} elements instead of 3")
     val heading = data[1].toShort()
@@ -560,7 +560,7 @@ private fun parseAppLocalizer(data: List<String>, approach: Approach) {
  * Parse the given data into glideslope data, and adds it to the input approach
  * @param data the data containing glideslope information
  * @param approach the approach to add the glideslope to
- * */
+ */
 private fun parseAppGlideslope(data: List<String>, approach: Approach) {
     if (data.size != 4) Log.info("GameLoader", "Glideslope data has ${data.size} elements instead of 4")
     val angleDeg = data[1].toFloat()
@@ -573,7 +573,7 @@ private fun parseAppGlideslope(data: List<String>, approach: Approach) {
  * Parse the given data into step-down procedure data, and adds it to the input approach
  * @param data the data containing step-down information
  * @param approach the approach to add the step-down procedure to
- * */
+ */
 private fun parseAppStepDown(data: List<String>, approach: Approach) {
     val steps = ArrayList<StepDown.Step>()
     for (i in 1 until data.size) {
@@ -635,7 +635,7 @@ private fun parseApproachTransition(data: List<String>, approach: Approach) {
  * Parse the given [data] into missed approach procedure legs data, and adds it to the supplied [approach]'s [Approach.missedLegs]
  * @param data the line array for the missed approach legs
  * @param approach the [Approach] to add the legs to
- * */
+ */
 private fun parseApproachMissed(data: List<String>, approach: Approach) {
     if (approach.missedLegs.size > 0) {
         Log.info("GameLoader", "Multiple missed approach procedures for approach: ${approach.entity[ApproachInfo.mapper]?.approachName}")
@@ -650,7 +650,7 @@ private fun parseApproachMissed(data: List<String>, approach: Approach) {
  * Parse the given [data] into a [SidStar.SID], and adds it to the supplied [airport]'s [SIDChildren] component
  * @param data the line array for the legs
  * @return the constructed [SidStar.SID]
- * */
+ */
 private fun parseSID(data: List<String>, airport: Airport): SidStar.SID {
     if (data.size != 4) Log.info("GameLoader", "SID data has ${data.size} elements instead of 4")
     val name = data[1]
@@ -674,7 +674,7 @@ private fun parseSID(data: List<String>, airport: Airport): SidStar.SID {
  * [SidStar.rwyLegs]
  * @param data the line array for the legs
  * @param sid the SID to add the runway legs too
- * */
+ */
 private fun parseSIDRwyRoute(data: List<String>, sid: SidStar.SID) {
     val rwy = data[1]
     val initClimb = data[2].toInt()
@@ -688,7 +688,7 @@ private fun parseSIDRwyRoute(data: List<String>, sid: SidStar.SID) {
  * @param data the line array for the legs
  * @param airport the airport that this STAR belongs to
  * @return the constructed [SidStar.STAR]
- * */
+ */
 private fun parseSTAR(data: List<String>, airport: Airport): SidStar.STAR {
     if (data.size != 4) Log.info("GameLoader", "STAR data has ${data.size} elements instead of 4")
     val name = data[1]
@@ -714,7 +714,7 @@ private fun parseSTAR(data: List<String>, airport: Airport): SidStar.STAR {
  * this STAR can be used
  * @param data the line array for the sector
  * @param star the STAR to add the runway to
- * */
+ */
 private fun parseSTARRwyRoute(data: List<String>, star: SidStar.STAR) {
     val rwy = data[1]
     star.rwyLegs[rwy] = Route()
@@ -724,7 +724,7 @@ private fun parseSTARRwyRoute(data: List<String>, star: SidStar.STAR) {
  * Parse the given [data] into route legs data, and adds it to the supplied [sidStar]'s [SidStar.routeLegs]
  * @param data the line array for the legs
  * @param sidStar the [SidStar] to add the legs to
- * */
+ */
 private fun parseSIDSTARRoute(data: List<String>, sidStar: SidStar) {
     if (sidStar.routeLegs.size > 0) {
         Log.info("GameLoader", "Multiple routes for SID/STAR: ${sidStar.name}")
@@ -746,7 +746,7 @@ private fun parseSIDSTARinOutboundRoute(data: List<String>, sidStar: SidStar) {
  * @param onWarning the function to invoke when a warning occurs while parsing
  * @param testingWpts a set of waypoint names to use for checking; leave null if not testing
  * @return a [Route] containing the legs
- * */
+ */
 private fun parseLegs(data: List<String>, flightPhase: Byte, onWarning: (String, String) -> Unit = { type, msg ->
     Log.info(type, msg)
 }, testingWpts: HashSet<String>? = null): Route {
@@ -802,7 +802,7 @@ private fun parseLegs(data: List<String>, flightPhase: Byte, onWarning: (String,
  * @param allWpts all the waypoint names in the game world
  * @param flightPhase the phase of flight for this specific set of legs
  * @param onWarning the function to invoke when a warning occurs while parsing
- * */
+ */
 fun testParseLegs(data: List<String>, allWpts: HashSet<String>, flightPhase: Byte, onWarning: (String, String) -> Unit) {
     parseLegs(data, flightPhase, onWarning, allWpts)
 }
@@ -816,7 +816,7 @@ fun testParseLegs(data: List<String>, allWpts: HashSet<String>, flightPhase: Byt
  * @param onHdg the function to invoke when Heading leg data is parsed
  * @param onWpt the function to invoke when Waypoint leg data is parsed
  * @param onHold the function to invoke when Hold leg data is parsed
- * */
+ */
 private fun parseLeg(legType: String, data: String, onWarning: (String, String) -> Unit,
                      onInitClimb: (Short, Int) -> Unit, onHdg: (Short, Byte) -> Unit,
                      onWpt: (String, Int?, Int?, Short?, Boolean, Byte) -> Unit,
@@ -881,7 +881,7 @@ private fun parseLeg(legType: String, data: String, onWarning: (String, String) 
  * [RandomMetarInfo] component
  * @param data the line array containing wind direction cumulative distribution data
  * @param airport the airport to add the data to
- * */
+ */
 private fun parseWindDir(data: List<String>, airport: Airport) {
     if (data.size != 38) Log.info("GameLoader", "Wind direction data has ${data.size} elements instead of 38")
     airport.entity[RandomMetarInfo.mapper]?.apply {
@@ -897,7 +897,7 @@ private fun parseWindDir(data: List<String>, airport: Airport) {
  * [RandomMetarInfo] component
  * @param data the line array containing wind speed cumulative distribution data
  * @param airport the airport to add the data to
- * */
+ */
 private fun parseWindSpd(data: List<String>, airport: Airport) {
     if (data.size < 32) Log.info("GameLoader", "Wind speed data has only ${data.size} elements; recommended at least 32")
     airport.entity[RandomMetarInfo.mapper]?.apply {
@@ -913,7 +913,7 @@ private fun parseWindSpd(data: List<String>, airport: Airport) {
  * [RandomMetarInfo] component
  * @param data the line array containing visibility cumulative distribution data
  * @param airport the airport to add the data to
- * */
+ */
 private fun parseVisibility(data: List<String>, airport: Airport) {
     if (data.size != 21) Log.info("GameLoader", "Visibility data has ${data.size} elements instead of 21")
     airport.entity[RandomMetarInfo.mapper]?.apply {
@@ -946,7 +946,7 @@ private fun parseCeiling(data: List<String>, airport: Airport) {
  * [RandomMetarInfo] component
  * @param data the line array containing windshear logistic curve coefficients
  * @param airport the airport to add the data to
- * */
+ */
 private fun parseWindshear(data: List<String>, airport: Airport) {
     if (data.size != 3) Log.info("GameLoader", "Windshear data has ${data.size} elements instead of 3")
     airport.entity[RandomMetarInfo.mapper]?.apply {
@@ -976,7 +976,7 @@ private fun parseTraffic(data: List<String>, airport: Airport) {
 /**
  * Generates the uniform traffic distribution for the input airport; should be called when /TRAFFIC is encountered
  * @param airport the airport to generate distribution for
- * */
+ */
 private fun generateTrafficDistribution(airport: Airport) {
     airport.entity[RandomAirlineData.mapper]?.airlineDistribution?.generateNormalized()
 }

@@ -11,7 +11,7 @@ import ktx.ashley.get
  * System that is responsible solely for transmission of data which can happen at a lower rate than [DataSystemClient]
  *
  * Used only in RadarScreen
- * */
+ */
 class DataSystemIntervalClient: IntervalSystem(1f) {
     private val pendingRunwayChangeFamily: Family = allOf(PendingRunwayConfig::class).get()
 
@@ -20,7 +20,7 @@ class DataSystemIntervalClient: IntervalSystem(1f) {
      * (e.g. can be derived from other values without needing a time variable)
      *
      * Values that require constant updating or relies on deltaTime should be put in [DataSystemClient]
-     * */
+     */
     override fun updateInterval() {
         // Update pending runway change timer for status pane display
         val pendingRunwayChange = engine.getEntitiesFor(pendingRunwayChangeFamily)

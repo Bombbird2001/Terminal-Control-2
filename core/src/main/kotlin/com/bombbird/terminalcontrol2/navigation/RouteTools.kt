@@ -27,7 +27,7 @@ import kotlin.math.min
  * @param leg1 the first leg to compare
  * @param leg2 the second leg to compare
  * @return a boolean denoting whether the two input legs are the same
- * */
+ */
 fun compareLegEquality(leg1: Leg, leg2: Leg): Boolean {
     if (leg1.phase != leg2.phase) return false
     return when {
@@ -53,7 +53,7 @@ fun compareLegEquality(leg1: Leg, leg2: Leg): Boolean {
  * @param route1 the first route to compare
  * @param route2 the second route to compare
  * @return a boolean denoting whether the two routes are strictly equal
- * */
+ */
 fun checkRouteEqualityStrict(route1: Route, route2: Route): Boolean {
     route1.let { legs1 -> route2.let { legs2 ->
         if (legs1.size != legs2.size) return false
@@ -76,7 +76,7 @@ fun checkRouteEqualityStrict(route1: Route, route2: Route): Boolean {
  * @param route the original to route to check for the leg
  * @param leg the leg to check for in the route
  * @return a boolean denoting whether the leg has differed from in the supplied route
- * */
+ */
 fun checkLegChanged(route: Route, leg: Leg): Boolean {
     when (leg) {
         is VectorLeg, is InitClimbLeg, is DiscontinuityLeg -> return !route.contains(leg)
@@ -103,7 +103,7 @@ fun checkLegChanged(route: Route, leg: Leg): Boolean {
  * @param leg the waypoint leg to check for in the route
  * @return a [Triple] with 3 booleans denoting whether [WaypointLeg.altRestrActive], [WaypointLeg.spdRestrActive]
  * and [WaypointLeg.legActive] has changed respectively
- * */
+ */
 fun checkRestrChanged(route: Route, leg: WaypointLeg): Triple<Boolean, Boolean, Boolean> {
     for (i in 0 until route.size) route[i].apply { if (this is WaypointLeg && compareLegEquality(this, leg)) {
         return Triple(altRestrActive != leg.altRestrActive, spdRestrActive != leg.spdRestrActive, legActive != leg.legActive)
@@ -119,7 +119,7 @@ fun checkRestrChanged(route: Route, leg: WaypointLeg): Triple<Boolean, Boolean, 
  * @param posX the x coordinate of the new waypoint
  * @param posY the y coordinate of the new waypoint
  * @return the wptID of the new created waypoint
- * */
+ */
 fun createCustomHoldWaypoint(posX: Float, posY: Float): Short {
     // Search for an available ID below -1
     var wptId: Short? = null
@@ -143,7 +143,7 @@ fun createCustomHoldWaypoint(posX: Float, posY: Float): Short {
 /**
  * Removes a custom waypoint with its ID
  * @param wptId the ID of the waypoint to remove; this must be less than -1
- * */
+ */
 fun removeCustomHoldWaypoint(wptId: Short) {
     if (wptId >= -1) {
         Log.info("ControlStateTools", "Custom waypoint must have ID < -1; $wptId was provided")
@@ -162,7 +162,7 @@ fun removeCustomHoldWaypoint(wptId: Short) {
  * @param sector the sector to test the waypoint in
  * @param route the route to refer to
  * @return a Pair, first being the [WaypointLeg], second being the index of the [WaypointLeg], or null if none found
- * */
+ */
 fun getFirstWaypointLegInSector(sector: Polygon, route: Route): Int? {
     for (i in 0 until route.size) {
         (route[i] as? WaypointLeg)?.apply {
@@ -177,7 +177,7 @@ fun getFirstWaypointLegInSector(sector: Polygon, route: Route): Int? {
  * Gets the track and turn direction from the first to second waypoint, or null if there is no second waypoint leg
  * @param route the route to refer to
  * @return a Pair, the first being a float denoting the track, the second being a byte representing the turn direction
- * */
+ */
 fun findNextWptLegTrackAndDirection(route: Route): Pair<Float, Byte>? {
     if (route.size == 0) return null
     (route[0] as? WaypointLeg)?.let { wpt1 ->
@@ -198,7 +198,7 @@ fun findNextWptLegTrackAndDirection(route: Route): Pair<Float, Byte>? {
  * @param wpt the waypoint leg to check for a vector leg after
  * @param route the route to refer to
  * @return a [VectorLeg], or null if no vector leg found
- * */
+ */
 fun getAfterWptHdgLeg(wpt: WaypointLeg, route: Route): VectorLeg? {
     for (i in 0 until route.size) route[i].apply {
         if (compareLegEquality(wpt, this)) {
@@ -214,7 +214,7 @@ fun getAfterWptHdgLeg(wpt: WaypointLeg, route: Route): VectorLeg? {
  * @param route the route to refer to
  * @return a pair, the first being the [VectorLeg] and the second being the [WaypointLeg] the earlier vector leg
  * belongs to, or null if no vector leg found
- * */
+ */
 fun getAfterWptHdgLeg(wptName: String, route: Route): Pair<VectorLeg, WaypointLeg>? {
     for (i in 0 until route.size) (route[i] as? WaypointLeg)?.apply {
         if (CLIENT_SCREEN?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName == wptName) {
@@ -228,7 +228,7 @@ fun getAfterWptHdgLeg(wptName: String, route: Route): Pair<VectorLeg, WaypointLe
  * Gets the next waypoint leg that has a vector leg after it; if none are found, null is returned
  * @param route the route to refer to
  * @return a [WaypointLeg], or null if no vector leg found
- * */
+ */
 fun getNextAfterWptHdgLeg(route: Route): WaypointLeg? {
     if (route.size < 2) return null
     for (i in 0 until route.size - 1) {
@@ -243,7 +243,7 @@ fun getNextAfterWptHdgLeg(route: Route): WaypointLeg? {
  * hold legs, null is returned
  * @param route the route to refer to
  * @return a [HoldLeg], or null if no hold legs are found
- * */
+ */
 fun getNextHoldLeg(route: Route): HoldLeg? {
     for (i in 0 until route.size) route[i].apply {
         if (this is HoldLeg) return this
@@ -261,7 +261,7 @@ fun getNextHoldLeg(route: Route): HoldLeg? {
  * @param wptId the waypoint ID of the hold leg to search for in the route
  * @param route the route to refer to
  * @return a [HoldLeg], or null if no hold legs are found
- * */
+ */
 fun findFirstHoldLegWithID(wptId: Short, route: Route): HoldLeg? {
     if (wptId <= -1) {
         // Searching for present position hold leg - only the first leg should be
@@ -285,7 +285,7 @@ fun findFirstHoldLegWithID(wptId: Short, route: Route): HoldLeg? {
  * @param route the route to refer to
  * @param altitude present altitude of the aircraft
  * @return a [WaypointLeg] or [HoldLeg], or null if no legs with a speed restriction are found
- * */
+ */
 fun getNextWaypointWithSpdRestr(route: Route, altitude: Float): Pair<Leg, Short>? {
     for (i in 0 until route.size) {
         (route[i] as? WaypointLeg)?.let {
@@ -304,7 +304,7 @@ fun getNextWaypointWithSpdRestr(route: Route, altitude: Float): Pair<Leg, Short>
  * Gets the speed restriction active at the active leg in the current departure route
  * @param route the route to refer to
  * @return the max speed, or null if a speed restriction does not exist
- * */
+ */
 fun getNextMaxSpd(route: Route): Short? {
     for (i in 0 until route.size) return (route[i] as? WaypointLeg)?.let {
         if (it.legActive && it.spdRestrActive) it.maxSpdKt else null
@@ -316,7 +316,7 @@ fun getNextMaxSpd(route: Route): Short? {
  * Gets the next minimum altitude restriction for the route
  * @param route the route to refer to
  * @return the minimum altitude, or null if a minimum altitude restriction does not exist
- * */
+ */
 fun getNextMinAlt(route: Route): Int? {
     for (i in 0 until route.size) return (route[i] as? WaypointLeg)?.let {
         if (it.legActive && it.altRestrActive) it.minAltFt else null
@@ -328,7 +328,7 @@ fun getNextMinAlt(route: Route): Int? {
  * Gets the next maximum altitude restriction for the route
  * @param route the route to refer to
  * @return the maximum altitude, or null if a maximum altitude restriction does not exist
- * */
+ */
 fun getNextMaxAlt(route: Route): Int? {
     for (i in 0 until route.size) return (route[i] as? WaypointLeg)?.let {
         if (it.legActive && it.altRestrActive) it.maxAltFt else null
@@ -501,7 +501,7 @@ fun calculateRouteSegments(route: Route, routeSegmentArray: GdxArray<LegSegment>
  * @param arptId the ID of the arrival airport
  * @param appName the name of the approach, or null if none cleared
  * @param transName the name of the approach transition, or null if no approach cleared
- * */
+ */
 fun updateApproachRoute(route: Route, hiddenLegs: Route, arptId: Byte?, appName: String?, transName: String?) {
     removeApproachLegs(route, hiddenLegs)
     if (arptId == null || appName == null || transName == null) return
@@ -540,7 +540,7 @@ fun updateApproachRoute(route: Route, hiddenLegs: Route, arptId: Byte?, appName:
  * Also clears the hidden leg route
  * @param route the route to remove approach legs from
  * @param hiddenLegs the route containing currently hidden legs to add back to the route
- * */
+ */
 fun removeApproachLegs(route: Route, hiddenLegs: Route) {
     for (i in route.size - 1 downTo 0) {
         if (route[i].phase == Leg.NORMAL) break // Once a normal leg is encountered, break from loop

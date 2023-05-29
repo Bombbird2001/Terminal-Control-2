@@ -63,7 +63,7 @@ class HoldSubpane {
      * @param widget the widget to add this hold table to
      * @param paneWidth will be used as the reference width of the UI pane when initialising the table
      * @return a [KTableWidget] used to contain the elements of the hold sub-pane, which has been added to the [KWidget]
-     * */
+     */
     @Scene2dDsl
     fun holdTable(controlPane: ControlPane, widget: KWidget<Actor>, paneWidth: Float): KTableWidget {
         parentControlPane = controlPane
@@ -202,7 +202,7 @@ class HoldSubpane {
      * Updates the hold table to the next cleared hold clearance if any
      * @param route the route to refer to; should be the aircraft's latest cleared route or user input route
      * @param selectedHold the current user selected hold leg
-     * */
+     */
     fun updateHoldTable(route: Route, selectedHold: Route.HoldLeg?) {
         modificationInProgress = true
         holdSelectBox.items = GdxArray<String>().apply {
@@ -247,7 +247,7 @@ class HoldSubpane {
     /**
      * Updates the user cleared hold inbound heading with the input delta value, and updates the [holdInboundHdgLabel] as well
      * @param change the change in heading that will be added to the user cleared hold inbound heading
-     * */
+     */
     private fun updateHoldHdgValue(change: Short) {
         selectedHoldLeg?.apply {
             inboundHdg = (inboundHdg + change).toShort().let {
@@ -262,7 +262,7 @@ class HoldSubpane {
     /**
      * Updates the styles for the hold parameter input fields (selectBox, Labels, etc.) given the input hold leg
      * @param holdLeg the hold leg to compare with the acting clearance state
-     * */
+     */
     private fun updateHoldParameterChangedState(holdLeg: Route.HoldLeg?) {
         holdLeg?.apply {
             val sameLeg = findFirstHoldLegWithID(wptId, parentPane.clearanceState.route)
@@ -283,7 +283,7 @@ class HoldSubpane {
      *
      * Also updates the [selectedHoldLeg] with the new selected holding leg
      * @param route the route to update the hold legs
-     * */
+     */
     fun updateHoldClearanceState(route: Route) {
         (selectedHoldLeg?.wptId)?.let {
             // Look for hold legs that are present in the selected clearance but not the acting clearance
@@ -369,7 +369,7 @@ class HoldSubpane {
     /**
      * Sets the parameters of the hold leg to be the same as published holds
      * @param holdWpt the hold leg
-     * */
+     */
     private fun setHoldAsPublished(holdWpt: Route.HoldLeg) {
         val name = CLIENT_SCREEN?.waypoints?.get(holdWpt.wptId)?.entity?.get(WaypointInfo.mapper)?.wptName ?: return
         val publishedHold = CLIENT_SCREEN?.publishedHolds?.get(name)?.entity?.get(PublishedHoldInfo.mapper) ?: return // Return if no published hold found

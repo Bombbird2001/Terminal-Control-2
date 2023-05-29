@@ -5,7 +5,7 @@ interface SerialisableEntity<T> {
     /**
      * Returns an empty serialisable entity by default, due to a missing component
      * @param missingComponent the missing component, which can be logged to help with debugging
-     * */
+     */
     fun emptySerialisableObject(missingComponent: String): T
 
     /** Gets a [SerialisableEntity] from current state */

@@ -97,7 +97,7 @@ data class Minimums(var baroAltFt: Short = 0, var rvrM: Short = 0): Component, B
 /**
  * Component for tagging visual approach (one will be created for every runway with their own extended centerline up to
  * 10nm and glide path of 3 degrees)
- * */
+ */
 @JsonClass(generateAdapter = true)
 class Visual: Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.VISUAL

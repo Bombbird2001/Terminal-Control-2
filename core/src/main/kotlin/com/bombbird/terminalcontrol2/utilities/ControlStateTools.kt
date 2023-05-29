@@ -48,7 +48,7 @@ fun getAircraftIcon(flightType: Byte, sectorID: Byte): TextureRegionDrawable {
  * @param clearance the [AircraftControlStateUpdateData] object that the clearance will be constructed from
  * @param returnTripTime the time taken for a ping to be sent and acknowledged, in ms, calculated by the server; half of
  * this value in seconds will be subtracted from the delay time (2s) to account for any ping time lag
- * */
+ */
 fun addNewClearanceToPendingClearances(entity: Entity, clearance: AircraftControlStateUpdateData, returnTripTime: Int) {
     val pendingClearances = entity[PendingClearances.mapper]
     val newClearance = ClearanceState(clearance.primaryName, Route.fromSerialisedObject(clearance.route), Route.fromSerialisedObject(clearance.hiddenLegs),
@@ -82,7 +82,7 @@ fun getLatestClearanceState(entity: Entity): ClearanceState? {
  * @param clearanceState2 the second clearance state to compare
  * @param checkVector whether to check for vector clearance differences
  * @return a boolean denoting whether the two clearance states are equal
- * */
+ */
 fun checkClearanceEquality(clearanceState1: ClearanceState, clearanceState2: ClearanceState, checkVector: Boolean): Boolean {
     if (!checkRouteEqualityStrict(clearanceState1.route, clearanceState2.route)) return false
     if (!checkRouteEqualityStrict(clearanceState1.hiddenLegs, clearanceState2.hiddenLegs)) return false
@@ -106,7 +106,7 @@ fun checkClearanceEquality(clearanceState1: ClearanceState, clearanceState2: Cle
  * @param entity the aircraft entity to calculate the speed values for
  * @return a [Triple] that contains 3 shorts, the first being the minimum IAS, the second being the maximum IAS, and
  * the third being the optimal IAS for the phase of flight
- * */
+ */
 fun getMinMaxOptimalIAS(entity: Entity): Triple<Short, Short, Short> {
     val perf = entity[AircraftInfo.mapper]?.aircraftPerf ?: return Triple(150, 250, 240)
     val altitude = entity[Altitude.mapper] ?: return Triple(150, 250, 240)
@@ -180,7 +180,7 @@ fun getMinMaxOptimalIAS(entity: Entity): Triple<Short, Short, Short> {
  * @param aircraftRoute the current aircraft route
  * @param spawnAlt the altitude at which the aircraft will spawn at
  * @return the IAS the aircraft should spawn at
- * */
+ */
 fun calculateArrivalSpawnIAS(origStarRoute: Route, aircraftRoute: Route, spawnAlt: Float, aircraftPerf: AircraftTypeData.AircraftPerfData): Short {
     var maxSpd: Short? = null
     // Try to find an existing speed restriction

@@ -15,7 +15,7 @@ import ktx.ashley.get
  * System that is responsible solely for transmission of data
  *
  * Used only in RadarScreen
- * */
+ */
 class DataSystemClient: EntitySystem() {
     var radarDataTimer = 0f
 

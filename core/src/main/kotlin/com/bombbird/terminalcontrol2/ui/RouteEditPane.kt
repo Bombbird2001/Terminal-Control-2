@@ -33,7 +33,7 @@ class RouteEditPane {
      * @param paneWidth will be used as the reference width of the UI pane when initialising the container
      * @param confirmFunction a function that will be called when the "Confirm" button is pressed
      * @return a [KContainer] used to contain a table with the elements of the route edit pane, which has been added to the [KWidget]
-     * */
+     */
     @Scene2dDsl
     fun routeEditPane(uiPane: UIPane, widget: KWidget<Actor>, paneWidth: Float, confirmFunction: () -> Unit): KContainer<Actor> {
         parentPane = uiPane
@@ -110,7 +110,7 @@ class RouteEditPane {
     /**
      * Updates the route list in [routeEditTable] (Edit route pane)
      * @param route the route to display in the route pane; should be the aircraft's latest cleared route
-     * */
+     */
     fun updateEditRouteTable(route: Route) {
         routeEditTable.clear()
         routeEditTable.apply {
@@ -216,7 +216,7 @@ class RouteEditPane {
     /**
      * Updates the options available in the Change STAR select box
      * @param arptId the ID of the airport to get the STARs for
-     * */
+     */
     fun updateChangeStarOptions(arptId: Byte?) {
         val arptStars = GAME.gameServer?.airports?.get(arptId)?.entity?.get(STARChildren.mapper)?.starMap
         if (arptStars == null) {
@@ -266,7 +266,7 @@ class RouteEditPane {
     /**
      * Toggles between the unchanged and changed font colours for the waypoint leg restriction text buttons
      * @param style the [TextButtonStyle] to update
-     * */
+     */
     private fun toggleTextColor(style: TextButtonStyle): TextButtonStyle {
         return Scene2DSkin.defaultSkin[if (style.fontColor == Color.WHITE) "ControlPaneRestrChanged" else "ControlPaneRestr", TextButtonStyle::class.java]
     }
@@ -288,7 +288,7 @@ class RouteEditPane {
     /**
      * Updates the appropriate changed/unchanged button styles for the Undo and Confirm buttons depending on the current
      * state of [Route] in the UI pane's clearance states
-     * */
+     */
     fun updateUndoTransmitButtonStates() {
         if (checkRouteEqualityStrict(parentPane.clearanceState.route, parentPane.userClearanceState.route)) setUndoConfirmButtonsUnchanged()
         else setUndoConfirmButtonsChanged()

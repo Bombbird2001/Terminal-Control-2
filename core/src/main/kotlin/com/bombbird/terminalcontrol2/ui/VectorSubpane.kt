@@ -60,7 +60,7 @@ class VectorSubpane {
      * @param widget the widget to add this vector table to
      * @param paneWidth will be used as the reference width of the UI pane when initialising the table
      * @return a [KTableWidget] used to contain the elements of the vector sub-pane, which has been added to the [KWidget]
-     * */
+     */
     @Scene2dDsl
     fun vectorTable(controlPane: ControlPane, widget: KWidget<Actor>, paneWidth: Float): KTableWidget {
         parentControlPane = controlPane
@@ -169,7 +169,7 @@ class VectorSubpane {
      * @param route the route to refer to; should be the aircraft's latest cleared route or user input route
      * @param vectorHdg the currently selected vector heading
      * @param vectorTurnDir the currently selected turn direction
-     * */
+     */
     fun updateVectorTable(route: Route, vectorHdg: Short?, vectorTurnDir: Byte?) {
         modificationInProgress = true
         afterWaypointSelectBox.items = GdxArray<String>().apply {
@@ -222,7 +222,7 @@ class VectorSubpane {
      * @param change the change in heading that will be added to the user clearance vector heading
      * @param route the route to refer to; should be the aircraft's latest cleared route or user input route
      * @param selectedAftWpt the currently selected after waypoint leg, before the changes from the select box are applied
-     * */
+     */
     private fun updateVectorHdgClearanceState(change: Short, route: Route, selectedAftWpt: Route.WaypointLeg?) {
         selectedAftWpt?.let {
             // Look for after waypoint vector legs that are present in the selected clearance but not the acting clearance

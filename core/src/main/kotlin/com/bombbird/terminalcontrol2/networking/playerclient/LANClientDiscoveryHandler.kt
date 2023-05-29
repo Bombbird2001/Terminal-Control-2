@@ -35,7 +35,7 @@ class LANClientDiscoveryHandler: ClientDiscoveryHandler {
      * @return a triple, the first being a byte that represents the current number of players in game, the second being
      * the maximum number of players allowed in game, the third being a string that represents the current game world's
      * main airport; returns null if the byte array length does not match
-     * */
+     */
     private fun decodePacketData(byteArray: ByteArray): Triple<Byte, Byte, String>? {
         if (byteArray.size != LANServerDiscoveryHandler.DISCOVERY_PACKET_SIZE) return null
         var players: Byte = -1

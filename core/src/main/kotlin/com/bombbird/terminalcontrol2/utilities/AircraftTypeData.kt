@@ -26,7 +26,7 @@ object AircraftTypeData {
      * @param icaoType the ICAO aircraft type
      * @param flightType the type of the flight
      * @return the new instance of [AircraftPerfData]
-     * */
+     */
     fun getAircraftPerf(icaoType: String, flightType: Byte): AircraftPerfData {
         return aircraftPerfMap[icaoType]?.newInstance(flightType) ?: run {
             Log.info("AircraftTypeData", "No performance data found for $icaoType, returning default data")
@@ -79,7 +79,7 @@ object AircraftTypeData {
      * [massKg]: Mass of the plane
      *
      * @param flightType the type of the flight, used for load factor calculation purposes
-     * */
+     */
     @JsonClass(generateAdapter = true)
     class AircraftPerfData(val wakeCategory: Char = WAKE_HEAVY, val recat: Char = RECAT_B,
                            val thrustNSLISA: Int? = 1026000, val propPowerWSLISA: Int? = null, val propArea: Float? = null,
@@ -132,7 +132,7 @@ object AircraftTypeData {
          * dependent values calculated
          * @param flightType the type of the flight to generate the parameters for
          * @return a new instance of [AircraftPerfData]
-         * */
+         */
         fun newInstance(flightType: Byte): AircraftPerfData {
             return AircraftPerfData(wakeCategory, recat,
                 thrustNSLISA, propPowerWSLISA, propArea,

@@ -24,7 +24,7 @@ data class RSSprite(var drawable: Drawable = BaseDrawable(), var width: Float = 
 /**
  * Component for rendering a generic label with position offsets on radarScreen, functions included to update text/style
  * of underlying label
- * */
+ */
 class GenericLabel(var xOffset: Float = 0f, var yOffset: Float = 0f): Component {
     val label: Label = Label("", Scene2DSkin.defaultSkin)
     companion object: Mapper<GenericLabel>()
@@ -51,7 +51,7 @@ class GenericLabels(var labels: Array<GenericLabel> = arrayOf()): Component {
  * [positionToRunway] = 1 -> to the right of the runway threshold
  *
  * [positionToRunway] = -1 -> to the left of the runway threshold
- * */
+ */
 data class RunwayLabel(var positionToRunway: Byte = 0): Component {
     var dirUnitVector = ImmutableVector2(0f, 0f)
     var dirSet = false
@@ -81,7 +81,7 @@ data class SRColor(var color: Color = Color()): Component {
  * Component for tagging entities that should be rendered the last (when compared to entities of the same family -
  * this by itself does not ensure the entity is rendered above every single other entity; behaviour for the required
  * family must also be implemented in RenderingSystem)
- * */
+ */
 class RenderLast: Component {
     companion object: Mapper<RenderLast>()
 }
@@ -102,7 +102,7 @@ class DoNotRenderLabel: Component {
  * Use functions in DatatagTools to update text/style/spacing of underlying imageButton and label
  *
  * This component will have [ConstantZoomSize] properties applied to it
- * */
+ */
 class Datatag(var xOffset: Float = 0f, var yOffset: Float = 0f, var minimised: Boolean = false): Component {
     var dragging = false
     var clicks = 0

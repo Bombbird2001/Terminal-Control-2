@@ -32,7 +32,7 @@ import kotlin.math.sqrt
  * Main rendering system, which renders to [GAME]'s spriteBatch or radarScreen's [shapeRenderer]
  *
  * Used only in RadarScreen
- * */
+ */
 class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
                             private val stage: Stage, private val constZoomStage: Stage, private val uiStage: Stage,
                             private val uiPane: UIPane): EntitySystem() {

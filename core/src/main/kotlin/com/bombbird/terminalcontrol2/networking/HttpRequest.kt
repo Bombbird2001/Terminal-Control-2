@@ -47,7 +47,7 @@ object HttpRequest {
      * @param retry whether to retry the request a second time if it fails
      * @param onGenerateRandom the function to be called to generate random weather if error occurs in retrieving live
      * weather
-     * */
+     */
     private fun sendMetarRequest(reqString: String, retry: Boolean, onGenerateRandom: () -> Unit) {
         val request = Request.Builder()
             .url(Secrets.GET_METAR_URL)
@@ -112,7 +112,7 @@ object HttpRequest {
     /**
      * Sends an HTTP request to the relay server
      * @param joinGame the [JoinGame] screen to handle the response
-     * */
+     */
     fun sendPublicGamesRequest(joinGame: JoinGame) {
         val request = Request.Builder()
             .url("${Secrets.RELAY_ENDPOINT_URL}:$RELAY_ENDPOINT_PORT$RELAY_GAMES_PATH")

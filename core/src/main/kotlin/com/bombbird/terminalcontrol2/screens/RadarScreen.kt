@@ -58,7 +58,7 @@ import kotlin.math.min
  * Implements [GestureListener] and [InputProcessor] to handle input/gesture events to it
  * @param connectionHost the address of the host server to connect to; if null, no connection will be initiated
  * @param roomId the ID of the room to join (public multiplayer)
- * */
+ */
 class RadarScreen private constructor(private val connectionHost: String, private var roomId: Short?): KtxScreen, GestureListener, InputProcessor {
     private val clientEngine = getEngine(true)
     private val radarDisplayStage = safeStage(GAME.batch)
@@ -209,7 +209,7 @@ class RadarScreen private constructor(private val connectionHost: String, privat
     /**
      * Adds an actor to the constant zoom stage
      * @param actor the [Actor] to add to [constZoomStage]
-     * */
+     */
     fun addToConstZoomStage(actor: Actor) {
         constZoomStage.addActor(actor)
     }
@@ -217,7 +217,7 @@ class RadarScreen private constructor(private val connectionHost: String, privat
     /**
      * Instructs [uiPane] to display the control pane for the supplied aircraft
      * @param aircraft the aircraft to display in the UI pane
-     * */
+     */
     fun setUISelectedAircraft(aircraft: Aircraft) {
         if (selectedAircraft != null) deselectUISelectedAircraft()
         Gdx.app.postRunnable {
@@ -263,7 +263,7 @@ class RadarScreen private constructor(private val connectionHost: String, privat
     /**
      * Initiates animation of [radarDisplayStage]'s camera to the new position, as well as a new zoom depending on current
      * zoom value
-     * */
+     */
     private fun initiateCameraAnimation(targetScreenX: Float, targetScreenY: Float) {
         (radarDisplayStage.camera as OrthographicCamera).apply {
             targetZoom = if (zoom > (nmToPx(ZOOM_THRESHOLD_NM) / UI_HEIGHT)) nmToPx(DEFAULT_ZOOM_IN_NM) / UI_HEIGHT
@@ -280,7 +280,7 @@ class RadarScreen private constructor(private val connectionHost: String, privat
     /**
      * Shifts [radarDisplayStage]'s camera by an amount depending on the time passed since last frame, and the zoom, pan
      * rate calculated in [initiateCameraAnimation]
-     * */
+     */
     private fun runCameraAnimations(delta: Float) {
         if (!cameraAnimating) return
         (radarDisplayStage.camera as OrthographicCamera).apply {
@@ -297,7 +297,7 @@ class RadarScreen private constructor(private val connectionHost: String, privat
     /**
      * Helper function for unprojecting from screen coordinates to camera world coordinates, as unfortunately Camera's
      * unproject function is not accurate in this case
-     * */
+     */
     private fun unprojectFromRadarCamera(screenX: Float, screenY: Float): Vector2 {
         (radarDisplayStage.camera as OrthographicCamera).apply {
             val scaleFactor = UI_HEIGHT / HEIGHT // 1px in screen distance = ?px in world distance (at zoom = 1)
@@ -344,7 +344,7 @@ class RadarScreen private constructor(private val connectionHost: String, privat
     /**
      * Sets [Gdx.input]'s inputProcessors to [inputMultiplexer], which consists of [uiStage], [constZoomStage], [radarDisplayStage],
      * [gestureDetector] and this [RadarScreen]
-     * */
+     */
     override fun show() {
         inputMultiplexer.addProcessor(uiStage)
         inputMultiplexer.addProcessor(constZoomStage)
@@ -377,7 +377,7 @@ class RadarScreen private constructor(private val connectionHost: String, privat
     /**
      * Clears and disposes of [radarDisplayStage], [constZoomStage], [uiStage], [shapeRenderer], stops the [networkClient] and
      * [GameServer] if present
-     * */
+     */
     override fun dispose() {
         radarDisplayStage.clear()
         constZoomStage.clear()
@@ -406,7 +406,7 @@ class RadarScreen private constructor(private val connectionHost: String, privat
     /** Updates various global constants, variables upon a screen resize, to ensure UI will fit to the new screen size
      *
      * Updates the viewport and camera's projectionMatrix of [radarDisplayStage], [constZoomStage], [uiStage] and [shapeRenderer]
-     * */
+     */
     override fun resize(width: Int, height: Int) {
         ScreenSize.updateScreenSizeParameters(width, height)
         radarDisplayStage.viewport.update(width, height)
@@ -533,7 +533,7 @@ class RadarScreen private constructor(private val connectionHost: String, privat
      * This is different from Gdx.app.postRunnable in that the runnable will run right after the engine has updated,
      * instead of after the whole render loop has been finished
      * @param runnable the runnable to add
-     * */
+     */
     fun postRunnableAfterEngineUpdate(print: Boolean, runnable: Runnable) {
         if (print) println("Runnable added")
         pendingRunnablesQueue.offer(runnable)
@@ -543,7 +543,7 @@ class RadarScreen private constructor(private val connectionHost: String, privat
      * Attempt to connect to the server, retrying until success
      *
      * If client is already connected, the method will return
-     * */
+     */
     private fun attemptConnectionToServer() {
         if (networkClient.isConnected) return
         while (true) {
@@ -594,7 +594,7 @@ class RadarScreen private constructor(private val connectionHost: String, privat
     /**
      * Quits the game, which will resume the game (from paused screen) and set the running flag to false if the player
      * is also the host
-     * */
+     */
     fun quitGame() {
         GAME.gameServer?.setLoopingFalse()
         resumeGame(false)
@@ -604,7 +604,7 @@ class RadarScreen private constructor(private val connectionHost: String, privat
      * Sends a new player clearance for the aircraft
      * @param callsign the callsign of the aircraft to send the instructions to
      * @param newClearanceState the new clearance to send to the aircraft
-     * */
+     */
     fun sendAircraftControlStateClearance(callsign: String, newClearanceState: ClearanceState) {
         networkClient.sendTCP(
             AircraftControlStateUpdateData(callsign, newClearanceState.routePrimaryName,
@@ -641,7 +641,7 @@ class RadarScreen private constructor(private val connectionHost: String, privat
     /**
      * Sends a request to decline an incoming swap request
      * @param requestingSector the ID of the sector being declined
-     * */
+     */
     fun declineSectorSwapRequest(requestingSector: Byte) {
         networkClient.sendTCP(DeclineSwapRequest(requestingSector, playerSector))
     }

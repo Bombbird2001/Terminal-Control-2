@@ -336,7 +336,7 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
      * Maps the given runway name to a certain ID - this method should be used only when loading runways from
      * internal game files, and not during save file loads since they may contain old runways with the same name
      * (runway added/renamed/etc.) leading to incorrect mappings
-     * */
+     */
     fun setRunwayMapping(rwyName: String, rwyId: Byte) {
         entity[RunwayChildren.mapper]?.updatedRwyMapping?.put(rwyName, rwyId)
     }

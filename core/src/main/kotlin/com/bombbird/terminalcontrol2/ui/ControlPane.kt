@@ -70,7 +70,7 @@ class ControlPane {
      * @param paneWidth will be used as the reference width of the UI pane when initialising the container
      * @param setToEditRoutePane a function that will be called when the "Edit Route" button is pressed
      * @return a [KContainer] used to contain a table with the elements of the control pane, which has been added to the [KWidget]
-     * */
+     */
     @Scene2dDsl
     fun controlPane(uiPane: UIPane, widget: KWidget<Actor>, paneWidth: Float, setToEditRoutePane: () -> Unit): KContainer<Actor> {
         parentPane = uiPane
@@ -305,7 +305,7 @@ class ControlPane {
      * @param vectorHdg the aircraft's latest cleared vector heading; is null if aircraft is not being vectored
      * @param ignoreUserPane whether to ignore the pane the player is currently on and forcefully set the pane
      * hold waypoint is selected
-     * */
+     */
     fun updateClearanceMode(route: Route, vectorHdg: Short?, appTrackCaptured: Boolean, ignoreUserPane: Boolean) {
         val currPane = when {
             routeModeButton.isChecked -> PANE_ROUTE
@@ -343,7 +343,7 @@ class ControlPane {
      *
      * If the ID provided is null, the boxes will be disabled
      * @param airportId the airport to refer to when selecting approaches that can be cleared
-     * */
+     */
     private fun updateApproachSelectBoxChoices(airportId: Byte?) {
         modificationInProgress = true
         CLIENT_SCREEN?.airports?.get(airportId)?.entity?.let { arpt ->
@@ -359,7 +359,7 @@ class ControlPane {
      * Updates [ControlPane.transitionSelectBox] with possible transitions for the selected approach given the airport ID
      *
      * If the ID provided is null, the boxes (including [appSelectBox]) will be disabled
-     * */
+     */
     private fun updateTransitionSelectBoxChoices(airportId: Byte?, selectedApp: String, selectedTrans: String?) {
         modificationInProgress = true
         transitionSelectBox.apply {
@@ -395,14 +395,14 @@ class ControlPane {
      * @param aircraftMaxAlt the maximum altitude the aircraft can fly at, or null if none provided in which it will be
      * @param userClearanceState the user selected clearance state
      * ignored
-     * */
+     */
     fun updateAltSelectBoxChoices(aircraftMaxAlt: Int?, userClearanceState: ClearanceState) {
         /**
          * Checks the input altitude according to transition altitude and transition level parsing it into the FLXXX format
          * if necessary, before adding it to the string array
          * @param alt the altitude value to add
          * @param array the string [GdxArray] to add the value into
-         * */
+         */
         fun checkAltAndAddToArray(alt: Int, array: GdxArray<String>) {
             if (alt > TRANS_ALT && alt < TRANS_LVL * 100) return
             if (alt <= TRANS_ALT) array.add(alt.toString())
@@ -413,7 +413,7 @@ class ControlPane {
          * Selects the appropriate selection in the altitude box for the input altitude value, accounting for altitudes
          * above the transition altitude being represented in the FLXXX format
          * @param alt the altitude value to set
-         * */
+         */
         fun setToAltValue(alt: Int) {
             if (alt <= TRANS_ALT) altSelectBox.selected = alt.toString()
             else altSelectBox.selected = "FL${alt / 100}"
@@ -507,7 +507,7 @@ class ControlPane {
      * @param optimalSpd the optimal IAS that the aircraft will select by default without player intervention
      * @param appName the cleared approach, or null if no approach is cleared
      * @param transName the cleared approach transition, or null if no approach has been cleared
-     * */
+     */
     fun updateAltSpdAppClearances(clearedAlt: Int, clearedSpd: Short, minSpd: Short, maxSpd: Short, optimalSpd: Short, appName: String?, transName: String?) {
         val minSpdRounded = if (minSpd % 10 > 0) ((minSpd / 10 + 1) * 10).toShort() else minSpd
         val maxSpdRounded = if (maxSpd % 10 > 0) ((maxSpd / 10) * 10).toShort() else maxSpd
@@ -555,7 +555,7 @@ class ControlPane {
      *
      * Called when user taps on a lateral mode button
      * @param mode the pane mode to show
-     * */
+     */
     private fun setPaneLateralMode(mode: Byte) {
         modificationInProgress = true
         when (mode) {
@@ -614,7 +614,7 @@ class ControlPane {
     /**
      * Updates the route table belonging to the [routeSubpaneObj] of this control pane with the input route
      * @param route the route to set the route table to display
-     * */
+     */
     fun updateRouteTable(route: Route) {
         routeSubpaneObj.updateRouteTable(route)
     }
@@ -636,7 +636,7 @@ class ControlPane {
     /**
      * Updates the appropriate changed/unchanged button styles for the Undo and Transmit buttons depending on the current
      * state of [UIPane.clearanceState] and [UIPane.userClearanceState]
-     * */
+     */
     fun updateUndoTransmitButtonStates() {
         val leg1 = parentPane.clearanceState.route.let {
             var currDirectLeg: Route.Leg? = null // Additional variable for finding current direct leg as making leg1 a var prevents smart cast in this changing closure below
@@ -687,7 +687,7 @@ class ControlPane {
      *
      * Will also clear any items in the select boxes' lists if disabled
      * @param disabled whether to disable the select boxes
-     * */
+     */
     private fun updateAppTransBoxesDisabled(disabled: Boolean) {
         appSelectBox.isDisabled = disabled
         // Transition select box will also be disabled if no approach is cleared

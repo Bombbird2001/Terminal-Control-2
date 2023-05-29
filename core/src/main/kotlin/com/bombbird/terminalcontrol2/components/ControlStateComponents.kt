@@ -23,7 +23,7 @@ data class Controllable(var sectorId: Byte = 0, var controllerUUID: UUID? = null
  * [type] = 1 -> Departure
  *
  * [type] = 2 -> En-route
- * */
+ */
 @JsonClass(generateAdapter = true)
 data class FlightType(var type: Byte = 0): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.FLIGHT_TYPE
@@ -102,7 +102,7 @@ class AppDecelerateTo190kts: Component, BaseComponentJSONInterface {
 /**
  * Component for tagging aircraft that should decelerate to their minimum approach speed when less than 5 nm from the
  * runway threshold
- * */
+ */
 @JsonClass(generateAdapter = true)
 class DecelerateToAppSpd: Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.DECELERATE_TO_APP_SPD
@@ -113,7 +113,7 @@ class DecelerateToAppSpd: Component, BaseComponentJSONInterface {
 /**
  * Component for tagging the pending [ClearanceState]s an aircraft has been cleared, as well as the corresponding reaction
  * time, after the preceding clearance, for each clearance
- * */
+ */
 class PendingClearances(val clearanceQueue: Queue<ClearanceState.PendingClearanceState> = Queue(5)): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.PENDING_CLEARANCES
 
@@ -122,7 +122,7 @@ class PendingClearances(val clearanceQueue: Queue<ClearanceState.PendingClearanc
 
 /**
  * Component for tagging the latest [ClearanceState] an aircraft has been cleared
- * */
+ */
 class ClearanceAct(val actingClearance: ClearanceState.ActingClearance = ClearanceState().ActingClearance()): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.CLEARANCE_ACT
 
@@ -133,7 +133,7 @@ class ClearanceAct(val actingClearance: ClearanceState.ActingClearance = Clearan
  * Component for tagging when an aircraft's latest [PendingClearances] or [CommandTarget] changes
  *
  * The server will send a TCP update to all clients informing them of the updated clearance state
- * */
+ */
 @JsonClass(generateAdapter = true)
 class LatestClearanceChanged: Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.LATEST_CLEARANCE_CHANGED
@@ -145,7 +145,7 @@ class LatestClearanceChanged: Component, BaseComponentJSONInterface {
  * Component for tagging when an aircraft's [ClearanceAct] changes
  *
  * The system will update command target to follow the new clearance
- * */
+ */
 @JsonClass(generateAdapter = true)
 class ClearanceActChanged: Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.CLEARANCE_ACT_CHANGED
@@ -157,7 +157,7 @@ class ClearanceActChanged: Component, BaseComponentJSONInterface {
  * Component for tagging an initial arrival spawn
  *
  * Required actions will be performed in the AI system and then removed for the entity
- * */
+ */
 @JsonClass(generateAdapter = true)
 class InitialArrivalSpawn: Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.INITIAL_ARRIVAL_SPAWN
@@ -168,7 +168,7 @@ class InitialArrivalSpawn: Component, BaseComponentJSONInterface {
 /**
  * Component for tagging aircraft that has just contacted the player, which will enable the acknowledge button as well
  * as the datatag flashing to notify the player; this will be used only on client
- * */
+ */
 class ContactNotification: Component {
     companion object: Mapper<ContactNotification>()
 }

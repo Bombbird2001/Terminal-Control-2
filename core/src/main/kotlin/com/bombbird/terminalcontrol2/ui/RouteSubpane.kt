@@ -47,7 +47,7 @@ class RouteSubpane {
      * @param paneWidth will be used as the reference width of the UI pane when initialising the table
      * @param setToEditRoutePane is the function that will be run when the "Edit route" button is clicked
      * @return a [KTableWidget] used to contain the elements of the route sub-pane, which has been added to the [KWidget]
-     * */
+     */
     @Scene2dDsl
     fun routeTable(controlPane: ControlPane, widget: KWidget<Actor>, paneWidth: Float, setToEditRoutePane: () -> Unit): KTableWidget {
         parentControlPane = controlPane
@@ -74,7 +74,7 @@ class RouteSubpane {
     /**
      * Updates the route list in [routeLegsTable]
      * @param route the route to display in the route pane; should be the aircraft's latest cleared route or user input route
-     * */
+     */
     fun updateRouteTable(route: Route) {
         routeLegsTable.clear()
         directButtonArray.clear()

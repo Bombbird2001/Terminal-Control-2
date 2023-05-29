@@ -6,7 +6,7 @@ import java.time.LocalTime
 /**
  * Helper interface that contains data and functions to determine whether a SID, STAR or approach is valid for use
  * under the given conditions
- * */
+ */
 interface UsabilityFilter {
     companion object {
         const val DAY_AND_NIGHT: Byte = 0
@@ -18,7 +18,7 @@ interface UsabilityFilter {
          *
          * This method should only be used on the host server
          * @return whether night mode operations are active for the game
-         * */
+         */
         fun isNight(): Boolean {
             GAME.gameServer?.apply {
                 if (nightModeStart == -1 && nightModeEnd == -1) return false
@@ -41,7 +41,7 @@ interface UsabilityFilter {
      *
      * This method should only be used on the host server to determine spawning information
      * @return whether this entity can be used for the current time
-     * */
+     */
     fun isUsableForDayNight(): Boolean {
         if (timeRestriction == DAY_AND_NIGHT) return true
         val night = isNight()

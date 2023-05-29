@@ -121,7 +121,7 @@ class SectorPane {
      * request state and incoming request state
      * @param button the button to modify
      * @param buttonSector the sector ID the button is representing
-     * */
+     */
     private fun updateSelectedSectorState(button: KTextButton, buttonSector: Byte) {
         if (buttonsBeingModified) return
         buttonsBeingModified = true

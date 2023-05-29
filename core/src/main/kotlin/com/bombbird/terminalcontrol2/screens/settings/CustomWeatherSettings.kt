@@ -154,7 +154,7 @@ class CustomWeatherSettings: BaseGameSettings() {
     /**
      * Modulates the choices for the 2nd and 3rd select boxes with the currently selected values
      * @param arptId ID of the airport to modulate
-     * */
+     */
     private fun modulateWindHdgChoices(arptId: Byte) {
         airportWindSelectBoxes[arptId]?.apply {
             if (get(0).selected == 3.byte) {
