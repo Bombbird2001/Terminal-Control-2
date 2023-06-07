@@ -118,7 +118,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
          * @return GameServer in testing mode
          */
         fun testGameServer(): GameServer {
-            return GameServer("", null, false, 1, true)
+            return GameServer("", null, false, 4, true)
         }
     }
 

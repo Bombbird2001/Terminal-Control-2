@@ -6,10 +6,13 @@ import com.bombbird.terminalcontrol2.networking.HttpRequest
 import com.bombbird.terminalcontrol2.networking.hostserver.PublicServer
 import com.bombbird.terminalcontrol2.networking.playerclient.PublicClient
 import com.bombbird.terminalcontrol2.relay.RelayServer
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
+import io.kotest.matchers.collections.shouldBeIn
 import io.kotest.matchers.shouldBe
+import java.lang.IllegalStateException
 import java.util.UUID
 
 /** Kotest FunSpec class for testing relay server functionality */
@@ -65,6 +68,90 @@ object RelayServerTest: FunSpec() {
             HttpRequest.sendPublicGamesRequest {
                 it.size shouldBe 0
             }
+        }
+
+        test("Too many players") {
+            val host = connectAsHost()
+
+            HttpRequest.sendPublicGamesRequest {
+                it.size shouldBe 1
+                it[0].roomId shouldBe host.getRoomId()
+            }
+
+            connectAsClient(host.getRoomId())
+            connectAsClient(host.getRoomId())
+            connectAsClient(host.getRoomId())
+            connectAsClient(host.getRoomId())
+
+            HttpRequest.sendPublicGamesRequest {
+                it.size shouldBe 0
+            }
+
+            shouldThrow<IllegalStateException> {
+                connectAsClient(host.getRoomId())
+            }
+
+            host.disconnect()
+        }
+
+        test("Incorrect room ID") {
+            val host = connectAsHost()
+
+            HttpRequest.sendPublicGamesRequest {
+                it.size shouldBe 1
+                it[0].roomId shouldBe host.getRoomId()
+            }
+
+            shouldThrow<IllegalStateException> {
+                connectAsClient(0)
+            }
+
+            shouldThrow<IllegalStateException> {
+                connectAsClient(350)
+            }
+
+            shouldThrow<IllegalStateException> {
+                connectAsClient(777)
+            }
+
+            shouldThrow<IllegalStateException> {
+                connectAsClient(Short.MAX_VALUE)
+            }
+
+            host.disconnect()
+        }
+
+        test("Multiple rooms") {
+            val host1 = connectAsHost()
+            val host2 = connectAsHost()
+            val host3 = connectAsHost()
+
+            HttpRequest.sendPublicGamesRequest {
+                it.size shouldBe 3
+                val idList = it.map { room -> room.roomId }
+                host1.getRoomId() shouldBeIn idList
+                host2.getRoomId() shouldBeIn idList
+                host3.getRoomId() shouldBeIn idList
+            }
+
+            connectAsClient(host1.getRoomId())
+            connectAsClient(host2.getRoomId())
+            connectAsClient(host3.getRoomId())
+            connectAsClient(host1.getRoomId())
+            connectAsClient(host2.getRoomId())
+            connectAsClient(host3.getRoomId())
+
+            HttpRequest.sendPublicGamesRequest {
+                it.size shouldBe 3
+                val idList = it.map { room -> room.roomId }
+                host1.getRoomId() shouldBeIn idList
+                host2.getRoomId() shouldBeIn idList
+                host3.getRoomId() shouldBeIn idList
+            }
+
+            host1.disconnect()
+            host2.disconnect()
+            host3.disconnect()
         }
 
         afterSpec {
