@@ -4,10 +4,7 @@ import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.screens.JoinGame
 import com.bombbird.terminalcontrol2.utilities.updateAirportMetar
 import com.esotericsoftware.minlog.Log
-import com.squareup.moshi.JsonClass
-import com.squareup.moshi.JsonDataException
-import com.squareup.moshi.Moshi
-import com.squareup.moshi.adapter
+import com.squareup.moshi.*
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -110,10 +107,10 @@ object HttpRequest {
     }
 
     /**
-     * Sends an HTTP request to the relay server
-     * @param joinGame the [JoinGame] screen to handle the response
+     * Sends an HTTP request to the relay server to request for open public games
+     * @param onComplete function to be called when the results are received; list of games are passed to the function
      */
-    fun sendPublicGamesRequest(joinGame: JoinGame) {
+    fun sendPublicGamesRequest(onComplete: (List<JoinGame.MultiplayerGameInfo>) -> Unit) {
         val request = Request.Builder()
             .url("${Secrets.RELAY_ENDPOINT_URL}:$RELAY_ENDPOINT_PORT$RELAY_GAMES_PATH")
             .post("".toRequestBody(TEXT_MEDIA_TYPE))
@@ -125,18 +122,19 @@ object HttpRequest {
             }
 
             override fun onResponse(call: Call, response: Response) {
-                handlePublicGamesResult(response, joinGame)
+                handlePublicGamesResult(response, onComplete)
             }
         })
     }
 
     /**
      * Handles the response from the public games endpoint query
+     * @param onComplete function to be called when the results are received; list of games are passed to the function
      * @param response the response received from the server; may be null if request was unsuccessful
-     * @param joinGame the [JoinGame] screen to handle the response
      */
-    private fun handlePublicGamesResult(response: Response?, joinGame: JoinGame) {
-        if (response == null) return
+    private fun handlePublicGamesResult(response: Response?, onComplete: (List<JoinGame.MultiplayerGameInfo>) -> Unit) {
+        val publicGamesData = ArrayList<JoinGame.MultiplayerGameInfo>()
+        if (response == null) return onComplete(publicGamesData)
 
         if (!response.isSuccessful) {
             Log.info("HttpRequest", "Public games request error ${response.code}")
@@ -146,10 +144,15 @@ object HttpRequest {
                 Log.info("HttpRequest", "Public games request null response body")
             } else {
                 // Parse JSON to multiplayer games info
-                joinGame.parsePublicGameInfo(responseText)
+                val type = Types.newParameterizedType(List::class.java, JoinGame.MultiplayerGameInfo::class.java)
+                Moshi.Builder().build().adapter<List<JoinGame.MultiplayerGameInfo>>(type).fromJson(responseText)?.apply {
+                    for (game in this) publicGamesData.add(game)
+                }
+                return onComplete(publicGamesData)
             }
         }
         response.close()
+        onComplete(publicGamesData)
     }
 
     /** Class representing data sent to authorization endpoint to obtain symmetric key for room data encryption */

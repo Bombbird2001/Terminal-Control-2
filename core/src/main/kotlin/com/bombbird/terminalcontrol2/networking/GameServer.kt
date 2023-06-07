@@ -1,6 +1,7 @@
 package com.bombbird.terminalcontrol2.networking
 
 import com.badlogic.ashley.core.Engine
+import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.math.Polygon
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.*
@@ -233,8 +234,10 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
 
     /** Initialises game world for testing purposes */
     private fun loadGameTest() {
-        loadAircraftData()
-        loadDisallowedCallsigns()
+        if (Gdx.files != null) {
+            loadAircraftData()
+            loadDisallowedCallsigns()
+        }
 
         engine.addSystem(PhysicsSystem())
         engine.addSystem(PhysicsSystemInterval())
@@ -243,6 +246,11 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
         engine.addSystem(ControlStateSystemInterval())
         engine.addSystem(TrafficSystemInterval())
         engine.addSystem(DataSystem())
+
+        sectors.put(0, GdxArray())
+        sectors.put(1, GdxArray())
+        sectors.put(2, GdxArray())
+        sectors.put(3, GdxArray())
     }
 
     /** Initialises game world where [mainName] is the ICAO code of the main airport */

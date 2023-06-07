@@ -29,6 +29,9 @@ class PublicServer(
     onDisconnect: (ConnectionMeta) -> Unit,
     private val mapName: String
 ) : NetworkServer(gameServer, onReceive, onConnect, onDisconnect) {
+    val isConnected: Boolean
+        get() = relayServerConnector.isConnected
+
     private val encryptor: Encryptor = AESGCMEncryptor(::getSerialisedBytes)
     private val decrypter: Decrypter = AESGCMDecrypter(::fromSerializedBytes)
     override val kryo: Kryo

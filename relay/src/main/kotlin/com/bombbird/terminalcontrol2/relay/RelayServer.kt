@@ -188,7 +188,10 @@ object RelayServer: RelayServer, RelayAuthorization {
         }
 
         /**
-         * Encrypts the object based on the authorised connection's room
+         * Encrypts the object based on the authorised connection's room, or pending room if the room is not yet open,
+         * returning the encrypted object
+         * @param conn the connection to encrypt for
+         * @param obj the object to encrypt
          */
         fun encryptBasedOnConnectionPendingRoom(conn: Connection, obj: NeedsEncryption): Any? {
             // Try to find an open room first
@@ -249,15 +252,22 @@ object RelayServer: RelayServer, RelayAuthorization {
         // Shut down server before terminating program
         Runtime.getRuntime().addShutdownHook(Thread {
             println("Server shutdown signal received")
-            server.stop()
-            RelayEndpoint.stop()
+            stop()
         })
 
         registerClassesToKryo(server.kryo)
         server.bind(57773, 57779)
         server.start()
 
-        RelayEndpoint.launch(this)
+        val test = args.isNotEmpty() && args[0] == "test"
+
+        RelayEndpoint.launch(this, !test)
+    }
+
+    fun stop() {
+        println("Stopping relay")
+        server.stop()
+        RelayEndpoint.stop()
     }
 
     override fun createNewRoom(

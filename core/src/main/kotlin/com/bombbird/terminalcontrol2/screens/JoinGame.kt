@@ -7,8 +7,6 @@ import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.networking.HttpRequest
 import com.bombbird.terminalcontrol2.ui.addChangeListener
 import com.squareup.moshi.JsonClass
-import com.squareup.moshi.Moshi
-import com.squareup.moshi.Types
 import kotlinx.coroutines.*
 import ktx.async.KtxAsync
 import ktx.collections.GdxArray
@@ -96,7 +94,10 @@ class JoinGame: BasicUIScreen() {
         if (searching) return
         Gdx.app.postRunnable { setSearchingGames() }
         publicGamesData.clear()
-        HttpRequest.sendPublicGamesRequest(this) // Non-blocking
+        // Non-blocking HTTP request
+        HttpRequest.sendPublicGamesRequest { games ->
+            for (game in games) publicGamesData.add(game)
+        }
         lanGamesData.clear()
         GAME.lanClientDiscoveryHandler.onDiscoveredHostDataMap = lanGamesData
         GAME.lanClient.discoverHosts(UDP_PORT) // Blocks this thread
@@ -114,17 +115,6 @@ class JoinGame: BasicUIScreen() {
     @JsonClass(generateAdapter = true)
     class MultiplayerGameInfo(val address: String, val players: Byte, val maxPlayers: Byte, val airportName: String,
                               val roomId: Short?)
-
-    /**
-     * Parses the provided response JSON into multiplayer game info
-     * @param responseJSON the JSON response from endpoint
-     */
-    fun parsePublicGameInfo(responseJSON: String) {
-        val type = Types.newParameterizedType(List::class.java, MultiplayerGameInfo::class.java)
-        Moshi.Builder().build().adapter<List<MultiplayerGameInfo>>(type).fromJson(responseJSON)?.apply {
-            for (game in this) publicGamesData.add(game)
-        }
-    }
 
     /** Displays all games found on LAN and public relay server, and sets the searching flag to false */
     private fun showFoundGames() {

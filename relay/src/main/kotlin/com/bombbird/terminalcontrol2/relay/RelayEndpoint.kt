@@ -27,11 +27,10 @@ object RelayEndpoint {
     private val moshiAuthResponseAdapter = moshi.adapter<HttpRequest.AuthorizationResponse>()
     @OptIn(ExperimentalStdlibApi::class)
     private val moshiRoomCreationsStatusAdapter = moshi.adapter<HttpRequest.RoomCreationStatus>()
-    private var relayServer: RelayServer? = null
     private lateinit var httpServer: HttpServer
 
     /** HttpHandler object to handle client requesting available games */
-    private object GamesRequestHandler: HttpHandler {
+    private class GamesRequestHandler(private val relayServer: RelayServer): HttpHandler {
         override fun handle(exchange: HttpExchange?) {
             try {
                 if (exchange == null) return
@@ -40,10 +39,7 @@ object RelayEndpoint {
                 if (exchange.requestMethod != "POST") return sendError(exchange, 405)
 
                 // Get non-full games from server
-                var responseJson = "{}"
-                relayServer?.apply {
-                    responseJson = moshiGamesAdapter.toJson(getAvailableGames())
-                }
+                val responseJson = moshiGamesAdapter.toJson(relayServer.getAvailableGames())
 
                 val output = exchange.responseBody
                 exchange.sendResponseHeaders(200, responseJson.length.toLong())
@@ -58,7 +54,7 @@ object RelayEndpoint {
     }
 
     /** HttpHandler object to handle client requesting authorization for joining a game */
-    private object AuthorizeRequestHandler: HttpHandler {
+    private class AuthorizeRequestHandler(private val relayServer: RelayServer): HttpHandler {
         override fun handle(exchange: HttpExchange?) {
             try {
                 if (exchange == null) return
@@ -78,7 +74,7 @@ object RelayEndpoint {
                 if (DigestUtils.sha256Hex(authReq.pw) != Secrets.AUTH_PW_HASH) return sendError(exchange, 403)
 
                 // Get symmetric key, nonce and output to JSON
-                val res = relayServer?.authorizeUUIDToRoom(authReq.roomId, UUID.fromString(authReq.uuid))
+                val res = relayServer.authorizeUUIDToRoom(authReq.roomId, UUID.fromString(authReq.uuid))
                 val authResponse = if (res == null) HttpRequest.AuthorizationResponse(false, "", "", "")
                 else HttpRequest.AuthorizationResponse(true, res.first, res.second, res.third)
                 val responseJson = moshiAuthResponseAdapter.toJson(authResponse)
@@ -96,7 +92,7 @@ object RelayEndpoint {
     }
 
     /** HttpHandler object to handle client requesting creation of new game */
-    private object CreateGameHandler: HttpHandler {
+    private class CreateGameHandler(private val relayServer: RelayServer): HttpHandler {
         override fun handle(exchange: HttpExchange?) {
             try {
                 if (exchange == null) return
@@ -108,7 +104,7 @@ object RelayEndpoint {
                 if (DigestUtils.sha256Hex(pw) != Secrets.CREATE_GAME_PW_HASH) return sendError(exchange, 403)
 
                 // Get symmetric key and output to JSON
-                val roomResponse = relayServer?.createPendingRoom() ?:
+                val roomResponse = relayServer.createPendingRoom() ?:
                 HttpRequest.RoomCreationStatus(false, Short.MAX_VALUE, HttpRequest.AuthorizationResponse(false, "", "", ""))
                 val responseJson = moshiRoomCreationsStatusAdapter.toJson(roomResponse)
 
@@ -127,21 +123,23 @@ object RelayEndpoint {
     /**
      * Launches the server with the provided relayServer to handle logic
      * @param rs the [RelayServer]
+     * @param production whether to use ports for production environment
      */
-    fun launch(rs: RelayServer) {
-        relayServer = rs
-        httpServer = HttpServer.create(InetSocketAddress(Inet4Address.getByName(LOCALHOST), RELAY_ENDPOINT_PORT - 1), 10)
-        httpServer.createContext(RELAY_GAMES_PATH, GamesRequestHandler)
-        httpServer.createContext(RELAY_GAME_AUTH_PATH, AuthorizeRequestHandler)
-        httpServer.createContext(RELAY_GAME_CREATE_PATH, CreateGameHandler)
+    fun launch(rs: RelayServer, production: Boolean = true) {
+        httpServer = HttpServer.create(InetSocketAddress(Inet4Address.getByName(LOCALHOST),
+            RELAY_ENDPOINT_PORT - (if (production) 1 else 0)), 10)
+        httpServer.createContext(RELAY_GAMES_PATH, GamesRequestHandler(rs))
+        httpServer.createContext(RELAY_GAME_AUTH_PATH, AuthorizeRequestHandler(rs))
+        httpServer.createContext(RELAY_GAME_CREATE_PATH, CreateGameHandler(rs))
         httpServer.executor = Executors.newFixedThreadPool(2)
         httpServer.start()
 
         println("Endpoint launched")
     }
 
-    /** Stops the server */
+    /** Stops the endpoint HTTP server */
     fun stop() {
+        println("Stopping endpoint")
         httpServer.stop(1)
     }
 
