@@ -106,6 +106,7 @@ const val RELAY_ENDPOINT_PORT = 57775
 const val RELAY_GAMES_PATH = "/games"
 const val RELAY_GAME_AUTH_PATH = "/gameAuth"
 const val RELAY_GAME_CREATE_PATH = "/gameCreate"
+const val RELAY_GAME_ALIVE_PATH = "/alive"
 
 /** Encryption constants */
 /** 2048-bit DH prime from RFC 7919 ffdhe2048 */

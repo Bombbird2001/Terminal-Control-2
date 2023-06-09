@@ -29,7 +29,7 @@ object RelayEndpoint {
     private val moshiRoomCreationsStatusAdapter = moshi.adapter<HttpRequest.RoomCreationStatus>()
     private lateinit var httpServer: HttpServer
 
-    /** HttpHandler object to handle client requesting available games */
+    /** HttpHandler class to handle client requesting available games */
     private class GamesRequestHandler(private val relayServer: RelayServer): HttpHandler {
         override fun handle(exchange: HttpExchange?) {
             try {
@@ -53,7 +53,7 @@ object RelayEndpoint {
         }
     }
 
-    /** HttpHandler object to handle client requesting authorization for joining a game */
+    /** HttpHandler class to handle client requesting authorization for joining a game */
     private class AuthorizeRequestHandler(private val relayServer: RelayServer): HttpHandler {
         override fun handle(exchange: HttpExchange?) {
             try {
@@ -91,7 +91,7 @@ object RelayEndpoint {
         }
     }
 
-    /** HttpHandler object to handle client requesting creation of new game */
+    /** HttpHandler class to handle client requesting creation of new game */
     private class CreateGameHandler(private val relayServer: RelayServer): HttpHandler {
         override fun handle(exchange: HttpExchange?) {
             try {
@@ -120,6 +120,26 @@ object RelayEndpoint {
         }
     }
 
+    /** HttpHandler object to handle is-alive requests */
+    private object AliveHandler: HttpHandler {
+        override fun handle(exchange: HttpExchange?) {
+            try {
+                if (exchange == null) return
+
+                // Only accept GET requests
+                if (exchange.requestMethod != "GET") return sendError(exchange, 405)
+
+                val output = exchange.responseBody
+                exchange.sendResponseHeaders(200, -1)
+                output.flush()
+                output.close()
+            } catch (e: Exception) {
+                if (exchange != null) sendError(exchange, 500)
+                e.printStackTrace()
+            }
+        }
+    }
+
     /**
      * Launches the server with the provided relayServer to handle logic
      * @param rs the [RelayServer]
@@ -131,6 +151,7 @@ object RelayEndpoint {
         httpServer.createContext(RELAY_GAMES_PATH, GamesRequestHandler(rs))
         httpServer.createContext(RELAY_GAME_AUTH_PATH, AuthorizeRequestHandler(rs))
         httpServer.createContext(RELAY_GAME_CREATE_PATH, CreateGameHandler(rs))
+        httpServer.createContext(RELAY_GAME_ALIVE_PATH, AliveHandler)
         httpServer.executor = Executors.newFixedThreadPool(2)
         httpServer.start()
 
