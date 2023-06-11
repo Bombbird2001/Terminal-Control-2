@@ -42,7 +42,7 @@ class PlayerJoined: ClientReceive, NeedsEncryption {
 /** Class representing player left event */
 data class PlayerLeft(private val sector: Byte = -1): ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
-        rs.uiPane.commsPane.addMessage("Player controlling ${sector + 1} has left the game", CommsPane.ALERT)
+        rs.uiPane.commsPane.addMessage("Player controlling sector ${sector + 1} has left the game", CommsPane.ALERT)
     }
 }
 

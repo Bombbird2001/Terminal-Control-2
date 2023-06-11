@@ -7,6 +7,8 @@ import com.bombbird.terminalcontrol2.networking.dataclasses.RequestClientUUID
 import com.bombbird.terminalcontrol2.networking.encryption.*
 import com.bombbird.terminalcontrol2.networking.handleIncomingRequestClient
 import com.bombbird.terminalcontrol2.networking.registerClassesToKryo
+import com.bombbird.terminalcontrol2.screens.RadarScreen
+import com.bombbird.terminalcontrol2.ui.CustomDialog
 import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
@@ -63,6 +65,11 @@ class LANClient(lanClientDiscoveryHandler: LANClientDiscoveryHandler): NetworkCl
                 (decrypted as? RequestClientUUID)?.apply {
                     this@LANClient.sendTCP(ClientUUIDData(myUuid.toString()))
                 } ?: handleIncomingRequestClient(GAME.gameClientScreen ?: return, decrypted)
+            }
+
+            override fun disconnected(connection: Connection?) {
+                if (GAME.shownScreen is RadarScreen && GAME.gameServer == null)
+                    GAME.quitCurrentGameWithDialog(CustomDialog("Disconnected", "You have been disconnected from the server", "", "Ok"))
             }
         })
     }

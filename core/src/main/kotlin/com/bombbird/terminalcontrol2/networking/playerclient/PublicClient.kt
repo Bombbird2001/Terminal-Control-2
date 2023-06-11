@@ -6,6 +6,7 @@ import com.bombbird.terminalcontrol2.networking.dataclasses.ClientUUIDData
 import com.bombbird.terminalcontrol2.networking.dataclasses.RequestClientUUID
 import com.bombbird.terminalcontrol2.networking.encryption.*
 import com.bombbird.terminalcontrol2.networking.relayserver.*
+import com.bombbird.terminalcontrol2.screens.RadarScreen
 import com.bombbird.terminalcontrol2.ui.CustomDialog
 import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.io.Input
@@ -53,6 +54,11 @@ class PublicClient: NetworkClient() {
 
             override fun connected(connection: Connection) {
                 connection.sendTCP(relayChallenge)
+            }
+
+            override fun disconnected(connection: Connection?) {
+                if (GAME.shownScreen is RadarScreen)
+                    GAME.quitCurrentGameWithDialog(CustomDialog("Disconnected", "You have been disconnected from the server", "", "Ok"))
             }
         })
     }
