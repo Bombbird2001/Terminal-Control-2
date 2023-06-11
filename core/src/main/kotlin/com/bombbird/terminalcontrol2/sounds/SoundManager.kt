@@ -20,8 +20,8 @@ class SoundManager: Disposable {
     private val initialContactAudio: Sound = GAME.assetStorage["Audio/initial_contact.wav"]
     private val runwayChangeAudio: Sound = GAME.assetStorage["Audio/rwy_change.wav"]
 
-    /** Loops the conflict audio effect  */
-    fun playConflict() {
+    /** Loops the warning audio effect  */
+    fun playWarning() {
         if (!conflictPlaying && COMMUNICATIONS_SOUND > COMMS_OFF) {
             conflictAudio.play(0.8f)
             conflictPlaying = true

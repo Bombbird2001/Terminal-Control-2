@@ -322,6 +322,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
         val onConnect = { conn: ConnectionMeta ->
             val currPlayerNo = playerNo.incrementAndGet().toByte()
             val uuid = conn.uuid
+            networkServer.sendToAllTCP(PlayerJoined())
             postRunnableAfterEngineUpdate {
                 // Get data only after engine has completed this update to prevent threading issues
                 networkServer.sendTCPToConnection(uuid, ClearAllClientData())
@@ -433,9 +434,11 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
         val onDisconnect = { conn: ConnectionMeta ->
             // Called on disconnect
             val newPlayerNo = playerNo.decrementAndGet().toByte()
+            val sectorControlled = sectorMap[conn.uuid]
+            if (sectorControlled != null) networkServer.sendToAllTCP(PlayerLeft(sectorControlled))
             postRunnableAfterEngineUpdate {
                 // Remove entries only after this engine update to prevent threading issues
-                sectorUUIDMap.removeKey(sectorMap[conn.uuid])
+                sectorUUIDMap.removeKey(sectorControlled)
                 sectorMap.removeKey(conn.uuid)
                 if (newPlayerNo > 0) assignSectorsToPlayers(
                     networkServer.connections,

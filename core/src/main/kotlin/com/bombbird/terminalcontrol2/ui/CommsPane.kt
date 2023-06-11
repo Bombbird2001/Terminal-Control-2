@@ -69,14 +69,20 @@ class CommsPane {
      * @param msg the message
      * @param msgType the type of the message to add; will determine the display style of the message
      */
-    private fun addMessage(msg: String, msgType: Byte) {
+    fun addMessage(msg: String, msgType: Byte) {
         if (convoLabels.size >= CONVO_SIZE) convoLabels.removeFirst().remove()
         val msgStyle = "CommsPane" + when (msgType) {
             ARRIVAL -> "Arrival"
             DEPARTURE -> "Departure"
             OTHERS -> "Others"
-            ALERT -> "Alert"
-            WARNING -> "Warning"
+            ALERT -> {
+                GAME.soundManager.playAlert()
+                "Alert"
+            }
+            WARNING -> {
+                GAME.soundManager.playWarning()
+                "Warning"
+            }
             else -> {
                 Log.info("CommsPane", "Unknown message type $msgType")
                 "Others"

@@ -41,6 +41,8 @@ fun registerClassesToKryo(kryo: Kryo?) {
         register(RequestClientUUID::class.java)
         register(ClientUUIDData::class.java)
         register(ConnectionError::class.java)
+        register(PlayerJoined::class.java)
+        register(PlayerLeft::class.java)
         register(ClearAllClientData::class.java)
         register(InitialDataSendComplete::class.java)
         register(InitialAirspaceData::class.java)

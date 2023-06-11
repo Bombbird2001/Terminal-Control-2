@@ -10,6 +10,7 @@ import com.bombbird.terminalcontrol2.networking.GameServer
 import com.bombbird.terminalcontrol2.networking.encryption.NeedsEncryption
 import com.bombbird.terminalcontrol2.screens.RadarScreen
 import com.bombbird.terminalcontrol2.systems.RenderingSystemClient
+import com.bombbird.terminalcontrol2.ui.CommsPane
 import com.bombbird.terminalcontrol2.ui.getNewDatatagLabelText
 import com.bombbird.terminalcontrol2.ui.updateDatatagText
 import com.bombbird.terminalcontrol2.utilities.*
@@ -104,10 +105,12 @@ data class SectorSwapRequest(private val requestedSector: Byte? = null, private 
         if (requestedSector == null) {
             // Requesting sector cancelled, remove swap request
             rs.incomingSwapRequests.removeValue(sendingSector, false)
+            rs.uiPane.commsPane.addMessage("Sector ${sendingSector + 1} has cancelled the sector swap request", CommsPane.ALERT)
         } else {
             // Check the request has not been received before
             if (rs.incomingSwapRequests.contains(sendingSector, false)) return
             rs.incomingSwapRequests.add(sendingSector)
+            rs.uiPane.commsPane.addMessage("Sector ${sendingSector + 1} has requested to swap sectors with you", CommsPane.ALERT)
         }
         rs.uiPane.sectorPane.updateSectorDisplay(rs.sectors)
     }
@@ -131,5 +134,6 @@ data class DeclineSwapRequest(private val requestingSector: Byte = -1, private v
         if (rs.swapSectorRequest != decliningSector) return
         rs.swapSectorRequest = null
         rs.uiPane.sectorPane.updateSectorDisplay(rs.sectors)
+        rs.uiPane.commsPane.addMessage("Sector ${decliningSector + 1} has declined your sector swap request", CommsPane.ALERT)
     }
 }

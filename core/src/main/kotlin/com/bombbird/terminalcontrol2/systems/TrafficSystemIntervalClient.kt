@@ -12,7 +12,7 @@ class TrafficSystemIntervalClient: IntervalSystem(1f) {
     override fun updateInterval() {
         GAME.gameClientScreen?.apply {
             // Play the conflict sound every 1s
-            if (conflicts.size > 0) GAME.soundManager.playConflict()
+            if (conflicts.size > 0) GAME.soundManager.playWarning()
         }
     }
 }

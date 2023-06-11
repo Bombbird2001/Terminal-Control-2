@@ -31,7 +31,7 @@ class MainMenu: BasicUIScreen() {
                     }
                     row().padTop(15f)
                     table {
-                        textButton("Join Game", "Menu").cell(width = BUTTON_WIDTH_MAIN, height = BUTTON_HEIGHT_MAIN).addChangeListener { _, _ ->
+                        textButton("Multiplayer", "Menu").cell(width = BUTTON_WIDTH_MAIN, height = BUTTON_HEIGHT_MAIN).addChangeListener { _, _ ->
                             GAME.setScreen<JoinGame>()
                         }
                         imageButton("RunwayConfig").cell(width = BUTTON_WIDTH_SMALL, height = BUTTON_HEIGHT_MAIN, padLeft = 20f, padRight = 210f).addChangeListener { _, _ ->

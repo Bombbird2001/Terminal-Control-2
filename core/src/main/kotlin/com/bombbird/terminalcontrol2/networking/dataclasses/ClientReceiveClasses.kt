@@ -7,10 +7,7 @@ import com.bombbird.terminalcontrol2.networking.encryption.NeedsEncryption
 import com.bombbird.terminalcontrol2.screens.RadarScreen
 import com.bombbird.terminalcontrol2.traffic.ConflictManager
 import com.bombbird.terminalcontrol2.traffic.TrafficMode
-import com.bombbird.terminalcontrol2.ui.CustomDialog
-import com.bombbird.terminalcontrol2.ui.getNewDatatagLabelText
-import com.bombbird.terminalcontrol2.ui.setDatatagFlash
-import com.bombbird.terminalcontrol2.ui.updateDatatagText
+import com.bombbird.terminalcontrol2.ui.*
 import com.bombbird.terminalcontrol2.utilities.getAircraftIcon
 import com.esotericsoftware.minlog.Log
 import ktx.ashley.*
@@ -32,6 +29,20 @@ data class ConnectionError(private val cause: String = "Unknown cause"): ClientR
     override fun handleClientReceive(rs: RadarScreen) {
         Log.info("NetworkingTools", "Connection failed - $cause")
         GAME.quitCurrentGameWithDialog(CustomDialog("Failed to connect", cause, "", "Ok"))
+    }
+}
+
+/** Class representing player joined event */
+class PlayerJoined: ClientReceive, NeedsEncryption {
+    override fun handleClientReceive(rs: RadarScreen) {
+        rs.uiPane.commsPane.addMessage("A player has joined the game", CommsPane.ALERT)
+    }
+}
+
+/** Class representing player left event */
+data class PlayerLeft(private val sector: Byte = -1): ClientReceive, NeedsEncryption {
+    override fun handleClientReceive(rs: RadarScreen) {
+        rs.uiPane.commsPane.addMessage("Player controlling ${sector + 1} has left the game", CommsPane.ALERT)
     }
 }
 
@@ -101,6 +112,7 @@ class IndividualSectorData(private val assignedSectorId: Byte = 0, private val s
         rs.swapSectorRequest = null
         rs.incomingSwapRequests.clear()
         rs.uiPane.sectorPane.updateSectorDisplay(rs.sectors)
+        rs.uiPane.commsPane.addMessage("You are now controlling sector ${assignedSectorId + 1}", CommsPane.ALERT)
     }
 }
 
@@ -221,7 +233,8 @@ class TrafficSettingsData(private val trafficMode: Byte = TrafficMode.NORMAL, pr
 data class PendingRunwayUpdateData(private val airportId: Byte = 0, private val configId: Byte? = null): ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
         rs.airports[airportId]?.pendingRunwayConfigClient(configId)
-        GAME.soundManager.playAlert()
+        if (configId != null)
+            rs.uiPane.commsPane.addMessage("Runway change pending for ${rs.airports[airportId]?.entity?.get(AirportInfo.mapper)?.icaoCode}", CommsPane.ALERT)
     }
 }
 

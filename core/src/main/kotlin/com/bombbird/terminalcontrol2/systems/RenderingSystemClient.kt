@@ -44,7 +44,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         .exclude(DoNotRenderShape::class).get()
     private val circleFamily: Family = allOf(Position::class, GCircle::class, SRColor::class)
         .exclude(SRConstantZoomSize::class, DoNotRenderShape::class).get()
-    private val runwayFamily: Family = allOf(RunwayInfo::class, SRColor::class).get()
+    private val runwayFamily: Family = allOf(RunwayInfo::class, SRColor::class).exclude(DoNotRenderShape::class).get()
     private val locFamily: Family = allOf(Position::class, Localizer::class, Direction::class, ApproachInfo::class).get()
     private val trajectoryFamily: Family = allOf(RadarData::class, Controllable::class, SRColor::class)
         .exclude(WaitingTakeoff::class).get()
