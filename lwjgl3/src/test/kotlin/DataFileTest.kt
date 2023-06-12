@@ -569,7 +569,7 @@ object DataFileTest: FunSpec() {
                     infoLine[1] shouldBeIn TIME_SLOTS
 
                     val rwyLines = getAllTextAfterHeaderMultiple("RWY", sidLines[1])
-                    rwyLines.size shouldBe 1
+                    rwyLines.size shouldBeGreaterThanOrEqual 1
                     val rwyLine = rwyLines[0].split(" ")
                     rwyLine.size shouldBeGreaterThanOrEqual 2
                     rwyLine[0] shouldBeIn allRwys
@@ -736,20 +736,27 @@ object DataFileTest: FunSpec() {
                     for (trans in transitions) {
                         val inboundLine = trans.split(" ")
                         inboundLine.size shouldBeGreaterThanOrEqual 1
-                        if (inboundLine[0] != "vectors") inboundLine[0] shouldBeIn allWpts
+                        if (inboundLine[0] != "vectors") {
+                            // First leg should be waypoint with the same name as transition
+                            inboundLine[0] shouldBeIn allWpts
+                            inboundLine[1] shouldBe WYPT_LEG
+                            inboundLine[2] shouldBe inboundLine[0]
+                        }
                         else vectorTransPresent = true
                         testParseLegs(inboundLine.subList(1, inboundLine.size), allWpts, Route.Leg.NORMAL, WARNING_SHOULD_BE_EMPTY)
                     }
                     vectorTransPresent.shouldBeTrue()
 
                     val routeLines = getAllTextAfterHeaderMultiple("ROUTE", apchLines[1])
-                    routeLines.size shouldBe 1
-                    val routeLine = routeLines[0].split(" ")
-                    testParseLegs(routeLine, allWpts, Route.Leg.NORMAL, WARNING_SHOULD_BE_EMPTY)
+                    routeLines.size shouldBeLessThanOrEqual 1
+                    if (routeLines.size == 1) {
+                        val routeLine = routeLines[0].split(" ")
+                        testParseLegs(routeLine, allWpts, Route.Leg.NORMAL, WARNING_SHOULD_BE_EMPTY)
+                    }
 
                     val missedLines = getAllTextAfterHeaderMultiple("MISSED", apchLines[1])
                     missedLines.size shouldBe 1
-                    val missedLine = routeLines[0].split(" ")
+                    val missedLine = missedLines[0].split(" ")
                     testParseLegs(missedLine, allWpts, Route.Leg.NORMAL, WARNING_SHOULD_BE_EMPTY)
                 }
             }
