@@ -9,9 +9,11 @@ import com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle
 import com.badlogic.gdx.utils.Timer
 import com.badlogic.gdx.utils.Timer.Task
 import com.bombbird.terminalcontrol2.components.*
+import com.bombbird.terminalcontrol2.entities.SectorContactable
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.utilities.AircraftTypeData
+import com.bombbird.terminalcontrol2.utilities.getACCSectorForPosition
 import com.esotericsoftware.minlog.Log
 import ktx.ashley.get
 import ktx.scene2d.*
@@ -108,7 +110,7 @@ class CommsPane {
         val arrivalAirport = aircraft[ArrivalAirport.mapper]
 
         // Get the callsign of the player
-        val thisSectorInfo = CLIENT_SCREEN?.let {
+        val thisSector = CLIENT_SCREEN?.let {
             // If the player has not received the initial sector data, schedule the contact for 0.5s later
             if (it.sectors.isEmpty) {
                 Timer.schedule(object: Task() {
@@ -119,9 +121,9 @@ class CommsPane {
                 return
             }
             it.sectors[it.playerSector.toInt()]
-        }?.entity?.get(SectorInfo.mapper) ?: return
+        } ?: return
 
-        val yourCallsign = getControllerCallsign(flightType.type, thisSectorInfo)
+        val yourCallsign = thisSector.getControllerCallsignFrequency(flightType.type).callsign
 
         // Get the wake category of the aircraft
         val aircraftWake = getWakePhraseology(acInfo.aircraftPerf.wakeCategory)
@@ -201,8 +203,8 @@ class CommsPane {
                 return
             }
             it.sectors[it.playerSector.toInt()]
-        }?.entity?.get(SectorInfo.mapper) ?: return
-        val yourCallsign = getControllerCallsign(flightType.type, thisSectorInfo)
+        } ?: return
+        val yourCallsign = thisSectorInfo.getControllerCallsignFrequency(flightType.type).callsign
 
         // Get the wake category of the aircraft
         val aircraftWake = getWakePhraseology(acInfo.aircraftPerf.wakeCategory)
@@ -227,13 +229,14 @@ class CommsPane {
     fun contactOther(aircraft: Entity, newSectorId: Byte) {
         val flightType = aircraft[FlightType.mapper] ?: return
         val acInfo = aircraft[AircraftInfo.mapper] ?: return
+        val pos = aircraft[Position.mapper] ?: return
 
         // Controller segment
         // Get the wake category of the aircraft
         val aircraftWake = getWakePhraseology(acInfo.aircraftPerf.wakeCategory)
 
         // Get the callsign and frequency of the next controller
-        val nextSectorInfo = when (newSectorId) {
+        val nextSectorInfo: SectorContactable.ControllerInfo = when (newSectorId) {
             SectorInfo.TOWER -> {
                 // For tower, get the tower information for the runway the aircraft is cleared for approach to
                 // If not present, get that of the first runway in the airport
@@ -250,10 +253,12 @@ class CommsPane {
                     }
                 }
 
-                SectorInfo(SectorInfo.TOWER, towerFreq, towerCallsign, towerCallsign)
+                SectorContactable.ControllerInfo(towerCallsign, towerFreq)
             }
-            // TODO Get correct callsign, frequency of ACC
-            SectorInfo.CENTRE -> SectorInfo(SectorInfo.CENTRE, "121.5", "Control", "Control")
+            SectorInfo.CENTRE -> {
+                val accSectorObj = getACCSectorForPosition(pos.x, pos.y)
+                accSectorObj?.getControllerCallsignFrequency(flightType.type) ?: SectorContactable.ControllerInfo("Control", "121.5")
+            }
             else -> {
                 CLIENT_SCREEN?.let {
                     // If the player has not received the initial sector data, schedule the contact for 0.5s later
@@ -265,11 +270,11 @@ class CommsPane {
                         }, 0.5f)
                         return
                     }
-                    it.sectors[newSectorId.toInt()]?.entity?.get(SectorInfo.mapper) ?: return
+                    it.sectors[newSectorId.toInt()]?.getControllerCallsignFrequency(flightType.type) ?: return
                 } ?: return
             }
         }
-        val nextCallsign = getControllerCallsign(flightType.type, nextSectorInfo)
+        val nextCallsign = nextSectorInfo.callsign
 
         val finalMsg = "${acInfo.icaoCallsign} $aircraftWake, contact $nextCallsign on ${nextSectorInfo.frequency}"
         addMessage(finalMsg, OTHERS)
@@ -319,23 +324,6 @@ class CommsPane {
 
         // Return the string with leading or trailing whitespaces removed if any
         return correctMsg.trim()
-    }
-
-    /**
-     * Gets the appropriate controller callsign depending on the type of flight
-     * @param flightType the type of flight contacting the player
-     * @param sectorInfo the [SectorInfo] component of the controller
-     * @return the callsign the aircraft will address the controller
-     */
-    private fun getControllerCallsign(flightType: Byte, sectorInfo: SectorInfo): String {
-        return when (flightType) {
-            FlightType.ARRIVAL, FlightType.EN_ROUTE -> sectorInfo.arrivalCallsign
-            FlightType.DEPARTURE -> sectorInfo.departureCallsign
-            else -> {
-                Log.info("CommsPane", "Unknown flight type $flightType")
-                sectorInfo.arrivalCallsign
-            }
-        }
     }
 
     /**

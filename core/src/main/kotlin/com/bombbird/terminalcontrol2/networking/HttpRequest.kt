@@ -107,6 +107,35 @@ object HttpRequest {
     }
 
     /**
+     * Sends an HTTP request to the relay server to check its aliveness
+     * @param onComplete function to be called when the results are received; a string denoting the status of the
+     * request is passed to the function
+     */
+    fun sendPublicServerAlive(onComplete: (String) -> Unit) {
+        val request = Request.Builder()
+            .url("${Secrets.RELAY_ENDPOINT_URL}:$RELAY_ENDPOINT_PORT$RELAY_GAME_ALIVE_PATH")
+            .get()
+            .build()
+        client.newCall(request).enqueue(object: Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                Log.info("HttpRequest", "Public games alive check failed")
+                onComplete("Could not check status")
+                // println(e)
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                if (!response.isSuccessful) {
+                    Log.info("HttpRequest", "Public games alive check error ${response.code}")
+                    onComplete("Down")
+                } else {
+                    onComplete("Up and reachable")
+                }
+                response.close()
+            }
+        })
+    }
+
+    /**
      * Sends an HTTP request to the relay server to request for open public games
      * @param onComplete function to be called when the results are received; list of games are passed to the function
      */

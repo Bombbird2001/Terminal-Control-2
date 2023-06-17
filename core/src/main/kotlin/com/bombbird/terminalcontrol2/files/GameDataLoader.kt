@@ -35,6 +35,7 @@ private const val WORLD_WAYPOINTS = "WAYPOINTS"
 private const val WORLD_HOLDS = "HOLDS"
 private const val WORLD_MIN_ALT_SECTORS = "MIN_ALT_SECTORS"
 private const val WORLD_SECTORS = "SECTORS"
+private const val ACC_SECTORS = "ACC_SECTORS"
 private const val WORLD_SHORELINE = "SHORELINE"
 private const val AIRPORT_OBJ = "AIRPORT"
 private const val AIRPORT_RWYS = "RWYS"
@@ -183,6 +184,7 @@ fun loadWorldData(mainName: String, gameServer: GameServer) {
                             if (currSectorCount == 0.byte) currSectorCount = lineData[0].split("/")[0].toByte()
                             else parseSector(lineData, currSectorCount, gameServer)
                         }
+                        ACC_SECTORS -> parseACCSector(lineData, gameServer)
                         "" -> when (lineData[0]) {
                             WORLD_MIN_ALT -> MIN_ALT = lineData[1].toInt()
                             WORLD_MAX_ALT -> MAX_ALT = lineData[1].toInt()
@@ -199,8 +201,8 @@ fun loadWorldData(mainName: String, gameServer: GameServer) {
                             else -> {
                                 if (lineData[0] in arrayOf(
                                         WORLD_WAYPOINTS, WORLD_HOLDS, WORLD_MIN_ALT_SECTORS, WORLD_SHORELINE, AIRPORT_RWYS,
-                                        WORLD_SECTORS, AIRPORT_TFC, AIRPORT_DEP_PARALLEL, AIRPORT_DEP_OPP, AIRPORT_CROSSING,
-                                        AIRPORT_APP_NOZ, AIRPORT_DEP_NOZ).map { "$it/" })
+                                        WORLD_SECTORS, ACC_SECTORS, AIRPORT_TFC, AIRPORT_DEP_PARALLEL, AIRPORT_DEP_OPP,
+                                        AIRPORT_CROSSING, AIRPORT_APP_NOZ, AIRPORT_DEP_NOZ).map { "$it/" })
                                     parseMode = lineData[0].substringBefore("/")
                                 else if (lineData[0] != "") Log.info("GameLoader", "Unknown parse mode ${lineData[0]} in line ${index + 1}")
                             }
@@ -247,6 +249,25 @@ private fun parseSector(data: List<String>, currSectorCount: Byte, gameServer: G
     if (currSectorCount == 1.byte) gameServer.primarySector.vertices = polygon.map { it.toFloat() }.toFloatArray()
     if (id == 0.byte) gameServer.sectors[currSectorCount] = Array<Sector>().apply { add(sector) }
     else gameServer.sectors[currSectorCount].add(sector)
+}
+
+/**
+ * Parse the given [data] into an [ACCSector], and adds it to [GameServer.sectors]
+ * @param data the line array for the ACC sector
+ * @param gameServer the [GameServer] to add this ACC sector to
+ */
+private fun parseACCSector(data: List<String>, gameServer: GameServer) {
+    val id = gameServer.accSectors.size.toByte()
+    val freq = data[0]
+    val accCallsign = data[1]
+    val polygon = ArrayList<Short>()
+    for (i in 2 until data.size) {
+        val pos = data[i].split(",")
+        polygon.add(nmToPx(pos[0].toFloat()).toInt().toShort())
+        polygon.add(nmToPx(pos[1].toFloat()).toInt().toShort())
+    }
+    val accSector = ACCSector(id, freq, accCallsign, polygon.toShortArray())
+    gameServer.accSectors.add(accSector)
 }
 
 /** Parse the given [data] into a [MinAltSector], and adds it to [GameServer.minAltSectors] */

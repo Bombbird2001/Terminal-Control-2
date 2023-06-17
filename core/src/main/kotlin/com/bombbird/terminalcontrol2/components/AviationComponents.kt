@@ -68,6 +68,11 @@ data class SectorInfo(var sectorId: Byte = 0, var frequency: String = "121.5",
     }
 }
 
+/** Component for tagging an ACC sector's information */
+data class ACCSectorInfo(var sectorId: Byte = 0, var frequency: String = "121.5", var accCallsign: String = "Control"): Component {
+    companion object: Mapper<ACCSectorInfo>()
+}
+
 /**
  * Component for tagging MVA/Restricted area related information
  *

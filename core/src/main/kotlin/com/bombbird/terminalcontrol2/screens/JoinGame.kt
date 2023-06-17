@@ -1,6 +1,7 @@
 package com.bombbird.terminalcontrol2.screens
 
 import com.badlogic.gdx.Gdx
+import com.badlogic.gdx.scenes.scene2d.ui.Label
 import com.badlogic.gdx.utils.Align
 import com.badlogic.gdx.utils.Timer
 import com.bombbird.terminalcontrol2.global.*
@@ -14,6 +15,7 @@ import ktx.scene2d.*
 
 /** Screen for searching and joining multiplayer games on the LAN */
 class JoinGame: BasicUIScreen() {
+    private val publicServerStatusLabel: Label
     private val refreshButton: KTextButton
     private val gamesTable: KTableWidget
     private val lanGamesData = GdxArray<MultiplayerGameInfo>()
@@ -28,7 +30,11 @@ class JoinGame: BasicUIScreen() {
                 fill()
                 setSize(UI_WIDTH, UI_HEIGHT)
                 table {
-                    refreshButton = textButton("Refresh", "JoinGameRefresh").cell(padTop = 70f).apply {
+                    publicServerStatusLabel = label("Public server status: Checking...").cell(padTop = 70f).apply {
+                        setAlignment(Align.center)
+                    }
+                    row()
+                    refreshButton = textButton("Refresh", "JoinGameRefresh").cell(padTop = 30f).apply {
                         addChangeListener { _, _ ->
                             KtxAsync.launch(Dispatchers.IO) { searchGames() }
                         }
@@ -63,6 +69,7 @@ class JoinGame: BasicUIScreen() {
         refreshButton.isDisabled = true
         searching = true
         gamesTable.clear()
+        publicServerStatusLabel.setText("Public server status: Checking...")
         val loadingLabel = gamesTable.label("Searching games.", "SearchingGame")
         Timer.schedule(object: Timer.Task() {
             override fun run() {
@@ -92,7 +99,12 @@ class JoinGame: BasicUIScreen() {
      */
     private fun searchGames() {
         if (searching) return
-        Gdx.app.postRunnable { setSearchingGames() }
+        Gdx.app.postRunnable {
+            setSearchingGames()
+            HttpRequest.sendPublicServerAlive {
+                publicServerStatusLabel.setText("Public server status: $it")
+            }
+        }
         publicGamesData.clear()
         // Non-blocking HTTP request
         HttpRequest.sendPublicGamesRequest { games ->

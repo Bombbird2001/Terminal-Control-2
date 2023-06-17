@@ -116,6 +116,17 @@ class IndividualSectorData(private val assignedSectorId: Byte = 0, private val s
     }
 }
 
+/** Class representing ACC sector data sent on initial connection, loading of the game on a client */
+class InitialACCSectorData(private val accSectors: Array<ACCSector.SerialisedACCSector> = arrayOf()): ClientReceive, NeedsEncryption {
+    override fun handleClientReceive(rs: RadarScreen) {
+        accSectors.forEach {
+            ACCSector.fromSerialisedObject(it).apply {
+                rs.accSectors.add(this)
+            }
+        }
+    }
+}
+
 /** Class representing aircraft data sent on initial connection, loading of the game on a client */
 class InitialAircraftData(private val aircraft: Array<Aircraft.SerialisedAircraft> = arrayOf()): ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {

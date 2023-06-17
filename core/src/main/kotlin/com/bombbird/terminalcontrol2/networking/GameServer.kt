@@ -149,6 +149,8 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
     val minAltSectors = GdxArray<MinAltSector>()
     val shoreline = GdxArray<Shoreline>()
 
+    val accSectors = GdxArray<ACCSector>(SECTOR_COUNT_SIZE) // ACC sectors
+
     /**
      * Maps [AirportInfo.arptId] (instead of [AirportInfo.icaoCode]) to the airport for backwards compatibility (in case of airport ICAO code reassignments;
      * Old airport is still available as a separate entity even with the same ICAO code as the new airport)
@@ -326,6 +328,9 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
             postRunnableAfterEngineUpdate {
                 // Get data only after engine has completed this update to prevent threading issues
                 networkServer.sendTCPToConnection(uuid, ClearAllClientData())
+                networkServer.sendTCPToConnection(
+                    uuid,
+                    InitialACCSectorData(accSectors.toArray().map { it.getSerialisableObject() }.toTypedArray()))
                 networkServer.sendTCPToConnection(
                     uuid,
                     InitialAirspaceData(MAG_HDG_DEV, MIN_ALT, MAX_ALT, MIN_SEP, TRANS_ALT, TRANS_LVL, INTERMEDIATE_ALTS.map { it }.toIntArray())

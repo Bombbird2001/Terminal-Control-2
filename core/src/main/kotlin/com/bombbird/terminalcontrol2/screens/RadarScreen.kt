@@ -110,6 +110,9 @@ class RadarScreen private constructor(private val connectionHost: String, privat
     var swapSectorRequest: Byte? = null
     var incomingSwapRequests = GdxArray<Byte>(SECTOR_COUNT_SIZE)
 
+    // ACC sectors
+    val accSectors = GdxArray<ACCSector>(SECTOR_COUNT_SIZE)
+
     // Aircraft map for access during UDP updates
     val aircraft = GdxArrayMap<String, Aircraft>(AIRCRAFT_SIZE)
 

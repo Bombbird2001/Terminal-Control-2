@@ -1,10 +1,13 @@
 package com.bombbird.terminalcontrol2.utilities
 
+import com.bombbird.terminalcontrol2.components.GPolygon
+import com.bombbird.terminalcontrol2.entities.ACCSector
 import com.bombbird.terminalcontrol2.entities.Sector
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.PLAYER_SIZE
 import com.bombbird.terminalcontrol2.networking.ConnectionMeta
 import com.esotericsoftware.minlog.Log
+import ktx.ashley.get
 import ktx.collections.GdxArray
 import ktx.collections.GdxArrayMap
 import ktx.collections.set
@@ -73,4 +76,21 @@ fun swapPlayerSectors(player1: UUID, currentSector1: Byte, player2: UUID, curren
         sendIndividualSectorUpdateTCP(player1, currentSector2, sectorArray)
         sendIndividualSectorUpdateTCP(player2, currentSector1, sectorArray)
     }
+}
+
+/**
+ * Gets the appropriate ACC sector object depending on the position provided
+ * @param posX the X coordinate
+ * @param posY the Y coordinate
+ */
+fun getACCSectorForPosition(posX: Float, posY: Float): ACCSector? {
+    val accSectors = GAME.gameClientScreen?.accSectors ?: return null
+    for (i in 0 until accSectors.size) {
+        accSectors[i]?.apply {
+            val vertices = entity[GPolygon.mapper] ?: return@apply
+            if (vertices.polygonObj.contains(posX, posY)) return this
+        }
+    }
+
+    return null
 }
