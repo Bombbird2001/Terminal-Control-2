@@ -1,6 +1,7 @@
 package com.bombbird.terminalcontrol2.global
 
 import ktx.collections.GdxArray
+import ktx.collections.GdxArrayMap
 import java.util.UUID
 
 /** Global variables for use, can be modified */
@@ -34,6 +35,18 @@ var BG_INDEX = 0
 /** Server, client TCP/UDP ports */
 var TCP_PORT = 57773
 var UDP_PORT = 57779
+
+/** List of available airports */
+val AVAIL_AIRPORTS = GdxArrayMap<String, String?>().apply {
+    put("TCTP", null)
+    put("TCWS", null)
+    put("TCTT", null)
+    put("TCBB", null)
+    put("TCHH", null)
+    put("TCBD", null)
+    put("TCMD", null)
+    put("TCPG", null)
+}
 
 /** Magnetic heading deviation in the current game - positive for Westward deviation and negative for Eastward deviation */
 var MAG_HDG_DEV = 0f

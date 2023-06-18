@@ -1,5 +1,6 @@
 package com.bombbird.terminalcontrol2.screens
 
+import com.badlogic.gdx.scenes.scene2d.ui.Label
 import com.badlogic.gdx.utils.Align
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.ui.addChangeListener
@@ -17,6 +18,7 @@ class NewGame: BasicUIScreen() {
     private var currSelectedAirport: KTextButton? = null
     private var currSelectedMode: KTextButton? = null
     private lateinit var start: KTextButton
+    private lateinit var descriptionLabel: Label
 
     init {
         stage.actors {
@@ -32,12 +34,13 @@ class NewGame: BasicUIScreen() {
                         scrollPane("NewGame") {
                             table {
                                 for (icao in AVAIL_AIRPORTS) {
-                                    textButton(icao,"NewLoadGameAirport").cell(growX = true, height = 150f).apply {
+                                    val finalDesc = icao.value
+                                    textButton(icao.key,"NewLoadGameAirport").cell(growX = true, height = 150f).apply {
                                         addChangeListener { event, _ ->
                                             if (currSelectedAirport != this@apply) {
                                                 currSelectedAirport?.isChecked = false
                                                 currSelectedAirport = this@apply
-                                                // TODO Update placeholder text
+                                                descriptionLabel.setText(finalDesc ?: "No description provided")
                                             } else currSelectedAirport = null
                                             if (this@NewGame::start.isInitialized) start.isVisible = currSelectedAirport != null
                                             event?.handle()
@@ -50,7 +53,13 @@ class NewGame: BasicUIScreen() {
                         }.cell(align = Align.top, width = 300f)
                         table {
                             // debugAll()
-                            label("Placeholder", "NewGameAirportInfo").cell(width = 800f, expandY = true, preferredHeight = 550f).setAlignment(Align.top)
+                            scrollPane("NewGame") {
+                                descriptionLabel = label("", "NewGameAirportInfo").apply {
+                                    setAlignment(Align.topLeft)
+                                    wrap = true
+
+                                }
+                            }.cell(width = 800f, expandY = true, preferredHeight = 550f)
                             row().padTop(10f)
                             start = textButton("Start", "NewLoadGameStart").cell(width = 400f, height = 100f).apply {
                                 isVisible = false

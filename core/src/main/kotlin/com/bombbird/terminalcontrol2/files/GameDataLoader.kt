@@ -112,6 +112,20 @@ fun loadDisallowedCallsigns() {
     }
 }
 
+/** Loads the airport description (to be shown on the New Game screen) */
+fun loadAvailableAirports() {
+    // Load default airport descriptions
+    for (i in 0 until AVAIL_AIRPORTS.size) {
+        val icao = AVAIL_AIRPORTS.getKeyAt(i)
+        val fileHandle = "Airports/$icao.desc".toInternalFile()
+        if (!fileHandle.exists()) continue
+        val descText = fileHandle.readString().trim()
+        AVAIL_AIRPORTS.put(icao, descText)
+    }
+
+    // TODO Enable custom airports
+}
+
 /** Loads the "[mainName].arpt" file located in the "Airports" subfolder in the assets */
 fun loadWorldData(mainName: String, gameServer: GameServer) {
     "Airports/$mainName.arpt".toInternalFile().readString().toLines().toTypedArray().apply {

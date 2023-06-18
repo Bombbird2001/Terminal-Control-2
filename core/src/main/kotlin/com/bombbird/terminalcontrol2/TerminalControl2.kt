@@ -6,10 +6,7 @@ import com.badlogic.gdx.audio.Sound
 import com.badlogic.gdx.graphics.Texture
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.math.MathUtils
-import com.bombbird.terminalcontrol2.files.ExternalFileHandler
-import com.bombbird.terminalcontrol2.files.loadBuildVersion
-import com.bombbird.terminalcontrol2.files.loadPlayerSettings
-import com.bombbird.terminalcontrol2.files.loadPlayerUUID
+import com.bombbird.terminalcontrol2.files.*
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.networking.*
 import com.bombbird.terminalcontrol2.networking.playerclient.LANClient
@@ -97,6 +94,7 @@ class TerminalControl2(val externalFileHandler: ExternalFileHandler) : KtxGame<K
                 loadBuildVersion()
                 loadPlayerSettings()
                 loadPlayerUUID()
+                loadAvailableAirports()
             }
             // Assets are loaded
             GAME = this@TerminalControl2
