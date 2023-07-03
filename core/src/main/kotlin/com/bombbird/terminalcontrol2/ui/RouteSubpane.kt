@@ -64,7 +64,7 @@ class RouteSubpane {
             table {
                 textButton("Edit\nroute", "ControlPaneButton").cell(growX = true, height = UI_HEIGHT * 0.15f).addChangeListener { _, _ -> setToEditRoutePane() }
                 row()
-                textButton("CDA", "ControlPaneSelected").cell(growX = true, height = UI_HEIGHT * 0.15f)
+                // textButton("CDA", "ControlPaneSelected").cell(growX = true, height = UI_HEIGHT * 0.15f)
             }.cell(preferredWidth = 0.19f * paneWidth, padTop = 20f, align = Align.top)
             isVisible = false
         }

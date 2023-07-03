@@ -9,6 +9,7 @@ import ktx.scene2d.Scene2DSkin
 /** Class for a custom dialog box; extend this class to  */
 open class CustomDialog(title: String, val text: String, private val negative: String, private val positive: String,
                         val height: Int = 500, val width: Int = 1200, private val fontScale: Float = 1f,
+                        private val fontAlign: Int = Align.center,
                         private val onNegative: (() -> Unit)? = null, private val onPositive: (() -> Unit)? = null):
     Dialog(title, Scene2DSkin.defaultSkin["DialogWindow", WindowStyle::class.java]) {
     companion object {
@@ -39,9 +40,10 @@ open class CustomDialog(title: String, val text: String, private val negative: S
     private fun updateText(newText: String) {
         contentTable.clearChildren()
         val label = Label("$newText\n", Scene2DSkin.defaultSkin, "DialogLabel")
+        label.wrap = true
         label.setFontScale(fontScale * 1.25f)
-        label.setAlignment(Align.center)
-        text(label)
+        label.setAlignment(fontAlign)
+        contentTable.add(label).width(width - 100f).prefWidth(width - 100f).padLeft(50f).padRight(50f)
     }
 
     /*

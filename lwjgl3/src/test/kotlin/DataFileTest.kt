@@ -80,9 +80,15 @@ object DataFileTest: FunSpec() {
         }
 
         context("Airport data file check") {
-            withData(AVAIL_AIRPORTS.toList()) {
+            val airports = ArrayList<String>(AVAIL_AIRPORTS.size)
+            for (entry in AVAIL_AIRPORTS) {
+                airports.add(entry.key)
+            }
+            withData(airports) {
                 val handle = "Airports/${it}.arpt".toInternalFile()
                 handle.exists().shouldBeTrue()
+                val descHandle = "Airports/${it}.desc".toInternalFile()
+                descHandle.exists().shouldBeTrue()
                 val data = handle.readString()
                 try {
                     // 1. Check all global values are present and within acceptable range

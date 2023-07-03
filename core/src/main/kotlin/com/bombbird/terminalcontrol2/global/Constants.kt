@@ -158,3 +158,6 @@ const val HOLD_THRESHOLD_ALTITUDE = 14050
 
 /** Threshold IAS for reduced turn rate */
 const val HALF_TURN_RATE_THRESHOLD_IAS = 251
+
+/** LibGDX preference file name */
+const val PREFS_FILE_NAME = "com.bombbird.terminalControl2.prefs"
