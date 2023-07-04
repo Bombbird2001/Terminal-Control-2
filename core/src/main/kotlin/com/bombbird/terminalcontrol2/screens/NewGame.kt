@@ -18,6 +18,7 @@ class NewGame: BasicUIScreen() {
     private var currSelectedAirport: KTextButton? = null
     private var currSelectedMode: KTextButton? = null
     private lateinit var start: KTextButton
+    private lateinit var scrollPane: KScrollPane
     private lateinit var descriptionLabel: Label
 
     init {
@@ -40,6 +41,8 @@ class NewGame: BasicUIScreen() {
                                             if (currSelectedAirport != this@apply) {
                                                 currSelectedAirport?.isChecked = false
                                                 currSelectedAirport = this@apply
+                                                scrollPane.velocityY = 0f
+                                                scrollPane.scrollY = 0f
                                                 descriptionLabel.setText(finalDesc ?: "No description provided")
                                             } else currSelectedAirport = null
                                             if (this@NewGame::start.isInitialized) start.isVisible = currSelectedAirport != null
@@ -53,11 +56,12 @@ class NewGame: BasicUIScreen() {
                         }.cell(align = Align.top, width = 300f)
                         table {
                             // debugAll()
-                            scrollPane("NewGame") {
-                                descriptionLabel = label("", "NewGameAirportInfo").apply {
-                                    setAlignment(Align.topLeft)
-                                    wrap = true
-
+                            scrollPane = scrollPane("NewGameDescription") {
+                                table {
+                                    descriptionLabel = label("", "NewGameAirportInfo").apply {
+                                        setAlignment(Align.topLeft)
+                                        wrap = true
+                                    }.cell(growX = true)
                                 }
                             }.cell(width = 800f, expandY = true, preferredHeight = 550f)
                             row().padTop(10f)
