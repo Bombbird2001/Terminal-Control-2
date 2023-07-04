@@ -27,7 +27,7 @@ class AboutGame: BasicUIScreen() {
                             GAME.setScreen<PrivacyPolicy>()
                         }
                         textButton("Software & Licenses", "GameInfoButton").cell(width = BUTTON_WIDTH_BIG, height = BUTTON_HEIGHT_BIG).addChangeListener { _, _ ->
-                            // GAME.setScreen<SoftwareLicenses>()
+                            GAME.setScreen<SoftwareLicenses>()
                         }
                     }.cell(expandY = true, padTop = 50f)
                     row().padTop(30f)
