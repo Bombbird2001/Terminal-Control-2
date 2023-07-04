@@ -27,7 +27,8 @@ class CommsPane {
         const val DEPARTURE: Byte = 1
         const val OTHERS: Byte = 2
         const val ALERT: Byte = 3
-        const val WARNING: Byte = 4
+        const val ALERT_NO_SOUND: Byte = 4
+        const val WARNING: Byte = 5
 
         /** Gets the appropriate greeting depending on the time set on user device */
         private val greetingByTime: String
@@ -79,6 +80,9 @@ class CommsPane {
             OTHERS -> "Others"
             ALERT -> {
                 GAME.soundManager.playAlert()
+                "Alert"
+            }
+            ALERT_NO_SOUND -> {
                 "Alert"
             }
             WARNING -> {
@@ -221,6 +225,30 @@ class CommsPane {
     }
 
     /**
+     * Adds a message for contact after a missed approach by an aircraft - used if aircraft goes around while still in
+     * contact with the player
+     * @param aircraft the aircraft entity contacting the player
+     */
+    fun missedApproach(aircraft: Entity) {
+        val acInfo = aircraft[AircraftInfo.mapper] ?: return
+        val clearanceState = aircraft[ClearanceAct.mapper]?.actingClearance?.clearanceState ?: return
+        val alt = aircraft[Altitude.mapper] ?: return
+
+        // Get the wake category of the aircraft
+        val aircraftWake = getWakePhraseology(acInfo.aircraftPerf.wakeCategory)
+
+        // Get the current altitude, cleared altitude and the respective actions
+        val altitudeAction = getAltitudePhraseology(alt.altitudeFt, clearanceState.clearedAlt)
+
+        // If aircraft is vectored, say heading, else say missed approach procedure
+        val lateralClearance = if (clearanceState.vectorHdg != null) "heading ${clearanceState.vectorHdg}"
+        else ""
+
+        val preFinalMsg = "${acInfo.icaoCallsign} $aircraftWake, missed approach, $altitudeAction, $lateralClearance"
+        addMessage(removeExtraCharacters(preFinalMsg), ARRIVAL)
+    }
+
+    /**
      * Adds a message sent by the player to instruct an aircraft to contact another sector, as well as the reply by the
      * aircraft
      * @param aircraft the aircraft to instruct to contact another sector
@@ -277,7 +305,7 @@ class CommsPane {
         val nextCallsign = nextSectorInfo.callsign
 
         val finalMsg = "${acInfo.icaoCallsign} $aircraftWake, contact $nextCallsign on ${nextSectorInfo.frequency}"
-        addMessage(finalMsg, OTHERS)
+        addMessage(removeExtraCharacters(finalMsg), OTHERS)
 
         // Aircraft read-back segment
         val switchMsg = when (MathUtils.random(2)) {

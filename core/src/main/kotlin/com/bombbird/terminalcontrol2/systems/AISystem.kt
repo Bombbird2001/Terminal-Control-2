@@ -149,6 +149,10 @@ class AISystem: EntitySystem() {
                             it.trafficValue = MathUtils.clamp(it.trafficValue + points, 4f, MAX_ARRIVALS.toFloat())
                         }
                         it.incrementScoreBy(1, FlightType.ARRIVAL)
+                        get(ArrivalAirport.mapper)?.arptId?.also { landingArptId ->
+                            val depInfo = GAME.gameServer?.airports?.get(landingArptId)?.entity?.get(DepartureInfo.mapper) ?: return@also
+                            depInfo.backlog++
+                        }
                     }
 
                     despawnAircraft(this)

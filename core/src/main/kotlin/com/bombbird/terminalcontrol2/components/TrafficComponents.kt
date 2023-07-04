@@ -70,7 +70,7 @@ class ArrivalClosed: Component, BaseComponentJSONInterface {
 
 /** Component for tagging a closed airport for departures */
 @JsonClass(generateAdapter = true)
-data class DepartureInfo(var closed: Boolean = false, var backlog: Int = 0): Component, BaseComponentJSONInterface {
+data class DepartureInfo(var closed: Boolean = false, var backlog: Int = 0, var maxAdvanceDepartures: Int = 10): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.DEPARTURE_INFO
 
     companion object: Mapper<DepartureInfo>()

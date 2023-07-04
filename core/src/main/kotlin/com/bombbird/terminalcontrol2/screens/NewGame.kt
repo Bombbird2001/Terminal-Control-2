@@ -13,6 +13,7 @@ class NewGame: BasicUIScreen() {
         const val SINGLE_PLAYER = "single_player"
         const val LAN_MULTIPLAYER = "multiplayer_lan"
         const val PUBLIC_MULTIPLAYER = "multiplayer_public"
+        const val COMING_SOON_DESC = "Coming soon..."
     }
 
     private var currSelectedAirport: KTextButton? = null
@@ -43,9 +44,12 @@ class NewGame: BasicUIScreen() {
                                                 currSelectedAirport = this@apply
                                                 scrollPane.velocityY = 0f
                                                 scrollPane.scrollY = 0f
-                                                descriptionLabel.setText(finalDesc ?: "No description provided")
-                                            } else currSelectedAirport = null
-                                            if (this@NewGame::start.isInitialized) start.isVisible = currSelectedAirport != null
+                                                descriptionLabel.setText(finalDesc ?: COMING_SOON_DESC)
+                                            } else {
+                                                currSelectedAirport = null
+                                                descriptionLabel.setText("")
+                                            }
+                                            if (this@NewGame::start.isInitialized) start.isVisible = (currSelectedAirport != null && descriptionLabel.text.toString() != COMING_SOON_DESC)
                                             event?.handle()
                                         }
                                     }

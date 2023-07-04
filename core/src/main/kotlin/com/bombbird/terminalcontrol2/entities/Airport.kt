@@ -14,7 +14,7 @@ import ktx.ashley.*
 import ktx.math.times
 
 /** Airport class that creates an airport entity with the required components on instantiation */
-class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX: Float, posY: Float, elevation: Short,
+class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advDep: Int, posX: Float, posY: Float, elevation: Short,
               onClient: Boolean = true): SerialisableEntity<Airport.SerialisedAirport> {
     val entity = getEngine(onClient).entity {
         with<Position> {
@@ -39,20 +39,21 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
         if (!onClient) {
             with<RandomMetarInfo>()
             with<RandomAirlineData>()
-            with<DepartureInfo>()
+            with<DepartureInfo> {
+                maxAdvanceDepartures = advDep
+            }
         }
     }
 
     /** Empty airport constructor for loading of saves */
-    constructor(): this(-1, "XXXX", "Empty", 1, 0f, 0f, 0, false)
+    constructor(): this(-1, "XXXX", "Empty", 1, 0, 0f, 0f, 0, false)
 
     companion object {
         /** De-serialises a [SerialisedAirport] and creates a new [Airport] object from it */
         fun fromSerialisedObject(serialisedAirport: SerialisedAirport): Airport {
             return Airport(
                 serialisedAirport.arptId, serialisedAirport.icaoCode, serialisedAirport.name, serialisedAirport.tfcRatio,
-                serialisedAirport.x, serialisedAirport.y,
-                serialisedAirport.altitude
+                0, serialisedAirport.x, serialisedAirport.y, serialisedAirport.altitude
             ).also { arpt ->
                 arpt.entity.apply {
                     get(RunwayChildren.mapper)?.apply {
@@ -386,8 +387,9 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
     /**
      * Activates a new runway configuration, replacing the current active one
      * @param newConfigId the ID of the new config to use
+     * @param informPlayer whether to inform the player of the change in commsPane
      */
-    fun activateRunwayConfig(newConfigId: Byte) {
+    fun activateRunwayConfig(newConfigId: Byte, informPlayer: Boolean = false) {
         val currId = entity[ActiveRunwayConfig.mapper]?.configId
         if (currId == newConfigId) return
         entity += ActiveRunwayConfig(newConfigId)
@@ -431,10 +433,11 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, posX
                 }
                 it.setNTZVisibility(true)
                 val airportName = entity[AirportInfo.mapper]?.icaoCode ?: ""
-                GAME.gameClientScreen?.uiPane?.commsPane?.addMessage("""
-                    $airportName runway${if (arrRwyNames.size > 1) "s" else ""} ${arrRwyNames.joinToString(", ")} ${if (arrRwyNames.size > 1) "are" else "is"} now active for landings.
-                    $airportName runway${if (depRwyNames.size > 1) "s" else ""} ${arrRwyNames.joinToString(", ")} ${if (depRwyNames.size > 1) "are" else "is"} now active for takeoffs.
-                """.trimIndent(), CommsPane.ALERT)
+                if (informPlayer)
+                    GAME.gameClientScreen?.uiPane?.commsPane?.addMessage("""
+                        $airportName runway${if (arrRwyNames.size > 1) "s" else ""} ${arrRwyNames.joinToString(", ")} ${if (arrRwyNames.size > 1) "are" else "is"} now active for landings.
+                        $airportName runway${if (depRwyNames.size > 1) "s" else ""} ${arrRwyNames.joinToString(", ")} ${if (depRwyNames.size > 1) "are" else "is"} now active for takeoffs.
+                    """.trimIndent(), CommsPane.ALERT)
             }
         }
         CLIENT_SCREEN?.uiPane?.mainInfoObj?.setAirportRunwayConfigPaneState(entity)

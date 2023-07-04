@@ -623,13 +623,15 @@ fun checkCrossingRunwayTraffic(rwy: Entity, additionalTime: Int): Boolean {
  * Calculates the minimum additional time from the previous departure to the next departure for an airport depending on
  * its departure backlog
  * @param backlog the number of departure aircraft waiting
+ * @param maxAdvDep the maximum number of departures to allow in advance of any arrivals (i.e. the maximum -departure backlog)
  * @return the minimum additional time, in seconds, between the previous departure and the next departure
  */
-fun calculateAdditionalTimeToNextDeparture(backlog: Int): Int {
+fun calculateAdditionalTimeToNextDeparture(backlog: Int, maxAdvDep: Int): Int {
+    val threshold1 = (maxAdvDep * 0.5f).roundToInt()
     return when {
         backlog >= 10 -> 0
-        backlog >= -20 -> 0 + 120 * (10 - backlog) / 30
-        backlog >= -40 -> 120 + (320 - 120) * (-20 - backlog) / 20
+        backlog >= -threshold1 -> 0 + 120 * (10 - backlog) / (10 + threshold1)
+        backlog >= -maxAdvDep -> 120 + (320 - 120) * (-threshold1 - backlog) / (maxAdvDep - threshold1)
         else -> 320
     }
 }

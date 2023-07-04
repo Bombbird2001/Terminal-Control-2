@@ -344,7 +344,7 @@ fun getNextMaxAlt(route: Route): Int? {
 fun getFafAltitude(route: Route): Int? {
     var latestMinAlt: Int? = null
     for (i in 0 until route.size) (route[i] as? WaypointLeg)?.also {
-        if (it.phase == Leg.APP) it.minAltFt?.let { faf -> latestMinAlt = faf }
+        if (it.phase == Leg.APP || it.phase == Leg.APP_TRANS) it.minAltFt?.let { faf -> latestMinAlt = faf }
         else if (it.phase == Leg.MISSED_APP) return latestMinAlt
     }
     return latestMinAlt

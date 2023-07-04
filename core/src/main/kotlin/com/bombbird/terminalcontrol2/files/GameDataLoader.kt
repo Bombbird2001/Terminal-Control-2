@@ -364,17 +364,18 @@ private fun parseHold(data: List<String>, gameServer: GameServer) {
  * Returns the constructed [Airport]
  */
 private fun parseAirport(data: List<String>, gameServer: GameServer): Airport {
-    if (data.size != 8) Log.info("GameLoader", "Airport data has ${data.size} elements instead of 8")
+    if (data.size != 9) Log.info("GameLoader", "Airport data has ${data.size} elements instead of 8")
     val id = data[1].toByte()
     val icao = data[2]
     val name = data[3]
     val ratio = data[4].toByte()
-    val pos = data[5].split(",")
+    val maxAdvanceDepartures = data[5].toInt()
+    val pos = data[6].split(",")
     val posX = nmToPx(pos[0].toFloat())
     val posY = nmToPx(pos[1].toFloat())
-    val elevation = data[6].toShort()
-    val realLifeIcao = data[7]
-    val arpt = Airport(id, icao, name, ratio, posX, posY, elevation, false).apply {
+    val elevation = data[7].toShort()
+    val realLifeIcao = data[8]
+    val arpt = Airport(id, icao, name, ratio, maxAdvanceDepartures, posX, posY, elevation, false).apply {
         setMetarRealLifeIcao(realLifeIcao)
     }
     // Check if an airport with the same ID already exists from the save load; if it does, overwrite the base info components
