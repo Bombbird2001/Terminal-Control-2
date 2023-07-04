@@ -47,6 +47,7 @@ class DisplaySettings: BaseSettings() {
                             }
                             defaultSettingsLabel("Radar sweep:")
                             radarSweepSelectBox = defaultSettingsSelectBox<String>().apply {
+                                isDisabled = true
                                 setItems("0.5$SECONDS_SUFFIX", "1$SECONDS_SUFFIX", "2$SECONDS_SUFFIX", "4$SECONDS_SUFFIX", "10$SECONDS_SUFFIX") // TODO Incremental unlocks
                             }
                             newSettingsRow()
@@ -70,15 +71,18 @@ class DisplaySettings: BaseSettings() {
                             newSettingsRow()
                             defaultSettingsLabel("ILS display:")
                             ilsDisplaySelectBox = defaultSettingsSelectBox<String>().apply {
+                                isDisabled = true
                                 setItems(ILS_REALISTIC, ILS_SIMPLE)
                             }
                             defaultSettingsLabel("Colour style:")
                             colourStyleSelectBox = defaultSettingsSelectBox<String>().apply {
+                                isDisabled = true
                                 setItems(MORE_COLOURFUL, MORE_STANDARDISED)
                             }
                             newSettingsRow()
                             defaultSettingsLabel("Show distance to go:")
                             distToGoSelectBox = defaultSettingsSelectBox<String>().apply {
+                                isDisabled = true
                                 setItems(OFF, ARRIVALS_ONLY, ALL_AIRCRAFT)
                             }
                         }

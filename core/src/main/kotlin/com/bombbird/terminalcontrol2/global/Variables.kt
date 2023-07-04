@@ -85,7 +85,7 @@ var DATATAG_BORDER: Byte = DATATAG_BORDER_ALWAYS
 var DATATAG_ROW_SPACING_PX: Byte = 4
 
 /** Sound settings */
-var COMMUNICATIONS_SOUND = COMMS_PILOT_VOICES
+var COMMUNICATIONS_SOUND = COMMS_SOUND_EFFECTS
 var ALERT_SOUND_ON = true
 
 /** Advanced trajectory alert settings */

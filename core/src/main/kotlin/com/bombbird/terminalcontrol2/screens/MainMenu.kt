@@ -21,7 +21,7 @@ class MainMenu: BasicUIScreen() {
                     // debugAll()
                     val iconTexture = GAME.assetStorage.get<Texture>("Images/MainMenuIcon.png")
                     iconTexture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear)
-                    image(iconTexture).cell(width = 360f, height = 119f, expandY = true, padTop = 105f)
+                    image(iconTexture).cell(width = 405f, height = 134f, expandY = true, padTop = 75f)
                     row().padTop(100f)
                     table {
                         textButton("New Game", "Menu").cell(width = BUTTON_WIDTH_MAIN, height = BUTTON_HEIGHT_MAIN).addChangeListener { _, _ ->
