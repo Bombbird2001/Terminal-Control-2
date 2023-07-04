@@ -14,6 +14,7 @@ import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.utilities.AircraftTypeData
 import com.bombbird.terminalcontrol2.utilities.getACCSectorForPosition
+import com.bombbird.terminalcontrol2.utilities.removeExtraCharacters
 import com.esotericsoftware.minlog.Log
 import ktx.ashley.get
 import ktx.scene2d.*
@@ -325,33 +326,6 @@ class CommsPane {
 
         val preFinalMsg = "$switchMsg ${nextSectorInfo.frequency}, ${acInfo.icaoCallsign} $aircraftWake, $bye"
         addMessage(removeExtraCharacters(preFinalMsg), getMessageTypeForAircraftType(flightType.type))
-    }
-
-    /**
-     * Removes additional spaces, commas, trailing and leading commas and whitespace from the input string and returns the corrected string
-     * @param msg the message to correct
-     * @return a new message without additional characters
-     */
-    private fun removeExtraCharacters(msg: String): String {
-        var correctMsg = msg
-        // First replace any spaces before a comma
-        val commaSpaceRegex = " +,".toRegex()
-        correctMsg = correctMsg.replace(commaSpaceRegex, ",")
-
-        // Next replace multi-spaces with a single space
-        val multiSpaceRegex = " +".toRegex()
-        correctMsg = correctMsg.replace(multiSpaceRegex, " ")
-
-        // Next replace multi-commas with a single comma
-        val multiCommaRegex = ",+".toRegex()
-        correctMsg = correctMsg.replace(multiCommaRegex, ",")
-
-        // Remove trailing commas
-        val trailingCommaRegex = ", *\$".toRegex()
-        correctMsg = correctMsg.replace(trailingCommaRegex, "")
-
-        // Return the string with leading or trailing whitespaces removed if any
-        return correctMsg.trim()
     }
 
     /**

@@ -10,10 +10,10 @@ import com.badlogic.gdx.utils.Timer
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.Aircraft
 import com.bombbird.terminalcontrol2.global.*
-import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.utilities.convertWorldAndRenderDeg
 import com.bombbird.terminalcontrol2.utilities.modulateHeading
 import com.bombbird.terminalcontrol2.utilities.pxpsToKt
+import com.bombbird.terminalcontrol2.utilities.removeExtraCharacters
 import com.esotericsoftware.minlog.Log
 import ktx.ashley.get
 import ktx.ashley.has
@@ -254,18 +254,15 @@ private fun getExpandedLabelText(entity: Entity): Array<String> {
     val cmdAlt = if (entity.has(GlideSlopeCaptured.mapper)) "GS" else if (entity.has(VisualCaptured.mapper)) "VIS"
     else (cmdTarget.targetAltFt / 100f).roundToInt().toString()
     val hdg = modulateHeading((convertWorldAndRenderDeg(radarData.direction.trackUnitVector.angleDeg()) + MAG_HDG_DEV).roundToInt().toFloat()).roundToInt()
-    val cmdHdg = cmdTarget.targetHdgDeg.roundToInt()
     val groundSpd = pxpsToKt(groundTrack.trackVectorPxps.len()).roundToInt()
     val clearedLateral = if (entity.has(LocalizerCaptured.mapper)) "LOC" else if (entity.has(VisualCaptured.mapper)) "VIS"
-    else latestClearance?.route?.let {
-        if (it.size == 0) null else CLIENT_SCREEN?.waypoints?.get((it[0] as? Route.WaypointLeg)?.wptId)
-    }?.entity?.get(WaypointInfo.mapper)?.wptName ?: latestClearance?.vectorHdg?.toString() ?: ""
+    else latestClearance?.vectorHdg?.toString() ?: ""
     val sidStar = latestClearance?.routePrimaryName ?: ""
 
-    labelText[0] = "$callsign $acInfo"
-    labelText[1] = "$alt $vs $cmdAlt $clearedAlt"
-    labelText[2] = "$hdg $cmdHdg $clearedLateral $sidStar"
-    labelText[3] = "$groundSpd ${latestClearance?.clearedIas}"
+    labelText[0] = removeExtraCharacters("$callsign $acInfo")
+    labelText[1] = removeExtraCharacters("$alt $vs $cmdAlt $clearedAlt")
+    labelText[2] = removeExtraCharacters("$hdg $clearedLateral $sidStar")
+    labelText[3] = removeExtraCharacters("$groundSpd ${latestClearance?.clearedIas}")
 
     return labelText
 }

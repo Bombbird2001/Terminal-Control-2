@@ -1,7 +1,7 @@
 package com.bombbird.terminalcontrol2.entities
 
-import com.badlogic.gdx.graphics.Color
 import com.bombbird.terminalcontrol2.components.*
+import com.bombbird.terminalcontrol2.global.DARK_GREEN
 import com.bombbird.terminalcontrol2.global.getEngine
 import com.bombbird.terminalcontrol2.utilities.nmToPx
 import ktx.ashley.entity
@@ -9,10 +9,6 @@ import ktx.ashley.with
 
 /** Range ring class for displaying rings in intervals set by the user */
 class RangeRing(radiusNm: Int) {
-    companion object {
-        private val DARK_GREEN = Color(0x005720ff)
-    }
-
     private val topLabel: RangeRingLabel
     private val bottomLabel: RangeRingLabel
 
