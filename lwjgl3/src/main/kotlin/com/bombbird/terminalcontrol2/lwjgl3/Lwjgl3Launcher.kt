@@ -14,5 +14,6 @@ fun main() {
         setMaximized(true)
         setForegroundFPS(60)
         setBackBufferConfig(8, 8, 8, 8, 16, 0, 0)
+        setWindowIcon("WindowIcon/Icon16.png", "WindowIcon/Icon32.png", "WindowIcon/Icon48.png", "WindowIcon/Icon64.png")
     })
 }
