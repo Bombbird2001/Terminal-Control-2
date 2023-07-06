@@ -396,7 +396,7 @@ object DataFileTest: FunSpec() {
         getBlocksBetweenTags("AIRPORT", data).forEach { airport ->
             val arptLines = airport.toLines(2)
             val header = arptLines[0].split(" ") // Get only the first 2 identifiers (ID, ICAO)
-            header.size shouldBe 7
+            header.size shouldBe 8
             withData(arrayListOf("Airport ${header[0]} ${header[1]}")) {
                 val id = header[0].toByte()
                 val icao = header[1]
@@ -404,9 +404,10 @@ object DataFileTest: FunSpec() {
                 arptIds.add(id)
                 withClue("ICAO code format invalid: $icao") { "^[A-Z]{4}\$".toRegex().find(icao).shouldNotBeNull() }
                 header[3].toByte()
-                testCoordsString(header[4])
-                val arptElevation = header[5].toShort()
-                withClue("Real life weather ICAO code format invalid: ${header[6]}") { "^[A-Z]{4}\$".toRegex().find(header[6]).shouldNotBeNull() }
+                header[4].toInt()
+                testCoordsString(header[5])
+                val arptElevation = header[6].toShort()
+                withClue("Real life weather ICAO code format invalid: ${header[7]}") { "^[A-Z]{4}\$".toRegex().find(header[7]).shouldNotBeNull() }
                 testAirport(arptLines[1], wpts, minAlt, arptElevation)
             }
         }

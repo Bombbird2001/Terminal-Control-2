@@ -20,6 +20,8 @@ android/libs/arm64-v8a/
 android/libs/x86/
 android/libs/x86_64/
 android/gen/
+android/release/
+android/debug/
 local.properties
 com_crashlytics_export_strings.xml
 
