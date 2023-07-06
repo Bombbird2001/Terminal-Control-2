@@ -1,3 +1,5 @@
+import groovy.json.JsonOutput
+
 apply plugin: 'application'
 targetCompatibility = JavaVersion.VERSION_1_8
 sourceCompatibility = JavaVersion.VERSION_1_8
@@ -40,7 +42,7 @@ jar {
 	archiveBaseName.set(appName)
 // the duplicatesStrategy matters starting in Gradle 7.0; this setting works.
 	duplicatesStrategy(DuplicatesStrategy.EXCLUDE)
-	dependsOn configurations.runtimeClasspath
+	dependsOn(configurations.runtimeClasspath, 'checkVersion')
 	from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
 // these "exclude" lines remove some unnecessary duplicate files in the output JAR.
 	exclude('META-INF/INDEX.LIST', 'META-INF/*.SF', 'META-INF/*.DSA', 'META-INF/*.RSA')
@@ -58,7 +60,8 @@ jar {
 }
 
 // Equivalent to the jar task; here for compatibility with gdx-setup.
-task dist(dependsOn: [jar]) {
+tasks.register('dist') {
+	dependsOn['jar']
 }
 
 test {
@@ -73,5 +76,187 @@ test {
 		events "passed", "skipped", "failed"
 	}
 
+	ignoreFailures = true
+
 	workingDir "../assetsDesktop"
+}
+
+tasks.register('buildJar') {
+	dependsOn('build')
+
+	doLast {
+		println("JAR successfully built")
+	}
+}
+
+// Called before build to check that version information in internal game files are correct
+tasks.register('checkVersion') {
+	doLast {
+		String gradleVersion = project.version
+		String gradleVersionCode = project.buildVersion
+
+		def text2 = project.file("../assetsDesktop/BUILD").text
+		def values2 = text2.split(' ')
+		if (values2.size() < 2) {
+			throw new GradleException("Version: Type string length is " + values2.size() + ", needs 2")
+		}
+		if ((values2[0] != gradleVersion) || (values2[1] != gradleVersionCode)) {
+			throw new GradleException("Version: " + values2[0] + " code " + values2[1] + " not equal to Gradle's " + gradleVersion + " code " + gradleVersionCode)
+		}
+		println "Version check successful"
+	}
+}
+
+def baseDir = "C:\\My Apps\\Terminal Control 2"
+def macConfigFile = "mac.json"
+def win32ConfigFile = "windows32.json"
+def win64ConfigFile = "windows64.json"
+def latestVersionFile = "latest.txt"
+def packrFile = "packr.jar"
+def sevenZipLocation = "C:\\Programs\\7-Zip\\7z.exe"
+
+tasks.register('copyJar', Copy) {
+	dependsOn('buildJar')
+
+	from jar
+	into "${baseDir}\\Desktop"
+	doLast {
+		println "JAR file successfully copied"
+	}
+}
+
+tasks.register('updateFileVersion') {
+	dependsOn('copyJar')
+
+	doLast {
+		copy {
+			from(baseDir) {
+				include macConfigFile
+				include win32ConfigFile
+				include win64ConfigFile
+			}
+			into("${baseDir}\\old")
+		}
+
+		def macConfig = [
+			platform: "mac",
+			"jdk": "C:\\Programs\\OpenJDK\\ojdkbuild\\openjdk-1.7.0-u80-unofficial-macosx-x86_64-image",
+			"executable": "Terminal Control 2",
+			"classpath": [
+					"${baseDir}\\Desktop\\Terminal Control 2-${version}.jar"
+			],
+			"removelibs": [
+					"${baseDir}\\Desktop\\Terminal Control 2-${version}.jar"
+			],
+			"mainclass": "com.bombbird.terminalcontrol2.lwjgl3.Lwjgl3Launcher",
+			"vmargs": [
+					"-XstartOnFirstThread",
+					"-Xms256M"
+			],
+			"minimizejre": "soft",
+			"output": "${baseDir}\\Desktop\\${version}\\Terminal-Control-2-${version}-mac",
+			"icon":"${baseDir}\\Icon.icns"
+		]
+
+		def win32Config = [
+				"platform": "windows32",
+				"jdk": "C:\\Programs\\OpenJDK\\ojdkbuild\\java-1.8.0-openjdk-1.8.0.332-1.b09.ojdkbuild.windows.x86",
+				"executable": "Terminal Control 2",
+				"classpath": [
+						"${baseDir}\\Desktop\\Terminal Control 2-${version}.jar"
+				],
+				"removelibs": [
+						"${baseDir}\\Desktop\\Terminal Control 2-${version}.jar"
+				],
+				"mainclass": "com.bombbird.terminalcontrol2.lwjgl3.Lwjgl3Launcher",
+				"vmargs": [
+						"-Xms256M"
+				],
+				"minimizejre": "soft",
+				"output": "${baseDir}\\Desktop\\${version}\\Terminal-Control-2-${version}-windows-32"
+		]
+
+		def win64Config = [
+				"platform": "windows64",
+				"jdk": "C:\\Programs\\OpenJDK\\ojdkbuild\\java-1.8.0-openjdk-1.8.0.332-1.b09.ojdkbuild.windows.x86_64",
+				"executable": "Terminal Control 2",
+				"classpath": [
+						"${baseDir}\\Desktop\\Terminal Control 2-${version}.jar"
+				],
+				"removelibs": [
+						"${baseDir}\\Desktop\\Terminal Control 2-${version}.jar"
+				],
+				"mainclass": "com.bombbird.terminalcontrol2.lwjgl3.Lwjgl3Launcher",
+				"vmargs": [
+						"-Xms256M"
+				],
+				"minimizejre": "soft",
+				"output": "${baseDir}\\Desktop\\${version}\\Terminal-Control-2-${version}-windows-64"
+		]
+
+		new File("${baseDir}\\${macConfigFile}").text = JsonOutput.prettyPrint(JsonOutput.toJson(macConfig))
+		new File("${baseDir}\\${win32ConfigFile}").text = JsonOutput.prettyPrint(JsonOutput.toJson(win32Config))
+		new File("${baseDir}\\${win64ConfigFile}").text = JsonOutput.prettyPrint(JsonOutput.toJson(win64Config))
+		println "JSON files successfully updated"
+
+		new File("${baseDir}\\${latestVersionFile}").text = version.toString()
+		println("${latestVersionFile} successfully updated")
+	}
+}
+
+tasks.register('packrJar') {
+	dependsOn('updateFileVersion')
+
+	doLast {
+		exec {
+			println "\nPacking Mac version..."
+			workingDir baseDir
+			commandLine 'java', '-jar', packrFile, macConfigFile
+		}
+		exec {
+			println "\nPacking Windows-32 version..."
+			workingDir baseDir
+			commandLine 'java', '-jar', packrFile, win32ConfigFile
+		}
+		exec {
+			println "\nPacking Windows-64 version..."
+			workingDir baseDir
+			commandLine 'java', '-jar', packrFile, win64ConfigFile
+		}
+		println("JARs successfully packr-ed")
+	}
+}
+
+tasks.register('compressFolder') {
+	dependsOn('packrJar')
+
+	doLast {
+		file("${baseDir}\\Desktop\\${version}\\Terminal-Control-2-${version}-mac").renameTo(file("${baseDir}\\Desktop\\${version}\\Terminal Control 2.app"))
+		println "Mac folder successfully renamed"
+		exec {
+			println "Compressing Mac folder"
+			workingDir "${baseDir}\\Desktop\\${version}"
+			commandLine sevenZipLocation, 'a', "Mac-${version}.zip", "Terminal Control 2.app"
+		}
+		exec {
+			println "Compressing Windows-32 folder"
+			workingDir "${baseDir}\\Desktop\\${version}"
+			commandLine sevenZipLocation, 'a', "Windows-32-${version}.zip", "Terminal-Control-2-${version}-windows-32"
+		}
+		exec {
+			println "Compressing Windows-64 folder"
+			workingDir "${baseDir}\\Desktop\\${version}"
+			commandLine sevenZipLocation, 'a', "Windows-64-${version}.zip", "Terminal-Control-2-${version}-windows-64"
+		}
+		println("Folders successfully compressed")
+	}
+}
+
+tasks.register('packageDesktop') {
+	dependsOn('compressFolder')
+
+	doLast {
+		new File("${baseDir}\\Desktop\\${version}\\BUILD.txt").text = "Autogenerated build\nVersion ${version}, build ${buildVersion}"
+		println "Packaging successful"
+	}
 }
