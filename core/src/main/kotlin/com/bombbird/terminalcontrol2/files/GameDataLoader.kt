@@ -5,7 +5,7 @@ import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.*
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.json.BaseComponentJSONInterface
-import com.bombbird.terminalcontrol2.json.DoNotOverwriteFromJSON
+import com.bombbird.terminalcontrol2.json.DoNotOverwriteSavedJSON
 import com.bombbird.terminalcontrol2.navigation.Approach
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.navigation.SidStar
@@ -381,10 +381,11 @@ private fun parseAirport(data: List<String>, gameServer: GameServer): Airport {
     // Check if an airport with the same ID already exists from the save load; if it does, overwrite the base info components
     val loadedArpt = gameServer.airports[id]?.let {
         for (i in 0 until arpt.entity.components.size()) arpt.entity.components[i]?.also { comp ->
-            // We add to the existing airport entity only if the component is not already present, or if it is a
-            // BaseComponentJSONInterface and is supposed to overwrite the save value
-            if ((comp is BaseComponentJSONInterface && comp !is DoNotOverwriteFromJSON)
-                || it.entity.getComponent(comp::class.java) == null) it.entity += arpt.entity.components[i]
+            // We add to the existing airport entity if the component is not already present, or it is not a
+            // BaseComponentJSONInterface, or it is supposed to overwrite the save value
+            if (comp !is BaseComponentJSONInterface ||
+                comp !is DoNotOverwriteSavedJSON ||
+                it.entity.getComponent(comp::class.java) == null) it.entity += arpt.entity.components[i]
         }
         it
     }

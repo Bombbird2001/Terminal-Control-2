@@ -7,7 +7,7 @@ import com.badlogic.gdx.utils.Queue
 import com.bombbird.terminalcontrol2.entities.Airport
 import com.bombbird.terminalcontrol2.global.MAX_TRAIL_DOTS
 import com.bombbird.terminalcontrol2.json.BaseComponentJSONInterface
-import com.bombbird.terminalcontrol2.json.DoNotOverwriteFromJSON
+import com.bombbird.terminalcontrol2.json.DoNotOverwriteSavedJSON
 import com.bombbird.terminalcontrol2.utilities.AircraftTypeData
 import com.squareup.moshi.JsonClass
 import ktx.ashley.Mapper
@@ -39,7 +39,8 @@ data class RealLifeMetarIcao(var realLifeIcao: String = ""): Component {
 @JsonClass(generateAdapter = true)
 data class MetarInfo(var letterCode: Char? = null, var rawMetar: String? = null,
                      var windHeadingDeg: Short = 360, var windSpeedKt: Short = 0, var windGustKt: Short = 0,
-                     var visibilityM: Short = 10000, var ceilingHundredFtAGL: Short? = null, var windshear: String = ""): Component, BaseComponentJSONInterface, DoNotOverwriteFromJSON {
+                     var visibilityM: Short = 10000, var ceilingHundredFtAGL: Short? = null, var windshear: String = ""
+): Component, BaseComponentJSONInterface, DoNotOverwriteSavedJSON {
     override val componentType = BaseComponentJSONInterface.ComponentType.METAR_INFO
 
     val windVectorPx = Vector2()

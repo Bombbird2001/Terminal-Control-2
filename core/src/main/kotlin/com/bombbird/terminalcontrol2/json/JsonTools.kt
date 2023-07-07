@@ -27,7 +27,7 @@ fun getMoshiWithAllAdapters(): Moshi {
  * Interface to mark components that should not be overwritten by the same component type in a newly instantiated
  * entity during loading of newest world data
  */
-interface DoNotOverwriteFromJSON
+interface DoNotOverwriteSavedJSON
 
 /** Interface for implementing JSON serialization for subclasses of Component */
 interface BaseComponentJSONInterface {

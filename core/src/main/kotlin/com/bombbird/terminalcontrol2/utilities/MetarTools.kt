@@ -72,7 +72,6 @@ fun initialiseAirportMetarStatic() {
     for (i in 0 until airports.size) {
         airports.getValueAt(i)?.entity?.let { arpt ->
             arpt[MetarInfo.mapper]?.apply {
-                println(this)
                 updateWindVector(windVectorPx, windHeadingDeg, windSpeedKt)
                 updateRunwayWindComponents(arpt)
                 calculateRunwayConfigScores(arpt)
@@ -87,8 +86,6 @@ fun updateAirportMetar(metarJson: String) {
     airportMetarMoshiAdapter.fromJson(metarJson)?.apply {
         for (entry in entries) {
             entry.value.let { GAME.gameServer?.airports?.get(entry.key)?.entity?.also { arpt ->
-                println("Arpt ${arpt[AirportInfo.mapper]}")
-                println(arpt[MetarInfo.mapper])
                 arpt[MetarInfo.mapper]?.apply {
                     if (rawMetar != it.rawMetar) letterCode = letterCode?.let {
                         if (it + 1 <= 'Z') it + 1 else 'A'
