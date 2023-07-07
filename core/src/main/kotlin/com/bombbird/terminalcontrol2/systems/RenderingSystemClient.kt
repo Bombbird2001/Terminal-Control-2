@@ -616,15 +616,12 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
      */
     private fun renderRouteSegments(posX: Float, posY: Float, segments: GdxArray<Route.LegSegment>, skipAircraftToFirstWaypoint: Boolean,
                                     forceRenderChangedAircraftToFirstWaypoint: Boolean) {
-        var firstPhase = Route.Leg.NORMAL
-
         for (i in 0 until segments.size) { segments[i]?.also { seg ->
             shapeRenderer.color = if (seg.changed) Color.YELLOW else Color.WHITE
             val leg1 = seg.leg1
             val leg2 = seg.leg2
-            // Set first leg phase to be either leg1's phase (for holding) or leg2's phase
-            if (i == 0) firstPhase = leg2?.phase ?: Route.Leg.NORMAL
-            if ((leg1?.phase == Route.Leg.MISSED_APP || leg2?.phase == Route.Leg.MISSED_APP) && firstPhase != Route.Leg.MISSED_APP) return
+            // Do not render any segments containing a missed approach leg
+            if ((leg1?.phase == Route.Leg.MISSED_APP || leg2?.phase == Route.Leg.MISSED_APP)) return
             when {
                 (leg1 == null && leg2 is Route.WaypointLeg) -> {
                     // Aircraft to waypoint segment
@@ -743,6 +740,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         for (i in 0 until route.size) {
             val leg = route[i]
             if (leg !is Route.WaypointLeg) continue
+            if (leg.phase == Route.Leg.MISSED_APP) continue
             val wptEntity = wptMap[leg.wptId] ?: continue
             wptEntity.remove<DoNotRenderShape>()
             wptEntity.remove<DoNotRenderLabel>()
@@ -752,6 +750,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         for (i in 0 until uiSelectedClearanceRoute.size) {
             val leg = uiSelectedClearanceRoute[i]
             if (leg !is Route.WaypointLeg) continue
+            if (leg.phase == Route.Leg.MISSED_APP) continue
             val wptEntity = wptMap[leg.wptId] ?: continue
             wptEntity.remove<DoNotRenderShape>()
             wptEntity.remove<DoNotRenderLabel>()
