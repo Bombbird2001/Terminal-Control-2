@@ -71,16 +71,19 @@ class GameSettings: BaseGameSettings() {
                             }
                             defaultSettingsLabel("Emergencies:")
                             emergencySelectBox = defaultSettingsSelectBox<String>().apply {
+                                isDisabled = true
                                 setItems(OFF, LOW, MEDIUM, HIGH)
                             }
                             newSettingsRow()
                             defaultSettingsLabel("Storms:")
                             stormSelectBox = defaultSettingsSelectBox<String>().apply {
+                                isDisabled = true
                                 setItems(OFF, LOW, MEDIUM, HIGH, NIGHTMARE)
                             }
                             if (GAME.gameServer?.playersInGame == 1.toByte()) {
                                 defaultSettingsLabel("Game speed:")
                                 gameSpeedSelectBox = defaultSettingsSelectBox<String>().apply {
+                                    isDisabled = true
                                     setItems("1x", "2x", "4x", "8x")
                                 }
                             }
@@ -123,7 +126,7 @@ class GameSettings: BaseGameSettings() {
                             GAME.setScreen<TrafficSettings>()
                         }
                         row().padTop(50f)
-                        textButton("Custom aircraft", "SettingsSubpane").cell(width = BUTTON_WIDTH_BIG / 2f, height = BUTTON_HEIGHT_BIG)
+                        textButton("Custom aircraft", "SettingsSubpane").cell(width = BUTTON_WIDTH_BIG / 2f, height = BUTTON_HEIGHT_BIG).isDisabled = true
                     }
                     row().padTop(50f)
                     table {

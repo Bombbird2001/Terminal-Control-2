@@ -29,14 +29,17 @@ private val airportMetarMoshiAdapter = Moshi.Builder().build().adapter<Map<Byte,
 fun requestAllMetar() {
     // No need to update for static weather
     val weatherMode = GAME.gameServer?.weatherMode ?: return
-    if (weatherMode == WEATHER_STATIC) return
+    if (weatherMode == WEATHER_STATIC) {
+        if (GAME.gameServer?.initialisingWeather?.get() == true) initialiseAirportMetarStatic()
+        return notifyGameServerWeatherLoaded()
+    }
 
     // Check if is a new game that has not yet requested/generated METAR, or the minute of requesting is from 0-4 or 30-34
     val randomUpdateNeeded = GAME.gameServer?.initialisingWeather?.get() == true || (LocalTime.now().minute % 30 < 5)
     val randomWeatherAirportList = ArrayList<Entity>()
     val metarRequestList = ArrayList<HttpRequest.MetarRequest.MetarMapper>().apply {
         (GAME.gameServer?.airports?.values() ?: return).forEach { arpt ->
-            val realIcao = arpt.entity[MetarInfo.mapper]?.realLifeIcao ?: return@forEach
+            val realIcao = arpt.entity[RealLifeMetarIcao.mapper]?.realLifeIcao ?: return@forEach
             val icao = arpt.entity[AirportInfo.mapper]?.arptId ?: return@forEach
             add(HttpRequest.MetarRequest.MetarMapper(realIcao, icao))
             if (randomUpdateNeeded) randomWeatherAirportList.add(arpt.entity)
@@ -63,16 +66,33 @@ class MetarResponse(
     var windshear: String?
 )
 
+/** Initialises static airport METAR on game start */
+fun initialiseAirportMetarStatic() {
+    val airports = GAME.gameServer?.airports ?: return
+    for (i in 0 until airports.size) {
+        airports.getValueAt(i)?.entity?.let { arpt ->
+            arpt[MetarInfo.mapper]?.apply {
+                println(this)
+                updateWindVector(windVectorPx, windHeadingDeg, windSpeedKt)
+                updateRunwayWindComponents(arpt)
+                calculateRunwayConfigScores(arpt)
+                checkRunwayConfigSelection(arpt)
+            }
+        }
+    }
+}
+
 /** Updates the in-game airports' METAR with the supplied [metarJson] string */
 fun updateAirportMetar(metarJson: String) {
     airportMetarMoshiAdapter.fromJson(metarJson)?.apply {
         for (entry in entries) {
             entry.value.let { GAME.gameServer?.airports?.get(entry.key)?.entity?.also { arpt ->
+                println("Arpt ${arpt[AirportInfo.mapper]}")
+                println(arpt[MetarInfo.mapper])
                 arpt[MetarInfo.mapper]?.apply {
                     if (rawMetar != it.rawMetar) letterCode = letterCode?.let {
                         if (it + 1 <= 'Z') it + 1 else 'A'
                     } ?: MathUtils.random(65, 90).toChar()
-                    realLifeIcao = it.realLifeIcao
                     rawMetar = it.rawMetar ?: ""
                     windHeadingDeg = it.windHeadingDeg ?: 0
                     windSpeedKt = it.windSpeedKt ?: 0
@@ -87,10 +107,8 @@ fun updateAirportMetar(metarJson: String) {
                 }
             }}
         }
-        GAME.gameServer?.apply {
-            notifyWeatherLoaded()
-            sendMetarTCPToAll()
-        }
+
+        notifyGameServerWeatherLoaded()
     }
 }
 
@@ -170,10 +188,7 @@ fun generateRandomWeather(basedOnCurrent: Boolean, airports: List<Entity>) {
             currMetar.visibilityM, currMetar.ceilingHundredFtAGL, temp, dewPoint, qnh, currMetar.windshear)
     }
 
-    GAME.gameServer?.apply {
-        notifyWeatherLoaded()
-        sendMetarTCPToAll()
-    }
+    notifyGameServerWeatherLoaded()
 }
 
 /**
@@ -396,4 +411,12 @@ fun getClosestAirportWindVector(x: Float, y: Float): Vector2 {
     }
 
     return vectorToUse
+}
+
+/** Notifies the gameServer that initial weather has been loaded */
+private fun notifyGameServerWeatherLoaded() {
+    GAME.gameServer?.apply {
+        notifyWeatherLoaded()
+        sendMetarTCPToAll()
+    }
 }

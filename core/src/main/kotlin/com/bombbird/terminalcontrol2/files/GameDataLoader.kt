@@ -4,6 +4,8 @@ import com.badlogic.gdx.utils.Array
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.*
 import com.bombbird.terminalcontrol2.global.*
+import com.bombbird.terminalcontrol2.json.BaseComponentJSONInterface
+import com.bombbird.terminalcontrol2.json.DoNotOverwriteFromJSON
 import com.bombbird.terminalcontrol2.navigation.Approach
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.navigation.SidStar
@@ -375,13 +377,14 @@ private fun parseAirport(data: List<String>, gameServer: GameServer): Airport {
     val posY = nmToPx(pos[1].toFloat())
     val elevation = data[7].toShort()
     val realLifeIcao = data[8]
-    val arpt = Airport(id, icao, name, ratio, maxAdvanceDepartures, posX, posY, elevation, false).apply {
-        setMetarRealLifeIcao(realLifeIcao)
-    }
+    val arpt = Airport(id, icao, name, ratio, maxAdvanceDepartures, posX, posY, elevation, realLifeIcao, false)
     // Check if an airport with the same ID already exists from the save load; if it does, overwrite the base info components
     val loadedArpt = gameServer.airports[id]?.let {
         for (i in 0 until arpt.entity.components.size()) arpt.entity.components[i]?.also { comp ->
-            if (comp !is RunwayChildren) it.entity += arpt.entity.components[i]
+            // We add to the existing airport entity only if the component is not already present, or if it is a
+            // BaseComponentJSONInterface and is supposed to overwrite the save value
+            if ((comp is BaseComponentJSONInterface && comp !is DoNotOverwriteFromJSON)
+                || it.entity.getComponent(comp::class.java) == null) it.entity += arpt.entity.components[i]
         }
         it
     }

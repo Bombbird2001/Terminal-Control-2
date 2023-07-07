@@ -30,7 +30,7 @@ object ApproachToolsTest: FunSpec() {
             MAG_HDG_DEV = 0f
             GAME.gameServer?.apply {
                 airports.clear()
-                airports[0] = Airport(0, "TEST", "Test Airport", 1, 0f, 0f, 0, false).also {
+                airports[0] = Airport(0, "TEST", "Test Airport", 1, 0, 0f, 0f, 0, "XXXX", false).also {
                     it.addRunway(0, "Test Runway", 10f, 10f, 270f, 3500,
                         0, 0, 0, "", "", RunwayLabel.BEFORE)
                 }

@@ -14,7 +14,8 @@ import ktx.ashley.*
 import ktx.math.times
 
 /** Airport class that creates an airport entity with the required components on instantiation */
-class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advDep: Int, posX: Float, posY: Float, elevation: Short,
+class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advDep: Int, posX: Float, posY: Float,
+              elevation: Short, realLifeMetarIcao: String,
               onClient: Boolean = true): SerialisableEntity<Airport.SerialisedAirport> {
     val entity = getEngine(onClient).entity {
         with<Position> {
@@ -35,25 +36,29 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advD
         with<STARChildren>()
         with<ApproachChildren>()
         with<RunwayConfigurationChildren>()
+        with<RealLifeMetarIcao> {
+            realLifeIcao = realLifeMetarIcao
+        }
         with<MetarInfo>()
         if (!onClient) {
             with<RandomMetarInfo>()
             with<RandomAirlineData>()
-            with<DepartureInfo> {
+            with<DepartureInfo>()
+            with<MaxAdvancedDepartures> {
                 maxAdvanceDepartures = advDep
             }
         }
     }
 
     /** Empty airport constructor for loading of saves */
-    constructor(): this(-1, "XXXX", "Empty", 1, 0, 0f, 0f, 0, false)
+    constructor(): this(-1, "XXXX", "Empty", 1, 0, 0f, 0f, 0, "XXXX", false)
 
     companion object {
         /** De-serialises a [SerialisedAirport] and creates a new [Airport] object from it */
         fun fromSerialisedObject(serialisedAirport: SerialisedAirport): Airport {
             return Airport(
                 serialisedAirport.arptId, serialisedAirport.icaoCode, serialisedAirport.name, serialisedAirport.tfcRatio,
-                0, serialisedAirport.x, serialisedAirport.y, serialisedAirport.altitude
+                0, serialisedAirport.x, serialisedAirport.y, serialisedAirport.altitude, "XXXX"
             ).also { arpt ->
                 arpt.entity.apply {
                     get(RunwayChildren.mapper)?.apply {
@@ -146,7 +151,7 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advD
     }
 
     /** Object that contains METAR data to be serialised by Kryo */
-    class SerialisedMetar(val arptId: Byte = 0, val realLifeIcao: String = "",
+    class SerialisedMetar(val arptId: Byte = 0,
                           val letterCode: Char? = null, val rawMetar: String? = null,
                           val windHeadingDeg: Short = 360, val windSpeedKt: Short = 0, val windGustKt: Short = 0,
                           val visibilityM: Short = 10000, val ceilingFtAGL: Short? = null, val windshear: String = "")
@@ -155,14 +160,13 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advD
     fun getSerialisedMetar(): SerialisedMetar {
         val arptId = entity[AirportInfo.mapper]?.arptId ?: return SerialisedMetar()
         return entity[MetarInfo.mapper]?.let {
-            SerialisedMetar(arptId, it.realLifeIcao, it.letterCode, it.rawMetar, it.windHeadingDeg, it.windSpeedKt, it.windGustKt, it.visibilityM, it.ceilingHundredFtAGL, it.windshear)
+            SerialisedMetar(arptId, it.letterCode, it.rawMetar, it.windHeadingDeg, it.windSpeedKt, it.windGustKt, it.visibilityM, it.ceilingHundredFtAGL, it.windshear)
         } ?: SerialisedMetar()
     }
 
     /** De-serialises a [SerialisedMetar] and updates this airport's [MetarInfo] from it */
     fun updateFromSerialisedMetar(serialisedMetar: SerialisedMetar) {
         entity[MetarInfo.mapper]?.apply {
-            realLifeIcao = serialisedMetar.realLifeIcao
             letterCode = serialisedMetar.letterCode
             rawMetar = serialisedMetar.rawMetar
             windHeadingDeg = serialisedMetar.windHeadingDeg
@@ -377,11 +381,6 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advD
             }
             this += OppositeRunway(getRunway(oppRwyName)?.entity ?: return@forEach)
         }}
-    }
-
-    /** Sets [MetarInfo.realLifeIcao] for the airport, only needed for the game server */
-    fun setMetarRealLifeIcao(realLifeIcao: String) {
-        entity[MetarInfo.mapper]?.realLifeIcao = realLifeIcao
     }
 
     /**

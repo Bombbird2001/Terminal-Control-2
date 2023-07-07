@@ -57,7 +57,7 @@ object JsonTest: FunSpec() {
     init {
         beforeTest {
             testInitialiseGameAndServer()
-            arpt = Airport(0, "TEST", "Test Airport", 1, 1f, 1f, 20, false)
+            arpt = Airport(0, "TEST", "Test Airport", 1, 0, 1f, 1f, 20, "XXXX", false)
             arpt?.addRunway(0, "05L", -1f, 1f, 45f, 4000, 200, 0,
                 20, "Test Tower", "118.6", RunwayLabel.LEFT)
             arpt?.setRunwayMapping("05L", 0)

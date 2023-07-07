@@ -7,6 +7,7 @@ import com.badlogic.gdx.utils.Queue
 import com.bombbird.terminalcontrol2.entities.Airport
 import com.bombbird.terminalcontrol2.global.MAX_TRAIL_DOTS
 import com.bombbird.terminalcontrol2.json.BaseComponentJSONInterface
+import com.bombbird.terminalcontrol2.json.DoNotOverwriteFromJSON
 import com.bombbird.terminalcontrol2.utilities.AircraftTypeData
 import com.squareup.moshi.JsonClass
 import ktx.ashley.Mapper
@@ -29,10 +30,18 @@ data class RunwayInfo(var rwyId: Byte = 0, var rwyName: String = "", var lengthM
     companion object: Mapper<RunwayInfo>()
 }
 
+/** Component for tagging the real-life airport METAR code to use when requesting live weather */
+data class RealLifeMetarIcao(var realLifeIcao: String = ""): Component {
+    companion object: Mapper<RealLifeMetarIcao>()
+}
+
 /** Component for tagging airport METAR information */
-data class MetarInfo(var realLifeIcao: String = "", var letterCode: Char? = null, var rawMetar: String? = null,
+@JsonClass(generateAdapter = true)
+data class MetarInfo(var letterCode: Char? = null, var rawMetar: String? = null,
                      var windHeadingDeg: Short = 360, var windSpeedKt: Short = 0, var windGustKt: Short = 0,
-                     var visibilityM: Short = 10000, var ceilingHundredFtAGL: Short? = null, var windshear: String = ""): Component {
+                     var visibilityM: Short = 10000, var ceilingHundredFtAGL: Short? = null, var windshear: String = ""): Component, BaseComponentJSONInterface, DoNotOverwriteFromJSON {
+    override val componentType = BaseComponentJSONInterface.ComponentType.METAR_INFO
+
     val windVectorPx = Vector2()
     companion object: Mapper<MetarInfo>()
 }

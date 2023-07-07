@@ -124,6 +124,7 @@ class TrafficSystemInterval: IntervalSystem(1f) {
                 val airport = get(RunwayInfo.mapper)?.airport ?: return@apply
                 // Create random departure if airport does not have one queued
                 val depInfo = airport.entity[DepartureInfo.mapper] ?: return@apply
+                val maxAdvDep = airport.entity[MaxAdvancedDepartures.mapper] ?: return@apply
                 if (depInfo.closed) {
                     // Closed for departures - remove any existing next departure from the airport
                     val nextDepCallsign = airport.entity[AirportNextDeparture.mapper]?.aircraft?.get(AircraftInfo.mapper)?.icaoCallsign
@@ -137,10 +138,10 @@ class TrafficSystemInterval: IntervalSystem(1f) {
                 else if (airport.entity.hasNot(AirportNextDeparture.mapper)) createRandomDeparture(airport.entity, GAME.gameServer ?: return@apply)
 
                 // If too many departures have departed already, do not depart
-                if (depInfo.backlog <= -depInfo.maxAdvanceDepartures) return@apply
+                if (depInfo.backlog <= -maxAdvDep.maxAdvanceDepartures) return@apply
 
                 // Runway checks
-                val additionalTime = calculateAdditionalTimeToNextDeparture(depInfo.backlog, depInfo.maxAdvanceDepartures)
+                val additionalTime = calculateAdditionalTimeToNextDeparture(depInfo.backlog, maxAdvDep.maxAdvanceDepartures)
                 // Check self and all related runways
                 if (hasNot(ActiveTakeoff.mapper)) return@apply // Not active for departures
                 if (!checkSameRunwayTraffic(this, additionalTime)) return@apply

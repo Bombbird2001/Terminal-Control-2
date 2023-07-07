@@ -8,6 +8,7 @@ import com.bombbird.terminalcontrol2.entities.ApproachNormalOperatingZone
 import com.bombbird.terminalcontrol2.entities.DepartureNormalOperatingZone
 import com.bombbird.terminalcontrol2.entities.WakeZone
 import com.bombbird.terminalcontrol2.json.BaseComponentJSONInterface
+import com.bombbird.terminalcontrol2.json.DoNotOverwriteFromJSON
 import com.bombbird.terminalcontrol2.utilities.AircraftTypeData
 import com.squareup.moshi.JsonClass
 import ktx.ashley.Mapper
@@ -68,12 +69,17 @@ class ArrivalClosed: Component, BaseComponentJSONInterface {
     companion object: Mapper<ArrivalClosed>()
 }
 
-/** Component for tagging a closed airport for departures */
+/** Component for tagging a closed airport for departures and backlog information */
 @JsonClass(generateAdapter = true)
-data class DepartureInfo(var closed: Boolean = false, var backlog: Int = 0, var maxAdvanceDepartures: Int = 10): Component, BaseComponentJSONInterface {
+data class DepartureInfo(var closed: Boolean = false, var backlog: Int = 0): Component, BaseComponentJSONInterface, DoNotOverwriteFromJSON {
     override val componentType = BaseComponentJSONInterface.ComponentType.DEPARTURE_INFO
 
     companion object: Mapper<DepartureInfo>()
+}
+
+/** Component for tagging the maximum number of departures an airport can depart in advance */
+data class MaxAdvancedDepartures(var maxAdvanceDepartures: Int = 10): Component {
+    companion object: Mapper<MaxAdvancedDepartures>()
 }
 
 /** Component for tagging the next departure aircraft entity of the airport */

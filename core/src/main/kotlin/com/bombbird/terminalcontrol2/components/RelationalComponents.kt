@@ -5,6 +5,7 @@ import com.badlogic.ashley.core.Entity
 import com.bombbird.terminalcontrol2.entities.Airport
 import com.bombbird.terminalcontrol2.entities.RouteZone
 import com.bombbird.terminalcontrol2.json.BaseComponentJSONInterface
+import com.bombbird.terminalcontrol2.json.DoNotOverwriteFromJSON
 import com.bombbird.terminalcontrol2.navigation.Approach
 import com.bombbird.terminalcontrol2.navigation.SidStar
 import com.bombbird.terminalcontrol2.traffic.RunwayConfiguration
@@ -14,7 +15,7 @@ import ktx.collections.GdxArrayMap
 
 /** Component to keep track of an airport's runways as well as the mapping runway names to the most updated ID (for backwards compatibility) */
 data class RunwayChildren(val rwyMap: GdxArrayMap<Byte, Airport.Runway> = GdxArrayMap(),
-                          val updatedRwyMapping: GdxArrayMap<String, Byte> = GdxArrayMap()): Component, BaseComponentJSONInterface {
+                          val updatedRwyMapping: GdxArrayMap<String, Byte> = GdxArrayMap()): Component, BaseComponentJSONInterface, DoNotOverwriteFromJSON {
     override val componentType = BaseComponentJSONInterface.ComponentType.RUNWAY_CHILDREN
 
     companion object: Mapper<RunwayChildren>()

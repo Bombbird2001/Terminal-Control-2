@@ -24,6 +24,7 @@ import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.networking.*
 import com.bombbird.terminalcontrol2.networking.dataclasses.*
 import com.bombbird.terminalcontrol2.networking.NetworkClient
+import com.bombbird.terminalcontrol2.networking.playerclient.PublicClient
 import com.bombbird.terminalcontrol2.systems.*
 import com.bombbird.terminalcontrol2.traffic.ConflictManager
 import com.bombbird.terminalcontrol2.traffic.TrafficMode
@@ -372,7 +373,9 @@ class RadarScreen private constructor(private val connectionHost: String, privat
             // Process pending runnables
             while (true) { pendingRunnablesQueue.poll()?.run() ?: break }
         } catch (e: Exception) {
-            HttpRequest.sendCrashReport(e, "RadarScreen")
+            val multiplayerType = if (networkClient is PublicClient) "Public multiplayer"
+            else "LAN multiplayer/Singleplayer"
+            HttpRequest.sendCrashReport(e, "RadarScreen", multiplayerType)
             GAME.quitCurrentGameWithDialog(CustomDialog("Error", "An error occurred", "", "Ok"))
         }
     }

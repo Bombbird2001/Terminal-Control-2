@@ -274,7 +274,9 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
 
         if (initialisingWeather.get()) lock.withLock {
             requestAllMetar()
-            initialWeatherCondition.await()
+            // initialisingWeather may have already changed in the line above if static/random weather is used which
+            // will immediately set initialisingWeather to false
+            if (initialisingWeather.get()) initialWeatherCondition.await()
         }
     }
 
@@ -300,7 +302,9 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
                 stopNetworkingServer()
                 saveGame(this)
             } catch (e: Exception) {
-                HttpRequest.sendCrashReport(e, "GameServer")
+                val multiplayerType = if (networkServer.getRoomId() != null) "Public multiplayer"
+                else "LAN multiplayer/Singleplayer"
+                HttpRequest.sendCrashReport(e, "GameServer", multiplayerType)
                 GAME.quitCurrentGameWithDialog(CustomDialog("Error", "An error occurred", "", "Ok"))
             }
         }
@@ -476,6 +480,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
         var metarUpdateTime = 0
         var autosaveTime = 0
         while (loopRunning.get()) {
+            // println("Looping")
             var currMs = System.currentTimeMillis()
             if (startTime == -1L) {
                 // Skip this frame since server has just started up

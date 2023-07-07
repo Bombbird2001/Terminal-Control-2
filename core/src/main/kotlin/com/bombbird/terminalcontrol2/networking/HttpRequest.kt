@@ -1,5 +1,7 @@
 package com.bombbird.terminalcontrol2.networking
 
+import com.badlogic.gdx.Application
+import com.badlogic.gdx.Gdx
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.screens.JoinGame
 import com.bombbird.terminalcontrol2.utilities.updateAirportMetar
@@ -283,7 +285,8 @@ object HttpRequest {
     /** Class representing the error stack trace sent to the crash server together with the password */
     @JsonClass(generateAdapter = true)
     data class ErrorRequest(val errorString: String, val crashLocation: String, val gameVersion: String = GAME_VERSION,
-                            val buildVersion: Int = BUILD_VERSION, val password: String = Secrets.SEND_ERROR_PW)
+                            val buildVersion: Int = BUILD_VERSION, val platform: String,
+                            val multiplayerType: String, val password: String = Secrets.SEND_ERROR_PW)
 
     /**
      * Sends an HTTP request to the crash report server
@@ -291,8 +294,17 @@ object HttpRequest {
      * @param crashLocation the location where the crash occurred (GameServer, RadarScreen, etc.)
      */
     @OptIn(ExperimentalStdlibApi::class)
-    fun sendCrashReport(e: Exception, crashLocation: String) {
-        val jsonString = Moshi.Builder().build().adapter<ErrorRequest>().toJson(ErrorRequest(e.stackTraceToString(), crashLocation))
+    fun sendCrashReport(e: Exception, crashLocation: String, multiplayerType: String) {
+        val platformName = when (Gdx.app.type) {
+            Application.ApplicationType.Android -> "Android"
+            Application.ApplicationType.Desktop -> "Desktop"
+            Application.ApplicationType.iOS -> "iOS"
+            else -> "Unknown platform"
+        }
+
+        val jsonString = Moshi.Builder().build().adapter<ErrorRequest>().toJson(
+            ErrorRequest(e.stackTraceToString(), crashLocation, platform = platformName, multiplayerType = multiplayerType)
+        )
 
         val request = Request.Builder()
             .url(Secrets.SEND_ERROR_URL)

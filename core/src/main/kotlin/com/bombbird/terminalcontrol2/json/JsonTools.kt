@@ -23,13 +23,19 @@ fun getMoshiWithAllAdapters(): Moshi {
         .add(getPolymorphicComponentAdapter()).add(getPolymorphicLegAdapter()).build()
 }
 
+/**
+ * Interface to mark components that should not be overwritten by the same component type in a newly instantiated
+ * entity during loading of newest world data
+ */
+interface DoNotOverwriteFromJSON
+
 /** Interface for implementing JSON serialization for subclasses of Component */
 interface BaseComponentJSONInterface {
     enum class ComponentType {
         TAKEOFF_ROLL, TAKEOFF_CLIMB, LANDING_ROLL, COMMAND_TARGET, COMMAND_VECTOR, COMMAND_INIT_CLIMB, COMMAND_DIRECT,
         COMMAND_HOLD, COMMAND_EXPEDITE, COMMAND_CDA, LAST_RESTRICTIONS, VISUAL_ARMED, VISUAL_CAPTURED, LOCALIZER_ARMED,
         LOCALIZER_CAPTURED, GLIDE_SLOPE_ARMED, GLIDE_SLOPE_CAPTURED, STEP_DOWN_APPROACH, CIRCLING_APPROACH, APPROACH_INFO,
-        LOCALIZER, LINE_UP_DIST, GLIDE_SLOPE, STEP_DOWN, CIRCLING, MINIMUMS, VISUAL, AIRPORT_INFO, RUNWAY_INFO,
+        LOCALIZER, LINE_UP_DIST, GLIDE_SLOPE, STEP_DOWN, CIRCLING, MINIMUMS, VISUAL, AIRPORT_INFO, RUNWAY_INFO, METAR_INFO,
         RANDOM_METAR_INFO, WAYPOINT_INFO, AIRCRAFT_INFO, ARRIVAL_AIRPORT, DEPARTURE_AIRPORT, CONTROLLABLE, FLIGHT_TYPE,
         WAITING_TAKEOFF, CONTACT_FROM_TOWER, CONTACT_TO_TOWER, CONTACT_FROM_CENTRE, CONTACT_TO_CENTRE, ACCELERATE_TO_ABOVE_250KTS,
         DECELERATE_TO_240KTS, APP_DECELERATE_TO_190KTS, DECELERATE_TO_APP_SPD, PENDING_CLEARANCES, CLEARANCE_ACT, LATEST_CLEARANCE_CHANGED,
@@ -77,6 +83,7 @@ private fun getPolymorphicComponentAdapter(): PolymorphicJsonAdapterFactory<Base
         .withSubtype(Visual::class.java, BaseComponentJSONInterface.ComponentType.VISUAL.name)
         .withSubtype(AirportInfo::class.java, BaseComponentJSONInterface.ComponentType.AIRPORT_INFO.name)
         .withSubtype(RunwayInfo::class.java, BaseComponentJSONInterface.ComponentType.RUNWAY_INFO.name)
+        .withSubtype(MetarInfo::class.java, BaseComponentJSONInterface.ComponentType.METAR_INFO.name)
         .withSubtype(RandomMetarInfo::class.java, BaseComponentJSONInterface.ComponentType.RANDOM_METAR_INFO.name)
         .withSubtype(WaypointInfo::class.java, BaseComponentJSONInterface.ComponentType.WAYPOINT_INFO.name)
         .withSubtype(AircraftInfo::class.java, BaseComponentJSONInterface.ComponentType.AIRCRAFT_INFO.name)
