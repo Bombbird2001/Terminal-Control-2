@@ -64,12 +64,12 @@ tasks.register('dist') {
 	dependsOn['jar']
 }
 
-test {
+tasks.register('testDataFile', Test) {
 	// Enable JUnit 5 (Gradle 4.6+).
 	useJUnitPlatform()
 
 	// Always run tests, even when nothing changed.
-	dependsOn 'cleanTest'
+	dependsOn 'cleanTestDataFile'
 
 	// Show test results.
 	testLogging {
@@ -79,6 +79,10 @@ test {
 	ignoreFailures = true
 
 	workingDir "../assetsDesktop"
+}
+
+test {
+	dependsOn(project(':core').getTasksByName('test', false).toArray()[0], 'testDataFile')
 }
 
 tasks.register('buildJar') {
