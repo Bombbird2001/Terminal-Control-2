@@ -15,9 +15,11 @@ import ktx.ashley.get
  * Used only in RadarScreen
  */
 class PhysicsSystemIntervalClient: IntervalSystem(1f) {
-    private val tasToIasFamily: Family = allOf(Speed::class, IndicatedAirSpeed::class, Altitude::class)
-        .exclude(TakeoffRoll::class).get()
-    private val affectedByWindFamily: Family = allOf(Position::class, AffectedByWind::class).get()
+    companion object {
+        private val tasToIasFamily: Family = allOf(Speed::class, IndicatedAirSpeed::class, Altitude::class)
+            .exclude(TakeoffRoll::class).get()
+        private val affectedByWindFamily: Family = allOf(Position::class, AffectedByWind::class).get()
+    }
 
     /**
      * Secondary update system, for operations that can be updated at a lower frequency and do not rely on deltaTime

@@ -21,15 +21,17 @@ import kotlin.math.max
  * Used only in GameServer
  */
 class ControlStateSystemInterval: IntervalSystem(1f) {
-    private val contactFromTowerFamily: Family = allOf(Altitude::class, Position::class, ContactFromTower::class, GroundTrack::class, Controllable::class).get()
-    private val contactToTowerFamily: Family = allOf(Altitude::class, ContactToTower::class, Controllable::class).get()
-    private val minMaxOptIasFamily: Family = allOf(AircraftInfo::class, Altitude::class, ClearanceAct::class, CommandTarget::class).get()
-    private val spdRestrFamily: Family = allOf(ClearanceAct::class, LastRestrictions::class, Position::class, Direction::class, GroundTrack::class, AircraftInfo::class, CommandTarget::class).get()
-    private val contactFromCentreFamily: Family = allOf(Altitude::class, Position::class, ContactFromCentre::class, GroundTrack::class, Controllable::class).get()
-    private val contactToCentreFamily: Family = allOf(Altitude::class, Position::class, ContactToCentre::class).get()
-    private val checkSectorFamily: Family = allOf(Position::class, GroundTrack::class, Controllable::class).get()
-    private val goAroundFamily: Family = allOf(RecentGoAround::class).get()
-    private val pendingCruiseFamily: Family = allOf(PendingCruiseAltitude::class, ClearanceAct::class, AircraftInfo::class).get()
+    companion object {
+        private val contactFromTowerFamily: Family = allOf(Altitude::class, Position::class, ContactFromTower::class, GroundTrack::class, Controllable::class).get()
+        private val contactToTowerFamily: Family = allOf(Altitude::class, ContactToTower::class, Controllable::class).get()
+        private val minMaxOptIasFamily: Family = allOf(AircraftInfo::class, Altitude::class, ClearanceAct::class, CommandTarget::class).get()
+        private val spdRestrFamily: Family = allOf(ClearanceAct::class, LastRestrictions::class, Position::class, Direction::class, GroundTrack::class, AircraftInfo::class, CommandTarget::class).get()
+        private val contactFromCentreFamily: Family = allOf(Altitude::class, Position::class, ContactFromCentre::class, GroundTrack::class, Controllable::class).get()
+        private val contactToCentreFamily: Family = allOf(Altitude::class, Position::class, ContactToCentre::class).get()
+        private val checkSectorFamily: Family = allOf(Position::class, GroundTrack::class, Controllable::class).get()
+        private val goAroundFamily: Family = allOf(RecentGoAround::class).get()
+        private val pendingCruiseFamily: Family = allOf(PendingCruiseAltitude::class, ClearanceAct::class, AircraftInfo::class).get()
+    }
 
     /**
      * Secondary update system, for operations that can be updated at a lower frequency and do not rely on deltaTime

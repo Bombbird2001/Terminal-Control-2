@@ -27,7 +27,11 @@ data class AircraftControlStateUpdateData(val callsign: String = "", val primary
                                           val clearedIas: Short = 0, val minIas: Short = 0,
                                           val maxIas: Short = 0, val optimalIas: Short = 0,
                                           val clearedApp: String? = null, val clearedTrans: String? = null,
-                                          val sendingSector: Byte = -5): ServerReceive, ClientReceive, NeedsEncryption {
+                                          val sendingSector: Byte = SECTOR_GAMESERVER): ServerReceive, ClientReceive, NeedsEncryption {
+    companion object {
+        const val SECTOR_GAMESERVER: Byte = -5
+    }
+
     override fun handleServerReceive(gs: GameServer, connection: ConnectionMeta) {
         gs.postRunnableAfterEngineUpdate {
             gs.aircraft[callsign]?.entity?.let {

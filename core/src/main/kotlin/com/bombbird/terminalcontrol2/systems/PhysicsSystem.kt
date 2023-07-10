@@ -22,19 +22,21 @@ import kotlin.math.tan
  * Used only in GameServer
  */
 class PhysicsSystem: EntitySystem() {
-    private val positionUpdateFamily: Family = allOf(Position::class, Altitude::class, Speed::class, Direction::class)
-        .exclude(WaitingTakeoff::class).get()
-    private val windAffectedFamily: Family = allOf(AffectedByWind::class, Position::class)
-        .exclude(TakeoffRoll::class, LandingRoll::class).get()
-    private val speedUpdateFamily: Family = allOf(Speed::class, Acceleration::class)
-        .exclude(WaitingTakeoff::class).get()
-    private val cmdTargetAltFamily: Family = allOf(AircraftInfo::class, Altitude::class, Speed::class, Acceleration::class, CommandTarget::class)
-        .exclude(GlideSlopeCaptured::class, TakeoffRoll::class, LandingRoll::class).get()
-    private val cmdTargetSpdFamily: Family = allOf(AircraftInfo::class, Altitude::class, Speed::class, Acceleration::class, CommandTarget::class).get()
-    private val cmdTargetHeadingFamily: Family = allOf(IndicatedAirSpeed::class, Direction::class, Speed::class, Acceleration::class, CommandTarget::class)
-        .exclude(TakeoffRoll::class, LandingRoll::class, WaitingTakeoff::class).get()
-    private val glideSlopeCapturedFamily: Family = allOf(Altitude::class, Speed::class, GlideSlopeCaptured::class).get()
-    private val gsFamily: Family = allOf(Position::class, Altitude::class, GroundTrack::class, Speed::class, Direction::class, Acceleration::class).get()
+    companion object {
+        private val positionUpdateFamily: Family = allOf(Position::class, Altitude::class, Speed::class, Direction::class)
+            .exclude(WaitingTakeoff::class).get()
+        private val windAffectedFamily: Family = allOf(AffectedByWind::class, Position::class)
+            .exclude(TakeoffRoll::class, LandingRoll::class).get()
+        private val speedUpdateFamily: Family = allOf(Speed::class, Acceleration::class)
+            .exclude(WaitingTakeoff::class).get()
+        private val cmdTargetAltFamily: Family = allOf(AircraftInfo::class, Altitude::class, Speed::class, Acceleration::class, CommandTarget::class)
+            .exclude(GlideSlopeCaptured::class, TakeoffRoll::class, LandingRoll::class).get()
+        private val cmdTargetSpdFamily: Family = allOf(AircraftInfo::class, Altitude::class, Speed::class, Acceleration::class, CommandTarget::class).get()
+        private val cmdTargetHeadingFamily: Family = allOf(IndicatedAirSpeed::class, Direction::class, Speed::class, Acceleration::class, CommandTarget::class)
+            .exclude(TakeoffRoll::class, LandingRoll::class, WaitingTakeoff::class).get()
+        private val glideSlopeCapturedFamily: Family = allOf(Altitude::class, Speed::class, GlideSlopeCaptured::class).get()
+        private val gsFamily: Family = allOf(Position::class, Altitude::class, GroundTrack::class, Speed::class, Direction::class, Acceleration::class).get()
+    }
 
     /**
      * Main update function, for values that need to be updated frequently

@@ -13,7 +13,9 @@ import ktx.ashley.get
  * Used only in RadarScreen
  */
 class DataSystemIntervalClient: IntervalSystem(1f) {
-    private val pendingRunwayChangeFamily: Family = allOf(PendingRunwayConfig::class).get()
+    companion object {
+        private val pendingRunwayChangeFamily: Family = allOf(PendingRunwayConfig::class).get()
+    }
 
     /**
      * Secondary update system, for operations that can be updated at a lower frequency and do not rely on deltaTime

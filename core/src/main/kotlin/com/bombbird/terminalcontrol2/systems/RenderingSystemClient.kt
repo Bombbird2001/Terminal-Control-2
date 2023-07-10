@@ -36,43 +36,45 @@ import kotlin.math.sqrt
 class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
                             private val stage: Stage, private val constZoomStage: Stage, private val uiStage: Stage,
                             private val uiPane: UIPane): EntitySystem() {
-    private val lineArrayFamily: Family = allOf(GLineArray::class, SRColor::class)
-        .exclude(DoNotRenderShape::class.java).get()
-    private val polygonFamily: Family = allOf(GPolygon::class, SRColor::class)
-        .exclude(RenderLast::class, DoNotRenderShape::class).get()
-    private val polygonLastFamily: Family = allOf(GPolygon::class, SRColor::class, RenderLast::class)
-        .exclude(DoNotRenderShape::class).get()
-    private val circleFamily: Family = allOf(Position::class, GCircle::class, SRColor::class)
-        .exclude(SRConstantZoomSize::class, DoNotRenderShape::class).get()
-    private val runwayFamily: Family = allOf(RunwayInfo::class, SRColor::class).exclude(DoNotRenderShape::class).get()
-    private val locFamily: Family = allOf(Position::class, Localizer::class, Direction::class, ApproachInfo::class).get()
-    private val trajectoryFamily: Family = allOf(RadarData::class, Controllable::class, SRColor::class)
-        .exclude(WaitingTakeoff::class).get()
-    private val visualFamily: Family = allOf(VisualCaptured::class, RadarData::class).get()
-    private val datatagLineFamily: Family = allOf(Datatag::class, RadarData::class)
-        .exclude(WaitingTakeoff::class).get()
-    private val constCircleFamily: Family = allOf(Position::class, GCircle::class, SRColor::class, SRConstantZoomSize::class)
-        .exclude(DoNotRenderShape::class).get()
-    private val rwyLabelFamily: Family = allOf(GenericLabel::class, RunwayInfo::class, RunwayLabel::class)
-        .oneOf(ActiveLanding::class, ActiveTakeoff::class).get()
-    private val labelFamily: Family = allOf(GenericLabel::class, Position::class)
-        .exclude(ConstantZoomSize::class, DoNotRenderLabel::class).get()
-    private val labelArrayFamily: Family = allOf(GenericLabels::class, Position::class)
-        .exclude(ConstantZoomSize::class, DoNotRenderLabel::class).get()
-    private val aircraftFamily: Family = allOf(AircraftInfo::class, RadarData::class, RSSprite::class, TrailInfo::class, FlightType::class, Controllable::class)
-        .exclude(WaitingTakeoff::class).get()
-    private val constSizeLabelFamily: Family = allOf(GenericLabel::class, Position::class, ConstantZoomSize::class)
-        .exclude(DoNotRenderLabel::class).get()
-    private val constSizeLabelArrayFamily: Family = allOf(GenericLabels::class, Position::class, ConstantZoomSize::class)
-        .exclude(DoNotRenderLabel::class).get()
-    private val datatagFamily: Family = allOf(Datatag::class, RadarData::class)
-        .exclude(WaitingTakeoff::class).get()
-    private val contactDotFamily: Family = allOf(ContactNotification::class, RadarData::class, FlightType::class).get()
-    private val waypointFamily: Family = allOf(WaypointInfo::class).get()
-    private val routeFamily: Family = oneOf(PendingClearances::class, ClearanceAct::class).get()
+    companion object {
+        private val lineArrayFamily: Family = allOf(GLineArray::class, SRColor::class)
+            .exclude(DoNotRenderShape::class.java).get()
+        private val polygonFamily: Family = allOf(GPolygon::class, SRColor::class)
+            .exclude(RenderLast::class, DoNotRenderShape::class).get()
+        private val polygonLastFamily: Family = allOf(GPolygon::class, SRColor::class, RenderLast::class)
+            .exclude(DoNotRenderShape::class).get()
+        private val circleFamily: Family = allOf(Position::class, GCircle::class, SRColor::class)
+            .exclude(SRConstantZoomSize::class, DoNotRenderShape::class).get()
+        private val runwayFamily: Family = allOf(RunwayInfo::class, SRColor::class).exclude(DoNotRenderShape::class).get()
+        private val locFamily: Family = allOf(Position::class, Localizer::class, Direction::class, ApproachInfo::class).get()
+        private val trajectoryFamily: Family = allOf(RadarData::class, Controllable::class, SRColor::class)
+            .exclude(WaitingTakeoff::class).get()
+        private val visualFamily: Family = allOf(VisualCaptured::class, RadarData::class).get()
+        private val datatagLineFamily: Family = allOf(Datatag::class, RadarData::class)
+            .exclude(WaitingTakeoff::class).get()
+        private val constCircleFamily: Family = allOf(Position::class, GCircle::class, SRColor::class, SRConstantZoomSize::class)
+            .exclude(DoNotRenderShape::class).get()
+        private val rwyLabelFamily: Family = allOf(GenericLabel::class, RunwayInfo::class, RunwayLabel::class)
+            .oneOf(ActiveLanding::class, ActiveTakeoff::class).get()
+        private val labelFamily: Family = allOf(GenericLabel::class, Position::class)
+            .exclude(ConstantZoomSize::class, DoNotRenderLabel::class).get()
+        private val labelArrayFamily: Family = allOf(GenericLabels::class, Position::class)
+            .exclude(ConstantZoomSize::class, DoNotRenderLabel::class).get()
+        private val aircraftFamily: Family = allOf(AircraftInfo::class, RadarData::class, RSSprite::class, TrailInfo::class, FlightType::class, Controllable::class)
+            .exclude(WaitingTakeoff::class).get()
+        private val constSizeLabelFamily: Family = allOf(GenericLabel::class, Position::class, ConstantZoomSize::class)
+            .exclude(DoNotRenderLabel::class).get()
+        private val constSizeLabelArrayFamily: Family = allOf(GenericLabels::class, Position::class, ConstantZoomSize::class)
+            .exclude(DoNotRenderLabel::class).get()
+        private val datatagFamily: Family = allOf(Datatag::class, RadarData::class)
+            .exclude(WaitingTakeoff::class).get()
+        private val contactDotFamily: Family = allOf(ContactNotification::class, RadarData::class, FlightType::class).get()
+        private val waypointFamily: Family = allOf(WaypointInfo::class).get()
+        private val routeFamily: Family = oneOf(PendingClearances::class, ClearanceAct::class).get()
 
-    private val dotBlue: TextureRegion = Scene2DSkin.defaultSkin["DotBlue", TextureRegion::class.java]
-    private val dotGreen: TextureRegion = Scene2DSkin.defaultSkin["DotGreen", TextureRegion::class.java]
+        private val dotBlue: TextureRegion = Scene2DSkin.defaultSkin["DotBlue", TextureRegion::class.java]
+        private val dotGreen: TextureRegion = Scene2DSkin.defaultSkin["DotGreen", TextureRegion::class.java]
+    }
 
     /** Main update function */
     override fun update(deltaTime: Float) {
@@ -185,8 +187,11 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
                 val dir = get(Direction.mapper)?.trackUnitVector ?: return@apply
                 val appInfo = get(ApproachInfo.mapper) ?: return@apply
                 if (appInfo.rwyObj.entity.hasNot(ActiveLanding.mapper)) return@apply
+                // Offset if glideslope is present
+                val gs = get(GlideSlope.mapper)
+                val offsetNm = gs?.offsetNm ?: 0f
                 shapeRenderer.color = Color.CYAN
-                val startPos = Vector2(pos.x, pos.y) + dir * nmToPx(1)
+                val startPos = Vector2(pos.x, pos.y) + dir * (nmToPx(1) - nmToPx(offsetNm))
                 val perpendicularVector = Vector2(dir).rotate90(-1).scl(nmToPx(0.4f))
                 for (j in 1..loc.maxDistNm step 2) {
                     if (j % 5 == 0) shapeRenderer.line(startPos - perpendicularVector, startPos + perpendicularVector)

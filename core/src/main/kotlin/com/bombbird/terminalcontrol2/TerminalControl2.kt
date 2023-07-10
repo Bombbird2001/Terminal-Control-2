@@ -126,5 +126,6 @@ class TerminalControl2(val externalFileHandler: ExternalFileHandler) : KtxGame<K
         assetStorage.disposeSafely()
         soundManager.disposeSafely()
         lanClient.dispose()
+        publicClient.dispose()
     }
 }

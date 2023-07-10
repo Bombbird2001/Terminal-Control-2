@@ -26,15 +26,17 @@ import kotlin.math.roundToInt
  * Used only in GameServer
  */
 class TrafficSystemInterval: IntervalSystem(1f) {
-    private val pendingRunwayChangeFamily = allOf(PendingRunwayConfig::class, AirportInfo::class, RunwayConfigurationChildren::class).get()
-    private val arrivalFamily = allOf(AircraftInfo::class, ArrivalAirport::class).get()
-    private val runwayTakeoffFamily = allOf(RunwayInfo::class).get()
-    private val closestArrivalFamily = allOf(Position::class, AircraftInfo::class)
-        .oneOf(LocalizerCaptured::class, GlideSlopeCaptured::class, VisualCaptured::class).get()
-    private val conflictAbleFamily = allOf(Position::class, Altitude::class, ConflictAble::class)
-        .exclude(WaitingTakeoff::class, TakeoffRoll::class, LandingRoll::class).get()
-    private val despawnFamily = allOf(Position::class, AircraftInfo::class, Controllable::class)
-        .exclude(WaitingTakeoff::class, TakeoffRoll::class, LandingRoll::class).get()
+    companion object {
+        private val pendingRunwayChangeFamily = allOf(PendingRunwayConfig::class, AirportInfo::class, RunwayConfigurationChildren::class).get()
+        private val arrivalFamily = allOf(AircraftInfo::class, ArrivalAirport::class).get()
+        private val runwayTakeoffFamily = allOf(RunwayInfo::class).get()
+        private val closestArrivalFamily = allOf(Position::class, AircraftInfo::class)
+            .oneOf(LocalizerCaptured::class, GlideSlopeCaptured::class, VisualCaptured::class).get()
+        private val conflictAbleFamily = allOf(Position::class, Altitude::class, ConflictAble::class)
+            .exclude(WaitingTakeoff::class, TakeoffRoll::class, LandingRoll::class).get()
+        private val despawnFamily = allOf(Position::class, AircraftInfo::class, Controllable::class)
+            .exclude(WaitingTakeoff::class, TakeoffRoll::class, LandingRoll::class).get()
+    }
 
     private val startingAltitude = floor(getLowestAirportElevation() / VERT_SEP).roundToInt() * VERT_SEP
     private val conflictLevels = Array<GdxArray<Entity>>(ceil((MAX_ALT + 1500f) / VERT_SEP).roundToInt() - startingAltitude / VERT_SEP) {

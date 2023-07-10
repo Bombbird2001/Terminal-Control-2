@@ -14,7 +14,9 @@ import ktx.ashley.*
  * Used only in RadarScreen
  */
 class ControlStateSystemIntervalClient: IntervalSystem(1f) {
-    private val handoverUpdateFamily = allOf(Controllable::class, GroundTrack::class, Position::class, Altitude::class).get()
+    companion object {
+        private val handoverUpdateFamily = allOf(Controllable::class, GroundTrack::class, Position::class, Altitude::class).get()
+    }
 
     /** Main update function */
     override fun updateInterval() {

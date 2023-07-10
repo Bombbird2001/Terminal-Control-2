@@ -11,10 +11,12 @@ import ktx.ashley.has
 
 /** A lower frequency [PhysicsSystem] used to deal with physics calculations that can be done at a lower rate */
 class PhysicsSystemInterval: IntervalSystem(1f) {
-    private val tasToIasFamily: Family = allOf(Speed::class, IndicatedAirSpeed::class, Altitude::class)
-        .exclude(TakeoffRoll::class).get()
-    private val accLimitFamily: Family = allOf(Speed::class, Altitude::class, Acceleration::class, AircraftInfo::class).get()
-    private val affectedByWindFamily: Family = allOf(Position::class, AffectedByWind::class).get()
+    companion object {
+        private val tasToIasFamily: Family = allOf(Speed::class, IndicatedAirSpeed::class, Altitude::class)
+            .exclude(TakeoffRoll::class).get()
+        private val accLimitFamily: Family = allOf(Speed::class, Altitude::class, Acceleration::class, AircraftInfo::class).get()
+        private val affectedByWindFamily: Family = allOf(Position::class, AffectedByWind::class).get()
+    }
 
     /**
      * Secondary update system, for operations that can be updated at a lower frequency and do not rely on deltaTime

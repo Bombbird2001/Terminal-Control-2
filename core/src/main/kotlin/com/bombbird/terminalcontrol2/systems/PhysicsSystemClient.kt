@@ -15,10 +15,12 @@ import ktx.math.times
  * Used only in RadarScreen
  */
 class PhysicsSystemClient: EntitySystem() {
-    private val positionUpdateFamily: Family = allOf(Position::class, Altitude::class, Speed::class, Direction::class)
-        .exclude(WaitingTakeoff::class).get()
-    private val windAffectedFamily: Family = allOf(AffectedByWind::class, Position::class)
-        .exclude(TakeoffRoll::class, LandingRoll::class).get()
+    companion object {
+        private val positionUpdateFamily: Family = allOf(Position::class, Altitude::class, Speed::class, Direction::class)
+            .exclude(WaitingTakeoff::class).get()
+        private val windAffectedFamily: Family = allOf(AffectedByWind::class, Position::class)
+            .exclude(TakeoffRoll::class, LandingRoll::class).get()
+    }
 
     /**
      * Main update function, for values that need to be updated frequently

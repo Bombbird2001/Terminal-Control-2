@@ -19,6 +19,7 @@ import com.bombbird.terminalcontrol2.ui.CustomDialog
 import com.bombbird.terminalcontrol2.utilities.*
 import com.esotericsoftware.minlog.Log
 import ktx.ashley.get
+import ktx.ashley.remove
 import ktx.collections.GdxArray
 import ktx.collections.GdxArrayMap
 import java.util.UUID
@@ -434,6 +435,27 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
                 // Send score data
                 networkServer.sendTCPToConnection(uuid, ScoreData(score, highScore))
 
+                // Send each aircraft's latest nav state
+                Entries(aircraft).forEach { acEntry ->
+                    val entity = acEntry.value.entity
+                    val aircraftInfo = entity[AircraftInfo.mapper] ?: return@forEach
+                    // Try to get the last pending clearance; if no pending clearances exist, use the existing clearance
+                    entity[PendingClearances.mapper]?.clearanceQueue.also {
+                        val clearanceToUse = if (it != null && it.size > 0) it.last()?.clearanceState ?: return@also
+                        else {
+                            entity.remove<PendingClearances>()
+                            entity[ClearanceAct.mapper]?.actingClearance?.clearanceState ?: return@also
+                        }
+                        clearanceToUse.apply {
+                            networkServer.sendTCPToConnection(uuid, AircraftControlStateUpdateData(
+                                aircraftInfo.icaoCallsign, routePrimaryName, route.getSerialisedObject(),
+                                hiddenLegs.getSerialisedObject(), vectorHdg, vectorTurnDir, clearedAlt, expedite,
+                                clearedIas, minIas, maxIas, optimalIas, clearedApp, clearedTrans
+                            ))
+                        }
+                    }
+                }
+
                 // Initial data sending complete
                 networkServer.sendTCPToConnection(uuid, InitialDataSendComplete())
             }
@@ -695,8 +717,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
                 maxIas,
                 optimalIas,
                 clearedApp,
-                clearedTrans,
-                -5
+                clearedTrans
             )
         )
     }

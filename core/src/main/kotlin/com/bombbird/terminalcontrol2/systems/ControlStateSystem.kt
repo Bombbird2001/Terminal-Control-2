@@ -12,8 +12,10 @@ import ktx.ashley.*
  * Used only in GameServer
  */
 class ControlStateSystem: EntitySystem() {
-    private val latestClearanceChangedFamily: Family = allOf(LatestClearanceChanged::class, AircraftInfo::class, ClearanceAct::class).get()
-    private val pendingFamily: Family = allOf(PendingClearances::class, ClearanceAct::class).get()
+    companion object {
+        private val latestClearanceChangedFamily: Family = allOf(LatestClearanceChanged::class, AircraftInfo::class, ClearanceAct::class).get()
+        private val pendingFamily: Family = allOf(PendingClearances::class, ClearanceAct::class).get()
+    }
 
     /** Main update function */
     override fun update(deltaTime: Float) {

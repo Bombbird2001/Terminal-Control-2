@@ -17,10 +17,12 @@ import ktx.ashley.get
  * Used only in RadarScreen
  */
 class DataSystemClient: EntitySystem() {
-    var radarDataTimer = 0f
+    companion object {
+        private val radarDataUpdateFamily: Family = allOf(Position::class, Direction::class, Speed::class, Altitude::class, RadarData::class).get()
+        private val datatagUpdateFamily: Family = allOf(AircraftInfo::class, RadarData::class, CommandTarget::class, Datatag::class).get()
+    }
 
-    private val radarDataUpdateFamily: Family = allOf(Position::class, Direction::class, Speed::class, Altitude::class, RadarData::class).get()
-    private val datatagUpdateFamily: Family = allOf(AircraftInfo::class, RadarData::class, CommandTarget::class, Datatag::class).get()
+    private var radarDataTimer = 0f
 
     /** Main update function */
     override fun update(deltaTime: Float) {

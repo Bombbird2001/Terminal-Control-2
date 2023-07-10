@@ -17,8 +17,10 @@ import ktx.collections.GdxArray
  * Used only in GameServer
  */
 class DataSystem: EntitySystem() {
-    private val trailInfoUpdateFamily: Family = allOf(AircraftInfo::class, Position::class, TrailInfo::class)
-        .exclude(WaitingTakeoff::class, TakeoffRoll::class, LandingRoll::class).get()
+    companion object {
+        private val trailInfoUpdateFamily: Family = allOf(AircraftInfo::class, Position::class, TrailInfo::class)
+            .exclude(WaitingTakeoff::class, TakeoffRoll::class, LandingRoll::class).get()
+    }
 
     /** Main update function */
     override fun update(deltaTime: Float) {
