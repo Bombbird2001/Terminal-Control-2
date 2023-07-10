@@ -1,5 +1,6 @@
 package com.bombbird.terminalcontrol2.networking.hostserver
 
+import com.badlogic.gdx.utils.ArrayMap.Entries
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.networking.*
 import com.bombbird.terminalcontrol2.networking.encryption.*
@@ -126,8 +127,8 @@ class PublicServer(
     override val connections: Collection<ConnectionMeta>
         get() {
             val conns = HashSet<ConnectionMeta>()
-            for (conn in uuidConnectionMap.values()) {
-                conns.add(conn)
+            for (conn in Entries(uuidConnectionMap)) {
+                conns.add(conn.value)
             }
             return conns
         }

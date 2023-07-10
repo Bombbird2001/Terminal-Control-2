@@ -3,6 +3,7 @@ package com.bombbird.terminalcontrol2.screens.settings
 import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.scenes.scene2d.ui.SelectBox
 import com.badlogic.gdx.utils.Align
+import com.badlogic.gdx.utils.ArrayMap.Entries
 import com.bombbird.terminalcontrol2.components.AirportInfo
 import com.bombbird.terminalcontrol2.components.MetarInfo
 import com.bombbird.terminalcontrol2.global.*
@@ -35,7 +36,8 @@ class CustomWeatherSettings: BaseGameSettings() {
                     row().padTop(50f)
                     scrollPane("SettingsPane") {
                         table {
-                            CLIENT_SCREEN?.apply { for (airport in airports.values()) {
+                            CLIENT_SCREEN?.apply {for (airportEntry in Entries(airports)) {
+                                val airport = airportEntry.value
                                 airport?.entity?.get(AirportInfo.mapper)?.let { arptInfo ->
                                     row().padTop(30f)
                                     label("${arptInfo.icaoCode}:", "SettingsOption").cell(height = BUTTON_HEIGHT_BIG / 1.5f, padRight = 20f)
@@ -93,9 +95,10 @@ class CustomWeatherSettings: BaseGameSettings() {
     /** Updates the weather information from the current game airports to the selections */
     override fun setToCurrentGameSettings() {
         GAME.gameServer?.apply {
-            airports.values().forEach {
-                val arptInfo = it.entity[AirportInfo.mapper] ?: return@forEach
-                val metarInfo = it.entity[MetarInfo.mapper] ?: return@forEach
+            Entries(airports).forEach {
+                val arpt = it.value
+                val arptInfo = arpt.entity[AirportInfo.mapper] ?: return@forEach
+                val metarInfo = arpt.entity[MetarInfo.mapper] ?: return@forEach
 
                 // Set the wind first
                 val windBoxes = airportWindSelectBoxes[arptInfo.arptId] ?: return@forEach
@@ -126,8 +129,9 @@ class CustomWeatherSettings: BaseGameSettings() {
     override fun updateCurrentGameSettings() {
         GAME.gameServer?.apply {
             weatherMode = WEATHER_STATIC
-            airports.values().forEach {
-                val arptInfo = it.entity[AirportInfo.mapper] ?: return@forEach
+            Entries(airports).forEach {
+                val arpt = it.value
+                val arptInfo = arpt.entity[AirportInfo.mapper] ?: return@forEach
 
                 // Set the wind heading and speed
                 val windBoxes = airportWindSelectBoxes[arptInfo.arptId] ?: return@forEach
@@ -145,7 +149,7 @@ class CustomWeatherSettings: BaseGameSettings() {
                 val worldDewDelta = -MathUtils.random(2, 8)
                 val worldQnh = MathUtils.random(1005, 1019)
 
-                setAirportStaticWeather(it.entity, windHdg, windSpd, vis, ceilHundred, worldTemp, worldDewDelta, worldQnh)
+                setAirportStaticWeather(arpt.entity, windHdg, windSpd, vis, ceilHundred, worldTemp, worldDewDelta, worldQnh)
             }
             sendMetarTCPToAll()
         }

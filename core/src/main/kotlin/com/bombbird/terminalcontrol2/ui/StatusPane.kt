@@ -3,6 +3,7 @@ package com.bombbird.terminalcontrol2.ui
 import com.badlogic.ashley.core.Family
 import com.badlogic.gdx.scenes.scene2d.Actor
 import com.badlogic.gdx.scenes.scene2d.ui.Label
+import com.badlogic.gdx.utils.ArrayMap.Entries
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.traffic.ConflictManager
@@ -137,9 +138,11 @@ class StatusPane {
 
     /** Gets pending runway changes for each airport and adds them as messages to the status pane */
     private fun getPendingRunwayChangeMessages() {
-        CLIENT_SCREEN?.airports?.values()?.forEach {
-            val icao = it.entity[AirportInfo.mapper]?.icaoCode ?: return@forEach
-            it.entity[PendingRunwayConfig.mapper]?.apply {
+        val airportEntries = Entries(CLIENT_SCREEN?.airports ?: return)
+        airportEntries.forEach {
+            val arpt = it.value
+            val icao = arpt.entity[AirportInfo.mapper]?.icaoCode ?: return@forEach
+            arpt.entity[PendingRunwayConfig.mapper]?.apply {
                 val minLeft = ceil(timeRemaining / 60)
                 val timeLeft = if (minLeft > 0) "$minLeft min${if (minLeft > 1) "s" else ""} left"
                 else "${timeRemaining}s left"
@@ -186,10 +189,11 @@ class StatusPane {
             }
             addMessage("Traffic mode: $trafficMode", INFO)
 
-            airports.values().forEach {
-                val icao = it.entity[AirportInfo.mapper]?.icaoCode ?: return@forEach
-                val arrClosed = it.entity.has(ArrivalClosed.mapper)
-                val depClosed = it.entity[DepartureInfo.mapper]?.closed == true
+            Entries(airports).forEach {
+                val arpt = it.value
+                val icao = arpt.entity[AirportInfo.mapper]?.icaoCode ?: return@forEach
+                val arrClosed = arpt.entity.has(ArrivalClosed.mapper)
+                val depClosed = arpt.entity[DepartureInfo.mapper]?.closed == true
                 if (arrClosed || depClosed) addMessage("$icao: Closed${if (arrClosed && depClosed) ""
                 else if (arrClosed) " for arrivals" else " for departures"}", INFO)
             }

@@ -3,6 +3,7 @@ package com.bombbird.terminalcontrol2.systems
 import com.badlogic.ashley.core.Entity
 import com.badlogic.ashley.systems.IntervalSystem
 import com.badlogic.gdx.math.MathUtils
+import com.badlogic.gdx.utils.ArrayMap.Entries
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.WakeZone
 import com.bombbird.terminalcontrol2.global.GAME
@@ -67,7 +68,7 @@ class TrafficSystemInterval: IntervalSystem(1f) {
                     }
                     else -> Log.info("TrafficSystem", "Invalid traffic mode $trafficMode")
                 }
-                createRandomArrival(airports.values().toArray(), this)
+                createRandomArrival(Entries(airports).map { it.value }, this)
             }
         }
 

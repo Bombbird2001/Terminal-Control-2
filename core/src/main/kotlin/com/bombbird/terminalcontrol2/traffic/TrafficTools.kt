@@ -4,6 +4,7 @@ import com.badlogic.ashley.core.Entity
 import com.badlogic.gdx.math.CumulativeDistribution
 import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.math.Vector2
+import com.badlogic.gdx.utils.ArrayMap.Entries
 import com.badlogic.gdx.utils.Queue
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.Aircraft
@@ -45,9 +46,9 @@ object TrafficMode {
  * @param airports the full list of airports in the game world
  * @param gs the gameServer to instantiate the aircraft in
  */
-fun createRandomArrival(airports: GdxArray<Airport>, gs: GameServer) {
+fun createRandomArrival(airports: List<Airport>, gs: GameServer) {
     val airportDist = CumulativeDistribution<Entity>()
-    for (i in 0 until airports.size) { airports[i]?.entity?.apply {
+    for (element in airports) { element.entity.apply {
         if (hasNot(ArrivalClosed.mapper)) airportDist.add(this, get(AirportInfo.mapper)?.tfcRatio?.toFloat() ?: return@apply)
     }}
     airportDist.generateNormalized()
@@ -147,15 +148,21 @@ fun despawnAircraft(aircraft: Entity) {
 private fun randomStar(airport: Entity): SidStar.STAR? {
     val availableStars = GdxArray<SidStar.STAR>()
     val runwaysAvailable = HashSet<String>()
-    airport[RunwayChildren.mapper]?.rwyMap?.values()?.forEach { rwy ->
-        // Add names of runways that are active for landing to set
-        if (rwy.entity.has(ActiveLanding.mapper)) runwaysAvailable.add(rwy.entity[RunwayInfo.mapper]?.rwyName ?: return@forEach)
+    airport[RunwayChildren.mapper]?.rwyMap?.let { rwyMap ->
+        Entries(rwyMap).forEach { rwyEntry ->
+            val rwy = rwyEntry.value
+            // Add names of runways that are active for landing to set
+            if (rwy.entity.has(ActiveLanding.mapper)) runwaysAvailable.add(rwy.entity[RunwayInfo.mapper]?.rwyName ?: return@forEach)
+        }
     }
-    airport[STARChildren.mapper]?.starMap?.values()?.forEach { star ->
-        // Add to list of eligible STARs if both runway and time restriction checks passes
-        if ((star.rwyLegs.keys() intersect  runwaysAvailable).isEmpty()) return@forEach
-        if (!star.isUsableForDayNight()) return@forEach
-        availableStars.add(star)
+    airport[STARChildren.mapper]?.starMap?.let { starMap ->
+        Entries(starMap).forEach { starEntry ->
+            val star = starEntry.value
+            // Add to list of eligible STARs if both runway and time restriction checks passes
+            if ((star.rwyLegs.keys() intersect  runwaysAvailable).isEmpty()) return@forEach
+            if (!star.isUsableForDayNight()) return@forEach
+            availableStars.add(star)
+        }
     }
 
     if (availableStars.isEmpty) {
@@ -333,11 +340,14 @@ fun clearForTakeoff(aircraft: Entity, rwy: Entity) {
 private fun randomSid(rwy: Entity): SidStar.SID? {
     val availableSids = GdxArray<SidStar.SID>()
     val rwyName = rwy[RunwayInfo.mapper]?.rwyName
-    rwy[RunwayInfo.mapper]?.airport?.entity?.get(SIDChildren.mapper)?.sidMap?.values()?.forEach { sid ->
-        // Add to list of eligible SIDs if both runway and time restriction checks passes
-        if (!sid.rwyInitialClimbs.containsKey(rwyName)) return@forEach
-        if (!sid.isUsableForDayNight()) return@forEach
-        availableSids.add(sid)
+    rwy[RunwayInfo.mapper]?.airport?.entity?.get(SIDChildren.mapper)?.sidMap?.let { sidMap ->
+        Entries(sidMap).forEach { sidEntry ->
+            val sid = sidEntry.value
+            // Add to list of eligible SIDs if both runway and time restriction checks passes
+            if (!sid.rwyInitialClimbs.containsKey(rwyName)) return@forEach
+            if (!sid.isUsableForDayNight()) return@forEach
+            availableSids.add(sid)
+        }
     }
 
     if (availableSids.isEmpty) {
@@ -399,12 +409,15 @@ private fun generateRandomCallsign(airline: String, private: Boolean, gs: GameSe
 fun getAvailableApproaches(airport: Entity): GdxArray<String> {
     val array = GdxArray<String>().apply { add("Approach") }
     val rwys = airport[RunwayChildren.mapper]?.rwyMap ?: return array
-    airport[ApproachChildren.mapper]?.approachMap?.values()?.forEach { app ->
-        app.entity[ApproachInfo.mapper]?.also {
-            // Add to list of eligible approaches if its runway is active for landings and time restriction checks passes
-            if (rwys[it.rwyId]?.entity?.get(ActiveLanding.mapper) == null) return@forEach
-            if (!app.isUsableForDayNight()) return@forEach
-            array.add(it.approachName)
+    airport[ApproachChildren.mapper]?.approachMap?.let { appMap ->
+        Entries(appMap).forEach { appEntry ->
+            val app = appEntry.value
+            app.entity[ApproachInfo.mapper]?.also {
+                // Add to list of eligible approaches if its runway is active for landings and time restriction checks passes
+                if (rwys[it.rwyId]?.entity?.get(ActiveLanding.mapper) == null) return@forEach
+                if (!app.isUsableForDayNight()) return@forEach
+                array.add(it.approachName)
+            }
         }
     }
     return array
@@ -643,8 +656,8 @@ fun calculateAdditionalTimeToNextDeparture(backlog: Int, maxAdvDep: Int): Int {
 fun getLowestAirportElevation(): Float {
     var minElevation: Float? = null
     GAME.gameServer?.apply {
-        airports.values().forEach {
-            val alt = it.entity[Altitude.mapper]?.altitudeFt ?: return@forEach
+        Entries(airports).forEach {
+            val alt = it.value.entity[Altitude.mapper]?.altitudeFt ?: return@forEach
             val finalMinElevation = minElevation
             if (finalMinElevation == null || alt < finalMinElevation) minElevation = alt
         }
@@ -670,9 +683,12 @@ fun getSectorIndexForAlt(alt: Float, startingAltitude: Int): Int {
  */
 fun getArrivalClosedAirports(): ByteArray {
     val airports = GdxArray<Byte>(AIRPORT_SIZE)
-    GAME.gameServer?.airports?.values()?.forEach {
-        val id = it.entity[AirportInfo.mapper]?.arptId ?: return@forEach
-        if (it.entity.has(ArrivalClosed.mapper)) airports.add(id)
+    GAME.gameServer?.airports?.let { arpts ->
+        Entries(arpts).forEach {
+            val arpt = it.value
+            val id = arpt.entity[AirportInfo.mapper]?.arptId ?: return@forEach
+            if (arpt.entity.has(ArrivalClosed.mapper)) airports.add(id)
+        }
     }
     return airports.toArray().map { it }.toByteArray()
 }
@@ -683,9 +699,12 @@ fun getArrivalClosedAirports(): ByteArray {
  */
 fun getDepartureClosedAirports(): ByteArray {
     val airports = GdxArray<Byte>(AIRPORT_SIZE)
-    GAME.gameServer?.airports?.values()?.forEach {
-        val id = it.entity[AirportInfo.mapper]?.arptId ?: return@forEach
-        if (it.entity[DepartureInfo.mapper]?.closed == true) airports.add(id)
+    GAME.gameServer?.airports?.let { arpts ->
+        Entries(arpts).forEach {
+            val arpt = it.value
+            val id = arpt.entity[AirportInfo.mapper]?.arptId ?: return@forEach
+            if (arpt.entity[DepartureInfo.mapper]?.closed == true) airports.add(id)
+        }
     }
     return airports.toArray().map { it }.toByteArray()
 }

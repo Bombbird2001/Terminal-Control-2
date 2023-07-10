@@ -1,6 +1,7 @@
 package com.bombbird.terminalcontrol2.json
 
 import com.badlogic.ashley.core.Component
+import com.badlogic.gdx.utils.ArrayMap.Entries
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.Airport
 import com.bombbird.terminalcontrol2.entities.RouteZone
@@ -21,7 +22,7 @@ object RunwayChildrenAdapter {
     @ToJson
     fun toJson(rwys: RunwayChildren): RunwayChildrenJSON {
         val array = ArrayList<Airport.Runway>()
-        rwys.rwyMap.values().forEach { array.add(it) }
+        Entries(rwys.rwyMap).forEach { array.add(it.value) }
         return RunwayChildrenJSON(array)
     }
 
@@ -45,7 +46,7 @@ object ApproachChildrenAdapter {
     @ToJson
     fun toJson(apps: ApproachChildren): ApproachChildrenJSON {
         val array = ArrayList<Approach>()
-        apps.approachMap.values().forEach { array.add(it) }
+        Entries(apps.approachMap).forEach { array.add(it.value) }
         return ApproachChildrenJSON(array)
     }
 

@@ -6,6 +6,7 @@ import com.badlogic.gdx.scenes.scene2d.InputEvent
 import com.badlogic.gdx.scenes.scene2d.ui.ImageButton
 import com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle
 import com.badlogic.gdx.scenes.scene2d.utils.DragListener
+import com.badlogic.gdx.utils.ArrayMap.Entries
 import com.badlogic.gdx.utils.Timer
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.Aircraft
@@ -183,7 +184,9 @@ fun addDatatagInputListeners(datatag: Datatag, aircraft: Aircraft) {
             CLIENT_SCREEN?.setUISelectedAircraft(aircraft)
             Gdx.app.postRunnable {
                 if (!datatag.renderLast) {
-                    CLIENT_SCREEN?.aircraft?.values()?.forEach { it.entity[Datatag.mapper]?.renderLast = false }
+                    CLIENT_SCREEN?.aircraft?.let { aircraftMap ->
+                        Entries(aircraftMap).forEach { it.value.entity[Datatag.mapper]?.renderLast = false }
+                    }
                     remove()
                     CLIENT_SCREEN?.addToConstZoomStage(this) // Re-add to uiStage in order for position to be increased
                     datatag.renderLast = true

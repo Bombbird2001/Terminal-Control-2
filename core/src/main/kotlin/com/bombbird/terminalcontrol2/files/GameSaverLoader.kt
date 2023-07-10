@@ -1,5 +1,6 @@
 package com.bombbird.terminalcontrol2.files
 
+import com.badlogic.gdx.utils.ArrayMap.Entries
 import com.badlogic.gdx.utils.Queue.QueueIterator
 import com.bombbird.terminalcontrol2.components.AircraftInfo
 import com.bombbird.terminalcontrol2.components.AirportInfo
@@ -68,7 +69,9 @@ fun saveGame(gs: GameServer) {
     val saveObject = GameServerSave(gs.mainName, gs.arrivalSpawnTimerS, gs.previousArrivalOffsetS, gs.trafficValue,
         gs.trafficMode, gs.score, gs.highScore, gs.landed, gs.departed, gs.weatherMode, gs.emergencyRate, gs.stormsDensity,
         gs.gameSpeed, gs.nightModeStart, gs.nightModeEnd, gs.useRecat, gs.trailDotTimer,
-        gs.aircraft.values().toList(), gs.airports.values().toList(), gs.waypoints.values.toList())
+        Entries(gs.aircraft).toList().map { it.value },
+        Entries(gs.airports).toList().map { it.value },
+        gs.waypoints.values.toList())
     val saveFolderHandle = getExtDir("Saves") ?: return
     if (!saveFolderHandle.exists()) saveFolderHandle.mkdirs()
 

@@ -3,6 +3,7 @@ package com.bombbird.terminalcontrol2.utilities
 import com.badlogic.ashley.core.Entity
 import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.math.Vector2
+import com.badlogic.gdx.utils.ArrayMap.Entries
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.MAG_HDG_DEV
@@ -38,7 +39,9 @@ fun requestAllMetar() {
     val randomUpdateNeeded = GAME.gameServer?.initialisingWeather?.get() == true || (LocalTime.now().minute % 30 < 5)
     val randomWeatherAirportList = ArrayList<Entity>()
     val metarRequestList = ArrayList<HttpRequest.MetarRequest.MetarMapper>().apply {
-        (GAME.gameServer?.airports?.values() ?: return).forEach { arpt ->
+        val arptEntries = Entries(GAME.gameServer?.airports ?: return)
+        arptEntries.forEach { arptEntry ->
+            val arpt = arptEntry.value
             val realIcao = arpt.entity[RealLifeMetarIcao.mapper]?.realLifeIcao ?: return@forEach
             val icao = arpt.entity[AirportInfo.mapper]?.arptId ?: return@forEach
             add(HttpRequest.MetarRequest.MetarMapper(realIcao, icao))
@@ -248,7 +251,8 @@ private fun generateRandomWsForAllRwy(airport: Entity): String {
 
     var landingRwyCount = 0
     val stringBuilder = StringBuilder()
-    (airport[RunwayChildren.mapper]?.rwyMap?.values() ?: return "").mapNotNull { it?.entity }.forEach { rwy ->
+    val rwyEntries = Entries(airport[RunwayChildren.mapper]?.rwyMap ?: return "")
+    rwyEntries.mapNotNull { it.value.entity }.forEach { rwy ->
         if (!rwy.has(ActiveLanding.mapper)) return@forEach
         landingRwyCount++
         if (MathUtils.randomBoolean(prob)) {
@@ -335,9 +339,11 @@ fun updateWindVector(vec: Vector2, windDeg: Short, windSpdKt: Short) {
  */
 fun updateRunwayWindComponents(airport: Entity) {
     val windVectorPxps = airport[MetarInfo.mapper]?.windVectorPx ?: return
-    airport[RunwayChildren.mapper]?.rwyMap?.values()?.forEach {
-        val dir = it.entity[Direction.mapper] ?: return@forEach
-        it.entity[RunwayWindComponents.mapper]?.apply {
+    val rwyEntries = Entries(airport[RunwayChildren.mapper]?.rwyMap ?: return)
+    rwyEntries.forEach { rwyEntry ->
+        val rwy = rwyEntry.value
+        val dir = rwy.entity[Direction.mapper] ?: return@forEach
+        rwy.entity[RunwayWindComponents.mapper]?.apply {
             tailwindKt = pxpsToKt(windVectorPxps.dot(dir.trackUnitVector))
             crosswindKt = pxpsToKt(abs(windVectorPxps.crs(dir.trackUnitVector)))
         }
@@ -368,8 +374,9 @@ fun checkRunwayConfigSelection(airport: Entity) {
     val configs = airport[RunwayConfigurationChildren.mapper]?.rwyConfigs ?: return
     val activeConfig: RunwayConfiguration? = configs[airport[ActiveRunwayConfig.mapper]?.configId]
     val pendingConfig: RunwayConfiguration? = configs[airport[PendingRunwayConfig.mapper]?.pendingId]
-    val idealConfig = airport[RunwayConfigurationChildren.mapper]?.rwyConfigs?.values()?.filterNotNull()?.toTypedArray()?.sortedArray()?.last()
-    if ((activeConfig == null || activeConfig.rwyAvailabilityScore == 0) && idealConfig != null && idealConfig.id != activeConfig?.id) {
+    val rwyConfigEntries = Entries(airport[RunwayConfigurationChildren.mapper]?.rwyConfigs ?: return)
+    val idealConfig = rwyConfigEntries.mapNotNull { it.value }.toTypedArray().sortedArray().last()
+    if ((activeConfig == null || activeConfig.rwyAvailabilityScore == 0) && idealConfig.id != activeConfig?.id) {
         if (activeConfig == null) {
             // If no active current config, set the most ideal choice directly
             GAME.gameServer?.airports?.get(arptId)?.activateRunwayConfig(idealConfig.id)
@@ -380,7 +387,7 @@ fun checkRunwayConfigSelection(airport: Entity) {
             airport += PendingRunwayConfig(idealConfig.id, 300f)
             GAME.gameServer?.sendPendingRunwayUpdateToAll(arptId, idealConfig.id)
         }
-    } else if ((activeConfig != null && activeConfig.rwyAvailabilityScore > 0) && pendingConfig != null) {
+    } else if ((activeConfig.rwyAvailabilityScore > 0) && pendingConfig != null) {
         // Active config is ok for current configuration, but there is a pending runway change - cancel it
         airport.remove<PendingRunwayConfig>()
         GAME.gameServer?.sendPendingRunwayUpdateToAll(arptId, null)

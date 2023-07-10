@@ -4,6 +4,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.CheckBox
 import com.badlogic.gdx.scenes.scene2d.ui.Label
 import com.badlogic.gdx.scenes.scene2d.ui.Slider
 import com.badlogic.gdx.utils.Align
+import com.badlogic.gdx.utils.ArrayMap.Entries
 import com.bombbird.terminalcontrol2.components.AirportInfo
 import com.bombbird.terminalcontrol2.components.ArrivalClosed
 import com.bombbird.terminalcontrol2.components.DepartureInfo
@@ -55,7 +56,9 @@ class TrafficSettings: BaseGameSettings() {
                     row()
                     scrollPane("SettingsPane") {
                         table {
-                            for (airport in GAME.gameServer?.airports?.values() ?: return@table) {
+                            val arptEntries = Entries(GAME.gameServer?.airports ?: return@table)
+                            for (airportEntry in arptEntries) {
+                                val airport = airportEntry.value
                                 val arptInfo = airport.entity[AirportInfo.mapper] ?: continue
                                 defaultSettingsLabel("${arptInfo.icaoCode}:").cell(width = 100f, padRight = 60f)
                                 val arrBox = checkBox("   Arrivals", "TrafficCheckbox").cell(height = BUTTON_HEIGHT_BIG / 1.5f, padRight = 80f, fillY = true)
@@ -97,7 +100,8 @@ class TrafficSettings: BaseGameSettings() {
 
             trafficValueSlider.value = round(trafficValue)
             updateTrafficValueElements()
-            for (airport in airports.values()) {
+            for (airportEntry in Entries(airports)) {
+                val airport = airportEntry.value
                 val arptInfo = airport.entity[AirportInfo.mapper] ?: continue
                 val arrClosed = airport.entity.has(ArrivalClosed.mapper)
                 val depInfo = airport.entity[DepartureInfo.mapper] ?: continue
@@ -124,7 +128,8 @@ class TrafficSettings: BaseGameSettings() {
             }
             if (trafficMode != TrafficMode.NORMAL) trafficValue = trafficValueSlider.value
             else if (prevTrafficMode == TrafficMode.FLOW_RATE) trafficValue = 1f
-            for (airport in airports.values()) {
+            for (airportEntry in Entries(airports)) {
+                val airport = airportEntry.value
                 val arptInfo = airport.entity[AirportInfo.mapper] ?: continue
                 val checkboxes = airportClosedSelections[arptInfo.arptId] ?: continue
                 if (checkboxes.first.isChecked) airport.entity.remove<ArrivalClosed>()

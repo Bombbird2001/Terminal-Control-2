@@ -1,5 +1,6 @@
 package com.bombbird.terminalcontrol2.networking.hostserver
 
+import com.badlogic.gdx.utils.ArrayMap.Entries
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.networking.*
 import com.bombbird.terminalcontrol2.networking.dataclasses.ClientUUIDData
@@ -155,8 +156,8 @@ class LANServer(
     override val connections: Collection<ConnectionMeta>
         get() {
             val conns = HashSet<ConnectionMeta>()
-            for (conn in connectionMetaMap.values()) {
-                conns.add(conn)
+            for (conn in Entries(connectionMetaMap)) {
+                conns.add(conn.value)
             }
             return conns
         }

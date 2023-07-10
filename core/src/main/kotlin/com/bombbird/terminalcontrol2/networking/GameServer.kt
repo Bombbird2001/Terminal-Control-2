@@ -3,6 +3,7 @@ package com.bombbird.terminalcontrol2.networking
 import com.badlogic.ashley.core.Engine
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.math.Polygon
+import com.badlogic.gdx.utils.ArrayMap.Entries
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.*
 import com.bombbird.terminalcontrol2.files.*
@@ -347,7 +348,8 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
                     sectors
                 )
                 sectorSwapRequests.clear()
-                val aircraftArray = aircraft.values().toArray()
+
+                val aircraftArray = Entries(aircraft).map { it.value }.toTypedArray()
                 var itemsRemaining = aircraftArray.size
                 while (itemsRemaining > 0) {
                     val serialisedAircraftArray = Array(min(itemsRemaining, SERVER_AIRCRAFT_TCP_UDP_MAX_COUNT)) {
@@ -358,8 +360,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
                 }
                 networkServer.sendTCPToConnection(
                     uuid,
-                    AirportData(airports.values().toArray().map { it.getSerialisableObject() }
-                        .toTypedArray()))
+                    AirportData(Entries(airports).map { it.value.getSerialisableObject() }.toTypedArray()))
                 val wptArray = waypoints.values.toTypedArray()
                 networkServer.sendTCPToConnection(
                     uuid,
@@ -371,8 +372,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
                 )
                 networkServer.sendTCPToConnection(
                     uuid,
-                    PublishedHoldData(publishedHolds.values().toArray().map { it.getSerialisableObject() }
-                        .toTypedArray()))
+                    PublishedHoldData(Entries(publishedHolds).map { it.value.getSerialisableObject() }.toTypedArray()))
                 networkServer.sendTCPToConnection(
                     uuid,
                     MinAltData(minAltSectors.toArray().map { it.getSerialisableObject() }.toTypedArray())
@@ -402,7 +402,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
                 // Send current METAR
                 networkServer.sendTCPToConnection(
                     uuid,
-                    MetarData(airports.values().map { it.getSerialisedMetar() }.toTypedArray())
+                    MetarData(Entries(airports).map { it.value.getSerialisedMetar() }.toTypedArray())
                 )
 
                 // Send current traffic settings
@@ -415,18 +415,19 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
                 )
 
                 // Send runway configs
-                airports.values().toArray().forEach {
-                    val arptId = it.entity[AirportInfo.mapper]?.arptId ?: return@forEach
+                Entries(airports).forEach {
+                    val arpt = it.value
+                    val arptId = arpt.entity[AirportInfo.mapper]?.arptId ?: return@forEach
                     networkServer.sendTCPToConnection(
                         uuid,
                         ActiveRunwayUpdateData(
                             arptId,
-                            it.entity[ActiveRunwayConfig.mapper]?.configId ?: return@forEach
+                            arpt.entity[ActiveRunwayConfig.mapper]?.configId ?: return@forEach
                         )
                     )
                     networkServer.sendTCPToConnection(
                         uuid,
-                        PendingRunwayUpdateData(arptId, it.entity[PendingRunwayConfig.mapper]?.pendingId)
+                        PendingRunwayUpdateData(arptId, arpt.entity[PendingRunwayConfig.mapper]?.pendingId)
                     )
                 }
 
@@ -611,7 +612,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
     /** Send non-frequent METAR updates */
     fun sendMetarTCPToAll() {
         if (gameRunning)
-            networkServer.sendToAllTCP(MetarData(airports.values().map { it.getSerialisedMetar() }.toTypedArray()))
+            networkServer.sendToAllTCP(MetarData(Entries(airports).map { it.value.getSerialisedMetar() }.toTypedArray()))
     }
 
     /**

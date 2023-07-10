@@ -1,5 +1,6 @@
 package com.bombbird.terminalcontrol2.networking.dataclasses
 
+import com.badlogic.gdx.utils.ArrayMap.Entries
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.*
 import com.bombbird.terminalcontrol2.global.*
@@ -231,7 +232,8 @@ class TrafficSettingsData(private val trafficMode: Byte = TrafficMode.NORMAL, pr
         rs.serverTrafficMode = trafficMode
         rs.serverTrafficValue = trafficValue
         // Remove all airport closed components/flags
-        rs.airports.values().forEach { arpt ->
+        Entries(rs.airports).forEach { arptEntry ->
+            val arpt = arptEntry.value
             arpt.entity.remove<ArrivalClosed>()
             arpt.entity += DepartureInfo(closed = false)
         }
@@ -252,6 +254,7 @@ data class PendingRunwayUpdateData(private val airportId: Byte = 0, private val 
 /** Class representing data sent during a runway change */
 data class ActiveRunwayUpdateData(private val airportId: Byte = 0, private val configId: Byte = 0): ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
+        println(this)
         rs.airports[airportId]?.activateRunwayConfig(configId, true)
         rs.uiPane.mainInfoObj.updateAtisInformation()
         GAME.soundManager.playRunwayChange()

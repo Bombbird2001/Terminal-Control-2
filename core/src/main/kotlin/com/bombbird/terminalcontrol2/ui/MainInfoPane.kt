@@ -7,6 +7,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.ImageButton.ImageButtonStyle
 import com.badlogic.gdx.scenes.scene2d.ui.Label
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton.TextButtonStyle
 import com.badlogic.gdx.utils.Align
+import com.badlogic.gdx.utils.ArrayMap.Entries
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.Airport
 import com.bombbird.terminalcontrol2.global.AIRPORT_SIZE
@@ -163,7 +164,8 @@ class MainInfoPane {
         metarPane.clear()
         CLIENT_SCREEN?.let {
             var padTop = false
-            for (airport in it.airports.values()) {
+            for (airportEntry in Entries(it.airports)) {
+                val airport = airportEntry.value
                 val arptId = airport.entity[AirportInfo.mapper]?.arptId ?: continue
                 val linkedButton = metarPane.textButton("", "Metar").apply {
                     label.setAlignment(Align.left)
@@ -213,7 +215,8 @@ class MainInfoPane {
     /** Updates the ATIS pane display label (for new METAR/runway information change) for all airports */
     fun updateAtisInformation() {
         CLIENT_SCREEN?.let {
-            for (airport in it.airports.values()) {
+            for (airportEntry in Entries(it.airports)) {
+                val airport = airportEntry.value
                 val airportInfo = airport.entity[AirportInfo.mapper] ?: continue
                 val metarInfo = airport.entity[MetarInfo.mapper] ?: continue
                 val rwyDisplay = getRunwayInformationDisplay(airport.entity)
@@ -248,14 +251,16 @@ class MainInfoPane {
         var depAdded = false
         var arr = "ARR - "
         var arrAdded = false
-        airport[RunwayChildren.mapper]?.rwyMap?.values()?.forEach {
-            if (it.entity.has(ActiveTakeoff.mapper)) {
+        val rwyMap = airport[RunwayChildren.mapper]?.rwyMap ?: return "$dep      $arr"
+        Entries(rwyMap).forEach {
+            val rwy = it.value
+            if (rwy.entity.has(ActiveTakeoff.mapper)) {
                 if (depAdded) dep += ", " else depAdded = true
-                dep += it.entity[RunwayInfo.mapper]?.rwyName
+                dep += rwy.entity[RunwayInfo.mapper]?.rwyName
             }
-            if (it.entity.has(ActiveLanding.mapper)) {
+            if (rwy.entity.has(ActiveLanding.mapper)) {
                 if (arrAdded) arr += ", " else arrAdded = true
-                arr += it.entity[RunwayInfo.mapper]?.rwyName
+                arr += rwy.entity[RunwayInfo.mapper]?.rwyName
             }
         }
         return "$dep      $arr"
@@ -263,12 +268,13 @@ class MainInfoPane {
 
     /** Initializes the runway configuration panes for all the airports */
     fun initializeAirportRwyConfigPanes() {
-        for (airport in CLIENT_SCREEN?.airports?.values() ?: return) {
+        val airports = CLIENT_SCREEN?.airports ?: return
+        for (airportEntry in Entries(airports)) {
+            val airport = airportEntry.value
             val arptId = airport.entity[AirportInfo.mapper]?.arptId ?: return
             paneContainer.actor = null
             val newTable = paneContainer.table {
                 // debugAll()
-                val configs = airport.entity[RunwayConfigurationChildren.mapper]?.rwyConfigs ?: return
                 table {
                     label("Select runway configuration", "MenuPaneRunwayConfigLabel")
                     cell(colspan = 2, padBottom = 15f)
@@ -278,7 +284,9 @@ class MainInfoPane {
                     table configTable@ {
                         // debugAll()
                         val buttonArray = GdxArray<KTextButton>()
-                        for (config in configs.values()) {
+                        val configs = airport.entity[RunwayConfigurationChildren.mapper]?.rwyConfigs ?: return
+                        for (configEntry in Entries(configs)) {
+                            val config = configEntry.value
                             val arrRwys = config.arrRwys
                             val depRwys = config.depRwys
                             val sb = StringBuilder()

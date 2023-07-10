@@ -1,6 +1,7 @@
 package com.bombbird.terminalcontrol2.entities
 
 import com.badlogic.gdx.math.Vector2
+import com.badlogic.gdx.utils.ArrayMap.Entries
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.Airport.Runway.SerialisedRunway
 import com.bombbird.terminalcontrol2.global.*
@@ -361,7 +362,8 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advD
 
     /** Maps all the runways to their opposite counterparts, and adds it as a relational component */
     fun assignOppositeRunways() {
-        entity[RunwayChildren.mapper]?.rwyMap?.values()?.forEach { it.entity.apply {
+        val runwayEntries = Entries(entity[RunwayChildren.mapper]?.rwyMap ?: return)
+        runwayEntries.forEach { it.value.entity.apply {
             val rwyName = get(RunwayInfo.mapper)?.rwyName ?: return@forEach
             val oppRwyName = if (charArrayOf('L', 'C', 'R').contains(rwyName.last())) {
                 var letter = rwyName.last()
@@ -392,51 +394,55 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advD
         val currId = entity[ActiveRunwayConfig.mapper]?.configId
         if (currId == newConfigId) return
         entity += ActiveRunwayConfig(newConfigId)
-        entity[RunwayConfigurationChildren.mapper]?.rwyConfigs?.values()?.forEach {
-            if (it.id != newConfigId) it.setNTZVisibility(false)
-            else {
-                val rwyMap = entity[RunwayChildren.mapper]?.rwyMap ?: return@forEach
-                rwyMap.values().forEach { rwyObj ->
-                    // Clear all current runways
-                    rwyObj.entity.let { rwy ->
-                        rwy.remove<ActiveLanding>()
-                        rwy.remove<ActiveTakeoff>()
-                        rwy[ApproachNOZ.mapper]?.appNoz?.entity?.plusAssign(DoNotRenderShape())
-                        rwy[DepartureNOZ.mapper]?.depNoz?.entity?.plusAssign(DoNotRenderShape())
-                        rwy[SRColor.mapper]?.color = RUNWAY_INACTIVE
-                        rwy += DoNotRenderLabel()
-                        rwy.remove<DoNotRenderShape>()
+        entity[RunwayConfigurationChildren.mapper]?.rwyConfigs?.let { configMap ->
+            Entries(configMap).forEach {
+                val config = it.value
+                if (config.id != newConfigId) config.setNTZVisibility(false)
+                else {
+                    val rwyMap = entity[RunwayChildren.mapper]?.rwyMap ?: return@forEach
+                    Entries(rwyMap).forEach { rwyEntry ->
+                        val rwyObj = rwyEntry.value
+                        // Clear all current runways
+                        rwyObj.entity.let { rwy ->
+                            rwy.remove<ActiveLanding>()
+                            rwy.remove<ActiveTakeoff>()
+                            rwy[ApproachNOZ.mapper]?.appNoz?.entity?.plusAssign(DoNotRenderShape())
+                            rwy[DepartureNOZ.mapper]?.depNoz?.entity?.plusAssign(DoNotRenderShape())
+                            rwy[SRColor.mapper]?.color = RUNWAY_INACTIVE
+                            rwy += DoNotRenderLabel()
+                            rwy.remove<DoNotRenderShape>()
+                        }
                     }
-                }
-                val arrRwyNames = Array(it.arrRwys.size) {""}
-                for (i in 0 until it.arrRwys.size) {
-                    rwyMap[it.arrRwys[i]?.entity?.get(RunwayInfo.mapper)?.rwyId]?.entity?.let { rwy ->
-                        rwy += ActiveLanding()
-                        rwy[ApproachNOZ.mapper]?.appNoz?.entity?.remove<DoNotRenderShape>()
-                        rwy[SRColor.mapper]?.color = RUNWAY_ACTIVE
-                        rwy.remove<DoNotRenderLabel>()
-                        rwy[OppositeRunway.mapper]?.oppRwy?.add(DoNotRenderShape())
-                        arrRwyNames[i] = rwy[RunwayInfo.mapper]?.rwyName ?: ""
+                    val arrRwyNames = Array(config.arrRwys.size) {""}
+                    for (i in 0 until config.arrRwys.size) {
+                        rwyMap[config.arrRwys[i]?.entity?.get(RunwayInfo.mapper)?.rwyId]?.entity?.let { rwy ->
+                            rwy += ActiveLanding()
+                            rwy[ApproachNOZ.mapper]?.appNoz?.entity?.remove<DoNotRenderShape>()
+                            rwy[SRColor.mapper]?.color = RUNWAY_ACTIVE
+                            rwy.remove<DoNotRenderLabel>()
+                            rwy[OppositeRunway.mapper]?.oppRwy?.add(DoNotRenderShape())
+                            arrRwyNames[i] = rwy[RunwayInfo.mapper]?.rwyName ?: ""
+                        }
                     }
-                }
-                val depRwyNames = Array(it.depRwys.size) {""}
-                for (i in 0 until it.depRwys.size) {
-                    rwyMap[it.depRwys[i]?.entity?.get(RunwayInfo.mapper)?.rwyId]?.entity?.let {  rwy ->
-                        rwy += ActiveTakeoff()
-                        rwy[DepartureNOZ.mapper]?.depNoz?.entity?.remove<DoNotRenderShape>()
-                        rwy[SRColor.mapper]?.color = RUNWAY_ACTIVE
-                        rwy.remove<DoNotRenderLabel>()
-                        rwy[OppositeRunway.mapper]?.oppRwy?.add(DoNotRenderShape())
-                        depRwyNames[i] = rwy[RunwayInfo.mapper]?.rwyName ?: ""
+                    val depRwyNames = Array(config.depRwys.size) {""}
+                    for (i in 0 until config.depRwys.size) {
+                        rwyMap[config.depRwys[i]?.entity?.get(RunwayInfo.mapper)?.rwyId]?.entity?.let {  rwy ->
+                            rwy += ActiveTakeoff()
+                            rwy[DepartureNOZ.mapper]?.depNoz?.entity?.remove<DoNotRenderShape>()
+                            rwy[SRColor.mapper]?.color = RUNWAY_ACTIVE
+                            rwy.remove<DoNotRenderLabel>()
+                            rwy[OppositeRunway.mapper]?.oppRwy?.add(DoNotRenderShape())
+                            depRwyNames[i] = rwy[RunwayInfo.mapper]?.rwyName ?: ""
+                        }
                     }
-                }
-                it.setNTZVisibility(true)
-                val airportName = entity[AirportInfo.mapper]?.icaoCode ?: ""
-                if (informPlayer)
-                    GAME.gameClientScreen?.uiPane?.commsPane?.addMessage("""
+                    config.setNTZVisibility(true)
+                    val airportName = entity[AirportInfo.mapper]?.icaoCode ?: ""
+                    if (informPlayer)
+                        GAME.gameClientScreen?.uiPane?.commsPane?.addMessage("""
                         $airportName runway${if (arrRwyNames.size > 1) "s" else ""} ${arrRwyNames.joinToString(", ")} ${if (arrRwyNames.size > 1) "are" else "is"} now active for landings.
                         $airportName runway${if (depRwyNames.size > 1) "s" else ""} ${arrRwyNames.joinToString(", ")} ${if (depRwyNames.size > 1) "are" else "is"} now active for takeoffs.
                     """.trimIndent(), CommsPane.ALERT)
+                }
             }
         }
         CLIENT_SCREEN?.uiPane?.mainInfoObj?.setAirportRunwayConfigPaneState(entity)
