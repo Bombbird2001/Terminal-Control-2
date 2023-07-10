@@ -254,7 +254,6 @@ data class PendingRunwayUpdateData(private val airportId: Byte = 0, private val 
 /** Class representing data sent during a runway change */
 data class ActiveRunwayUpdateData(private val airportId: Byte = 0, private val configId: Byte = 0): ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
-        println(this)
         rs.airports[airportId]?.activateRunwayConfig(configId, true)
         rs.uiPane.mainInfoObj.updateAtisInformation()
         GAME.soundManager.playRunwayChange()

@@ -87,7 +87,7 @@ class PublicServer(
     }
 
     override fun sendTCPToConnection(uuid: UUID, data: Any) {
-        val dataToSend = encryptIfNeeded(ServerToClient(roomId, uuid.toString(), getSerialisedBytes(data), true), encryptor)
+        val dataToSend = encryptIfNeeded(ServerToClient(roomId, uuid.toString(), getSerialisedBytes(data), true), encryptor) ?: return
         relayServerConnector.sendTCP(dataToSend)
     }
 

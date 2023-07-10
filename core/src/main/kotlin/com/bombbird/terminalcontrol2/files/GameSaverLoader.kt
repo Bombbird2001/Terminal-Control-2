@@ -69,8 +69,8 @@ fun saveGame(gs: GameServer) {
     val saveObject = GameServerSave(gs.mainName, gs.arrivalSpawnTimerS, gs.previousArrivalOffsetS, gs.trafficValue,
         gs.trafficMode, gs.score, gs.highScore, gs.landed, gs.departed, gs.weatherMode, gs.emergencyRate, gs.stormsDensity,
         gs.gameSpeed, gs.nightModeStart, gs.nightModeEnd, gs.useRecat, gs.trailDotTimer,
-        Entries(gs.aircraft).toList().map { it.value },
-        Entries(gs.airports).toList().map { it.value },
+        Entries(gs.aircraft).map { it.value },
+        Entries(gs.airports).map { it.value },
         gs.waypoints.values.toList())
     val saveFolderHandle = getExtDir("Saves") ?: return
     if (!saveFolderHandle.exists()) saveFolderHandle.mkdirs()

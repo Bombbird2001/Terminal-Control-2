@@ -129,7 +129,7 @@ class LANServer(
     override fun sendToAllTCP(data: Any) {
         for (i in 0 until connectionEncDecMap.size) {
             val conn = connectionEncDecMap.getKeyAt(i) ?: continue
-            val encrypted = encryptIfNeeded(data, getEncryptorForConnection(conn) ?: continue)
+            val encrypted = encryptIfNeeded(data, getEncryptorForConnection(conn) ?: continue) ?: continue
             conn.sendTCP(encrypted)
         }
     }
@@ -141,7 +141,7 @@ class LANServer(
 
     override fun sendTCPToConnection(uuid: UUID, data: Any) {
         val conn = uuidConnectionMap[uuid] ?: return
-        val encrypted = encryptIfNeeded(data, getEncryptorForConnection(conn) ?: return)
+        val encrypted = encryptIfNeeded(data, getEncryptorForConnection(conn) ?: return) ?: return
         conn.sendTCP(encrypted)
     }
 
