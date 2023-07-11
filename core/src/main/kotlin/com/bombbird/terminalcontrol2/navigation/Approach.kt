@@ -6,16 +6,15 @@ import com.bombbird.terminalcontrol2.entities.RouteZone
 import com.bombbird.terminalcontrol2.global.MAG_HDG_DEV
 import com.bombbird.terminalcontrol2.global.TRANSITION_SIZE
 import com.bombbird.terminalcontrol2.global.getEngine
-import com.bombbird.terminalcontrol2.utilities.Pronounceable
-import com.bombbird.terminalcontrol2.utilities.UsabilityFilter
-import com.bombbird.terminalcontrol2.utilities.convertWorldAndRenderDeg
-import ktx.ashley.entity
-import ktx.ashley.get
-import ktx.ashley.plusAssign
-import ktx.ashley.with
+import com.bombbird.terminalcontrol2.utilities.*
+import ktx.ashley.*
 import ktx.collections.GdxArray
 import ktx.collections.GdxArrayMap
+import ktx.math.plus
+import ktx.math.times
+import kotlin.math.floor
 import kotlin.math.roundToInt
+import kotlin.math.tan
 
 /**
  * Approach class that stores all relevant data regarding the approach and utility functions
@@ -190,5 +189,24 @@ class Approach(name: String, arptId: Byte, runwayId: Byte, posX: Float, posY: Fl
      */
     fun addCircling(minBreakoutAlt: Int, maxBreakoutAlt: Int, breakoutDir: Byte) {
         entity += Circling(minBreakoutAlt, maxBreakoutAlt, breakoutDir)
+    }
+
+    /** Calculates and assigns the glide slope circle positions for the approach */
+    fun assignGlideSlopeCircles() {
+        val glideSlope = entity[GlideSlope.mapper] ?: return
+        val dir = entity[Direction.mapper] ?: return
+        val pos = entity[Position.mapper] ?: return
+        val rwyAlt = entity[ApproachInfo.mapper]?.rwyObj?.entity?.get(Altitude.mapper)?.altitudeFt ?: 0f
+        val posVector = Vector2(pos.x, pos.y)
+        val positions = GdxArray<Position>()
+        // Minimum glideslope altitude is at least 1000ft, at most 2000ft above runway elevation, and a multiple of 1000ft
+        val minGsAlt = floor(rwyAlt / 1000).roundToInt() * 1000 + 2000
+        for (alt in minGsAlt..glideSlope.maxInterceptAlt step 1000) {
+            val altDiff = alt - rwyAlt
+            val distFromGsFt = altDiff / tan(Math.toRadians(glideSlope.glideAngle.toDouble())).toFloat()
+            val circlePos = dir.trackUnitVector * (ftToPx(distFromGsFt) + nmToPx(-glideSlope.offsetNm)) + posVector
+            positions.add(Position(circlePos.x, circlePos.y))
+        }
+        entity += GlideSlopeCircle(Array(positions.size) { positions[it] })
     }
 }

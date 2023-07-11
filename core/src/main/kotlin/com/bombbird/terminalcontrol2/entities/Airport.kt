@@ -88,7 +88,9 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advD
                     get(ApproachChildren.mapper)?.apply {
                         approachMap.clear()
                         for (sApp in serialisedAirport.approaches) {
-                            approachMap.put(sApp.name, Approach.fromSerialisedObject(sApp))
+                            approachMap.put(sApp.name, Approach.fromSerialisedObject(sApp).apply {
+                                assignGlideSlopeCircles()
+                            })
                         }
                     }
                     get(RunwayConfigurationChildren.mapper)?.apply {

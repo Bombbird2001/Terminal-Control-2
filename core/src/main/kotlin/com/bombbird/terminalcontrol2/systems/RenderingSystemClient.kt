@@ -47,6 +47,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
             .exclude(SRConstantZoomSize::class, DoNotRenderShape::class).get()
         private val runwayFamily: Family = allOf(RunwayInfo::class, SRColor::class).exclude(DoNotRenderShape::class).get()
         private val locFamily: Family = allOf(Position::class, Localizer::class, Direction::class, ApproachInfo::class).get()
+        private val gsCircleFamily: Family = allOf(GlideSlopeCircle::class, ApproachInfo::class).get()
         private val trajectoryFamily: Family = allOf(RadarData::class, Controllable::class, SRColor::class)
             .exclude(WaitingTakeoff::class).get()
         private val visualFamily: Family = allOf(VisualCaptured::class, RadarData::class).get()
@@ -338,6 +339,20 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
                 val srColor = get(SRColor.mapper) ?: return@apply
                 shapeRenderer.color = srColor.color
                 shapeRenderer.circle((pos.x - camX) / camZoom, (pos.y - camY) / camZoom, circle.radius)
+            }
+        }
+
+        // Render glide slope circles with constant zoom size
+        val gsCircles = engine.getEntitiesFor(gsCircleFamily)
+        for (i in 0 until gsCircles.size()) {
+            gsCircles[i]?.apply {
+                val gsCirclePos = get(GlideSlopeCircle.mapper) ?: return@apply
+                val appInfo = get(ApproachInfo.mapper) ?: return@apply
+                if (appInfo.rwyObj.entity.hasNot(ActiveLanding.mapper)) return@apply
+                shapeRenderer.color = Color.CYAN
+                for (pos in gsCirclePos.positions) {
+                    shapeRenderer.circle((pos.x - camX) / camZoom, (pos.y - camY) / camZoom, 4f)
+                }
             }
         }
         shapeRenderer.end()

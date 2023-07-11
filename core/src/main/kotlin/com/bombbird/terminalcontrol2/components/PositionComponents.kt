@@ -137,3 +137,8 @@ class OnGround: Component, BaseComponentJSONInterface {
 
     companion object: Mapper<OnGround>()
 }
+
+/** Component for tagging the positions of glide slope circles */
+class GlideSlopeCircle(var positions: Array<Position>): Component {
+    companion object: Mapper<GlideSlopeCircle>()
+}
