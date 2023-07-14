@@ -98,7 +98,13 @@ fun getEngine(onClient: Boolean): Engine {
 /** Constant addresses */
 const val LOCALHOST = "127.0.0.1"
 
+/** Server, client TCP/UDP ports available (up to 10, if all taken something is terribly wrong with the device) */
+var LAN_TCP_PORTS = arrayOf(57773, 57783, 57793, 57803, 57813, 57823, 57833, 57843, 57853, 57863)
+var LAN_UDP_PORTS = arrayOf(57779, 57789, 57799, 57809, 57819, 57829, 57839, 57849, 57859, 57869)
+
 /** Relay server HTTPS endpoint port */
+const val RELAY_TCP_PORT = 57773
+const val RELAY_UDP_PORT = 57779
 const val RELAY_ENDPOINT_PORT = 57775
 const val RELAY_GAMES_PATH = "/games"
 const val RELAY_GAME_AUTH_PATH = "/gameAuth"

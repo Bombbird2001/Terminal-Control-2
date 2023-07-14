@@ -62,7 +62,7 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advD
                 0, serialisedAirport.x, serialisedAirport.y, serialisedAirport.altitude, "XXXX"
             ).also { arpt ->
                 arpt.entity.apply {
-                    get(RunwayChildren.mapper)?.apply {
+                    val rwys = get(RunwayChildren.mapper)?.apply {
                         rwyMap.clear()
                         for (sRwy in serialisedAirport.rwys) {
                             rwyMap.put(sRwy.rwyId, Runway.fromSerialisedObject(arpt, sRwy))
@@ -89,7 +89,7 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advD
                         approachMap.clear()
                         for (sApp in serialisedAirport.approaches) {
                             approachMap.put(sApp.name, Approach.fromSerialisedObject(sApp).apply {
-                                assignGlideSlopeCircles()
+                                assignGlideSlopeCircles(rwys?.rwyMap?.get(sApp.rwyId))
                             })
                         }
                     }

@@ -120,6 +120,9 @@ class LANServer(
                 }
             }
         })
+
+        CLIENT_TCP_PORT_IN_USE = tcpPort
+        CLIENT_UDP_PORT_IN_USE = udpPort
     }
 
     override fun stop() {

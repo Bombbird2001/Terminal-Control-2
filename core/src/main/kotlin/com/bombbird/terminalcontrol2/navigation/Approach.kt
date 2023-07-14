@@ -2,6 +2,7 @@ package com.bombbird.terminalcontrol2.navigation
 
 import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
+import com.bombbird.terminalcontrol2.entities.Airport
 import com.bombbird.terminalcontrol2.entities.RouteZone
 import com.bombbird.terminalcontrol2.global.MAG_HDG_DEV
 import com.bombbird.terminalcontrol2.global.TRANSITION_SIZE
@@ -192,11 +193,11 @@ class Approach(name: String, arptId: Byte, runwayId: Byte, posX: Float, posY: Fl
     }
 
     /** Calculates and assigns the glide slope circle positions for the approach */
-    fun assignGlideSlopeCircles() {
+    fun assignGlideSlopeCircles(rwyObj: Airport.Runway?) {
         val glideSlope = entity[GlideSlope.mapper] ?: return
         val dir = entity[Direction.mapper] ?: return
         val pos = entity[Position.mapper] ?: return
-        val rwyAlt = entity[ApproachInfo.mapper]?.rwyObj?.entity?.get(Altitude.mapper)?.altitudeFt ?: 0f
+        val rwyAlt = rwyObj?.entity?.get(Altitude.mapper)?.altitudeFt ?: 0f
         val posVector = Vector2(pos.x, pos.y)
         val positions = GdxArray<Position>()
         // Minimum glideslope altitude is at least 1000ft, at most 2000ft above runway elevation, and a multiple of 1000ft

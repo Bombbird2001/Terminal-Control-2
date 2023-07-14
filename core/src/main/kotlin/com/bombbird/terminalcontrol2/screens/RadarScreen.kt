@@ -566,7 +566,7 @@ class RadarScreen private constructor(private val connectionHost: String, privat
                 Thread.sleep(1000)
                 networkClient.beforeConnect(roomId)
                 networkClient.start()
-                networkClient.connect(5000, connectionHost, TCP_PORT, UDP_PORT)
+                networkClient.connect(5000, connectionHost, CLIENT_TCP_PORT_IN_USE, CLIENT_UDP_PORT_IN_USE)
                 break
             } catch (_: IOException) {
                 // Workaround for strange behaviour on some devices where the 5000ms timeout is ignored,

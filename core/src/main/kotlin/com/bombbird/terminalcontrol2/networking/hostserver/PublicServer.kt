@@ -69,7 +69,9 @@ class PublicServer(
 
     override fun start(tcpPort: Int, udpPort: Int) {
         relayServerConnector.start()
-        relayServerConnector.connect(5000, Secrets.RELAY_ADDRESS, TCP_PORT, UDP_PORT)
+        relayServerConnector.connect(5000, Secrets.RELAY_ADDRESS, RELAY_TCP_PORT, RELAY_UDP_PORT)
+        CLIENT_TCP_PORT_IN_USE = RELAY_TCP_PORT
+        CLIENT_UDP_PORT_IN_USE = RELAY_UDP_PORT
     }
 
     override fun stop() {
