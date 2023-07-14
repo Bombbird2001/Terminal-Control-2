@@ -112,7 +112,10 @@ class JoinGame: BasicUIScreen() {
         }
         lanGamesData.clear()
         GAME.lanClientDiscoveryHandler.onDiscoveredHostDataMap = lanGamesData
-        GAME.lanClient.discoverHosts(LAN_UDP_PORTS[0]) // Blocks this thread
+        for (udpPort in LAN_UDP_PORTS) {
+            // Blocks this thread
+            GAME.lanClient.discoverHosts(udpPort)
+        }
         Gdx.app.postRunnable { showFoundGames() }
     }
 

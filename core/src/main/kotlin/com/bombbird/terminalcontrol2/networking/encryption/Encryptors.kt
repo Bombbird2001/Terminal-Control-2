@@ -48,7 +48,7 @@ interface Decrypter {
  * Class to encrypt data using AES-GCM mode
  * @param serializeObj the function passed from server/client to serialize an object into byte array before encryption
  */
-class AESGCMEncryptor(private val serializeObj: (Any) -> ByteArray): Encryptor {
+class AESGCMEncryptor(private val serializeObj: (Any) -> ByteArray?): Encryptor {
     companion object {
         const val ENCRYPTION_MODE = "AES/GCM/NoPadding"
         const val AES_KEY_LENGTH_BYTES = 16
@@ -69,7 +69,7 @@ class AESGCMEncryptor(private val serializeObj: (Any) -> ByteArray): Encryptor {
         try {
             val gcmPara = GCMParameterSpec(8 * iv.size, iv)
             cipher.init(Cipher.ENCRYPT_MODE, secretKey, gcmPara)
-            return EncryptedData(iv, cipher.doFinal(serializeObj(dataToEncrypt)))
+            return EncryptedData(iv, cipher.doFinal(serializeObj(dataToEncrypt) ?: return null))
         } catch (e: Exception) {
             Log.info("AESGCMEncryptor", "Failed to encrypt due to ${e.javaClass.name}")
         }
