@@ -22,7 +22,6 @@ import ktx.ashley.get
 import ktx.ashley.remove
 import ktx.collections.GdxArray
 import ktx.collections.GdxArrayMap
-import java.net.BindException
 import java.util.UUID
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicBoolean
@@ -487,21 +486,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
         // Log.set(Log.LEVEL_DEBUG)
         networkServer = if (publicServer) PublicServer(this, onReceive, onConnect, onDisconnect, mainName)
         else LANServer(this, onReceive, onConnect, onDisconnect)
-        networkServer.beforeConnect()
-        for (entry in LAN_TCP_PORTS.withIndex()) {
-            try {
-                networkServer.start(entry.value, LAN_UDP_PORTS[entry.index])
-                break
-            } catch (e: BindException) {
-                // If reached last available combination, all combinations taken, exit with error
-                if (entry.index == LAN_TCP_PORTS.size - 1) {
-                    GAME.quitCurrentGameWithDialog(
-                        CustomDialog("Error starting game",
-                        "If you see this error, consider restarting your device and try again.", "", "Ok")
-                    )
-                }
-            }
-        }
+        if (networkServer.beforeStart()) networkServer.start()
     }
 
     /** Closes server and stops its thread */

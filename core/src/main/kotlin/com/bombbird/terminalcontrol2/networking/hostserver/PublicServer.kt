@@ -16,6 +16,7 @@ import com.esotericsoftware.minlog.Log
 import ktx.collections.GdxArrayMap
 import org.apache.commons.codec.binary.Base64
 import java.lang.NullPointerException
+import java.net.UnknownHostException
 import java.util.*
 import javax.crypto.spec.SecretKeySpec
 
@@ -68,11 +69,11 @@ class PublicServer(
     /** Maps [UUID] to [ConnectionMeta] */
     private val uuidConnectionMap = GdxArrayMap<UUID, ConnectionMeta>(PLAYER_SIZE)
 
-    override fun start(tcpPort: Int, udpPort: Int) {
+    override fun start() {
         relayServerConnector.start()
-        relayServerConnector.connect(5000, Secrets.RELAY_ADDRESS, RELAY_TCP_PORT, RELAY_UDP_PORT)
         CLIENT_TCP_PORT_IN_USE = RELAY_TCP_PORT
         CLIENT_UDP_PORT_IN_USE = RELAY_UDP_PORT
+        relayServerConnector.connect(5000, Secrets.RELAY_ADDRESS, RELAY_TCP_PORT, RELAY_UDP_PORT)
     }
 
     override fun stop() {
@@ -94,13 +95,22 @@ class PublicServer(
         relayServerConnector.sendTCP(dataToSend)
     }
 
-    override fun beforeConnect() {
+    override fun beforeStart(): Boolean {
         registerClassesToKryo(relayServerConnector.kryo)
 
-        val roomCreation = HttpRequest.sendCreateGameRequest()
+        val roomCreation: HttpRequest.RoomCreationStatus?
+        try {
+            roomCreation = HttpRequest.sendCreateGameRequest()
+        } catch (e: UnknownHostException) {
+            // Could not resolve host from DNS, most likely network error
+            GAME.quitCurrentGameWithDialog(CustomDialog("Failed to connect",
+                "Please check your network connection and try again.", "", "Ok"))
+            return false
+        }
         if (roomCreation?.success != true) {
-            GAME.quitCurrentGameWithDialog(CustomDialog("Failed to connect", "Room creation failed", "", "Ok"))
-            return
+            GAME.quitCurrentGameWithDialog(CustomDialog("Failed to connect",
+                "Room creation failed", "", "Ok"))
+            return false
         }
         setRoomId(roomCreation.roomId)
         val key = SecretKeySpec(Base64.decodeBase64(roomCreation.authResponse.key), 0, AESGCMEncryptor.AES_KEY_LENGTH_BYTES, "AES")
@@ -108,15 +118,22 @@ class PublicServer(
         decrypter.setKey(key)
 
         val iv = Base64.decodeBase64(roomCreation.authResponse.iv)
-        val ciphertext = encryptor.encryptWithIV(iv, RelayNonce(roomCreation.authResponse.nonce))?.ciphertext ?: return
+        val ciphertext = encryptor.encryptWithIV(iv, RelayNonce(roomCreation.authResponse.nonce))?.ciphertext
+        if (ciphertext == null) {
+            GAME.quitCurrentGameWithDialog(CustomDialog("Failed to connect",
+                "Authorization challenge failed", "", "Ok"))
+            return false
+        }
         relayChallenge = RelayChallenge(ciphertext)
+
+        return true
     }
 
     private fun setRoomId(roomId: Short) {
         if (roomId == Short.MAX_VALUE) {
             // Failed to create room, stop server
-            GAME.quitCurrentGameWithDialog(CustomDialog("Failed to connect", "Room creation failed", "", "Ok"))
-            return
+            return GAME.quitCurrentGameWithDialog(CustomDialog("Failed to connect",
+                "Room creation failed", "", "Ok"))
         }
 
         if (this.roomId == Short.MAX_VALUE)

@@ -7,6 +7,7 @@ import com.bombbird.terminalcontrol2.networking.dataclasses.ClientUUIDData
 import com.bombbird.terminalcontrol2.networking.dataclasses.ConnectionError
 import com.bombbird.terminalcontrol2.networking.dataclasses.RequestClientUUID
 import com.bombbird.terminalcontrol2.networking.encryption.*
+import com.bombbird.terminalcontrol2.ui.CustomDialog
 import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
@@ -16,6 +17,7 @@ import com.esotericsoftware.kryonet.Server
 import com.esotericsoftware.minlog.Log
 import ktx.collections.GdxArrayMap
 import ktx.collections.set
+import java.net.BindException
 import java.util.*
 import kotlin.collections.HashSet
 
@@ -47,9 +49,27 @@ class LANServer(
     /** Maps [UUID] to [Connection] */
     private val uuidConnectionMap = GdxArrayMap<UUID, Connection>(PLAYER_SIZE)
 
-    override fun start(tcpPort: Int, udpPort: Int) {
+    override fun start() {
         server.setDiscoveryHandler(LANServerDiscoveryHandler(gameServer))
-        server.bind(tcpPort, udpPort)
+        // Try all 10 available port combinations
+        for (entry in LAN_TCP_PORTS.withIndex()) {
+            try {
+                val tcpPort = entry.value
+                val udpPort = LAN_UDP_PORTS[entry.index]
+                CLIENT_TCP_PORT_IN_USE = tcpPort
+                CLIENT_UDP_PORT_IN_USE = udpPort
+                server.bind(tcpPort, udpPort)
+                break
+            } catch (e: BindException) {
+                // If reached last available combination, all combinations taken, exit with error
+                if (entry.index == LAN_TCP_PORTS.size - 1) {
+                    return GAME.quitCurrentGameWithDialog(
+                        CustomDialog("Error starting game",
+                            "If you see this error, consider restarting your device and try again.", "", "Ok")
+                    )
+                }
+            }
+        }
         server.start()
         server.addListener(object : Listener {
             /**
@@ -120,9 +140,6 @@ class LANServer(
                 }
             }
         })
-
-        CLIENT_TCP_PORT_IN_USE = tcpPort
-        CLIENT_UDP_PORT_IN_USE = udpPort
     }
 
     override fun stop() {
@@ -148,8 +165,9 @@ class LANServer(
         conn.sendTCP(encrypted)
     }
 
-    override fun beforeConnect() {
+    override fun beforeStart(): Boolean {
         registerClassesToKryo(server.kryo)
+        return true
     }
 
     override fun getRoomId(): Short? {

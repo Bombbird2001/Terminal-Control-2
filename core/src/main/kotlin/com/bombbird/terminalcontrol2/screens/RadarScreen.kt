@@ -592,7 +592,7 @@ class RadarScreen private constructor(private val connectionHost: String, privat
 
     /** Resumes the game, and sends a resume game signal to the server */
     fun resumeGame(reconnect: Boolean = true) {
-        networkClient.sendTCP(GameRunningStatus(true))
+        if (networkClient.isConnected) networkClient.sendTCP(GameRunningStatus(true))
         GAME.soundManager.resume()
         if (!networkClient.isConnected && reconnect) networkClient.reconnect()
     }

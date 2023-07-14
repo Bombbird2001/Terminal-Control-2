@@ -23,7 +23,7 @@ internal fun testInitialiseGameAndServer() {
         newGameServer.networkServer = object : NetworkServer(newGameServer, { _, _ -> }, { _ -> }, { _ -> }) {
             override val kryo = Kryo()
 
-            override fun start(tcpPort: Int, udpPort: Int) {}
+            override fun start() {}
 
             override fun stop() {}
 
@@ -33,7 +33,7 @@ internal fun testInitialiseGameAndServer() {
 
             override fun sendTCPToConnection(uuid: UUID, data: Any) {}
 
-            override fun beforeConnect() {}
+            override fun beforeStart(): Boolean { return true }
 
             override fun getRoomId(): Short? {
                 return null

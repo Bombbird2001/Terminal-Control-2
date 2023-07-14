@@ -163,8 +163,8 @@ object RelayServerTest: FunSpec() {
     private fun connectAsHost(): PublicServer {
         myUuid = UUID.randomUUID()
         val host = PublicServer(GameServer.testGameServer(), {_, _ -> }, {}, {}, "TEST")
-        host.beforeConnect()
-        host.start(RELAY_TCP_PORT, RELAY_UDP_PORT)
+        host.beforeStart()
+        host.start()
         host.isConnected.shouldBeTrue()
 
         Thread.sleep(1000)

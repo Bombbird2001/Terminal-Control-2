@@ -20,12 +20,8 @@ abstract class NetworkServer(
 ) {
     abstract val kryo: Kryo
 
-    /**
-     * Starts the server
-     * @param tcpPort port to accept TCP connections
-     * @param udpPort port to accept UDP connections
-     */
-    abstract fun start(tcpPort: Int, udpPort: Int)
+    /** Starts the server */
+    abstract fun start()
 
     /** Stops the server, ending all connections from clients if any */
     abstract fun stop()
@@ -49,8 +45,11 @@ abstract class NetworkServer(
      */
     abstract fun sendTCPToConnection(uuid: UUID, data: Any)
 
-    /** Performs necessary actions for this server before connecting to the relay server */
-    abstract fun beforeConnect()
+    /**
+     * Performs necessary actions for this server before connecting to the relay server. Returns a boolean to denote
+     * whether pre-start actions have succeeded - if this is false, the server should not attempt to call [start]
+     */
+    abstract fun beforeStart(): Boolean
 
     /**
      * Returns the room ID of the server (after it is allocated one by relay server); null for LAN servers
