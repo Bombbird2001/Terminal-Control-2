@@ -637,7 +637,11 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
     private fun renderRouteSegments(posX: Float, posY: Float, segments: GdxArray<Route.LegSegment>, skipAircraftToFirstWaypoint: Boolean,
                                     forceRenderChangedAircraftToFirstWaypoint: Boolean) {
         for (i in 0 until segments.size) { segments[i]?.also { seg ->
-            shapeRenderer.color = if (seg.changed) Color.YELLOW else Color.WHITE
+            shapeRenderer.color = when {
+                seg.changed -> Color.YELLOW
+                skipAircraftToFirstWaypoint -> Color.GRAY
+                else -> Color.WHITE
+            }
             val leg1 = seg.leg1
             val leg2 = seg.leg2
             // Do not render any segments containing a missed approach leg
