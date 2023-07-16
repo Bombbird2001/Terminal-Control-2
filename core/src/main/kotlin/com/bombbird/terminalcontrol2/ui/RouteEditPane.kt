@@ -218,7 +218,7 @@ class RouteEditPane {
      * @param arptId the ID of the airport to get the STARs for
      */
     fun updateChangeStarOptions(arptId: Byte?) {
-        val arptStars = GAME.gameServer?.airports?.get(arptId)?.entity?.get(STARChildren.mapper)?.starMap
+        val arptStars = GAME.gameClientScreen?.airports?.get(arptId)?.entity?.get(STARChildren.mapper)?.starMap
         if (arptStars == null) {
             changeStarBox.setItems("Change STAR")
             return
