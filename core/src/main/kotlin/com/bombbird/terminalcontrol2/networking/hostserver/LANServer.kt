@@ -17,7 +17,9 @@ import com.esotericsoftware.kryonet.Server
 import com.esotericsoftware.minlog.Log
 import ktx.collections.GdxArrayMap
 import ktx.collections.set
+import java.lang.Exception
 import java.net.BindException
+import java.nio.channels.ClosedSelectorException
 import java.util.*
 import kotlin.collections.HashSet
 
@@ -71,6 +73,14 @@ class LANServer(
             }
         }
         server.start()
+        Thread.sleep(1000)
+        server.updateThread?.setUncaughtExceptionHandler { _, e ->
+            // We can ignore this, it happens sometimes when the client is stopped
+            if (e is ClosedSelectorException) return@setUncaughtExceptionHandler
+
+            HttpRequest.sendCrashReport(Exception(e), "LANServer", "LAN multiplayer/Singleplayer")
+            GAME.quitCurrentGameWithDialog(CustomDialog("Error", "An error occurred", "", "Ok"))
+        }
         server.addListener(object : Listener {
             /**
              * Called when the server receives a TCP/UDP request from a client

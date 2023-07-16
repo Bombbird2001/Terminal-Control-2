@@ -1,6 +1,7 @@
 package com.bombbird.terminalcontrol2.networking.playerclient
 
 import com.bombbird.terminalcontrol2.global.*
+import com.bombbird.terminalcontrol2.networking.HttpRequest
 import com.bombbird.terminalcontrol2.networking.NetworkClient
 import com.bombbird.terminalcontrol2.networking.dataclasses.ClientUUIDData
 import com.bombbird.terminalcontrol2.networking.dataclasses.RequestClientUUID
@@ -16,6 +17,8 @@ import com.esotericsoftware.kryonet.Client
 import com.esotericsoftware.kryonet.Connection
 import com.esotericsoftware.kryonet.Listener
 import com.esotericsoftware.minlog.Log
+import java.lang.Exception
+import java.nio.channels.ClosedSelectorException
 
 /**
  * Client for handling LAN multiplayer games
@@ -69,7 +72,7 @@ class LANClient(lanClientDiscoveryHandler: LANClientDiscoveryHandler): NetworkCl
 
             override fun disconnected(connection: Connection?) {
                 if (GAME.shownScreen is RadarScreen && GAME.gameServer == null)
-                    GAME.quitCurrentGameWithDialog(CustomDialog("Disconnected", "You have been disconnected from the server", "", "Ok"))
+                    GAME.quitCurrentGameWithDialog(CustomDialog("Disconnected", "You have been disconnected from the server - most likely the host quit the game", "", "Ok"))
             }
         })
     }
@@ -94,6 +97,13 @@ class LANClient(lanClientDiscoveryHandler: LANClientDiscoveryHandler): NetworkCl
 
     override fun start() {
         client.start()
+        client.updateThread.setUncaughtExceptionHandler { _, e ->
+            // We can ignore this, it happens sometimes when the client is stopped
+            if (e is ClosedSelectorException) return@setUncaughtExceptionHandler
+
+            HttpRequest.sendCrashReport(Exception(e), "LANClient", "LAN multiplayer/Singleplayer")
+            GAME.quitCurrentGameWithDialog(CustomDialog("Error", "An error occurred", "", "Ok"))
+        }
     }
 
     override fun stop() {

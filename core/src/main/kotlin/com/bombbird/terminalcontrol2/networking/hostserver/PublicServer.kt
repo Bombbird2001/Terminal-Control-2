@@ -15,8 +15,10 @@ import com.esotericsoftware.kryonet.Listener
 import com.esotericsoftware.minlog.Log
 import ktx.collections.GdxArrayMap
 import org.apache.commons.codec.binary.Base64
+import java.lang.Exception
 import java.lang.NullPointerException
 import java.net.UnknownHostException
+import java.nio.channels.ClosedSelectorException
 import java.util.*
 import javax.crypto.spec.SecretKeySpec
 
@@ -71,6 +73,13 @@ class PublicServer(
 
     override fun start() {
         relayServerConnector.start()
+        relayServerConnector.updateThread.setUncaughtExceptionHandler { _, e ->
+            // We can ignore this, it happens sometimes when the client is stopped
+            if (e is ClosedSelectorException) return@setUncaughtExceptionHandler
+
+            HttpRequest.sendCrashReport(Exception(e), "PublicServer", "Public multiplayer")
+            GAME.quitCurrentGameWithDialog(CustomDialog("Error", "An error occurred", "", "Ok"))
+        }
         CLIENT_TCP_PORT_IN_USE = RELAY_TCP_PORT
         CLIENT_UDP_PORT_IN_USE = RELAY_UDP_PORT
         relayServerConnector.connect(5000, Secrets.RELAY_ADDRESS, RELAY_TCP_PORT, RELAY_UDP_PORT)

@@ -16,6 +16,8 @@ import com.esotericsoftware.kryonet.Connection
 import com.esotericsoftware.kryonet.Listener
 import com.esotericsoftware.minlog.Log
 import org.apache.commons.codec.binary.Base64
+import java.lang.Exception
+import java.nio.channels.ClosedSelectorException
 import javax.crypto.spec.SecretKeySpec
 
 /**
@@ -58,7 +60,7 @@ class PublicClient: NetworkClient() {
 
             override fun disconnected(connection: Connection?) {
                 if (GAME.shownScreen is RadarScreen)
-                    GAME.quitCurrentGameWithDialog(CustomDialog("Disconnected", "You have been disconnected from the server", "", "Ok"))
+                    GAME.quitCurrentGameWithDialog(CustomDialog("Disconnected", "You have been disconnected from the server - most likely the host quit the game", "", "Ok"))
             }
         })
     }
@@ -107,6 +109,13 @@ class PublicClient: NetworkClient() {
 
     override fun start() {
         client.start()
+        client.updateThread.setUncaughtExceptionHandler { _, e ->
+            // We can ignore this, it happens sometimes when the client is stopped
+            if (e is ClosedSelectorException) return@setUncaughtExceptionHandler
+
+            HttpRequest.sendCrashReport(Exception(e), "PublicClient", "Public multiplayer")
+            GAME.quitCurrentGameWithDialog(CustomDialog("Error", "An error occurred", "", "Ok"))
+        }
     }
 
     override fun stop() {

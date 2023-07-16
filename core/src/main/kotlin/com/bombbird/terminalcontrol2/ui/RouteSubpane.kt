@@ -154,6 +154,7 @@ class RouteSubpane {
                                 for (j in 0 until directButtonArray.size) {
                                     // Uncheck all buttons except for this one
                                     if (j != i) directButtonArray[j].isChecked = false
+                                    if (j >= route.size) break
                                     (route[j] as? Route.WaypointLeg)?.let {
                                         if (j < i) it.legActive = false // All legs before are no longer active
                                         else if (j == i) it.legActive = true // This leg is active

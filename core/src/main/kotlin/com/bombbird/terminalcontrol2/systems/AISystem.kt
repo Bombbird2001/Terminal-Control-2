@@ -527,7 +527,7 @@ class AISystem: EntitySystem() {
                 val groundTrack = get(GroundTrack.mapper) ?: return@apply
                 val locPos = locApp[Position.mapper] ?: return@apply
                 val locTrack = locApp[Direction.mapper]?.trackUnitVector ?: return@apply
-                val locCourseHdg = convertWorldAndRenderDeg(locTrack.angleDeg()) + 180 - MAG_HDG_DEV
+                val locCourseHdg = convertWorldAndRenderDeg(locTrack.angleDeg()) + 180 + MAG_HDG_DEV
 
                 // Check whether aircraft is heading away from the LOC
                 if (dir.trackUnitVector.dot(locTrack) > 0) return@apply
@@ -547,6 +547,15 @@ class AISystem: EntitySystem() {
                     locCourseHdg, CommandTarget.TURN_DEFAULT),
                     if (ias.iasKt > HALF_TURN_RATE_THRESHOLD_IAS) MAX_HIGH_SPD_ANGULAR_SPD else MAX_LOW_SPD_ANGULAR_SPD, groundTrack.trackVectorPxps.len()))
                 if (requiredDist * requiredDist > deltaX * deltaX + deltaY * deltaY) {
+                    remove<LocalizerArmed>()
+                    this += LocalizerCaptured(locApp)
+                    return@apply
+                }
+
+                // Alternatively, if aircraft is within 1 degree of LOC track, capture
+                val trackToLoc = Vector2(locPos.x - pos.x, locPos.y - pos.y)
+                val targetHdg = convertWorldAndRenderDeg(trackToLoc.angleDeg()) + MAG_HDG_DEV
+                if (abs(targetHdg - locCourseHdg) < 1) {
                     remove<LocalizerArmed>()
                     this += LocalizerCaptured(locApp)
                 }
