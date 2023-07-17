@@ -133,7 +133,7 @@ class RadarScreen private constructor(private val connectionHost: String, privat
 
     // Networking client
     private val networkClient: NetworkClient
-        get() = if (roomId == null) GAME.lanClient else GAME.publicClient
+        get() = if (!isPublicMultiplayer()) GAME.lanClient else GAME.publicClient
 
     // Blocking queue to store runnables to be run in the main thread after engine update
     private val pendingRunnablesQueue = ConcurrentLinkedQueue<Runnable>()
@@ -373,7 +373,7 @@ class RadarScreen private constructor(private val connectionHost: String, privat
             // Process pending runnables
             while (true) { pendingRunnablesQueue.poll()?.run() ?: break }
         } catch (e: Exception) {
-            val multiplayerType = if (networkClient is PublicClient) "Public multiplayer"
+            val multiplayerType = if (isPublicMultiplayer()) "Public multiplayer"
             else "LAN multiplayer/Singleplayer"
             HttpRequest.sendCrashReport(e, "RadarScreen", multiplayerType)
             GAME.quitCurrentGameWithDialog(CustomDialog("Error", "An error occurred", "", "Ok"))
@@ -676,5 +676,10 @@ class RadarScreen private constructor(private val connectionHost: String, privat
     fun notifyInitialDataSendComplete() {
         initialDataReceived = true
         connectedToHostCallback?.invoke()
+    }
+
+    /** Returns true if client is in public multiplayer game, else false */
+    fun isPublicMultiplayer(): Boolean {
+        return roomId != null
     }
 }

@@ -1,6 +1,5 @@
 package com.bombbird.terminalcontrol2.screens
 
-import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.utils.Align
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.ui.addChangeListener
@@ -32,10 +31,8 @@ class AboutGame: BasicUIScreen() {
                     }.cell(expandY = true, padTop = 50f)
                     row().padTop(30f)
                     textButton("Bug Report", "GameInfoButton").cell(width = BUTTON_WIDTH_BIG, height = BUTTON_HEIGHT_BIG).addChangeListener { _, _ ->
-                        val url = ("mailto:bombbirddev@gmail.com?subject=Terminal Control 2 Bug Report&body=Build version:" +
-                                " $BUILD_VERSION\n\nPlease describe the bug here. If possible, please attach a screenshot" +
-                                " or video of the bug.").replace(" ", "%20").replace("\n", "%0A")
-                        Gdx.net.openURI(url)
+                        GAME.getScreen<ReportBug>().prevScreen = this@AboutGame
+                        GAME.setScreen<ReportBug>()
                     }
                     row().padTop(50f)
                     label("While we make effort to ensure that this game is as realistic as possible, please note" +

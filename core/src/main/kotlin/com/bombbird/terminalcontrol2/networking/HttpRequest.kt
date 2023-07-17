@@ -279,7 +279,7 @@ object HttpRequest {
         return roomCreationStatus
     }
 
-    /** Class representing the error stack trace sent to the crash server together with the password */
+    /** Class representing the crash information sent to the server together with the password */
     @JsonClass(generateAdapter = true)
     data class ErrorRequest(val errorString: String, val crashLocation: String, val gameVersion: String = GAME_VERSION,
                             val buildVersion: Int = BUILD_VERSION, val platform: String,
@@ -289,6 +289,7 @@ object HttpRequest {
      * Sends an HTTP request to the crash report server
      * @param e the crash exception
      * @param crashLocation the location where the crash occurred (GameServer, RadarScreen, etc.)
+     * @param multiplayerType the type of game (singleplayer, multiplayer)
      */
     @OptIn(ExperimentalStdlibApi::class)
     fun sendCrashReport(e: Exception, crashLocation: String, multiplayerType: String) {
@@ -315,6 +316,53 @@ object HttpRequest {
 
             override fun onResponse(call: Call, response: Response) {
                 FileLog.info("HttpRequest", response.body?.string() ?: "Null response body")
+            }
+        })
+    }
+
+    /** Class representing the bug report sent to the server together with the password */
+    @JsonClass(generateAdapter = true)
+    data class BugReportRequest(val description: String, val logs: String, val gameSave: String,
+                                val gameVersion: String = GAME_VERSION, val buildVersion: Int = BUILD_VERSION,
+                                val platform: String, val multiplayerType: String, val password: String = Secrets.BUG_REPORT_PW)
+
+    /**
+     * Sends an HTTP request to the bug report server
+     * @param description the description of the bug
+     * @param logs the game logs
+     * @param gameSave the save file where the bug occurred
+     * @param multiplayerType the type of game (singleplayer, multiplayer)
+     * @param onSuccess callback function called when the request is successful, with the response body as parameter
+     * @param onFailure callback function called when the request fails
+     */
+    @OptIn(ExperimentalStdlibApi::class)
+    fun sendBugReport(description: String, logs: String, gameSave: String, multiplayerType: String,
+                      onSuccess: (String) -> Unit, onFailure: () -> Unit) {
+        val platformName = when (Gdx.app.type) {
+            Application.ApplicationType.Android -> "Android"
+            Application.ApplicationType.Desktop -> "Desktop"
+            Application.ApplicationType.iOS -> "iOS"
+            else -> "Unknown platform"
+        }
+
+        val jsonString = Moshi.Builder().build().adapter<BugReportRequest>().toJson(
+            BugReportRequest(description, logs, gameSave, platform = platformName, multiplayerType = multiplayerType)
+        )
+
+        val request = Request.Builder()
+            .url(Secrets.BUG_REPORT_URL)
+            .post(jsonString.toRequestBody(JSON_MEDIA_TYPE))
+            .build()
+
+        client.newCall(request).enqueue(object: Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                FileLog.info("HttpRequest", "Bug report request failed")
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                val responseStr = response.body?.string()
+                FileLog.info("HttpRequest", responseStr ?: "Null response body")
+                if (responseStr == null) onFailure() else onSuccess(responseStr)
             }
         })
     }

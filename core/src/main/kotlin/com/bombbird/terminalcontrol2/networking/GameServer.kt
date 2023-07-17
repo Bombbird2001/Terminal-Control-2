@@ -305,7 +305,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
                 saveGame(this)
             } catch (e: Exception) {
                 val multiplayerType = when {
-                    networkServer.getRoomId() != null -> "Public multiplayer"
+                    isPublicMultiplayer() -> "Public multiplayer"
                     maxPlayersAllowed > 1 -> "LAN multiplayer"
                     else -> "Singleplayer"
                 }
@@ -827,5 +827,10 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
      */
     fun getRoomId(): Short? {
         return networkServer.getRoomId()
+    }
+
+    /** Returns true if server is hosting a public multiplayer game, else false */
+    fun isPublicMultiplayer(): Boolean {
+        return getRoomId() != null
     }
 }

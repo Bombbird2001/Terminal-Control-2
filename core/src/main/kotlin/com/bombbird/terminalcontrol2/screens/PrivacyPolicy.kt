@@ -25,10 +25,11 @@ class PrivacyPolicy: BasicUIScreen() {
                                 - Date, time of access
                                 - Public IP address
                                 
-                                If you enable the sending of crash reports or send a crash report when a game load error occurs, the following data are also sent to the server:
+                                When a game crash or a game load error occurs, the following data are also sent to the server:
                                 - Game version
                                 - Date, time of error occurrence
                                 - Crash logs
+                                - Game logs
                                 - Game save data (if game load error occurs)
                             """.trimIndent()
 
