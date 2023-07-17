@@ -15,7 +15,7 @@ import com.bombbird.terminalcontrol2.utilities.convertWorldAndRenderDeg
 import com.bombbird.terminalcontrol2.utilities.modulateHeading
 import com.bombbird.terminalcontrol2.utilities.pxpsToKt
 import com.bombbird.terminalcontrol2.utilities.removeExtraCharacters
-import com.esotericsoftware.minlog.Log
+import com.bombbird.terminalcontrol2.utilities.FileLog
 import ktx.ashley.get
 import ktx.ashley.has
 import ktx.scene2d.Scene2DSkin
@@ -62,7 +62,7 @@ fun updateDatatagStyle(datatag: Datatag, flightType: Byte, selected: Boolean) {
         FlightType.ARRIVAL -> "Blue"
         FlightType.EN_ROUTE -> "Gray"
         else -> {
-            Log.info("Datatag", "Unknown flight type $flightType")
+            FileLog.info("Datatag", "Unknown flight type $flightType")
             ""
         }
     } else ""

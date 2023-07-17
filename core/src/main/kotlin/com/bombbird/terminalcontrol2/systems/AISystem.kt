@@ -12,7 +12,7 @@ import com.bombbird.terminalcontrol2.navigation.*
 import com.bombbird.terminalcontrol2.traffic.TrafficMode
 import com.bombbird.terminalcontrol2.traffic.despawnAircraft
 import com.bombbird.terminalcontrol2.utilities.*
-import com.esotericsoftware.minlog.Log
+import com.bombbird.terminalcontrol2.utilities.FileLog
 import ktx.ashley.*
 import ktx.math.plusAssign
 import ktx.math.times
@@ -301,7 +301,7 @@ class AISystem: EntitySystem() {
                 val clearanceAct = get(ClearanceAct.mapper)?.actingClearance?.clearanceState ?: return@apply
                 val pos = get(Position.mapper) ?: return@apply
                 val wpt = GAME.gameServer?.waypoints?.get(cmdDir.wptId)?.entity?.get(Position.mapper) ?: run {
-                    Log.info("AISystem", "Unknown command direct waypoint with ID ${cmdDir.wptId}")
+                    FileLog.info("AISystem", "Unknown command direct waypoint with ID ${cmdDir.wptId}")
                     return@apply
                 }
                 val spd = get(Speed.mapper) ?: return@apply
@@ -552,10 +552,10 @@ class AISystem: EntitySystem() {
                     return@apply
                 }
 
-                // Alternatively, if aircraft is within 1 degree of LOC track, capture
+                // Alternatively, if aircraft is within 2 degrees of LOC track, capture
                 val trackToLoc = Vector2(locPos.x - pos.x, locPos.y - pos.y)
                 val targetHdg = convertWorldAndRenderDeg(trackToLoc.angleDeg()) + MAG_HDG_DEV
-                if (abs(targetHdg - locCourseHdg) < 1) {
+                if (abs(targetHdg - locCourseHdg) < 2) {
                     remove<LocalizerArmed>()
                     this += LocalizerCaptured(locApp)
                 }
@@ -629,7 +629,7 @@ class AISystem: EntitySystem() {
                             CommandTarget.TURN_LEFT -> -45
                             CommandTarget.TURN_RIGHT -> 45
                             else -> {
-                                Log.info("AISystem", "Unknown circling breakout direction ${circleInfo.breakoutDir}")
+                                FileLog.info("AISystem", "Unknown circling breakout direction ${circleInfo.breakoutDir}")
                                 -45
                             }
                         })
@@ -709,7 +709,6 @@ class AISystem: EntitySystem() {
                 // For approach with glide slope, check speed not more than 20 knots above approach speed
                 val maxAllowableIas = perf.appSpd + (if (gsApp != null) 20 else 10)
                 if (ias.iasKt > maxAllowableIas) {
-                    println("Too fast ${ias.iasKt} >> $maxAllowableIas")
                     return@apply initiateGoAround(this)
                 }
 
@@ -728,7 +727,6 @@ class AISystem: EntitySystem() {
                     (getAppAltAtPos(appVert, pos.x, pos.y, 0f) ?: return@apply) + 200
                 }
                 if (alt.altitudeFt > maxAllowableAlt) {
-                    println("Too high ${alt.altitudeFt} >> $maxAllowableAlt")
                     return@apply initiateGoAround(this)
                 }
 
@@ -741,7 +739,6 @@ class AISystem: EntitySystem() {
                 val appTrack = convertWorldAndRenderDeg(appLat[Direction.mapper]?.trackUnitVector?.angleDeg() ?: return@apply) + 180
                 val deviation = abs(findDeltaHeading(trackToRwy, appTrack, CommandTarget.TURN_DEFAULT))
                 if (pxToNm(distFromRwyPx) > 0.5f && deviation > maxAllowableDeviation) {
-                    println("Too much deviation $deviation >> $maxAllowableDeviation")
                     return@apply initiateGoAround(this)
                 }
 
@@ -755,7 +752,6 @@ class AISystem: EntitySystem() {
                 // For all approaches, go around if runway is still occupied by the time aircraft reaches 150 feet AGL
                 val rwyAlt = rwyObj[Altitude.mapper]?.altitudeFt
                 if (rwyAlt != null && rwyObj.has(RunwayOccupied.mapper) && alt.altitudeFt < rwyAlt + 150) {
-                    println("Traffic on runway")
                     return@apply initiateGoAround(this)
                 }
 
@@ -765,7 +761,6 @@ class AISystem: EntitySystem() {
                 if (pxToNm(distFromRwyPx) < 7) {
                     rwyObj[OppositeRunway.mapper]?.oppRwy?.get(RunwayPreviousDeparture.mapper)?.let {
                         if (it.timeSinceDepartureS < 135) {
-                            println("Departure from opposite runway")
                             return@apply initiateGoAround(this)
                         }
                     }
@@ -773,7 +768,6 @@ class AISystem: EntitySystem() {
                         for (j in 0 until depOppRwys.size) {
                             depOppRwys[j][RunwayPreviousDeparture.mapper]?.let {
                                 if (it.timeSinceDepartureS < 135) {
-                                    println("Departure from dependent opposite runway")
                                     return@apply initiateGoAround(this)
                                 }
                             }
@@ -885,7 +879,7 @@ class AISystem: EntitySystem() {
                         return@apply
                     }
                     else -> {
-                        Log.info("AISystem", "Unknown leg type ${it::class}")
+                        FileLog.info("AISystem", "Unknown leg type ${it::class}")
                         removeIndex(0)
                         return@let
                     }
@@ -962,7 +956,7 @@ class AISystem: EntitySystem() {
         }
 
         if (minAlt != null && maxAlt != null && minAlt > maxAlt) {
-            Log.info("AISystem", "minAlt ($minAlt) should not > maxAlt ($maxAlt)")
+            FileLog.info("AISystem", "minAlt ($minAlt) should not > maxAlt ($maxAlt)")
             maxAlt = minAlt
         }
 
@@ -1056,7 +1050,7 @@ class AISystem: EntitySystem() {
             CommandTarget.TURN_RIGHT -> if (offset > -1 && offset < 129) 1 else if (offset < -1 && offset > -69) 2 else 3
             CommandTarget.TURN_LEFT -> if (offset < 1 && offset > -129) 1 else if (offset > 1 && offset < 69) 2 else 3
             else -> {
-                Log.info("AISystem", "Invalid turn direction $legDir specified for holding pattern")
+                FileLog.info("AISystem", "Invalid turn direction $legDir specified for holding pattern")
                 if (offset > -1 && offset < 129) 1 else if (offset < -1 && offset > -69) 2 else 3
             }
         }

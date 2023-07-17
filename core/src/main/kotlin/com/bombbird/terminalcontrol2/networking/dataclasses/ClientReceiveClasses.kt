@@ -10,7 +10,7 @@ import com.bombbird.terminalcontrol2.traffic.ConflictManager
 import com.bombbird.terminalcontrol2.traffic.TrafficMode
 import com.bombbird.terminalcontrol2.ui.*
 import com.bombbird.terminalcontrol2.utilities.getAircraftIcon
-import com.esotericsoftware.minlog.Log
+import com.bombbird.terminalcontrol2.utilities.FileLog
 import ktx.ashley.*
 import java.util.*
 
@@ -28,7 +28,7 @@ class RequestClientUUID: NeedsEncryption
  */
 data class ConnectionError(private val cause: String = "Unknown cause"): ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
-        Log.info("NetworkingTools", "Connection failed - $cause")
+        FileLog.info("NetworkingTools", "Connection failed - $cause")
         GAME.quitCurrentGameWithDialog(CustomDialog("Failed to connect", cause, "", "Ok"))
     }
 }
@@ -104,7 +104,6 @@ class IndividualSectorData(private val assignedSectorId: Byte = 0, private val s
 
     override fun handleClientReceive(rs: RadarScreen) {
         // Remove all existing sector mapping and entities
-        println("Individual sector received")
         rs.sectors.clear()
         getEngine(true).removeAllEntities(sectorFamily)
         rs.playerSector = assignedSectorId
@@ -346,7 +345,7 @@ data class CustomWaypointData(private val customWpt: Waypoint.SerialisedWaypoint
     ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
         if (rs.waypoints.containsKey(customWpt.id)) {
-            Log.info("NetworkingTools", "Existing waypoint with ID ${customWpt.id} found, ignoring this custom waypoint")
+            FileLog.info("NetworkingTools", "Existing waypoint with ID ${customWpt.id} found, ignoring this custom waypoint")
             return
         }
         rs.waypoints[customWpt.id] = Waypoint.fromSerialisedObject(customWpt)
@@ -357,7 +356,7 @@ data class CustomWaypointData(private val customWpt: Waypoint.SerialisedWaypoint
 data class RemoveCustomWaypointData(private val wptId: Short = -1): ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
         if (wptId >= -1) {
-            Log.info("NetworkingTools", "Custom waypoint must have ID < -1; $wptId was provided")
+            FileLog.info("NetworkingTools", "Custom waypoint must have ID < -1; $wptId was provided")
             return
         }
         rs.waypoints[wptId]?.let { getEngine(true).removeEntity(it.entity) }
@@ -390,7 +389,7 @@ class AllTrailDotData(private val trails: Array<TrailDotData> = arrayOf()): Clie
     override fun handleClientReceive(rs: RadarScreen) {
         if (!rs.isInitialDataReceived()) return
         trails.forEach { trail ->
-            rs.aircraft[trail.callsign].entity[TrailInfo.mapper]?.positions?.addFirst(Position(trail.posX, trail.posY))
+            rs.aircraft[trail.callsign]?.entity?.get(TrailInfo.mapper)?.positions?.addFirst(Position(trail.posX, trail.posY))
         }
     }
 }

@@ -15,7 +15,7 @@ import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.utilities.AircraftTypeData
 import com.bombbird.terminalcontrol2.utilities.getACCSectorForPosition
 import com.bombbird.terminalcontrol2.utilities.removeExtraCharacters
-import com.esotericsoftware.minlog.Log
+import com.bombbird.terminalcontrol2.utilities.FileLog
 import ktx.ashley.get
 import ktx.scene2d.*
 import java.time.LocalTime
@@ -91,7 +91,7 @@ class CommsPane {
                 "Warning"
             }
             else -> {
-                Log.info("CommsPane", "Unknown message type $msgType")
+                FileLog.info("CommsPane", "Unknown message type $msgType")
                 "Others"
             }
         }
@@ -394,7 +394,7 @@ class CommsPane {
             FlightType.DEPARTURE -> DEPARTURE
             FlightType.EN_ROUTE -> OTHERS
             else -> {
-                Log.info("CommsPane", "Unknown flight type $flightType")
+                FileLog.info("CommsPane", "Unknown flight type $flightType")
                 OTHERS
             }
         }

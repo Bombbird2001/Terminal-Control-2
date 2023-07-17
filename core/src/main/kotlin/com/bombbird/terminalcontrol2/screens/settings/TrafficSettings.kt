@@ -11,7 +11,7 @@ import com.bombbird.terminalcontrol2.components.DepartureInfo
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.traffic.TrafficMode
 import com.bombbird.terminalcontrol2.ui.*
-import com.esotericsoftware.minlog.Log
+import com.bombbird.terminalcontrol2.utilities.FileLog
 import ktx.ashley.get
 import ktx.ashley.has
 import ktx.ashley.plusAssign
@@ -93,7 +93,7 @@ class TrafficSettings: BaseGameSettings() {
                 TrafficMode.ARRIVALS_TO_CONTROL -> ARRIVALS_TO_CONTROL
                 TrafficMode.FLOW_RATE -> ARRIVAL_FLOW_RATE
                 else -> {
-                    Log.info("TrafficSettings", "Unknown traffic mode setting $trafficMode")
+                    FileLog.info("TrafficSettings", "Unknown traffic mode setting $trafficMode")
                     NORMAL
                 }
             }
@@ -122,7 +122,7 @@ class TrafficSettings: BaseGameSettings() {
                 ARRIVALS_TO_CONTROL -> TrafficMode.ARRIVALS_TO_CONTROL
                 ARRIVAL_FLOW_RATE -> TrafficMode.FLOW_RATE
                 else -> {
-                    Log.info("TrafficSettings", "Unknown traffic mode selection $selectedMode")
+                    FileLog.info("TrafficSettings", "Unknown traffic mode selection $selectedMode")
                     TrafficMode.NORMAL
                 }
             }

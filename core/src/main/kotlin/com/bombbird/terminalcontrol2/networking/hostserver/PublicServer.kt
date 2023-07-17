@@ -12,7 +12,7 @@ import com.esotericsoftware.kryo.io.Output
 import com.esotericsoftware.kryonet.Client
 import com.esotericsoftware.kryonet.Connection
 import com.esotericsoftware.kryonet.Listener
-import com.esotericsoftware.minlog.Log
+import com.bombbird.terminalcontrol2.utilities.FileLog
 import ktx.collections.GdxArrayMap
 import org.apache.commons.codec.binary.Base64
 import java.lang.Exception
@@ -49,7 +49,7 @@ class PublicServer(
         addListener(object: Listener {
             override fun received(connection: Connection, obj: Any?) {
                 if (obj is NeedsEncryption) {
-                    Log.info("PublicServer", "Received unencrypted data of class ${obj.javaClass.name}")
+                    FileLog.info("PublicServer", "Received unencrypted data of class ${obj.javaClass.name}")
                     return
                 }
 
@@ -178,7 +178,7 @@ class PublicServer(
      */
     fun onDisconnect(uuid: UUID) {
         val removedConn = uuidConnectionMap.removeKey(uuid) ?: run {
-            Log.info("PublicServer", "Failed to remove $uuid from connection map - it is not a key")
+            FileLog.info("PublicServer", "Failed to remove $uuid from connection map - it is not a key")
             return
         }
         onDisconnect(removedConn)
@@ -187,7 +187,7 @@ class PublicServer(
     /** Requests for the relay server to create a game room */
     fun requestGameCreation() {
         val encrypted = encryptIfNeeded(NewGameRequest(roomId, gameServer.maxPlayersAllowed, mapName, myUuid.toString()), encryptor) ?: run {
-            Log.info("PublicServer", "Room creation failed - encryption failed")
+            FileLog.info("PublicServer", "Room creation failed - encryption failed")
             return
         }
         relayServerConnector.sendTCP(encrypted)

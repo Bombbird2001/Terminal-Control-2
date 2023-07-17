@@ -16,7 +16,7 @@ import com.esotericsoftware.kryo.io.Output
 import com.esotericsoftware.kryonet.Client
 import com.esotericsoftware.kryonet.Connection
 import com.esotericsoftware.kryonet.Listener
-import com.esotericsoftware.minlog.Log
+import com.bombbird.terminalcontrol2.utilities.FileLog
 import java.lang.Exception
 import java.nio.channels.ClosedSelectorException
 
@@ -57,7 +57,7 @@ class LANClient(lanClientDiscoveryHandler: LANClientDiscoveryHandler): NetworkCl
                 if (!secretKeyCalculated) return
 
                 if (obj is NeedsEncryption) {
-                    Log.info("RelayServer", "Received unencrypted data of class ${obj.javaClass.name}")
+                    FileLog.info("RelayServer", "Received unencrypted data of class ${obj.javaClass.name}")
                     return
                 }
 

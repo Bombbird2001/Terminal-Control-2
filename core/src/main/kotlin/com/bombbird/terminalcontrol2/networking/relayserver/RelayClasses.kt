@@ -4,7 +4,7 @@ import com.bombbird.terminalcontrol2.networking.encryption.NeedsEncryption
 import com.bombbird.terminalcontrol2.networking.hostserver.PublicServer
 import com.bombbird.terminalcontrol2.networking.playerclient.PublicClient
 import com.esotericsoftware.kryonet.Connection
-import com.esotericsoftware.minlog.Log
+import com.bombbird.terminalcontrol2.utilities.FileLog
 import java.util.*
 
 /** Class to wrap the nonce in a [NeedsEncryption] interface to be encrypted */
@@ -63,7 +63,7 @@ data class PlayerConnect(val uuid: String? = null): RelayHostReceive, NeedsEncry
     override fun handleRelayHostReceive(host: PublicServer, conn: Connection) {
         if (uuid == null) return
         host.onConnect(UUID.fromString(uuid))
-        Log.info("PublicServer", "Player $uuid connected")
+        FileLog.info("PublicServer", "Player $uuid connected")
     }
 }
 
@@ -72,7 +72,7 @@ data class PlayerDisconnect(val uuid: String? = null): RelayHostReceive, NeedsEn
     override fun handleRelayHostReceive(host: PublicServer, conn: Connection) {
         if (uuid == null) return
         host.onDisconnect(UUID.fromString(uuid))
-        Log.info("PublicServer", "Player $uuid disconnected")
+        FileLog.info("PublicServer", "Player $uuid disconnected")
     }
 }
 

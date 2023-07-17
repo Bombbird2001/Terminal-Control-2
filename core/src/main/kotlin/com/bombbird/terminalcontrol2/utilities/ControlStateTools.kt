@@ -12,7 +12,6 @@ import com.bombbird.terminalcontrol2.global.HOLD_THRESHOLD_ALTITUDE
 import com.bombbird.terminalcontrol2.navigation.*
 import com.bombbird.terminalcontrol2.navigation.Route.*
 import com.bombbird.terminalcontrol2.networking.dataclasses.AircraftControlStateUpdateData
-import com.esotericsoftware.minlog.Log
 import ktx.ashley.get
 import ktx.ashley.has
 import ktx.ashley.plusAssign
@@ -35,7 +34,7 @@ fun getAircraftIcon(flightType: Byte, sectorID: Byte): TextureRegionDrawable {
                 FlightType.ARRIVAL -> "aircraftArrival"
                 FlightType.EN_ROUTE -> "aircraftEnroute"
                 else -> {
-                    Log.info("ControlState", "Unknown flight type $flightType")
+                    FileLog.info("ControlState", "Unknown flight type $flightType")
                     "aircraftEnroute"
                 }
             }

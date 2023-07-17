@@ -2,7 +2,7 @@ package com.bombbird.terminalcontrol2.json
 
 import com.badlogic.ashley.core.Component
 import com.bombbird.terminalcontrol2.entities.Airport
-import com.esotericsoftware.minlog.Log
+import com.bombbird.terminalcontrol2.utilities.FileLog
 import com.squareup.moshi.FromJson
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.ToJson
@@ -32,7 +32,7 @@ object AirportAdapter {
      * @return the empty default Airport
      */
     private fun emptyAirport(missingComponent: String): Airport {
-        Log.info("AirportJSON", "Empty airport returned due to missing $missingComponent")
+        FileLog.info("AirportJSON", "Empty airport returned due to missing $missingComponent")
         return Airport()
     }
 }
@@ -61,7 +61,7 @@ object RunwayAdapter {
      * @return the empty default Runway
      */
     private fun emptyRunway(missingComponent: String): Airport.Runway {
-        Log.info("AirportJSON", "Empty runway returned due to missing $missingComponent")
+        FileLog.info("AirportJSON", "Empty runway returned due to missing $missingComponent")
         return Airport.Runway()
     }
 }

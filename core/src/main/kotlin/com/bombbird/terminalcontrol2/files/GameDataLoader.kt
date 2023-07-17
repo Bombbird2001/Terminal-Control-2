@@ -14,7 +14,7 @@ import com.bombbird.terminalcontrol2.networking.GameServer
 import com.bombbird.terminalcontrol2.traffic.RunwayConfiguration
 import com.bombbird.terminalcontrol2.traffic.disallowedCallsigns
 import com.bombbird.terminalcontrol2.utilities.*
-import com.esotericsoftware.minlog.Log
+import com.bombbird.terminalcontrol2.utilities.FileLog
 import ktx.ashley.get
 import ktx.ashley.plusAssign
 import ktx.assets.toInternalFile
@@ -220,7 +220,7 @@ fun loadWorldData(mainName: String, gameServer: GameServer) {
                                         WORLD_SECTORS, ACC_SECTORS, AIRPORT_TFC, AIRPORT_DEP_PARALLEL, AIRPORT_DEP_OPP,
                                         AIRPORT_CROSSING, AIRPORT_APP_NOZ, AIRPORT_DEP_NOZ).map { "$it/" })
                                     parseMode = lineData[0].substringBefore("/")
-                                else if (lineData[0] != "") Log.info("GameLoader", "Unknown parse mode ${lineData[0]} in line ${index + 1}")
+                                else if (lineData[0] != "") FileLog.info("GameLoader", "Unknown parse mode ${lineData[0]} in line ${index + 1}")
                             }
                         }
                     }
@@ -290,7 +290,7 @@ private fun parseACCSector(data: List<String>, gameServer: GameServer) {
 private fun parseMinAltSector(data: List<String>, gameServer: GameServer) {
     val type = data[0]
     val enforced = if (data[1] == "RESTR") true else if (data[1] == "MVA") false else {
-        Log.info("GameLoader", "Unknown minAltSector restriction ${data[1]} provided")
+        FileLog.info("GameLoader", "Unknown minAltSector restriction ${data[1]} provided")
         false
     }
     val minAlt = if (data[2] == "UNL") null else data[2].toInt()
@@ -318,7 +318,7 @@ private fun parseMinAltSector(data: List<String>, gameServer: GameServer) {
             val radius = nmToPx(data[4].toFloat())
             gameServer.minAltSectors.add(MinAltSector(minAlt, null, posX, posY, radius, null, null, enforced, false))
         }
-        else -> Log.info("GameLoader", "Unknown minAltSector type $type")
+        else -> FileLog.info("GameLoader", "Unknown minAltSector type $type")
     }
 }
 
@@ -337,7 +337,7 @@ private fun parseShoreline(data: List<String>, gameServer: GameServer) {
 private fun parseHold(data: List<String>, gameServer: GameServer) {
     val wptName = data[0]
     val wptId = gameServer.updatedWaypointMapping[wptName] ?: run {
-        Log.info("GameLoader", "Unknown hold waypoint $wptName")
+        FileLog.info("GameLoader", "Unknown hold waypoint $wptName")
         return
     }
     val inboundHdg = data[1].toShort()
@@ -348,7 +348,7 @@ private fun parseHold(data: List<String>, gameServer: GameServer) {
         "LEFT" -> CommandTarget.TURN_LEFT
         "RIGHT" -> CommandTarget.TURN_RIGHT
         else -> {
-            Log.info("GameLoader", "Unknown hold direction ${data[5]} for $wptName")
+            FileLog.info("GameLoader", "Unknown hold direction ${data[5]} for $wptName")
             CommandTarget.TURN_RIGHT
         }
     }
@@ -366,7 +366,7 @@ private fun parseHold(data: List<String>, gameServer: GameServer) {
  * Returns the constructed [Airport]
  */
 private fun parseAirport(data: List<String>, gameServer: GameServer): Airport {
-    if (data.size != 9) Log.info("GameLoader", "Airport data has ${data.size} elements instead of 8")
+    if (data.size != 9) FileLog.info("GameLoader", "Airport data has ${data.size} elements instead of 8")
     val id = data[1].toByte()
     val icao = data[2]
     val name = data[3]
@@ -397,7 +397,7 @@ private fun parseAirport(data: List<String>, gameServer: GameServer): Airport {
 
 /** Parse the given [data] into a runway, and adds it to the supplied [airport] */
 private fun parseRunway(data: List<String>, airport: Airport) {
-    if (data.size != 11) Log.info("GameLoader", "Runway data has ${data.size} elements instead of 11")
+    if (data.size != 11) FileLog.info("GameLoader", "Runway data has ${data.size} elements instead of 11")
     val id = data[0].toByte()
     val name = data[1]
     val pos = data[2].split(",")
@@ -413,7 +413,7 @@ private fun parseRunway(data: List<String>, airport: Airport) {
         "LABEL_RIGHT" -> RunwayLabel.RIGHT
         "LABEL_LEFT" -> RunwayLabel.LEFT
         else -> {
-            Log.info("GameLoader", "Unknown runway label placement for runway $name: ${data[6]}")
+            FileLog.info("GameLoader", "Unknown runway label placement for runway $name: ${data[6]}")
             RunwayLabel.BEFORE
         }
     }
@@ -431,7 +431,7 @@ private fun parseRunway(data: List<String>, airport: Airport) {
  * @param airport the airport to apply this to
  */
 private fun parseDependentParallelRunways(data: List<String>, airport: Airport) {
-    if (data.size != 2) Log.info("GameLoader", "Dependent parallel runway data has ${data.size} elements instead of 2")
+    if (data.size != 2) FileLog.info("GameLoader", "Dependent parallel runway data has ${data.size} elements instead of 2")
     val rwy1 = airport.getRunway(data[0])?.entity ?: return logMissingRunway(data[0])
     val rwy2 = airport.getRunway(data[1])?.entity ?: return logMissingRunway(data[1])
     (rwy1[DependentParallelRunway.mapper] ?: DependentParallelRunway().apply { rwy1 += this }).depParRwys.add(rwy2)
@@ -445,7 +445,7 @@ private fun parseDependentParallelRunways(data: List<String>, airport: Airport) 
  * @param airport the airport to apply this to
  */
 private fun parseDependentOppositeRunways(data: List<String>, airport: Airport) {
-    if (data.size != 2) Log.info("GameLoader", "Dependent opposite runway data has ${data.size} elements instead of 2")
+    if (data.size != 2) FileLog.info("GameLoader", "Dependent opposite runway data has ${data.size} elements instead of 2")
     val rwy1 = airport.getRunway(data[0])?.entity ?: return logMissingRunway(data[0])
     val rwy2 = airport.getRunway(data[1])?.entity ?: return logMissingRunway(data[1])
     (rwy1[DependentOppositeRunway.mapper] ?: DependentOppositeRunway().apply { rwy1 += this }).depOppRwys.add(rwy2)
@@ -459,7 +459,7 @@ private fun parseDependentOppositeRunways(data: List<String>, airport: Airport) 
  * @param airport the airport to apply this to
  */
 private fun parseCrossingRunways(data: List<String>, airport: Airport) {
-    if (data.size != 2) Log.info("GameLoader", "Crossing runway data has ${data.size} elements instead of 2")
+    if (data.size != 2) FileLog.info("GameLoader", "Crossing runway data has ${data.size} elements instead of 2")
     val rwy1 = airport.getRunway(data[0])?.entity ?: return logMissingRunway(data[0])
     val rwy2 = airport.getRunway(data[1])?.entity ?: return logMissingRunway(data[1])
     (rwy1[CrossingRunway.mapper] ?: CrossingRunway().apply { rwy1 += this }).crossRwys.add(rwy2)
@@ -472,7 +472,7 @@ private fun parseCrossingRunways(data: List<String>, airport: Airport) {
  * @param airport the airport that the parent runway belongs to
  */
 private fun parseApproachNOZ(data: List<String>, airport: Airport) {
-    if (data.size != 5) Log.info("GameLoader", "Approach NOZ data has ${data.size} elements instead of 5")
+    if (data.size != 5) FileLog.info("GameLoader", "Approach NOZ data has ${data.size} elements instead of 5")
     val name = data[0]
     val pos = data[1].split(",")
     val posX = nmToPx(pos[0].toFloat())
@@ -489,7 +489,7 @@ private fun parseApproachNOZ(data: List<String>, airport: Airport) {
  * @param airport the airport that the parent runway belongs to
  */
 private fun parseDepartureNOZ(data: List<String>, airport: Airport) {
-    if (data.size != 5) Log.info("GameLoader", "Departure NOZ data has ${data.size} elements instead of 5")
+    if (data.size != 5) FileLog.info("GameLoader", "Departure NOZ data has ${data.size} elements instead of 5")
     val name = data[0]
     val pos = data[1].split(",")
     val posX = nmToPx(pos[0].toFloat())
@@ -514,7 +514,7 @@ private fun parseRunwayConfiguration(data: List<String>, airport: Airport): Runw
         DAY_ONLY -> UsabilityFilter.DAY_ONLY
         NIGHT_ONLY -> UsabilityFilter.NIGHT_ONLY
         else -> {
-            Log.info("GameLoader", "Unknown dayNight for runway configuration")
+            FileLog.info("GameLoader", "Unknown dayNight for runway configuration")
             UsabilityFilter.DAY_AND_NIGHT
         }
     }
@@ -541,7 +541,7 @@ private fun parseRwyConfigRunways(data: List<String>, airport: Airport, currRwyC
  * @param currRwyConfig the current runway configuration
  */
 private fun parseRwyConfigNTZ(data: List<String>, currRwyConfig: RunwayConfiguration) {
-    if (data.size != 5) Log.info("GameLoader", "NTZ data has ${data.size} elements instead of 5")
+    if (data.size != 5) FileLog.info("GameLoader", "NTZ data has ${data.size} elements instead of 5")
     val pos = data[1].split(",")
     val posX = nmToPx(pos[0].toFloat())
     val posY = nmToPx(pos[1].toFloat())
@@ -558,20 +558,20 @@ private fun parseRwyConfigNTZ(data: List<String>, currRwyConfig: RunwayConfigura
  * @return the constructed [Approach] or null if an invalid runway is specified
  */
 private fun parseApproach(data: List<String>, airport: Airport): Approach? {
-    if (data.size != 7) Log.info("GameLoader", "Approach data has ${data.size} elements instead of 7")
+    if (data.size != 7) FileLog.info("GameLoader", "Approach data has ${data.size} elements instead of 7")
     val name = data[1].replace("-", " ")
     val dayNight = when (data[2]) {
         DAY_NIGHT -> UsabilityFilter.DAY_AND_NIGHT
         DAY_ONLY -> UsabilityFilter.DAY_ONLY
         NIGHT_ONLY -> UsabilityFilter.NIGHT_ONLY
         else -> {
-            Log.info("GameLoader", "Unknown dayNight for SID $name: ${data[2]}")
+            FileLog.info("GameLoader", "Unknown dayNight for SID $name: ${data[2]}")
             UsabilityFilter.DAY_AND_NIGHT
         }
     }
     val arptId = airport.entity[AirportInfo.mapper]?.arptId ?: return null
     val rwyId = airport.entity[RunwayChildren.mapper]?.updatedRwyMapping?.get(data[3]) ?: run {
-        Log.info("GameLoader", "Runway ${data[3]} not found for approach $name")
+        FileLog.info("GameLoader", "Runway ${data[3]} not found for approach $name")
         return null
     }
     val pos = data[4].split(",")
@@ -590,7 +590,7 @@ private fun parseApproach(data: List<String>, airport: Airport): Approach? {
  * @param approach the approach to add the localizer to
  */
 private fun parseAppLocalizer(data: List<String>, approach: Approach) {
-    if (data.size != 3) Log.info("GameLoader", "Localizer data has ${data.size} elements instead of 3")
+    if (data.size != 3) FileLog.info("GameLoader", "Localizer data has ${data.size} elements instead of 3")
     val heading = data[1].toShort()
     val locDistNm = data[2].toByte()
     approach.addLocalizer(heading, locDistNm)
@@ -602,7 +602,7 @@ private fun parseAppLocalizer(data: List<String>, approach: Approach) {
  * @param approach the approach to add the glideslope to
  */
 private fun parseAppGlideslope(data: List<String>, approach: Approach) {
-    if (data.size != 4) Log.info("GameLoader", "Glideslope data has ${data.size} elements instead of 4")
+    if (data.size != 4) FileLog.info("GameLoader", "Glideslope data has ${data.size} elements instead of 4")
     val angleDeg = data[1].toFloat()
     val offsetNm = data[2].toFloat()
     val maxInterceptAltFt = data[3].toShort()
@@ -630,7 +630,7 @@ private fun parseAppStepDown(data: List<String>, approach: Approach) {
  * @param approach the approach to add the line-up distance to
  */
 private fun parseAppLineUp(data: List<String>, approach: Approach) {
-    if (data.size != 2) Log.info("GameLoader", "Lineup data has ${data.size} elements instead of 2")
+    if (data.size != 2) FileLog.info("GameLoader", "Lineup data has ${data.size} elements instead of 2")
     approach.addLineUpDist(data[1].toFloat())
 }
 
@@ -640,14 +640,14 @@ private fun parseAppLineUp(data: List<String>, approach: Approach) {
  * @param approach the approach to add the circling approach data to
  */
 private fun parseCircling(data: List<String>, approach: Approach) {
-    if (data.size != 4) Log.info("GameLoader", "Circling data has ${data.size} elements instead of 4")
+    if (data.size != 4) FileLog.info("GameLoader", "Circling data has ${data.size} elements instead of 4")
     val minBreakoutAlt = data[1].toInt()
     val maxBreakoutAlt = data[2].toInt()
     val turnDir = when (data[3]) {
         "LEFT" -> CommandTarget.TURN_LEFT
         "RIGHT" -> CommandTarget.TURN_RIGHT
         else -> {
-            Log.info("GameLoader", "Unknown circling breakout turn direction for ${data[0]}")
+            FileLog.info("GameLoader", "Unknown circling breakout turn direction for ${data[0]}")
             CommandTarget.TURN_LEFT
         }
     }
@@ -657,7 +657,7 @@ private fun parseCircling(data: List<String>, approach: Approach) {
 /** Parse the given [data] into the route legs data, and adds it to the supplied [approach]'s [Approach.routeLegs] */
 private fun parseApproachRoute(data: List<String>, approach: Approach) {
     if (approach.routeLegs.size > 0) {
-        Log.info("GameLoader", "Multiple routes for approach: ${approach.entity[ApproachInfo.mapper]?.approachName}")
+        FileLog.info("GameLoader", "Multiple routes for approach: ${approach.entity[ApproachInfo.mapper]?.approachName}")
     }
     approach.routeLegs.extendRoute(parseLegs(data.subList(1, data.size), Route.Leg.APP))
     approach.routeZones.clear()
@@ -678,7 +678,7 @@ private fun parseApproachTransition(data: List<String>, approach: Approach) {
  */
 private fun parseApproachMissed(data: List<String>, approach: Approach) {
     if (approach.missedLegs.size > 0) {
-        Log.info("GameLoader", "Multiple missed approach procedures for approach: ${approach.entity[ApproachInfo.mapper]?.approachName}")
+        FileLog.info("GameLoader", "Multiple missed approach procedures for approach: ${approach.entity[ApproachInfo.mapper]?.approachName}")
     }
     approach.missedLegs.add(Route.DiscontinuityLeg(Route.Leg.MISSED_APP))
     approach.missedLegs.extendRoute(parseLegs(data.subList(1, data.size), Route.Leg.MISSED_APP))
@@ -692,14 +692,14 @@ private fun parseApproachMissed(data: List<String>, approach: Approach) {
  * @return the constructed [SidStar.SID]
  */
 private fun parseSID(data: List<String>, airport: Airport): SidStar.SID {
-    if (data.size != 4) Log.info("GameLoader", "SID data has ${data.size} elements instead of 4")
+    if (data.size != 4) FileLog.info("GameLoader", "SID data has ${data.size} elements instead of 4")
     val name = data[1]
     val dayNight = when (data[2]) {
         DAY_NIGHT -> UsabilityFilter.DAY_AND_NIGHT
         DAY_ONLY -> UsabilityFilter.DAY_ONLY
         NIGHT_ONLY -> UsabilityFilter.NIGHT_ONLY
         else -> {
-            Log.info("GameLoader", "Unknown dayNight for SID $name: ${data[2]}")
+            FileLog.info("GameLoader", "Unknown dayNight for SID $name: ${data[2]}")
             UsabilityFilter.DAY_AND_NIGHT
         }
     }
@@ -730,14 +730,14 @@ private fun parseSIDRwyRoute(data: List<String>, sid: SidStar.SID) {
  * @return the constructed [SidStar.STAR]
  */
 private fun parseSTAR(data: List<String>, airport: Airport): SidStar.STAR {
-    if (data.size != 4) Log.info("GameLoader", "STAR data has ${data.size} elements instead of 4")
+    if (data.size != 4) FileLog.info("GameLoader", "STAR data has ${data.size} elements instead of 4")
     val name = data[1]
     val dayNight = when (data[2]) {
         DAY_NIGHT -> UsabilityFilter.DAY_AND_NIGHT
         DAY_ONLY -> UsabilityFilter.DAY_ONLY
         NIGHT_ONLY -> UsabilityFilter.NIGHT_ONLY
         else -> {
-            Log.info("GameLoader", "Unknown dayNight for SID $name: ${data[2]}")
+            FileLog.info("GameLoader", "Unknown dayNight for SID $name: ${data[2]}")
             UsabilityFilter.DAY_AND_NIGHT
         }
     }
@@ -767,7 +767,7 @@ private fun parseSTARRwyRoute(data: List<String>, star: SidStar.STAR) {
  */
 private fun parseSIDSTARRoute(data: List<String>, sidStar: SidStar) {
     if (sidStar.routeLegs.size > 0) {
-        Log.info("GameLoader", "Multiple routes for SID/STAR: ${sidStar.name}")
+        FileLog.info("GameLoader", "Multiple routes for SID/STAR: ${sidStar.name}")
     }
     sidStar.routeLegs.extendRoute(parseLegs(data.subList(1, data.size), Route.Leg.NORMAL))
     sidStar.routeZones.clear()
@@ -788,7 +788,7 @@ private fun parseSIDSTARinOutboundRoute(data: List<String>, sidStar: SidStar) {
  * @return a [Route] containing the legs
  */
 private fun parseLegs(data: List<String>, flightPhase: Byte, onWarning: (String, String) -> Unit = { type, msg ->
-    Log.info(type, msg)
+    FileLog.info(type, msg)
 }, testingWpts: HashSet<String>? = null): Route {
     val route = Route()
 
@@ -923,7 +923,7 @@ private fun parseLeg(legType: String, data: String, onWarning: (String, String) 
  * @param airport the airport to add the data to
  */
 private fun parseWindDir(data: List<String>, airport: Airport) {
-    if (data.size != 38) Log.info("GameLoader", "Wind direction data has ${data.size} elements instead of 38")
+    if (data.size != 38) FileLog.info("GameLoader", "Wind direction data has ${data.size} elements instead of 38")
     airport.entity[RandomMetarInfo.mapper]?.apply {
         for (i in 1 until data.size) {
             windDirDist.add((i * 10 - 10).toShort(), data[i].toFloat())
@@ -939,7 +939,7 @@ private fun parseWindDir(data: List<String>, airport: Airport) {
  * @param airport the airport to add the data to
  */
 private fun parseWindSpd(data: List<String>, airport: Airport) {
-    if (data.size < 32) Log.info("GameLoader", "Wind speed data has only ${data.size} elements; recommended at least 32")
+    if (data.size < 32) FileLog.info("GameLoader", "Wind speed data has only ${data.size} elements; recommended at least 32")
     airport.entity[RandomMetarInfo.mapper]?.apply {
         for (i in 1 until data.size) {
             windSpdDist.add((i - 1).toShort(), data[i].toFloat())
@@ -955,7 +955,7 @@ private fun parseWindSpd(data: List<String>, airport: Airport) {
  * @param airport the airport to add the data to
  */
 private fun parseVisibility(data: List<String>, airport: Airport) {
-    if (data.size != 21) Log.info("GameLoader", "Visibility data has ${data.size} elements instead of 21")
+    if (data.size != 21) FileLog.info("GameLoader", "Visibility data has ${data.size} elements instead of 21")
     airport.entity[RandomMetarInfo.mapper]?.apply {
         for (i in 1 until data.size) {
             visibilityDist.add((i * 500).toShort(), data[i].toFloat())
@@ -971,7 +971,7 @@ private fun parseVisibility(data: List<String>, airport: Airport) {
  * @param airport the airport to add the data to
  */
 private fun parseCeiling(data: List<String>, airport: Airport) {
-    if (data.size != 16) Log.info("GameLoader", "Ceiling data has ${data.size} elements instead of 16")
+    if (data.size != 16) FileLog.info("GameLoader", "Ceiling data has ${data.size} elements instead of 16")
     airport.entity[RandomMetarInfo.mapper]?.apply {
         for (i in 1 until data.size) {
             val hundredFtDist = shortArrayOf(-1, 0, 1, 2, 5, 10, 20, 30, 50, 80, 120, 170, 230, 300, 380)
@@ -988,7 +988,7 @@ private fun parseCeiling(data: List<String>, airport: Airport) {
  * @param airport the airport to add the data to
  */
 private fun parseWindshear(data: List<String>, airport: Airport) {
-    if (data.size != 3) Log.info("GameLoader", "Windshear data has ${data.size} elements instead of 3")
+    if (data.size != 3) FileLog.info("GameLoader", "Windshear data has ${data.size} elements instead of 3")
     airport.entity[RandomMetarInfo.mapper]?.apply {
         windshearLogCoefficients = Pair(data[1].toFloat(), data[2].toFloat())
     }
@@ -1001,7 +1001,7 @@ private fun parseWindshear(data: List<String>, airport: Airport) {
  */
 private fun parseTraffic(data: List<String>, airport: Airport) {
     val private = data[0] == "PRIVATE"
-    if (private && data.size != 4) Log.info("GameLoader", "Private aircraft data has ${data.size} elements instead of 4")
+    if (private && data.size != 4) FileLog.info("GameLoader", "Private aircraft data has ${data.size} elements instead of 4")
     val airline = if (private) data[1] else data[0]
     val chance = (if (private) data[2] else data[1]).toFloat()
     val aircraftList = GdxArray<String>()
@@ -1027,5 +1027,5 @@ private fun generateTrafficDistribution(airport: Airport) {
  * @param rwyName name of the missing runway
  */
 private fun logMissingRunway(rwyName: String) {
-    Log.info("GameLoader", "Missing runway $rwyName: Did you try to access it before creating it in the data file?")
+    FileLog.info("GameLoader", "Missing runway $rwyName: Did you try to access it before creating it in the data file?")
 }

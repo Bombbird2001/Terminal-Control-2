@@ -2,7 +2,7 @@ package com.bombbird.terminalcontrol2.lwjgl3
 
 import com.bombbird.terminalcontrol2.files.ExternalFileHandler
 import com.bombbird.terminalcontrol2.files.SAVE_EXTENSION
-import com.esotericsoftware.minlog.Log
+import com.bombbird.terminalcontrol2.utilities.FileLog
 import ktx.assets.toAbsoluteFile
 import org.lwjgl.system.MemoryUtil.memAllocPointer
 import org.lwjgl.util.nfd.NativeFileDialog
@@ -15,7 +15,7 @@ class DesktopFileHandler: ExternalFileHandler {
         val path = when (NativeFileDialog.NFD_OpenDialog(SAVE_EXTENSION, "", outputPath)) {
             NativeFileDialog.NFD_CANCEL -> return
             NativeFileDialog.NFD_ERROR -> {
-                Log.info("DesktopFileHandler", "NFD error occurred")
+                FileLog.info("DesktopFileHandler", "NFD error occurred")
                 return onFailure("Error opening selected file")
             }
             NativeFileDialog.NFD_OKAY -> {
@@ -36,7 +36,7 @@ class DesktopFileHandler: ExternalFileHandler {
         val path = when (NativeFileDialog.NFD_SaveDialog(SAVE_EXTENSION, "", outputPath)) {
             NativeFileDialog.NFD_CANCEL -> return
             NativeFileDialog.NFD_ERROR -> {
-                Log.info("DesktopFileHandler", "NFD error occurred")
+                FileLog.info("DesktopFileHandler", "NFD error occurred")
                 return onFailure("Error opening selected file")
             }
             NativeFileDialog.NFD_OKAY -> {

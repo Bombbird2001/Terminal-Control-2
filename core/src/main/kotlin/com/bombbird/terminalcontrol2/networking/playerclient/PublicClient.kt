@@ -14,7 +14,7 @@ import com.esotericsoftware.kryo.io.Output
 import com.esotericsoftware.kryonet.Client
 import com.esotericsoftware.kryonet.Connection
 import com.esotericsoftware.kryonet.Listener
-import com.esotericsoftware.minlog.Log
+import com.bombbird.terminalcontrol2.utilities.FileLog
 import org.apache.commons.codec.binary.Base64
 import java.lang.Exception
 import java.nio.channels.ClosedSelectorException
@@ -41,7 +41,7 @@ class PublicClient: NetworkClient() {
         addListener(object: Listener {
             override fun received(connection: Connection, obj: Any?) {
                 if (obj is NeedsEncryption) {
-                    Log.info("PublicClient", "Received unencrypted data of class ${obj.javaClass.name}")
+                    FileLog.info("PublicClient", "Received unencrypted data of class ${obj.javaClass.name}")
                     return
                 }
 

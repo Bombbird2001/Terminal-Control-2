@@ -10,7 +10,7 @@ import com.bombbird.terminalcontrol2.navigation.SidStar
 import com.bombbird.terminalcontrol2.traffic.RunwayConfiguration
 import com.bombbird.terminalcontrol2.ui.CommsPane
 import com.bombbird.terminalcontrol2.utilities.*
-import com.esotericsoftware.minlog.Log
+import com.bombbird.terminalcontrol2.utilities.FileLog
 import ktx.ashley.*
 import ktx.math.times
 
@@ -123,7 +123,7 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advD
      * @param missingComponent the missing aircraft component
      */
     override fun emptySerialisableObject(missingComponent: String): SerialisedAirport {
-        Log.info("Airport", "Empty serialised airport returned due to missing $missingComponent component")
+        FileLog.info("Airport", "Empty serialised airport returned due to missing $missingComponent component")
         return SerialisedAirport()
     }
 
@@ -232,7 +232,7 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advD
                 if (labelPos in RunwayLabel.LEFT..RunwayLabel.RIGHT) positionToRunway = labelPos
                 else {
                     positionToRunway = 0
-                    Log.info("Runway", "Invalid labelPos $labelPos set, using default value 0")
+                    FileLog.info("Runway", "Invalid labelPos $labelPos set, using default value 0")
                 }
             }
             if (onClient) {
@@ -292,7 +292,7 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advD
          * @param missingComponent the missing aircraft component
          */
         override fun emptySerialisableObject(missingComponent: String): SerialisedRunway {
-            Log.info("Airport", "Empty serialised runway returned due to missing $missingComponent component")
+            FileLog.info("Airport", "Empty serialised runway returned due to missing $missingComponent component")
             return SerialisedRunway()
         }
 

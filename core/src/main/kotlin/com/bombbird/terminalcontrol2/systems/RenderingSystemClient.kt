@@ -18,7 +18,7 @@ import com.bombbird.terminalcontrol2.ui.LABEL_PADDING
 import com.bombbird.terminalcontrol2.ui.UIPane
 import com.bombbird.terminalcontrol2.ui.updateDatatagLabelSize
 import com.bombbird.terminalcontrol2.utilities.*
-import com.esotericsoftware.minlog.Log
+import com.bombbird.terminalcontrol2.utilities.FileLog
 import ktx.ashley.*
 import ktx.collections.GdxArray
 import ktx.collections.GdxMap
@@ -107,6 +107,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         }
 
         // Render polygons
+        // TODO Rendering bug
         val polygons = engine.getEntitiesFor(polygonFamily)
         for (i in 0 until polygons.size()) {
             polygons[i]?.apply {
@@ -306,6 +307,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         // Render datatag to aircraft icon line
         val datatagLines = engine.getEntitiesFor(datatagLineFamily)
         for (i in 0 until datatagLines.size()) {
+            // TODO Rendering bug
             datatagLines[i]?.apply {
                 val datatag = get(Datatag.mapper) ?: return@apply
                 if (!datatag.initialPosSet) return@apply
@@ -383,7 +385,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
                                 else -> {
                                     dirUnitVector = dirUnitVector.withRotation90(0)
                                     dirUnitVector = dirUnitVector.withRotation90(0)
-                                    if (positionToRunway != 0.byte) Log.info("Render runway label", "Invalid positionToRunway $positionToRunway set, using default value 0")
+                                    if (positionToRunway != 0.byte) FileLog.info("Render runway label", "Invalid positionToRunway $positionToRunway set, using default value 0")
                                 }
                             }
                             dirSet = true
@@ -450,7 +452,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
                         FlightType.ARRIVAL -> dotBlue
                         FlightType.DEPARTURE -> dotGreen
                         else -> {
-                            Log.info("RenderingSystem", "Invalid flight type ${flightType.type} for trail dot rendering")
+                            FileLog.info("RenderingSystem", "Invalid flight type ${flightType.type} for trail dot rendering")
                             null
                         }
                     }
@@ -516,13 +518,14 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
 
         var lastRenderDatatagAircraft: Entity? = null
         // Render aircraft datatags (except the one marked with RenderLast)
+        // TODO Rendering bug
         val datatags = engine.getEntitiesFor(datatagFamily)
         for (i in 0 until datatags.size()) {
             datatags[i]?.apply {
                 val datatag = get(Datatag.mapper) ?: return@apply
                 val radarData = get(RadarData.mapper) ?: return@apply
                 if (datatag.renderLast) {
-                    if (lastRenderDatatagAircraft != null) Log.info("RenderingSystem", "Multiple render last aircraft datatags found")
+                    if (lastRenderDatatagAircraft != null) FileLog.info("RenderingSystem", "Multiple render last aircraft datatags found")
                     lastRenderDatatagAircraft = this
                 }
                 if (!datatag.smallLabelFont && camZoom > DATATAG_ZOOM_THRESHOLD) updateDatatagLabelSize(datatag, true)
@@ -602,7 +605,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
                             FlightType.ARRIVAL -> dotBlue
                             FlightType.DEPARTURE -> dotGreen
                             else -> {
-                                Log.info("RenderingSystem", "Invalid flight type ${flightType.type} for contact dot rendering")
+                                FileLog.info("RenderingSystem", "Invalid flight type ${flightType.type} for contact dot rendering")
                                 null
                             }
                         }

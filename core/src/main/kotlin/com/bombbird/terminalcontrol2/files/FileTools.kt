@@ -4,7 +4,7 @@ import com.badlogic.gdx.Application
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.files.FileHandle
 import com.bombbird.terminalcontrol2.global.APP_TYPE
-import com.esotericsoftware.minlog.Log
+import com.bombbird.terminalcontrol2.utilities.FileLog
 import ktx.assets.toExternalFile
 import ktx.assets.toLocalFile
 
@@ -22,7 +22,7 @@ fun getExtDir(path: String): FileHandle? {
         // If Android, check first if local storage available
         if (Gdx.files.isLocalStorageAvailable) {
             handle = path.toLocalFile()
-        } else Log.info("FileLoaderTools", "Local storage unavailable for Android")
-    } else Log.info("FileLoaderTools", "Unknown platform")
+        } else FileLog.info("FileLoaderTools", "Local storage unavailable for Android")
+    } else FileLog.info("FileLoaderTools", "Unknown platform")
     return handle
 }

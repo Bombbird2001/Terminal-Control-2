@@ -18,7 +18,7 @@ import com.bombbird.terminalcontrol2.traffic.*
 import com.bombbird.terminalcontrol2.ui.*
 import com.bombbird.terminalcontrol2.utilities.*
 import com.esotericsoftware.kryo.Kryo
-import com.esotericsoftware.minlog.Log
+import com.bombbird.terminalcontrol2.utilities.FileLog
 import ktx.ashley.*
 import java.math.BigInteger
 import java.util.*
@@ -169,7 +169,7 @@ fun registerClassesToKryo(kryo: Kryo?) {
         register(BigInteger::class.java)
         register(DiffieHellmanValue::class.java)
 
-    } ?: Log.info("NetworkingTools", "Null kryo passed, unable to register classes")
+    } ?: FileLog.info("NetworkingTools", "Null kryo passed, unable to register classes")
 }
 
 /**
@@ -179,11 +179,10 @@ fun registerClassesToKryo(kryo: Kryo?) {
  */
 fun handleIncomingRequestClient(rs: RadarScreen, obj: Any?) {
     if (obj !is ClientReceive) return
-    if (obj is IndividualSectorData) println("IndividualSectorData scheduled")
     if (obj is InitialDataSendComplete) Gdx.app.postRunnable {
         rs.notifyInitialDataSendComplete()
     }
-    rs.postRunnableAfterEngineUpdate(obj is IndividualSectorData) {
+    rs.postRunnableAfterEngineUpdate(false) {
         obj.handleClientReceive(rs)
     }
 }

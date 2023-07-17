@@ -30,7 +30,7 @@ import com.bombbird.terminalcontrol2.traffic.ConflictManager
 import com.bombbird.terminalcontrol2.traffic.TrafficMode
 import com.bombbird.terminalcontrol2.ui.*
 import com.bombbird.terminalcontrol2.utilities.nmToPx
-import com.esotericsoftware.minlog.Log
+import com.bombbird.terminalcontrol2.utilities.FileLog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import ktx.app.KtxScreen
@@ -403,7 +403,7 @@ class RadarScreen private constructor(private val connectionHost: String, privat
             try {
                 networkClient.stop()
             } catch (e: ClosedSelectorException) {
-                Log.info("RadarScreen", "Client channel selector already closed before disposal")
+                FileLog.info("RadarScreen", "Client channel selector already closed before disposal")
             }
             GAME.gameServer?.stopServer()
         }
@@ -541,7 +541,7 @@ class RadarScreen private constructor(private val connectionHost: String, privat
      * @param runnable the runnable to add
      */
     fun postRunnableAfterEngineUpdate(print: Boolean, runnable: Runnable) {
-        if (print) println("Runnable added")
+        if (print) FileLog.info("RadarScreen", "Runnable added")
         pendingRunnablesQueue.offer(runnable)
     }
 
@@ -660,7 +660,7 @@ class RadarScreen private constructor(private val connectionHost: String, privat
      * @param minimised whether the datatag has been minimized
      */
     fun sendAircraftDatatagPositionUpdate(aircraft: Entity, xOffset: Float, yOffset: Float, minimised: Boolean, flashing: Boolean) {
-        val callsign = aircraft[AircraftInfo.mapper]?.icaoCallsign ?: return Log.info("RadarScreen", "Missing AircraftInfo component")
+        val callsign = aircraft[AircraftInfo.mapper]?.icaoCallsign ?: return FileLog.info("RadarScreen", "Missing AircraftInfo component")
         networkClient.sendTCP(AircraftDatatagPositionUpdateData(callsign, xOffset, yOffset, minimised, flashing))
     }
 

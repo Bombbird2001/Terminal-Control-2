@@ -1,6 +1,6 @@
 package com.bombbird.terminalcontrol2.networking.encryption
 
-import com.esotericsoftware.minlog.Log
+import com.bombbird.terminalcontrol2.utilities.FileLog
 import java.lang.Exception
 import java.security.SecureRandom
 import javax.crypto.Cipher
@@ -71,7 +71,8 @@ class AESGCMEncryptor(private val serializeObj: (Any) -> ByteArray?): Encryptor 
             cipher.init(Cipher.ENCRYPT_MODE, secretKey, gcmPara)
             return EncryptedData(iv, cipher.doFinal(serializeObj(dataToEncrypt) ?: return null))
         } catch (e: Exception) {
-            Log.info("AESGCMEncryptor", "Failed to encrypt due to ${e.javaClass.name}")
+            FileLog.info("AESGCMEncryptor", "Failed to encrypt due to\n${e.stackTraceToString()}")
+            e.printStackTrace()
         }
 
         return null
@@ -99,7 +100,7 @@ class AESGCMDecrypter(private val deserializeObj: (ByteArray) -> Any?): Decrypte
             val decrypted = cipher.doFinal(encryptedData.ciphertext)
             return deserializeObj(decrypted)
         } catch (e: Exception) {
-            Log.info("AESGCMDecrypter", "Failed to decrypt due to ${e.javaClass.name}")
+            FileLog.info("AESGCMDecrypter", "Failed to decrypt due to\n${e.stackTraceToString()}")
         }
 
         return null

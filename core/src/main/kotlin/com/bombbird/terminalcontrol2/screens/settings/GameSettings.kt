@@ -16,7 +16,7 @@ import com.bombbird.terminalcontrol2.networking.GameServer.Companion.WEATHER_LIV
 import com.bombbird.terminalcontrol2.networking.GameServer.Companion.WEATHER_RANDOM
 import com.bombbird.terminalcontrol2.networking.GameServer.Companion.WEATHER_STATIC
 import com.bombbird.terminalcontrol2.ui.*
-import com.esotericsoftware.minlog.Log
+import com.bombbird.terminalcontrol2.utilities.FileLog
 import ktx.collections.GdxArray
 import ktx.scene2d.*
 
@@ -151,7 +151,7 @@ class GameSettings: BaseGameSettings() {
                 WEATHER_RANDOM -> RANDOM_WEATHER
                 WEATHER_STATIC -> SET_CUSTOM_WEATHER
                 else -> {
-                    Log.info("GameSettings", "Unknown weather mode setting $weatherMode")
+                    FileLog.info("GameSettings", "Unknown weather mode setting $weatherMode")
                     LIVE_WEATHER
                 }
             }
@@ -161,7 +161,7 @@ class GameSettings: BaseGameSettings() {
                 EMERGENCY_MEDIUM -> MEDIUM
                 EMERGENCY_HIGH -> HIGH
                 else -> {
-                    Log.info("GameSettings", "Unknown emergency rate setting $weatherMode")
+                    FileLog.info("GameSettings", "Unknown emergency rate setting $weatherMode")
                     LOW
                 }
             }
@@ -172,7 +172,7 @@ class GameSettings: BaseGameSettings() {
                 STORMS_HIGH -> HIGH
                 STORMS_NIGHTMARE -> NIGHTMARE
                 else -> {
-                    Log.info("GameSettings", "Unknown storm density setting $weatherMode")
+                    FileLog.info("GameSettings", "Unknown storm density setting $weatherMode")
                     OFF
                 }
             }
@@ -207,7 +207,7 @@ class GameSettings: BaseGameSettings() {
                 RANDOM_WEATHER -> WEATHER_RANDOM
                 STATIC_WEATHER -> WEATHER_STATIC
                 else -> {
-                    Log.info("GameSettings", "Unknown weather mode selection ${weatherSelectBox.selected}")
+                    FileLog.info("GameSettings", "Unknown weather mode selection ${weatherSelectBox.selected}")
                     WEATHER_LIVE
                 }
             }
@@ -217,7 +217,7 @@ class GameSettings: BaseGameSettings() {
                 MEDIUM -> EMERGENCY_MEDIUM
                 HIGH -> EMERGENCY_HIGH
                 else -> {
-                    Log.info("GameSettings", "Unknown emergency rate selection ${emergencySelectBox.selected}")
+                    FileLog.info("GameSettings", "Unknown emergency rate selection ${emergencySelectBox.selected}")
                     EMERGENCY_LOW
                 }
             }
@@ -228,7 +228,7 @@ class GameSettings: BaseGameSettings() {
                 HIGH -> STORMS_HIGH
                 NIGHTMARE -> STORMS_NIGHTMARE
                 else -> {
-                    Log.info("GameSettings", "Unknown storm density selection ${stormSelectBox.selected}")
+                    FileLog.info("GameSettings", "Unknown storm density selection ${stormSelectBox.selected}")
                     STORMS_OFF
                 }
             }

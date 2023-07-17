@@ -14,7 +14,7 @@ import com.esotericsoftware.kryo.io.Output
 import com.esotericsoftware.kryonet.Connection
 import com.esotericsoftware.kryonet.Listener
 import com.esotericsoftware.kryonet.Server
-import com.esotericsoftware.minlog.Log
+import com.bombbird.terminalcontrol2.utilities.FileLog
 import ktx.collections.GdxArrayMap
 import ktx.collections.set
 import java.lang.Exception
@@ -78,7 +78,8 @@ class LANServer(
             // We can ignore this, it happens sometimes when the client is stopped
             if (e is ClosedSelectorException) return@setUncaughtExceptionHandler
 
-            HttpRequest.sendCrashReport(Exception(e), "LANServer", "LAN multiplayer/Singleplayer")
+            val multiplayerType = if (gameServer.maxPlayersAllowed > 1) "LAN multiplayer" else "Singleplayer"
+            HttpRequest.sendCrashReport(Exception(e), "LANServer", multiplayerType)
             GAME.quitCurrentGameWithDialog(CustomDialog("Error", "An error occurred", "", "Ok"))
         }
         server.addListener(object : Listener {
@@ -108,7 +109,7 @@ class LANServer(
                 if (encryptorDecrypter == null) return
 
                 if (obj is NeedsEncryption) {
-                    Log.info("LANServer", "Received unencrypted data of class ${obj.javaClass.name}")
+                    FileLog.info("LANServer", "Received unencrypted data of class ${obj.javaClass.name}")
                     return
                 }
 
@@ -211,7 +212,7 @@ class LANServer(
         }
         val connUuid = UUID.fromString(data.uuid)
         if (gameServer.sectorMap.containsKey(connUuid)) {
-            Log.info("NetworkingTools", "UUID $connUuid is already in game")
+            FileLog.info("NetworkingTools", "UUID $connUuid is already in game")
             encryptIfNeeded(ConnectionError("Player with same ID already in server"), encryptor)?.let { connection.sendTCP(it) }
             return
         }

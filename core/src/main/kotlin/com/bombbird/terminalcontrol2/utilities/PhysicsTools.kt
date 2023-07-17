@@ -9,7 +9,6 @@ import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.navigation.SidStar
 import com.bombbird.terminalcontrol2.navigation.compareLegEquality
 import com.bombbird.terminalcontrol2.navigation.getFirstWaypointLegInSector
-import com.esotericsoftware.minlog.Log
 import ktx.ashley.get
 import kotlin.math.*
 
@@ -614,7 +613,7 @@ fun calculateArrivalSpawnAltitude(aircraft: Entity, airport: Entity, origRoute: 
     // 12 - 16nm leeway
     val effectiveDistPxToAlt = max(distPxToAlt - nmToPx(MathUtils.random(12, 16)), 0f)
     val aircraftPerf = aircraft[AircraftInfo.mapper]?.aircraftPerf ?: run {
-        Log.info("PhysicsTools", "No aircraft performance data found")
+        FileLog.info("PhysicsTools", "No aircraft performance data found")
         AircraftTypeData.AircraftPerfData()
     }
     var currStepAlt = firstMaxAlt

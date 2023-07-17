@@ -12,7 +12,7 @@ import com.bombbird.terminalcontrol2.utilities.calculateDistanceBetweenPoints
 import com.bombbird.terminalcontrol2.utilities.ftToPx
 import com.bombbird.terminalcontrol2.utilities.getRequiredTrack
 import com.bombbird.terminalcontrol2.utilities.mToPx
-import com.esotericsoftware.minlog.Log
+import com.bombbird.terminalcontrol2.utilities.FileLog
 import ktx.ashley.get
 import ktx.collections.GdxArray
 import ktx.math.plus
@@ -91,7 +91,7 @@ fun checkLegChanged(route: Route, leg: Leg): Boolean {
             return true
         }
         else -> {
-            Log.info("ControlStateTools", "Unknown leg type ${leg::class}")
+            FileLog.info("ControlStateTools", "Unknown leg type ${leg::class}")
             return true
         }
     }
@@ -128,7 +128,7 @@ fun createCustomHoldWaypoint(posX: Float, posY: Float): Short {
         break
     }
     if (wptId == null) {
-        Log.info("ControlStateTools", "Could not find a custom waypoint ID to use")
+        FileLog.info("ControlStateTools", "Could not find a custom waypoint ID to use")
         return 0
     }
     // Create the waypoint, add to gameServer, and send data to clients
@@ -146,7 +146,7 @@ fun createCustomHoldWaypoint(posX: Float, posY: Float): Short {
  */
 fun removeCustomHoldWaypoint(wptId: Short) {
     if (wptId >= -1) {
-        Log.info("ControlStateTools", "Custom waypoint must have ID < -1; $wptId was provided")
+        FileLog.info("ControlStateTools", "Custom waypoint must have ID < -1; $wptId was provided")
         return
     }
     // Remove the custom waypoint with specified ID

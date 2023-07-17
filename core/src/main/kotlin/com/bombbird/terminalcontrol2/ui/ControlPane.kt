@@ -10,7 +10,7 @@ import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.*
 import com.bombbird.terminalcontrol2.traffic.getAvailableApproaches
 import com.bombbird.terminalcontrol2.utilities.*
-import com.esotericsoftware.minlog.Log
+import com.bombbird.terminalcontrol2.utilities.FileLog
 import ktx.ashley.get
 import ktx.ashley.remove
 import ktx.collections.GdxArray
@@ -606,7 +606,7 @@ class ControlPane {
                 vectorSubpaneObj.updateVectorTable(parentPane.userClearanceState.route, parentPane.userClearanceState.vectorHdg, parentPane.userClearanceState.vectorTurnDir)
                 updateUndoTransmitButtonStates()
             }
-            else -> Log.info("UIPane", "Unknown lateral mode $mode")
+            else -> FileLog.info("UIPane", "Unknown lateral mode $mode")
         }
         modificationInProgress = false
     }

@@ -11,7 +11,7 @@ import com.bombbird.terminalcontrol2.navigation.establishedOnFinalApproachTrack
 import com.bombbird.terminalcontrol2.utilities.calculateDistanceBetweenPoints
 import com.bombbird.terminalcontrol2.utilities.getLatestClearanceState
 import com.bombbird.terminalcontrol2.utilities.nmToPx
-import com.esotericsoftware.minlog.Log
+import com.bombbird.terminalcontrol2.utilities.FileLog
 import ktx.ashley.get
 import ktx.ashley.has
 import ktx.collections.GdxArray
@@ -338,7 +338,7 @@ class ConflictManager {
          * @param missingComponent the missing aircraft component
          */
         override fun emptySerialisableObject(missingComponent: String): SerialisedConflict {
-            Log.info("ConflictManager", "Empty serialised conflict returned due to missing $missingComponent component")
+            FileLog.info("ConflictManager", "Empty serialised conflict returned due to missing $missingComponent component")
             return SerialisedConflict()
         }
 
@@ -376,7 +376,7 @@ class ConflictManager {
          * @param missingComponent the missing aircraft component
          */
         override fun emptySerialisableObject(missingComponent: String): SerialisedPotentialConflict {
-            Log.info("ConflictManager", "Empty serialised potential conflict returned due to missing $missingComponent component")
+            FileLog.info("ConflictManager", "Empty serialised potential conflict returned due to missing $missingComponent component")
             return SerialisedPotentialConflict()
         }
 

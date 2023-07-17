@@ -4,7 +4,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.Label
 import com.badlogic.gdx.utils.Align
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.ui.addChangeListener
-import com.esotericsoftware.minlog.Log
+import com.bombbird.terminalcontrol2.utilities.FileLog
 import ktx.scene2d.*
 
 /** New game screen which extends [BasicUIScreen] */
@@ -88,10 +88,10 @@ class NewGame: BasicUIScreen() {
                                                     GAME.addScreen(GameLoading.newPublicMultiplayerGameLoading(airportToHost))
                                                     GAME.setScreen<GameLoading>()
                                                 }
-                                                else -> Log.info("NewGame", "Unknown game mode ${mode.name}")
+                                                else -> FileLog.info("NewGame", "Unknown game mode ${mode.name}")
                                             }
                                         }
-                                    } ?: Log.info("NewGame", "Start button pressed when airport selected is null")
+                                    } ?: FileLog.info("NewGame", "Start button pressed when airport selected is null")
                                     event?.handle()
                                 }
                             }

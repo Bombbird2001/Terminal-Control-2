@@ -6,7 +6,7 @@ import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.SHOW_MVA_ALTITUDE
 import com.bombbird.terminalcontrol2.global.getEngine
-import com.esotericsoftware.minlog.Log
+import com.bombbird.terminalcontrol2.utilities.FileLog
 import ktx.ashley.*
 import kotlin.math.roundToInt
 
@@ -117,7 +117,7 @@ class MinAltSector(minAlt: Int?, polygonBoundary: ShortArray?, circleX: Short = 
      * @param missingComponent the missing aircraft component
      */
     override fun emptySerialisableObject(missingComponent: String): SerialisedMinAltSector {
-        Log.info("MinAltSector", "Empty serialised minAltSector returned due to missing $missingComponent component")
+        FileLog.info("MinAltSector", "Empty serialised minAltSector returned due to missing $missingComponent component")
         return SerialisedMinAltSector()
     }
 

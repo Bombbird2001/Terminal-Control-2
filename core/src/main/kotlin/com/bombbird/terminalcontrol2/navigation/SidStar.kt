@@ -4,7 +4,7 @@ import com.bombbird.terminalcontrol2.entities.RouteZone
 import com.bombbird.terminalcontrol2.global.RUNWAY_SIZE
 import com.bombbird.terminalcontrol2.utilities.Pronounceable
 import com.bombbird.terminalcontrol2.utilities.UsabilityFilter
-import com.esotericsoftware.minlog.Log
+import com.bombbird.terminalcontrol2.utilities.FileLog
 import ktx.collections.GdxArray
 import ktx.collections.GdxArrayMap
 
@@ -96,7 +96,7 @@ abstract class SidStar(val name: String,
                 rwyLegs[rwyName]?.let { rwyRoute ->
                     setToRouteCopy(rwyRoute)
                 } ?: run {
-                    Log.info("SID", "Runway $rwyName not available for SID $name")
+                    FileLog.info("SID", "Runway $rwyName not available for SID $name")
                 }
                 extendRouteCopy(routeLegs)
                 if (!outboundLegs.isEmpty) extendRouteCopy(outboundLegs.random())

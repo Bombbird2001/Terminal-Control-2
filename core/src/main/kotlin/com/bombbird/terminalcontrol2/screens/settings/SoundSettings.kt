@@ -6,7 +6,7 @@ import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.ui.addChangeListener
 import com.bombbird.terminalcontrol2.ui.defaultSettingsLabel
 import com.bombbird.terminalcontrol2.ui.defaultSettingsSelectBox
-import com.esotericsoftware.minlog.Log
+import com.bombbird.terminalcontrol2.utilities.FileLog
 import ktx.scene2d.*
 
 /** Settings screen for sound settings */
@@ -62,7 +62,7 @@ class SoundSettings: BaseSettings() {
             COMMS_SOUND_EFFECTS -> SOUND_EFFECTS
             COMMS_PILOT_VOICES -> PILOT_VOICES
             else -> {
-                Log.info("SoundSettings", "Unknown communication voice setting $COMMUNICATIONS_SOUND")
+                FileLog.info("SoundSettings", "Unknown communication voice setting $COMMUNICATIONS_SOUND")
                 PILOT_VOICES
             }
         }
@@ -79,7 +79,7 @@ class SoundSettings: BaseSettings() {
             SOUND_EFFECTS -> COMMS_SOUND_EFFECTS
             PILOT_VOICES -> COMMS_PILOT_VOICES
             else -> {
-                Log.info("SoundSettings", "Unknown communication voice selection ${commsSelectBox.selected}")
+                FileLog.info("SoundSettings", "Unknown communication voice selection ${commsSelectBox.selected}")
                 COMMS_PILOT_VOICES
             }
         }

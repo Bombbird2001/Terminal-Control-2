@@ -16,7 +16,7 @@ import com.bombbird.terminalcontrol2.ui.updateDatatagStyle
 import com.bombbird.terminalcontrol2.ui.updateDatatagText
 import com.bombbird.terminalcontrol2.utilities.AircraftTypeData
 import com.bombbird.terminalcontrol2.utilities.getAircraftIcon
-import com.esotericsoftware.minlog.Log
+import com.bombbird.terminalcontrol2.utilities.FileLog
 import ktx.ashley.*
 import ktx.scene2d.Scene2DSkin
 import java.util.*
@@ -69,7 +69,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                     FlightType.ARRIVAL, FlightType.EN_ROUTE -> "aircraftEnroute"
                     FlightType.DEPARTURE -> "aircraftTower"
                     else -> {
-                        Log.info("Aircraft", "Unknown flight type $flightType")
+                        FileLog.info("Aircraft", "Unknown flight type $flightType")
                         "aircraftTower"
                     }
                 }))
@@ -93,7 +93,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                 FlightType.DEPARTURE -> SectorInfo.TOWER
                 FlightType.ARRIVAL, FlightType.EN_ROUTE -> SectorInfo.CENTRE
                 else -> {
-                    Log.info("Aircraft", "Unknown flight type $flightType")
+                    FileLog.info("Aircraft", "Unknown flight type $flightType")
                     SectorInfo.CENTRE
                 }
             }
@@ -206,7 +206,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
      * @param missingComponent the missing aircraft component
      */
     private fun emptySerialisableUDPObject(missingComponent: String): SerialisedAircraftUDP {
-        Log.info("Aircraft", "Empty serialised UDP aircraft returned due to missing $missingComponent component")
+        FileLog.info("Aircraft", "Empty serialised UDP aircraft returned due to missing $missingComponent component")
         return SerialisedAircraftUDP()
     }
 
@@ -328,7 +328,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
      * @param missingComponent the missing aircraft component
      */
     override fun emptySerialisableObject(missingComponent: String): SerialisedAircraft {
-        Log.info("Aircraft", "Empty serialised aircraft returned due to missing $missingComponent component")
+        FileLog.info("Aircraft", "Empty serialised aircraft returned due to missing $missingComponent component")
         return SerialisedAircraft()
     }
 

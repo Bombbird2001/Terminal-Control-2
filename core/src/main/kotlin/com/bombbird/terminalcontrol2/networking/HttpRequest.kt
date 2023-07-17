@@ -5,7 +5,7 @@ import com.badlogic.gdx.Gdx
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.screens.JoinGame
 import com.bombbird.terminalcontrol2.utilities.updateAirportMetar
-import com.esotericsoftware.minlog.Log
+import com.bombbird.terminalcontrol2.utilities.FileLog
 import com.squareup.moshi.*
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
@@ -54,8 +54,7 @@ object HttpRequest {
             .build()
         client.newCall(request).enqueue(object: Callback {
             override fun onFailure(call: Call, e: IOException) {
-                Log.info("HttpRequest", "METAR request failed")
-                // println(e)
+                FileLog.info("HttpRequest", "METAR request failed")
                 handleMetarResult(null, retry, reqString, onGenerateRandom)
             }
 
@@ -85,12 +84,12 @@ object HttpRequest {
             return
         }
         if (!response.isSuccessful) {
-            Log.info("HttpRequest", "METAR request error ${response.code}")
+            FileLog.info("HttpRequest", "METAR request error ${response.code}")
             tryGetWeatherAgain()
         } else {
             val responseText = response.body?.string()
             if (responseText == null) {
-                Log.info("HttpRequest", "METAR request null response body")
+                FileLog.info("HttpRequest", "METAR request null response body")
                 tryGetWeatherAgain()
             } else {
                 // METAR JSON has been received
@@ -120,14 +119,13 @@ object HttpRequest {
             .build()
         client.newCall(request).enqueue(object: Callback {
             override fun onFailure(call: Call, e: IOException) {
-                Log.info("HttpRequest", "Public games alive check failed")
+                FileLog.info("HttpRequest", "Public games alive check failed")
                 onComplete("Could not check status")
-                // println(e)
             }
 
             override fun onResponse(call: Call, response: Response) {
                 if (!response.isSuccessful) {
-                    Log.info("HttpRequest", "Public games alive check error ${response.code}")
+                    FileLog.info("HttpRequest", "Public games alive check error ${response.code}")
                     onComplete("Down")
                 } else {
                     onComplete("Up and reachable")
@@ -148,8 +146,7 @@ object HttpRequest {
             .build()
         client.newCall(request).enqueue(object: Callback {
             override fun onFailure(call: Call, e: IOException) {
-                Log.info("HttpRequest", "Public games request failed")
-                // println(e)
+                FileLog.info("HttpRequest", "Public games request failed")
             }
 
             override fun onResponse(call: Call, response: Response) {
@@ -168,11 +165,11 @@ object HttpRequest {
         if (response == null) return onComplete(publicGamesData)
 
         if (!response.isSuccessful) {
-            Log.info("HttpRequest", "Public games request error ${response.code}")
+            FileLog.info("HttpRequest", "Public games request error ${response.code}")
         } else {
             val responseText = response.body?.string()
             if (responseText == null) {
-                Log.info("HttpRequest", "Public games request null response body")
+                FileLog.info("HttpRequest", "Public games request null response body")
             } else {
                 // Parse JSON to multiplayer games info
                 val type = Types.newParameterizedType(List::class.java, JoinGame.MultiplayerGameInfo::class.java)
@@ -215,19 +212,19 @@ object HttpRequest {
         val response = client.newCall(request).execute()
 
         val roomAuthResponse = if (!response.isSuccessful) {
-            Log.info("HttpRequest", "Public games authorization error ${response.code}")
+            FileLog.info("HttpRequest", "Public games authorization error ${response.code}")
             null
         } else {
             val responseText = response.body?.string()
             if (responseText == null) {
-                Log.info("HttpRequest", "Public games authorization null response body")
+                FileLog.info("HttpRequest", "Public games authorization null response body")
                 null
             } else {
                 // Parse JSON to room creation status
                 try {
                     moshiRoomAuthAdapter.fromJson(responseText)
                 } catch (e: JsonDataException) {
-                    Log.info("HttpRequest", "Public games authorization failed to parse response $responseText")
+                    FileLog.info("HttpRequest", "Public games authorization failed to parse response $responseText")
                     null
                 }
             }
@@ -260,19 +257,19 @@ object HttpRequest {
         val response = client.newCall(request).execute()
 
         val roomCreationStatus = if (!response.isSuccessful) {
-            Log.info("HttpRequest", "Public games creation error ${response.code}")
+            FileLog.info("HttpRequest", "Public games creation error ${response.code}")
             null
         } else {
             val responseText = response.body?.string()
             if (responseText == null) {
-                Log.info("HttpRequest", "Public games creation null response body")
+                FileLog.info("HttpRequest", "Public games creation null response body")
                 null
             } else {
                 // Parse JSON to room creation status
                 try {
                     moshiRoomCreationAdapter.fromJson(responseText)
                 } catch (e: JsonDataException) {
-                    Log.info("HttpRequest", "Public games creation failed to parse response $responseText")
+                    FileLog.info("HttpRequest", "Public games creation failed to parse response $responseText")
                     null
                 }
             }
@@ -313,12 +310,11 @@ object HttpRequest {
 
         client.newCall(request).enqueue(object: Callback {
             override fun onFailure(call: Call, e: IOException) {
-                Log.info("HttpRequest", "Error request failed")
-                // println(e)
+                FileLog.info("HttpRequest", "Error request failed")
             }
 
             override fun onResponse(call: Call, response: Response) {
-                Log.info("HttpRequest", response.body?.string() ?: "Null response body")
+                FileLog.info("HttpRequest", response.body?.string() ?: "Null response body")
             }
         })
     }

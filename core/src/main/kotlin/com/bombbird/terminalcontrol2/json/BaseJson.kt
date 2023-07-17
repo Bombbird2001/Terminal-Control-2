@@ -6,7 +6,7 @@ import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.utilities.byte
-import com.esotericsoftware.minlog.Log
+import com.bombbird.terminalcontrol2.utilities.FileLog
 import com.squareup.moshi.FromJson
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.ToJson
@@ -81,7 +81,7 @@ data class ApproachRefJSON(val arptId: Byte, val appName: String, val visRwyId: 
                 is GlideSlopeCaptured -> component.gsApp = app
                 is StepDownApproach -> component.stepDownApp = app
                 is CirclingApproach -> component.circlingApp = app
-                else -> Log.info("BaseJson", "Unknown approach entity type ${component.javaClass.name}")
+                else -> FileLog.info("BaseJson", "Unknown approach entity type ${component.javaClass.name}")
             }
         }
     }

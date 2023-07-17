@@ -16,7 +16,7 @@ import com.esotericsoftware.kryo.io.Output
 import com.esotericsoftware.kryonet.Connection
 import com.esotericsoftware.kryonet.Listener
 import com.esotericsoftware.kryonet.Server
-import com.esotericsoftware.minlog.Log
+import com.bombbird.terminalcontrol2.utilities.FileLog
 import org.apache.commons.codec.binary.Base64
 import java.util.Timer
 import java.util.TimerTask
@@ -48,7 +48,7 @@ object RelayServer: RelayServer, RelayAuthorization {
                 }
 
                 if (obj is NeedsEncryption) {
-                    Log.info("RelayServer", "Received unencrypted data of class ${obj.javaClass.name}")
+                    FileLog.info("RelayServer", "Received unencrypted data of class ${obj.javaClass.name}")
                     return
                 }
 
@@ -83,7 +83,7 @@ object RelayServer: RelayServer, RelayAuthorization {
                     idToRoom.remove(hostRoom)
                     hostConnectionToRoomMap.remove(connection)
                     hostUUIDs.remove(connectionToRoomUUID[connection]?.second)
-                    Log.info("RelayServer", "Room $hostRoom closed")
+                    FileLog.info("RelayServer", "Room $hostRoom closed")
                 } else  {
                     // Connection is from non-host player
                     val uuidRoom = connectionToRoomUUID[connection] ?: return
@@ -285,7 +285,7 @@ object RelayServer: RelayServer, RelayAuthorization {
             connectionToRoomUUID[hostConnection] = Pair(roomID, newUUID)
             idToRoom[roomID] = Room(roomID, maxPlayers, hostConnection, mapName, pendingRoom.secretKey)
             hostConnectionToRoomMap[hostConnection] = roomID
-            Log.info("RelayServer", "Room $roomID created - $mapName")
+            FileLog.info("RelayServer", "Room $roomID created - $mapName")
             return true
         }
 
@@ -323,19 +323,19 @@ object RelayServer: RelayServer, RelayAuthorization {
         val roomId = obj.roomId
         // Verify roomId matches connection
         if (connectionToRoomUUID[conn]?.first != roomId) {
-            Log.info("RelayServer", "Forward to client failed - Connection does not match room ID")
+            FileLog.info("RelayServer", "Forward to client failed - Connection does not match room ID")
             return
         }
 
         val targetUUID = obj.uuid
         val roomObj = idToRoom[roomId] ?: run {
-            Log.info("RelayServer", "Forward to client failed - Room ID $roomId not found")
+            FileLog.info("RelayServer", "Forward to client failed - Room ID $roomId not found")
             return
         }
 
         // Verify connection is host
         if (!roomObj.isHost(conn)) {
-            Log.info("RelayServer", "Forward to client failed - Connection UUID is not host of room")
+            FileLog.info("RelayServer", "Forward to client failed - Connection UUID is not host of room")
             return
         }
 
@@ -346,11 +346,11 @@ object RelayServer: RelayServer, RelayAuthorization {
     override fun forwardToAllClientsUnencryptedUDP(obj: ServerToAllClientsUnencryptedUDP, conn: Connection) {
         val roomObj = idToRoom[hostConnectionToRoomMap[conn]]
         if (roomObj == null) {
-            Log.info("RelayServer", "Forward to all clients failed - Connection does not belong to a room")
+            FileLog.info("RelayServer", "Forward to all clients failed - Connection does not belong to a room")
             return
         }
         if (!roomObj.isHost(conn)) {
-            Log.info("RelayServer", "Forward to client failed - Connection UUID is not host of room")
+            FileLog.info("RelayServer", "Forward to client failed - Connection UUID is not host of room")
             return
         }
         roomObj.forwardFromHostToAllClientConnectionsUnencryptedUDP(obj, conn)
@@ -360,12 +360,12 @@ object RelayServer: RelayServer, RelayAuthorization {
         val roomId = obj.roomId
         // Verify roomId matches connection - prevents malicious modification of roomID
         if (connectionToRoomUUID[conn]?.first != roomId) {
-            Log.info("RelayServer", "Forward to host failed - Connection does not match room ID")
+            FileLog.info("RelayServer", "Forward to host failed - Connection does not match room ID")
             return
         }
 
         val roomObj = idToRoom[roomId] ?: run {
-            Log.info("RelayServer", "Forward to host failed - Room ID $roomId not found")
+            FileLog.info("RelayServer", "Forward to host failed - Room ID $roomId not found")
             return
         }
         roomObj.forwardFromClientToHost(obj, conn)
@@ -527,12 +527,12 @@ object RelayServer: RelayServer, RelayAuthorization {
             val cancelTask = object : TimerTask() {
                 override fun run() {
                     authorizedUUIDs.remove(uuid)
-                    Log.info("RelayServer", "Pending player $uuid removed")
+                    FileLog.info("RelayServer", "Pending player $uuid removed")
                 }
             }
             timer.schedule(cancelTask, 10000)
             if (authorizedUUIDs.putIfAbsent(uuid, cancelTask) == null) {
-                Log.info("RelayServer", "Pending player $uuid added")
+                FileLog.info("RelayServer", "Pending player $uuid added")
                 return symmetricKey
             }
             return null
@@ -581,7 +581,7 @@ object RelayServer: RelayServer, RelayAuthorization {
             val nonce = AuthenticationChecker.addChallengeNonce(key, roomID) ?: return null
             return Triple(Base64.encodeBase64String(key.encoded), nonce.first, nonce.second)
         } ?: run {
-            Log.info("RelayServer", "Authorization failed - Room ID $roomID does not exist")
+            FileLog.info("RelayServer", "Authorization failed - Room ID $roomID does not exist")
             return null
         }
     }
@@ -592,7 +592,7 @@ object RelayServer: RelayServer, RelayAuthorization {
                 val cancelTask = object : TimerTask() {
                     override fun run() {
                         pendingRooms.remove(i.toShort())
-                        Log.info("RelayServer", "Pending room $i removed")
+                        FileLog.info("RelayServer", "Pending room $i removed")
                     }
                 }
                 timer.schedule(cancelTask, 20000)
@@ -601,7 +601,7 @@ object RelayServer: RelayServer, RelayAuthorization {
                 val newPendingRoom = PendingRoom(key, cancelTask)
                 pendingRooms[i.toShort()] = newPendingRoom
                 val nonce = AuthenticationChecker.addChallengeNonce(key, i.toShort()) ?: return null
-                Log.info("RelayServer", "Pending room $i created")
+                FileLog.info("RelayServer", "Pending room $i created")
                 return HttpRequest.RoomCreationStatus(true, i.toShort(),
                     HttpRequest.AuthorizationResponse(true, Base64.encodeBase64String(key.encoded), nonce.first, nonce.second))
             }

@@ -19,6 +19,7 @@ import com.bombbird.terminalcontrol2.screens.settings.MainSettings
 import com.bombbird.terminalcontrol2.screens.settings.TrafficSettings
 import com.bombbird.terminalcontrol2.sounds.SoundManager
 import com.bombbird.terminalcontrol2.ui.CustomDialog
+import com.bombbird.terminalcontrol2.utilities.FileLog
 import kotlinx.coroutines.launch
 import ktx.app.KtxGame
 import ktx.app.KtxScreen
@@ -97,6 +98,12 @@ class TerminalControl2(val externalFileHandler: ExternalFileHandler) : KtxGame<K
                 loadPlayerUUID()
                 loadAvailableAirports()
             }
+
+            // Initialize logging system
+            FileLog.initializeFile("Logs/BUILD $BUILD_VERSION.log")
+            println("------------------------------------------------------")
+            FileLog.info("TerminalControl2", "Game initialized")
+
             // Assets are loaded
             GAME = this@TerminalControl2
 
@@ -128,5 +135,6 @@ class TerminalControl2(val externalFileHandler: ExternalFileHandler) : KtxGame<K
         soundManager.disposeSafely()
         lanClient.dispose()
         publicClient.dispose()
+        FileLog.close()
     }
 }

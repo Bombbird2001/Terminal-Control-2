@@ -13,7 +13,7 @@ import com.bombbird.terminalcontrol2.traffic.*
 import com.bombbird.terminalcontrol2.utilities.calculateDistanceBetweenPoints
 import com.bombbird.terminalcontrol2.utilities.findClosestIntersectionBetweenSegmentAndPolygon
 import com.bombbird.terminalcontrol2.utilities.nmToPx
-import com.esotericsoftware.minlog.Log
+import com.bombbird.terminalcontrol2.utilities.FileLog
 import ktx.ashley.*
 import ktx.collections.GdxArray
 import kotlin.math.ceil
@@ -68,7 +68,7 @@ class TrafficSystemInterval: IntervalSystem(1f) {
                         previousArrivalOffsetS = defaultRate * MathUtils.random(-0.1f, 0.1f)
                         arrivalSpawnTimerS += previousArrivalOffsetS
                     }
-                    else -> Log.info("TrafficSystem", "Invalid traffic mode $trafficMode")
+                    else -> FileLog.info("TrafficSystem", "Invalid traffic mode $trafficMode")
                 }
                 createRandomArrival(Entries(airports).map { it.value }, this)
             }

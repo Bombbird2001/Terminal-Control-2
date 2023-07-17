@@ -17,7 +17,7 @@ import com.bombbird.terminalcontrol2.systems.*
 import com.bombbird.terminalcontrol2.traffic.*
 import com.bombbird.terminalcontrol2.ui.CustomDialog
 import com.bombbird.terminalcontrol2.utilities.*
-import com.esotericsoftware.minlog.Log
+import com.bombbird.terminalcontrol2.utilities.FileLog
 import ktx.ashley.get
 import ktx.ashley.remove
 import ktx.collections.GdxArray
@@ -290,12 +290,12 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
     private fun initiateServer(mainName: String, saveId: Int?) {
         thread {
             try {
-                Log.info("GameServer", "Starting game server")
+                FileLog.info("GameServer", "Starting game server")
                 saveID = saveId
                 loadGame(mainName, saveId)
                 startNetworkingServer()
                 startTime = -1L
-                Log.info("GameServer", "Game server started")
+                FileLog.info("GameServer", "Game server started")
                 serverStartedCallback?.invoke()
                 // Pause the game initially (until at least 1 player connects)
                 handleGameRunningRequest(false)
@@ -304,8 +304,11 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
                 stopNetworkingServer()
                 saveGame(this)
             } catch (e: Exception) {
-                val multiplayerType = if (networkServer.getRoomId() != null) "Public multiplayer"
-                else "LAN multiplayer/Singleplayer"
+                val multiplayerType = when {
+                    networkServer.getRoomId() != null -> "Public multiplayer"
+                    maxPlayersAllowed > 1 -> "LAN multiplayer"
+                    else -> "Singleplayer"
+                }
                 HttpRequest.sendCrashReport(e, "GameServer", multiplayerType)
                 GAME.quitCurrentGameWithDialog(CustomDialog("Error", "An error occurred", "", "Ok"))
             }
@@ -317,7 +320,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
         setLoopingFalse()
         engine.removeAllEntities()
         engine.removeAllSystems()
-        Log.info("GameServer", "Game server stopped")
+        FileLog.info("GameServer", "Game server stopped")
     }
 
     /** Initiates the host server for networking */
@@ -658,7 +661,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
         newId: Byte,
         newSectorArray: Array<Sector.SerialisedSector>
     ) {
-        println("Individual sector send to $connUuid")
+        // println("Individual sector send to $connUuid")
         networkServer.sendTCPToConnection(
             connUuid,
             IndividualSectorData(newId, newSectorArray, primarySector.vertices ?: floatArrayOf())

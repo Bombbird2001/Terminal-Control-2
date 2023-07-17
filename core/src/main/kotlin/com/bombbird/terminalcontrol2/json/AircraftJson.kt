@@ -6,7 +6,7 @@ import com.bombbird.terminalcontrol2.components.Altitude
 import com.bombbird.terminalcontrol2.components.FlightType
 import com.bombbird.terminalcontrol2.components.Position
 import com.bombbird.terminalcontrol2.entities.Aircraft
-import com.esotericsoftware.minlog.Log
+import com.bombbird.terminalcontrol2.utilities.FileLog
 import com.squareup.moshi.FromJson
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.ToJson
@@ -41,7 +41,7 @@ object AircraftAdapter {
      * @return the empty default Aircraft
      */
     private fun emptyAircraft(missingComponent: String): Aircraft {
-        Log.info("AircraftJSON", "Empty aircraft returned due to missing $missingComponent")
+        FileLog.info("AircraftJSON", "Empty aircraft returned due to missing $missingComponent")
         return Aircraft()
     }
 }

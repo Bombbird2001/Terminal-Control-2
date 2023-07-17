@@ -14,7 +14,7 @@ import com.bombbird.terminalcontrol2.global.UI_HEIGHT
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.navigation.findFirstHoldLegWithID
 import com.bombbird.terminalcontrol2.utilities.modulateHeading
-import com.esotericsoftware.minlog.Log
+import com.bombbird.terminalcontrol2.utilities.FileLog
 import ktx.ashley.get
 import ktx.collections.GdxArray
 import ktx.scene2d.*
@@ -235,7 +235,7 @@ class HoldSubpane {
             }
             updateHoldParameterChangedState(this)
         } ?: run {
-            Log.info("ControlPane", "Null selectedHoldLeg; should not be null")
+            FileLog.info("ControlPane", "Null selectedHoldLeg; should not be null")
             holdSelectBox.selectedIndex = 0
             holdLegDistLabel.setText("5 nm")
             holdInboundHdgLabel.setText("360")

@@ -8,7 +8,7 @@ import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.traffic.ConflictManager
 import com.bombbird.terminalcontrol2.traffic.TrafficMode
-import com.esotericsoftware.minlog.Log
+import com.bombbird.terminalcontrol2.utilities.FileLog
 import ktx.ashley.allOf
 import ktx.ashley.exclude
 import ktx.ashley.get
@@ -79,7 +79,7 @@ class StatusPane {
             ALERT -> "Alert"
             WARNING -> "Warning"
             else -> {
-                Log.info("StatusPane", "Unknown message type $msgType")
+                FileLog.info("StatusPane", "Unknown message type $msgType")
                 "Info"
             }
         }
@@ -107,7 +107,7 @@ class StatusPane {
                         ConflictManager.Conflict.WAKE_INFRINGE -> "Wake separation infringement"
                         ConflictManager.Conflict.STORM -> "Flying in bad weather"
                         else -> {
-                            Log.info("StatusPane", "Unknown conflict reason $reason")
+                            FileLog.info("StatusPane", "Unknown conflict reason $reason")
                             "???"
                         }
                     }}"
@@ -162,7 +162,7 @@ class StatusPane {
                     FlightType.ARRIVAL, FlightType.EN_ROUTE -> NOTIFICATION_ARRIVAL
                     FlightType.DEPARTURE -> NOTIFICATION_DEPARTURE
                     else -> {
-                        Log.info("StatusPane", "Unknown flight type $flightType")
+                        FileLog.info("StatusPane", "Unknown flight type $flightType")
                         NOTIFICATION_ARRIVAL
                     }
                 })
@@ -183,7 +183,7 @@ class StatusPane {
                 TrafficMode.ARRIVALS_TO_CONTROL -> "Arrivals to control - $serverTrafficValue"
                 TrafficMode.FLOW_RATE -> "Arrival flow rate - ${serverTrafficValue}/hr"
                 else -> {
-                    Log.info("StatusPane", "Unknown server traffic mode $serverTrafficMode")
+                    FileLog.info("StatusPane", "Unknown server traffic mode $serverTrafficMode")
                     "Unknown"
                 }
             }

@@ -16,7 +16,7 @@ import com.bombbird.terminalcontrol2.json.runDelayedEntityRetrieval
 import com.bombbird.terminalcontrol2.networking.GameServer
 import com.bombbird.terminalcontrol2.systems.TrafficSystemInterval
 import com.bombbird.terminalcontrol2.ui.CustomDialog
-import com.esotericsoftware.minlog.Log
+import com.bombbird.terminalcontrol2.utilities.FileLog
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.JsonDataException
 import com.squareup.moshi.JsonEncodingException
@@ -125,7 +125,7 @@ private fun loadSave(gs: GameServer, saveId: Int, useBackup: Boolean) {
         if (!saveFolderHandle.exists()) return
         val saveHandle = saveFolderHandle.child("${saveId}${if (useBackup) "-backup" else ""}.json")
         if (!saveHandle.exists()) {
-            Log.warn("GameSaverLoader", "${saveId}.json missing, attempting to use backup")
+            FileLog.warn("GameSaverLoader", "${saveId}.json missing, attempting to use backup")
             loadSave(gs, saveId, true)
             return
         }
@@ -153,18 +153,18 @@ private fun loadSave(gs: GameServer, saveId: Int, useBackup: Boolean) {
     } catch (e: Exception) {
         if (e is JsonDataException || e is JsonEncodingException) {
             if (!useBackup) {
-                Log.warn("GameSaverLoader", "Encountered JSON parsing error when loading ${saveId}.json, attempting to use backup, deleting corrupted save")
+                FileLog.warn("GameSaverLoader", "Encountered JSON parsing error when loading ${saveId}.json, attempting to use backup, deleting corrupted save")
                 deleteMainSave(saveId)
                 loadSave(gs, saveId, true)
             } else {
-                Log.warn("GameSaverLoader", "Encountered JSON parsing error when loading ${saveId}-backup.json, exiting")
+                FileLog.warn("GameSaverLoader", "Encountered JSON parsing error when loading ${saveId}-backup.json, exiting")
                 deleteBackupSave(saveId)
                 GAME.quitCurrentGameWithDialog(CustomDialog("Failed to load game", "Save files are corrupted", "", "Ok"))
             }
             return
         }
 
-        Log.warn("GameSaverLoader", "Encountered ${e.javaClass.name} when loading ${saveId}${if (useBackup) "-backup" else ""}.json, exiting")
+        FileLog.warn("GameSaverLoader", "Encountered ${e.javaClass.name} when loading ${saveId}${if (useBackup) "-backup" else ""}.json, exiting")
         GAME.quitCurrentGameWithDialog(CustomDialog("Error loading game", "Please try again.", "", "Ok"))
     }
 }

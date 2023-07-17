@@ -5,7 +5,7 @@ import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.CLIENT_SCREEN
 import com.bombbird.terminalcontrol2.global.SECTOR_GREEN
 import com.bombbird.terminalcontrol2.global.getEngine
-import com.esotericsoftware.minlog.Log
+import com.bombbird.terminalcontrol2.utilities.FileLog
 import ktx.ashley.entity
 import ktx.ashley.get
 import ktx.ashley.with
@@ -61,7 +61,7 @@ class Sector(id: Byte, freq: String, arrCallsign: String, depCallsign: String, s
      * @param missingComponent the missing aircraft component
      */
     override fun emptySerialisableObject(missingComponent: String): SerialisedSector {
-        Log.info("Sector", "Empty serialised sector returned due to missing $missingComponent component")
+        FileLog.info("Sector", "Empty serialised sector returned due to missing $missingComponent component")
         return SerialisedSector()
     }
 
@@ -119,7 +119,7 @@ class ACCSector(id: Byte, freq: String, callsign: String, sectorBoundary: ShortA
      * @param missingComponent the missing aircraft component
      */
     override fun emptySerialisableObject(missingComponent: String): SerialisedACCSector {
-        Log.info("Sector", "Empty serialised sector returned due to missing $missingComponent component")
+        FileLog.info("Sector", "Empty serialised sector returned due to missing $missingComponent component")
         return SerialisedACCSector()
     }
 

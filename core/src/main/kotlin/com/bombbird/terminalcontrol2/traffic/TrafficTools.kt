@@ -15,7 +15,7 @@ import com.bombbird.terminalcontrol2.navigation.*
 import com.bombbird.terminalcontrol2.networking.GameServer
 import com.bombbird.terminalcontrol2.systems.TrafficSystemInterval
 import com.bombbird.terminalcontrol2.utilities.*
-import com.esotericsoftware.minlog.Log
+import com.bombbird.terminalcontrol2.utilities.FileLog
 import ktx.ashley.*
 import ktx.collections.GdxArray
 import ktx.collections.GdxSet
@@ -57,7 +57,7 @@ fun createRandomArrival(airports: List<Airport>, gs: GameServer) {
     val callsign = generateRandomCallsign(spawnData.first, spawnData.second, gs) ?: return
     // Choose random aircraft type from the array of possible aircraft
     val icaoType = spawnData.third.random() ?: run {
-        Log.info("TrafficTools", "No aircraft available for ${spawnData.first} in ${arpt[AirportInfo.mapper]?.icaoCode}")
+        FileLog.info("TrafficTools", "No aircraft available for ${spawnData.first} in ${arpt[AirportInfo.mapper]?.icaoCode}")
         "B77W"
     }
     createArrival(callsign, icaoType, arpt, gs)
@@ -72,7 +72,7 @@ fun createRandomArrival(airports: List<Airport>, gs: GameServer) {
  */
 fun createArrival(callsign: String, icaoType: String, airport: Entity, gs: GameServer) {
     if (gs.aircraft.containsKey(callsign)) {
-        Log.info("TrafficTools", "Aircraft with callsign $callsign already exists")
+        FileLog.info("TrafficTools", "Aircraft with callsign $callsign already exists")
         return
     }
     val randomStar = randomStar(airport)
@@ -166,7 +166,7 @@ private fun randomStar(airport: Entity): SidStar.STAR? {
     }
 
     if (availableStars.isEmpty) {
-        Log.info("TrafficTools", "No STAR available for ${airport[AirportInfo.mapper]?.name}")
+        FileLog.info("TrafficTools", "No STAR available for ${airport[AirportInfo.mapper]?.name}")
         return null
     }
     return availableStars.random()
@@ -244,7 +244,7 @@ fun createRandomDeparture(airport: Entity, gs: GameServer) {
     val callsign = generateRandomCallsign(spawnData.first, spawnData.second, gs) ?: return
     // Choose random aircraft type from the array of possible aircraft
     val icaoType = spawnData.third.random() ?: run {
-        Log.info("TrafficTools", "No aircraft available for ${spawnData.first} in ${airport[AirportInfo.mapper]?.icaoCode}")
+        FileLog.info("TrafficTools", "No aircraft available for ${spawnData.first} in ${airport[AirportInfo.mapper]?.icaoCode}")
         "B77W"
     }
     gs.aircraft.put(callsign, Aircraft(callsign, 0f, 0f, 0f, icaoType, FlightType.DEPARTURE, false).apply {
@@ -351,7 +351,7 @@ private fun randomSid(rwy: Entity): SidStar.SID? {
     }
 
     if (availableSids.isEmpty) {
-        Log.info("TrafficTools", "No SID available for runway $rwyName")
+        FileLog.info("TrafficTools", "No SID available for runway $rwyName")
         return null
     }
     return availableSids.random()
@@ -366,7 +366,7 @@ private fun randomSid(rwy: Entity): SidStar.SID? {
 private fun generateRandomTrafficForAirport(airport: Entity): Triple<String, Boolean, GdxArray<String>>? {
     return airport[RandomAirlineData.mapper]?.airlineDistribution?.let { dist ->
         if (dist.size() == 0) {
-            Log.info("TrafficTools", "No airlines available for ${airport[AirportInfo.mapper]?.arptId} ${airport[AirportInfo.mapper]?.icaoCode}")
+            FileLog.info("TrafficTools", "No airlines available for ${airport[AirportInfo.mapper]?.arptId} ${airport[AirportInfo.mapper]?.icaoCode}")
             null
         } else dist.value()
     }
@@ -390,7 +390,7 @@ private fun generateRandomCallsign(airline: String, private: Boolean, gs: GameSe
         do {
             // If no suitable callsign found after 30 tries, return from this function (something is wrong)
             if (loopCount > 30) {
-                Log.info("TrafficTools", "Failed to generate random callsign in time for $airline, aircraft will not be created")
+                FileLog.info("TrafficTools", "Failed to generate random callsign in time for $airline, aircraft will not be created")
                 return null
             }
             flightNo = if (MathUtils.randomBoolean(0.1f)) MathUtils.random(1000, 9999) else MathUtils.random(1, 999)
@@ -477,7 +477,7 @@ object WakeMatrix {
             'M' -> 2
             'L' -> 3
             else -> {
-                Log.info("TrafficTools", "Unknown wake category $wake")
+                FileLog.info("TrafficTools", "Unknown wake category $wake")
                 1
             }
         }

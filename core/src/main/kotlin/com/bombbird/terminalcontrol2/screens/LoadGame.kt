@@ -7,7 +7,7 @@ import com.bombbird.terminalcontrol2.files.*
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.ui.CustomDialog
 import com.bombbird.terminalcontrol2.ui.addChangeListener
-import com.esotericsoftware.minlog.Log
+import com.bombbird.terminalcontrol2.utilities.FileLog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import ktx.async.KtxAsync
@@ -140,11 +140,11 @@ class LoadGame: BasicUIScreen() {
                                                 GAME.addScreen(GameLoading.loadPublicMultiplayerGameLoading(airportToHost, saveId))
                                                 GAME.setScreen<GameLoading>()
                                             }
-                                            else -> Log.info("LoadGame", "Unknown game mode ${mode.name}")
+                                            else -> FileLog.info("LoadGame", "Unknown game mode ${mode.name}")
                                         }
                                     }
                                 }
-                            } ?: Log.info("LoadGame", "Start button pressed when save selected is null")
+                            } ?: FileLog.info("LoadGame", "Start button pressed when save selected is null")
                             event?.handle()
                         }
                     }
