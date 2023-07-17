@@ -2,6 +2,7 @@ package com.bombbird.terminalcontrol2.screens
 
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.scenes.scene2d.ui.CheckBox
+import com.badlogic.gdx.scenes.scene2d.ui.Label
 import com.badlogic.gdx.scenes.scene2d.ui.TextArea
 import com.badlogic.gdx.utils.Align
 import com.bombbird.terminalcontrol2.files.getExtDir
@@ -16,8 +17,10 @@ import ktx.scene2d.*
 class ReportBug: BasicUIScreen() {
     lateinit var prevScreen: KtxScreen
     private val textInput: TextArea
+    private val sentItemsLabel: Label
     private val imageCheckbox: CheckBox
     private val submitButton: KTextButton
+    private lateinit var backButton: KTextButton
     private var saveString = ""
 
     init {
@@ -37,7 +40,7 @@ class ReportBug: BasicUIScreen() {
                         table {
                             imageCheckbox = checkBox("  Attach screenshots/videos (will open in email app)", "AttachImageCheckbox").cell(align = Align.left)
                             row().padTop(20f)
-                            label("Game logs${if (saveString.isNotBlank()) ", save file" else ""} will be sent to " +
+                            sentItemsLabel = label("Game logs${if (saveString.isNotBlank()) ", save file" else ""} will be sent to " +
                                     "the developer", "DescribeBugLabel").cell(align = Align.left)
                         }.cell(align = Align.left, padLeft = 100f)
                         table {
@@ -50,6 +53,7 @@ class ReportBug: BasicUIScreen() {
                                         return@addChangeListener
                                     }
                                     isDisabled = true
+                                    backButton.isDisabled = true
                                     setText("Sending report...")
                                     val logs = getExtDir("Logs/BUILD $BUILD_VERSION.log")?.readString() ?: "Logs not found"
                                     val multiplayerType = GAME.gameServer?.let {
@@ -68,6 +72,7 @@ class ReportBug: BasicUIScreen() {
                                                 textInput.text = ""
                                                 imageCheckbox.isChecked = false
                                                 isDisabled = false
+                                                backButton.isDisabled = false
                                                 setText("Send report")
                                                 if (!sendEmail) return@CustomDialog
                                                 val url = ("mailto:bombbirddev@gmail.com?subject=Terminal Control 2 Bug Report&body=Report ID:" +
@@ -76,6 +81,7 @@ class ReportBug: BasicUIScreen() {
                                         }).show(stage)
                                     }, {
                                         isDisabled = false
+                                        backButton.isDisabled = false
                                         setText("Send report")
                                         CustomDialog("Error", "An error occurred when sending the bug report. Please try again.",
                                             "", "Ok").show(stage)
@@ -85,8 +91,11 @@ class ReportBug: BasicUIScreen() {
                         }.cell(growX = true)
                     }.cell(padLeft = 100f, padRight = 100f, growX = true)
                     row().padTop(50f)
-                    textButton("Back", "Menu").cell(width = BUTTON_WIDTH_BIG, height = BUTTON_HEIGHT_BIG, padBottom = BOTTOM_BUTTON_MARGIN, align = Align.bottom).addChangeListener { _, _ ->
-                        GAME.setScreen(prevScreen::class.java)
+                    backButton = textButton("Back", "Menu").cell(width = BUTTON_WIDTH_BIG, height = BUTTON_HEIGHT_BIG,
+                        padBottom = BOTTOM_BUTTON_MARGIN, align = Align.bottom).apply {
+                        addChangeListener { _, _ ->
+                            GAME.setScreen(prevScreen::class.java)
+                        }
                     }
                 }
             }
@@ -99,5 +108,6 @@ class ReportBug: BasicUIScreen() {
      */
     fun setSaveGame(saveGame: String) {
         saveString = saveGame
+        sentItemsLabel.setText("Game logs${if (saveString.isNotBlank()) ", save file" else ""} will be sent to the developer")
     }
 }

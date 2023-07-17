@@ -24,7 +24,6 @@ import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.networking.*
 import com.bombbird.terminalcontrol2.networking.dataclasses.*
 import com.bombbird.terminalcontrol2.networking.NetworkClient
-import com.bombbird.terminalcontrol2.networking.playerclient.PublicClient
 import com.bombbird.terminalcontrol2.systems.*
 import com.bombbird.terminalcontrol2.traffic.ConflictManager
 import com.bombbird.terminalcontrol2.traffic.TrafficMode

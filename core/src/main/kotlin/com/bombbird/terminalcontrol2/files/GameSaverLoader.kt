@@ -57,6 +57,21 @@ data class GameServerSave(
 @JsonClass(generateAdapter = true)
 data class GameSaveMeta(val mainName: String, val score: Int, val highScore: Int, val landed: Int, val departed: Int)
 
+@OptIn(ExperimentalStdlibApi::class)
+fun getSaveJSONString(gs: GameServer): String {
+    val moshi = getMoshiWithAllAdapters()
+
+    // Main game information
+    val saveObject = GameServerSave(gs.mainName, gs.arrivalSpawnTimerS, gs.previousArrivalOffsetS, gs.trafficValue,
+        gs.trafficMode, gs.score, gs.highScore, gs.landed, gs.departed, gs.weatherMode, gs.emergencyRate, gs.stormsDensity,
+        gs.gameSpeed, gs.nightModeStart, gs.nightModeEnd, gs.useRecat, gs.trailDotTimer,
+        Entries(gs.aircraft).map { it.value },
+        Entries(gs.airports).map { it.value },
+        gs.waypoints.values.toList())
+
+    return moshi.adapter<GameServerSave>().toJson(saveObject)
+}
+
 /**
  * Saves the game state for the input GameServer
  * @param gs the [GameServer] to save
@@ -65,13 +80,7 @@ data class GameSaveMeta(val mainName: String, val score: Int, val highScore: Int
 fun saveGame(gs: GameServer) {
     val moshi = getMoshiWithAllAdapters()
 
-    // Save main game information
-    val saveObject = GameServerSave(gs.mainName, gs.arrivalSpawnTimerS, gs.previousArrivalOffsetS, gs.trafficValue,
-        gs.trafficMode, gs.score, gs.highScore, gs.landed, gs.departed, gs.weatherMode, gs.emergencyRate, gs.stormsDensity,
-        gs.gameSpeed, gs.nightModeStart, gs.nightModeEnd, gs.useRecat, gs.trailDotTimer,
-        Entries(gs.aircraft).map { it.value },
-        Entries(gs.airports).map { it.value },
-        gs.waypoints.values.toList())
+    val saveString = getSaveJSONString(gs)
     val saveFolderHandle = getExtDir("Saves") ?: return
     if (!saveFolderHandle.exists()) saveFolderHandle.mkdirs()
 
@@ -92,7 +101,7 @@ fun saveGame(gs: GameServer) {
     val saveIndex = currSaveId ?: getNextAvailableSaveID() ?: return
     gs.saveID = saveIndex
     val saveHandle = saveFolderHandle.child("${saveIndex}.json")
-    saveHandle.writeString(moshi.adapter<GameServerSave>().toJson(saveObject), false)
+    saveHandle.writeString(saveString, false)
 
     // Save meta information
     val metaObject = GameSaveMeta(gs.mainName, gs.score, gs.highScore, gs.landed, gs.departed)

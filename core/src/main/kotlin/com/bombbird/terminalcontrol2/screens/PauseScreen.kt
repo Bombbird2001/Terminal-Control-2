@@ -1,5 +1,7 @@
 package com.bombbird.terminalcontrol2.screens
 
+import com.badlogic.gdx.utils.Align
+import com.bombbird.terminalcontrol2.files.getSaveJSONString
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.screens.settings.MainSettings
 import com.bombbird.terminalcontrol2.ui.addChangeListener
@@ -32,6 +34,14 @@ class PauseScreen: BasicUIScreen() {
                         }
                     textButton("Save & Quit", "PauseScreen").cell(width = BUTTON_WIDTH_MEDIUM, height = BUTTON_HEIGHT_BIG)
                         .addChangeListener { _, _ -> GAME.quitCurrentGame() }
+                    row().padTop(30f)
+                    textButton("Bug Report", "PauseScreen").cell(align = Align.center, colspan = 3, width = BUTTON_WIDTH_MEDIUM, height = BUTTON_HEIGHT_BIG)
+                        .addChangeListener { _, _ ->
+                            val bugReportScreen = GAME.getScreen<ReportBug>()
+                            bugReportScreen.prevScreen = this@PauseScreen
+                            bugReportScreen.setSaveGame(GAME.gameServer?.let { getSaveJSONString(it) } ?: "")
+                            GAME.setScreen<ReportBug>()
+                        }
                 }
             }
         }
