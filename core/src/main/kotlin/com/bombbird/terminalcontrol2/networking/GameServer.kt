@@ -334,16 +334,24 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
             val currPlayerNo = playerNo.incrementAndGet().toByte()
             val uuid = conn.uuid
             networkServer.sendToAllTCP(PlayerJoined())
+            FileLog.info("GameServer", "Player joined game")
             postRunnableAfterEngineUpdate {
                 // Get data only after engine has completed this update to prevent threading issues
                 networkServer.sendTCPToConnection(uuid, ClearAllClientData())
+                FileLog.info("GameServer", "Sent ClearAllClientData")
+
+                val accSectorArray = accSectors.toArray().map { it.getSerialisableObject() }.toTypedArray()
                 networkServer.sendTCPToConnection(
                     uuid,
-                    InitialACCSectorData(accSectors.toArray().map { it.getSerialisableObject() }.toTypedArray()))
+                    InitialACCSectorData(accSectorArray))
+                FileLog.info("GameServer", "Sent InitialACCSectorData with ${accSectorArray.size} sectors")
+
                 networkServer.sendTCPToConnection(
                     uuid,
                     InitialAirspaceData(MAG_HDG_DEV, MIN_ALT, MAX_ALT, MIN_SEP, TRANS_ALT, TRANS_LVL, INTERMEDIATE_ALTS.map { it }.toIntArray())
                 )
+                FileLog.info("GameServer", "Sent InitialAirspaceData")
+
                 assignSectorsToPlayers(
                     networkServer.connections,
                     sectorMap,
@@ -352,6 +360,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
                     sectors
                 )
                 sectorSwapRequests.clear()
+                FileLog.info("GameServer", "Sector assigned")
 
                 val aircraftArray = Entries(aircraft).map { it.value }.toTypedArray()
                 var itemsRemaining = aircraftArray.size
@@ -361,26 +370,43 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
                     }
                     itemsRemaining -= SERVER_AIRCRAFT_TCP_UDP_MAX_COUNT
                     networkServer.sendTCPToConnection(uuid, InitialAircraftData(serialisedAircraftArray))
+                    FileLog.info("GameServer", "Sent InitialAircraftData with ${serialisedAircraftArray.size} aircraft")
                 }
+
+                val airportArray = Entries(airports).map { it.value.getSerialisableObject() }.toTypedArray()
                 networkServer.sendTCPToConnection(
                     uuid,
-                    AirportData(Entries(airports).map { it.value.getSerialisableObject() }.toTypedArray()))
-                val wptArray = waypoints.values.toTypedArray()
+                    AirportData(airportArray))
+                FileLog.info("GameServer", "Sent AirportData with ${airportArray.size} airports")
+
+                val wptMap = waypoints.values
+                val wptArray = wptMap.map { it.getSerialisableObject() }.toTypedArray()
                 networkServer.sendTCPToConnection(
                     uuid,
-                    WaypointData(wptArray.map { it.getSerialisableObject() }.toTypedArray())
+                    WaypointData(wptArray)
                 )
+                FileLog.info("GameServer", "Sent WaypointData with ${wptArray.size} waypoints")
+
+                val wptMappingArray = wptMap.map { it.getMappingSerialisableObject() }.toTypedArray()
                 networkServer.sendTCPToConnection(
                     uuid,
-                    WaypointMappingData(wptArray.map { it.getMappingSerialisableObject() }.toTypedArray())
+                    WaypointMappingData(wptMappingArray)
                 )
+                FileLog.info("GameServer", "Sent WaypointMappingData with ${wptMappingArray.size} waypoint mappings")
+
+                val publishedHoldArray = Entries(publishedHolds).map { it.value.getSerialisableObject() }.toTypedArray()
                 networkServer.sendTCPToConnection(
                     uuid,
-                    PublishedHoldData(Entries(publishedHolds).map { it.value.getSerialisableObject() }.toTypedArray()))
+                    PublishedHoldData(publishedHoldArray))
+                FileLog.info("GameServer", "Sent PublishedHoldData with ${publishedHoldArray.size} published holds")
+
+                val minAltSectorArray = minAltSectors.toArray().map { it.getSerialisableObject() }.toTypedArray()
                 networkServer.sendTCPToConnection(
                     uuid,
-                    MinAltData(minAltSectors.toArray().map { it.getSerialisableObject() }.toTypedArray())
+                    MinAltData(minAltSectorArray)
                 )
+                FileLog.info("GameServer", "Sent MinAltData with ${minAltSectorArray.size} sectors")
+
                 val tmpShoreline = GdxArray<Shoreline>()
                 val maxVertexCountPerSend = (SERVER_WRITE_BUFFER_SIZE / 8f - 2).toInt()
                 var vertexCount = 0
@@ -388,26 +414,32 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
                     val shorelineArray = shoreline[sentShoreline].entity[GLineArray.mapper] ?: continue
                     if (vertexCount + shorelineArray.vertices.size / 2 > maxVertexCountPerSend) {
                         // Send existing data and restart
+                        val serialisedShorelineArray = tmpShoreline.toArray().map { it.getSerialisableObject() }.toTypedArray()
                         networkServer.sendTCPToConnection(
                             uuid,
-                            ShorelineData(tmpShoreline.toArray().map { it.getSerialisableObject() }.toTypedArray())
+                            ShorelineData(serialisedShorelineArray)
                         )
+                        FileLog.info("GameServer", "Sent ShorelineData with ${serialisedShorelineArray.size} shorelines")
                         tmpShoreline.clear()
                         vertexCount = 0
                     }
                     tmpShoreline.add(shoreline[sentShoreline])
                     vertexCount += shorelineArray.vertices.size / 2
                 }
+                val serialisedShorelineArray = tmpShoreline.toArray().map { it.getSerialisableObject() }.toTypedArray()
                 networkServer.sendTCPToConnection(
                     uuid,
-                    ShorelineData(tmpShoreline.toArray().map { it.getSerialisableObject() }.toTypedArray())
+                    ShorelineData(serialisedShorelineArray)
                 )
+                FileLog.info("GameServer", "Sent ShorelineData with ${serialisedShorelineArray.size} shorelines")
 
                 // Send current METAR
+                val metarArray = Entries(airports).map { it.value.getSerialisedMetar() }.toTypedArray()
                 networkServer.sendTCPToConnection(
                     uuid,
-                    MetarData(Entries(airports).map { it.value.getSerialisedMetar() }.toTypedArray())
+                    MetarData(metarArray)
                 )
+                FileLog.info("GameServer", "Sent MetarData with ${metarArray.size} METARs")
 
                 // Send current traffic settings
                 networkServer.sendTCPToConnection(
@@ -417,6 +449,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
                         getArrivalClosedAirports(), getDepartureClosedAirports()
                     )
                 )
+                FileLog.info("GameServer", "Sent TrafficSettingsData")
 
                 // Send runway configs
                 Entries(airports).forEach {
@@ -429,16 +462,20 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
                             arpt.entity[ActiveRunwayConfig.mapper]?.configId ?: return@forEach
                         )
                     )
+                    FileLog.info("GameServer", "Sent ActiveRunwayUpdateData for airport $arptId")
                     networkServer.sendTCPToConnection(
                         uuid,
                         PendingRunwayUpdateData(arptId, arpt.entity[PendingRunwayConfig.mapper]?.pendingId)
                     )
+                    FileLog.info("GameServer", "Sent PendingRunwayUpdateData for airport $arptId")
                 }
 
                 // Send score data
                 networkServer.sendTCPToConnection(uuid, ScoreData(score, highScore))
+                FileLog.info("GameServer", "Sent ScoreData")
 
                 // Send each aircraft's latest nav state
+                var count = 0
                 Entries(aircraft).forEach { acEntry ->
                     val entity = acEntry.value.entity
                     val aircraftInfo = entity[AircraftInfo.mapper] ?: return@forEach
@@ -455,12 +492,15 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
                                 hiddenLegs.getSerialisedObject(), vectorHdg, vectorTurnDir, clearedAlt, expedite,
                                 clearedIas, minIas, maxIas, optimalIas, clearedApp, clearedTrans
                             ))
+                            count++
                         }
                     }
                 }
+                FileLog.info("GameServer", "Sent AircraftControlStateUpdateData for $count aircraft")
 
                 // Initial data sending complete
                 networkServer.sendTCPToConnection(uuid, InitialDataSendComplete())
+                FileLog.info("GameServer", "Sent InitialDataSendComplete")
             }
             // Unpause the game if it is currently paused
             handleGameRunningRequest(true)

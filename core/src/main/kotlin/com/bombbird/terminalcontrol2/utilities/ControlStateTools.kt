@@ -198,7 +198,7 @@ fun calculateArrivalSpawnIAS(origStarRoute: Route, aircraftRoute: Route, spawnAl
 }
 
 /**
- * Removes all approach components from the aircraft
+ * Removes all approach components from the aircraft, and resets the route altitude, speed restrictions
  * @param aircraft the aircraft entity
  */
 fun removeAllApproachComponents(aircraft: Entity) {
@@ -213,6 +213,12 @@ fun removeAllApproachComponents(aircraft: Entity) {
         remove<AppDecelerateTo190kts>()
         remove<DecelerateToAppSpd>()
         remove<ContactToTower>()
+
+        (get(LastRestrictions.mapper) ?: LastRestrictions().also { restr -> this += restr }).let { restr ->
+            restr.minAltFt = null
+            restr.maxAltFt = null
+            restr.maxSpdKt = null
+        }
     }
 }
 

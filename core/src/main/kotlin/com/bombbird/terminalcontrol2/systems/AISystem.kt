@@ -1128,12 +1128,11 @@ class AISystem: EntitySystem() {
 
                 setAllMissedLegsToNormal(it.route)
                 // Clear any preceding altitude and speed restrictions since approach route is no longer being used
-                // Set min altitude to airport elevation, and max speed to 0 if a speed restriction exists in the missed
+                // Set min, max altitude to null, and max speed to 0 if a speed restriction exists in the missed
                 // approach procedure to simulate departure acceleration behaviour
                 (get(LastRestrictions.mapper) ?: LastRestrictions().also { restr -> entity += restr }).let { restr ->
-                    val arptAlt = GAME.gameServer?.airports?.get(get(ArrivalAirport.mapper)?.arptId)?.entity?.get(Altitude.mapper)?.altitudeFt?.roundToInt()
-                    restr.minAltFt = arptAlt
-                    restr.maxAltFt = arptAlt
+                    restr.minAltFt = null
+                    restr.maxAltFt = null
                     restr.maxSpdKt = if (getNextMaxSpd(it.route) == null) null else 0
                 }
             }

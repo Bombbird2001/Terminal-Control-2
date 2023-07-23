@@ -65,6 +65,7 @@ class FastUDPData(private val aircraft: Array<Aircraft.SerialisedAircraftUDP> = 
 class ClearAllClientData: ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
         // Nuke everything
+        FileLog.info("ClientReceiveClasses", "Received ClearAllClientData")
         rs.sectors.clear()
         rs.aircraft.clear()
         rs.airports.clear()
@@ -84,6 +85,7 @@ class InitialAirspaceData(private val magHdgDev: Float = 0f, private val minAlt:
 ):
     ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
+        FileLog.info("ClientReceiveClasses", "Received InitialAirspaceData")
         MAG_HDG_DEV = magHdgDev
         MIN_ALT = minAlt
         MAX_ALT = maxAlt
@@ -103,6 +105,7 @@ class IndividualSectorData(private val assignedSectorId: Byte = 0, private val s
     }
 
     override fun handleClientReceive(rs: RadarScreen) {
+        FileLog.info("ClientReceiveClasses", "Received IndividualSectorData")
         // Remove all existing sector mapping and entities
         rs.sectors.clear()
         getEngine(true).removeAllEntities(sectorFamily)
@@ -119,6 +122,7 @@ class IndividualSectorData(private val assignedSectorId: Byte = 0, private val s
 /** Class representing ACC sector data sent on initial connection, loading of the game on a client */
 class InitialACCSectorData(private val accSectors: Array<ACCSector.SerialisedACCSector> = arrayOf()): ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
+        FileLog.info("ClientReceiveClasses", "Received InitialACCSectorData")
         accSectors.forEach {
             ACCSector.fromSerialisedObject(it).apply {
                 rs.accSectors.add(this)
@@ -130,6 +134,7 @@ class InitialACCSectorData(private val accSectors: Array<ACCSector.SerialisedACC
 /** Class representing aircraft data sent on initial connection, loading of the game on a client */
 class InitialAircraftData(private val aircraft: Array<Aircraft.SerialisedAircraft> = arrayOf()): ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
+        FileLog.info("ClientReceiveClasses", "Received InitialAircraftData")
         aircraft.onEach {
             Aircraft.fromSerialisedObject(it).apply {
                 entity[AircraftInfo.mapper]?.icaoCallsign?.let { callsign ->
@@ -143,6 +148,7 @@ class InitialAircraftData(private val aircraft: Array<Aircraft.SerialisedAircraf
 /** Class representing airport data sent on initial connection, loading of the game on a client */
 class AirportData(private val airports: Array<Airport.SerialisedAirport> = arrayOf()): ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
+        FileLog.info("ClientReceiveClasses", "Received AirportData")
         airports.forEach {
             Airport.fromSerialisedObject(it).apply {
                 entity[AirportInfo.mapper]?.arptId?.let { id ->
@@ -163,6 +169,7 @@ class AirportData(private val airports: Array<Airport.SerialisedAirport> = array
 /** Class representing waypoint data sent on initial connection, loading of the game on a client */
 class WaypointData(private val waypoints: Array<Waypoint.SerialisedWaypoint> = arrayOf()): ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
+        FileLog.info("ClientReceiveClasses", "Received WaypointData")
         waypoints.onEach {
             Waypoint.fromSerialisedObject(it).apply {
                 entity[WaypointInfo.mapper]?.wptId?.let { id ->
@@ -177,6 +184,7 @@ class WaypointData(private val waypoints: Array<Waypoint.SerialisedWaypoint> = a
 class WaypointMappingData(private val waypointMapping: Array<Waypoint.SerialisedWaypointMapping> = arrayOf()):
     ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
+        FileLog.info("ClientReceiveClasses", "Received WaypointMappingData")
         rs.updatedWaypointMapping.clear()
         waypointMapping.onEach { rs.updatedWaypointMapping[it.name] = it.wptId }
     }
@@ -186,6 +194,7 @@ class WaypointMappingData(private val waypointMapping: Array<Waypoint.Serialised
 class PublishedHoldData(private val publishedHolds: Array<PublishedHold.SerialisedPublishedHold> = arrayOf()):
     ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
+        FileLog.info("ClientReceiveClasses", "Received PublishedHoldData")
         publishedHolds.onEach {
             PublishedHold.fromSerialisedObject(it).apply {
                 rs.waypoints[entity[PublishedHoldInfo.mapper]?.wptId]?.entity?.get(WaypointInfo.mapper)?.wptName?.let { wptName ->
@@ -199,6 +208,7 @@ class PublishedHoldData(private val publishedHolds: Array<PublishedHold.Serialis
 /** Class representing minimum altitude sector data sent on initial connection, loading of the game on a client */
 class MinAltData(private val minAltSectors: Array<MinAltSector.SerialisedMinAltSector> = arrayOf()): ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
+        FileLog.info("ClientReceiveClasses", "Received MinAltData")
         minAltSectors.onEach {
             rs.minAltSectors.add(MinAltSector.fromSerialisedObject(it))
             rs.minAltSectors.sort(MinAltSector::sortByDescendingMinAltComparator)
@@ -209,6 +219,7 @@ class MinAltData(private val minAltSectors: Array<MinAltSector.SerialisedMinAltS
 /** Class representing shoreline data sent on initial connection, loading of the game on a client */
 class ShorelineData(private val shoreline: Array<Shoreline.SerialisedShoreline> = arrayOf()): ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
+        FileLog.info("ClientReceiveClasses", "Received ShorelineData")
         shoreline.onEach { Shoreline.fromSerialisedObject(it) }
     }
 }
@@ -216,6 +227,7 @@ class ShorelineData(private val shoreline: Array<Shoreline.SerialisedShoreline> 
 /** Class representing the data to be sent during METAR updates */
 class MetarData(private val metars: Array<Airport.SerialisedMetar> = arrayOf()): ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
+        FileLog.info("ClientReceiveClasses", "Received MetarData")
         metars.forEach {
             rs.airports[it.arptId]?.updateFromSerialisedMetar(it)
         }
@@ -228,6 +240,7 @@ class TrafficSettingsData(private val trafficMode: Byte = TrafficMode.NORMAL, pr
                           private val arrivalClosed: ByteArray = byteArrayOf(), private val departureClosed: ByteArray = byteArrayOf()):
     ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
+        FileLog.info("ClientReceiveClasses", "Received TrafficSettingsData")
         rs.serverTrafficMode = trafficMode
         rs.serverTrafficValue = trafficValue
         // Remove all airport closed components/flags
@@ -244,6 +257,7 @@ class TrafficSettingsData(private val trafficMode: Byte = TrafficMode.NORMAL, pr
 /** Class representing data sent during setting/un-setting of a pending runway change */
 data class PendingRunwayUpdateData(private val airportId: Byte = 0, private val configId: Byte? = null): ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
+        FileLog.info("ClientReceiveClasses", "Received PendingRunwayUpdateData")
         rs.airports[airportId]?.pendingRunwayConfigClient(configId)
         if (configId != null)
             rs.uiPane.commsPane.addMessage("Runway change pending for ${rs.airports[airportId]?.entity?.get(AirportInfo.mapper)?.icaoCode}", CommsPane.ALERT)
@@ -253,6 +267,7 @@ data class PendingRunwayUpdateData(private val airportId: Byte = 0, private val 
 /** Class representing data sent during a runway change */
 data class ActiveRunwayUpdateData(private val airportId: Byte = 0, private val configId: Byte = 0): ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
+        FileLog.info("ClientReceiveClasses", "Received ActiveRunwayUpdateData")
         rs.airports[airportId]?.activateRunwayConfig(configId, true)
         rs.uiPane.mainInfoObj.updateAtisInformation()
         GAME.soundManager.playRunwayChange()
@@ -269,6 +284,7 @@ data class ScoreData(private val score: Int = 0, private val highScore: Int = 0)
 /** Class notifying client that all initial required data has been sent, they can now accept other transmission data */
 class InitialDataSendComplete: ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
+        FileLog.info("ClientReceiveClasses", "Received InitialDataSendComplete")
         // rs.notifyInitialDataSendComplete() Handled separately
     }
 }

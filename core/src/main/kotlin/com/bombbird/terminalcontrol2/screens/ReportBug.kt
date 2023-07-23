@@ -30,7 +30,8 @@ class ReportBug: BasicUIScreen() {
                 fill()
                 setSize(UI_WIDTH, UI_HEIGHT)
                 table {
-                    label("Describe the bug here:", "DescribeBugLabel").cell(align = Align.left, padTop = 65f, padLeft = 100f)
+                    label("Describe the bug here. If possible, please include the actions performed before encountering the bug:\n" +
+                            "(just created/loaded game, cleared aircraft to climb, etc.)", "DescribeBugLabel").cell(align = Align.left, padTop = 65f, padLeft = 100f)
                     row().padTop(20f)
                     textInput = textArea("", "DescribeBugField").cell(align = Align.center, growX = true, growY = true, padLeft = 100f, padRight = 100f).apply {
                         alignment = Align.left

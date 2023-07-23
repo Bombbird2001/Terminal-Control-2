@@ -170,9 +170,9 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
             maxIas = newClearance.maxIas
             optimalIas = newClearance.optimalIas
             clearedApp = newClearance.clearedApp
-            newClearance.clearedApp?.let {
+            newClearance.clearedApp.let {
                 // If the approach has been changed, remove all current approach components to allow aircraft to
-                // re-establish on new approach
+                // re-establish on new approach (if new approach is null, then the approach is cancelled)
                 if (appChanged) removeAllApproachComponents(entity)
                 val app = GAME.gameServer?.airports?.get(entity[ArrivalAirport.mapper]?.arptId)?.entity?.get(ApproachChildren.mapper)?.approachMap?.get(it)?.entity ?: return@let
                 if (app.has(Localizer.mapper)) entity += LocalizerArmed(app)
