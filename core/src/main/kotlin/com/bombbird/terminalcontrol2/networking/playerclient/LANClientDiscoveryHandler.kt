@@ -3,11 +3,10 @@ package com.bombbird.terminalcontrol2.networking.playerclient
 import com.bombbird.terminalcontrol2.networking.hostserver.LANServerDiscoveryHandler
 import com.bombbird.terminalcontrol2.screens.JoinGame
 import com.esotericsoftware.kryonet.ClientDiscoveryHandler
-import ktx.collections.GdxArray
 import java.net.DatagramPacket
 
 class LANClientDiscoveryHandler: ClientDiscoveryHandler {
-    var onDiscoveredHostDataMap: GdxArray<JoinGame.MultiplayerGameInfo>? = null
+    var onDiscoveredHostDataMap: MutableList<JoinGame.MultiplayerGameInfo>? = null
 
     /**
      * Overrides [ClientDiscoveryHandler.onRequestNewDatagramPacket] to return a new datagram packet of 10 bytes, just

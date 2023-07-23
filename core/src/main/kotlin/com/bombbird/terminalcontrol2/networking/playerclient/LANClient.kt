@@ -115,7 +115,7 @@ class LANClient(lanClientDiscoveryHandler: LANClientDiscoveryHandler): NetworkCl
     }
 
     fun discoverHosts(udpPort: Int) {
-        client.discoverHosts(udpPort, 200)
+        client.discoverHosts(udpPort, 5000)
     }
 
     /**

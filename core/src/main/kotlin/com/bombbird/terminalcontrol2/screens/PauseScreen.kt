@@ -5,14 +5,12 @@ import com.bombbird.terminalcontrol2.files.getSaveJSONString
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.screens.settings.MainSettings
 import com.bombbird.terminalcontrol2.ui.addChangeListener
-import ktx.scene2d.actors
-import ktx.scene2d.container
-import ktx.scene2d.table
-import ktx.scene2d.textButton
+import ktx.scene2d.*
 
 /** Pause screen which extends [BasicUIScreen] */
 class PauseScreen: BasicUIScreen() {
     var radarScreen: RadarScreen? = null
+    private val quitButton: KTextButton
 
     init {
         stage.actors {
@@ -32,8 +30,10 @@ class PauseScreen: BasicUIScreen() {
                             GAME.getScreen<MainSettings>().prevScreen = this@PauseScreen
                             GAME.setScreen<MainSettings>()
                         }
-                    textButton("Save & Quit", "PauseScreen").cell(width = BUTTON_WIDTH_MEDIUM, height = BUTTON_HEIGHT_BIG)
-                        .addChangeListener { _, _ -> GAME.quitCurrentGame() }
+                    quitButton = textButton("Save & Quit", "PauseScreen")
+                        .cell(width = BUTTON_WIDTH_MEDIUM, height = BUTTON_HEIGHT_BIG).apply {
+                            addChangeListener { _, _ -> GAME.quitCurrentGame() }
+                        }
                     row().padTop(30f)
                     textButton("Bug Report", "PauseScreen").cell(align = Align.center, colspan = 3, width = BUTTON_WIDTH_MEDIUM, height = BUTTON_HEIGHT_BIG)
                         .addChangeListener { _, _ ->
@@ -45,5 +45,10 @@ class PauseScreen: BasicUIScreen() {
                 }
             }
         }
+    }
+
+    override fun show() {
+        super.show()
+        quitButton.setText(if (GAME.gameServer == null) "Quit" else "Save & Quit")
     }
 }

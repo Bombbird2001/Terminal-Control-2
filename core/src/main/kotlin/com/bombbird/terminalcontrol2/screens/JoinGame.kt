@@ -12,13 +12,15 @@ import kotlinx.coroutines.*
 import ktx.async.KtxAsync
 import ktx.collections.GdxArray
 import ktx.scene2d.*
+import java.util.*
+import kotlin.collections.ArrayList
 
 /** Screen for searching and joining multiplayer games on the LAN */
 class JoinGame: BasicUIScreen() {
     private val publicServerStatusLabel: Label
     private val refreshButton: KTextButton
     private val gamesTable: KTableWidget
-    private val lanGamesData = GdxArray<MultiplayerGameInfo>()
+    private val lanGamesData = Collections.synchronizedList<MultiplayerGameInfo>(ArrayList())
     @Volatile
     private var searching = false
     private val publicGamesData = GdxArray<MultiplayerGameInfo>()
@@ -106,17 +108,23 @@ class JoinGame: BasicUIScreen() {
             }
         }
         publicGamesData.clear()
-        // Non-blocking HTTP request
-        HttpRequest.sendPublicGamesRequest { games ->
-            for (game in games) publicGamesData.add(game)
+        KtxAsync.launch(Dispatchers.IO) {
+            // Non-blocking HTTP request
+            HttpRequest.sendPublicGamesRequest { games ->
+                for (game in games) publicGamesData.add(game)
+            }
+            lanGamesData.clear()
+            GAME.lanClientDiscoveryHandler.onDiscoveredHostDataMap = lanGamesData
+            val jobs = ArrayList<Job>(LAN_UDP_PORTS.size)
+            for (udpPort in LAN_UDP_PORTS) {
+                jobs.add(KtxAsync.launch(Dispatchers.IO) {
+                    // Blocking call
+                    GAME.lanClient.discoverHosts(udpPort)
+                })
+            }
+            joinAll(*jobs.toTypedArray())
+            Gdx.app.postRunnable { showFoundGames() }
         }
-        lanGamesData.clear()
-        GAME.lanClientDiscoveryHandler.onDiscoveredHostDataMap = lanGamesData
-        for (udpPort in LAN_UDP_PORTS) {
-            // Blocks this thread
-            GAME.lanClient.discoverHosts(udpPort)
-        }
-        Gdx.app.postRunnable { showFoundGames() }
     }
 
     /**
@@ -137,15 +145,17 @@ class JoinGame: BasicUIScreen() {
         gamesTable.apply {
             clear()
             var added = 0
-            for (i in 0 until lanGamesData.size) { lanGamesData[i]?.let { game ->
-                if (game.players >= game.maxPlayers) return@let // Server is full
-                textButton("${game.airportName} - ${game.players}/${game.maxPlayers} player${if (game.maxPlayers > 1) "s" else ""}          ${game.address}          Join", "JoinGameAirport").addChangeListener { _, _ ->
-                    GAME.addScreen(GameLoading.joinLANMultiplayerGameLoading(game.address))
-                    GAME.setScreen<GameLoading>()
-                }
-                row()
-                added++
-            }}
+            synchronized(lanGamesData) {
+                for (i in 0 until lanGamesData.size) { lanGamesData[i]?.let { game ->
+                    if (game.players >= game.maxPlayers) return@let // Server is full
+                    textButton("${game.airportName} - ${game.players}/${game.maxPlayers} player${if (game.maxPlayers > 1) "s" else ""}          ${game.address}          Join", "JoinGameAirport").addChangeListener { _, _ ->
+                        GAME.addScreen(GameLoading.joinLANMultiplayerGameLoading(game.address))
+                        GAME.setScreen<GameLoading>()
+                    }
+                    row()
+                    added++
+                }}
+            }
             for (i in 0 until publicGamesData.size) { publicGamesData[i]?.let { game ->
                 val roomId = game.roomId ?: return@let // Public games should have a room ID
                 if (game.players >= game.maxPlayers) return@let // Server is full

@@ -10,10 +10,7 @@ import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.systems.updateAircraftDatatagText
 import com.bombbird.terminalcontrol2.systems.updateAircraftRadarData
-import com.bombbird.terminalcontrol2.ui.addDatatagInputListeners
-import com.bombbird.terminalcontrol2.ui.getNewDatatagLabelText
-import com.bombbird.terminalcontrol2.ui.updateDatatagStyle
-import com.bombbird.terminalcontrol2.ui.updateDatatagText
+import com.bombbird.terminalcontrol2.ui.*
 import com.bombbird.terminalcontrol2.utilities.AircraftTypeData
 import com.bombbird.terminalcontrol2.utilities.getAircraftIcon
 import com.bombbird.terminalcontrol2.utilities.FileLog
@@ -166,11 +163,13 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                     if (serialisedAircraft.waitingTakeoff) this += WaitingTakeoff()
                     else if (datatag != null) addDatatagInputListeners(datatag, it)
                     datatag?.let { tag ->
-                        tag.minimised = controllable?.sectorId != CLIENT_SCREEN?.playerSector || serialisedAircraft.initialDatatagMinimised
-                        updateDatatagText(tag, getNewDatatagLabelText(this, tag.minimised))
                         tag.xOffset = serialisedAircraft.initialDatatagXOffset
                         tag.yOffset = serialisedAircraft.initialDatatagYOffset
-                        CLIENT_SCREEN?.sendAircraftDatatagPositionUpdate(this, tag.xOffset, tag.yOffset, tag.minimised, tag.flashing)
+                        tag.minimised = controllable?.sectorId != CLIENT_SCREEN?.playerSector || serialisedAircraft.initialDatatagMinimised
+                        updateDatatagText(tag, getNewDatatagLabelText(this, tag.minimised))
+                        if (serialisedAircraft.initialDatatagFlashing &&
+                            controllable?.sectorId == GAME.gameClientScreen?.playerSector)
+                            setDatatagFlash(tag, it, true)
                     }
 
                     get(TrailInfo.mapper)?.apply {
@@ -319,7 +318,8 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                              val waitingTakeoff: Boolean = false,
                              val contactToCentre: Boolean = false,
                              val recentGoAround: Boolean = false,
-                             val initialDatatagXOffset: Float = 0f, val initialDatatagYOffset: Float = 0f, val initialDatatagMinimised: Boolean = false,
+                             val initialDatatagXOffset: Float = 0f, val initialDatatagYOffset: Float = 0f,
+                             val initialDatatagMinimised: Boolean = false, val initialDatatagFlashing: Boolean = false,
                              val trailX: FloatArray = floatArrayOf(), val trailY: FloatArray = floatArrayOf()
     )
 
@@ -371,7 +371,8 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                 has(WaitingTakeoff.mapper),
                 has(ContactToCentre.mapper),
                 has(RecentGoAround.mapper),
-                initialDatatagPosition.xOffset, initialDatatagPosition.yOffset, initialDatatagPosition.minimised,
+                initialDatatagPosition.xOffset, initialDatatagPosition.yOffset,
+                initialDatatagPosition.minimised, initialDatatagPosition.flashing,
                 trailArray.map { it.x }.toFloatArray(), trailArray.map { it.y }.toFloatArray()
             )
         }
