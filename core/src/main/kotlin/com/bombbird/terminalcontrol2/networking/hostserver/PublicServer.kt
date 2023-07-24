@@ -7,8 +7,6 @@ import com.bombbird.terminalcontrol2.networking.encryption.*
 import com.bombbird.terminalcontrol2.networking.relayserver.*
 import com.bombbird.terminalcontrol2.ui.CustomDialog
 import com.esotericsoftware.kryo.Kryo
-import com.esotericsoftware.kryo.io.Input
-import com.esotericsoftware.kryo.io.Output
 import com.esotericsoftware.kryonet.Client
 import com.esotericsoftware.kryonet.Connection
 import com.esotericsoftware.kryonet.Listener
@@ -16,7 +14,6 @@ import com.bombbird.terminalcontrol2.utilities.FileLog
 import ktx.collections.GdxArrayMap
 import org.apache.commons.codec.binary.Base64
 import java.lang.Exception
-import java.lang.NullPointerException
 import java.net.UnknownHostException
 import java.nio.channels.ClosedSelectorException
 import java.util.*
@@ -37,9 +34,7 @@ class PublicServer(
     val isConnected: Boolean
         get() = relayServerConnector.isConnected
 
-    private val encryptor: Encryptor = AESGCMEncryptor(::getSerialisedBytes)
-    private val decrypter: Decrypter = AESGCMDecrypter(::fromSerializedBytes)
-    override val kryo: Kryo
+    override val serverKryo: Kryo
         get() = relayServerConnector.kryo
 
     private var roomId: Short = Short.MAX_VALUE
@@ -105,7 +100,7 @@ class PublicServer(
     }
 
     override fun beforeStart(): Boolean {
-        registerClassesToKryo(relayServerConnector.kryo)
+        registerClassesToKryo(serverKryo)
 
         val roomCreation: HttpRequest.RoomCreationStatus?
         try {
@@ -191,37 +186,6 @@ class PublicServer(
             return
         }
         relayServerConnector.sendTCP(encrypted)
-    }
-
-    /**
-     * Serialises the input object with Kryo and returns the byte array - retries up to 2 more times if error occurs
-     * @param data the object to serialise; it should have been registered with Kryo first
-     * @return a byte array containing the serialised object, or null if serialisation error occurs
-     */
-    @Synchronized
-    private fun getSerialisedBytes(data: Any): ByteArray? {
-        var times = 0
-        while (times < 3) {
-            try {
-                val serialisationOutput = Output(SERVER_WRITE_BUFFER_SIZE)
-                relayServerConnector.kryo.writeClassAndObject(serialisationOutput, data)
-                return serialisationOutput.toBytes()
-            } catch (e: NullPointerException) {
-                times++
-            }
-        }
-
-        return null
-    }
-
-    /**
-     * De-serialises the input byte array with Kryo and returns the object
-     * @param data the byte array to de-serialise
-     * @return the de-serialised object
-     */
-    @Synchronized
-    private fun fromSerializedBytes(data: ByteArray): Any? {
-        return relayServerConnector.kryo.readClassAndObject(Input(data))
     }
 
     /**

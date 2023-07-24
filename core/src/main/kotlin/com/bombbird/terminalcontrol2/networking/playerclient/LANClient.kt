@@ -11,8 +11,6 @@ import com.bombbird.terminalcontrol2.networking.registerClassesToKryo
 import com.bombbird.terminalcontrol2.screens.RadarScreen
 import com.bombbird.terminalcontrol2.ui.CustomDialog
 import com.esotericsoftware.kryo.Kryo
-import com.esotericsoftware.kryo.io.Input
-import com.esotericsoftware.kryo.io.Output
 import com.esotericsoftware.kryonet.Client
 import com.esotericsoftware.kryonet.Connection
 import com.esotericsoftware.kryonet.Listener
@@ -28,10 +26,7 @@ import java.nio.channels.ClosedSelectorException
 class LANClient(lanClientDiscoveryHandler: LANClientDiscoveryHandler): NetworkClient() {
     override val isConnected: Boolean
         get() = client.isConnected
-
-    override val encryptor: Encryptor = AESGCMEncryptor(::getSerialisedBytes)
-    override val decrypter: Decrypter = AESGCMDecrypter(::fromSerializedBytes)
-    override val kryo: Kryo
+    override val clientKryo: Kryo
         get() = client.kryo
 
     private var secretKeyCalculated = false
@@ -91,7 +86,7 @@ class LANClient(lanClientDiscoveryHandler: LANClientDiscoveryHandler): NetworkCl
     }
 
     override fun beforeConnect(roomId: Short?) {
-        registerClassesToKryo(kryo)
+        registerClassesToKryo(clientKryo)
         secretKeyCalculated = false
     }
 
@@ -116,27 +111,5 @@ class LANClient(lanClientDiscoveryHandler: LANClientDiscoveryHandler): NetworkCl
 
     fun discoverHosts(udpPort: Int) {
         client.discoverHosts(udpPort, 5000)
-    }
-
-    /**
-     * Serialises the input object with Kryo and returns the byte array
-     * @param data the object to serialise; it should have been registered with Kryo first
-     * @return a byte array containing the serialised object
-     */
-    @Synchronized
-    private fun getSerialisedBytes(data: Any): ByteArray {
-        val serialisationOutput = Output(SERVER_WRITE_BUFFER_SIZE)
-        client.kryo.writeClassAndObject(serialisationOutput, data)
-        return serialisationOutput.toBytes()
-    }
-
-    /**
-     * De-serialises the input byte array with Kryo and returns the object
-     * @param data the byte array to de-serialise
-     * @return the de-serialised object
-     */
-    @Synchronized
-    private fun fromSerializedBytes(data: ByteArray): Any? {
-        return client.kryo.readClassAndObject(Input(data))
     }
 }

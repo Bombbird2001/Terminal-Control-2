@@ -21,7 +21,7 @@ internal fun testInitialiseGameAndServer() {
     if (GAME.gameServer == null) {
         val newGameServer = GameServer.testGameServer()
         newGameServer.networkServer = object : NetworkServer(newGameServer, { _, _ -> }, { _ -> }, { _ -> }) {
-            override val kryo = Kryo()
+            override val serverKryo = Kryo()
 
             override fun start() {}
 

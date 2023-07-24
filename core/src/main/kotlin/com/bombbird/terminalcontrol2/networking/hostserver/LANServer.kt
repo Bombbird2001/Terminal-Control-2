@@ -9,8 +9,6 @@ import com.bombbird.terminalcontrol2.networking.dataclasses.RequestClientUUID
 import com.bombbird.terminalcontrol2.networking.encryption.*
 import com.bombbird.terminalcontrol2.ui.CustomDialog
 import com.esotericsoftware.kryo.Kryo
-import com.esotericsoftware.kryo.io.Input
-import com.esotericsoftware.kryo.io.Output
 import com.esotericsoftware.kryonet.Connection
 import com.esotericsoftware.kryonet.Listener
 import com.esotericsoftware.kryonet.Server
@@ -34,7 +32,7 @@ class LANServer(
     onConnect: (ConnectionMeta) -> Unit,
     onDisconnect: (ConnectionMeta) -> Unit
 ) : NetworkServer(gameServer, onReceive, onConnect, onDisconnect) {
-    override val kryo: Kryo
+    override val serverKryo: Kryo
         get() = server.kryo
 
     private val server = Server(SERVER_WRITE_BUFFER_SIZE, SERVER_READ_BUFFER_SIZE)
@@ -177,7 +175,7 @@ class LANServer(
     }
 
     override fun beforeStart(): Boolean {
-        registerClassesToKryo(server.kryo)
+        registerClassesToKryo(serverKryo)
         return true
     }
 
@@ -220,28 +218,6 @@ class LANServer(
         connectionMetaMap.put(connection, connMeta)
         uuidConnectionMap.put(connUuid, connection)
         onConnect(connMeta)
-    }
-
-    /**
-     * Serialises the input object with Kryo and returns the byte array
-     * @param data the object to serialise; it should have been registered with Kryo first
-     * @return a byte array containing the serialised object
-     */
-    @Synchronized
-    private fun getSerialisedBytes(data: Any): ByteArray {
-        val serialisationOutput = Output(SERVER_WRITE_BUFFER_SIZE)
-        server.kryo.writeClassAndObject(serialisationOutput, data)
-        return serialisationOutput.toBytes()
-    }
-
-    /**
-     * De-serialises the input byte array with Kryo and returns the object
-     * @param data the byte array to de-serialise
-     * @return the de-serialised object
-     */
-    @Synchronized
-    private fun fromSerializedBytes(data: ByteArray): Any? {
-        return server.kryo.readClassAndObject(Input(data))
     }
 
     /**

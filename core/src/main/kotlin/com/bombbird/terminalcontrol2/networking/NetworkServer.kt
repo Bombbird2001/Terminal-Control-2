@@ -1,8 +1,11 @@
 package com.bombbird.terminalcontrol2.networking
 
-import com.bombbird.terminalcontrol2.networking.encryption.Encryptor
-import com.bombbird.terminalcontrol2.networking.encryption.NeedsEncryption
+import com.bombbird.terminalcontrol2.global.SERVER_WRITE_BUFFER_SIZE
+import com.bombbird.terminalcontrol2.networking.encryption.*
 import com.esotericsoftware.kryo.Kryo
+import com.esotericsoftware.kryo.io.Input
+import com.esotericsoftware.kryo.io.Output
+import java.lang.NullPointerException
 import java.util.UUID
 
 /**
@@ -18,7 +21,11 @@ abstract class NetworkServer(
     protected val onConnect: (ConnectionMeta) -> Unit,
     protected val onDisconnect: (ConnectionMeta) -> Unit
 ) {
-    abstract val kryo: Kryo
+    protected val encryptor: Encryptor = AESGCMEncryptor(::getSerialisedBytes)
+    protected val decrypter: Decrypter = AESGCMDecrypter(::fromSerializedBytes)
+    abstract val serverKryo: Kryo
+    private val manualKryo = Kryo().apply { registerClassesToKryo(this) }
+    private val manualKryoLock = Any()
 
     /** Starts the server */
     abstract fun start()
@@ -71,5 +78,49 @@ abstract class NetworkServer(
         (data as? NeedsEncryption)?.let {
             return encryptor.encrypt(it)
         } ?: return data
+    }
+
+    /**
+     * Serialises the input object with Kryo and returns the byte array - retries up to 2 more times if error occurs
+     * @param data the object to serialise; it should have been registered with Kryo first
+     * @return a byte array containing the serialised object, or null if serialisation error occurs
+     */
+    @Synchronized
+    protected fun getSerialisedBytes(data: Any): ByteArray? {
+        var times = 0
+        while (times < 3) {
+            try {
+                val serialisationOutput = Output(SERVER_WRITE_BUFFER_SIZE)
+                synchronized(manualKryoLock) {
+                    manualKryo.writeClassAndObject(serialisationOutput, data)
+                }
+                return serialisationOutput.toBytes()
+            } catch (e: NullPointerException) {
+                times++
+            }
+        }
+
+        return null
+    }
+
+    /**
+     * De-serialises the input byte array with Kryo and returns the object
+     * @param data the byte array to de-serialise
+     * @return the de-serialised object
+     */
+    @Synchronized
+    protected fun fromSerializedBytes(data: ByteArray): Any? {
+        var times = 0
+        while (times < 3) {
+            try {
+                synchronized(manualKryoLock) {
+                    return manualKryo.readClassAndObject(Input(data))
+                }
+            } catch (e: NullPointerException) {
+                times++
+            }
+        }
+
+        return null
     }
 }

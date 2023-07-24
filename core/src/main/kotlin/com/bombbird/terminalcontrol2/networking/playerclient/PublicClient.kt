@@ -10,7 +10,6 @@ import com.bombbird.terminalcontrol2.screens.RadarScreen
 import com.bombbird.terminalcontrol2.ui.CustomDialog
 import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.io.Input
-import com.esotericsoftware.kryo.io.Output
 import com.esotericsoftware.kryonet.Client
 import com.esotericsoftware.kryonet.Connection
 import com.esotericsoftware.kryonet.Listener
@@ -28,10 +27,7 @@ import javax.crypto.spec.SecretKeySpec
 class PublicClient: NetworkClient() {
     override val isConnected: Boolean
         get() = client.isConnected
-
-    override val encryptor: Encryptor = AESGCMEncryptor(::getSerialisedBytes)
-    override val decrypter: Decrypter = AESGCMDecrypter(::fromSerializedBytes)
-    override val kryo: Kryo
+    override val clientKryo: Kryo
         get() = client.kryo
 
     private var roomId: Short = Short.MAX_VALUE
@@ -75,12 +71,12 @@ class PublicClient: NetworkClient() {
 
     override fun sendTCP(data: Any) {
         // Serialize, wrap in ClientToServer and encrypt
-        val encrypted = encryptIfNeeded(ClientToServer(roomId, myUuid.toString(), getSerialisedBytes(data))) ?: return
+        val encrypted = encryptIfNeeded(ClientToServer(roomId, myUuid.toString(), getSerialisedBytes(data) ?: return)) ?: return
         client.sendTCP(encrypted)
     }
 
     override fun beforeConnect(roomId: Short?) {
-        registerClassesToKryo(kryo)
+        registerClassesToKryo(clientKryo)
 
         if (roomId == null) {
             GAME.quitCurrentGameWithDialog(CustomDialog("Failed to connect", "Missing room ID", "", "Ok"))
@@ -124,28 +120,6 @@ class PublicClient: NetworkClient() {
 
     override fun dispose() {
         client.dispose()
-    }
-
-    /**
-     * Serialises the input object with Kryo and returns the byte array
-     * @param data the object to serialise; it should have been registered with Kryo first
-     * @return a byte array containing the serialised object
-     */
-    @Synchronized
-    private fun getSerialisedBytes(data: Any): ByteArray {
-        val serialisationOutput = Output(SERVER_WRITE_BUFFER_SIZE)
-        client.kryo.writeClassAndObject(serialisationOutput, data)
-        return serialisationOutput.toBytes()
-    }
-
-    /**
-     * De-serialises the input byte array with Kryo and returns the object
-     * @param data the byte array to de-serialise
-     * @return the de-serialised object
-     */
-    @Synchronized
-    private fun fromSerializedBytes(data: ByteArray): Any? {
-        return client.kryo.readClassAndObject(Input(data))
     }
 
     /**
