@@ -78,6 +78,7 @@ class UIPane(private val uiStage: Stage) {
             routeEditPane = routeEditObj.routeEditPane(this@UIPane, this, paneWidth) {
                 if (userClearanceState.routePrimaryName != clearanceState.routePrimaryName) controlObj.directLeg = userClearanceState.route[0]
                 controlObj.updateRouteTable(userClearanceState.route)
+                controlObj.updateAltSelectBoxChoices(aircraftMaxAlt, userClearanceState)
                 controlObj.updateUndoTransmitButtonStates()
                 setToControlPane()
             }

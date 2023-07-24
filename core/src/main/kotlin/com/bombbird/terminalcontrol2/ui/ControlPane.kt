@@ -442,8 +442,8 @@ class ControlPane {
             val nextHold = getNextHoldLeg(userClearanceState.route)
             val holdMinAlt = nextHold?.minAltFt
             val holdMaxAlt = nextHold?.maxAltFt
-            effectiveMinAlt = if (holdMinAlt == null) MIN_ALT else max(MIN_ALT, holdMinAlt)
-            effectiveMaxAlt = if (holdMaxAlt == null) MAX_ALT else min(MAX_ALT, holdMaxAlt)
+            effectiveMinAlt = if (holdMinAlt == null || userClearanceState.vectorHdg != null) MIN_ALT else max(MIN_ALT, holdMinAlt)
+            effectiveMaxAlt = if (holdMaxAlt == null || userClearanceState.vectorHdg != null) MAX_ALT else min(MAX_ALT, holdMaxAlt)
         }
         val roundedMinAlt = if (effectiveMinAlt % 1000 > 0) (effectiveMinAlt / 1000 + 1) * 1000 else effectiveMinAlt
         val maxAltAircraft = if (aircraftMaxAlt != null) aircraftMaxAlt - aircraftMaxAlt % 1000 else null
@@ -592,6 +592,7 @@ class ControlPane {
                 selectedHoldLeg = getNextHoldLeg(parentPane.userClearanceState.route)
                 if (selectedHoldLeg == null) holdSubpaneObj.updateHoldClearanceState(parentPane.userClearanceState.route)
                 holdSubpaneObj.updateHoldTable(parentPane.userClearanceState.route, selectedHoldLeg)
+                updateAltSelectBoxChoices(parentPane.aircraftMaxAlt, parentPane.userClearanceState)
                 updateUndoTransmitButtonStates()
             }
             UIPane.MODE_VECTOR -> {
@@ -610,6 +611,7 @@ class ControlPane {
                 else if (parentPane.userClearanceState.vectorHdg == null) parentPane.userClearanceState.vectorHdg = parentPane.clearanceState.vectorHdg
                 vectorSubpaneObj.setHdgElementsDisabled(parentPane.appTrackCaptured)
                 vectorSubpaneObj.updateVectorTable(parentPane.userClearanceState.route, parentPane.userClearanceState.vectorHdg, parentPane.userClearanceState.vectorTurnDir)
+                updateAltSelectBoxChoices(parentPane.aircraftMaxAlt, parentPane.userClearanceState)
                 updateUndoTransmitButtonStates()
             }
             else -> FileLog.info("UIPane", "Unknown lateral mode $mode")
