@@ -302,7 +302,7 @@ data class AircraftSectorUpdateData(private val callsign: String = "", private v
             controllable.sectorId = newSector
             aircraft.entity[RSSprite.mapper]?.drawable = getAircraftIcon(aircraft.entity[FlightType.mapper]?.type ?: return, newSector)
             aircraft.entity[Datatag.mapper]?.let {
-                it.minimised = newSector != rs.playerSector
+                it.minimised = newSector != rs.playerSector || it.minimised
                 updateDatatagText(it, getNewDatatagLabelText(aircraft.entity, it.minimised))
                 CLIENT_SCREEN?.sendAircraftDatatagPositionUpdate(aircraft.entity, it.xOffset, it.yOffset, it.minimised, it.flashing)
             }

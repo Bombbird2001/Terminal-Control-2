@@ -318,21 +318,27 @@ class ControlPane {
         if (!ignoreUserPane && defaultClearancePane != currPane) return setPaneLateralMode(currPane)
         when (getDefaultPaneForClearanceState(route, vectorHdg, appTrackCaptured)) {
             PANE_VECTOR -> {
+                modificationInProgress = true
                 routeModeButton.isChecked = false
                 holdModeButton.isChecked = false
+                modificationInProgress = false
                 vectorModeButton.isChecked = true
                 setPaneLateralMode(UIPane.MODE_VECTOR)
             }
             PANE_HOLD -> {
+                modificationInProgress = true
                 routeModeButton.isChecked = false
-                holdModeButton.isChecked = true
                 vectorModeButton.isChecked = false
+                modificationInProgress = false
+                holdModeButton.isChecked = true
                 setPaneLateralMode(UIPane.MODE_HOLD)
             }
             PANE_ROUTE -> {
                 routeModeButton.isChecked = true
+                modificationInProgress = true
                 holdModeButton.isChecked = false
                 vectorModeButton.isChecked = false
+                modificationInProgress = false
                 setPaneLateralMode(UIPane.MODE_ROUTE)
             }
         }
