@@ -593,7 +593,16 @@ class RadarScreen private constructor(private val connectionHost: String, privat
     fun resumeGame(reconnect: Boolean = true) {
         if (networkClient.isConnected) networkClient.sendTCP(GameRunningStatus(true))
         GAME.soundManager.resume()
-        if (!networkClient.isConnected && reconnect) networkClient.reconnect()
+        if (!networkClient.isConnected && reconnect) {
+            networkClient.beforeConnect(roomId)
+            try {
+                networkClient.reconnect()
+            } catch (e: IOException) {
+                FileLog.warn("RadarScreen", "Failed to reconnect to server")
+                GAME.quitCurrentGameWithDialog(CustomDialog("Disconnected", "You have been disconnected from the server - most likely the host quit the game",
+                    "", "Ok"))
+            }
+        }
     }
 
     /**
