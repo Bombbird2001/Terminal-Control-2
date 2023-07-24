@@ -751,6 +751,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
             clearanceRoutes[i]?.apply {
                 val latest = get(PendingClearances.mapper)?.clearanceQueue?.last()?.clearanceState ?:
                 get(ClearanceAct.mapper)?.actingClearance?.clearanceState ?: return@apply
+                if (latest.vectorHdg != null) return@apply
                 if (latest.route.size < 1) return@apply
                 val firstWpt = latest.route[0]
                 if (firstWpt !is Route.WaypointLeg) return@apply
@@ -767,6 +768,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         for (i in 0 until route.size) {
             val leg = route[i]
             if (leg !is Route.WaypointLeg) continue
+            if (!leg.legActive) continue
             if (leg.phase == Route.Leg.MISSED_APP) continue
             val wptEntity = wptMap[leg.wptId] ?: continue
             wptEntity.remove<DoNotRenderShape>()
@@ -777,6 +779,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         for (i in 0 until uiSelectedClearanceRoute.size) {
             val leg = uiSelectedClearanceRoute[i]
             if (leg !is Route.WaypointLeg) continue
+            if (!leg.legActive) continue
             if (leg.phase == Route.Leg.MISSED_APP) continue
             val wptEntity = wptMap[leg.wptId] ?: continue
             wptEntity.remove<DoNotRenderShape>()
