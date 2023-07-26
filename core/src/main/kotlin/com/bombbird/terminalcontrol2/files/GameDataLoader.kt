@@ -62,6 +62,7 @@ private const val SID_STAR_RWY = "RWY"
 private const val SID_STAR_APP_ROUTE = "ROUTE"
 private const val SID_OUTBOUND = "OUTBOUND"
 private const val STAR_INBOUND = "INBOUND"
+private const val SID_STAR_ALLOWED_CONFIGS = "ALLOWED_CONFIGS"
 private const val APCH_OBJ = "APCH"
 private const val APCH_LOC = "LOC"
 private const val APCH_GS = "GS"
@@ -168,6 +169,10 @@ fun loadWorldData(mainName: String, gameServer: GameServer) {
                 }
                 SID_OUTBOUND -> if (currSid != null) parseSIDSTARinOutboundRoute(lineData, currSid)
                 STAR_INBOUND -> if (currStar != null) parseSIDSTARinOutboundRoute(lineData, currStar)
+                SID_STAR_ALLOWED_CONFIGS -> {
+                    if (currSid != null) parseSIDSTARAllowedConfigs(lineData, currSid)
+                    else if (currStar != null) parseSIDSTARAllowedConfigs(lineData, currStar)
+                }
                 "$APCH_OBJ/" -> currApp = parseApproach(lineData, currAirport ?: continue)
                 "/$APCH_OBJ" -> currApp = null
                 APCH_LOC -> if (currApp != null) parseAppLocalizer(lineData, currApp)
@@ -253,8 +258,8 @@ private fun parseWaypoint(data: List<String>, gameServer: GameServer) {
 private fun parseSector(data: List<String>, currSectorCount: Byte, gameServer: GameServer) {
     val id = if (!gameServer.sectors.containsKey(currSectorCount)) 0.byte else gameServer.sectors[currSectorCount].size.toByte()
     val freq = data[0]
-    val arrCallsign = data[1]
-    val depCallsign = data[2]
+    val arrCallsign = data[1].replace("-", " ")
+    val depCallsign = data[2].replace("-", " ")
     val polygon = ArrayList<Short>()
     for (i in 3 until data.size) {
         val pos = data[i].split(",")
@@ -777,6 +782,15 @@ private fun parseSIDSTARRoute(data: List<String>, sidStar: SidStar) {
 /** Parse the given [data] into the route data for the inbound/outbound segment of the SID/STAR respectively, and adds it to the supplied [sidStar]'s [SidStar.routeLegs] */
 private fun parseSIDSTARinOutboundRoute(data: List<String>, sidStar: SidStar) {
     sidStar.addToInboundOutboundLegs(parseLegs(data.subList(1, data.size), Route.Leg.NORMAL))
+}
+
+/** Parse the given [data] into the runway configurations that must be in use for the SID or STAR to be enabled */
+private fun parseSIDSTARAllowedConfigs(data: List<String>, sidStar: SidStar) {
+    sidStar.rwyConfigsAllowed.clear()
+    for (i in 1 until data.size) {
+        val configId = data[i].toByte()
+        sidStar.rwyConfigsAllowed.add(configId)
+    }
 }
 
 /**

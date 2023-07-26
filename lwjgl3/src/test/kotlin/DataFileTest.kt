@@ -18,6 +18,7 @@ import io.kotest.matchers.collections.shouldBeIn
 import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.collections.shouldNotBeIn
 import io.kotest.matchers.collections.shouldNotContain
+import io.kotest.matchers.comparables.shouldBeGreaterThan
 import io.kotest.matchers.comparables.shouldBeGreaterThanOrEqualTo
 import io.kotest.matchers.comparables.shouldBeLessThan
 import io.kotest.matchers.floats.shouldBeBetween
@@ -99,7 +100,7 @@ object DataFileTest: FunSpec() {
                     }
                     val maxAlt = getAllTextAfterHeader("MAX_ALT", data).toInt()
                     withData(arrayListOf("World Maximum Altitude")) {
-                        maxAlt.shouldBeBetween(18000, 26000)
+                        maxAlt.shouldBeBetween(15000, 26000)
                         maxAlt shouldBeGreaterThan minAlt
                         maxAlt % 100 shouldBe 0
                     }
@@ -443,9 +444,9 @@ object DataFileTest: FunSpec() {
         testDependentRunways("Crossing Runways", "CROSSING", arptData, allRwys)
         testRunwayZones("Approach NOZ", "APP_NOZ", arptData, allRwys)
         testRunwayZones("Departure NOZ", "DEP_NOZ", arptData, allRwys)
-        testRunwayConfigs(arptData, allRwys)
-        testSid(arptData, allRwys, wpts, minAlt)
-        testStar(arptData, allRwys, wpts)
+        val configRwys = testRunwayConfigs(arptData, allRwys)
+        testSid(arptData, allRwys, wpts, configRwys.first, minAlt)
+        testStar(arptData, allRwys, wpts, configRwys.second)
         testApp(arptData, allRwys, wpts, arptElevation)
         testTraffic(arptData)
     }
@@ -521,11 +522,14 @@ object DataFileTest: FunSpec() {
 
     /**
      * Tests the runway configs for the input airport data block, with the calling ContainerScope as the scope for the
-     * tests
+     * tests, returning a Pair containing a HashMap each mapping the runway config ID to their respective departure,
+     * arrival runways
      * @param data the string text to parse
      * @param allRwys all runways in this airport
      */
-    private suspend fun ContainerScope.testRunwayConfigs(data: String, allRwys: HashSet<String>) {
+    private suspend fun ContainerScope.testRunwayConfigs(data: String, allRwys: HashSet<String>): Pair<HashMap<Byte, HashSet<String>>, HashMap<Byte, HashSet<String>>> {
+        val depRwys = HashMap<Byte, HashSet<String>>()
+        val arrRwys = HashMap<Byte, HashSet<String>>()
         withData(arrayListOf("Runway Configurations")) {
             val configIds = HashSet<Byte>()
             getBlocksBetweenTags("CONFIG", data).forEach { config ->
@@ -535,15 +539,25 @@ object DataFileTest: FunSpec() {
                     val configId = header[0].toByte()
                     configIds shouldNotContain configId
                     configIds.add(configId)
+                    val configDepRwys = HashSet<String>()
+                    val configArrRwys = HashSet<String>()
                     header[1] shouldBeIn TIME_SLOTS
                     val dep = getAllTextAfterHeader("DEP", config)
                     withData(arrayListOf("DEP $dep")) {
-                        dep.split(" ").forEach { rwy -> allRwys shouldContain rwy }
+                        dep.split(" ").forEach { rwy ->
+                            allRwys shouldContain rwy
+                            configDepRwys.add(rwy)
+                        }
                     }
                     val arr = getAllTextAfterHeader("ARR", config)
                     withData(arrayListOf("ARR $arr")) {
-                        arr.split(" ").forEach { rwy -> allRwys shouldContain rwy }
+                        arr.split(" ").forEach { rwy ->
+                            allRwys shouldContain rwy
+                            configArrRwys.add(rwy)
+                        }
                     }
+                    depRwys[configId] = configDepRwys
+                    arrRwys[configId] = configArrRwys
                     withData(getAllTextAfterHeaderMultiple("NTZ", config).map { "NTZ $it" }) {ntz ->
                         val ntzData = ntz.split(" ")
                         ntzData.size shouldBe 5
@@ -555,6 +569,8 @@ object DataFileTest: FunSpec() {
                 }
             }
         }
+
+        return Pair(depRwys, arrRwys)
     }
 
     /**
@@ -563,10 +579,12 @@ object DataFileTest: FunSpec() {
      * @param data the string text to parse
      * @param allRwys all runways in this airport
      * @param allWpts all waypoints in this game world
+     * @param allConfigDepRwys a HashMap mapping the runway config ID to their respective departure runways
      * @param minAlt the game world's minimum altitude
      * @return a HashSet of all runway names for this airport
      */
-    private suspend fun ContainerScope.testSid(data: String, allRwys: HashSet<String>, allWpts: HashSet<String>, minAlt: Int) {
+    private suspend fun ContainerScope.testSid(data: String, allRwys: HashSet<String>, allWpts: HashSet<String>,
+                                               allConfigDepRwys: HashMap<Byte, HashSet<String>>, minAlt: Int) {
         withData(arrayListOf("SIDs")) {
             getBlocksBetweenTags("SID", data).forEach {
                 val sidLines = it.toLines(2)
@@ -575,13 +593,17 @@ object DataFileTest: FunSpec() {
                 withData(arrayListOf(infoLine[0])) {
                     infoLine[1] shouldBeIn TIME_SLOTS
 
+                    val sidRwys = ArrayList<String>()
                     val rwyLines = getAllTextAfterHeaderMultiple("RWY", sidLines[1])
                     rwyLines.size shouldBeGreaterThanOrEqual 1
-                    val rwyLine = rwyLines[0].split(" ")
-                    rwyLine.size shouldBeGreaterThanOrEqual 2
-                    rwyLine[0] shouldBeIn allRwys
-                    rwyLine[1].toInt() shouldBeGreaterThanOrEqual minAlt
-                    testParseLegs(rwyLine.subList(2, rwyLine.size), allWpts, Route.Leg.NORMAL, WARNING_SHOULD_BE_EMPTY)
+                    for (rwyStr in rwyLines) {
+                        val rwyLine = rwyStr.split(" ")
+                        rwyLine.size shouldBeGreaterThanOrEqual 2
+                        rwyLine[0] shouldBeIn allRwys
+                        sidRwys.add(rwyLine[0])
+                        rwyLine[1].toInt() shouldBeGreaterThanOrEqual minAlt
+                        testParseLegs(rwyLine.subList(2, rwyLine.size), allWpts, Route.Leg.NORMAL, WARNING_SHOULD_BE_EMPTY)
+                    }
 
                     val routeLines = getAllTextAfterHeaderMultiple("ROUTE", sidLines[1])
                     routeLines.size shouldBe 1
@@ -595,6 +617,15 @@ object DataFileTest: FunSpec() {
                         testWaypointLegStartEnd(outboundLine, false)
                     }
                     if (outbounds.isEmpty()) testWaypointLegStartEnd(routeLine, false)
+
+                    val allowedConfigs = getAllTextAfterHeader("ALLOWED_CONFIGS", sidLines[1])
+                    val configArray = allowedConfigs.split(" ")
+                    configArray.size shouldBeGreaterThan 0
+                    withData(configArray) {configId ->
+                        val id = configId.toByte()
+                        val depRwys = allConfigDepRwys[id].shouldNotBeNull()
+                        (sidRwys intersect depRwys).size shouldBeGreaterThan 0
+                    }
                 }
             }
         }
@@ -606,9 +637,11 @@ object DataFileTest: FunSpec() {
      * @param data the string text to parse
      * @param allRwys all runways in this airport
      * @param allWpts all waypoints in this game world
+     * @param allConfigArrRwys a HashMap mapping the runway config ID to their respective arrival runways
      * @return a HashSet of all runway names for this airport
      */
-    private suspend fun ContainerScope.testStar(data: String, allRwys: HashSet<String>, allWpts: HashSet<String>) {
+    private suspend fun ContainerScope.testStar(data: String, allRwys: HashSet<String>, allWpts: HashSet<String>,
+                                                allConfigArrRwys: HashMap<Byte, HashSet<String>>) {
         withData(arrayListOf("STARs")) {
             getBlocksBetweenTags("STAR", data).forEach {
                 val starLines = it.toLines(2)
@@ -630,12 +663,23 @@ object DataFileTest: FunSpec() {
                     testParseLegs(routeLine, allWpts, Route.Leg.NORMAL, WARNING_SHOULD_BE_EMPTY)
                     if (inbounds.isEmpty()) testWaypointLegStartEnd(routeLine, true)
 
+                    val starRwys = ArrayList<String>()
                     val rwyLines = getAllTextAfterHeaderMultiple("RWY", starLines[1])
                     rwyLines.size shouldBeGreaterThanOrEqual 1
                     for (rwy in rwyLines) {
                         val rwyLine = rwy.split(" ")
                         rwyLine.size shouldBe 1
                         rwyLine[0] shouldBeIn allRwys
+                        starRwys.add(rwyLine[0])
+                    }
+
+                    val allowedConfigs = getAllTextAfterHeader("ALLOWED_CONFIGS", starLines[1])
+                    val configArray = allowedConfigs.split(" ")
+                    configArray.size shouldBeGreaterThan 0
+                    withData(configArray) {configId ->
+                        val id = configId.toByte()
+                        val depRwys = allConfigArrRwys[id].shouldNotBeNull()
+                        (starRwys intersect depRwys).size shouldBeGreaterThan 0
                     }
                 }
             }

@@ -7,6 +7,7 @@ import com.bombbird.terminalcontrol2.utilities.UsabilityFilter
 import com.bombbird.terminalcontrol2.utilities.FileLog
 import ktx.collections.GdxArray
 import ktx.collections.GdxArrayMap
+import ktx.collections.GdxSet
 
 /** SID/STAR class that stores all relevant data regarding the SID/STAR and utility functions
  *
@@ -28,6 +29,7 @@ abstract class SidStar(val name: String,
     val routeZones = GdxArray<RouteZone>()
     val rwyLegs = GdxArrayMap<String, Route>(6)
     protected val inOutboundLegs = GdxArray<Route>(10)
+    val rwyConfigsAllowed = GdxSet<Byte>()
 
     /** Adds the supplied array of legs into [inOutboundLegs] */
     fun addToInboundOutboundLegs(newLegs: Route) {

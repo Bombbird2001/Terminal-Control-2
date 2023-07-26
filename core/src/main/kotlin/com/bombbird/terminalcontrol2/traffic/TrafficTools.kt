@@ -155,11 +155,17 @@ private fun randomStar(airport: Entity): SidStar.STAR? {
             if (rwy.entity.has(ActiveLanding.mapper)) runwaysAvailable.add(rwy.entity[RunwayInfo.mapper]?.rwyName ?: return@forEach)
         }
     }
+    val activeRwyConfig = airport[ActiveRunwayConfig.mapper]
+    if (activeRwyConfig == null) {
+        FileLog.info("TrafficTools", "No active runway configuration for random STAR")
+        return null
+    }
     airport[STARChildren.mapper]?.starMap?.let { starMap ->
         Entries(starMap).forEach { starEntry ->
             val star = starEntry.value
             // Add to list of eligible STARs if both runway and time restriction checks passes
-            if ((star.rwyLegs.keys() intersect  runwaysAvailable).isEmpty()) return@forEach
+            if ((star.rwyLegs.keys() intersect runwaysAvailable).isEmpty()) return@forEach
+            if (!star.rwyConfigsAllowed.contains(activeRwyConfig.configId)) return@forEach
             if (!star.isUsableForDayNight()) return@forEach
             availableStars.add(star)
         }
@@ -340,11 +346,21 @@ fun clearForTakeoff(aircraft: Entity, rwy: Entity) {
 private fun randomSid(rwy: Entity): SidStar.SID? {
     val availableSids = GdxArray<SidStar.SID>()
     val rwyName = rwy[RunwayInfo.mapper]?.rwyName
+    if (rwyName == null) {
+        FileLog.info("TrafficTools", "No runway info found")
+        return null
+    }
+    val activeRwyConfig = rwy[RunwayInfo.mapper]?.airport?.entity?.get(ActiveRunwayConfig.mapper)
+    if (activeRwyConfig == null) {
+        FileLog.info("TrafficTools", "No active runway configuration for random SID")
+        return null
+    }
     rwy[RunwayInfo.mapper]?.airport?.entity?.get(SIDChildren.mapper)?.sidMap?.let { sidMap ->
         Entries(sidMap).forEach { sidEntry ->
             val sid = sidEntry.value
-            // Add to list of eligible SIDs if both runway and time restriction checks passes
+            // Add to list of eligible SIDs if runway, runway configuration and time restriction checks all pass
             if (!sid.rwyInitialClimbs.containsKey(rwyName)) return@forEach
+            if (!sid.rwyConfigsAllowed.contains(activeRwyConfig.configId)) return@forEach
             if (!sid.isUsableForDayNight()) return@forEach
             availableSids.add(sid)
         }
