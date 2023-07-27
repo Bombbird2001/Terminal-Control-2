@@ -2,6 +2,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 android {
+	namespace "com.bombbird.terminalcontrol2"
 	setBuildToolsVersion("33.0.2")
 	setCompileSdk(33)
 	sourceSets {
@@ -34,14 +35,19 @@ android {
 		targetCompatibility "1.8"
 		coreLibraryDesugaringEnabled true
 	}
-	kotlinOptions.jvmTarget = "1.8"
+	kotlin {
+		jvmToolchain(8)
+	}
 	buildTypes {
 		release {
 			minifyEnabled false
 			proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
 		}
 	}
-
+    buildFeatures {
+        renderScript true
+        aidl true
+    }
 }
 
 repositories {

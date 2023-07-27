@@ -25,6 +25,10 @@ dependencies {
 	api files("build/classes/kotlin/main")
 }
 
+kotlin {
+	jvmToolchain(8)
+}
+
 def os = System.properties['os.name'].toLowerCase()
 
 run {

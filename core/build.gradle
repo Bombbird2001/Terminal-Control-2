@@ -1,6 +1,6 @@
 plugins {
-	id "kotlin-kapt"
 	id 'java-test-fixtures'
+	id 'com.google.devtools.ksp'
 }
 
 [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
@@ -33,7 +33,7 @@ dependencies {
 	api "com.squareup.moshi:moshi-adapters:$moshiKotlinVersion"
 	api "commons-codec:commons-codec:$apacheCommonsVersion"
 
-	kapt "com.squareup.moshi:moshi-kotlin-codegen:$moshiKotlinVersion"
+	ksp "com.squareup.moshi:moshi-kotlin-codegen:$moshiKotlinVersion"
 
 	testFixturesApi "io.kotest:kotest-runner-junit5:$kotestVersion"
 	testFixturesApi "io.kotest:kotest-framework-datatest:$kotestVersion"
@@ -51,4 +51,8 @@ test {
 	testLogging {
 		events "passed", "skipped", "failed"
 	}
+}
+
+kotlin {
+	jvmToolchain(8)
 }
