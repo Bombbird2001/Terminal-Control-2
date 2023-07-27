@@ -280,7 +280,7 @@ private fun parseSector(data: List<String>, currSectorCount: Byte, gameServer: G
 private fun parseACCSector(data: List<String>, gameServer: GameServer) {
     val id = gameServer.accSectors.size.toByte()
     val freq = data[0]
-    val accCallsign = data[1]
+    val accCallsign = data[1].replace("-", " ")
     val polygon = ArrayList<Short>()
     for (i in 2 until data.size) {
         val pos = data[i].split(",")

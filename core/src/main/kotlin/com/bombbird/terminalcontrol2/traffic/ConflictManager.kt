@@ -161,6 +161,13 @@ class ConflictManager {
         // Inhibit if either plane just did a go around
         if (entity1.has(RecentGoAround.mapper) || entity2.has(RecentGoAround.mapper)) return
 
+        // Allow simultaneous departures on divergent headings of at least 15 degrees
+        if (entity1.has(DivergentDepartureAllowed.mapper) && entity2.has(DivergentDepartureAllowed.mapper)) {
+            val hdg1 = entity1[Direction.mapper]?.trackUnitVector?.angleDeg() ?: 0f
+            val hdg2 = entity2[Direction.mapper]?.trackUnitVector?.angleDeg() ?: 0f
+            if (abs(hdg1 - hdg2) >= 15) return
+        }
+
         var latMinima = MIN_SEP
         val altMinima = VERT_SEP
         var conflictReason = Conflict.NORMAL_CONFLICT

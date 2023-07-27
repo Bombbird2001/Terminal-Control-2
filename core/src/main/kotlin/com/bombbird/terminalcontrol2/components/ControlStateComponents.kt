@@ -202,3 +202,15 @@ data class PendingCruiseAltitude(var timeLeft: Float = 10f): Component, BaseComp
 
     companion object: Mapper<PendingCruiseAltitude>()
 }
+
+/**
+ * Component for tagging aircraft that recently departed and are allowed to be less than the minimum radar separation
+ * from another simultaneous departure for 90s after departure, provided they are on a minimum 15 degrees divergent
+ * heading from each other within 90 seconds of departure
+ */
+@JsonClass(generateAdapter = true)
+data class DivergentDepartureAllowed(var timeLeft: Float = 90f): Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.DIVERGENT_DEPARTURE_ALLOWED
+
+    companion object: Mapper<DivergentDepartureAllowed>()
+}

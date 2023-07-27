@@ -442,7 +442,7 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advD
                     if (informPlayer)
                         GAME.gameClientScreen?.uiPane?.commsPane?.addMessage("""
                         $airportName runway${if (arrRwyNames.size > 1) "s" else ""} ${arrRwyNames.joinToString(", ")} ${if (arrRwyNames.size > 1) "are" else "is"} now active for landings.
-                        $airportName runway${if (depRwyNames.size > 1) "s" else ""} ${arrRwyNames.joinToString(", ")} ${if (depRwyNames.size > 1) "are" else "is"} now active for takeoffs.
+                        $airportName runway${if (depRwyNames.size > 1) "s" else ""} ${depRwyNames.joinToString(", ")} ${if (depRwyNames.size > 1) "are" else "is"} now active for takeoffs.
                     """.trimIndent(), CommsPane.ALERT)
                 }
             }

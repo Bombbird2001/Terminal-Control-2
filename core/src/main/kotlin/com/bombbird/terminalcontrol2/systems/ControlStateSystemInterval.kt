@@ -31,6 +31,7 @@ class ControlStateSystemInterval: IntervalSystem(1f) {
         private val checkSectorFamily: Family = allOf(Position::class, GroundTrack::class, Controllable::class).get()
         private val goAroundFamily: Family = allOf(RecentGoAround::class).get()
         private val pendingCruiseFamily: Family = allOf(PendingCruiseAltitude::class, ClearanceAct::class, AircraftInfo::class).get()
+        private val divergentDepFamily: Family = allOf(DivergentDepartureAllowed::class).get()
     }
 
     /**
@@ -263,6 +264,16 @@ class ControlStateSystemInterval: IntervalSystem(1f) {
                     }
                     remove<PendingCruiseAltitude>()
                 }
+            }
+        }
+
+        // Check divergent departures and decrement the timer counter
+        val divergentDepartures = engine.getEntitiesFor(divergentDepFamily)
+        for (i in 0 until divergentDepartures.size()) {
+            divergentDepartures[i]?.apply {
+                val divDep = get(DivergentDepartureAllowed.mapper) ?: return@apply
+                divDep.timeLeft -= interval
+                if (divDep.timeLeft < 0) remove<DivergentDepartureAllowed>()
             }
         }
     }

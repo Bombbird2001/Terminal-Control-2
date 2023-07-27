@@ -174,7 +174,8 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
                 // If the approach has been changed, remove all current approach components to allow aircraft to
                 // re-establish on new approach (if new approach is null, then the approach is cancelled)
                 if (appChanged) removeAllApproachComponents(entity)
-                val app = GAME.gameServer?.airports?.get(entity[ArrivalAirport.mapper]?.arptId)?.entity?.get(ApproachChildren.mapper)?.approachMap?.get(it)?.entity ?: return@let
+                val app = GAME.gameServer?.airports?.get(entity[ArrivalAirport.mapper]?.arptId)?.entity?.get(ApproachChildren.mapper)?.approachMap?.get(it)?.entity
+                    ?: return clearCurrentRouteRestrictions(entity)
                 if (app.has(Localizer.mapper)) entity += LocalizerArmed(app)
                 else app[ApproachInfo.mapper]?.rwyObj?.entity?.get(VisualApproach.mapper)?.let { visApp ->
                     entity += VisualArmed(visApp.visual, app)

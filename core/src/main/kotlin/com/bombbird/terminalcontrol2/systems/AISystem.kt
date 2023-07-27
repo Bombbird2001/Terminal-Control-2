@@ -93,6 +93,7 @@ class AISystem: EntitySystem() {
                     val accelAlt = alt.altitudeFt + randomAGL
                     this += TakeoffClimb(accelAlt)
                     this += AccelerateToAbove250kts()
+                    this += DivergentDepartureAllowed()
                     // Transition to first leg on route if present, otherwise maintain runway heading
                     setToFirstRouteLeg(this)
                     return@apply
