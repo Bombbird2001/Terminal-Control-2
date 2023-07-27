@@ -506,16 +506,19 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
             handleGameRunningRequest(true)
         }
 
-        val onDisconnect = { conn: ConnectionMeta ->
+        val onDisconnect = fun(conn: ConnectionMeta) {
             // Called on disconnect
             val newPlayerNo = playerNo.decrementAndGet().toByte()
+            if (newPlayerNo <= 0) {
+                return GAME.quitCurrentGameWithDialog(CustomDialog("Game closed", "All players have left the game", "", "Ok"))
+            }
             val sectorControlled = sectorMap[conn.uuid]
             if (sectorControlled != null) networkServer.sendToAllTCP(PlayerLeft(sectorControlled))
             postRunnableAfterEngineUpdate {
                 // Remove entries only after this engine update to prevent threading issues
                 sectorUUIDMap.removeKey(sectorControlled)
                 sectorMap.removeKey(conn.uuid)
-                if (newPlayerNo > 0) assignSectorsToPlayers(
+                assignSectorsToPlayers(
                     networkServer.connections,
                     sectorMap,
                     sectorUUIDMap,
