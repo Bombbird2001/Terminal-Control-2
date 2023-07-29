@@ -92,7 +92,7 @@ abstract class NetworkClient {
      * @return the de-serialised object
      */
     @Synchronized
-    private fun fromSerializedBytes(data: ByteArray): Any? {
+    protected fun fromSerializedBytes(data: ByteArray): Any? {
         var times = 0
         while (times < 3) {
             try {

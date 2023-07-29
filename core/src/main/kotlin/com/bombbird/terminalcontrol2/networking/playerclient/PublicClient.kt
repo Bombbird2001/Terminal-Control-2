@@ -9,7 +9,6 @@ import com.bombbird.terminalcontrol2.networking.relayserver.*
 import com.bombbird.terminalcontrol2.screens.RadarScreen
 import com.bombbird.terminalcontrol2.ui.CustomDialog
 import com.esotericsoftware.kryo.Kryo
-import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryonet.Client
 import com.esotericsoftware.kryonet.Connection
 import com.esotericsoftware.kryonet.Listener
@@ -130,7 +129,7 @@ class PublicClient: NetworkClient() {
      */
     @Synchronized
     fun decodeRelayMessageObject(data: ByteArray) {
-        val obj = client.kryo.readClassAndObject(Input(data))
+        val obj = fromSerializedBytes(data) ?: return
         onReceiveNonRelayData(obj)
     }
 
