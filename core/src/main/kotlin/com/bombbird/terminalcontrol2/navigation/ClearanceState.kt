@@ -62,8 +62,8 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
             val appChanged = newClearance.clearedApp != clearedApp
             val transChanged = newClearance.clearedTrans != clearedTrans
 
+            val currFirstLeg = if (route.size > 0) route[0] else null
             route.let { currRoute -> newClearance.route.let { newRoute ->
-                val currFirstLeg = if (currRoute.size > 0) currRoute[0] else null
                 val newFirstLeg = if (newRoute.size > 0) newRoute[0] else null
                 // Remove current present position hold leg if next leg is a different hold leg and is not an uninitialised leg, or not a hold leg
                 if (currFirstLeg is Route.HoldLeg && currFirstLeg.wptId < -1 && (newFirstLeg !is Route.HoldLeg || (newFirstLeg.wptId.toInt() != -1 && newFirstLeg.wptId != currFirstLeg.wptId)))
@@ -175,7 +175,11 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
                 // re-establish on new approach (if new approach is null, then the approach is cancelled)
                 if (appChanged) removeAllApproachComponents(entity)
                 val app = GAME.gameServer?.airports?.get(entity[ArrivalAirport.mapper]?.arptId)?.entity?.get(ApproachChildren.mapper)?.approachMap?.get(it)?.entity
-                    ?: return clearCurrentRouteRestrictions(entity)
+                if (app == null) {
+                    if (appChanged && (currFirstLeg == null || currFirstLeg.phase == Route.Leg.APP ||
+                                currFirstLeg.phase == Route.Leg.APP_TRANS)) return clearCurrentRouteRestrictions(entity)
+                    return
+                }
                 if (app.has(Localizer.mapper)) entity += LocalizerArmed(app)
                 else app[ApproachInfo.mapper]?.rwyObj?.entity?.get(VisualApproach.mapper)?.let { visApp ->
                     entity += VisualArmed(visApp.visual, app)

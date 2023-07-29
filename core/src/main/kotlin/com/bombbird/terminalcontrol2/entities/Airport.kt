@@ -12,6 +12,7 @@ import com.bombbird.terminalcontrol2.ui.CommsPane
 import com.bombbird.terminalcontrol2.utilities.*
 import com.bombbird.terminalcontrol2.utilities.FileLog
 import ktx.ashley.*
+import ktx.collections.GdxArray
 import ktx.math.times
 
 /** Airport class that creates an airport entity with the required components on instantiation */
@@ -415,28 +416,43 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advD
                             rwy.remove<DoNotRenderShape>()
                         }
                     }
+
                     val arrRwyNames = Array(config.arrRwys.size) {""}
+                    val allAppNOZ = GdxArray<ApproachNormalOperatingZone>()
                     for (i in 0 until config.arrRwys.size) {
                         rwyMap[config.arrRwys[i]?.entity?.get(RunwayInfo.mapper)?.rwyId]?.entity?.let { rwy ->
                             rwy += ActiveLanding()
-                            rwy[ApproachNOZ.mapper]?.appNoz?.entity?.remove<DoNotRenderShape>()
+                            rwy[ApproachNOZ.mapper]?.appNoz?.let { allAppNOZ.add(it) }
                             rwy[SRColor.mapper]?.color = RUNWAY_ACTIVE
                             rwy.remove<DoNotRenderLabel>()
                             rwy[OppositeRunway.mapper]?.oppRwy?.add(DoNotRenderShape())
                             arrRwyNames[i] = rwy[RunwayInfo.mapper]?.rwyName ?: ""
                         }
                     }
+                    if (allAppNOZ.size > 1) {
+                        for (i in 0 until allAppNOZ.size) {
+                            allAppNOZ[i].entity.remove<DoNotRenderShape>()
+                        }
+                    }
+
                     val depRwyNames = Array(config.depRwys.size) {""}
+                    val allDepNoz = GdxArray<DepartureNormalOperatingZone>()
                     for (i in 0 until config.depRwys.size) {
                         rwyMap[config.depRwys[i]?.entity?.get(RunwayInfo.mapper)?.rwyId]?.entity?.let {  rwy ->
                             rwy += ActiveTakeoff()
-                            rwy[DepartureNOZ.mapper]?.depNoz?.entity?.remove<DoNotRenderShape>()
+                            rwy[DepartureNOZ.mapper]?.depNoz?.let { allDepNoz.add(it) }
                             rwy[SRColor.mapper]?.color = RUNWAY_ACTIVE
                             rwy.remove<DoNotRenderLabel>()
                             rwy[OppositeRunway.mapper]?.oppRwy?.add(DoNotRenderShape())
                             depRwyNames[i] = rwy[RunwayInfo.mapper]?.rwyName ?: ""
                         }
                     }
+                    if (allDepNoz.size > 1) {
+                        for (i in 0 until allDepNoz.size) {
+                            allDepNoz[i].entity.remove<DoNotRenderShape>()
+                        }
+                    }
+
                     config.setNTZVisibility(true)
                     val airportName = entity[AirportInfo.mapper]?.icaoCode ?: ""
                     if (informPlayer)

@@ -3,15 +3,13 @@ package com.bombbird.terminalcontrol2.traffic
 import com.badlogic.ashley.core.Entity
 import com.badlogic.ashley.utils.ImmutableArray
 import com.badlogic.gdx.math.Circle
+import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.RouteZone
 import com.bombbird.terminalcontrol2.entities.SerialisableEntity
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.establishedOnFinalApproachTrack
-import com.bombbird.terminalcontrol2.utilities.calculateDistanceBetweenPoints
-import com.bombbird.terminalcontrol2.utilities.getLatestClearanceState
-import com.bombbird.terminalcontrol2.utilities.nmToPx
-import com.bombbird.terminalcontrol2.utilities.FileLog
+import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.get
 import ktx.ashley.has
 import ktx.collections.GdxArray
@@ -147,12 +145,12 @@ class ConflictManager {
             appNoz1?.contains(pos1.x, pos1.y) == true && appNoz2?.contains(pos2.x, pos2.y) == true) return
 
         // Inhibit if both planes are departing from the same airport, and are both inside different NOZs of their departure runways
-        val depRwy1 = entity1[DepartureAirport.mapper]?.let {
-            GAME.gameServer?.airports?.get(it.arptId)?.entity?.get(RunwayChildren.mapper)?.rwyMap?.get(it.rwyId)
-        }
-        val depRwy2 = entity2[DepartureAirport.mapper]?.let {
-            GAME.gameServer?.airports?.get(it.arptId)?.entity?.get(RunwayChildren.mapper)?.rwyMap?.get(it.rwyId)
-        }
+        val depArpt1 = entity1[DepartureAirport.mapper] ?: return
+        val depArpt2 = entity2[DepartureAirport.mapper] ?: return
+        val depArptEntity1 = GAME.gameServer?.airports?.get(depArpt1.arptId) ?: return
+        val depArptEntity2 = GAME.gameServer?.airports?.get(depArpt2.arptId) ?: return
+        val depRwy1 = depArptEntity1.entity[RunwayChildren.mapper]?.rwyMap?.get(depArpt1.rwyId)
+        val depRwy2 = depArptEntity2.entity[RunwayChildren.mapper]?.rwyMap?.get(depArpt2.rwyId)
         val depNoz1 = depRwy1?.entity?.get(DepartureNOZ.mapper)?.depNoz
         val depNoz2 = depRwy2?.entity?.get(DepartureNOZ.mapper)?.depNoz
         // Since depNoz1 and depNoz2 are nullable, the .contains method must return a true (not false or null)
@@ -162,10 +160,27 @@ class ConflictManager {
         if (entity1.has(RecentGoAround.mapper) || entity2.has(RecentGoAround.mapper)) return
 
         // Allow simultaneous departures on divergent headings of at least 15 degrees
-        if (entity1.has(DivergentDepartureAllowed.mapper) && entity2.has(DivergentDepartureAllowed.mapper)) {
-            val hdg1 = entity1[Direction.mapper]?.trackUnitVector?.angleDeg() ?: 0f
-            val hdg2 = entity2[Direction.mapper]?.trackUnitVector?.angleDeg() ?: 0f
-            if (abs(hdg1 - hdg2) >= 15) return
+        if (entity1.has(DivergentDepartureAllowed.mapper) && entity2.has(DivergentDepartureAllowed.mapper) && depArpt1 == depArpt2) {
+            val track1 = convertWorldAndRenderDeg(entity1[Direction.mapper]?.trackUnitVector?.angleDeg() ?: 0f)
+            val track2 = convertWorldAndRenderDeg(entity2[Direction.mapper]?.trackUnitVector?.angleDeg() ?: 0f)
+
+            // Identify which plane is on the left, right
+            depArptEntity1.entity[Position.mapper]?.let { arptPos ->
+                val plane1Offset = Vector2(pos1.x - arptPos.x, pos1.y - arptPos.y)
+                val plane2Offset = Vector2(pos2.x - arptPos.x, pos2.y - arptPos.y)
+
+                // Check which angle is more left
+                val plane1PosTrack = convertWorldAndRenderDeg(plane1Offset.angleDeg())
+                val plane2PosTrack = convertWorldAndRenderDeg(plane2Offset.angleDeg())
+                val plane2PosTrackDiff = findDeltaHeading(plane1PosTrack, plane2PosTrack, CommandTarget.TURN_DEFAULT)
+                if (plane2PosTrackDiff > 0) {
+                    // Plane 1 on left, 2 on right
+                    if (findDeltaHeading(track1, track2, CommandTarget.TURN_DEFAULT) >= 15) return
+                } else {
+                    // Plane 1 on right, 2 on left
+                    if (findDeltaHeading(track2, track1, CommandTarget.TURN_DEFAULT) >= 15) return
+                }
+            }
         }
 
         var latMinima = MIN_SEP
