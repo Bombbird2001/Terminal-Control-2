@@ -411,7 +411,7 @@ class ControlPane {
          */
         fun checkAltAndAddToArray(alt: Int, array: GdxArray<String>) {
             if (alt > TRANS_ALT && alt < TRANS_LVL * 100) return
-            if (alt <= TRANS_ALT) array.add(alt.toString())
+            if (alt < TRANS_LVL * 100) array.add(alt.toString())
             else if (alt >= TRANS_LVL * 100) array.add("FL${alt / 100}")
         }
 
@@ -421,7 +421,7 @@ class ControlPane {
          * @param alt the altitude value to set
          */
         fun setToAltValue(alt: Int) {
-            if (alt <= TRANS_ALT) altSelectBox.selected = alt.toString()
+            if (alt < TRANS_LVL * 100) altSelectBox.selected = alt.toString()
             else altSelectBox.selected = "FL${alt / 100}"
         }
 

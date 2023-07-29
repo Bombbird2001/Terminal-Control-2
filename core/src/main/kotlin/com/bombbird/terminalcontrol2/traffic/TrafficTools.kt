@@ -147,6 +147,7 @@ fun despawnAircraft(aircraft: Entity) {
  */
 private fun randomStar(airport: Entity): SidStar.STAR? {
     val availableStars = GdxArray<SidStar.STAR>()
+    val availableStarsIgnoreTime = GdxArray<SidStar.STAR>()
     val runwaysAvailable = HashSet<String>()
     airport[RunwayChildren.mapper]?.rwyMap?.let { rwyMap ->
         Entries(rwyMap).forEach { rwyEntry ->
@@ -166,14 +167,18 @@ private fun randomStar(airport: Entity): SidStar.STAR? {
             // Add to list of eligible STARs if both runway and time restriction checks passes
             if ((star.rwyLegs.keys() intersect runwaysAvailable).isEmpty()) return@forEach
             if (!star.rwyConfigsAllowed.contains(activeRwyConfig.configId)) return@forEach
+            availableStarsIgnoreTime.add(star)
             if (!star.isUsableForDayNight()) return@forEach
             availableStars.add(star)
         }
     }
 
     if (availableStars.isEmpty) {
-        FileLog.info("TrafficTools", "No STAR available for ${airport[AirportInfo.mapper]?.name}")
-        return null
+        if (availableStarsIgnoreTime.isEmpty) {
+            FileLog.info("TrafficTools", "No STAR available for ${airport[AirportInfo.mapper]?.name}")
+            return null
+        }
+        return availableStarsIgnoreTime.random()
     }
     return availableStars.random()
 }
@@ -345,6 +350,7 @@ fun clearForTakeoff(aircraft: Entity, rwy: Entity) {
  */
 private fun randomSid(rwy: Entity): SidStar.SID? {
     val availableSids = GdxArray<SidStar.SID>()
+    val availableSidsIgnoreTime = GdxArray<SidStar.SID>()
     val rwyName = rwy[RunwayInfo.mapper]?.rwyName
     if (rwyName == null) {
         FileLog.info("TrafficTools", "No runway info found")
@@ -361,14 +367,18 @@ private fun randomSid(rwy: Entity): SidStar.SID? {
             // Add to list of eligible SIDs if runway, runway configuration and time restriction checks all pass
             if (!sid.rwyInitialClimbs.containsKey(rwyName)) return@forEach
             if (!sid.rwyConfigsAllowed.contains(activeRwyConfig.configId)) return@forEach
+            availableSidsIgnoreTime.add(sid)
             if (!sid.isUsableForDayNight()) return@forEach
             availableSids.add(sid)
         }
     }
 
     if (availableSids.isEmpty) {
-        FileLog.info("TrafficTools", "No SID available for runway $rwyName")
-        return null
+        if (availableSidsIgnoreTime.isEmpty) {
+            FileLog.info("TrafficTools", "No SID available for runway $rwyName")
+            return null
+        }
+        return availableSidsIgnoreTime.random()
     }
     return availableSids.random()
 }

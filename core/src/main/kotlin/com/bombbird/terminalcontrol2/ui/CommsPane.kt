@@ -350,13 +350,13 @@ class CommsPane {
     private fun getAltitudePhraseology(currAltFt: Float, clearedAltFt: Int): String {
         val currAltitude = currAltFt.let { currAlt ->
             val roundedFL = (currAlt / 100f).roundToInt()
-            if (roundedFL * 100 > TRANS_ALT) "FL$roundedFL"
+            if (roundedFL * 100 >= TRANS_LVL * 100) "FL$roundedFL"
             else "${roundedFL * 100} feet"
         }
 
         val clearedAlt = clearedAltFt.let { clearedAlt ->
             val roundedFL = (clearedAlt / 100f).roundToInt()
-            if (roundedFL * 100 > TRANS_ALT) "FL$roundedFL"
+            if (roundedFL * 100 >= TRANS_LVL * 100) "FL$roundedFL"
             else "${roundedFL * 100} feet"
         }
 
