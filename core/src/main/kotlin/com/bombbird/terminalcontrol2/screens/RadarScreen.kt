@@ -551,12 +551,18 @@ class RadarScreen private constructor(private val connectionHost: String, privat
      */
     private fun attemptConnectionToServer() {
         if (networkClient.isConnected) return
+        var times = 0
         while (true) {
             val gs = GAME.gameServer
             // If the game server is not yet running, or if the game server is a public server and has yet to receive
             // its room ID
             if (gs != null && (!gs.gameRunning || (gs.publicServer && gs.getRoomId() == null))) {
                 Thread.sleep(3000)
+                times++
+                if (times >= 10) {
+                    FileLog.info("RadarScreen", "Game server not running - timeout")
+                    return GAME.quitCurrentGameWithDialog(CustomDialog("Error", "Timeout when connecting to server", "", "Ok"))
+                }
                 continue
             }
             try {

@@ -17,7 +17,9 @@ import com.esotericsoftware.kryonet.Connection
 import com.esotericsoftware.kryonet.Listener
 import com.esotericsoftware.kryonet.Server
 import com.bombbird.terminalcontrol2.utilities.FileLog
+import com.esotericsoftware.kryo.Kryo
 import org.apache.commons.codec.binary.Base64
+import java.lang.NullPointerException
 import java.util.Timer
 import java.util.TimerTask
 import java.util.UUID
@@ -114,6 +116,9 @@ object RelayServer: RelayServer, RelayAuthorization {
 
     /** 128-bit AES key generator */
     private val keyGenerator = KeyGenerator.getInstance("AES").apply { init(128) }
+
+    private val manualKryo = Kryo().apply { registerClassesToKryo(this) }
+    private val manualKryoLock = Any()
 
     /**
      * Inner class for encapsulating a pending room connection, initiated after a request is sent to the create room
@@ -377,10 +382,21 @@ object RelayServer: RelayServer, RelayAuthorization {
      * @return a byte array containing the serialised object
      */
     @Synchronized
-    private fun getSerialisedBytes(data: Any): ByteArray {
-        val serialisationOutput = Output(SERVER_WRITE_BUFFER_SIZE)
-        server.kryo.writeClassAndObject(serialisationOutput, data)
-        return serialisationOutput.toBytes()
+    private fun getSerialisedBytes(data: Any): ByteArray? {
+        var times = 0
+        while (times < 3) {
+            try {
+                val serialisationOutput = Output(SERVER_WRITE_BUFFER_SIZE)
+                synchronized(manualKryoLock) {
+                    manualKryo.writeClassAndObject(serialisationOutput, data)
+                }
+                return serialisationOutput.toBytes()
+            } catch (e: NullPointerException) {
+                times++
+            }
+        }
+
+        return null
     }
 
     /**
@@ -390,7 +406,18 @@ object RelayServer: RelayServer, RelayAuthorization {
      */
     @Synchronized
     private fun fromSerializedBytes(data: ByteArray): Any? {
-        return server.kryo.readClassAndObject(Input(data))
+        var times = 0
+        while (times < 3) {
+            try {
+                synchronized(manualKryoLock) {
+                    return manualKryo.readClassAndObject(Input(data))
+                }
+            } catch (e: NullPointerException) {
+                times++
+            }
+        }
+
+        return null
     }
 
     /**
