@@ -72,7 +72,9 @@ class TrafficSystemInterval: IntervalSystem(1f) {
 
             // Keep checking runway configurations for any changes if needed
             for (i in 0 until airports.size) {
-                checkRunwayConfigSelection(airports.getValueAt(i).entity)
+                val arptEntity = airports.getValueAt(i).entity
+                calculateRunwayConfigScores(arptEntity)
+                checkRunwayConfigSelection(arptEntity)
             }
         }
 

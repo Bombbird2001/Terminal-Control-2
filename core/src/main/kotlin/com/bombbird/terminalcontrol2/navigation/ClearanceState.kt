@@ -134,7 +134,8 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
                                 // 4a. The current direct leg may be an approach/transition phase if the aircraft has
                                 // been cleared from vectors, in this case do not remove the first leg since the aircraft
                                 // has not passed by it
-                                if (currFirstLeg.phase == Route.Leg.NORMAL) newRoute.removeIndex(0)
+                                // 4b. STAR may have been changed, in this case just use the new route as it is
+                                if (currFirstLeg.phase == Route.Leg.NORMAL && !starChanged) newRoute.removeIndex(0)
                             }
                         }
                     }
