@@ -382,6 +382,8 @@ fun checkRunwayConfigSelection(airport: Entity) {
             GAME.gameServer?.airports?.get(arptId)?.activateRunwayConfig(idealConfig.id)
             GAME.gameServer?.sendActiveRunwayUpdateToAll(arptId, idealConfig.id)
         } else {
+            // Don't need to update if pending config is already equal to the ideal config
+            if (pendingConfig?.id == idealConfig.id) return
             // If another alternative that is better than the current no-runway available config is present, set pending
             // runway selection to that
             airport += PendingRunwayConfig(idealConfig.id, 300f)

@@ -51,7 +51,7 @@ class RunwayConfiguration(val id: Byte, override val timeRestriction: Byte): Com
             windScore -= winds.tailwindKt
         }}
 
-        rwyAvailabilityScore = depAvailable * arrAvailable
+        rwyAvailabilityScore = if (isUsableForDayNight()) depAvailable * arrAvailable else 0
     }
 
     /**

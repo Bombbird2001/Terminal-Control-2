@@ -10,10 +10,7 @@ import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.MAX_ALT
 import com.bombbird.terminalcontrol2.global.VERT_SEP
 import com.bombbird.terminalcontrol2.traffic.*
-import com.bombbird.terminalcontrol2.utilities.calculateDistanceBetweenPoints
-import com.bombbird.terminalcontrol2.utilities.findClosestIntersectionBetweenSegmentAndPolygon
-import com.bombbird.terminalcontrol2.utilities.nmToPx
-import com.bombbird.terminalcontrol2.utilities.FileLog
+import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.*
 import ktx.collections.GdxArray
 import kotlin.math.ceil
@@ -49,8 +46,8 @@ class TrafficSystemInterval: IntervalSystem(1f) {
      * (e.g. can be derived from other values without needing a time variable)
      */
     override fun updateInterval() {
-        // Arrival spawning timer
         GAME.gameServer?.apply {
+            // Arrival spawning timer
             arrivalSpawnTimerS -= interval
             if (arrivalSpawnTimerS < 0) {
                 when (trafficMode) {
@@ -71,6 +68,11 @@ class TrafficSystemInterval: IntervalSystem(1f) {
                     else -> FileLog.info("TrafficSystem", "Invalid traffic mode $trafficMode")
                 }
                 createRandomArrival(Entries(airports).map { it.value }, this)
+            }
+
+            // Keep checking runway configurations for any changes if needed
+            for (i in 0 until airports.size) {
+                checkRunwayConfigSelection(airports.getValueAt(i).entity)
             }
         }
 
