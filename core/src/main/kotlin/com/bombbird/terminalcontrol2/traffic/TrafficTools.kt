@@ -651,8 +651,8 @@ fun checkCrossingRunwayTraffic(rwy: Entity, additionalTime: Int): Boolean {
     val prevDeparture = rwy[RunwayPreviousDeparture.mapper]
     // Check if runway is occupied
     if (rwy.has(RunwayOccupied.mapper)) return false
-    // Check time from touchdown - minimum 30s
-    if (nextArrival != null && calculateTimeToThreshold(nextArrival.aircraft, rwy) < 30) return false
+    // Check time from touchdown - minimum 60s
+    if (nextArrival != null && calculateTimeToThreshold(nextArrival.aircraft, rwy) < 60) return false
     // No minimum time since departure needed, but check for additional time
     if (prevDeparture != null && prevDeparture.timeSinceDepartureS < additionalTime) return false
     return true
