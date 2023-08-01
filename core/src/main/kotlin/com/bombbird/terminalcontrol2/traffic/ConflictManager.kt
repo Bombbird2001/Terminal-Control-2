@@ -154,7 +154,8 @@ class ConflictManager {
         val depNoz1 = depRwy1?.entity?.get(DepartureNOZ.mapper)?.depNoz
         val depNoz2 = depRwy2?.entity?.get(DepartureNOZ.mapper)?.depNoz
         // Since depNoz1 and depNoz2 are nullable, the .contains method must return a true (not false or null)
-        if (depNoz1 !== depNoz2 && appNoz1?.contains(pos1.x, pos1.y) == true && appNoz2?.contains(pos2.x, pos2.y) == true) return
+        if (dep1 === dep2 && depNoz1 !== depNoz2 &&
+            depNoz1?.contains(pos1.x, pos1.y) == true && depNoz2?.contains(pos2.x, pos2.y) == true) return
 
         // Inhibit if either plane just did a go around
         if (entity1.has(RecentGoAround.mapper) || entity2.has(RecentGoAround.mapper)) return
