@@ -268,7 +268,7 @@ class MainInfoPane {
 
     /** Initializes the runway configuration panes for all the airports */
     fun initializeAirportRwyConfigPanes() {
-        val airports = CLIENT_SCREEN?.airports ?: return
+        val airports = GAME.gameServer?.airports ?: CLIENT_SCREEN?.airports ?: return
         for (airportEntry in Entries(airports)) {
             val airport = airportEntry.value
             val arptId = airport.entity[AirportInfo.mapper]?.arptId ?: return
@@ -406,6 +406,10 @@ class MainInfoPane {
         }}
     }
 
+    /**
+     * Updates the confirm and cancel buttons to reflect the usability of the runway configurations
+     * @param airport the airport entity to update for
+     */
     private fun updateConfirmCancelButtons(airport: Entity) {
         val arptId = airport[AirportInfo.mapper]?.arptId ?: return
         val cfmButton = airportRwyConfigConfirmCancelMap[arptId]?.first ?: return
@@ -431,9 +435,9 @@ class MainInfoPane {
         if (selectedConfig != null) {
             val isNight = UsabilityFilter.isNight()
             cfmButton.setText(when {
-                selectedConfig.rwyAvailabilityScore == 0 -> "Not allowed\ndue to winds"
                 selectedConfig.timeRestriction == UsabilityFilter.DAY_ONLY && isNight -> "Only allowed\nin day"
                 selectedConfig.timeRestriction == UsabilityFilter.NIGHT_ONLY && !isNight -> "Only allowed\nat night"
+                selectedConfig.rwyAvailabilityScore == 0 -> "Not allowed\ndue to winds"
                 GAME.gameServer == null -> "Only host\ncan change\nrunway"
                 else -> {
                     cfmButton.name = selectedId?.toString()
