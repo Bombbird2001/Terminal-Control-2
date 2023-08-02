@@ -4,6 +4,7 @@ import com.badlogic.ashley.core.Entity
 import com.badlogic.ashley.systems.IntervalSystem
 import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.utils.ArrayMap.Entries
+import com.badlogic.gdx.utils.Queue
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.WakeZone
 import com.bombbird.terminalcontrol2.global.GAME
@@ -239,8 +240,18 @@ class TrafficSystemInterval: IntervalSystem(1f) {
      * @param aircraft the aircraft being despawned
      */
     fun removeAircraftOnDespawn(aircraft: Entity) {
-        val conflict = aircraft[ConflictAble.mapper] ?: return
-        if (conflict.conflictLevel >= 0 && conflict.conflictLevel < conflictLevels.size)
-            conflictLevels[conflict.conflictLevel].removeValue(aircraft, false)
+        aircraft[ConflictAble.mapper]?.let { conflict ->
+            if (conflict.conflictLevel >= 0 && conflict.conflictLevel < conflictLevels.size)
+                conflictLevels[conflict.conflictLevel].removeValue(aircraft, false)
+        }
+
+        aircraft[WakeTrail.mapper]?.wakeZones?.let { wakeZones ->
+            for (point in Queue.QueueIterator(wakeZones)) {
+                point.second?.let {
+                    removeWakeZone(it)
+                    engine.removeEntity(it.entity)
+                }
+            }
+        }
     }
 }
