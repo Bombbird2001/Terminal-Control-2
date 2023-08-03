@@ -41,6 +41,7 @@ class TrafficSystemInterval: IntervalSystem(1f) {
         GdxArray()
     }
     val conflictManager = ConflictManager()
+    private var lastIsNight: Boolean? = null
 
     /**
      * Update function for operations that can be updated at a lower frequency and do not rely on deltaTime
@@ -72,10 +73,15 @@ class TrafficSystemInterval: IntervalSystem(1f) {
             }
 
             // Keep checking runway configurations for any changes if needed
-            for (i in 0 until airports.size) {
-                val arptEntity = airports.getValueAt(i).entity
-                calculateRunwayConfigScores(arptEntity)
-                checkRunwayConfigSelection(arptEntity)
+            val currIsNight = UsabilityFilter.isNight()
+            if (lastIsNight != currIsNight) {
+                lastIsNight = currIsNight
+                for (i in 0 until airports.size) {
+                    val arptEntity = airports.getValueAt(i).entity
+                    calculateRunwayConfigScores(arptEntity)
+                    checkRunwayConfigSelection(arptEntity)
+                }
+                sendNightModeUpdate(currIsNight)
             }
         }
 

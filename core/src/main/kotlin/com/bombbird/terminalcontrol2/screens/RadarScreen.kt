@@ -124,6 +124,9 @@ class RadarScreen private constructor(private val connectionHost: String, privat
     var serverTrafficMode = TrafficMode.NORMAL
     var serverTrafficValue = 6f
 
+    // Server values - night mode
+    var isNight = false
+
     // Selected aircraft
     var selectedAircraft: Aircraft? = null
 

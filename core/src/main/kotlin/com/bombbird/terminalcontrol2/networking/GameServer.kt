@@ -852,6 +852,14 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
     }
 
     /**
+     * Sends night mode change to clients
+     * @param night the new active night mode
+     */
+    fun sendNightModeUpdate(night: Boolean) {
+        networkServer.sendToAllTCP(NightModeData(night))
+    }
+
+    /**
      * Adds a runnable to be run on the main server thread after the current engine update
      * @param runnable the runnable to add
      */

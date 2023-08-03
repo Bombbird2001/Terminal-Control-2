@@ -30,7 +30,7 @@ interface UsabilityFilter {
                 // For start on previous and end next day e.g. 2200 to 0600
                 if (timeValue in nightModeStart..2359 || nightModeEnd < nightModeStart) return true
             }
-            return false
+            return GAME.gameClientScreen?.isNight ?: false
         }
     }
 
