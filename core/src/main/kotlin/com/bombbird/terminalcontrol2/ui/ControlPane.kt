@@ -349,13 +349,14 @@ class ControlPane {
      *
      * If the ID provided is null, the boxes will be disabled
      * @param airportId the airport to refer to when selecting approaches that can be cleared
+     * @param currSelectedApp the currently selected approach of the aircraft, if any
      */
-    private fun updateApproachSelectBoxChoices(airportId: Byte?) {
+    private fun updateApproachSelectBoxChoices(airportId: Byte?, currSelectedApp: String?) {
         modificationInProgress = true
         CLIENT_SCREEN?.airports?.get(airportId)?.entity?.let { arpt ->
             updateAppTransBoxesDisabled(false)
             appSelectBox.apply {
-                items = getAvailableApproaches(arpt)
+                items = getAvailableApproaches(arpt, currSelectedApp)
             }
         } ?: updateAppTransBoxesDisabled(true)
         modificationInProgress = false
@@ -533,7 +534,7 @@ class ControlPane {
 
         clearAltSelectBoxChoices()
         updateAltSelectBoxChoices(parentPane.aircraftMaxAlt, parentPane.userClearanceState)
-        updateApproachSelectBoxChoices(parentPane.aircraftArrivalArptId)
+        updateApproachSelectBoxChoices(parentPane.aircraftArrivalArptId, appName)
 
         altSelectBox.selected = if (clearedAlt >= TRANS_LVL * 100) "FL${clearedAlt / 100}" else clearedAlt.toString()
         spdSelectBox.selected = clearedSpd
@@ -573,7 +574,7 @@ class ControlPane {
                 holdSubpaneObj.isVisible = false
                 vectorSubpaneObj.isVisible = false
                 lateralContainer.actor = routeSubpaneObj.actor
-                updateApproachSelectBoxChoices(parentPane.aircraftArrivalArptId)
+                updateApproachSelectBoxChoices(parentPane.aircraftArrivalArptId, parentPane.userClearanceState.clearedApp)
                 parentPane.userClearanceState.vectorHdg = null
                 routeSubpaneObj.updateRouteTable(parentPane.userClearanceState.route)
                 updateUndoTransmitButtonStates()

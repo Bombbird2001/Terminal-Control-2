@@ -430,9 +430,10 @@ private fun generateRandomCallsign(airline: String, private: Boolean, gs: GameSe
 /**
  * Gets all available approaches for the input airport
  * @param airport the airport to use
+ * @param currSelectedApp the currently selected approach of the aircraft, if any
  * @return a [GdxArray] of strings containing the eligible approach names
  */
-fun getAvailableApproaches(airport: Entity): GdxArray<String> {
+fun getAvailableApproaches(airport: Entity, currSelectedApp: String?): GdxArray<String> {
     val array = GdxArray<String>().apply { add("Approach") }
     val rwys = airport[RunwayChildren.mapper]?.rwyMap ?: return array
     airport[ApproachChildren.mapper]?.approachMap?.let { appMap ->
@@ -446,6 +447,8 @@ fun getAvailableApproaches(airport: Entity): GdxArray<String> {
             }
         }
     }
+    if (currSelectedApp != null && !array.contains(currSelectedApp, false))
+        array.insert(1, currSelectedApp)
     return array
 }
 
