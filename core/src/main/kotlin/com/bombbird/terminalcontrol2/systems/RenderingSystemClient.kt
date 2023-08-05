@@ -124,6 +124,9 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         // Debug: Render wake zones
         // renderWakeZones(shapeRenderer)
 
+        // Debug: Render all sectors
+        // renderAllSectors(shapeRenderer)
+
         // Render circles
         val circles = engine.getEntitiesFor(circleFamily)
         for (i in 0 until circles.size()) {
@@ -741,8 +744,10 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         val wptMap = GdxMap<Short, Entity>()
         for (i in 0 until waypoints.size()) {
             val wpt = waypoints[i]
-            wpt += DoNotRenderShape()
-            wpt += DoNotRenderLabel()
+            // wpt += DoNotRenderShape()
+            wpt.remove<DoNotRenderShape>()
+            // wpt += DoNotRenderLabel()
+            wpt.remove<DoNotRenderLabel>()
             wpt[WaypointInfo.mapper]?.wptId?.let { id -> wptMap[id] = wpt }
         }
         val clearanceRoutes = engine.getEntitiesFor(routeFamily)

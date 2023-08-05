@@ -161,7 +161,7 @@ class ConflictManager {
         if (entity1.has(RecentGoAround.mapper) || entity2.has(RecentGoAround.mapper)) return
 
         // Allow simultaneous departures on divergent headings of at least 15 degrees
-        if (entity1.has(DivergentDepartureAllowed.mapper) && entity2.has(DivergentDepartureAllowed.mapper) && depArpt1 == depArpt2) {
+        if (entity1.has(DivergentDepartureAllowed.mapper) && entity2.has(DivergentDepartureAllowed.mapper) && depArptEntity1 == depArptEntity2) {
             val track1 = convertWorldAndRenderDeg(entity1[Direction.mapper]?.trackUnitVector?.angleDeg() ?: 0f)
             val track2 = convertWorldAndRenderDeg(entity2[Direction.mapper]?.trackUnitVector?.angleDeg() ?: 0f)
 
