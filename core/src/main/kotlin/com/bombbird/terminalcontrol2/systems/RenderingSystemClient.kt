@@ -744,10 +744,8 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         val wptMap = GdxMap<Short, Entity>()
         for (i in 0 until waypoints.size()) {
             val wpt = waypoints[i]
-            // wpt += DoNotRenderShape()
-            wpt.remove<DoNotRenderShape>()
-            // wpt += DoNotRenderLabel()
-            wpt.remove<DoNotRenderLabel>()
+             wpt += DoNotRenderShape()
+             wpt += DoNotRenderLabel()
             wpt[WaypointInfo.mapper]?.wptId?.let { id -> wptMap[id] = wpt }
         }
         val clearanceRoutes = engine.getEntitiesFor(routeFamily)
