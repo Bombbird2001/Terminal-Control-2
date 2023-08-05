@@ -451,6 +451,13 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
                 )
                 FileLog.info("GameServer", "Sent TrafficSettingsData")
 
+                // Send night mode data
+                networkServer.sendTCPToConnection(
+                    uuid,
+                    NightModeData(UsabilityFilter.isNight())
+                )
+                FileLog.info("GameServer", "Sent NightModeData")
+
                 // Send runway configs
                 Entries(airports).forEach {
                     val arpt = it.value

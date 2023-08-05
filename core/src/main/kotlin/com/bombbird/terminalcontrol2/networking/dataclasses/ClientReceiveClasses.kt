@@ -413,6 +413,7 @@ class AllTrailDotData(private val trails: Array<TrailDotData> = arrayOf()): Clie
 /** Class representing data sent from the server to clients to update night mode */
 data class NightModeData(val night: Boolean = false): ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
+        FileLog.info("ClientReceiveClasses", "Received NightModeData")
         rs.isNight = night
     }
 }
