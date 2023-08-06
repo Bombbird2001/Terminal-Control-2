@@ -11,11 +11,11 @@ import com.badlogic.gdx.utils.Timer
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.Aircraft
 import com.bombbird.terminalcontrol2.global.*
+import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.ui.addChangeListener
 import com.bombbird.terminalcontrol2.utilities.convertWorldAndRenderDeg
 import com.bombbird.terminalcontrol2.utilities.modulateHeading
 import com.bombbird.terminalcontrol2.utilities.pxpsToKt
-import com.bombbird.terminalcontrol2.utilities.removeExtraCharacters
 import com.bombbird.terminalcontrol2.utilities.FileLog
 import ktx.ashley.get
 import ktx.ashley.has
@@ -31,7 +31,7 @@ const val LABEL_PADDING = 7
 fun updateDatatagText(datatag: Datatag, newText: Array<String>) {
     for (i in 0 until datatag.labelArray.size) {
         datatag.labelArray[i].apply {
-            setText(newText[i])
+            setText(if (i < newText.size) newText[i] else "")
             pack()
         }
     }
@@ -199,26 +199,8 @@ fun getNewDatatagLabelText(entity: Entity, minimised: Boolean): Array<String> {
  * @return an array of string denoting each line in the datatag
  */
 private fun getMinimisedLabelText(entity: Entity): Array<String> {
-    val labelText = arrayOf("", "", "", "")
-    // Temporary label format TODO change based on datatag format in use
-    val aircraftInfo = entity[AircraftInfo.mapper] ?: return labelText
-    val radarData = entity[RadarData.mapper] ?: return labelText
-    val groundTrack = entity[GroundTrack.mapper] ?: return labelText
-    val latestClearance = entity[ClearanceAct.mapper]?.actingClearance?.clearanceState
-
-    val callsign = aircraftInfo.icaoCallsign
-    val recat = aircraftInfo.aircraftPerf.recat
-    val alt = (radarData.altitude.altitudeFt / 100).roundToInt()
-    val groundSpd = pxpsToKt(groundTrack.trackVectorPxps.len()).roundToInt()
-    val clearedAlt = if (entity.has(VisualCaptured.mapper)) "VIS"
-    else if (entity.has(GlideSlopeCaptured.mapper)) "GS"
-    else latestClearance?.let { it.clearedAlt / 100 }?.toString() ?: ""
-    val icaoType = aircraftInfo.icaoType
-
-    labelText[0] = "$callsign/$recat"
-    labelText[1] = if (System.currentTimeMillis() % 4000 < 2500) "$alt $groundSpd" else "$clearedAlt $icaoType"
-
-    return labelText
+    val datatagMap = updateDatatagValueMap(entity)
+    return DATATAG_LAYOUTS[DATATAG_STYLE_NAME]?.generateTagText(datatagMap, true)?.split("\n")?.toTypedArray() ?: arrayOf()
 }
 
 /**
@@ -227,31 +209,63 @@ private fun getMinimisedLabelText(entity: Entity): Array<String> {
  * @return an array of string denoting each line in the datatag
  */
 private fun getExpandedLabelText(entity: Entity): Array<String> {
-    val labelText = arrayOf("", "", "", "")
-    // Temporary label format TODO change based on datatag format in use
-    val aircraftInfo = entity[AircraftInfo.mapper] ?: return labelText
-    val radarData = entity[RadarData.mapper] ?: return labelText
-    val cmdTarget = entity[CommandTarget.mapper] ?: return labelText
-    val groundTrack = entity[GroundTrack.mapper] ?: return labelText
+    val datatagMap = updateDatatagValueMap(entity)
+    return DATATAG_LAYOUTS[DATATAG_STYLE_NAME]?.generateTagText(datatagMap, false)?.split("\n")?.toTypedArray() ?: arrayOf()
+}
+
+/**
+ * Gets all properties required for the datatag to display in a HashMap
+ * @param entity the aircraft to generate the HashMap for
+ */
+private fun updateDatatagValueMap(entity: Entity): HashMap<String, String> {
+    val datatagMap = entity[Datatag.mapper]?.datatagInfoMap ?: return hashMapOf()
+
+    val acInfo = entity[AircraftInfo.mapper]
+    val radarData = entity[RadarData.mapper]
+    val cmdTarget = entity[CommandTarget.mapper]
     val latestClearance = entity[ClearanceAct.mapper]?.actingClearance?.clearanceState
-
-    val callsign = aircraftInfo.icaoCallsign
-    val acInfo = "${aircraftInfo.icaoType}/${aircraftInfo.aircraftPerf.wakeCategory}/${aircraftInfo.aircraftPerf.recat}"
-    val alt = (radarData.altitude.altitudeFt / 100).roundToInt()
-    val vs = if (radarData.speed.vertSpdFpm > 150) '^' else if (radarData.speed.vertSpdFpm < -150) 'v' else '='
-    val clearedAlt = latestClearance?.clearedAlt?.let { "${if (latestClearance.expedite) "=>>" else "=>"} ${it / 100}" } ?: ""
+    val callsign = acInfo?.icaoCallsign ?: "<Callsign>"
+    val wake = acInfo?.aircraftPerf?.wakeCategory ?: "<Wake>"
+    val recat = acInfo?.aircraftPerf?.recat ?: "<Recat>"
+    val icaoType = acInfo?.icaoType ?: "<ICAO Type>"
+    val currAlt = radarData?.altitude?.altitudeFt?.let { (it / 100).roundToInt() }
+    val currAltStr = if (currAlt != null) "$currAlt" else "<Alt>"
+    val vs = radarData?.speed?.vertSpdFpm?.let { if (it > 150) "^" else if (it < -150) "v" else "=" } ?: "<VS>"
     val cmdAlt = if (entity.has(GlideSlopeCaptured.mapper)) "GS" else if (entity.has(VisualCaptured.mapper)) "VIS"
-    else (cmdTarget.targetAltFt / 100f).roundToInt().toString()
-    val hdg = modulateHeading((convertWorldAndRenderDeg(radarData.direction.trackUnitVector.angleDeg()) + MAG_HDG_DEV).roundToInt().toFloat()).roundToInt()
-    val groundSpd = pxpsToKt(groundTrack.trackVectorPxps.len()).roundToInt()
-    val clearedLateral = if (entity.has(LocalizerCaptured.mapper)) "LOC" else if (entity.has(VisualCaptured.mapper)) "VIS"
-    else latestClearance?.vectorHdg?.toString() ?: ""
-    val sidStar = latestClearance?.routePrimaryName ?: ""
+    else (cmdTarget?.targetAltFt?.let { (it / 100f).roundToInt().toString() }) ?: "<Cmd Alt>"
+    val expedite = latestClearance?.expedite?.let { if (it) "=>>" else "=>" } ?: "<Expedite>"
+    val clearedAlt = latestClearance?.clearedAlt?.let { "${it / 100}" } ?: "<Cleared Alt>"
+    val hdg = radarData?.direction?.trackUnitVector?.angleDeg()?.let { modulateHeading((convertWorldAndRenderDeg(it) + MAG_HDG_DEV).roundToInt().toFloat()).roundToInt().toString() } ?: "<Hdg>"
+    val clearedLat = if (entity.has(LocalizerCaptured.mapper)) "LOC" else if (entity.has(VisualCaptured.mapper)) "VIS"
+    else latestClearance?.route?.let { if (it.size > 0) {
+        (it[0] as? Route.WaypointLeg)?.wptId?.let { wptId -> GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName } ?:
+        (it[0] as? Route.HoldLeg)?.wptId?.let { wptId -> GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName }
+    } else null} ?: latestClearance?.vectorHdg?.toString() ?: ""
+    val sidStarApp = latestClearance?.clearedApp ?: latestClearance?.routePrimaryName ?: ""
+    val gs = entity[GroundTrack.mapper]?.trackVectorPxps?.len()?.let { pxpsToKt(it).roundToInt().toString() } ?: "<GS>"
+    val clearedIas = latestClearance?.clearedIas?.toString() ?: "<CLeared IAS>"
+    val arptId = entity[DepartureAirport.mapper]?.arptId ?: entity[ArrivalAirport.mapper]?.arptId
+    val arptName = GAME.gameClientScreen?.airports?.get(arptId)?.entity?.get(AirportInfo.mapper)?.icaoCode ?: "<Arpt>"
 
-    labelText[0] = removeExtraCharacters("$callsign $acInfo")
-    labelText[1] = removeExtraCharacters("$alt $vs $cmdAlt $clearedAlt")
-    labelText[2] = removeExtraCharacters("$hdg $clearedLateral $sidStar")
-    labelText[3] = removeExtraCharacters("$groundSpd ${latestClearance?.clearedIas}")
+    datatagMap.apply {
+        put(DatatagConfig.CALLSIGN, callsign)
+        put(DatatagConfig.CALLSIGN_RECAT, "$callsign/$recat")
+        put(DatatagConfig.CALLSIGN_WAKE, "$callsign/$wake")
+        put(DatatagConfig.ICAO_TYPE, icaoType)
+        put(DatatagConfig.ICAO_TYPE_RECAT, "$icaoType/$recat")
+        put(DatatagConfig.ICAO_TYPE_WAKE, "$icaoType/$wake")
+        put(DatatagConfig.ALTITUDE, currAltStr)
+        put(DatatagConfig.ALTITUDE_TREND, vs)
+        put(DatatagConfig.CMD_ALTITUDE, cmdAlt)
+        put(DatatagConfig.EXPEDITE, expedite)
+        put(DatatagConfig.CLEARED_ALT, clearedAlt)
+        put(DatatagConfig.HEADING, hdg)
+        put(DatatagConfig.LAT_CLEARED, clearedLat)
+        put(DatatagConfig.SIDSTARAPP_CLEARED, sidStarApp)
+        put(DatatagConfig.GROUND_SPEED, gs)
+        put(DatatagConfig.CLEARED_IAS, clearedIas)
+        put(DatatagConfig.AIRPORT, arptName)
+    }
 
-    return labelText
+    return datatagMap
 }

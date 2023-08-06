@@ -118,6 +118,8 @@ class Datatag(var xOffset: Float = 0f, var yOffset: Float = 0f, var minimised: B
                                            Label("", Scene2DSkin.defaultSkin, "Datatag"), Label("", Scene2DSkin.defaultSkin, "Datatag"))
     var smallLabelFont = false
     var renderLast = false
+    val datatagInfoMap = HashMap<String, String>()
+
     companion object: Mapper<Datatag>()
 
     /** Called when the aircraft who owns this datatag despawns */
