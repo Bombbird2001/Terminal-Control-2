@@ -373,11 +373,15 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
                     FileLog.info("GameServer", "Sent InitialAircraftData with ${serialisedAircraftArray.size} aircraft")
                 }
 
-                val airportArray = Entries(airports).map { it.value.getSerialisableObject() }.toTypedArray()
-                networkServer.sendTCPToConnection(
-                    uuid,
-                    AirportData(airportArray))
-                FileLog.info("GameServer", "Sent AirportData with ${airportArray.size} airports")
+                Entries(airports).forEach {
+                    val airportArray = Array(1) { _ ->
+                        it.value.getSerialisableObject()
+                    }
+                    networkServer.sendTCPToConnection(
+                        uuid,
+                        AirportData(airportArray))
+                    FileLog.info("GameServer", "Sent AirportData with ${airportArray.size} airports")
+                }
 
                 val wptMap = waypoints.values
                 val wptArray = wptMap.map { it.getSerialisableObject() }.toTypedArray()
