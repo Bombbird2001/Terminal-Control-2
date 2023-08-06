@@ -25,12 +25,17 @@ class DatatagLayoutSettings: BasicUIScreen() {
     private val miniArrangementSecondSelectBoxes = GdxArray<SelectBox<String>>(DatatagConfig.MINI_ARRANGEMENT_ROWS * DatatagConfig.MINI_ARRANGEMENT_COLS)
     private val showWhenChangedOptions = GdxArrayMap<String, Boolean>(DatatagConfig.CAN_BE_HIDDEN.size)
     private var currName: String? = null
+    private val layoutNameLabel: Label
     private val layoutNameField: TextField
     private var currSelectedCheckboxOption: String? = null
     private val showWhenChangedCheckbox: CheckBox
     private val previewLabel: Label
     private val pageButton: KTextButton
     private var showingMainPage = true
+    private var currPreviewLayout: DatatagConfig = DatatagConfig("Empty")
+    private var miniArrangementFirstEmpty = false
+    private var miniArrangementSecondEmpty = false
+    private var modificationInProgress = false
 
     companion object {
         private const val NONE = "(None)"
@@ -55,6 +60,26 @@ class DatatagLayoutSettings: BasicUIScreen() {
             put(DatatagConfig.CLEARED_IAS, 15)
             put(DatatagConfig.AIRPORT, 16)
         }
+
+        private val PREVIEW_DATA = HashMap<String, String>().apply {
+            put(DatatagConfig.CALLSIGN, "SHB123")
+            put(DatatagConfig.CALLSIGN_RECAT, "SHB123/B")
+            put(DatatagConfig.CALLSIGN_WAKE, "SHB123/H")
+            put(DatatagConfig.ICAO_TYPE, "B77W")
+            put(DatatagConfig.ICAO_TYPE_RECAT, "B77W/B")
+            put(DatatagConfig.ICAO_TYPE_WAKE, "B77W/H")
+            put(DatatagConfig.ALTITUDE, "24")
+            put(DatatagConfig.ALTITUDE_TREND, "^")
+            put(DatatagConfig.CMD_ALTITUDE, "90")
+            put(DatatagConfig.EXPEDITE, "=>>")
+            put(DatatagConfig.CLEARED_ALT, "150")
+            put(DatatagConfig.HEADING, "54")
+            put(DatatagConfig.LAT_CLEARED, "SHIBA")
+            put(DatatagConfig.SIDSTARAPP_CLEARED, "HICAL1C")
+            put(DatatagConfig.GROUND_SPEED, "214")
+            put(DatatagConfig.CLEARED_IAS, "250")
+            put(DatatagConfig.AIRPORT, "TCTP")
+        }
     }
 
     init {
@@ -74,7 +99,10 @@ class DatatagLayoutSettings: BasicUIScreen() {
                                 setSelectBoxesToLayout(selected)
                             }
                         }
-                        layoutNameField = textField("", "DatatagLayoutName").cell(width = BUTTON_WIDTH_MEDIUM, padLeft = 50f).apply {
+                        layoutNameLabel = label("Layout name:", "DatatagLayoutName").cell(padLeft = 70f).apply {
+                            isVisible = false
+                        }
+                        layoutNameField = textField("", "DatatagLayoutName").cell(width = BUTTON_WIDTH_MEDIUM, padLeft = 20f).apply {
                             isVisible = false
                         }
                     }.padTop(50f)
@@ -86,12 +114,16 @@ class DatatagLayoutSettings: BasicUIScreen() {
                                     for (j in 0 until DatatagConfig.ARRANGEMENT_COLS) {
                                         defaultSettingsSelectBox<String>().cell(padRight = 20f, width = BUTTON_WIDTH_BIG / 3).apply {
                                             isVisible = false
-                                            items = GdxArray<String>()
+                                            items = GdxArray<String>().apply { add(NONE) }
+                                            selected = NONE
                                             arrangementSelectBoxes.add(this)
                                             addChangeListener { _, _ ->
+                                                if (modificationInProgress) return@addChangeListener
                                                 updateSelectBoxOptionsForArrangement(arrangementSelectBoxes)
                                                 currSelectedCheckboxOption = selected
                                                 updateShowWhenChangedCheckbox()
+                                                currPreviewLayout = getLayoutObjectFromSelectBoxes("Preview")
+                                                updatePreview()
                                             }
                                             addListener(object: ClickListener() {
                                                 override fun clicked(event: InputEvent?, x: Float, y: Float) {
@@ -112,12 +144,17 @@ class DatatagLayoutSettings: BasicUIScreen() {
                                         for (j in 0 until DatatagConfig.MINI_ARRANGEMENT_COLS) {
                                             defaultSettingsSelectBox<String>().cell(padRight = 20f, width = BUTTON_WIDTH_BIG / 3).apply {
                                                 isVisible = false
-                                                items = GdxArray<String>()
+                                                items = GdxArray<String>().apply { add(NONE) }
+                                                selected = NONE
                                                 miniArrangementFirstSelectBoxes.add(this)
                                                 addChangeListener { _, _ ->
+                                                    if (modificationInProgress) return@addChangeListener
                                                     updateSelectBoxOptionsForArrangement(miniArrangementFirstSelectBoxes)
                                                     currSelectedCheckboxOption = selected
                                                     updateShowWhenChangedCheckbox()
+                                                    miniArrangementFirstEmpty = checkIfAllSelectBoxesEmpty(miniArrangementFirstSelectBoxes)
+                                                    currPreviewLayout = getLayoutObjectFromSelectBoxes("Preview")
+                                                    updatePreview()
                                                 }
                                                 addListener(object: ClickListener() {
                                                     override fun clicked(event: InputEvent?, x: Float, y: Float) {
@@ -136,12 +173,17 @@ class DatatagLayoutSettings: BasicUIScreen() {
                                         for (j in 0 until DatatagConfig.MINI_ARRANGEMENT_COLS) {
                                             defaultSettingsSelectBox<String>().cell(padRight = 20f, width = BUTTON_WIDTH_BIG / 3).apply {
                                                 isVisible = false
-                                                items = GdxArray<String>()
+                                                items = GdxArray<String>().apply { add(NONE) }
+                                                selected = NONE
                                                 miniArrangementSecondSelectBoxes.add(this)
                                                 addChangeListener { _, _ ->
+                                                    if (modificationInProgress) return@addChangeListener
                                                     updateSelectBoxOptionsForArrangement(miniArrangementSecondSelectBoxes)
                                                     currSelectedCheckboxOption = selected
                                                     updateShowWhenChangedCheckbox()
+                                                    miniArrangementSecondEmpty = checkIfAllSelectBoxesEmpty(miniArrangementSecondSelectBoxes)
+                                                    currPreviewLayout = getLayoutObjectFromSelectBoxes("Preview")
+                                                    updatePreview()
                                                 }
                                                 addListener(object: ClickListener() {
                                                     override fun clicked(event: InputEvent?, x: Float, y: Float) {
@@ -168,7 +210,7 @@ class DatatagLayoutSettings: BasicUIScreen() {
                             }.cell(padBottom = 50f)
                             row()
                             previewLabel = label("Set fields and see\nthe preview here", "DatatagLayoutPreview").apply {
-                                setAlignment(Align.center)
+                                setAlignment(Align.left)
                                 isVisible = false
                             }.cell(align = Align.center, padBottom = 50f)
                             row()
@@ -178,6 +220,7 @@ class DatatagLayoutSettings: BasicUIScreen() {
                                     showingMainPage = !showingMainPage
                                     setText(if (showingMainPage) "Next =>" else "<= Back")
                                     updateSelectBoxesForPage()
+                                    updatePreview()
                                 }
                             }
                         }
@@ -195,6 +238,7 @@ class DatatagLayoutSettings: BasicUIScreen() {
                                     currName?.let {
                                         deleteDatatagLayout(it)
                                         DATATAG_LAYOUTS.remove(it)
+                                        if (DATATAG_STYLE_NAME == it) DATATAG_STYLE_NAME = DatatagConfig.DEFAULT
                                     }
                                 } else {
                                     DATATAG_LAYOUTS[newName] = newLayout
@@ -226,15 +270,18 @@ class DatatagLayoutSettings: BasicUIScreen() {
             for (i in 0 until miniArrangementFirstSelectBoxes.size) miniArrangementFirstSelectBoxes[i].isVisible = false
             for (i in 0 until miniArrangementSecondSelectBoxes.size) miniArrangementSecondSelectBoxes[i].isVisible = false
             layoutNameField.isVisible = false
+            layoutNameLabel.isVisible = false
             previewLabel.isVisible = false
             pageButton.isVisible = false
         } else {
             updateSelectBoxesForPage()
             layoutNameField.isVisible = true
+            layoutNameLabel.isVisible = true
             previewLabel.isVisible = true
             pageButton.isVisible = true
         }
 
+        modificationInProgress = true
         val layout = DATATAG_LAYOUTS[layoutName]
         layoutNameField.text = if (layoutName == NEW_LAYOUT) "New layout" else layoutName
         updateSelectBoxOptionsForArrangement(arrangementSelectBoxes)
@@ -245,6 +292,7 @@ class DatatagLayoutSettings: BasicUIScreen() {
             for (i in 0 until arrangementSelectBoxes.size) arrangementSelectBoxes[i].selected = NONE
             for (i in 0 until miniArrangementFirstSelectBoxes.size) arrangementSelectBoxes[i].selected = NONE
             for (i in 0 until miniArrangementSecondSelectBoxes.size) arrangementSelectBoxes[i].selected = NONE
+            currPreviewLayout = DatatagConfig("Empty")
         } else {
             // Set to selected values
             for ((rowIndex, row) in layout.arrangement.withIndex()) {
@@ -262,7 +310,13 @@ class DatatagLayoutSettings: BasicUIScreen() {
                     miniArrangementSecondSelectBoxes[rowIndex * DatatagConfig.MINI_ARRANGEMENT_COLS + colIndex].selected = col
                 }
             }
+            currPreviewLayout = layout
         }
+
+        miniArrangementFirstEmpty = checkIfAllSelectBoxesEmpty(miniArrangementFirstSelectBoxes)
+        miniArrangementSecondEmpty = checkIfAllSelectBoxesEmpty(miniArrangementSecondSelectBoxes)
+        updatePreview()
+        modificationInProgress = false
     }
 
     /**
@@ -296,7 +350,7 @@ class DatatagLayoutSettings: BasicUIScreen() {
                     break
                 }
             }
-            if (!added) itemsCopy.add(selected)
+            if (!added && selected != null && selected != NONE) itemsCopy.add(selected)
             selectBox.items = itemsCopy
         }
     }
@@ -349,5 +403,29 @@ class DatatagLayoutSettings: BasicUIScreen() {
         }
 
         return DatatagConfig(name, showWhenChanged, arrangement, miniArrangementFirst, miniArrangementSecond)
+    }
+
+    /**
+     * Checks whether all select boxes for the given arrangement are set to NONE
+     * @param arrangementBoxes GdxArray of select boxes of the arrangement
+     */
+    private fun checkIfAllSelectBoxesEmpty(arrangementBoxes: GdxArray<SelectBox<String>>): Boolean {
+        for (i in 0 until arrangementBoxes.size) {
+            if (arrangementBoxes[i].selected != NONE) return false
+        }
+        return true
+    }
+
+    /** Updates the preview label depending on the selected options, page and timing */
+    private fun updatePreview() {
+        previewLabel.setText(currPreviewLayout.generateTagText(PREVIEW_DATA, !showingMainPage))
+    }
+
+    override fun render(delta: Float) {
+        super.render(delta)
+        // We'll call update preview here if minimised page is active, and both first and second mini arrangement are
+        // not empty
+        if (currName != null && currName != NONE && !showingMainPage && !miniArrangementFirstEmpty && !miniArrangementSecondEmpty)
+            updatePreview()
     }
 }
