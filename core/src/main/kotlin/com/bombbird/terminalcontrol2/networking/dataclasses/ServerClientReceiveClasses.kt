@@ -10,9 +10,9 @@ import com.bombbird.terminalcontrol2.networking.GameServer
 import com.bombbird.terminalcontrol2.networking.encryption.NeedsEncryption
 import com.bombbird.terminalcontrol2.screens.RadarScreen
 import com.bombbird.terminalcontrol2.systems.RenderingSystemClient
-import com.bombbird.terminalcontrol2.ui.CommsPane
-import com.bombbird.terminalcontrol2.ui.getNewDatatagLabelText
-import com.bombbird.terminalcontrol2.ui.updateDatatagText
+import com.bombbird.terminalcontrol2.ui.panes.CommsPane
+import com.bombbird.terminalcontrol2.ui.datatag.getNewDatatagLabelText
+import com.bombbird.terminalcontrol2.ui.datatag.updateDatatagText
 import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.get
 import ktx.ashley.getSystem

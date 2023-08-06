@@ -1,4 +1,4 @@
-package com.bombbird.terminalcontrol2.ui
+package com.bombbird.terminalcontrol2.ui.panes
 
 import com.badlogic.ashley.core.Entity
 import com.badlogic.gdx.Gdx
@@ -12,6 +12,9 @@ import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.SectorContactable
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.Route
+import com.bombbird.terminalcontrol2.ui.datatag.getNewDatatagLabelText
+import com.bombbird.terminalcontrol2.ui.removeMouseScrollListeners
+import com.bombbird.terminalcontrol2.ui.datatag.updateDatatagText
 import com.bombbird.terminalcontrol2.utilities.AircraftTypeData
 import com.bombbird.terminalcontrol2.utilities.getACCSectorForPosition
 import com.bombbird.terminalcontrol2.utilities.removeExtraCharacters

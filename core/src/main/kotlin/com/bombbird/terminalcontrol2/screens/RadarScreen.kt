@@ -28,6 +28,9 @@ import com.bombbird.terminalcontrol2.systems.*
 import com.bombbird.terminalcontrol2.traffic.ConflictManager
 import com.bombbird.terminalcontrol2.traffic.TrafficMode
 import com.bombbird.terminalcontrol2.ui.*
+import com.bombbird.terminalcontrol2.ui.datatag.updateDatatagLineSpacing
+import com.bombbird.terminalcontrol2.ui.datatag.updateDatatagStyle
+import com.bombbird.terminalcontrol2.ui.panes.UIPane
 import com.bombbird.terminalcontrol2.utilities.nmToPx
 import com.bombbird.terminalcontrol2.utilities.FileLog
 import kotlinx.coroutines.Dispatchers

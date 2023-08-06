@@ -97,6 +97,7 @@ class TerminalControl2(val externalFileHandler: ExternalFileHandler) : KtxGame<K
                 loadPlayerSettings()
                 loadPlayerUUID()
                 loadAvailableAirports()
+                loadAllDatatagLayouts()
             }
 
             // Initialize logging system

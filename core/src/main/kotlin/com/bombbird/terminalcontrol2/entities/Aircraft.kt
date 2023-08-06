@@ -10,7 +10,7 @@ import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.systems.updateAircraftDatatagText
 import com.bombbird.terminalcontrol2.systems.updateAircraftRadarData
-import com.bombbird.terminalcontrol2.ui.*
+import com.bombbird.terminalcontrol2.ui.datatag.*
 import com.bombbird.terminalcontrol2.utilities.AircraftTypeData
 import com.bombbird.terminalcontrol2.utilities.getAircraftIcon
 import com.bombbird.terminalcontrol2.utilities.FileLog

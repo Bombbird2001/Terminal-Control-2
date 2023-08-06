@@ -36,7 +36,6 @@ class MainSettings: BasicUIScreen() {
                     }.cell(width = BUTTON_WIDTH_BIG, height = BUTTON_HEIGHT_BIG)
                     row().padTop(30f)
                     textButton("Datatag", "MainSettings").apply {
-                        isDisabled = true
                         addChangeListener { _, _ ->
                             if (!GAME.containsScreen<DatatagSettings>()) GAME.addScreen(DatatagSettings())
                             GAME.getScreen<DatatagSettings>().setToCurrentClientSettings()

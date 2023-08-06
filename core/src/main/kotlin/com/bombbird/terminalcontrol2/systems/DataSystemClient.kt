@@ -6,8 +6,8 @@ import com.badlogic.ashley.core.Family
 import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.RADAR_REFRESH_INTERVAL_S
-import com.bombbird.terminalcontrol2.ui.getNewDatatagLabelText
-import com.bombbird.terminalcontrol2.ui.updateDatatagText
+import com.bombbird.terminalcontrol2.ui.datatag.getNewDatatagLabelText
+import com.bombbird.terminalcontrol2.ui.datatag.updateDatatagText
 import ktx.ashley.allOf
 import ktx.ashley.get
 

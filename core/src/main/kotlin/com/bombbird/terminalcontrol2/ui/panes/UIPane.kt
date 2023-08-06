@@ -1,4 +1,4 @@
-package com.bombbird.terminalcontrol2.ui
+package com.bombbird.terminalcontrol2.ui.panes
 
 import com.badlogic.ashley.core.Entity
 import com.badlogic.gdx.math.Vector2
@@ -9,6 +9,7 @@ import com.bombbird.terminalcontrol2.entities.Aircraft
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.navigation.Route
+import com.bombbird.terminalcontrol2.ui.addChangeListener
 import ktx.ashley.get
 import ktx.ashley.has
 import ktx.collections.GdxArray

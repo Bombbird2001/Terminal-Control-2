@@ -1,4 +1,4 @@
-package com.bombbird.terminalcontrol2.ui
+package com.bombbird.terminalcontrol2.ui.panes
 
 import com.badlogic.gdx.scenes.scene2d.Actor
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton.TextButtonStyle
@@ -6,6 +6,8 @@ import com.bombbird.terminalcontrol2.entities.Sector
 import com.bombbird.terminalcontrol2.global.CLIENT_SCREEN
 import com.bombbird.terminalcontrol2.global.SECTOR_COUNT_SIZE
 import com.bombbird.terminalcontrol2.global.UI_HEIGHT
+import com.bombbird.terminalcontrol2.ui.addChangeListener
+import com.bombbird.terminalcontrol2.ui.removeMouseScrollListeners
 import com.bombbird.terminalcontrol2.utilities.byte
 import ktx.collections.GdxArray
 import ktx.scene2d.*

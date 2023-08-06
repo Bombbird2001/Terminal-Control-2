@@ -1,5 +1,6 @@
 package com.bombbird.terminalcontrol2.global
 
+import com.bombbird.terminalcontrol2.ui.datatag.DatatagConfig
 import ktx.collections.GdxArray
 import ktx.collections.GdxArrayMap
 import java.util.UUID
@@ -79,7 +80,7 @@ var COLOURFUL_STYLE = true
 var SHOW_DIST_TO_GO = SHOW_DIST_TO_GO_ALL
 
 /** Datatag settings */
-var DATATAG_STYLE_ID: Byte = 0
+var DATATAG_STYLE_NAME = DatatagConfig.DEFAULT
 var DATATAG_BACKGROUND: Byte = DATATAG_BACKGROUND_ALWAYS
 var DATATAG_BORDER: Byte = DATATAG_BORDER_ALWAYS
 var DATATAG_ROW_SPACING_PX: Byte = 4
@@ -102,3 +103,6 @@ lateinit var myUuid: UUID
 /** Build version */
 var GAME_VERSION = "Unknown"
 var BUILD_VERSION = 0
+
+/** Datatag layouts available */
+var DATATAG_LAYOUTS = HashMap<String, DatatagConfig>()

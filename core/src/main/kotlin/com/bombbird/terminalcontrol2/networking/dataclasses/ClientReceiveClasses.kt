@@ -9,6 +9,10 @@ import com.bombbird.terminalcontrol2.screens.RadarScreen
 import com.bombbird.terminalcontrol2.traffic.ConflictManager
 import com.bombbird.terminalcontrol2.traffic.TrafficMode
 import com.bombbird.terminalcontrol2.ui.*
+import com.bombbird.terminalcontrol2.ui.datatag.getNewDatatagLabelText
+import com.bombbird.terminalcontrol2.ui.datatag.setDatatagFlash
+import com.bombbird.terminalcontrol2.ui.datatag.updateDatatagText
+import com.bombbird.terminalcontrol2.ui.panes.CommsPane
 import com.bombbird.terminalcontrol2.utilities.getAircraftIcon
 import com.bombbird.terminalcontrol2.utilities.FileLog
 import ktx.ashley.*

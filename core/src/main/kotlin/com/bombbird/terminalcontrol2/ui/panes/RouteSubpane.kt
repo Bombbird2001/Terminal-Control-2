@@ -1,4 +1,4 @@
-package com.bombbird.terminalcontrol2.ui
+package com.bombbird.terminalcontrol2.ui.panes
 
 import com.badlogic.gdx.scenes.scene2d.Actor
 import com.badlogic.gdx.utils.Align
@@ -10,6 +10,8 @@ import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.navigation.checkLegChanged
 import com.bombbird.terminalcontrol2.navigation.checkRestrChanged
 import com.bombbird.terminalcontrol2.navigation.compareLegEquality
+import com.bombbird.terminalcontrol2.ui.addChangeListener
+import com.bombbird.terminalcontrol2.ui.removeMouseScrollListeners
 import ktx.ashley.get
 import ktx.collections.GdxArray
 import ktx.scene2d.*

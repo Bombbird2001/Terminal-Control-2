@@ -1,4 +1,4 @@
-package com.bombbird.terminalcontrol2.ui
+package com.bombbird.terminalcontrol2.ui.panes
 
 import com.badlogic.ashley.core.Entity
 import com.badlogic.gdx.Gdx
@@ -14,6 +14,8 @@ import com.bombbird.terminalcontrol2.global.AIRPORT_SIZE
 import com.bombbird.terminalcontrol2.global.CLIENT_SCREEN
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.UI_HEIGHT
+import com.bombbird.terminalcontrol2.ui.addChangeListener
+import com.bombbird.terminalcontrol2.ui.removeMouseScrollListeners
 import com.bombbird.terminalcontrol2.utilities.UsabilityFilter
 import ktx.ashley.get
 import ktx.ashley.has

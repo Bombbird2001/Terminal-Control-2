@@ -1,4 +1,4 @@
-package com.bombbird.terminalcontrol2.ui
+package com.bombbird.terminalcontrol2.ui.datatag
 
 import com.badlogic.ashley.core.Entity
 import com.badlogic.gdx.Gdx
@@ -11,6 +11,7 @@ import com.badlogic.gdx.utils.Timer
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.Aircraft
 import com.bombbird.terminalcontrol2.global.*
+import com.bombbird.terminalcontrol2.ui.addChangeListener
 import com.bombbird.terminalcontrol2.utilities.convertWorldAndRenderDeg
 import com.bombbird.terminalcontrol2.utilities.modulateHeading
 import com.bombbird.terminalcontrol2.utilities.pxpsToKt
@@ -25,21 +26,6 @@ import kotlin.math.roundToInt
 
 // Spacing between each line on the datatag
 const val LABEL_PADDING = 7
-
-// Datatag value keys
-const val CALLSIGN = "Callsign"
-const val CALLSIGN_RECAT = "Callsign + Wake"
-const val ICAO_TYPE = "Aircraft type"
-const val ICAO_TYPE_WAKE = "Aircraft type + Wake"
-const val ALTITUDE_FULL = "Full altitude info"
-const val ALTITUDE = "Current altitude"
-const val CLEARED_ALT = "Cleared altitude"
-const val HEADING = "Heading"
-const val LAT_CLEARED = "Cleared waypoint/heading"
-const val SIDSTARAPP_CLEARED = "Cleared SID/STAR/Approach"
-const val GROUND_SPEED = "Ground speed"
-const val CLEARED_IAS = "Cleared speed"
-const val AIRPORT = "Airport"
 
 /** Updates the text for the labels of the [datatag], and sets the new sizes accordingly */
 fun updateDatatagText(datatag: Datatag, newText: Array<String>) {

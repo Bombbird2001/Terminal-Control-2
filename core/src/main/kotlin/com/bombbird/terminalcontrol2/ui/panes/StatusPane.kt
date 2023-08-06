@@ -1,4 +1,4 @@
-package com.bombbird.terminalcontrol2.ui
+package com.bombbird.terminalcontrol2.ui.panes
 
 import com.badlogic.ashley.core.Family
 import com.badlogic.gdx.scenes.scene2d.Actor
@@ -8,6 +8,7 @@ import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.traffic.ConflictManager
 import com.bombbird.terminalcontrol2.traffic.TrafficMode
+import com.bombbird.terminalcontrol2.ui.removeMouseScrollListeners
 import com.bombbird.terminalcontrol2.utilities.FileLog
 import ktx.ashley.allOf
 import ktx.ashley.exclude
@@ -195,7 +196,8 @@ class StatusPane {
                 val arrClosed = arpt.entity.has(ArrivalClosed.mapper)
                 val depClosed = arpt.entity[DepartureInfo.mapper]?.closed == true
                 if (arrClosed || depClosed) addMessage("$icao: Closed${if (arrClosed && depClosed) ""
-                else if (arrClosed) " for arrivals" else " for departures"}", INFO)
+                else if (arrClosed) " for arrivals" else " for departures"}", INFO
+                )
             }
         }
     }

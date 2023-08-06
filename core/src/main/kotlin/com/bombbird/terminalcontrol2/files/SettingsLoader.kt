@@ -1,6 +1,7 @@
 package com.bombbird.terminalcontrol2.files
 
 import com.bombbird.terminalcontrol2.global.*
+import com.bombbird.terminalcontrol2.ui.datatag.DatatagConfig
 import com.squareup.moshi.FromJson
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
@@ -31,7 +32,7 @@ data class PlayerSettingsJSON(
     val showDistToGo: Byte,
 
     // Datatag settings
-    val datatagStyleId: Byte,
+    val datatagStyleName: String?,
     val datatagBackground: Byte,
     val datatagBorder: Byte,
     val datatagRowSpacingPx: Byte,
@@ -87,7 +88,7 @@ private fun loadPlayerSettingsFromJson(playerSettingsJSON: PlayerSettingsJSON) {
         SHOW_DIST_TO_GO = showDistToGo
 
         // Datatag settings
-        DATATAG_STYLE_ID = datatagStyleId
+        DATATAG_STYLE_NAME = datatagStyleName ?: DatatagConfig.DEFAULT
         DATATAG_BACKGROUND = datatagBackground
         DATATAG_BORDER = datatagBorder
         DATATAG_ROW_SPACING_PX = datatagRowSpacingPx
@@ -110,7 +111,7 @@ private fun loadPlayerSettingsFromJson(playerSettingsJSON: PlayerSettingsJSON) {
 private fun getJsonFromPlayerSettings(): PlayerSettingsJSON {
     return PlayerSettingsJSON(TRAJECTORY_DURATION_S, RADAR_REFRESH_INTERVAL_S, TRAIL_DURATION_S, SHOW_UNCONTROLLED_AIRCRAFT_TRAIL,
         RANGE_RING_INTERVAL_NM, SHOW_MVA_ALTITUDE, REALISTIC_ILS_DISPLAY, COLOURFUL_STYLE, SHOW_DIST_TO_GO,
-        DATATAG_STYLE_ID, DATATAG_BACKGROUND, DATATAG_BORDER, DATATAG_ROW_SPACING_PX, COMMUNICATIONS_SOUND, ALERT_SOUND_ON,
+        DATATAG_STYLE_NAME, DATATAG_BACKGROUND, DATATAG_BORDER, DATATAG_ROW_SPACING_PX, COMMUNICATIONS_SOUND, ALERT_SOUND_ON,
         ADV_TRAJECTORY_DURATION_S, APW_DURATION_S, STCA_DURATION_S)
 }
 

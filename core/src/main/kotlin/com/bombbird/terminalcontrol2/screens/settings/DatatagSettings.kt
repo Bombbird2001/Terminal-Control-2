@@ -21,6 +21,10 @@ class DatatagSettings: BaseSettings() {
     private val rowSpacingSlide: Slider
     private val rowSpacingLabel: Label
 
+    companion object {
+        private const val MANAGE_LAYOUTS = "Manage layouts"
+    }
+
     init {
         stage.actors {
             container = container {
@@ -31,8 +35,14 @@ class DatatagSettings: BaseSettings() {
                         table {
                             defaultSettingsLabel("Datatag style:")
                             styleSelectBox = defaultSettingsSelectBox<String>().apply {
-                                // TODO Custom datatag layouts
-                                setItems("Default", "Compact")
+                                setItems(*DATATAG_LAYOUTS.keys.toTypedArray(), MANAGE_LAYOUTS)
+                                addChangeListener { _, _ ->
+                                    if (selected == MANAGE_LAYOUTS) {
+                                        if (!GAME.containsScreen<DatatagLayoutSettings>()) GAME.addScreen(DatatagLayoutSettings())
+                                        GAME.setScreen<DatatagLayoutSettings>()
+                                        selected = items.first()
+                                    }
+                                }
                             }
                             defaultSettingsLabel("Show datatag background:")
                             backgroundSelectBox = defaultSettingsSelectBox<String>().apply {
@@ -82,6 +92,7 @@ class DatatagSettings: BaseSettings() {
      * and set the select box choices based on them
      */
     override fun setToCurrentClientSettings() {
+        styleSelectBox.selected = DATATAG_STYLE_NAME
         backgroundSelectBox.selected = when (DATATAG_BACKGROUND) {
             DATATAG_BACKGROUND_OFF -> OFF
             DATATAG_BACKGROUND_SELECTED -> WHEN_SELECTED
@@ -108,6 +119,7 @@ class DatatagSettings: BaseSettings() {
      * and set the relevant datatag settings based on them
      */
     override fun updateClientSettings() {
+        DATATAG_STYLE_NAME = styleSelectBox.selected
         DATATAG_BACKGROUND = when (backgroundSelectBox.selected) {
             OFF -> DATATAG_BACKGROUND_OFF
             WHEN_SELECTED -> DATATAG_BACKGROUND_SELECTED

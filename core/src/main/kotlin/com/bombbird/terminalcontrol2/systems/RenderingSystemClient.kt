@@ -14,9 +14,9 @@ import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.Aircraft
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.Route
-import com.bombbird.terminalcontrol2.ui.LABEL_PADDING
-import com.bombbird.terminalcontrol2.ui.UIPane
-import com.bombbird.terminalcontrol2.ui.updateDatatagLabelSize
+import com.bombbird.terminalcontrol2.ui.datatag.LABEL_PADDING
+import com.bombbird.terminalcontrol2.ui.panes.UIPane
+import com.bombbird.terminalcontrol2.ui.datatag.updateDatatagLabelSize
 import com.bombbird.terminalcontrol2.utilities.*
 import com.bombbird.terminalcontrol2.utilities.FileLog
 import ktx.ashley.*
@@ -35,7 +35,8 @@ import kotlin.math.sqrt
  */
 class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
                             private val stage: Stage, private val constZoomStage: Stage, private val uiStage: Stage,
-                            private val uiPane: UIPane): EntitySystem() {
+                            private val uiPane: UIPane
+): EntitySystem() {
     companion object {
         private val lineArrayFamily: Family = allOf(GLineArray::class, SRColor::class)
             .exclude(DoNotRenderShape::class.java).get()

@@ -1,4 +1,4 @@
-package com.bombbird.terminalcontrol2.ui
+package com.bombbird.terminalcontrol2.ui.panes
 
 import com.badlogic.gdx.scenes.scene2d.Actor
 import com.badlogic.gdx.scenes.scene2d.ui.Label
@@ -12,6 +12,8 @@ import com.bombbird.terminalcontrol2.global.UI_HEIGHT
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.navigation.compareLegEquality
 import com.bombbird.terminalcontrol2.navigation.getAfterWptHdgLeg
+import com.bombbird.terminalcontrol2.ui.addChangeListener
+import com.bombbird.terminalcontrol2.ui.disallowDisabledClickThrough
 import com.bombbird.terminalcontrol2.utilities.modulateHeading
 import ktx.ashley.get
 import ktx.collections.GdxArray
