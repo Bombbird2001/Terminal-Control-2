@@ -1,8 +1,6 @@
 package com.bombbird.terminalcontrol2.utilities
 
-import com.badlogic.ashley.core.Engine
-import com.badlogic.ashley.core.Entity
-import com.badlogic.ashley.core.Family
+import com.badlogic.ashley.core.*
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import com.badlogic.gdx.math.Vector2
@@ -13,9 +11,12 @@ import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.MAG_HDG_DEV
 import com.bombbird.terminalcontrol2.global.getEngine
 import com.bombbird.terminalcontrol2.systems.TrafficSystemInterval
+import com.esotericsoftware.minlog.Log
 import ktx.ashley.*
 import ktx.collections.toGdxArray
 import kotlin.math.roundToInt
+
+val alreadyPrintedErrors = HashSet<String>()
 
 /** A simple debug helper file */
 private val minAltSectorFamily: Family = allOf(MinAltSectorInfo::class).get()
@@ -155,4 +156,23 @@ fun renderAllSectors(shapeRenderer: ShapeRenderer) {
             }
         }
     }
+}
+
+/**
+ * Helper extension function that logs down missing components - use for debugging components that should be present
+ * but are missing
+ * @param mapper the [ComponentMapper] of the component to get
+ */
+inline fun <reified T : Component> Entity.getOrLogMissing(mapper: ComponentMapper<T>): T? {
+    val comp: T? = mapper.get(this)
+    if (comp == null && Log.WARN) {
+        val trace = Thread.currentThread().stackTrace
+        val errorCat = "${trace[1].fileName}:${trace[1].lineNumber}"
+        if (!alreadyPrintedErrors.contains(errorCat)) {
+            FileLog.warn("MissingComponent", "Component of type ${T::class.simpleName} is required but missing\n" +
+                    Exception().stackTraceToString())
+            alreadyPrintedErrors.add(errorCat)
+        }
+    }
+    return comp
 }

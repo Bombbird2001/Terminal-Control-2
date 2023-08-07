@@ -96,8 +96,8 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         val lineArrays = engine.getEntitiesFor(lineArrayFamily)
         for (i in 0 until lineArrays.size()) {
             lineArrays[i]?.apply {
-                val lineArray = get(GLineArray.mapper) ?: return@apply
-                val srColor = get(SRColor.mapper) ?: return@apply
+                val lineArray = getOrLogMissing(GLineArray.mapper) ?: return@apply
+                val srColor = getOrLogMissing(SRColor.mapper) ?: return@apply
                 shapeRenderer.color = srColor.color
                 lineArray.vertices.let {
                     for (j in 0 until it.size - 3 step 2) {
@@ -108,12 +108,11 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         }
 
         // Render polygons
-        // TODO Rendering bug
         val polygons = engine.getEntitiesFor(polygonFamily)
         for (i in 0 until polygons.size()) {
             polygons[i]?.apply {
-                val poly = get(GPolygon.mapper) ?: return@apply
-                val srColor = get(SRColor.mapper) ?: return@apply
+                val poly = getOrLogMissing(GPolygon.mapper) ?: return@apply
+                val srColor = getOrLogMissing(SRColor.mapper) ?: return@apply
                 shapeRenderer.color = srColor.color
                 shapeRenderer.polygon(poly.vertices)
             }
@@ -132,9 +131,9 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         val circles = engine.getEntitiesFor(circleFamily)
         for (i in 0 until circles.size()) {
             circles[i]?.apply {
-                val pos = get(Position.mapper) ?: return@apply
-                val circle = get(GCircle.mapper) ?: return@apply
-                val srColor = get(SRColor.mapper) ?: return@apply
+                val pos = getOrLogMissing(Position.mapper) ?: return@apply
+                val circle = getOrLogMissing(GCircle.mapper) ?: return@apply
+                val srColor = getOrLogMissing(SRColor.mapper) ?: return@apply
                 shapeRenderer.color = srColor.color
                 shapeRenderer.circle(pos.x, pos.y, circle.radius)
             }
@@ -162,8 +161,8 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         val polygonsLast = engine.getEntitiesFor(polygonLastFamily)
         for (i in 0 until polygonsLast.size()) {
             polygonsLast[i]?.apply {
-                val poly = get(GPolygon.mapper) ?: return@apply
-                val srColor = get(SRColor.mapper) ?: return@apply
+                val poly = getOrLogMissing(GPolygon.mapper) ?: return@apply
+                val srColor = getOrLogMissing(SRColor.mapper) ?: return@apply
                 shapeRenderer.color = srColor.color
                 shapeRenderer.polygon(poly.vertices)
             }
@@ -174,10 +173,10 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         val rwys = engine.getEntitiesFor(runwayFamily)
         for (i in 0 until rwys.size()) {
             rwys[i]?.apply {
-                val pos = get(Position.mapper) ?: return@apply
-                val rect = get(GRect.mapper) ?: return@apply
-                val deg = get(Direction.mapper) ?: return@apply
-                val srColor = get(SRColor.mapper) ?: return@apply
+                val pos = getOrLogMissing(Position.mapper) ?: return@apply
+                val rect = getOrLogMissing(GRect.mapper) ?: return@apply
+                val deg = getOrLogMissing(Direction.mapper) ?: return@apply
+                val srColor = getOrLogMissing(SRColor.mapper) ?: return@apply
                 rect.height = rwyWidthPx
                 shapeRenderer.color = srColor.color
                 shapeRenderer.rect(pos.x, pos.y - rect.height / 2, 0f, rect.height / 2, rect.width, rect.height, 1f, 1f, deg.trackUnitVector.angleDeg())
@@ -188,10 +187,10 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         val localizer = engine.getEntitiesFor(locFamily)
         for (i in 0 until localizer.size()) {
             localizer[i]?.apply {
-                val pos = get(Position.mapper) ?: return@apply
-                val loc = get(Localizer.mapper) ?: return@apply
-                val dir = get(Direction.mapper)?.trackUnitVector ?: return@apply
-                val appInfo = get(ApproachInfo.mapper) ?: return@apply
+                val pos = getOrLogMissing(Position.mapper) ?: return@apply
+                val loc = getOrLogMissing(Localizer.mapper) ?: return@apply
+                val dir = getOrLogMissing(Direction.mapper)?.trackUnitVector ?: return@apply
+                val appInfo = getOrLogMissing(ApproachInfo.mapper) ?: return@apply
                 if (appInfo.rwyObj.entity.hasNot(ActiveLanding.mapper)) return@apply
                 // Offset if glideslope is present
                 val gs = get(GlideSlope.mapper)
@@ -213,16 +212,16 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         val visual = engine.getEntitiesFor(visualFamily)
         for (i in 0 until visual.size()) {
             visual[i]?.apply {
-                val rwyPos = get(VisualCaptured.mapper)?.visApp?.get(Position.mapper) ?: return@apply
-                val rDataPos = get(RadarData.mapper)?.position ?: return@apply
+                val rwyPos = getOrLogMissing(VisualCaptured.mapper)?.visApp?.getOrLogMissing(Position.mapper) ?: return@apply
+                val rDataPos = getOrLogMissing(RadarData.mapper)?.position ?: return@apply
                 shapeRenderer.line(rwyPos.x, rwyPos.y, rDataPos.x, rDataPos.y)
             }
         }
 
         // Render current UI selected aircraft's lateral navigation state, accessed via radarScreen's uiPane
         CLIENT_SCREEN?.selectedAircraft?.let {
-            val aircraftPos = it.entity[RadarData.mapper]?.position ?: return@let
-            val controllable = it.entity[Controllable.mapper] ?: return@let
+            val aircraftPos = it.entity.getOrLogMissing(RadarData.mapper)?.position ?: return@let
+            val controllable = it.entity.getOrLogMissing(Controllable.mapper) ?: return@let
             val vectorUnchanged = uiPane.clearanceState.vectorHdg == uiPane.userClearanceState.vectorHdg
             val noVector = uiPane.userClearanceState.vectorHdg == null
             val clearanceStateVectorHdg = uiPane.clearanceState.vectorHdg
@@ -248,15 +247,15 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         val trajectory = engine.getEntitiesFor(trajectoryFamily)
         for (i in 0 until trajectory.size()) {
             trajectory[i]?.apply {
-                val controllable = get(Controllable.mapper) ?: return@apply
+                val controllable = getOrLogMissing(Controllable.mapper) ?: return@apply
                 if (controllable.sectorId != CLIENT_SCREEN?.playerSector) return@apply
-                val rData = get(RadarData.mapper) ?: return@apply
-                val srColor = get(SRColor.mapper) ?: return@apply
-                val wind = get(AffectedByWind.mapper)
+                val rData = getOrLogMissing(RadarData.mapper) ?: return@apply
+                val srColor = getOrLogMissing(SRColor.mapper) ?: return@apply
+                val windPxps = getOrLogMissing(AffectedByWind.mapper)?.windVectorPxps ?: Vector2()
                 val spdVector = Vector2(rData.direction.trackUnitVector).scl(ktToPxps(rData.speed.speedKts) * TRAJECTORY_DURATION_S)
-                val windVector = wind?.windVectorPxps?.let { Vector2(it).scl(TRAJECTORY_DURATION_S.toFloat()) }
+                val windVector = Vector2(windPxps).scl(TRAJECTORY_DURATION_S.toFloat())
                 shapeRenderer.color = srColor.color
-                shapeRenderer.line(rData.position.x, rData.position.y, rData.position.x + spdVector.x + (windVector?.x ?: 0f), rData.position.y + spdVector.y + (windVector?.y ?: 0f))
+                shapeRenderer.line(rData.position.x, rData.position.y, rData.position.x + spdVector.x + windVector.x, rData.position.y + spdVector.y + windVector.y)
             }
         }
 
@@ -265,8 +264,8 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
             shapeRenderer.color = Color.YELLOW
             for (i in 0 until it.potentialConflicts.size) {
                 it.potentialConflicts[i]?.apply {
-                    val pos1 = entity1[RadarData.mapper]?.position ?: return@apply
-                    val pos2 = entity2[RadarData.mapper]?.position ?: return@apply
+                    val pos1 = entity1.getOrLogMissing(RadarData.mapper)?.position ?: return@apply
+                    val pos2 = entity2.getOrLogMissing(RadarData.mapper)?.position ?: return@apply
                     shapeRenderer.circle(pos1.x, pos1.y, nmToPx(latSepRequiredNm) / 2)
                     shapeRenderer.circle(pos2.x, pos2.y, nmToPx(latSepRequiredNm) / 2)
                     shapeRenderer.line(pos1.x, pos1.y, pos2.x, pos2.y)
@@ -276,7 +275,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
             shapeRenderer.color = Color.RED
             for (i in 0 until it.conflicts.size) {
                 it.conflicts[i]?.apply {
-                    val pos1 = entity1[RadarData.mapper]?.position ?: return@apply
+                    val pos1 = entity1.getOrLogMissing(RadarData.mapper)?.position ?: return@apply
                     val pos2 = entity2?.get(RadarData.mapper)?.position
                     shapeRenderer.circle(pos1.x, pos1.y, nmToPx(latSepRequiredNm) / 2)
                     if (pos2 != null) {
@@ -311,11 +310,10 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         // Render datatag to aircraft icon line
         val datatagLines = engine.getEntitiesFor(datatagLineFamily)
         for (i in 0 until datatagLines.size()) {
-            // TODO Rendering bug
             datatagLines[i]?.apply {
-                val datatag = get(Datatag.mapper) ?: return@apply
+                val datatag = getOrLogMissing(Datatag.mapper) ?: return@apply
                 if (!datatag.initialPosSet) return@apply
-                val radarData = get(RadarData.mapper) ?: return@apply
+                val radarData = getOrLogMissing(RadarData.mapper) ?: return@apply
                 val radarX = (radarData.position.x - camX) / camZoom
                 val radarY = (radarData.position.y - camY) / camZoom
                 val leftX = datatag.imgButton.x
@@ -340,9 +338,9 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         val constCircles = engine.getEntitiesFor(constCircleFamily)
         for (i in 0 until constCircles.size()) {
             constCircles[i]?.apply {
-                val pos = get(Position.mapper) ?: return@apply
-                val circle = get(GCircle.mapper) ?: return@apply
-                val srColor = get(SRColor.mapper) ?: return@apply
+                val pos = getOrLogMissing(Position.mapper) ?: return@apply
+                val circle = getOrLogMissing(GCircle.mapper) ?: return@apply
+                val srColor = getOrLogMissing(SRColor.mapper) ?: return@apply
                 shapeRenderer.color = srColor.color
                 shapeRenderer.circle((pos.x - camX) / camZoom, (pos.y - camY) / camZoom, circle.radius)
             }
@@ -352,8 +350,8 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         val gsCircles = engine.getEntitiesFor(gsCircleFamily)
         for (i in 0 until gsCircles.size()) {
             gsCircles[i]?.apply {
-                val gsCirclePos = get(GlideSlopeCircle.mapper) ?: return@apply
-                val appInfo = get(ApproachInfo.mapper) ?: return@apply
+                val gsCirclePos = getOrLogMissing(GlideSlopeCircle.mapper) ?: return@apply
+                val appInfo = getOrLogMissing(ApproachInfo.mapper) ?: return@apply
                 if (appInfo.rwyObj.entity.hasNot(ActiveLanding.mapper)) return@apply
                 shapeRenderer.color = Color.CYAN
                 for (pos in gsCirclePos.positions) {
@@ -371,9 +369,9 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         val rwyLabels = engine.getEntitiesFor(rwyLabelFamily)
         for (i in 0 until rwyLabels.size()) {
             rwyLabels[i]?.apply {
-                val labelInfo = get(GenericLabel.mapper) ?: return@apply
-                val rwyLabel = get(RunwayLabel.mapper) ?: return@apply
-                val direction = get(Direction.mapper) ?: return@apply
+                val labelInfo = getOrLogMissing(GenericLabel.mapper) ?: return@apply
+                val rwyLabel = getOrLogMissing(RunwayLabel.mapper) ?: return@apply
+                val direction = getOrLogMissing(Direction.mapper) ?: return@apply
                 labelInfo.label.apply {
                     rwyLabel.apply {
                         val spacingFromCentre = sqrt(prefWidth * prefWidth + prefHeight * prefHeight) / 2 + 3 / camZoom + if (positionToRunway == 0.byte) 0f else rwyWidthPx / 2
@@ -406,8 +404,8 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         val labels = engine.getEntitiesFor(labelFamily)
         for (i in 0 until labels.size()) {
             labels[i]?.apply {
-                val labelInfo = get(GenericLabel.mapper) ?: return@apply
-                val pos = get(Position.mapper) ?: return@apply
+                val labelInfo = getOrLogMissing(GenericLabel.mapper) ?: return@apply
+                val pos = getOrLogMissing(Position.mapper) ?: return@apply
                 labelInfo.label.apply {
                     setPosition(pos.x + labelInfo.xOffset, pos.y + labelInfo.yOffset)
                     draw(GAME.batch, 1f)
@@ -419,8 +417,8 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         val labelArray = engine.getEntitiesFor(labelArrayFamily)
         for (i in 0 until labelArray.size()) {
             labelArray[i]?.apply {
-                val pos = get(Position.mapper) ?: return@apply
-                val genericLabels = get(GenericLabels.mapper) ?: return@apply
+                val pos = getOrLogMissing(Position.mapper) ?: return@apply
+                val genericLabels = getOrLogMissing(GenericLabels.mapper) ?: return@apply
                 for (j in 0 until genericLabels.labels.size) {
                     val labelInfo = genericLabels.labels[j]
                     labelInfo.label.apply {
@@ -439,11 +437,11 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         val allAircraft = engine.getEntitiesFor(aircraftFamily)
         for (i in 0 until allAircraft.size()) {
             allAircraft[i]?.apply {
-                val trailInfo = get(TrailInfo.mapper) ?: return@apply
-                val rsSprite = get(RSSprite.mapper) ?: return@apply
-                val radarData = get(RadarData.mapper) ?: return@apply
-                val flightType = get(FlightType.mapper) ?: return@apply
-                val controllable = get(Controllable.mapper) ?: return@apply
+                val trailInfo = getOrLogMissing(TrailInfo.mapper) ?: return@apply
+                val rsSprite = getOrLogMissing(RSSprite.mapper) ?: return@apply
+                val radarData = getOrLogMissing(RadarData.mapper) ?: return@apply
+                val flightType = getOrLogMissing(FlightType.mapper) ?: return@apply
+                val controllable = getOrLogMissing(Controllable.mapper) ?: return@apply
                 run {
                     // If player has turned off trail for uncontrolled aircraft
                     if (SHOW_UNCONTROLLED_AIRCRAFT_TRAIL == UNCONTROLLED_AIRCRAFT_TRAIL_OFF
@@ -477,8 +475,8 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         val constLabels = engine.getEntitiesFor(constSizeLabelFamily)
         for (i in 0 until constLabels.size()) {
             constLabels[i].apply {
-                val labelInfo = get(GenericLabel.mapper) ?: return@apply
-                val pos = get(Position.mapper) ?: return@apply
+                val labelInfo = getOrLogMissing(GenericLabel.mapper) ?: return@apply
+                val pos = getOrLogMissing(Position.mapper) ?: return@apply
                 labelInfo.label.apply {
                     setPosition((pos.x - camX) / camZoom + labelInfo.xOffset, (pos.y - camY) / camZoom + labelInfo.yOffset)
                     draw(GAME.batch, 1f)
@@ -490,8 +488,8 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         val constLabelArray = engine.getEntitiesFor(constSizeLabelArrayFamily)
         for (i in 0 until constLabelArray.size()) {
             constLabelArray[i].apply {
-                val pos = get(Position.mapper) ?: return@apply
-                val genericLabels = get(GenericLabels.mapper) ?: return@apply
+                val pos = getOrLogMissing(Position.mapper) ?: return@apply
+                val genericLabels = getOrLogMissing(GenericLabels.mapper) ?: return@apply
                 for (j in 0 until genericLabels.labels.size) {
                     val labelInfo = genericLabels.labels[j]
                     labelInfo.label.apply {
@@ -508,7 +506,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
                 it.conflicts[i]?.apply {
                     if (minAltSectorIndex != null) {
                         val minAltSector = it.minAltSectors[minAltSectorIndex]?.entity ?: return@apply
-                        val labelInfo = minAltSector[GenericLabel.mapper] ?: return@apply
+                        val labelInfo = minAltSector.getOrLogMissing(GenericLabel.mapper) ?: return@apply
                         labelInfo.apply {
                             val currStyle = label.style
                             updateStyle("MinAltSectorConflict")
@@ -522,12 +520,11 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
 
         var lastRenderDatatagAircraft: Entity? = null
         // Render aircraft datatags (except the one marked with RenderLast)
-        // TODO Rendering bug
         val datatags = engine.getEntitiesFor(datatagFamily)
         for (i in 0 until datatags.size()) {
             datatags[i]?.apply {
-                val datatag = get(Datatag.mapper) ?: return@apply
-                val radarData = get(RadarData.mapper) ?: return@apply
+                val datatag = getOrLogMissing(Datatag.mapper) ?: return@apply
+                val radarData = getOrLogMissing(RadarData.mapper) ?: return@apply
                 if (datatag.renderLast) {
                     if (lastRenderDatatagAircraft != null) FileLog.info("RenderingSystem", "Multiple render last aircraft datatags found")
                     lastRenderDatatagAircraft = this
@@ -556,8 +553,8 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
 
         // Save the render last datatag to be rendered after all other datatags
         lastRenderDatatagAircraft?.apply {
-            val datatag = get(Datatag.mapper) ?: return@apply
-            val radarData = get(RadarData.mapper) ?: return@apply
+            val datatag = getOrLogMissing(Datatag.mapper) ?: return@apply
+            val radarData = getOrLogMissing(RadarData.mapper) ?: return@apply
             if (!datatag.smallLabelFont && camZoom > DATATAG_ZOOM_THRESHOLD) updateDatatagLabelSize(datatag, true)
             else if (datatag.smallLabelFont && camZoom <= DATATAG_ZOOM_THRESHOLD) updateDatatagLabelSize(datatag, false)
             val leftX = (radarData.position.x - camX) / camZoom + datatag.xOffset
@@ -590,8 +587,8 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
             val contactDots = engine.getEntitiesFor(contactDotFamily)
             for (i in 0 until contactDots.size()) {
                 contactDots[i]?.apply {
-                    val radarData = get(RadarData.mapper) ?: return@apply
-                    val flightType = get(FlightType.mapper) ?: return@apply
+                    val radarData = getOrLogMissing(RadarData.mapper) ?: return@apply
+                    val flightType = getOrLogMissing(FlightType.mapper) ?: return@apply
                     val radarX = (radarData.position.x - camX) / camZoom
                     val radarY = (radarData.position.y - camY) / camZoom
                     val intersectionVector = Vector2()
@@ -658,19 +655,19 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
                     // Aircraft to waypoint segment
                     if (forceRenderChangedAircraftToFirstWaypoint) shapeRenderer.color = Color.YELLOW
                     else if (skipAircraftToFirstWaypoint) return@also
-                    val wptPos = CLIENT_SCREEN?.waypoints?.get(leg2.wptId)?.entity?.get(Position.mapper) ?: return@also
+                    val wptPos = CLIENT_SCREEN?.waypoints?.get(leg2.wptId)?.entity?.getOrLogMissing(Position.mapper) ?: return@also
                     shapeRenderer.line(posX, posY, wptPos.x, wptPos.y)
                 }
                 (leg1 is Route.WaypointLeg && leg2 is Route.WaypointLeg) -> {
                     // Waypoint to waypoint segment
-                    val pos1 = CLIENT_SCREEN?.waypoints?.get(leg1.wptId)?.entity?.get(Position.mapper) ?: return@also
-                    val pos2 = CLIENT_SCREEN?.waypoints?.get(leg2.wptId)?.entity?.get(Position.mapper) ?: return@also
+                    val pos1 = CLIENT_SCREEN?.waypoints?.get(leg1.wptId)?.entity?.getOrLogMissing(Position.mapper) ?: return@also
+                    val pos2 = CLIENT_SCREEN?.waypoints?.get(leg2.wptId)?.entity?.getOrLogMissing(Position.mapper) ?: return@also
                     shapeRenderer.line(pos1.x, pos1.y, pos2.x, pos2.y)
                 }
                 (leg1 == null && leg2 is Route.HoldLeg) -> {
                     // Hold segment
                     val wptPos = if (leg2.wptId.toInt() == -1) Position(posX, posY)
-                    else CLIENT_SCREEN?.waypoints?.get(leg2.wptId)?.entity?.get(Position.mapper) ?: return@also
+                    else CLIENT_SCREEN?.waypoints?.get(leg2.wptId)?.entity?.getOrLogMissing(Position.mapper) ?: return@also
                     val wptVec = Vector2(wptPos.x, wptPos.y)
                     // Render a default 230 knot IAS @ 10000ft, 3 deg/s turn
                     val tasPxps = ktToPxps(266)
@@ -704,14 +701,14 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
                 }
                 (leg1 is Route.WaypointLeg && leg2 is Route.VectorLeg) -> {
                     // Waypoint to vector segment
-                    val wptPos = CLIENT_SCREEN?.waypoints?.get(leg1.wptId)?.entity?.get(Position.mapper) ?: return@also
+                    val wptPos = CLIENT_SCREEN?.waypoints?.get(leg1.wptId)?.entity?.getOrLogMissing(Position.mapper) ?: return@also
                     renderVector(wptPos.x, wptPos.y, leg2.heading, seg.changed)
                 }
                 (leg1 is Route.HoldLeg && leg2 is Route.WaypointLeg) -> {
                     // Hold to waypoint segment
                     val pos1 = if (leg1.wptId.toInt() == -1) Position(posX, posY)
-                    else CLIENT_SCREEN?.waypoints?.get(leg1.wptId)?.entity?.get(Position.mapper) ?: return@also
-                    val pos2 = CLIENT_SCREEN?.waypoints?.get(leg2.wptId)?.entity?.get(Position.mapper) ?: return@also
+                    else CLIENT_SCREEN?.waypoints?.get(leg1.wptId)?.entity?.getOrLogMissing(Position.mapper) ?: return@also
+                    val pos2 = CLIENT_SCREEN?.waypoints?.get(leg2.wptId)?.entity?.getOrLogMissing(Position.mapper) ?: return@also
                     shapeRenderer.line(pos1.x, pos1.y, pos2.x, pos2.y)
                 }
             }
@@ -754,7 +751,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         for (i in 0 until clearanceRoutes.size()) {
             clearanceRoutes[i]?.apply {
                 val latest = get(PendingClearances.mapper)?.clearanceQueue?.last()?.clearanceState ?:
-                get(ClearanceAct.mapper)?.actingClearance?.clearanceState ?: return@apply
+                getOrLogMissing(ClearanceAct.mapper)?.actingClearance?.clearanceState ?: return@apply
                 if (latest.vectorHdg != null) return@apply
                 if (latest.route.size < 1) return@apply
                 val firstWpt = latest.route[0]
@@ -767,7 +764,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         // Check currently selected aircraft route
         if (selectedAircraft == null) return
         val latestClearance = selectedAircraft.entity[PendingClearances.mapper]?.clearanceQueue?.last()?.clearanceState ?:
-        selectedAircraft.entity[ClearanceAct.mapper]?.actingClearance?.clearanceState ?: return
+        selectedAircraft.entity.getOrLogMissing(ClearanceAct.mapper)?.actingClearance?.clearanceState ?: return
         val route = latestClearance.route
         for (i in 0 until route.size) {
             val leg = route[i]
