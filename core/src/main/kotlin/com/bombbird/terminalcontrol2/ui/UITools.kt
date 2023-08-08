@@ -19,6 +19,7 @@ import com.badlogic.gdx.utils.Scaling
 import com.badlogic.gdx.utils.viewport.ScalingViewport
 import com.badlogic.gdx.utils.viewport.Viewport
 import com.bombbird.terminalcontrol2.global.*
+import com.bombbird.terminalcontrol2.utilities.FileLog
 import ktx.scene2d.*
 
 /**
@@ -72,6 +73,11 @@ fun ScrollPane.removeMouseScrollListeners() {
 inline fun Actor.addChangeListener(crossinline function: (ChangeEvent?, Actor?) -> Unit) {
     addListener(object: ChangeListener() {
         override fun changed(event: ChangeEvent?, actor: Actor?) {
+            val threadName = Thread.currentThread().name
+            if (threadName != "main") {
+                FileLog.warn("UITools", "Change listener called from $threadName instead of main")
+                Exception().printStackTrace()
+            }
             function(event, actor)
         }
     })

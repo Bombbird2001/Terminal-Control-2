@@ -1,5 +1,6 @@
 package com.bombbird.terminalcontrol2.screens
 
+import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.scenes.scene2d.ui.ProgressBar
 import com.badlogic.gdx.utils.Timer
 import com.bombbird.terminalcontrol2.global.*
@@ -199,16 +200,22 @@ class GameLoading private constructor(): BasicUIScreen() {
 
     /** Function to be called by GameServer to indicate that the server has loaded successfully */
     private fun gameServerLoaded() {
-        pBar.value = 0.7f
+        Gdx.app.postRunnable {
+            pBar.value = 0.7f
+        }
     }
 
     /** Function to be called by RadarScreen to indicate client-side data has loaded */
     private fun gameClientLoaded() {
-        pBar.value = 0.4f
+        Gdx.app.postRunnable {
+            pBar.value = 0.4f
+        }
     }
 
     /** Function to be called by RadarScreen after it has successfully connected to the server */
     private fun connectedToGameServer() {
-        pBar.value = 1f
+        Gdx.app.postRunnable {
+            pBar.value = 1f
+        }
     }
 }
