@@ -17,10 +17,13 @@ class ControlStateSystem: EntitySystem() {
         private val pendingFamily: Family = allOf(PendingClearances::class, ClearanceAct::class).get()
     }
 
+    private val latestClearanceChangedFamilyEntities = FamilyWithListener.newServerFamilyWithListener(latestClearanceChangedFamily)
+    private val pendingFamilyEntities = FamilyWithListener.newServerFamilyWithListener(pendingFamily)
+
     /** Main update function */
     override fun update(deltaTime: Float) {
         // Aircraft that have their clearance states changed
-        val clearanceChanged = engine.getEntitiesFor(latestClearanceChangedFamily)
+        val clearanceChanged = latestClearanceChangedFamilyEntities.getEntities()
         for (i in 0 until clearanceChanged.size()) {
             clearanceChanged[i]?.let { entity ->
                 val aircraftInfo = entity[AircraftInfo.mapper] ?: return@let
@@ -41,7 +44,7 @@ class ControlStateSystem: EntitySystem() {
         }
 
         // Aircraft that have pending clearances (due to 2s pilot response)
-        val pendingClearances = engine.getEntitiesFor(pendingFamily)
+        val pendingClearances = pendingFamilyEntities.getEntities()
         for (i in 0 until pendingClearances.size()) {
             pendingClearances[i]?.apply {
                 get(PendingClearances.mapper)?.clearanceQueue?.let { queue ->

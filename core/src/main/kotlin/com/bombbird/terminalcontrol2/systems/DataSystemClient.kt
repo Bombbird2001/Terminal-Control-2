@@ -24,17 +24,20 @@ class DataSystemClient: EntitySystem() {
 
     private var radarDataTimer = 0f
 
+    private val radarDataUpdateFamilyEntities = FamilyWithListener.newClientFamilyWithListener(radarDataUpdateFamily)
+    private val datatagUpdateFamilyEntities = FamilyWithListener.newClientFamilyWithListener(datatagUpdateFamily)
+
     /** Main update function */
     override fun update(deltaTime: Float) {
         // Timer for updating radar returns and datatags
         radarDataTimer += deltaTime
         if (radarDataTimer > RADAR_REFRESH_INTERVAL_S) {
-            val radarDataUpdate = engine.getEntitiesFor(radarDataUpdateFamily)
+            val radarDataUpdate = radarDataUpdateFamilyEntities.getEntities()
             for (i in 0 until radarDataUpdate.size()) {
                 radarDataUpdate[i]?.apply { updateAircraftRadarData(this) }
             }
 
-            val datatagUpdates = engine.getEntitiesFor(datatagUpdateFamily)
+            val datatagUpdates = datatagUpdateFamilyEntities.getEntities()
             for (i in 0 until datatagUpdates.size()) {
                 datatagUpdates[i]?.apply { updateAircraftDatatagText(this) }
             }

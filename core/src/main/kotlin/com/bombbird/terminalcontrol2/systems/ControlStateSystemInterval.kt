@@ -34,6 +34,17 @@ class ControlStateSystemInterval: IntervalSystem(1f) {
         private val divergentDepFamily: Family = allOf(DivergentDepartureAllowed::class).get()
     }
 
+    private val contactFromTowerFamilyEntities = FamilyWithListener.newServerFamilyWithListener(contactFromTowerFamily)
+    private val contactToTowerFamilyEntities = FamilyWithListener.newServerFamilyWithListener(contactToTowerFamily)
+    private val minMaxOptIasFamilyEntities = FamilyWithListener.newServerFamilyWithListener(minMaxOptIasFamily)
+    private val spdRestrFamilyEntities = FamilyWithListener.newServerFamilyWithListener(spdRestrFamily)
+    private val contactFromCentreFamilyEntities = FamilyWithListener.newServerFamilyWithListener(contactFromCentreFamily)
+    private val contactToCentreFamilyEntities = FamilyWithListener.newServerFamilyWithListener(contactToCentreFamily)
+    private val checkSectorFamilyEntities = FamilyWithListener.newServerFamilyWithListener(checkSectorFamily)
+    private val goAroundFamilyEntities = FamilyWithListener.newServerFamilyWithListener(goAroundFamily)
+    private val pendingCruiseFamilyEntities = FamilyWithListener.newServerFamilyWithListener(pendingCruiseFamily)
+    private val divergentDepFamilyEntities = FamilyWithListener.newServerFamilyWithListener(divergentDepFamily)
+
     /**
      * Secondary update system, for operations that can be updated at a lower frequency and do not rely on deltaTime
      * (e.g. can be derived from other values without needing a time variable)
@@ -42,7 +53,7 @@ class ControlStateSystemInterval: IntervalSystem(1f) {
      */
     override fun updateInterval() {
         // Updating the minimum, maximum and optimal IAS for aircraft
-        val minMaxOptIas = engine.getEntitiesFor(minMaxOptIasFamily)
+        val minMaxOptIas = minMaxOptIasFamilyEntities.getEntities()
         for (i in 0 until minMaxOptIas.size()) {
             minMaxOptIas[i]?.apply {
                 val clearanceAct = get(ClearanceAct.mapper)?.actingClearance?.clearanceState ?: return@apply
@@ -63,7 +74,7 @@ class ControlStateSystemInterval: IntervalSystem(1f) {
 
         // Check whether the aircraft is approaching a lower speed restriction, and set the reduced speed before
         // reaching the waypoint, so it crosses at the speed restriction
-        val spdRestr = engine.getEntitiesFor(spdRestrFamily)
+        val spdRestr = spdRestrFamilyEntities.getEntities()
         for (i in 0 until spdRestr.size()) {
             spdRestr[i]?.apply {
                 val actingClearance = get(ClearanceAct.mapper)?.actingClearance?.clearanceState ?: return@apply
@@ -116,7 +127,7 @@ class ControlStateSystemInterval: IntervalSystem(1f) {
         }
 
         // Aircraft that are expected to switch from tower to approach/departure
-        val contactFromTower = engine.getEntitiesFor(contactFromTowerFamily)
+        val contactFromTower = contactFromTowerFamilyEntities.getEntities()
         for (i in 0 until contactFromTower.size()) {
             contactFromTower[i]?.apply {
                 val alt = get(Altitude.mapper) ?: return@apply
@@ -136,7 +147,7 @@ class ControlStateSystemInterval: IntervalSystem(1f) {
         }
 
         // Aircraft that are expected to switch from approach to tower
-        val contactToTower = engine.getEntitiesFor(contactToTowerFamily)
+        val contactToTower = contactToTowerFamilyEntities.getEntities()
         for (i in 0 until contactToTower.size()) {
             contactToTower[i]?.apply {
                 val alt = get(Altitude.mapper) ?: return@apply
@@ -153,7 +164,7 @@ class ControlStateSystemInterval: IntervalSystem(1f) {
         }
 
         // Aircraft that are expected to switch from centre to approach/departure
-        val contactFromCentre = engine.getEntitiesFor(contactFromCentreFamily)
+        val contactFromCentre = contactFromCentreFamilyEntities.getEntities()
         for (i in 0 until contactFromCentre.size()) {
             contactFromCentre[i]?.apply {
                 val alt = get(Altitude.mapper) ?: return@apply
@@ -173,7 +184,7 @@ class ControlStateSystemInterval: IntervalSystem(1f) {
         }
 
         // Aircraft that are expected to switch from approach/departure to centre
-        val contactToCentre = engine.getEntitiesFor(contactToCentreFamily)
+        val contactToCentre = contactToCentreFamilyEntities.getEntities()
         for (i in 0 until contactToCentre.size()) {
             contactToCentre[i]?.apply {
                 val alt = get(Altitude.mapper) ?: return@apply
@@ -195,7 +206,7 @@ class ControlStateSystemInterval: IntervalSystem(1f) {
         }
 
         // Checking of whether aircraft is still in player's sector; if not switch it to other player's sector
-        val checkSector = engine.getEntitiesFor(checkSectorFamily)
+        val checkSector = checkSectorFamilyEntities.getEntities()
         for (i in 0 until checkSector.size()) {
             checkSector[i]?.apply {
                 val pos = get(Position.mapper) ?: return@apply
@@ -230,7 +241,7 @@ class ControlStateSystemInterval: IntervalSystem(1f) {
         if (GAME.gameServer?.sectorJustSwapped == true) GAME.gameServer?.sectorJustSwapped = false
 
         // Check recent go-around and decrement the timer counter
-        val goAround = engine.getEntitiesFor(goAroundFamily)
+        val goAround = goAroundFamilyEntities.getEntities()
         for (i in 0 until goAround.size()) {
             goAround[i]?.apply {
                 val recentGA = get(RecentGoAround.mapper) ?: return@apply
@@ -240,7 +251,7 @@ class ControlStateSystemInterval: IntervalSystem(1f) {
         }
 
         // Clear departures up to their cruising altitude automatically (ACC)
-        val pendingCruise = engine.getEntitiesFor(pendingCruiseFamily)
+        val pendingCruise = pendingCruiseFamilyEntities.getEntities()
         for (i in 0 until pendingCruise.size()) {
             pendingCruise[i]?.apply {
                 val pendingCruiseAltitude = get(PendingCruiseAltitude.mapper) ?: return@apply
@@ -268,7 +279,7 @@ class ControlStateSystemInterval: IntervalSystem(1f) {
         }
 
         // Check divergent departures and decrement the timer counter
-        val divergentDepartures = engine.getEntitiesFor(divergentDepFamily)
+        val divergentDepartures = divergentDepFamilyEntities.getEntities()
         for (i in 0 until divergentDepartures.size()) {
             divergentDepartures[i]?.apply {
                 val divDep = get(DivergentDepartureAllowed.mapper) ?: return@apply

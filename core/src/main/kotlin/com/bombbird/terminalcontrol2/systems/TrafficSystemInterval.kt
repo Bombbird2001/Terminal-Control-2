@@ -35,6 +35,13 @@ class TrafficSystemInterval: IntervalSystem(1f) {
             .exclude(WaitingTakeoff::class, TakeoffRoll::class, LandingRoll::class).get()
     }
 
+    private val pendingRunwayChangeFamilyEntities = FamilyWithListener.newServerFamilyWithListener(pendingRunwayChangeFamily)
+    private val arrivalFamilyEntities = FamilyWithListener.newServerFamilyWithListener(arrivalFamily)
+    private val runwayTakeoffFamilyEntities = FamilyWithListener.newServerFamilyWithListener(runwayTakeoffFamily)
+    private val closestArrivalFamilyEntities = FamilyWithListener.newServerFamilyWithListener(closestArrivalFamily)
+    private val conflictAbleFamilyEntities = FamilyWithListener.newServerFamilyWithListener(conflictAbleFamily)
+    private val despawnFamilyEntities = FamilyWithListener.newServerFamilyWithListener(despawnFamily)
+
     private val startingAltitude = floor(getLowestAirportElevation() / VERT_SEP).roundToInt() * VERT_SEP
     private var conflictLevels = Array<GdxArray<Entity>>(0) {
         GdxArray()
@@ -53,7 +60,7 @@ class TrafficSystemInterval: IntervalSystem(1f) {
             if (arrivalSpawnTimerS < 0) {
                 when (trafficMode) {
                     TrafficMode.NORMAL, TrafficMode.ARRIVALS_TO_CONTROL -> {
-                        val arrivalCount = engine.getEntitiesFor(arrivalFamily).filter { it[FlightType.mapper]?.type == FlightType.ARRIVAL }.size
+                        val arrivalCount = arrivalFamilyEntities.getEntities().filter { it[FlightType.mapper]?.type == FlightType.ARRIVAL }.size
                         // Min 50sec for >= 4 planes diff, max 80sec for <= 1 plane diff
                         arrivalSpawnTimerS = 90f - 10 * (trafficValue - arrivalCount)
                         arrivalSpawnTimerS = MathUtils.clamp(arrivalSpawnTimerS, 50f, 80f)
@@ -71,7 +78,7 @@ class TrafficSystemInterval: IntervalSystem(1f) {
                 createRandomArrival(Entries(airports).map { it.value }, this)
             }
 
-            // Keep checking runway configurations for any changes if needed
+            // Check runway configurations when night mode changes
             val currIsNight = UsabilityFilter.isNight()
             if (lastIsNight != currIsNight) {
                 lastIsNight = currIsNight
@@ -85,7 +92,7 @@ class TrafficSystemInterval: IntervalSystem(1f) {
         }
 
         // Closest arrival to runway checker
-        val closestRunwayArrival = engine.getEntitiesFor(closestArrivalFamily)
+        val closestRunwayArrival = closestArrivalFamilyEntities.getEntities()
         for (i in 0 until closestRunwayArrival.size()) {
             closestRunwayArrival[i]?.apply {
                 val approach = get(LocalizerCaptured.mapper)?.locApp ?: get(GlideSlopeCaptured.mapper)?.gsApp ?:
@@ -106,7 +113,7 @@ class TrafficSystemInterval: IntervalSystem(1f) {
         }
 
         // Update pending runway change timer
-        val pendingRunway = engine.getEntitiesFor(pendingRunwayChangeFamily)
+        val pendingRunway = pendingRunwayChangeFamilyEntities.getEntities()
         for (i in 0 until pendingRunway.size()) {
             pendingRunway[i]?.apply {
                 val pending = get(PendingRunwayConfig.mapper) ?: return@apply
@@ -126,7 +133,7 @@ class TrafficSystemInterval: IntervalSystem(1f) {
         }
 
         // Departure spawning timer
-        val runwayTakeoff = engine.getEntitiesFor(runwayTakeoffFamily)
+        val runwayTakeoff = runwayTakeoffFamilyEntities.getEntities()
         for (i in 0 until runwayTakeoff.size()) {
             runwayTakeoff[i]?.apply {
                 // First increment the previous departure and arrival timers if present
@@ -179,7 +186,7 @@ class TrafficSystemInterval: IntervalSystem(1f) {
         }
 
         // Despawn checker
-        val checkDespawn = engine.getEntitiesFor(despawnFamily)
+        val checkDespawn = despawnFamilyEntities.getEntities()
         for (i in 0 until checkDespawn.size()) {
             checkDespawn[i]?.apply {
                 val pos = get(Position.mapper) ?: return@apply
@@ -201,7 +208,7 @@ class TrafficSystemInterval: IntervalSystem(1f) {
         }
 
         // Traffic separation checking
-        val conflictAble = engine.getEntitiesFor(conflictAbleFamily)
+        val conflictAble = conflictAbleFamilyEntities.getEntities()
 
         // Update the levels of each conflict-able entity
         for (i in 0 until conflictAble.size()) {

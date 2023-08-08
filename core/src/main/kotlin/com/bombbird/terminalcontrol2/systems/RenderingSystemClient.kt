@@ -78,6 +78,28 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         private val dotGreen: TextureRegion = Scene2DSkin.defaultSkin["DotGreen", TextureRegion::class.java]
     }
 
+    private val lineArrayFamilyEntities = FamilyWithListener.newClientFamilyWithListener(lineArrayFamily)
+    private val polygonFamilyEntities = FamilyWithListener.newClientFamilyWithListener(polygonFamily)
+    private val polygonLastFamilyEntities = FamilyWithListener.newClientFamilyWithListener(polygonLastFamily)
+    private val circleFamilyEntities = FamilyWithListener.newClientFamilyWithListener(circleFamily)
+    private val runwayFamilyEntities = FamilyWithListener.newClientFamilyWithListener(runwayFamily)
+    private val locFamilyEntities = FamilyWithListener.newClientFamilyWithListener(locFamily)
+    private val gsCircleFamilyEntities = FamilyWithListener.newClientFamilyWithListener(gsCircleFamily)
+    private val trajectoryFamilyEntities = FamilyWithListener.newClientFamilyWithListener(trajectoryFamily)
+    private val visualFamilyEntities = FamilyWithListener.newClientFamilyWithListener(visualFamily)
+    private val datatagLineFamilyEntities = FamilyWithListener.newClientFamilyWithListener(datatagLineFamily)
+    private val constCircleFamilyEntities = FamilyWithListener.newClientFamilyWithListener(constCircleFamily)
+    private val rwyLabelFamilyEntities = FamilyWithListener.newClientFamilyWithListener(rwyLabelFamily)
+    private val labelFamilyEntities = FamilyWithListener.newClientFamilyWithListener(labelFamily)
+    private val labelArrayFamilyEntities = FamilyWithListener.newClientFamilyWithListener(labelArrayFamily)
+    private val aircraftFamilyEntities = FamilyWithListener.newClientFamilyWithListener(aircraftFamily)
+    private val constSizeLabelFamilyEntities = FamilyWithListener.newClientFamilyWithListener(constSizeLabelFamily)
+    private val constSizeLabelArrayFamilyEntities = FamilyWithListener.newClientFamilyWithListener(constSizeLabelArrayFamily)
+    private val datatagFamilyEntities = FamilyWithListener.newClientFamilyWithListener(datatagFamily)
+    private val contactDotFamilyEntities = FamilyWithListener.newClientFamilyWithListener(contactDotFamily)
+    private val waypointFamilyEntities = FamilyWithListener.newClientFamilyWithListener(waypointFamily)
+    private val routeFamilyEntities = FamilyWithListener.newClientFamilyWithListener(routeFamily)
+
     /** Main update function */
     override fun update(deltaTime: Float) {
         val camZoom = (stage.camera as OrthographicCamera).zoom
@@ -93,7 +115,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         shapeRenderer.circle(0f, 0f, 12.5f)
 
         // Render lineArrays
-        val lineArrays = engine.getEntitiesFor(lineArrayFamily)
+        val lineArrays = lineArrayFamilyEntities.getEntities()
         for (i in 0 until lineArrays.size()) {
             lineArrays[i]?.apply {
                 val lineArray = getOrLogMissing(GLineArray.mapper) ?: return@apply
@@ -108,7 +130,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         }
 
         // Render polygons
-        val polygons = engine.getEntitiesFor(polygonFamily)
+        val polygons = polygonFamilyEntities.getEntities()
         for (i in 0 until polygons.size()) {
             polygons[i]?.apply {
                 val poly = getOrLogMissing(GPolygon.mapper) ?: return@apply
@@ -128,7 +150,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         // renderAllSectors(shapeRenderer)
 
         // Render circles
-        val circles = engine.getEntitiesFor(circleFamily)
+        val circles = circleFamilyEntities.getEntities()
         for (i in 0 until circles.size()) {
             circles[i]?.apply {
                 val pos = getOrLogMissing(Position.mapper) ?: return@apply
@@ -158,7 +180,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         }
 
         // Render polygons with RenderLast
-        val polygonsLast = engine.getEntitiesFor(polygonLastFamily)
+        val polygonsLast = polygonLastFamilyEntities.getEntities()
         for (i in 0 until polygonsLast.size()) {
             polygonsLast[i]?.apply {
                 val poly = getOrLogMissing(GPolygon.mapper) ?: return@apply
@@ -170,7 +192,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
 
         // Render runways
         val rwyWidthPx = RWY_WIDTH_PX_ZOOM_1 + (camZoom - 1) * RWY_WIDTH_CHANGE_PX_PER_ZOOM
-        val rwys = engine.getEntitiesFor(runwayFamily)
+        val rwys = runwayFamilyEntities.getEntities()
         for (i in 0 until rwys.size()) {
             rwys[i]?.apply {
                 val pos = getOrLogMissing(Position.mapper) ?: return@apply
@@ -184,7 +206,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         }
 
         // Render localizers
-        val localizer = engine.getEntitiesFor(locFamily)
+        val localizer = locFamilyEntities.getEntities()
         for (i in 0 until localizer.size()) {
             localizer[i]?.apply {
                 val pos = getOrLogMissing(Position.mapper) ?: return@apply
@@ -209,7 +231,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         }
 
         // Render line from aircraft on visual approach to runway touchdown zone
-        val visual = engine.getEntitiesFor(visualFamily)
+        val visual = visualFamilyEntities.getEntities()
         for (i in 0 until visual.size()) {
             visual[i]?.apply {
                 val rwyPos = getOrLogMissing(VisualCaptured.mapper)?.visApp?.getOrLogMissing(Position.mapper) ?: return@apply
@@ -244,7 +266,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         }
 
         // Render trajectory line for controlled aircraft
-        val trajectory = engine.getEntitiesFor(trajectoryFamily)
+        val trajectory = trajectoryFamilyEntities.getEntities()
         for (i in 0 until trajectory.size()) {
             trajectory[i]?.apply {
                 val controllable = getOrLogMissing(Controllable.mapper) ?: return@apply
@@ -308,7 +330,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
 
         shapeRenderer.projectionMatrix = constZoomStage.camera.combined
         // Render datatag to aircraft icon line
-        val datatagLines = engine.getEntitiesFor(datatagLineFamily)
+        val datatagLines = datatagLineFamilyEntities.getEntities()
         for (i in 0 until datatagLines.size()) {
             datatagLines[i]?.apply {
                 val datatag = getOrLogMissing(Datatag.mapper) ?: return@apply
@@ -335,7 +357,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         }
 
         // Render circles with constant zoom size
-        val constCircles = engine.getEntitiesFor(constCircleFamily)
+        val constCircles = constCircleFamilyEntities.getEntities()
         for (i in 0 until constCircles.size()) {
             constCircles[i]?.apply {
                 val pos = getOrLogMissing(Position.mapper) ?: return@apply
@@ -347,7 +369,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         }
 
         // Render glide slope circles with constant zoom size
-        val gsCircles = engine.getEntitiesFor(gsCircleFamily)
+        val gsCircles = gsCircleFamilyEntities.getEntities()
         for (i in 0 until gsCircles.size()) {
             gsCircles[i]?.apply {
                 val gsCirclePos = getOrLogMissing(GlideSlopeCircle.mapper) ?: return@apply
@@ -366,7 +388,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         GAME.batch.packedColor = Color.WHITE_FLOAT_BITS // Prevent fading out behaviour during selectBox animations due to tint being changed
 
         // Update runway labels rendering size, position
-        val rwyLabels = engine.getEntitiesFor(rwyLabelFamily)
+        val rwyLabels = rwyLabelFamilyEntities.getEntities()
         for (i in 0 until rwyLabels.size()) {
             rwyLabels[i]?.apply {
                 val labelInfo = getOrLogMissing(GenericLabel.mapper) ?: return@apply
@@ -401,7 +423,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         }
 
         // Render generic labels (non-constant size)
-        val labels = engine.getEntitiesFor(labelFamily)
+        val labels = labelFamilyEntities.getEntities()
         for (i in 0 until labels.size()) {
             labels[i]?.apply {
                 val labelInfo = getOrLogMissing(GenericLabel.mapper) ?: return@apply
@@ -414,7 +436,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         }
 
         // Render array of generic labels (non-constant size)
-        val labelArray = engine.getEntitiesFor(labelArrayFamily)
+        val labelArray = labelArrayFamilyEntities.getEntities()
         for (i in 0 until labelArray.size()) {
             labelArray[i]?.apply {
                 val pos = getOrLogMissing(Position.mapper) ?: return@apply
@@ -434,7 +456,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         else AIRCRAFT_BLIP_LENGTH_PX_ZOOM_1 + (camZoom - 1) * AIRCRAFT_BLIP_LENGTH_CHANGE_PX_PER_ZOOM
         val trailSize = if (camZoom <= 1) AIRCRAFT_TRAIL_LENGTH_PX_ZOOM_1 * camZoom
         else AIRCRAFT_TRAIL_LENGTH_PX_ZOOM_1 + (camZoom - 1) * AIRCRAFT_TRAIL_LENGTH_CHANGE_PX_PER_ZOOM
-        val allAircraft = engine.getEntitiesFor(aircraftFamily)
+        val allAircraft = aircraftFamilyEntities.getEntities()
         for (i in 0 until allAircraft.size()) {
             allAircraft[i]?.apply {
                 val trailInfo = getOrLogMissing(TrailInfo.mapper) ?: return@apply
@@ -472,7 +494,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
 
         GAME.batch.projectionMatrix = constZoomStage.camera.combined
         // Render generic constant size labels
-        val constLabels = engine.getEntitiesFor(constSizeLabelFamily)
+        val constLabels = constSizeLabelFamilyEntities.getEntities()
         for (i in 0 until constLabels.size()) {
             constLabels[i].apply {
                 val labelInfo = getOrLogMissing(GenericLabel.mapper) ?: return@apply
@@ -485,7 +507,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         }
 
         // Render generic constant size label arrays
-        val constLabelArray = engine.getEntitiesFor(constSizeLabelArrayFamily)
+        val constLabelArray = constSizeLabelArrayFamilyEntities.getEntities()
         for (i in 0 until constLabelArray.size()) {
             constLabelArray[i].apply {
                 val pos = getOrLogMissing(Position.mapper) ?: return@apply
@@ -520,7 +542,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
 
         var lastRenderDatatagAircraft: Entity? = null
         // Render aircraft datatags (except the one marked with RenderLast)
-        val datatags = engine.getEntitiesFor(datatagFamily)
+        val datatags = datatagFamilyEntities.getEntities()
         for (i in 0 until datatags.size()) {
             datatags[i]?.apply {
                 val datatag = getOrLogMissing(Datatag.mapper) ?: return@apply
@@ -584,7 +606,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
             val topY = UI_HEIGHT / 2 - 15
             val centreX = uiPane.paneWidth / 2
             val centreY = 0f
-            val contactDots = engine.getEntitiesFor(contactDotFamily)
+            val contactDots = contactDotFamilyEntities.getEntities()
             for (i in 0 until contactDots.size()) {
                 contactDots[i]?.apply {
                     val radarData = getOrLogMissing(RadarData.mapper) ?: return@apply
@@ -738,7 +760,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
      * @param selectedAircraft the currently selected aircraft, or null if no aircraft selected
      */
     fun updateWaypointDisplay(selectedAircraft: Aircraft?) {
-        val waypoints = engine.getEntitiesFor(waypointFamily)
+        val waypoints = waypointFamilyEntities.getEntities()
         val wptMap = GdxMap<Short, Entity>()
         for (i in 0 until waypoints.size()) {
             val wpt = waypoints[i]
@@ -746,7 +768,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
              wpt += DoNotRenderLabel()
             wpt[WaypointInfo.mapper]?.wptId?.let { id -> wptMap[id] = wpt }
         }
-        val clearanceRoutes = engine.getEntitiesFor(routeFamily)
+        val clearanceRoutes = routeFamilyEntities.getEntities()
         // Check all aircraft routes for the first waypoint
         for (i in 0 until clearanceRoutes.size()) {
             clearanceRoutes[i]?.apply {

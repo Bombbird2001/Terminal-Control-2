@@ -1,6 +1,7 @@
 package com.bombbird.terminalcontrol2.systems
 
 import com.badlogic.ashley.core.Entity
+import com.badlogic.ashley.core.Family
 import com.badlogic.ashley.systems.IntervalSystem
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.*
@@ -15,12 +16,14 @@ import ktx.ashley.*
  */
 class ControlStateSystemIntervalClient: IntervalSystem(1f) {
     companion object {
-        private val handoverUpdateFamily = allOf(Controllable::class, GroundTrack::class, Position::class, Altitude::class).get()
+        private val handoverUpdateFamily: Family = allOf(Controllable::class, GroundTrack::class, Position::class, Altitude::class).get()
     }
+
+    private val handoverUpdateFamilyEntities = FamilyWithListener.newClientFamilyWithListener(handoverUpdateFamily)
 
     /** Main update function */
     override fun updateInterval() {
-        val handoverUpdate = engine.getEntitiesFor(handoverUpdateFamily)
+        val handoverUpdate = handoverUpdateFamilyEntities.getEntities()
         for (i in 0 until handoverUpdate.size()) {
             handoverUpdate[i]?.apply {
                 val pos = get(Position.mapper) ?: return@apply

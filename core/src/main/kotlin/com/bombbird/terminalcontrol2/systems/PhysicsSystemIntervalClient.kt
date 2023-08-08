@@ -21,6 +21,9 @@ class PhysicsSystemIntervalClient: IntervalSystem(1f) {
         private val affectedByWindFamily: Family = allOf(Position::class, AffectedByWind::class).get()
     }
 
+    private val tasToIasFamilyEntities = FamilyWithListener.newClientFamilyWithListener(tasToIasFamily)
+    private val affectedByWindFamilyEntities = FamilyWithListener.newClientFamilyWithListener(affectedByWindFamily)
+
     /**
      * Secondary update system, for operations that can be updated at a lower frequency and do not rely on deltaTime
      * (e.g. can be derived from other values without needing a time variable)
@@ -29,7 +32,7 @@ class PhysicsSystemIntervalClient: IntervalSystem(1f) {
      */
     override fun updateInterval() {
         // Calculate the IAS of the aircraft
-        val tasToIas = engine.getEntitiesFor(tasToIasFamily)
+        val tasToIas = tasToIasFamilyEntities.getEntities()
         for (i in 0 until tasToIas.size()) {
             tasToIas[i]?.apply {
                 val spd = get(Speed.mapper) ?: return@apply
@@ -40,7 +43,7 @@ class PhysicsSystemIntervalClient: IntervalSystem(1f) {
         }
 
         // Update the wind vector (to that of the METAR of the nearest airport)
-        val affectedByWind = engine.getEntitiesFor(affectedByWindFamily)
+        val affectedByWind = affectedByWindFamilyEntities.getEntities()
         for (i in 0 until affectedByWind.size()) {
             affectedByWind[i]?.apply {
                 val pos = get(Position.mapper) ?: return@apply

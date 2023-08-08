@@ -38,6 +38,15 @@ class PhysicsSystem: EntitySystem() {
         private val gsFamily: Family = allOf(Position::class, Altitude::class, GroundTrack::class, Speed::class, Direction::class, Acceleration::class).get()
     }
 
+    private val positionUpdateFamilyEntities = FamilyWithListener.newServerFamilyWithListener(positionUpdateFamily)
+    private val windAffectedFamilyEntities = FamilyWithListener.newServerFamilyWithListener(windAffectedFamily)
+    private val speedUpdateFamilyEntities = FamilyWithListener.newServerFamilyWithListener(speedUpdateFamily)
+    private val cmdTargetAltFamilyEntities = FamilyWithListener.newServerFamilyWithListener(cmdTargetAltFamily)
+    private val cmdTargetSpdFamilyEntities = FamilyWithListener.newServerFamilyWithListener(cmdTargetSpdFamily)
+    private val cmdTargetHeadingFamilyEntities = FamilyWithListener.newServerFamilyWithListener(cmdTargetHeadingFamily)
+    private val glideSlopeCapturedFamilyEntities = FamilyWithListener.newServerFamilyWithListener(glideSlopeCapturedFamily)
+    private val gsFamilyEntities = FamilyWithListener.newServerFamilyWithListener(gsFamily)
+
     /**
      * Main update function, for values that need to be updated frequently
      *
@@ -45,7 +54,7 @@ class PhysicsSystem: EntitySystem() {
      */
     override fun update(deltaTime: Float) {
         // Update position with speed, direction
-        val positionUpdates = engine.getEntitiesFor(positionUpdateFamily)
+        val positionUpdates = positionUpdateFamilyEntities.getEntities()
         for (i in 0 until positionUpdates.size()) {
             positionUpdates[i]?.apply {
                 val pos = get(Position.mapper) ?: return@apply
@@ -70,7 +79,7 @@ class PhysicsSystem: EntitySystem() {
         }
 
         // Position affected by wind
-        val windAffected = engine.getEntitiesFor(windAffectedFamily)
+        val windAffected = windAffectedFamilyEntities.getEntities()
         for (i in 0 until windAffected.size()) {
             windAffected[i]?.apply {
                 val pos = get(Position.mapper) ?: return@apply
@@ -81,7 +90,7 @@ class PhysicsSystem: EntitySystem() {
         }
 
         // Update speed with acceleration
-        val speedUpdates = engine.getEntitiesFor(speedUpdateFamily)
+        val speedUpdates = speedUpdateFamilyEntities.getEntities()
         for (i in 0 until speedUpdates.size()) {
             speedUpdates[i]?.apply {
                 val spd = get(Speed.mapper) ?: return@apply
@@ -93,7 +102,7 @@ class PhysicsSystem: EntitySystem() {
         }
 
         // Set altitude behaviour using target values from CommandTarget
-        val cmdAltitude = engine.getEntitiesFor(cmdTargetAltFamily)
+        val cmdAltitude = cmdTargetAltFamilyEntities.getEntities()
         for (i in 0 until cmdAltitude.size()) {
             cmdAltitude[i]?.apply {
                 val aircraftInfo = get(AircraftInfo.mapper) ?: return@apply
@@ -115,7 +124,7 @@ class PhysicsSystem: EntitySystem() {
         }
 
         // Set speed behaviour using target values from CommandTarget
-        val cmdIas = engine.getEntitiesFor(cmdTargetSpdFamily)
+        val cmdIas = cmdTargetSpdFamilyEntities.getEntities()
         for (i in 0 until cmdIas.size()) {
             cmdIas[i]?.apply {
                 val aircraftInfo = get(AircraftInfo.mapper) ?: return@apply
@@ -139,7 +148,7 @@ class PhysicsSystem: EntitySystem() {
         }
 
         // Update properties for aircraft on the glide slope
-        val gsCaptured = engine.getEntitiesFor(glideSlopeCapturedFamily)
+        val gsCaptured = glideSlopeCapturedFamilyEntities.getEntities()
         for (i in 0 until gsCaptured.size()) {
             gsCaptured[i]?.apply {
                 val pos = get(Position.mapper) ?: return@apply
@@ -158,7 +167,7 @@ class PhysicsSystem: EntitySystem() {
         }
 
         // Set heading behaviour using target values from CommandTarget
-        val cmdHeading = engine.getEntitiesFor(cmdTargetHeadingFamily)
+        val cmdHeading = cmdTargetHeadingFamilyEntities.getEntities()
         for (i in 0 until cmdHeading.size()) {
             cmdHeading[i]?.apply {
                 val ias = get(IndicatedAirSpeed.mapper) ?: return@apply
@@ -182,7 +191,7 @@ class PhysicsSystem: EntitySystem() {
         }
 
         // Calculate GS of the aircraft
-        val gs = engine.getEntitiesFor(gsFamily)
+        val gs = gsFamilyEntities.getEntities()
         for (i in 0 until gs.size()) {
             gs[i]?.apply {
                 val groundTrack = get(GroundTrack.mapper) ?: return@apply

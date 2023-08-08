@@ -841,7 +841,6 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
         conflicts: GdxArray<ConflictManager.Conflict>,
         potentialConflicts: GdxArray<ConflictManager.PotentialConflict>
     ) {
-        println("Sending ${conflicts.size} conflicts")
         networkServer.sendToAllTCP(
             ConflictData(
                 conflicts.toArray().map { it.getSerialisableObject() }.toTypedArray(),

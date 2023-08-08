@@ -22,13 +22,15 @@ class DataSystem: EntitySystem() {
             .exclude(WaitingTakeoff::class, TakeoffRoll::class, LandingRoll::class).get()
     }
 
+    private val trailInfoUpdateFamilyEntities = FamilyWithListener.newServerFamilyWithListener(trailInfoUpdateFamily)
+
     /** Main update function */
     override fun update(deltaTime: Float) {
         // Timer for updating trail info
         GAME.gameServer?.also { gs ->
             gs.trailDotTimer += deltaTime
             if (gs.trailDotTimer > TRAIL_DOT_UPDATE_INTERVAL_S) {
-                val trailDotUpdates = engine.getEntitiesFor(trailInfoUpdateFamily)
+                val trailDotUpdates = trailInfoUpdateFamilyEntities.getEntities()
                 val trailUpdates = GdxArray<Pair<String, Position>>()
                 for (i in 0 until trailDotUpdates.size()) {
                     trailDotUpdates[i]?.apply {

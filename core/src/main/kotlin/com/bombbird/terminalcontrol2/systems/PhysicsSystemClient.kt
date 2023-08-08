@@ -22,6 +22,9 @@ class PhysicsSystemClient: EntitySystem() {
             .exclude(TakeoffRoll::class, LandingRoll::class).get()
     }
 
+    private val positionUpdateFamilyEntities = FamilyWithListener.newClientFamilyWithListener(positionUpdateFamily)
+    private val windAffectedFamilyEntities = FamilyWithListener.newClientFamilyWithListener(windAffectedFamily)
+
     /**
      * Main update function, for values that need to be updated frequently
      *
@@ -29,7 +32,7 @@ class PhysicsSystemClient: EntitySystem() {
      */
     override fun update(deltaTime: Float) {
         // Update position with speed, direction
-        val positionUpdates = engine.getEntitiesFor(positionUpdateFamily)
+        val positionUpdates = positionUpdateFamilyEntities.getEntities()
         for (i in 0 until positionUpdates.size()) {
             positionUpdates[i]?.apply {
                 val pos = get(Position.mapper) ?: return@apply
@@ -45,7 +48,7 @@ class PhysicsSystemClient: EntitySystem() {
         }
 
         // Position affected by wind
-        val windAffected = engine.getEntitiesFor(windAffectedFamily)
+        val windAffected = windAffectedFamilyEntities.getEntities()
         for (i in 0 until windAffected.size()) {
             windAffected[i]?.apply {
                 val pos = get(Position.mapper) ?: return@apply

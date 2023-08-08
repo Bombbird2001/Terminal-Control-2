@@ -61,6 +61,31 @@ class AISystem: EntitySystem() {
         private val expediteFamily: Family = allOf(CommandExpedite::class, CommandTarget::class, Altitude::class).get()
     }
 
+    private val takeoffAccFamilyEntities = FamilyWithListener.newServerFamilyWithListener(takeoffAccFamily)
+    private val takeoffClimbFamilyEntities = FamilyWithListener.newServerFamilyWithListener(takeoffClimbFamily)
+    private val landingAccFamilyEntities = FamilyWithListener.newServerFamilyWithListener(landingAccFamily)
+    private val above250FamilyEntities = FamilyWithListener.newServerFamilyWithListener(above250Family)
+    private val below240FamilyEntities = FamilyWithListener.newServerFamilyWithListener(below240Family)
+    private val app190FamilyEntities = FamilyWithListener.newServerFamilyWithListener(app190Family)
+    private val minAppSpdFamilyEntities = FamilyWithListener.newServerFamilyWithListener(minAppSpdFamily)
+    private val initialArrivalFamilyEntities = FamilyWithListener.newServerFamilyWithListener(initialArrivalFamily)
+    private val vectorFamilyEntities = FamilyWithListener.newServerFamilyWithListener(vectorFamily)
+    private val initClimbFamilyEntities = FamilyWithListener.newServerFamilyWithListener(initClimbFamily)
+    private val waypointFamilyEntities = FamilyWithListener.newServerFamilyWithListener(waypointFamily)
+    private val holdFamilyEntities = FamilyWithListener.newServerFamilyWithListener(holdFamily)
+    private val pureVectorFamilyEntities = FamilyWithListener.newServerFamilyWithListener(pureVectorFamily)
+    private val appTrackCapFamilyEntities = FamilyWithListener.newServerFamilyWithListener(appTrackCapFamily)
+    private val visAppGlideFamilyEntities = FamilyWithListener.newServerFamilyWithListener(visAppGlideFamily)
+    private val checkGoAroundFamilyEntities = FamilyWithListener.newServerFamilyWithListener(checkGoAroundFamily)
+    private val visArmedFamilyEntities = FamilyWithListener.newServerFamilyWithListener(visArmedFamily)
+    private val locArmedFamilyEntities = FamilyWithListener.newServerFamilyWithListener(locArmedFamily)
+    private val gsArmedFamilyEntities = FamilyWithListener.newServerFamilyWithListener(gsArmedFamily)
+    private val stepDownAppFamilyEntities = FamilyWithListener.newServerFamilyWithListener(stepDownAppFamily)
+    private val circlingAppFamilyEntities = FamilyWithListener.newServerFamilyWithListener(circlingAppFamily)
+    private val checkTouchdownFamilyEntities = FamilyWithListener.newServerFamilyWithListener(checkTouchdownFamily)
+    private val actingClearanceChangedFamilyEntities = FamilyWithListener.newServerFamilyWithListener(actingClearanceChangedFamily)
+    private val expediteFamilyEntities = FamilyWithListener.newServerFamilyWithListener(expediteFamily)
+
     /** Main update function */
     override fun update(deltaTime: Float) {
         updateTakeoffAcceleration()
@@ -74,7 +99,7 @@ class AISystem: EntitySystem() {
 
     /** Set the acceleration for takeoff aircraft */
     private fun updateTakeoffAcceleration() {
-        val takeoffAcc = engine.getEntitiesFor(takeoffAccFamily)
+        val takeoffAcc = takeoffAccFamilyEntities.getEntities()
         for (i in 0 until takeoffAcc.size()) {
             takeoffAcc[i]?.apply {
                 val takeoffRoll = get(TakeoffRoll.mapper) ?: return@apply
@@ -106,7 +131,7 @@ class AISystem: EntitySystem() {
 
     /** Set initial takeoff climb, transition to acceleration for departing aircraft */
     private fun updateTakeoffClimb() {
-        val takeoffClimb = engine.getEntitiesFor(takeoffClimbFamily)
+        val takeoffClimb = takeoffClimbFamilyEntities.getEntities()
         for (i in 0 until takeoffClimb.size()) {
             takeoffClimb[i]?.apply {
                 val alt = get(Altitude.mapper) ?: return@apply
@@ -127,7 +152,7 @@ class AISystem: EntitySystem() {
 
     /** Set the acceleration for landing aircraft */
     private fun updateLandingAcceleration() {
-        val landingAcc = engine.getEntitiesFor(landingAccFamily)
+        val landingAcc = landingAccFamilyEntities.getEntities()
         for (i in 0 until landingAcc.size()) {
             landingAcc[i]?.apply {
                 val acc = get(Acceleration.mapper) ?: return@apply
@@ -167,7 +192,7 @@ class AISystem: EntitySystem() {
     /** Update cleared IAS changes at 10000 feet */
     private fun update10000ftSpeed() {
         // Update for aircraft going faster than 250 knots above 10000 feet
-        val above250 = engine.getEntitiesFor(above250Family)
+        val above250 = above250FamilyEntities.getEntities()
         for (i in 0 until above250.size()) {
             above250[i]?.apply {
                 val alt = get(Altitude.mapper) ?: return@apply
@@ -189,7 +214,7 @@ class AISystem: EntitySystem() {
         }
 
         // Update aircraft to slow down before reaching 10000 feet
-        val below240 = engine.getEntitiesFor(below240Family)
+        val below240 = below240FamilyEntities.getEntities()
         for (i in 0 until below240.size()) {
             below240[i]?.apply {
                 val alt = get(Altitude.mapper) ?: return@apply
@@ -207,9 +232,9 @@ class AISystem: EntitySystem() {
         }
 
         // Update aircraft to slow down to 190 knots at less than 16nm from runway threshold
-        val below190 = engine.getEntitiesFor(app190Family)
-        for (i in 0 until below190.size()) {
-            below190[i]?.apply {
+        val app190 = app190FamilyEntities.getEntities()
+        for (i in 0 until app190.size()) {
+            app190[i]?.apply {
                 val pos = get(Position.mapper) ?: return@apply
                 val cmd = get(CommandTarget.mapper) ?: return@apply
                 val clearanceAct = get(ClearanceAct.mapper) ?: return@apply
@@ -229,7 +254,7 @@ class AISystem: EntitySystem() {
 
         // Update aircraft to slow down to minimum approach speed at less than 6.4nm from runway threshold, except if
         // aircraft is on circling approach
-        val minApp = engine.getEntitiesFor(minAppSpdFamily)
+        val minApp = minAppSpdFamilyEntities.getEntities()
         for (i in 0 until minApp.size()) {
             minApp[i]?.apply {
                 val pos = get(Position.mapper) ?: return@apply
@@ -253,7 +278,7 @@ class AISystem: EntitySystem() {
 
     /** Updates parameters for initial arrival aircraft spawns */
     private fun updateInitialArrival() {
-        val initialArrivals = engine.getEntitiesFor(initialArrivalFamily)
+        val initialArrivals = initialArrivalFamilyEntities.getEntities()
         for (i in 0 until initialArrivals.size()) {
             initialArrivals[i]?.apply {
                 setToFirstRouteLeg(this)
@@ -265,7 +290,7 @@ class AISystem: EntitySystem() {
     /** Update the [CommandTarget] parameters for aircraft based on the different modes, excluding approaches */
     private fun updateCommandTarget() {
         // Update for vector leg
-        val vector = engine.getEntitiesFor(vectorFamily)
+        val vector = vectorFamilyEntities.getEntities()
         for (i in 0 until vector.size()) {
             vector[i]?.apply {
                 val cmdTarget = get(CommandTarget.mapper) ?: return@apply
@@ -278,7 +303,7 @@ class AISystem: EntitySystem() {
         }
 
         // Update for initial climb leg
-        val initClimb = engine.getEntitiesFor(initClimbFamily)
+        val initClimb = initClimbFamilyEntities.getEntities()
         for (i in 0 until initClimb.size()) {
             initClimb[i]?.apply {
                 val cmdTarget = get(CommandTarget.mapper) ?: return@apply
@@ -294,7 +319,7 @@ class AISystem: EntitySystem() {
         }
 
         // Update for waypoint direct leg
-        val waypoint = engine.getEntitiesFor(waypointFamily)
+        val waypoint = waypointFamilyEntities.getEntities()
         for (i in 0 until waypoint.size()) {
             waypoint[i]?.apply {
                 val cmdTarget = get(CommandTarget.mapper) ?: return@apply
@@ -339,7 +364,7 @@ class AISystem: EntitySystem() {
         }
 
         // Update for holding leg
-        val hold = engine.getEntitiesFor(holdFamily)
+        val hold = holdFamilyEntities.getEntities()
         for (i in 0 until hold.size()) {
             hold[i]?.apply {
                 val cmdTarget = get(CommandTarget.mapper) ?: return@apply
@@ -416,7 +441,7 @@ class AISystem: EntitySystem() {
         }
 
         // Update for pure vector (i.e. no legs)
-        val pureVector = engine.getEntitiesFor(pureVectorFamily)
+        val pureVector = pureVectorFamilyEntities.getEntities()
         for (i in 0 until pureVector.size()) {
             pureVector[i]?.apply {
                 val cmd = get(CommandTarget.mapper) ?: return@apply
@@ -436,7 +461,7 @@ class AISystem: EntitySystem() {
         }
 
         // Update when the acting clearance has been changed by player action
-        val actingClearances = engine.getEntitiesFor(actingClearanceChangedFamily)
+        val actingClearances = actingClearanceChangedFamilyEntities.getEntities()
         for (i in 0 until actingClearances.size()) {
             actingClearances[i]?.apply {
                 setCommandTargetToNewActingClearance(this)
@@ -452,7 +477,7 @@ class AISystem: EntitySystem() {
      */
     private fun updateApproaches(deltaTime: Float) {
         // Update for localizer/extended centreline captured (this will override waypoint direct behaviour)
-        val appTrackCaptured = engine.getEntitiesFor(appTrackCapFamily)
+        val appTrackCaptured = appTrackCapFamilyEntities.getEntities()
         for (i in 0 until appTrackCaptured.size()) {
             appTrackCaptured[i]?.apply {
                 val cmd = get(CommandTarget.mapper) ?: return@apply
@@ -482,7 +507,7 @@ class AISystem: EntitySystem() {
         }
 
         // Update for visual approach armed
-        val visArmed = engine.getEntitiesFor(visArmedFamily)
+        val visArmed = visArmedFamilyEntities.getEntities()
         for (i in 0 until visArmed.size()) {
             visArmed[i]?.apply {
                 val pos = get(Position.mapper) ?: return@apply
@@ -505,7 +530,7 @@ class AISystem: EntitySystem() {
         }
 
         // Update for visual glide path captured
-        val visGlideCaptured = engine.getEntitiesFor(visAppGlideFamily)
+        val visGlideCaptured = visAppGlideFamilyEntities.getEntities()
         for (i in 0 until visGlideCaptured.size()) {
             visGlideCaptured[i]?.apply {
                 val pos = get(Position.mapper) ?: return@apply
@@ -518,7 +543,7 @@ class AISystem: EntitySystem() {
         }
 
         // Update for localizer armed
-        val locArmed = engine.getEntitiesFor(locArmedFamily)
+        val locArmed = locArmedFamilyEntities.getEntities()
         for (i in 0 until locArmed.size()) {
             locArmed[i]?.apply {
                 val pos = get(Position.mapper) ?: return@apply
@@ -564,7 +589,7 @@ class AISystem: EntitySystem() {
         }
 
         // Update for glide slope armed
-        val gsArmed = engine.getEntitiesFor(gsArmedFamily)
+        val gsArmed = gsArmedFamilyEntities.getEntities()
         for (i in 0 until gsArmed.size()) {
             gsArmed[i]?.apply {
                 val pos = get(Position.mapper) ?: return@apply
@@ -587,7 +612,7 @@ class AISystem: EntitySystem() {
         }
 
         // Update for step down approach
-        val stepDown = engine.getEntitiesFor(stepDownAppFamily)
+        val stepDown = stepDownAppFamilyEntities.getEntities()
         for (i in 0 until stepDown.size()) {
             stepDown[i]?.apply {
                 val pos = get(Position.mapper) ?: return@apply
@@ -599,7 +624,7 @@ class AISystem: EntitySystem() {
         }
 
         // Update for circling approach
-        val circling = engine.getEntitiesFor(circlingAppFamily)
+        val circling = circlingAppFamilyEntities.getEntities()
         for (i in 0 until circling.size()) {
             circling[i]?.apply {
                 val pos = get(Position.mapper) ?: return@apply
@@ -669,7 +694,7 @@ class AISystem: EntitySystem() {
         }
 
         // Update stabilized approach status, and checks for minimums
-        val checkGoAround = engine.getEntitiesFor(checkGoAroundFamily)
+        val checkGoAround = checkGoAroundFamilyEntities.getEntities()
         for (i in 0 until checkGoAround.size()) {
             checkGoAround[i]?.apply {
                 val gsApp = get(GlideSlopeCaptured.mapper)?.gsApp ?: get(GlideSlopeArmed.mapper)?.gsApp
@@ -779,7 +804,7 @@ class AISystem: EntitySystem() {
         }
 
         // Update touchdown status for aircraft on approach
-        val touchDown = engine.getEntitiesFor(checkTouchdownFamily)
+        val touchDown = checkTouchdownFamilyEntities.getEntities()
         for (i in 0 until touchDown.size()) {
             touchDown[i]?.apply {
                 val alt = get(Altitude.mapper) ?: return@apply
@@ -814,7 +839,7 @@ class AISystem: EntitySystem() {
         }
 
         // Clear any existing expedite flags if the aircraft is within 500 feet of its target altitude
-        val expediteClearFamily = engine.getEntitiesFor(expediteFamily)
+        val expediteClearFamily = expediteFamilyEntities.getEntities()
         for (i in 0 until expediteClearFamily.size()) {
             expediteClearFamily[i]?.apply {
                 val alt = get(Altitude.mapper) ?: return@apply
