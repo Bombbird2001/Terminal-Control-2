@@ -8,7 +8,6 @@ import com.badlogic.gdx.utils.Queue
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.WakeZone
 import com.bombbird.terminalcontrol2.global.GAME
-import com.bombbird.terminalcontrol2.global.MAX_ALT
 import com.bombbird.terminalcontrol2.global.VERT_SEP
 import com.bombbird.terminalcontrol2.traffic.*
 import com.bombbird.terminalcontrol2.utilities.*
@@ -37,7 +36,7 @@ class TrafficSystemInterval: IntervalSystem(1f) {
     }
 
     private val startingAltitude = floor(getLowestAirportElevation() / VERT_SEP).roundToInt() * VERT_SEP
-    private val conflictLevels = Array<GdxArray<Entity>>(ceil((MAX_ALT + 1500f) / VERT_SEP).roundToInt() - startingAltitude / VERT_SEP) {
+    private var conflictLevels = Array<GdxArray<Entity>>(0) {
         GdxArray()
     }
     val conflictManager = ConflictManager()
@@ -221,6 +220,13 @@ class TrafficSystemInterval: IntervalSystem(1f) {
         }
 
         conflictManager.checkAllConflicts(conflictLevels, conflictAble)
+    }
+
+    /** Creates the conflict level array upon loading world data (MAX_ALT required) */
+    fun initializeConflictLevelArray(maxAlt: Int) {
+        conflictLevels = Array(ceil((maxAlt + 1500f) / VERT_SEP).roundToInt() - startingAltitude / VERT_SEP) {
+            GdxArray()
+        }
     }
 
     /**

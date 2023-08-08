@@ -14,6 +14,7 @@ import com.bombbird.terminalcontrol2.networking.encryption.DiffieHellmanValue
 import com.bombbird.terminalcontrol2.networking.encryption.EncryptedData
 import com.bombbird.terminalcontrol2.networking.relayserver.*
 import com.bombbird.terminalcontrol2.screens.RadarScreen
+import com.bombbird.terminalcontrol2.systems.FamilyWithListener
 import com.bombbird.terminalcontrol2.traffic.*
 import com.bombbird.terminalcontrol2.ui.*
 import com.bombbird.terminalcontrol2.utilities.*
@@ -185,6 +186,9 @@ fun handleIncomingRequestClient(rs: RadarScreen, obj: Any?) {
     if (obj !is ClientReceive) return
     if (obj is InitialDataSendComplete) Gdx.app.postRunnable {
         rs.notifyInitialDataSendComplete()
+        rs.postRunnableAfterEngineUpdate(false) {
+            FamilyWithListener.addAllClientFamilyEntityListeners()
+        }
     }
     rs.postRunnableAfterEngineUpdate(false) {
         obj.handleClientReceive(rs)

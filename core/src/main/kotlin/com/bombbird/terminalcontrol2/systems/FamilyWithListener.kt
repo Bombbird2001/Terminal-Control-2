@@ -1,5 +1,6 @@
 package com.bombbird.terminalcontrol2.systems
 
+import com.badlogic.ashley.core.Engine
 import com.badlogic.ashley.core.Entity
 import com.badlogic.ashley.core.EntityListener
 import com.badlogic.ashley.core.Family
@@ -47,18 +48,24 @@ class FamilyWithListener private constructor(private val family: Family, private
             FileLog.info("FamilyWithListener", "Added all client family entity listeners")
         }
 
-        /** Clears engine listeners belonging to all families on the server */
-        fun clearAllServerFamilyEntityListeners() {
+        /**
+         * Clears engine listeners belonging to all families on the server
+         * @param engine engine to remove listeners from
+         */
+        fun clearAllServerFamilyEntityListeners(engine: Engine) {
             for (i in 0 until allServerFamilies.size) {
-                allServerFamilies[i].removeEngineListener()
+                allServerFamilies[i].removeEngineListener(engine)
             }
             FileLog.info("FamilyWithListener", "Cleared all server family entity listeners")
         }
 
-        /** Clears engine listeners belonging to all families on the client */
-        fun clearAllClientFamilyEntityListeners() {
+        /**
+         * Clears engine listeners belonging to all families on the client
+         * @param engine engine to remove listeners from
+         */
+        fun clearAllClientFamilyEntityListeners(engine: Engine) {
             for (i in 0 until allClientFamilies.size) {
-                allClientFamilies[i].removeEngineListener()
+                allClientFamilies[i].removeEngineListener(engine)
             }
             FileLog.info("FamilyWithListener", "Cleared all client family entity listeners")
         }
@@ -88,13 +95,16 @@ class FamilyWithListener private constructor(private val family: Family, private
         engine.addEntityListener(family, newEntityListener)
     }
 
-    /** Removes this family's listener from the appropriate engine */
-    private fun removeEngineListener() {
+    /**
+     * Removes this family's listener from the input engine
+     * @param engine the engine to remove the listener from
+     */
+    private fun removeEngineListener(engine: Engine) {
         if (entityListener == null) {
             FileLog.warn("FamilyWithListener", "Entity listener does not exist for family")
             return
         }
-        getEngine(onClient).removeEntityListener(entityListener)
+        engine.removeEntityListener(entityListener)
         entityListener = null
         familyEntities = ImmutableArray(GdxArray())
     }

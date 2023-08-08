@@ -268,11 +268,14 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
         engine.addSystem(AISystem())
         engine.addSystem(ControlStateSystem())
         engine.addSystem(ControlStateSystemInterval())
-        engine.addSystem(TrafficSystemInterval())
+        val trafficSystemInterval = TrafficSystemInterval()
+        engine.addSystem(trafficSystemInterval)
         engine.addSystem(DataSystem())
 
         if (saveId != null) loadSave(this, saveId)
         loadWorldData(mainName, this)
+
+        trafficSystemInterval.initializeConflictLevelArray(MAX_ALT)
 
         FamilyWithListener.addAllServerFamilyEntityListeners()
 
@@ -320,9 +323,9 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
     /** Stops the game loop and exits server */
     fun stopServer() {
         setLoopingFalse()
+        FamilyWithListener.clearAllServerFamilyEntityListeners(engine)
         engine.removeAllEntities()
         engine.removeAllSystems()
-        FamilyWithListener.clearAllServerFamilyEntityListeners()
         FileLog.info("GameServer", "Game server stopped")
     }
 
@@ -838,6 +841,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
         conflicts: GdxArray<ConflictManager.Conflict>,
         potentialConflicts: GdxArray<ConflictManager.PotentialConflict>
     ) {
+        println("Sending ${conflicts.size} conflicts")
         networkServer.sendToAllTCP(
             ConflictData(
                 conflicts.toArray().map { it.getSerialisableObject() }.toTypedArray(),
