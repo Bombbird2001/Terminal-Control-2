@@ -274,6 +274,8 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
         if (saveId != null) loadSave(this, saveId)
         loadWorldData(mainName, this)
 
+        FamilyWithListener.addAllServerFamilyEntityListeners()
+
         if (initialisingWeather.get()) lock.withLock {
             requestAllMetar()
             // initialisingWeather may have already changed in the line above if static/random weather is used which
@@ -320,6 +322,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
         setLoopingFalse()
         engine.removeAllEntities()
         engine.removeAllSystems()
+        FamilyWithListener.clearAllServerFamilyEntityListeners()
         FileLog.info("GameServer", "Game server stopped")
     }
 

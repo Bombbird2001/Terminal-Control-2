@@ -401,6 +401,7 @@ class RadarScreen private constructor(private val connectionHost: String, privat
 
         GAME.soundManager.stop()
 
+        FamilyWithListener.clearAllClientFamilyEntityListeners()
         clientEngine.removeAllEntities()
         clientEngine.removeAllSystems()
 
@@ -696,6 +697,7 @@ class RadarScreen private constructor(private val connectionHost: String, privat
     fun notifyInitialDataSendComplete() {
         initialDataReceived = true
         connectedToHostCallback?.invoke()
+        FamilyWithListener.addAllClientFamilyEntityListeners()
     }
 
     /** Returns true if client is in public multiplayer game, else false */
