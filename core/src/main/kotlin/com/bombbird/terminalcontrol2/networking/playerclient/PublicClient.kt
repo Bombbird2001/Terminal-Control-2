@@ -2,8 +2,8 @@ package com.bombbird.terminalcontrol2.networking.playerclient
 
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.networking.*
-import com.bombbird.terminalcontrol2.networking.dataclasses.ClientUUIDData
-import com.bombbird.terminalcontrol2.networking.dataclasses.RequestClientUUID
+import com.bombbird.terminalcontrol2.networking.dataclasses.ClientData
+import com.bombbird.terminalcontrol2.networking.dataclasses.RequestClientData
 import com.bombbird.terminalcontrol2.networking.encryption.*
 import com.bombbird.terminalcontrol2.networking.relayserver.*
 import com.bombbird.terminalcontrol2.screens.RadarScreen
@@ -146,8 +146,8 @@ class PublicClient: NetworkClient() {
      */
     private fun onReceiveNonRelayData(obj: Any?) {
         if (obj is ServerToClient) return
-        (obj as? RequestClientUUID)?.apply {
-            sendTCP(ClientUUIDData(myUuid.toString()))
+        (obj as? RequestClientData)?.apply {
+            sendTCP(ClientData(myUuid.toString(), BUILD_VERSION))
         } ?: handleIncomingRequestClient(GAME.gameClientScreen ?: return, obj)
     }
 }

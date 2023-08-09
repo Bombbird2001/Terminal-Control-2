@@ -8,6 +8,9 @@ import java.net.DatagramPacket
 class LANClientDiscoveryHandler: ClientDiscoveryHandler {
     var onDiscoveredHostDataMap: MutableList<JoinGame.MultiplayerGameInfo>? = null
 
+    /** Data decoded from the datagram packet */
+    private class DecodedData(val playerCount: Byte, val maxPlayers: Byte, val airport: String)
+
     /**
      * Overrides [ClientDiscoveryHandler.onRequestNewDatagramPacket] to return a new datagram packet of 10 bytes, just
      * sufficient for the server host's onDiscoverHost data sent back
@@ -24,19 +27,19 @@ class LANClientDiscoveryHandler: ClientDiscoveryHandler {
     override fun onDiscoveredHost(datagramPacket: DatagramPacket?) {
         val data = datagramPacket?.data ?: return
         val decodedData = decodePacketData(data) ?: return
-        onDiscoveredHostDataMap?.add(JoinGame.MultiplayerGameInfo(datagramPacket.address.hostAddress, decodedData.first,
-            decodedData.second, decodedData.third, null))
+        onDiscoveredHostDataMap?.add(JoinGame.MultiplayerGameInfo(datagramPacket.address.hostAddress,
+            decodedData.playerCount, decodedData.maxPlayers, decodedData.airport, null))
     }
 
     /**
      * Decodes the byte array into player count and airport name data
      * @param byteArray the byte array received from the server
-     * @return a triple, the first being a byte that represents the current number of players in game, the second being
-     * the maximum number of players allowed in game, the third being a string that represents the current game world's
-     * main airport; returns null if the byte array length does not match
+     * @return a [DecodedData] with the current number of players in game, the maximum number of players allowed in
+     * game, and a string that represents the current game world's main airport; returns null if the byte array length
+     * is less than required
      */
-    private fun decodePacketData(byteArray: ByteArray): Triple<Byte, Byte, String>? {
-        if (byteArray.size != LANServerDiscoveryHandler.DISCOVERY_PACKET_SIZE) return null
+    private fun decodePacketData(byteArray: ByteArray): DecodedData? {
+        if (byteArray.size < LANServerDiscoveryHandler.DISCOVERY_PACKET_SIZE) return null
         var players: Byte = -1
         var maxPlayers: Byte = -1
         var airport = ""
@@ -51,13 +54,13 @@ class LANClientDiscoveryHandler: ClientDiscoveryHandler {
                     maxPlayers = byteArray[1]
                     pos++
                 }
-                else -> {
+                2, 4, 6, 8 -> {
                     airport += Char(byteArray[pos] * 255 + byteArray[pos + 1])
                     pos += 2
                 }
             }
         }
 
-        return Triple(players, maxPlayers, airport)
+        return DecodedData(players, maxPlayers, airport)
     }
 }

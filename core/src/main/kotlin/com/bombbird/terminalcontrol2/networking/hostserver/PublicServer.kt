@@ -3,6 +3,10 @@ package com.bombbird.terminalcontrol2.networking.hostserver
 import com.badlogic.gdx.utils.ArrayMap.Entries
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.networking.*
+import com.bombbird.terminalcontrol2.networking.dataclasses.ClientData
+import com.bombbird.terminalcontrol2.networking.dataclasses.ClientUUIDDataOld
+import com.bombbird.terminalcontrol2.networking.dataclasses.ConnectionError
+import com.bombbird.terminalcontrol2.networking.dataclasses.RequestClientData
 import com.bombbird.terminalcontrol2.networking.encryption.*
 import com.bombbird.terminalcontrol2.networking.relayserver.*
 import com.bombbird.terminalcontrol2.ui.CustomDialog
@@ -164,7 +168,7 @@ class PublicServer(
     fun onConnect(uuid: UUID) {
         val newConn = ConnectionMeta(uuid)
         uuidConnectionMap.put(uuid, newConn)
-        onConnect(newConn)
+        sendTCPToConnection(uuid, RequestClientData())
     }
 
     /**
@@ -200,6 +204,24 @@ class PublicServer(
         val sendingConnection = uuidConnectionMap[sendingUUID] ?: return
         val decoded = fromSerializedBytes(data)
         if (decoded is ClientToServer) sendingConnection.returnTripTime = decoded.clientToRelayReturnTripTime
+        if (decoded is ClientUUIDDataOld) {
+            sendTCPToConnection(sendingUUID, ConnectionError("Your game version is too old - please update to " +
+                    "the latest build"))
+            return
+        }
+        if (decoded is ClientData) {
+            return checkClientData(sendingUUID, decoded)
+        }
         onReceive(sendingConnection, decoded)
+    }
+
+    private fun checkClientData(uuid: UUID, data: ClientData) {
+        // Check that build version is correct
+        if (data.buildVersion != BUILD_VERSION) {
+            sendTCPToConnection(uuid, ConnectionError("Your build version ${data.buildVersion} is " +
+                    "not the same as host's build version $BUILD_VERSION"))
+            return
+        }
+        onConnect(uuidConnectionMap[uuid] ?: return)
     }
 }

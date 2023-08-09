@@ -1,7 +1,7 @@
 import com.bombbird.terminalcontrol2.global.DIFFIE_HELLMAN_GENERATOR
 import com.bombbird.terminalcontrol2.global.DIFFIE_HELLMAN_PRIME
 import com.bombbird.terminalcontrol2.global.SERVER_WRITE_BUFFER_SIZE
-import com.bombbird.terminalcontrol2.networking.dataclasses.ClientUUIDData
+import com.bombbird.terminalcontrol2.networking.dataclasses.ClientData
 import com.bombbird.terminalcontrol2.networking.encryption.AESGCMDecrypter
 import com.bombbird.terminalcontrol2.networking.encryption.AESGCMEncryptor
 import com.bombbird.terminalcontrol2.networking.encryption.DiffieHellman
@@ -52,10 +52,10 @@ object EncryptionTest: FunSpec() {
             decrypted.string shouldBe str
         }
 
-        test("Encrypt then decrypt - ClientUUIDData") {
+        test("Encrypt then decrypt - ClientData") {
             val uuid = UUID.randomUUID().toString()
-            val cipherText = encryptor.encrypt(ClientUUIDData(uuid)).shouldNotBeNull()
-            val decrypted = (decrypter.decrypt(cipherText) as? ClientUUIDData).shouldNotBeNull()
+            val cipherText = encryptor.encrypt(ClientData(uuid)).shouldNotBeNull()
+            val decrypted = (decrypter.decrypt(cipherText) as? ClientData).shouldNotBeNull()
             decrypted.uuid shouldBe uuid
         }
 

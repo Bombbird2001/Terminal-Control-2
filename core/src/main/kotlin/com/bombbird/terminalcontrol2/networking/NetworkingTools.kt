@@ -39,8 +39,8 @@ fun registerClassesToKryo(kryo: Kryo?) {
         register(IntArray::class.java)
 
         // Initial load classes
-        register(RequestClientUUID::class.java)
-        register(ClientUUIDData::class.java)
+        register(RequestClientData::class.java)
+        register(ClientUUIDDataOld::class.java)
         register(ConnectionError::class.java)
         register(PlayerJoined::class.java)
         register(PlayerLeft::class.java)
@@ -174,6 +174,7 @@ fun registerClassesToKryo(kryo: Kryo?) {
         // earlier classes
         register(NightModeData::class.java)
         register(ClearedForTakeoffData::class.java)
+        register(ClientData::class.java)
 
     } ?: FileLog.info("NetworkingTools", "Null kryo passed, unable to register classes")
 }
@@ -191,6 +192,7 @@ fun handleIncomingRequestClient(rs: RadarScreen, obj: Any?) {
             FamilyWithListener.addAllClientFamilyEntityListeners()
         }
     }
+    if (obj is ConnectionError) obj.handleClientReceive(rs)
     rs.postRunnableAfterEngineUpdate(false) {
         obj.handleClientReceive(rs)
     }

@@ -154,6 +154,32 @@ object RelayServerTest: FunSpec() {
             host3.disconnect()
         }
 
+        test("Same UUID for multiple games") {
+            val host = connectAsHost()
+
+            HttpRequest.sendPublicGamesRequest {
+                it.size shouldBe 1
+                it[0].roomId shouldBe host.getRoomId()
+            }
+
+            val client = connectAsClient(host.getRoomId())
+
+            shouldThrow<IllegalStateException> {
+                connectAsClient(host.getRoomId(), false)
+            }
+
+            HttpRequest.sendPublicGamesRequest {
+                it.size shouldBe 1
+            }
+
+            client.disconnect()
+            host.disconnect()
+
+            HttpRequest.sendPublicGamesRequest {
+                it.size shouldBe 0
+            }
+        }
+
         afterSpec {
             RelayServer.stop()
         }
@@ -183,9 +209,11 @@ object RelayServerTest: FunSpec() {
     /**
      * Connects to the relay server as client to the room ID, and returns the [PublicClient] object
      * @param roomId The room ID to connect to
+     * @param generateNewUUID Whether to generate a new UUID for the new client
      */
-    private fun connectAsClient(roomId: Short): PublicClient {
-        myUuid = UUID.randomUUID()
+    private fun connectAsClient(roomId: Short, generateNewUUID: Boolean = true): PublicClient {
+        if (generateNewUUID)
+            myUuid = UUID.randomUUID()
         val client = PublicClient()
         client.beforeConnect(roomId)
         client.start()

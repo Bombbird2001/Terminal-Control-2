@@ -18,8 +18,12 @@ data class GameRunningStatus(private val running: Boolean = true): ServerReceive
     }
 }
 
-/** Class representing response to the above UUID request, containing the UUID of the client */
-data class ClientUUIDData(val uuid: String? = null): NeedsEncryption
+/** Class representing response to the [RequestClientData] request, containing the UUID of the client */
+@Deprecated("Old version of UUID data class, kept for compatibility with builds < 7", ReplaceWith("ClientUUIDData"))
+data class ClientUUIDDataOld(val uuid: String? = null): NeedsEncryption
+
+/** Class representing response to the [RequestClientData] request, containing the UUID and the build version of the client */
+data class ClientData(val uuid: String? = null, val buildVersion: Int = 0): NeedsEncryption
 
 /** Class representing client request to hand over an aircraft to the new sector */
 data class HandoverRequest(private val callsign: String = "", private val newSector: Byte = 0, private val sendingSector: Byte = 0):

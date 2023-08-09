@@ -3,8 +3,8 @@ package com.bombbird.terminalcontrol2.networking.playerclient
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.networking.HttpRequest
 import com.bombbird.terminalcontrol2.networking.NetworkClient
-import com.bombbird.terminalcontrol2.networking.dataclasses.ClientUUIDData
-import com.bombbird.terminalcontrol2.networking.dataclasses.RequestClientUUID
+import com.bombbird.terminalcontrol2.networking.dataclasses.ClientData
+import com.bombbird.terminalcontrol2.networking.dataclasses.RequestClientData
 import com.bombbird.terminalcontrol2.networking.encryption.*
 import com.bombbird.terminalcontrol2.networking.handleIncomingRequestClient
 import com.bombbird.terminalcontrol2.networking.registerClassesToKryo
@@ -60,8 +60,8 @@ class LANClient(lanClientDiscoveryHandler: LANClientDiscoveryHandler): NetworkCl
                     decrypter.decrypt(obj)
                 } else obj
 
-                (decrypted as? RequestClientUUID)?.apply {
-                    this@LANClient.sendTCP(ClientUUIDData(myUuid.toString()))
+                (decrypted as? RequestClientData)?.apply {
+                    this@LANClient.sendTCP(ClientData(myUuid.toString(), BUILD_VERSION))
                 } ?: handleIncomingRequestClient(GAME.gameClientScreen ?: return, decrypted)
             }
 

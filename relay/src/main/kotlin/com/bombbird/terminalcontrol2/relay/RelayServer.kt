@@ -550,7 +550,15 @@ object RelayServer: RelayServer, RelayAuthorization {
          * room is full)
          */
         fun authorizeUUID(uuid: UUID): SecretKey? {
-            if (isFull()) return null
+            if (isFull()) {
+                FileLog.info("RelayServer", "Room $id is full")
+                return null
+            }
+            // Player cannot be in multiple public games at once
+            if (uuidToRoom.containsKey(uuid)) {
+                FileLog.info("RelayServer", "Player $uuid is already in a room")
+                return null
+            }
             val cancelTask = object : TimerTask() {
                 override fun run() {
                     authorizedUUIDs.remove(uuid)

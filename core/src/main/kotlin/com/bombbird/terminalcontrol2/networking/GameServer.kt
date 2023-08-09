@@ -532,6 +532,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
 
         val onDisconnect = fun(conn: ConnectionMeta) {
             // Called on disconnect
+            if (!sectorMap.containsKey(conn.uuid)) return
             val newPlayerNo = playerNo.decrementAndGet().toByte()
             if (newPlayerNo <= 0) {
                 return GAME.quitCurrentGameWithDialog(CustomDialog("Game closed", "All players have left the game", "", "Ok"))

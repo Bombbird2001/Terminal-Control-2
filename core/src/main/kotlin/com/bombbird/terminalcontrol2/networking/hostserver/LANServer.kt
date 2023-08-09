@@ -3,9 +3,10 @@ package com.bombbird.terminalcontrol2.networking.hostserver
 import com.badlogic.gdx.utils.ArrayMap.Entries
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.networking.*
-import com.bombbird.terminalcontrol2.networking.dataclasses.ClientUUIDData
+import com.bombbird.terminalcontrol2.networking.dataclasses.ClientData
+import com.bombbird.terminalcontrol2.networking.dataclasses.ClientUUIDDataOld
 import com.bombbird.terminalcontrol2.networking.dataclasses.ConnectionError
-import com.bombbird.terminalcontrol2.networking.dataclasses.RequestClientUUID
+import com.bombbird.terminalcontrol2.networking.dataclasses.RequestClientData
 import com.bombbird.terminalcontrol2.networking.encryption.*
 import com.bombbird.terminalcontrol2.ui.CustomDialog
 import com.esotericsoftware.kryo.Kryo
@@ -100,7 +101,7 @@ class LANServer(
                     connectionDHMap.removeKey(connection)
 
                     // Key established
-                    connection.sendTCP(encryptIfNeeded(RequestClientUUID(), encryptor))
+                    connection.sendTCP(encryptIfNeeded(RequestClientData(), encryptor))
                     return
                 }
 
@@ -116,7 +117,13 @@ class LANServer(
                 } else obj
 
                 // Check if is initial connection response
-                if (decrypted is ClientUUIDData) {
+                if (decrypted is ClientUUIDDataOld) {
+                    getEncryptorForConnection(connection)?.let { connEncryptor ->
+                        encryptIfNeeded(ConnectionError("Your game version is too old - please update to the " +
+                                "latest build"), connEncryptor)?.let { connection.sendTCP(it) }
+                    }
+                }
+                if (decrypted is ClientData) {
                     receiveClientData(connection, decrypted)
                 }
 
@@ -197,7 +204,7 @@ class LANServer(
      * @param connection the connection sending the data
      * @param data client data received
      */
-    private fun receiveClientData(connection: Connection, data: ClientUUIDData) {
+    private fun receiveClientData(connection: Connection, data: ClientData) {
         // If the UUID is null or the map already contains the UUID, do not send the data
         val encryptor = getEncryptorForConnection(connection) ?: return
         if (data.uuid == null) {
@@ -206,6 +213,11 @@ class LANServer(
         }
         if (gameServer.playersInGame == gameServer.maxPlayersAllowed) {
             encryptIfNeeded(ConnectionError("Game is full"), encryptor)?.let { connection.sendTCP(it) }
+            return
+        }
+        if (data.buildVersion != BUILD_VERSION) {
+            encryptIfNeeded(ConnectionError("Your build version ${data.buildVersion} is not the same as host's " +
+                    "build version $BUILD_VERSION"), encryptor)?.let { connection.sendTCP(it) }
             return
         }
         val connUuid = UUID.fromString(data.uuid)

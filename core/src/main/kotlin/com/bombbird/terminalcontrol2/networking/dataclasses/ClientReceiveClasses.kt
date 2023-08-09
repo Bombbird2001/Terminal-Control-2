@@ -24,10 +24,10 @@ import java.util.*
 /**
  * Class representing a request to the client to send its UUID to the server
  *
- * This will always be sent by the server on initial client connection, and a reply by the client (see below [ClientUUIDData])
+ * This will always be sent by the server on initial client connection, and a reply by the client (see [ClientData])
  * must be received in order for the server to send the client initialisation data
  */
-class RequestClientUUID: NeedsEncryption
+class RequestClientData: NeedsEncryption
 
 /**
  * Class representing an error when a player is attempting to connect - this could be caused by a few different reasons,
