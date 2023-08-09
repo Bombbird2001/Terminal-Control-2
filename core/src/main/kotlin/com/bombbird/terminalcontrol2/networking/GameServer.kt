@@ -887,9 +887,12 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
      * Sends a message to clients to inform them that an aircraft is cleared for takeoff
      * @param callsign the callsign of the aircraft
      * @param depArptId ID of the departure airport
+     * @param newPosX position of the aircraft after cleared for takeoff
+     * @param newPosY position of the aircraft after cleared for takeoff
+     * @param newAlt altitude of the aircraft after cleared for takeoff
      */
-    fun sendAircraftClearedForTakeoff(callsign: String, depArptId: Byte) {
-        networkServer.sendToAllTCP(ClearedForTakeoffData(callsign, depArptId))
+    fun sendAircraftClearedForTakeoff(callsign: String, depArptId: Byte, newPosX: Float, newPosY: Float, newAlt: Float) {
+        networkServer.sendToAllTCP(ClearedForTakeoffData(callsign, depArptId, newPosX, newPosY, newAlt))
     }
 
     /**

@@ -425,12 +425,23 @@ data class NightModeData(val night: Boolean = false): ClientReceive, NeedsEncryp
     }
 }
 
-/** Class representing data sent from server to clients to update an aircraft that is cleared for takeoff */
-data class ClearedForTakeoffData(val callsign: String = "", val depArptId: Byte = 0): ClientReceive, NeedsEncryption {
+/**
+ * Class representing data sent from server to clients to update an aircraft that is cleared for takeoff - some position
+ * data is also sent to account for the delay in UDP updates
+ */
+data class ClearedForTakeoffData(val callsign: String = "", val depArptId: Byte = 0, val newPosX: Float = 0f,
+                                 val newPosY: Float = 0f, val newAlt: Float = 0f): ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
         rs.aircraft[callsign]?.apply {
             if (entity.hasNot(WaitingTakeoff.mapper)) return@apply
-            // Was waiting takeoff, but now isn't: update radar data and datatag
+            // Was waiting takeoff, but now isn't: update position, radar data and datatag
+            entity[Position.mapper]?.let {
+                it.x = newPosX
+                it.y = newPosY
+            }
+            entity[Altitude.mapper]?.let {
+                it.altitudeFt = newAlt
+            }
             updateAircraftRadarData(entity)
             updateAircraftDatatagText(entity)
             entity[Datatag.mapper]?.let { addDatatagInputListeners(it, this) }
