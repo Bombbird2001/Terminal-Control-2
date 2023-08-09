@@ -35,11 +35,12 @@ class GameLoading private constructor(): BasicUIScreen() {
         /**
          * Creates a new instance of GameLoading screen and loads the relevant objects for a LAN multiplayer game
          * @param airportToHost the ICAO code of airport to play
+         * @param maxPlayers maximum number of players allowed in the game
          * @return the GameLoading screen
          */
-        fun newLANMultiplayerGameLoading(airportToHost: String): GameLoading {
+        fun newLANMultiplayerGameLoading(airportToHost: String, maxPlayers: Byte): GameLoading {
             val gameLoading = GameLoading()
-            GAME.gameServer = GameServer.newLANMultiplayerGameServer(airportToHost).apply {
+            GAME.gameServer = GameServer.newLANMultiplayerGameServer(airportToHost, maxPlayers).apply {
                 serverStartedCallback = gameLoading::gameServerLoaded
             }
             val rs = RadarScreen.newLANMultiplayerRadarScreen(LOCALHOST).apply {
@@ -54,11 +55,12 @@ class GameLoading private constructor(): BasicUIScreen() {
         /**
          * Creates a new instance of GameLoading screen and loads the relevant objects for a public multiplayer game
          * @param airportToHost the ICAO code of airport to play
+         * @param maxPlayers maximum number of players allowed in the game
          * @return the GameLoading screen
          */
-        fun newPublicMultiplayerGameLoading(airportToHost: String): GameLoading {
+        fun newPublicMultiplayerGameLoading(airportToHost: String, maxPlayers: Byte): GameLoading {
             val gameLoading = GameLoading()
-            GAME.gameServer = GameServer.newPublicMultiplayerGameServer(airportToHost).apply {
+            GAME.gameServer = GameServer.newPublicMultiplayerGameServer(airportToHost, maxPlayers).apply {
                 serverStartedCallback = gameLoading::gameServerLoaded
             }
             val rs = RadarScreen.newPublicMultiplayerRadarScreen().apply {
@@ -94,11 +96,12 @@ class GameLoading private constructor(): BasicUIScreen() {
          * Creates a new instance of GameLoading screen and loads the relevant objects for a LAN multiplayer game
          * @param airportToHost the ICAO code of airport to play
          * @param saveId ID of the save file to load
+         * @param maxPlayers maximum number of players allowed in the game
          * @return the GameLoading screen
          */
-        fun loadLANMultiplayerGameLoading(airportToHost: String, saveId: Int): GameLoading {
+        fun loadLANMultiplayerGameLoading(airportToHost: String, saveId: Int, maxPlayers: Byte): GameLoading {
             val gameLoading = GameLoading()
-            GAME.gameServer = GameServer.loadLANMultiplayerGameServer(airportToHost, saveId).apply {
+            GAME.gameServer = GameServer.loadLANMultiplayerGameServer(airportToHost, saveId, maxPlayers).apply {
                 serverStartedCallback = gameLoading::gameServerLoaded
             }
             val rs = RadarScreen.newLANMultiplayerRadarScreen(LOCALHOST).apply {
@@ -114,11 +117,12 @@ class GameLoading private constructor(): BasicUIScreen() {
          * Creates a new instance of GameLoading screen and loads the relevant objects for a public multiplayer game
          * @param airportToHost the ICAO code of airport to play
          * @param saveId ID of the save file to load
+         * @param maxPlayers maximum number of players allowed in the game
          * @return the GameLoading screen
          */
-        fun loadPublicMultiplayerGameLoading(airportToHost: String, saveId: Int): GameLoading {
+        fun loadPublicMultiplayerGameLoading(airportToHost: String, saveId: Int, maxPlayers: Byte): GameLoading {
             val gameLoading = GameLoading()
-            GAME.gameServer = GameServer.loadPublicMultiplayerGameServer(airportToHost, saveId).apply {
+            GAME.gameServer = GameServer.loadPublicMultiplayerGameServer(airportToHost, saveId, maxPlayers).apply {
                 serverStartedCallback = gameLoading::gameServerLoaded
             }
             val rs = RadarScreen.newPublicMultiplayerRadarScreen().apply {

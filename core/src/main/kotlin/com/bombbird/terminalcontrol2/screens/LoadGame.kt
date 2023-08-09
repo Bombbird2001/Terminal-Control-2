@@ -133,12 +133,16 @@ class LoadGame: BasicUIScreen() {
                                                 GAME.setScreen<GameLoading>()
                                             }
                                             NewGame.LAN_MULTIPLAYER -> {
-                                                GAME.addScreen(GameLoading.loadLANMultiplayerGameLoading(airportToHost, saveId))
-                                                GAME.setScreen<GameLoading>()
+                                                val chooseMax = GAME.getScreen<ChooseMaxPlayers>()
+                                                chooseMax.prevScreen = this@LoadGame
+                                                chooseMax.setMultiplayerGameInfo(airportToHost, false, saveId)
+                                                GAME.setScreen<ChooseMaxPlayers>()
                                             }
                                             NewGame.PUBLIC_MULTIPLAYER -> {
-                                                GAME.addScreen(GameLoading.loadPublicMultiplayerGameLoading(airportToHost, saveId))
-                                                GAME.setScreen<GameLoading>()
+                                                val chooseMax = GAME.getScreen<ChooseMaxPlayers>()
+                                                chooseMax.prevScreen = this@LoadGame
+                                                chooseMax.setMultiplayerGameInfo(airportToHost, true, saveId)
+                                                GAME.setScreen<ChooseMaxPlayers>()
                                             }
                                             else -> FileLog.info("LoadGame", "Unknown game mode ${mode.name}")
                                         }

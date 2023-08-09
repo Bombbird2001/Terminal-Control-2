@@ -71,18 +71,22 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
 
         /**
          * Creates a new multiplayer LAN mode game server object
+         * @param airportToHost name of airport to host
+         * @param maxPlayers maximum number of players allowed
          * @return GameServer in LAN multiplayer mode
          */
-        fun newLANMultiplayerGameServer(airportToHost: String): GameServer {
-            return GameServer(airportToHost, null, false, 4) // TODO Let user choose max players
+        fun newLANMultiplayerGameServer(airportToHost: String, maxPlayers: Byte): GameServer {
+            return GameServer(airportToHost, null, false, maxPlayers)
         }
 
         /**
          * Creates a new multiplayer public mode game server object
+         * @param airportToHost name of airport to host
+         * @param maxPlayers maximum number of players allowed
          * @return GameServer in public multiplayer mode
          */
-        fun newPublicMultiplayerGameServer(airportToHost: String): GameServer {
-            return GameServer(airportToHost, null, true, 4)
+        fun newPublicMultiplayerGameServer(airportToHost: String, maxPlayers: Byte): GameServer {
+            return GameServer(airportToHost, null, true, maxPlayers)
         }
 
         /**
@@ -99,20 +103,22 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
          * Creates a new multiplayer LAN mode game server object, loading an existing save
          * @param airportToHost name of airport to load
          * @param saveId ID of the save file to load
+         * @param maxPlayers maximum number of players allowed
          * @return GameServer in LAN multiplayer mode
          */
-        fun loadLANMultiplayerGameServer(airportToHost: String, saveId: Int): GameServer {
-            return GameServer(airportToHost, saveId, false, 4)
+        fun loadLANMultiplayerGameServer(airportToHost: String, saveId: Int, maxPlayers: Byte): GameServer {
+            return GameServer(airportToHost, saveId, false, maxPlayers)
         }
 
         /**
          * Creates a new multiplayer public mode game server object, loading an existing save
          * @param airportToHost name of airport to load
          * @param saveId ID of the save file to load
+         * @param maxPlayers maximum number of players allowed
          * @return GameServer in public multiplayer mode
          */
-        fun loadPublicMultiplayerGameServer(airportToHost: String, saveId: Int): GameServer {
-            return GameServer(airportToHost, saveId, true, 4)
+        fun loadPublicMultiplayerGameServer(airportToHost: String, saveId: Int, maxPlayers: Byte): GameServer {
+            return GameServer(airportToHost, saveId, true, maxPlayers)
         }
 
         /**
@@ -309,6 +315,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
                 stopNetworkingServer()
                 saveGame(this)
             } catch (e: Exception) {
+                e.printStackTrace()
                 val multiplayerType = when {
                     isPublicMultiplayer() -> "Public multiplayer"
                     maxPlayersAllowed > 1 -> "LAN multiplayer"

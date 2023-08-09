@@ -116,6 +116,7 @@ class TerminalControl2(val externalFileHandler: ExternalFileHandler) : KtxGame<K
             addScreen(NewGame())
             addScreen(JoinGame())
             addScreen(LoadGame())
+            addScreen(ChooseMaxPlayers())
             addScreen(PauseScreen())
             addScreen(MainSettings())
             addScreen(AboutGame())

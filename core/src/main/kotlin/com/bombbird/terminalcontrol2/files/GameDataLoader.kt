@@ -25,6 +25,7 @@ import ktx.collections.toGdxArray
 private const val aircraftPerfPath = "Data/aircraft.perf"
 private const val disallowedCallsignPath = "Data/disallowed.callsign"
 
+private const val WORLD_MAX_PLAYERS = "MAX_PLAYERS"
 private const val WORLD_MIN_ALT = "MIN_ALT"
 private const val WORLD_MAX_ALT = "MAX_ALT"
 private const val WORLD_INTER_ALT = "INTERMEDIATE_ALTS"
@@ -129,6 +130,20 @@ fun loadAvailableAirports() {
     // TODO Enable custom airports
 }
 
+/**
+ * Loads the max number of players allowed for the given map
+ * @param mainName name of the map (ICAO airport code)
+ */
+fun getMaxPlayersForMap(mainName: String): Int {
+    for (line in "Airports/$mainName.arpt".toInternalFile().readString().toLines()) {
+        val lineData = line.trim().split(" ")
+        if (lineData[0] == "MAX_PLAYERS") return lineData[1].toInt()
+    }
+
+    FileLog.warn("GameDataLoader", "Missing $WORLD_MAX_PLAYERS for $mainName.arpt")
+    return 1
+}
+
 /** Loads the "[mainName].arpt" file located in the "Airports" subfolder in the assets */
 fun loadWorldData(mainName: String, gameServer: GameServer) {
     "Airports/$mainName.arpt".toInternalFile().readString().toLines().toTypedArray().apply {
@@ -207,6 +222,7 @@ fun loadWorldData(mainName: String, gameServer: GameServer) {
                         }
                         ACC_SECTORS -> parseACCSector(lineData, gameServer)
                         "" -> when (lineData[0]) {
+                            WORLD_MAX_PLAYERS -> {} // Do nothing
                             WORLD_MIN_ALT -> MIN_ALT = lineData[1].toInt()
                             WORLD_MAX_ALT -> MAX_ALT = lineData[1].toInt()
                             WORLD_INTER_ALT -> INTERMEDIATE_ALTS.apply {
