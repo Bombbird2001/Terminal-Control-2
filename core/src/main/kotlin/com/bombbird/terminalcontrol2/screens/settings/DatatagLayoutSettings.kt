@@ -313,6 +313,10 @@ class DatatagLayoutSettings: BasicUIScreen() {
             currPreviewLayout = layout
         }
 
+        updateSelectBoxOptionsForArrangement(arrangementSelectBoxes)
+        updateSelectBoxOptionsForArrangement(miniArrangementFirstSelectBoxes)
+        updateSelectBoxOptionsForArrangement(miniArrangementSecondSelectBoxes)
+
         miniArrangementFirstEmpty = checkIfAllSelectBoxesEmpty(miniArrangementFirstSelectBoxes)
         miniArrangementSecondEmpty = checkIfAllSelectBoxesEmpty(miniArrangementSecondSelectBoxes)
         updatePreview()

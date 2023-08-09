@@ -6,9 +6,12 @@ import com.bombbird.terminalcontrol2.entities.*
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.networking.encryption.NeedsEncryption
 import com.bombbird.terminalcontrol2.screens.RadarScreen
+import com.bombbird.terminalcontrol2.systems.updateAircraftDatatagText
+import com.bombbird.terminalcontrol2.systems.updateAircraftRadarData
 import com.bombbird.terminalcontrol2.traffic.ConflictManager
 import com.bombbird.terminalcontrol2.traffic.TrafficMode
 import com.bombbird.terminalcontrol2.ui.*
+import com.bombbird.terminalcontrol2.ui.datatag.addDatatagInputListeners
 import com.bombbird.terminalcontrol2.ui.datatag.getNewDatatagLabelText
 import com.bombbird.terminalcontrol2.ui.datatag.setDatatagFlash
 import com.bombbird.terminalcontrol2.ui.datatag.updateDatatagText
@@ -419,5 +422,20 @@ data class NightModeData(val night: Boolean = false): ClientReceive, NeedsEncryp
     override fun handleClientReceive(rs: RadarScreen) {
         FileLog.info("ClientReceiveClasses", "Received NightModeData")
         rs.isNight = night
+    }
+}
+
+/** Class representing data sent from server to clients to update an aircraft that is cleared for takeoff */
+data class ClearedForTakeoffData(val callsign: String = "", val depArptId: Byte = 0): ClientReceive, NeedsEncryption {
+    override fun handleClientReceive(rs: RadarScreen) {
+        rs.aircraft[callsign]?.apply {
+            if (entity.hasNot(WaitingTakeoff.mapper)) return@apply
+            // Was waiting takeoff, but now isn't: update radar data and datatag
+            updateAircraftRadarData(entity)
+            updateAircraftDatatagText(entity)
+            entity[Datatag.mapper]?.let { addDatatagInputListeners(it, this) }
+            entity.remove<WaitingTakeoff>()
+            entity += DepartureAirport(depArptId, 0)
+        }
     }
 }

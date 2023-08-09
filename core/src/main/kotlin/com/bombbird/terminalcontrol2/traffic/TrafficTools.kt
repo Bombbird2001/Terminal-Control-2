@@ -338,6 +338,8 @@ fun clearForTakeoff(aircraft: Entity, rwy: Entity) {
         // Set airport previous departure
         rwyInfo.airport.entity[DepartureInfo.mapper]?.apply { backlog-- }
         rwyInfo.airport.entity.remove<AirportNextDeparture>()
+
+        getOrLogMissing(AircraftInfo.mapper)?.icaoCallsign?.let { GAME.gameServer?.sendAircraftClearedForTakeoff(it, arptId) }
     }
 }
 

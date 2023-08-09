@@ -884,6 +884,15 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
     }
 
     /**
+     * Sends a message to clients to inform them that an aircraft is cleared for takeoff
+     * @param callsign the callsign of the aircraft
+     * @param depArptId ID of the departure airport
+     */
+    fun sendAircraftClearedForTakeoff(callsign: String, depArptId: Byte) {
+        networkServer.sendToAllTCP(ClearedForTakeoffData(callsign, depArptId))
+    }
+
+    /**
      * Adds a runnable to be run on the main server thread after the current engine update
      * @param runnable the runnable to add
      */

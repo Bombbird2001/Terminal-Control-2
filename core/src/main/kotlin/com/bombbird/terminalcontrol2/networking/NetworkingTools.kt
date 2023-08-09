@@ -170,9 +170,10 @@ fun registerClassesToKryo(kryo: Kryo?) {
         register(BigInteger::class.java)
         register(DiffieHellmanValue::class.java)
 
-        // New classes will all be added sequentially to the back to prevent outdated clients from failing to parse
+        // New classes will all be added sequentially to the back to prevent relay from failing to parse
         // earlier classes
         register(NightModeData::class.java)
+        register(ClearedForTakeoffData::class.java)
 
     } ?: FileLog.info("NetworkingTools", "Null kryo passed, unable to register classes")
 }

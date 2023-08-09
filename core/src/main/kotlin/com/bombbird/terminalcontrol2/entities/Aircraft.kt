@@ -8,8 +8,6 @@ import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.navigation.Route
-import com.bombbird.terminalcontrol2.systems.updateAircraftDatatagText
-import com.bombbird.terminalcontrol2.systems.updateAircraftRadarData
 import com.bombbird.terminalcontrol2.ui.datatag.*
 import com.bombbird.terminalcontrol2.utilities.AircraftTypeData
 import com.bombbird.terminalcontrol2.utilities.getAircraftIcon
@@ -148,6 +146,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                         serialisedAircraft.minIas, serialisedAircraft.maxIas, serialisedAircraft.optimalIas,
                     ).ActingClearance())
                     serialisedAircraft.arrivalArptId?.let { arrId -> this += ArrivalAirport(arrId) }
+                    serialisedAircraft.departureArptId?.let { depId -> this += DepartureAirport(depId, 0) }
                     val controllable = get(Controllable.mapper)?.apply {
                         sectorId = serialisedAircraft.controlSectorId
                         controllerUUID = serialisedAircraft.controllerUUID?.let { controlId -> UUID.fromString(controlId) }
@@ -195,7 +194,6 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                                 val trackX: Float = 0f, val trackY: Float = 0f,
                                 val targetHdgDeg: Short = 0, val targetAltFt: Short = 0, val targetIasKt: Short = 0,
                                 val gsCap: Boolean = false, val locCap: Boolean = false, val visCap: Boolean = false,
-                                val waitingTakeoff: Boolean = false,
                                 val contactToCentre: Boolean = false,
                                 val recentGoAround: Boolean = false
     )
@@ -228,7 +226,6 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                 cmdTarget.targetHdgDeg.toInt().toShort(), (cmdTarget.targetAltFt / 100f).roundToInt().toShort(), cmdTarget.targetIasKt,
                 has(GlideSlopeCaptured.mapper), has(LocalizerCaptured.mapper),
                 has(VisualCaptured.mapper) || (get(CirclingApproach.mapper)?.phase ?: 0) >= 1,
-                has(WaitingTakeoff.mapper),
                 has(ContactToCentre.mapper),
                 has(RecentGoAround.mapper)
             )
@@ -269,16 +266,6 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
             else remove<LocalizerCaptured>()
             if (data.visCap) this += VisualCaptured()
             else remove<VisualCaptured>()
-            if (data.waitingTakeoff) this += WaitingTakeoff()
-            else {
-                if (has(WaitingTakeoff.mapper)) {
-                    // Was waiting takeoff, but now isn't: update radar data and datatag
-                    updateAircraftRadarData(this)
-                    updateAircraftDatatagText(this)
-                    get(Datatag.mapper)?.let { addDatatagInputListeners(it, this@Aircraft) }
-                }
-                remove<WaitingTakeoff>()
-            }
             if (data.contactToCentre) this += ContactToCentre()
             else remove<ContactToCentre>()
             if (data.recentGoAround) {
@@ -312,7 +299,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                              val vectorHdg: Short? = null, val vectorTurnDir: Byte? = null, // Vector HDG will be null if aircraft is flying route
                              val commandAlt: Int = 0, val expedite: Boolean = false, val clearedIas: Short = 0,
                              val minIas: Short = 0, val maxIas: Short = 0, val optimalIas: Short = 0,
-                             val arrivalArptId: Byte? = null,
+                             val arrivalArptId: Byte? = null, val departureArptId: Byte? = null,
                              val controlSectorId: Byte = 0, val controllerUUID: String? = null,
                              val gsCap: Boolean = false, val locCap: Boolean = false, val visCap: Boolean = false,
                              val waitingTakeoff: Boolean = false,
@@ -347,6 +334,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
             get(ClearanceAct.mapper)?.actingClearance?.clearanceState ?:
             return emptySerialisableObject("PendingClearances")
             val arrArptId = get(ArrivalAirport.mapper)?.arptId
+            val depArptId = get(DepartureAirport.mapper)?.arptId
             val controllable = get(Controllable.mapper) ?: return emptySerialisableObject("Controllable")
             val initialDatatagPosition = get(InitialClientDatatagPosition.mapper) ?:
             return emptySerialisableObject("InitialClientDatatagPosition")
@@ -364,7 +352,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                 clearance.routePrimaryName, clearance.route.getSerialisedObject(), clearance.hiddenLegs.getSerialisedObject(),
                 clearance.vectorHdg, clearance.vectorTurnDir, clearance.clearedAlt, has(CommandExpedite.mapper), clearance.clearedIas,
                 clearance.minIas, clearance.maxIas, clearance.optimalIas,
-                arrArptId,
+                arrArptId, depArptId,
                 controllable.sectorId, controllable.controllerUUID?.toString(),
                 has(GlideSlopeCaptured.mapper), has(LocalizerCaptured.mapper),
                 has(VisualCaptured.mapper) || (get(CirclingApproach.mapper)?.phase ?: 0) >= 1,

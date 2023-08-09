@@ -243,7 +243,7 @@ private fun updateDatatagValueMap(entity: Entity): HashMap<String, String> {
     } else null} ?: latestClearance?.vectorHdg?.toString() ?: ""
     val sidStarApp = latestClearance?.clearedApp ?: latestClearance?.routePrimaryName ?: ""
     val gs = entity[GroundTrack.mapper]?.trackVectorPxps?.len()?.let { pxpsToKt(it).roundToInt().toString() } ?: "<GS>"
-    val clearedIas = latestClearance?.clearedIas?.toString() ?: "<CLeared IAS>"
+    val clearedIas = latestClearance?.clearedIas?.toString() ?: "<Cleared IAS>"
     val arptId = entity[DepartureAirport.mapper]?.arptId ?: entity[ArrivalAirport.mapper]?.arptId
     val arptName = GAME.gameClientScreen?.airports?.get(arptId)?.entity?.get(AirportInfo.mapper)?.icaoCode ?: "<Arpt>"
 
