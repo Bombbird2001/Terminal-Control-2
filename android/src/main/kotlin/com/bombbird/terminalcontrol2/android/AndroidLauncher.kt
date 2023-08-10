@@ -23,6 +23,7 @@ class AndroidLauncher : AndroidApplication() {
             numSamples = 0
             useAccelerometer = false
             useCompass = false
+            useImmersiveMode = false
         })
     }
 
