@@ -526,6 +526,11 @@ class RadarScreen private constructor(private val connectionHost: String, privat
         return false
     }
 
+    /** Implements [InputProcessor.touchCancelled], no action required */
+    override fun touchCancelled(screenX: Int, screenY: Int, pointer: Int, button: Int): Boolean {
+        return false
+    }
+
     /** Implements [InputProcessor.mouseMoved], no action required */
     override fun mouseMoved(screenX: Int, screenY: Int): Boolean {
         return false

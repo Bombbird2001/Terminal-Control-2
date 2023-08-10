@@ -33,22 +33,22 @@ fun safeStage(batch: Batch = SpriteBatch(), viewport: Viewport = getDefaultViewp
 
     /** Overrides [Stage.addActor] method to ensure it is delegated to the main rendering thread if not already so */
     override fun addActor(actor: Actor) {
-        if (isOnMainThread()) {
+        if (isOnRenderingThread()) {
             super.addActor(actor)
         } else Gdx.app.postRunnable { super.addActor(actor) }
     }
 
     /** Overrides [Stage.draw] method to ensure it is delegated to the main rendering thread if not already so */
     override fun draw() {
-        if (isOnMainThread()) {
+        if (isOnRenderingThread()) {
             super.draw()
         } else Gdx.app.postRunnable { super.draw() }
     }
+}
 
-    /** Checks whether code is running on main rendering thread */
-    private fun isOnMainThread(): Boolean {
-        return Thread.currentThread().name == "main" || Thread.currentThread().name.contains("GLThread")
-    }
+/** Checks whether code is running on main rendering thread */
+fun isOnRenderingThread(): Boolean {
+    return Thread.currentThread().name == "main" || Thread.currentThread().name.contains("GLThread")
 }
 
 /** Creates a new [ScalingViewport] set to [Scaling.fill], with world size of [WORLD_WIDTH] by [WORLD_HEIGHT] */
@@ -74,8 +74,8 @@ inline fun Actor.addChangeListener(crossinline function: (ChangeEvent?, Actor?) 
     addListener(object: ChangeListener() {
         override fun changed(event: ChangeEvent?, actor: Actor?) {
             val threadName = Thread.currentThread().name
-            if (threadName != "main") {
-                FileLog.warn("UITools", "Change listener called from $threadName instead of main")
+            if (!isOnRenderingThread()) {
+                FileLog.warn("UITools", "Change listener called from $threadName instead of rendering")
                 Exception().printStackTrace()
             }
             function(event, actor)
