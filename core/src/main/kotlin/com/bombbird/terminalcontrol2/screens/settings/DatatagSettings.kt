@@ -87,6 +87,11 @@ class DatatagSettings: BaseSettings() {
         rowSpacingLabel.setText("${newSpacingPx.roundToInt()}px")
     }
 
+    /** Updates all the datatag choices available */
+    fun updateDatatagConfigChoices() {
+        styleSelectBox.setItems(*DATATAG_LAYOUTS.keys.toTypedArray(), MANAGE_LAYOUTS)
+    }
+
     /**
      * Overrides the base [BaseSettings.setToCurrentClientSettings] function; will take the relevant datatag settings
      * and set the select box choices based on them

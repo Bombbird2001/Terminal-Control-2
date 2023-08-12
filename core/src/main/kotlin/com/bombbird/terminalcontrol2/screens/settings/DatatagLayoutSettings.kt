@@ -11,6 +11,7 @@ import com.bombbird.terminalcontrol2.files.deleteDatatagLayout
 import com.bombbird.terminalcontrol2.files.saveDatatagLayout
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.screens.BasicUIScreen
+import com.bombbird.terminalcontrol2.ui.CustomDialog
 import com.bombbird.terminalcontrol2.ui.addChangeListener
 import com.bombbird.terminalcontrol2.ui.datatag.DatatagConfig
 import com.bombbird.terminalcontrol2.ui.defaultSettingsSelectBox
@@ -31,6 +32,7 @@ class DatatagLayoutSettings: BasicUIScreen() {
     private val showWhenChangedCheckbox: CheckBox
     private val previewLabel: Label
     private val pageButton: KTextButton
+    private val configSelectBox: KSelectBox<String>
     private var showingMainPage = true
     private var currPreviewLayout: DatatagConfig = DatatagConfig("Empty")
     private var miniArrangementFirstEmpty = false
@@ -40,6 +42,7 @@ class DatatagLayoutSettings: BasicUIScreen() {
     companion object {
         private const val NONE = "(None)"
         private const val NEW_LAYOUT = "+ New layout"
+        private const val NEW_LAYOUT_PLACEHOLDER = "New layout"
 
         private val FIELD_POSITIONS = GdxArrayMap<String, Int>(17).apply {
             put(DatatagConfig.CALLSIGN, 0)
@@ -89,7 +92,7 @@ class DatatagLayoutSettings: BasicUIScreen() {
                 setSize(UI_WIDTH, UI_HEIGHT)
                 table {
                     table {
-                        defaultSettingsSelectBox<String>().apply {
+                        configSelectBox = defaultSettingsSelectBox<String>().apply {
                             val availableLayouts = GdxArray<String>()
                             availableLayouts.add(NONE)
                             DATATAG_LAYOUTS.keys.filter { it != DatatagConfig.DEFAULT && it != DatatagConfig.COMPACT }.forEach { availableLayouts.add(it) }
@@ -232,6 +235,11 @@ class DatatagLayoutSettings: BasicUIScreen() {
                         }
                         textButton("Save", "Menu").cell(width = BUTTON_WIDTH_BIG / 1.5f, height = BUTTON_HEIGHT_BIG, padBottom = BOTTOM_BUTTON_MARGIN, align = Align.bottom).addChangeListener { _, _ ->
                             val newName = layoutNameField.text
+                            if (!validateLayoutName(newName)) {
+                                CustomDialog("Invalid name", "Names can only contain letters, digits, spaces," +
+                                        " underscores and hyphens with maximum length of 20 characters", "", "Ok").show(stage)
+                                return@addChangeListener
+                            }
                             val newLayout = getLayoutObjectFromSelectBoxes(newName)
                             if (saveDatatagLayout(newLayout)) {
                                 if (currName != newName) {
@@ -240,9 +248,11 @@ class DatatagLayoutSettings: BasicUIScreen() {
                                         DATATAG_LAYOUTS.remove(it)
                                         if (DATATAG_STYLE_NAME == it) DATATAG_STYLE_NAME = DatatagConfig.DEFAULT
                                     }
-                                } else {
-                                    DATATAG_LAYOUTS[newName] = newLayout
                                 }
+                                DATATAG_LAYOUTS[newName] = newLayout
+                                updateDatatagConfigChoices()
+                                GAME.getScreen<DatatagSettings>().updateDatatagConfigChoices()
+                                configSelectBox.selected = newName
                             }
                             GAME.setScreen<DatatagSettings>()
                         }
@@ -265,6 +275,7 @@ class DatatagLayoutSettings: BasicUIScreen() {
      */
     private fun setSelectBoxesToLayout(layoutName: String) {
         currName = layoutName
+        if (currName == NEW_LAYOUT) currName = NEW_LAYOUT_PLACEHOLDER
         if (layoutName == NONE) {
             for (i in 0 until arrangementSelectBoxes.size) arrangementSelectBoxes[i].isVisible = false
             for (i in 0 until miniArrangementFirstSelectBoxes.size) miniArrangementFirstSelectBoxes[i].isVisible = false
@@ -283,7 +294,7 @@ class DatatagLayoutSettings: BasicUIScreen() {
 
         modificationInProgress = true
         val layout = DATATAG_LAYOUTS[layoutName]
-        layoutNameField.text = if (layoutName == NEW_LAYOUT) "New layout" else layoutName
+        layoutNameField.text = if (layoutName == NEW_LAYOUT) NEW_LAYOUT_PLACEHOLDER else layoutName
         updateSelectBoxOptionsForArrangement(arrangementSelectBoxes)
         updateSelectBoxOptionsForArrangement(miniArrangementFirstSelectBoxes)
         updateSelectBoxOptionsForArrangement(miniArrangementSecondSelectBoxes)
@@ -423,6 +434,29 @@ class DatatagLayoutSettings: BasicUIScreen() {
     /** Updates the preview label depending on the selected options, page and timing */
     private fun updatePreview() {
         previewLabel.setText(currPreviewLayout.generateTagText(PREVIEW_DATA, !showingMainPage))
+    }
+
+    /** Update the choices available in the datatag config select box */
+    private fun updateDatatagConfigChoices() {
+        val availableLayouts = GdxArray<String>()
+        availableLayouts.add(NONE)
+        DATATAG_LAYOUTS.keys.filter { it != DatatagConfig.DEFAULT && it != DatatagConfig.COMPACT }.forEach { availableLayouts.add(it) }
+        availableLayouts.add(NEW_LAYOUT)
+        configSelectBox.items = availableLayouts
+    }
+
+    /**
+     * Validates the layout name to contain only letters, digits, spaces, underscores and hyphens, max length 20
+     * characters
+     * @param name the name to validate
+     */
+    private fun validateLayoutName(name: String): Boolean {
+        if (name == NEW_LAYOUT) return false
+        if (name.length > 20) return false
+        for (c in name) {
+            if (!c.isLetterOrDigit() && c != ' ' && c != '_' && c != '-') return false
+        }
+        return true
     }
 
     override fun render(delta: Float) {
