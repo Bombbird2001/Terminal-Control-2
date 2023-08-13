@@ -6,14 +6,14 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.utils.Queue
 import com.bombbird.terminalcontrol2.components.*
-import com.bombbird.terminalcontrol2.global.CLIENT_SCREEN
-import com.bombbird.terminalcontrol2.global.GAME
-import com.bombbird.terminalcontrol2.global.MAG_HDG_DEV
-import com.bombbird.terminalcontrol2.global.getEngine
+import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.systems.TrafficSystemInterval
 import com.esotericsoftware.minlog.Log
 import ktx.ashley.*
 import ktx.collections.toGdxArray
+import kotlin.contracts.ExperimentalContracts
+import kotlin.contracts.InvocationKind
+import kotlin.contracts.contract
 import kotlin.math.roundToInt
 
 val alreadyPrintedErrors = HashSet<String>()
@@ -175,4 +175,59 @@ inline fun <reified T : Component> Entity.getOrLogMissing(mapper: ComponentMappe
         }
     }
     return comp
+}
+
+/** Checks whether code is running on main rendering thread */
+fun isOnRenderingThread(): Boolean {
+    return Thread.currentThread().name == "main" || Thread.currentThread().name.contains("GLThread")
+}
+
+/** Checks whether code is running on game server update thread */
+fun isOnGameServerThread(): Boolean {
+    return Thread.currentThread().name == GAME_SERVER_THREAD_NAME
+}
+
+/**
+ * Create and add an [Entity] to the [Engine], additionally also checking that the code is running on the main rendering
+ * thread (if on client) or game server update thread (if on server)
+ *
+ * @param onClient whether the entity is created on the client or server
+ * @param configure inlined function with the created [EngineEntity] as the receiver to allow further configuration of
+ * the [Entity]. The [EngineEntity] holds the created [Entity] and this [Engine].
+ * @return the created [Entity].
+ */
+@OptIn(ExperimentalContracts::class)
+inline fun Engine.entityOnMainThread(onClient: Boolean, configure: EngineEntity.() -> Unit = {}): Entity {
+    contract { callsInPlace(configure, InvocationKind.EXACTLY_ONCE) }
+
+    if (onClient && !isOnRenderingThread()) {
+        FileLog.warn("EngineEntity", "Entity created on non-rendering thread\n" +
+                Exception().stackTraceToString())
+    } else if (!onClient && !isOnGameServerThread()) {
+        FileLog.warn("EngineEntity", "Entity created on non-game server thread\n" +
+                Exception().stackTraceToString())
+    }
+
+    val entity = createEntity()
+    EngineEntity(this, entity).configure()
+    addEntity(entity)
+    return entity
+}
+
+/**
+ * Removes an entity from the engine, checking if it is on the main rendering thread (if on client) or game server
+ * update thread (if on server)
+ * @param entity the entity to remove
+ * @param onClient whether the entity is removed on the client or server
+ */
+fun Engine.removeEntityOnMainThread(entity: Entity, onClient: Boolean) {
+    if (onClient && !isOnRenderingThread()) {
+        FileLog.warn("EngineEntity", "Entity created on non-rendering thread\n" +
+                Exception().stackTraceToString())
+    } else if (!onClient && !isOnGameServerThread()) {
+        FileLog.warn("EngineEntity", "Entity created on non-game server thread\n" +
+                Exception().stackTraceToString())
+    }
+
+    removeEntity(entity)
 }

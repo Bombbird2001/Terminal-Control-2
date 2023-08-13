@@ -12,6 +12,7 @@ import com.bombbird.terminalcontrol2.ui.datatag.*
 import com.bombbird.terminalcontrol2.utilities.AircraftTypeData
 import com.bombbird.terminalcontrol2.utilities.getAircraftIcon
 import com.bombbird.terminalcontrol2.utilities.FileLog
+import com.bombbird.terminalcontrol2.utilities.entityOnMainThread
 import ktx.ashley.*
 import ktx.scene2d.Scene2DSkin
 import java.util.*
@@ -21,7 +22,7 @@ import kotlin.math.roundToInt
 /** Aircraft class that creates an aircraft entity with the required components on instantiation */
 class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircraftType: String, flightType: Byte,
                onClient: Boolean = true): SerialisableEntity<Aircraft.SerialisedAircraft> {
-    val entity = getEngine(onClient).entity {
+    val entity = getEngine(onClient).entityOnMainThread(onClient) {
         with<Position> {
             x = posX
             y = posY

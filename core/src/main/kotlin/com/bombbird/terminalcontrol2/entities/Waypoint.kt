@@ -4,13 +4,13 @@ import com.badlogic.gdx.graphics.Color
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.getEngine
 import com.bombbird.terminalcontrol2.utilities.FileLog
-import ktx.ashley.entity
+import com.bombbird.terminalcontrol2.utilities.entityOnMainThread
 import ktx.ashley.get
 import ktx.ashley.with
 
 /** Waypoint class that creates a waypoint entity with the required components on instantiation */
 class Waypoint(id: Short, name: String, posX: Short, posY: Short, onClient: Boolean = true): SerialisableEntity<Waypoint.SerialisedWaypoint> {
-    val entity = getEngine(onClient).entity {
+    val entity = getEngine(onClient).entityOnMainThread(onClient) {
         with<WaypointInfo> {
             wptId = id
             wptName = name

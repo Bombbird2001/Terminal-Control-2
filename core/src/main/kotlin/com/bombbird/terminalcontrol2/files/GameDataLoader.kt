@@ -303,7 +303,7 @@ private fun parseACCSector(data: List<String>, gameServer: GameServer) {
         polygon.add(nmToPx(pos[0].toFloat()).toInt().toShort())
         polygon.add(nmToPx(pos[1].toFloat()).toInt().toShort())
     }
-    val accSector = ACCSector(id, freq, accCallsign, polygon.toShortArray())
+    val accSector = ACCSector(id, freq, accCallsign, polygon.toShortArray(), false)
     gameServer.accSectors.add(accSector)
 }
 
@@ -411,7 +411,7 @@ private fun parseAirport(data: List<String>, gameServer: GameServer): Airport {
         it
     }
     if (loadedArpt == null) gameServer.airports[id] = arpt
-    else getEngine(false).removeEntity(arpt.entity)
+    else getEngine(false).removeEntityOnMainThread(arpt.entity, false)
     gameServer.updatedAirportMapping[icao] = id
     return loadedArpt ?: arpt
 }

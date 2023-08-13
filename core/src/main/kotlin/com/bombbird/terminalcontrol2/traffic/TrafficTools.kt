@@ -129,7 +129,7 @@ fun createArrival(callsign: String, icaoType: String, airport: Entity, gs: GameS
  */
 fun despawnAircraft(aircraft: Entity) {
     val engine = getEngine(false)
-    engine.removeEntity(aircraft)
+    engine.removeEntityOnMainThread(aircraft, false)
     GAME.gameServer?.let {
         val callsign = aircraft[AircraftInfo.mapper]?.icaoCallsign ?: return
         it.aircraft.removeKey(callsign) // Remove from aircraft map

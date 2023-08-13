@@ -268,7 +268,7 @@ class TrafficSystemInterval: IntervalSystem(1f) {
             for (point in Queue.QueueIterator(wakeZones)) {
                 point.second?.let {
                     removeWakeZone(it)
-                    engine.removeEntity(it.entity)
+                    engine.removeEntityOnMainThread(it.entity, false)
                 }
             }
         }

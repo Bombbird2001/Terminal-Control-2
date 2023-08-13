@@ -34,7 +34,7 @@ class Approach(name: String, arptId: Byte, runwayId: Byte, posX: Float, posY: Fl
     override val pronunciation: String
         get() = "" // TODO implement pronunciation based on approach name (or I might change it to a user specified pronunciation)
 
-    val entity = getEngine(onClient).entity {
+    val entity = getEngine(onClient).entityOnMainThread(onClient) {
         with<ApproachInfo> {
             approachName = name
             airportId = arptId

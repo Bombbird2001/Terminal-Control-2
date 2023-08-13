@@ -6,7 +6,7 @@ import com.bombbird.terminalcontrol2.global.CLIENT_SCREEN
 import com.bombbird.terminalcontrol2.global.SECTOR_GREEN
 import com.bombbird.terminalcontrol2.global.getEngine
 import com.bombbird.terminalcontrol2.utilities.FileLog
-import ktx.ashley.entity
+import com.bombbird.terminalcontrol2.utilities.entityOnMainThread
 import ktx.ashley.get
 import ktx.ashley.with
 
@@ -21,7 +21,7 @@ interface SectorContactable {
 /** Sector class that creates a sector entity with the required components on instantiation */
 class Sector(id: Byte, freq: String, arrCallsign: String, depCallsign: String, sectorBoundary: ShortArray,
              onClient: Boolean = true): SerialisableEntity<Sector.SerialisedSector>, SectorContactable {
-    val entity = getEngine(onClient).entity {
+    val entity = getEngine(onClient).entityOnMainThread(onClient) {
         with<SectorInfo> {
             sectorId = id
             frequency = freq
@@ -88,7 +88,7 @@ class Sector(id: Byte, freq: String, arrCallsign: String, depCallsign: String, s
 /** Sector class that creates an ACC sector entity with the required components on instantiation */
 class ACCSector(id: Byte, freq: String, callsign: String, sectorBoundary: ShortArray,
                 onClient: Boolean = true): SerialisableEntity<ACCSector.SerialisedACCSector>, SectorContactable {
-    val entity = getEngine(onClient).entity {
+    val entity = getEngine(onClient).entityOnMainThread(onClient) {
         with<ACCSectorInfo> {
             sectorId = id
             frequency = freq

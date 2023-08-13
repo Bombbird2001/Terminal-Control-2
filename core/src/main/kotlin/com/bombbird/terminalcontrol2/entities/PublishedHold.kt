@@ -4,7 +4,7 @@ import com.bombbird.terminalcontrol2.components.CommandTarget
 import com.bombbird.terminalcontrol2.components.PublishedHoldInfo
 import com.bombbird.terminalcontrol2.global.getEngine
 import com.bombbird.terminalcontrol2.utilities.FileLog
-import ktx.ashley.entity
+import com.bombbird.terminalcontrol2.utilities.entityOnMainThread
 import ktx.ashley.get
 import ktx.ashley.with
 
@@ -12,7 +12,7 @@ import ktx.ashley.with
 class PublishedHold(id: Short, maxAlt: Int?, minAlt: Int?,
                     maxSpdLower: Short, maxSpdHigher: Short, inboundHdg: Short, legDist: Byte,
                     dir: Byte, onClient: Boolean = true): SerialisableEntity<PublishedHold.SerialisedPublishedHold> {
-    val entity = getEngine(onClient).entity {
+    val entity = getEngine(onClient).entityOnMainThread(onClient) {
         with<PublishedHoldInfo> {
             wptId = id
             maxAltFt = maxAlt

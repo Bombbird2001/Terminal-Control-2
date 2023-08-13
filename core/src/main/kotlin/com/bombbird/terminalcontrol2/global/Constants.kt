@@ -95,6 +95,9 @@ fun getEngine(onClient: Boolean): Engine {
     return if (onClient) CLIENT_ENGINE else SERVER_ENGINE
 }
 
+/** Fixed name for the game server's thread */
+const val GAME_SERVER_THREAD_NAME = "GameServerThread"
+
 /** Constant addresses */
 const val LOCALHOST = "127.0.0.1"
 

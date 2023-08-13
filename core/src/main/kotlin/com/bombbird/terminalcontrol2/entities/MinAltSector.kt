@@ -7,6 +7,7 @@ import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.SHOW_MVA_ALTITUDE
 import com.bombbird.terminalcontrol2.global.getEngine
 import com.bombbird.terminalcontrol2.utilities.FileLog
+import com.bombbird.terminalcontrol2.utilities.entityOnMainThread
 import ktx.ashley.*
 import kotlin.math.roundToInt
 
@@ -14,7 +15,7 @@ import kotlin.math.roundToInt
 class MinAltSector(minAlt: Int?, polygonBoundary: ShortArray?, circleX: Short = 0, circleY: Short = 0, radiusBoundary: Float = 0f,
                    labelX: Short? = null, labelY: Short? = null, restr: Boolean, onClient: Boolean = true): SerialisableEntity<MinAltSector.SerialisedMinAltSector> {
 
-    val entity = getEngine(onClient).entity {
+    val entity = getEngine(onClient).entityOnMainThread(onClient) {
         with<MinAltSectorInfo> {
             minAltFt = minAlt
             restricted = restr

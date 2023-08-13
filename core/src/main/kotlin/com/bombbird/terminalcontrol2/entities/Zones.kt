@@ -9,6 +9,7 @@ import com.bombbird.terminalcontrol2.global.getEngine
 import com.bombbird.terminalcontrol2.utilities.convertWorldAndRenderDeg
 import com.bombbird.terminalcontrol2.utilities.nmToPx
 import com.bombbird.terminalcontrol2.utilities.FileLog
+import com.bombbird.terminalcontrol2.utilities.entityOnMainThread
 import ktx.ashley.*
 import kotlin.math.roundToInt
 
@@ -26,7 +27,7 @@ interface Zone {
 /** Class for storing a runway's approach NOZ information */
 class ApproachNormalOperatingZone(posX: Float, posY: Float, appHdg: Short, private val widthNm: Float, private val lengthNm: Float,
                                   onClient: Boolean = true): Zone, SerialisableEntity<ApproachNormalOperatingZone.SerialisedApproachNOZ> {
-    val entity = getEngine(onClient).entity {
+    val entity = getEngine(onClient).entityOnMainThread(onClient) {
         with<Position> {
             x = posX
             y = posY
@@ -99,7 +100,7 @@ class ApproachNormalOperatingZone(posX: Float, posY: Float, appHdg: Short, priva
 /** Class for storing a runway's departure NOZ information */
 class DepartureNormalOperatingZone(posX: Float, posY: Float, appHdg: Short, private val widthNm: Float, private val lengthNm: Float,
                                    onClient: Boolean = true): Zone, SerialisableEntity<DepartureNormalOperatingZone.SerialisedDepartureNOZ> {
-    val entity = getEngine(onClient).entity {
+    val entity = getEngine(onClient).entityOnMainThread(onClient) {
         with<Position> {
             x = posX
             y = posY
@@ -176,7 +177,7 @@ class DepartureNormalOperatingZone(posX: Float, posY: Float, appHdg: Short, priv
  */
 class NoTransgressionZone(posX: Float, posY: Float, appHdg: Short, private val widthNm: Float, private val lengthNm: Float,
                           onClient: Boolean = true): Zone, SerialisableEntity<NoTransgressionZone.SerialisedNTZ> {
-    val entity = getEngine(onClient).entity {
+    val entity = getEngine(onClient).entityOnMainThread(onClient) {
         with<Position> {
             x = posX
             y = posY
@@ -252,7 +253,7 @@ class NoTransgressionZone(posX: Float, posY: Float, appHdg: Short, private val w
  * This class should be initialized only on the server as it is not required on the client
  */
 class RouteZone(posX1: Float, posY1: Float, posX2: Float, posY2: Float, rnpNm: Float, minAlt: Int?): Zone {
-    val entity = getEngine(false).entity {
+    val entity = getEngine(false).entityOnMainThread(false) {
         with<GPolygon> {
             val halfWidth = Vector2(posX2 - posX1, posY2 - posY1).apply { scl(nmToPx(rnpNm) / len()) }.rotate90(-1)
             val halfWidthOppTrack = Vector2(halfWidth).rotate90(-1)
@@ -286,7 +287,7 @@ class RouteZone(posX1: Float, posY1: Float, posX2: Float, posY2: Float, rnpNm: F
  * This class should be initialized only on the server as it is not required on the client
  */
 class WakeZone(posX1: Float, posY1: Float, posX2: Float, posY2: Float, wakeAlt: Float, callsign: String, leadingWakeCat: Char, leadingRecatCat: Char): Zone {
-    val entity = getEngine(false).entity {
+    val entity = getEngine(false).entityOnMainThread(false) {
         with<GPolygon> {
             val halfWidth = Vector2(posX2 - posX1, posY2 - posY1).apply { scl(nmToPx(WAKE_WIDTH_NM / 2) / len()) }.rotate90(-1)
             val halfWidthOppTrack = Vector2(halfWidth).rotate90(-1)

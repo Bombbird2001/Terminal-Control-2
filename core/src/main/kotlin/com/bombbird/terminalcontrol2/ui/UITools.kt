@@ -20,6 +20,7 @@ import com.badlogic.gdx.utils.viewport.ScalingViewport
 import com.badlogic.gdx.utils.viewport.Viewport
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.utilities.FileLog
+import com.bombbird.terminalcontrol2.utilities.isOnRenderingThread
 import ktx.scene2d.*
 
 /**
@@ -44,11 +45,6 @@ fun safeStage(batch: Batch = SpriteBatch(), viewport: Viewport = getDefaultViewp
             super.draw()
         } else Gdx.app.postRunnable { super.draw() }
     }
-}
-
-/** Checks whether code is running on main rendering thread */
-fun isOnRenderingThread(): Boolean {
-    return Thread.currentThread().name == "main" || Thread.currentThread().name.contains("GLThread")
 }
 
 /** Creates a new [ScalingViewport] set to [Scaling.fill], with world size of [WORLD_WIDTH] by [WORLD_HEIGHT] */

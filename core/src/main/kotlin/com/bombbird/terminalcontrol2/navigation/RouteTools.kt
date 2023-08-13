@@ -8,11 +8,7 @@ import com.bombbird.terminalcontrol2.entities.RouteZone
 import com.bombbird.terminalcontrol2.entities.Waypoint
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.Route.*
-import com.bombbird.terminalcontrol2.utilities.calculateDistanceBetweenPoints
-import com.bombbird.terminalcontrol2.utilities.ftToPx
-import com.bombbird.terminalcontrol2.utilities.getRequiredTrack
-import com.bombbird.terminalcontrol2.utilities.mToPx
-import com.bombbird.terminalcontrol2.utilities.FileLog
+import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.get
 import ktx.collections.GdxArray
 import ktx.math.plus
@@ -151,7 +147,7 @@ fun removeCustomHoldWaypoint(wptId: Short) {
     }
     // Remove the custom waypoint with specified ID
     GAME.gameServer?.apply {
-        waypoints[wptId]?.let { engine.removeEntity(it.entity) }
+        waypoints[wptId]?.let { engine.removeEntityOnMainThread(it.entity, false) }
         waypoints.remove(wptId)
         sendCustomWaypointRemovalToAll(wptId)
     }

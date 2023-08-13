@@ -18,6 +18,7 @@ import com.bombbird.terminalcontrol2.ui.datatag.updateDatatagText
 import com.bombbird.terminalcontrol2.ui.panes.CommsPane
 import com.bombbird.terminalcontrol2.utilities.getAircraftIcon
 import com.bombbird.terminalcontrol2.utilities.FileLog
+import com.bombbird.terminalcontrol2.utilities.removeEntityOnMainThread
 import ktx.ashley.*
 import java.util.*
 
@@ -358,7 +359,7 @@ data class AircraftDespawnData(private val callsign: String = ""): ClientReceive
     override fun handleClientReceive(rs: RadarScreen) {
         val entity = rs.aircraft[callsign]?.entity ?: return
         entity[Datatag.mapper]?.despawn()
-        GAME.engine.removeEntity(entity)
+        GAME.engine.removeEntityOnMainThread(entity, true)
         rs.aircraft.removeKey(callsign)
     }
 }
@@ -382,7 +383,7 @@ data class RemoveCustomWaypointData(private val wptId: Short = -1): ClientReceiv
             FileLog.info("NetworkingTools", "Custom waypoint must have ID < -1; $wptId was provided")
             return
         }
-        rs.waypoints[wptId]?.let { getEngine(true).removeEntity(it.entity) }
+        rs.waypoints[wptId]?.let { getEngine(true).removeEntityOnMainThread(it.entity, true) }
         rs.waypoints.remove(wptId)
     }
 }

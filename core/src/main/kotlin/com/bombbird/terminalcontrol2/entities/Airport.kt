@@ -19,7 +19,7 @@ import ktx.math.times
 class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advDep: Int, posX: Float, posY: Float,
               elevation: Short, realLifeMetarIcao: String,
               onClient: Boolean = true): SerialisableEntity<Airport.SerialisedAirport> {
-    val entity = getEngine(onClient).entity {
+    val entity = getEngine(onClient).entityOnMainThread(onClient) {
         with<Position> {
             x = posX
             y = posY
@@ -192,7 +192,7 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advD
     class Runway(parentAirport: Airport, id: Byte, name: String, posX: Float, posY: Float, trueHdg: Float,
                  runwayLengthM: Short, displacedM: Short, intersectionM: Short, elevation: Short, labelPos: Byte,
                  towerName: String, towerFreq: String, onClient: Boolean = true): SerialisableEntity<SerialisedRunway> {
-        val entity = getEngine(onClient).entity {
+        val entity = getEngine(onClient).entityOnMainThread(onClient) {
             with<Position> {
                 x = posX
                 y = posY
@@ -336,7 +336,7 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advD
                 it
             }
             if (loadedRwy == null) entity[RunwayChildren.mapper]?.rwyMap?.put(id, rwy)
-            else getEngine(false).removeEntity(rwy.entity)
+            else getEngine(false).removeEntityOnMainThread(rwy.entity, false)
         }
     }
 

@@ -299,7 +299,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
      * @param saveId the ID of the save file to load, or null if nothing to load
      */
     private fun initiateServer(mainName: String, saveId: Int?) {
-        thread {
+        thread(name = GAME_SERVER_THREAD_NAME) {
             try {
                 FileLog.info("GameServer", "Starting game server")
                 saveID = saveId
