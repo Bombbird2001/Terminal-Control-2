@@ -42,33 +42,39 @@ object RelayServer: RelayServer, RelayAuthorization {
              * @param obj the serialised network object
              */
             override fun received(connection: Connection, obj: Any?) {
-                if (obj is RelayChallenge) {
-                    // Verify challenge
-                    if (!AuthenticationChecker.authenticateConnection(connection, obj)) return connection.close()
-                    val encryptedRequest = AuthenticationChecker.encryptBasedOnConnectionPendingRoom(connection, RequestRelayAction()) ?: return
-                    connection.sendTCP(encryptedRequest)
-                }
+                try {
+                    if (obj is RelayChallenge) {
+                        // Verify challenge
+                        if (!AuthenticationChecker.authenticateConnection(connection, obj)) return connection.close()
+                        val encryptedRequest = AuthenticationChecker.encryptBasedOnConnectionPendingRoom(connection, RequestRelayAction()) ?: return
+                        connection.sendTCP(encryptedRequest)
+                    }
 
-                if (obj is NeedsEncryption) {
-                    FileLog.info("RelayServer", "Received unencrypted data of class ${obj.javaClass.name}")
-                    return
-                }
+                    if (obj is NeedsEncryption) {
+                        FileLog.info("RelayServer", "Received unencrypted data of class ${obj.javaClass.name}")
+                        return
+                    }
 
-                val decrypted = if (AuthenticationChecker.isPendingRoom(connection)) {
-                    // If the connection is authorised but pending room connection, use AuthenticationChecker
-                    if (obj is EncryptedData) {
-                        AuthenticationChecker.decryptForConn(connection, obj)
-                    } else obj
-                } else {
-                    // Decrypt using key belonging to the room the connection is in
-                    val connRoom = idToRoom[connectionToRoomUUID[connection]?.first] ?: return
-                    if (obj is EncryptedData) {
-                        connRoom.decryptForRoom(obj)
-                    } else obj
-                }
+                    val decrypted = if (AuthenticationChecker.isPendingRoom(connection)) {
+                        // If the connection is authorised but pending room connection, use AuthenticationChecker
+                        if (obj is EncryptedData) {
+                            AuthenticationChecker.decryptForConn(connection, obj)
+                        } else obj
+                    } else {
+                        // Decrypt using key belonging to the room the connection is in
+                        val roomId = connectionToRoomUUID[connection]?.first ?: return
+                        val connRoom = idToRoom[roomId] ?: return
+                        if (obj is EncryptedData) {
+                            connRoom.decryptForRoom(obj)
+                        } else obj
+                    }
 
-                (decrypted as? RelayServerReceive)?.apply {
-                    handleRelayServerReceive(this@RelayServer, connection)
+                    (decrypted as? RelayServerReceive)?.apply {
+                        handleRelayServerReceive(this@RelayServer, connection)
+                    }
+                } catch (e: Exception) {
+                    FileLog.error("RelayServer", "Error occurred while receiving data from client\n${e.stackTraceToString()}")
+                    HttpRequest.sendCrashReport(e, "RelayServer", "NA")
                 }
             }
 
@@ -77,23 +83,28 @@ object RelayServer: RelayServer, RelayAuthorization {
              * @param connection the disconnecting client
              */
             override fun disconnected(connection: Connection) {
-                val hostRoom = hostConnectionToRoomMap[connection]
-                if (hostRoom != null) {
-                    // If connection is from a host
-                    val room = idToRoom[hostRoom] ?: return
-                    room.disconnectAllPlayers(connection)
-                    idToRoom.remove(hostRoom)
-                    hostConnectionToRoomMap.remove(connection)
-                    hostUUIDs.remove(connectionToRoomUUID[connection]?.second)
-                    FileLog.info("RelayServer", "Room $hostRoom closed")
-                } else  {
-                    // Connection is from non-host player
-                    val uuidRoom = connectionToRoomUUID[connection] ?: return
-                    val uuid = uuidRoom.second
-                    val room = uuidRoom.first
-                    idToRoom[room]?.removePlayer(uuid)
-                    connectionToRoomUUID.remove(connection)
-                    uuidToRoom.remove(uuid)
+                try {
+                    val hostRoom = hostConnectionToRoomMap[connection]
+                    if (hostRoom != null) {
+                        // If connection is from a host
+                        val room = idToRoom[hostRoom] ?: return
+                        room.disconnectAllPlayers(connection)
+                        idToRoom.remove(hostRoom)
+                        hostConnectionToRoomMap.remove(connection)
+                        hostUUIDs.remove(connectionToRoomUUID[connection]?.second)
+                        FileLog.info("RelayServer", "Room $hostRoom closed")
+                    } else  {
+                        // Connection is from non-host player
+                        val uuidRoom = connectionToRoomUUID[connection] ?: return
+                        val uuid = uuidRoom.second
+                        val room = uuidRoom.first
+                        idToRoom[room]?.removePlayer(uuid)
+                        connectionToRoomUUID.remove(connection)
+                        uuidToRoom.remove(uuid)
+                    }
+                } catch (e: Exception) {
+                    FileLog.error("RelayServer", "Error occurred when client disconnected\n${e.stackTraceToString()}")
+                    HttpRequest.sendCrashReport(e, "RelayServer", "NA")
                 }
             }
         })
@@ -242,7 +253,7 @@ object RelayServer: RelayServer, RelayAuthorization {
          * @return the decrypted object
          */
         fun decryptForConn(conn: Connection, data: EncryptedData): Any? {
-            val room = authorisedConnectionsPendingAction[conn]
+            val room = authorisedConnectionsPendingAction[conn] ?: return null
             return idToRoom[room]?.decryptForRoom(data) ?: pendingRooms[room]?.decryptForRoom(data)
         }
     }
@@ -349,7 +360,8 @@ object RelayServer: RelayServer, RelayAuthorization {
     }
 
     override fun forwardToAllClientsUnencryptedUDP(obj: ServerToAllClientsUnencryptedUDP, conn: Connection) {
-        val roomObj = idToRoom[hostConnectionToRoomMap[conn]]
+        val roomId = hostConnectionToRoomMap[conn] ?: return
+        val roomObj = idToRoom[roomId]
         if (roomObj == null) {
             FileLog.info("RelayServer", "Forward to all clients failed - Connection does not belong to a room")
             return
