@@ -56,6 +56,7 @@ class FamilyWithListener private constructor(private val family: Family, private
             for (i in 0 until allServerFamilies.size) {
                 allServerFamilies[i].removeEngineListener(engine)
             }
+            allServerFamilies.clear()
             FileLog.info("FamilyWithListener", "Cleared all server family entity listeners")
         }
 
@@ -67,6 +68,7 @@ class FamilyWithListener private constructor(private val family: Family, private
             for (i in 0 until allClientFamilies.size) {
                 allClientFamilies[i].removeEngineListener(engine)
             }
+            allClientFamilies.clear()
             FileLog.info("FamilyWithListener", "Cleared all client family entity listeners")
         }
     }

@@ -198,6 +198,7 @@ private fun amendAltForNearbyTraffic(currSpawnAlt: Float, posX: Float, posY: Flo
     val minDistNm = 7f
     val gs = GAME.gameServer ?: return currSpawnAlt
     val entitiesToCheck = gs.engine.getSystem<TrafficSystemInterval>().getEntitiesWithinArrivalSpawnAltitude(currSpawnAlt, lowerRange, upperRange)
+    val svcCeil = arrival[AircraftInfo.mapper]?.aircraftPerf?.maxAlt ?: return currSpawnAlt
     for (i in 0 until entitiesToCheck.size) {
         val entity = entitiesToCheck[i]
         if (entity == arrival) continue
@@ -205,7 +206,9 @@ private fun amendAltForNearbyTraffic(currSpawnAlt: Float, posX: Float, posY: Flo
         val alt = entity[Altitude.mapper]?.altitudeFt ?: continue
         if (calculateDistanceBetweenPoints(posX, posY, pos.x, pos.y) < nmToPx(minDistNm) &&
             (currSpawnAlt - lowerRange < alt || currSpawnAlt + upperRange > alt)) {
-            return amendAltForNearbyTraffic(alt + upperRange, posX, posY, arrival)
+            val newAlt = alt + upperRange * 2
+            if (newAlt > svcCeil) return svcCeil.toFloat()
+            return amendAltForNearbyTraffic(newAlt, posX, posY, arrival)
         }
     }
 
