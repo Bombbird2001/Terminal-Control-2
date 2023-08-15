@@ -83,7 +83,8 @@ fun createArrival(callsign: String, icaoType: String, airport: Entity, gs: GameS
     gs.aircraft.put(callsign, Aircraft(callsign, spawnPos.first, spawnPos.second, 0f, icaoType, FlightType.ARRIVAL, false).apply {
         entity += ArrivalAirport(airport[AirportInfo.mapper]?.arptId ?: 0)
         entity += ArrivalRouteZone().apply { starZone.addAll(getZonesForRoute(origStarRoute)) }
-        val alt = calculateArrivalSpawnAltitude(entity, airport, origStarRoute, spawnPos.first, spawnPos.second, starRoute)
+        var alt = calculateArrivalSpawnAltitude(entity, airport, origStarRoute, spawnPos.first, spawnPos.second, starRoute)
+        alt = amendAltForNearbyTraffic(alt, spawnPos.first, spawnPos.second, entity)
         entity[Altitude.mapper]?.altitudeFt = alt
         val dir = (entity[Direction.mapper] ?: Direction()).apply { trackUnitVector.rotateDeg(-spawnPos.third - 180) }
         val aircraftPerf = entity[AircraftInfo.mapper]?.aircraftPerf ?: AircraftTypeData.AircraftPerfData()
@@ -181,6 +182,34 @@ private fun randomStar(airport: Entity): SidStar.STAR? {
         return availableStarsIgnoreTime.random()
     }
     return availableStars.random()
+}
+
+/**
+ * If necessary, calculates and returns the altitude of the spawning aircraft to ensure it is above any nearby traffic
+ * within 7nm and +-2000ft
+ * @param currSpawnAlt the current altitude that the aircraft plans to spawn at
+ * @param posX the X coordinate of the aircraft
+ * @param posY the Y coordinate of the aircraft
+ * @param arrival the arrival entity we're checking for
+ */
+private fun amendAltForNearbyTraffic(currSpawnAlt: Float, posX: Float, posY: Float, arrival: Entity): Float {
+    val upperRange = 2000f
+    val lowerRange = 2000f
+    val minDistNm = 7f
+    val gs = GAME.gameServer ?: return currSpawnAlt
+    val entitiesToCheck = gs.engine.getSystem<TrafficSystemInterval>().getEntitiesWithinArrivalSpawnAltitude(currSpawnAlt, lowerRange, upperRange)
+    for (i in 0 until entitiesToCheck.size) {
+        val entity = entitiesToCheck[i]
+        if (entity == arrival) continue
+        val pos = entity[Position.mapper] ?: continue
+        val alt = entity[Altitude.mapper]?.altitudeFt ?: continue
+        if (calculateDistanceBetweenPoints(posX, posY, pos.x, pos.y) < nmToPx(minDistNm) &&
+            (currSpawnAlt - lowerRange < alt || currSpawnAlt + upperRange > alt)) {
+            return amendAltForNearbyTraffic(alt + upperRange, posX, posY, arrival)
+        }
+    }
+
+    return currSpawnAlt
 }
 
 fun appTestArrival(gs: GameServer) {

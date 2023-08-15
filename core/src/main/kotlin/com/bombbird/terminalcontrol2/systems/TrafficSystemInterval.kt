@@ -207,6 +207,23 @@ class TrafficSystemInterval: IntervalSystem(1f) {
             }
         }
 
+        // Update the levels of each conflict-able entity
+        updateConflictLevels()
+
+        // Traffic separation checking
+        val conflictAble = conflictAbleFamilyEntities.getEntities()
+        conflictManager.checkAllConflicts(conflictLevels, conflictAble)
+    }
+
+    /** Creates the conflict level array upon loading world data (MAX_ALT required) */
+    fun initializeConflictLevelArray(maxAlt: Int) {
+        conflictLevels = Array(ceil((maxAlt + 1500f) / VERT_SEP).roundToInt() - startingAltitude / VERT_SEP) {
+            GdxArray()
+        }
+    }
+
+    /** Updates the conflict levels of each entity with the ConflictAble component using their altitude */
+    private fun updateConflictLevels() {
         // Traffic separation checking
         val conflictAble = conflictAbleFamilyEntities.getEntities()
 
@@ -225,15 +242,33 @@ class TrafficSystemInterval: IntervalSystem(1f) {
                 }
             }
         }
-
-        conflictManager.checkAllConflicts(conflictLevels, conflictAble)
     }
 
-    /** Creates the conflict level array upon loading world data (MAX_ALT required) */
-    fun initializeConflictLevelArray(maxAlt: Int) {
-        conflictLevels = Array(ceil((maxAlt + 1500f) / VERT_SEP).roundToInt() - startingAltitude / VERT_SEP) {
-            GdxArray()
+    /**
+     * Gets the array of entities within specified range of the input spawn altitude
+     * @param spawnAlt the spawn altitude to check range from
+     * @param lowerRange how much lower than the spawn altitude to check - must be positive
+     * @param upperRange how much higher than the spawn altitude to check - must be positive
+     */
+    fun getEntitiesWithinArrivalSpawnAltitude(spawnAlt: Float, lowerRange: Float, upperRange: Float): GdxArray<Entity> {
+        updateConflictLevels()
+        val lowerRangeChecked = if (lowerRange < 0) {
+            FileLog.warn("TrafficSystemInterval", "Lower range $lowerRange is negative, setting to 0")
+            0f
+        } else lowerRange
+        val upperRangeChecked = if (upperRange < 0) {
+            FileLog.warn("TrafficSystemInterval", "Upper range $upperRange is negative, setting to 0")
+            0f
+        } else upperRange
+        val lowerLevel = getSectorIndexForAlt(spawnAlt - lowerRangeChecked, startingAltitude)
+        val upperLevel = getSectorIndexForAlt(spawnAlt + upperRangeChecked, startingAltitude)
+        val entities = GdxArray<Entity>()
+        for (i in lowerLevel..upperLevel) {
+            if (i < 0 || i >= conflictLevels.size) continue
+            entities.addAll(conflictLevels[i])
         }
+
+        return entities
     }
 
     /**

@@ -459,7 +459,8 @@ fun calculateDescentGradient(netForceN: Float, massKg: Int): Float {
  * Calculates the spawn coordinates, track for an arrival aircraft route, just outside the primary sector's borders
  * @param route the route of the arrival aircraft
  * @param primarySector the polygon encompassing primary sector
- * @return a Triple of floats, the first being the x coordinate and the second being the y coordinate of the spawn position
+ * @return a Triple of floats, the first being the x coordinate, the second being the y coordinate of the spawn position
+ * and the third being the track of the opposite direction of the track the aircraft should spawn facing
  */
 fun calculateArrivalSpawnPoint(route: Route, primarySector: Polygon): Triple<Float, Float, Float> {
     val originX: Float
