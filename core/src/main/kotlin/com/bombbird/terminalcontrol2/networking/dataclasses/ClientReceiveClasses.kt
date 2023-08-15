@@ -6,6 +6,8 @@ import com.bombbird.terminalcontrol2.entities.*
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.networking.encryption.NeedsEncryption
 import com.bombbird.terminalcontrol2.screens.RadarScreen
+import com.bombbird.terminalcontrol2.systems.FamilyWithListener
+import com.bombbird.terminalcontrol2.systems.RenderingSystemClient
 import com.bombbird.terminalcontrol2.systems.updateAircraftDatatagText
 import com.bombbird.terminalcontrol2.systems.updateAircraftRadarData
 import com.bombbird.terminalcontrol2.traffic.ConflictManager
@@ -293,6 +295,8 @@ data class ScoreData(private val score: Int = 0, private val highScore: Int = 0)
 class InitialDataSendComplete: ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
         FileLog.info("ClientReceiveClasses", "Received InitialDataSendComplete")
+        FamilyWithListener.addAllClientFamilyEntityListeners()
+        getEngine(true).getSystem<RenderingSystemClient>().updateWaypointDisplay(null)
         // rs.notifyInitialDataSendComplete() Handled separately
     }
 }

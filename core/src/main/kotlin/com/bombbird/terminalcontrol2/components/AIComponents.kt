@@ -3,6 +3,7 @@ package com.bombbird.terminalcontrol2.components
 import com.badlogic.ashley.core.Component
 import com.badlogic.ashley.core.Entity
 import com.bombbird.terminalcontrol2.json.BaseComponentJSONInterface
+import com.bombbird.terminalcontrol2.utilities.FileLog
 import com.squareup.moshi.JsonClass
 import ktx.ashley.Mapper
 
@@ -14,7 +15,13 @@ import ktx.ashley.Mapper
 data class TakeoffRoll(var targetAccMps2: Float = 2f, var rwy: Entity = Entity()): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.TAKEOFF_ROLL
 
-    companion object: Mapper<TakeoffRoll>()
+    companion object {
+        val mapper = object : Mapper<TakeoffRoll>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising TakeoffRoll mapper")
+        }
+    }
 }
 
 /**
@@ -26,7 +33,13 @@ data class TakeoffRoll(var targetAccMps2: Float = 2f, var rwy: Entity = Entity()
 data class TakeoffClimb(var accelAltFt: Float = 1500f): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.TAKEOFF_CLIMB
 
-    companion object: Mapper<TakeoffClimb>()
+    companion object {
+        val mapper = object: Mapper<TakeoffClimb>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising TakeoffClimb mapper")
+        }
+    }
 }
 
 /**
@@ -37,7 +50,13 @@ data class TakeoffClimb(var accelAltFt: Float = 1500f): Component, BaseComponent
 data class LandingRoll(var rwy: Entity = Entity()): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.LANDING_ROLL
 
-    companion object: Mapper<LandingRoll>()
+    companion object {
+        val mapper = object: Mapper<LandingRoll>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising LandingRoll mapper")
+        }
+    }
 }
 
 /**
@@ -59,7 +78,13 @@ data class CommandTarget(var targetHdgDeg: Float = 360f, var turnDir: Byte = TUR
                          var targetIasKt: Short = 0): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.COMMAND_TARGET
 
-    companion object: Mapper<CommandTarget>() {
+    companion object {
+        val mapper = object: Mapper<CommandTarget>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising CommandTarget mapper")
+        }
+
         const val TURN_DEFAULT: Byte = 0
         const val TURN_LEFT: Byte = -1
         const val TURN_RIGHT: Byte = 1
@@ -79,7 +104,13 @@ data class CommandTarget(var targetHdgDeg: Float = 360f, var turnDir: Byte = TUR
 data class CommandVector(var heading: Short = 360, var turnDir: Byte = CommandTarget.TURN_DEFAULT): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.COMMAND_VECTOR
 
-    companion object: Mapper<CommandVector>()
+    companion object {
+        val mapper = object: Mapper<CommandVector>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising CommandVector mapper")
+        }
+    }
 }
 
 /**
@@ -95,7 +126,13 @@ data class CommandVector(var heading: Short = 360, var turnDir: Byte = CommandTa
 data class CommandInitClimb(var heading: Short = 360, var minAltFt: Int = 0): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.COMMAND_INIT_CLIMB
 
-    companion object: Mapper<CommandInitClimb>()
+    companion object {
+        val mapper = object: Mapper<CommandInitClimb>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising CommandInitClimb mapper")
+        }
+    }
 }
 
 /**
@@ -117,7 +154,13 @@ data class CommandDirect(var wptId: Short = 0, var maxAltFt: Int? = null, var mi
                          val flyOver: Boolean = false, val turnDir: Byte = CommandTarget.TURN_DEFAULT): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.COMMAND_DIRECT
 
-    companion object: Mapper<CommandDirect>()
+    companion object {
+        val mapper = object: Mapper<CommandDirect>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising CommandDirect mapper")
+        }
+    }
 }
 
 /**
@@ -132,7 +175,13 @@ data class CommandHold(var wptId: Short = 0, var maxAltFt: Int? = null, var minA
                        var flyOutbound: Boolean = true): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.COMMAND_HOLD
 
-    companion object: Mapper<CommandHold>()
+    companion object {
+        val mapper = object: Mapper<CommandHold>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising CommandHold mapper")
+        }
+    }
 }
 
 /** Command for tagging an aircraft that is expediting its climb or descent */
@@ -140,7 +189,13 @@ data class CommandHold(var wptId: Short = 0, var maxAltFt: Int? = null, var minA
 class CommandExpedite: Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.COMMAND_EXPEDITE
 
-    companion object: Mapper<CommandExpedite>()
+    companion object {
+        val mapper = object: Mapper<CommandExpedite>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising CommandExpedite mapper")
+        }
+    }
 }
 
 /** Component for tagging an aircraft that is flying according to continuous descent approach (CDA) operations */
@@ -148,7 +203,13 @@ class CommandExpedite: Component, BaseComponentJSONInterface {
 class CommandCDA: Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.COMMAND_CDA
 
-    companion object: Mapper<CommandCDA>()
+    companion object {
+        val mapper = object: Mapper<CommandCDA>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising CommandCDA mapper")
+        }
+    }
 }
 
 /**
@@ -159,7 +220,13 @@ class CommandCDA: Component, BaseComponentJSONInterface {
 data class LastRestrictions(var minAltFt: Int? = null, var maxAltFt: Int? = null, var maxSpdKt: Short? = null): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.LAST_RESTRICTIONS
 
-    companion object: Mapper<LastRestrictions>()
+    companion object {
+        val mapper = object: Mapper<LastRestrictions>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising LastRestrictions mapper")
+        }
+    }
 }
 
 /**
@@ -171,7 +238,13 @@ data class LastRestrictions(var minAltFt: Int? = null, var maxAltFt: Int? = null
 data class VisualArmed(var visApp: Entity = Entity(), var parentApp: Entity = Entity()): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.VISUAL_ARMED
 
-    companion object: Mapper<VisualArmed>()
+    companion object {
+        val mapper = object: Mapper<VisualArmed>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising VisualArmed mapper")
+        }
+    }
 }
 
 /**
@@ -181,7 +254,13 @@ data class VisualArmed(var visApp: Entity = Entity(), var parentApp: Entity = En
 data class VisualCaptured(var visApp: Entity = Entity(), var parentApp: Entity = Entity()): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.VISUAL_CAPTURED
 
-    companion object: Mapper<VisualCaptured>()
+    companion object {
+        val mapper = object: Mapper<VisualCaptured>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising VisualCaptured mapper")
+        }
+    }
 }
 
 /**
@@ -192,7 +271,13 @@ data class VisualCaptured(var visApp: Entity = Entity(), var parentApp: Entity =
 data class LocalizerArmed(var locApp: Entity = Entity()): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.LOCALIZER_ARMED
 
-    companion object: Mapper<LocalizerArmed>()
+    companion object {
+        val mapper = object: Mapper<LocalizerArmed>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising LocalizerArmed mapper")
+        }
+    }
 }
 
 /**
@@ -202,7 +287,13 @@ data class LocalizerArmed(var locApp: Entity = Entity()): Component, BaseCompone
 data class LocalizerCaptured(var locApp: Entity = Entity()): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.LOCALIZER_CAPTURED
 
-    companion object: Mapper<LocalizerCaptured>()
+    companion object {
+        val mapper = object: Mapper<LocalizerCaptured>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising LocalizerCaptured mapper")
+        }
+    }
 }
 
 /**
@@ -213,7 +304,13 @@ data class LocalizerCaptured(var locApp: Entity = Entity()): Component, BaseComp
 data class GlideSlopeArmed(var gsApp: Entity = Entity()): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.GLIDE_SLOPE_ARMED
 
-    companion object: Mapper<GlideSlopeArmed>()
+    companion object {
+        val mapper = object: Mapper<GlideSlopeArmed>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising GlideSlopeArmed mapper")
+        }
+    }
 }
 
 /**
@@ -223,7 +320,13 @@ data class GlideSlopeArmed(var gsApp: Entity = Entity()): Component, BaseCompone
 data class GlideSlopeCaptured(var gsApp: Entity = Entity()): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.GLIDE_SLOPE_CAPTURED
 
-    companion object: Mapper<GlideSlopeCaptured>()
+    companion object {
+        val mapper = object: Mapper<GlideSlopeCaptured>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising GlideSlopeCaptured mapper")
+        }
+    }
 }
 
 /**
@@ -233,7 +336,13 @@ data class GlideSlopeCaptured(var gsApp: Entity = Entity()): Component, BaseComp
 data class StepDownApproach(var stepDownApp: Entity = Entity()): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.STEP_DOWN_APPROACH
 
-    companion object: Mapper<StepDownApproach>()
+    companion object {
+        val mapper = object: Mapper<StepDownApproach>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising StepDownApproach mapper")
+        }
+    }
 }
 
 /**
@@ -247,5 +356,11 @@ data class CirclingApproach(var circlingApp: Entity = Entity(), var breakoutAlt:
                             var phase1Timer: Float = 70f, var phase3Timer: Float = 50f): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.CIRCLING_APPROACH
 
-    companion object: Mapper<CirclingApproach>()
+    companion object {
+        val mapper = object: Mapper<CirclingApproach>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising CirclingApproach mapper")
+        }
+    }
 }

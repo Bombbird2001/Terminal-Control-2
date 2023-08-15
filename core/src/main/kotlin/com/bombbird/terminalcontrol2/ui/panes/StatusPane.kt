@@ -26,14 +26,14 @@ class StatusPane {
         const val NOTIFICATION_ARRIVAL: Byte = 2
         const val NOTIFICATION_DEPARTURE: Byte = 3
         const val INFO: Byte = 4
+
+        private val goAroundContactFamily: Family = allOf(RecentGoAround::class, ContactNotification::class).get()
+        private val initialContactFamily: Family = allOf(ContactNotification::class).exclude(RecentGoAround::class).get()
     }
 
     lateinit var statusTable: KTableWidget
     private lateinit var statusScroll: KScrollPane
     private lateinit var statusMsgTable: KTableWidget
-
-    private val goAroundContactFamily: Family = allOf(RecentGoAround::class, ContactNotification::class).get()
-    private val initialContactFamily: Family = allOf(ContactNotification::class).exclude(RecentGoAround::class).get()
 
     /**
      * @param widget the widget to add the status pane table to

@@ -3,6 +3,7 @@ package com.bombbird.terminalcontrol2.components
 import com.badlogic.ashley.core.Component
 import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.json.BaseComponentJSONInterface
+import com.bombbird.terminalcontrol2.utilities.FileLog
 import com.squareup.moshi.JsonClass
 import ktx.ashley.Mapper
 
@@ -15,7 +16,13 @@ import ktx.ashley.Mapper
 data class Position(var x: Float = 0f, var y: Float = 0f): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.POSITION
 
-    companion object: Mapper<Position>()
+    companion object {
+        val mapper = object: Mapper<Position>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising Position mapper")
+        }
+    }
 }
 
 /**
@@ -30,7 +37,13 @@ data class Position(var x: Float = 0f, var y: Float = 0f): Component, BaseCompon
 data class CustomPosition(var x: Float = 0f, var y: Float = 0f): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.CUSTOM_POSITION
 
-    companion object: Mapper<CustomPosition>()
+    companion object {
+        val mapper = object: Mapper<CustomPosition>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising CustomPosition mapper")
+        }
+    }
 }
 
 /**
@@ -42,7 +55,13 @@ data class CustomPosition(var x: Float = 0f, var y: Float = 0f): Component, Base
 data class Direction(var trackUnitVector: Vector2 = Vector2()): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.DIRECTION
 
-    companion object: Mapper<Direction>()
+    companion object {
+        val mapper = object: Mapper<Direction>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising Direction mapper")
+        }
+    }
 }
 
 /**
@@ -55,7 +74,13 @@ data class Direction(var trackUnitVector: Vector2 = Vector2()): Component, BaseC
 data class Speed(var speedKts: Float = 0f, var vertSpdFpm: Float = 0f, var angularSpdDps: Float = 0f): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.SPEED
 
-    companion object: Mapper<Speed>()
+    companion object {
+        val mapper = object: Mapper<Speed>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising Speed mapper")
+        }
+    }
 }
 
 /**
@@ -66,7 +91,13 @@ data class Speed(var speedKts: Float = 0f, var vertSpdFpm: Float = 0f, var angul
 data class Altitude(var altitudeFt: Float = 0f): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.ALTITUDE
 
-    companion object: Mapper<Altitude>()
+    companion object {
+        val mapper = object: Mapper<Altitude>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising Altitude mapper")
+        }
+    }
 }
 
 /**
@@ -79,12 +110,24 @@ data class Altitude(var altitudeFt: Float = 0f): Component, BaseComponentJSONInt
 data class Acceleration(var dSpeedMps2: Float = 0f, var dVertSpdMps2: Float = 0f, var dAngularSpdDps2: Float = 0f): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.ACCELERATION
 
-    companion object: Mapper<Acceleration>()
+    companion object {
+        val mapper = object: Mapper<Acceleration>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising Acceleration mapper")
+        }
+    }
 }
 
 /** Component for radar returns (delayed reporting of [Position], [Direction], [Speed] and [Altitude]) */
 data class RadarData(val position: Position = Position(), val direction: Direction = Direction(), val speed: Speed = Speed(), val altitude: Altitude = Altitude()): Component {
-    companion object: Mapper<RadarData>()
+    companion object {
+        val mapper = object: Mapper<RadarData>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising RadarData mapper")
+        }
+    }
 }
 
 /**
@@ -101,7 +144,13 @@ data class RadarData(val position: Position = Position(), val direction: Directi
 data class IndicatedAirSpeed(var iasKt: Float = 0f): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.INDICATED_AIR_SPEED
 
-    companion object: Mapper<IndicatedAirSpeed>()
+    companion object {
+        val mapper = object: Mapper<IndicatedAirSpeed>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising IndicatedAirSpeed mapper")
+        }
+    }
 }
 
 /**
@@ -112,7 +161,13 @@ data class IndicatedAirSpeed(var iasKt: Float = 0f): Component, BaseComponentJSO
 data class GroundTrack(var trackVectorPxps: Vector2 = Vector2()): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.GROUND_TRACK
 
-    companion object: Mapper<GroundTrack>()
+    companion object {
+        val mapper = object: Mapper<GroundTrack>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising GroundTrack mapper")
+        }
+    }
 }
 
 /**
@@ -127,7 +182,13 @@ data class GroundTrack(var trackVectorPxps: Vector2 = Vector2()): Component, Bas
 data class AffectedByWind(var windVectorPxps: Vector2 = Vector2()): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.AFFECTED_BY_WIND
 
-    companion object: Mapper<AffectedByWind>()
+    companion object {
+        val mapper = object: Mapper<AffectedByWind>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising AffectedByWind mapper")
+        }
+    }
 }
 
 /** Component for tagging on ground entities (will not be affected by wind even if tagged with it) */
@@ -135,10 +196,22 @@ data class AffectedByWind(var windVectorPxps: Vector2 = Vector2()): Component, B
 class OnGround: Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.ON_GROUND
 
-    companion object: Mapper<OnGround>()
+    companion object {
+        val mapper = object: Mapper<OnGround>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising OnGround mapper")
+        }
+    }
 }
 
 /** Component for tagging the positions of glide slope circles */
 class GlideSlopeCircle(var positions: Array<Position>): Component {
-    companion object: Mapper<GlideSlopeCircle>()
+    companion object {
+        val mapper = object: Mapper<GlideSlopeCircle>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising GlideSlopeCircle mapper")
+        }
+    }
 }

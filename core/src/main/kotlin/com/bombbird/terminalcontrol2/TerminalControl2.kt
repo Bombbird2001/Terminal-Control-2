@@ -6,6 +6,7 @@ import com.badlogic.gdx.audio.Sound
 import com.badlogic.gdx.graphics.Texture
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.math.MathUtils
+import com.bombbird.terminalcontrol2.components.loadAllComponents
 import com.bombbird.terminalcontrol2.files.*
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.networking.*
@@ -125,6 +126,9 @@ class TerminalControl2(val externalFileHandler: ExternalFileHandler) : KtxGame<K
             addScreen(IndividualSoftwareLicense())
             addScreen(ReportBug())
             setScreen<MainMenu>()
+
+            // Initialise Ashley component mapper indices
+            loadAllComponents()
         }
 
         BG_INDEX = MathUtils.random(1, 8)

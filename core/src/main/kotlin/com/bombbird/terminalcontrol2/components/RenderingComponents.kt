@@ -10,6 +10,7 @@ import com.badlogic.gdx.scenes.scene2d.utils.Drawable
 import com.badlogic.gdx.utils.Timer
 import com.bombbird.terminalcontrol2.json.BaseComponentJSONInterface
 import com.bombbird.terminalcontrol2.navigation.Route
+import com.bombbird.terminalcontrol2.utilities.FileLog
 import com.squareup.moshi.JsonClass
 import ktx.ashley.Mapper
 import ktx.collections.GdxArray
@@ -18,7 +19,13 @@ import ktx.scene2d.Scene2DSkin
 
 /** Component for rendering a sprite/drawable on radarScreen */
 data class RSSprite(var drawable: Drawable = BaseDrawable(), var width: Float = 0f, var height: Float = 0f): Component {
-    companion object: Mapper<RSSprite>()
+    companion object {
+        val mapper = object: Mapper<RSSprite>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising RSSprite mapper")
+        }
+    }
 }
 
 /**
@@ -27,7 +34,13 @@ data class RSSprite(var drawable: Drawable = BaseDrawable(), var width: Float = 
  */
 class GenericLabel(var xOffset: Float = 0f, var yOffset: Float = 0f): Component {
     val label: Label = Label("", Scene2DSkin.defaultSkin)
-    companion object: Mapper<GenericLabel>()
+    companion object {
+        val mapper = object: Mapper<GenericLabel>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising GenericLabel mapper")
+        }
+    }
 
     fun updateText(newText: String) {
         label.setText(newText)
@@ -40,7 +53,13 @@ class GenericLabel(var xOffset: Float = 0f, var yOffset: Float = 0f): Component 
 
 /** Component for storing multiple labels to render */
 class GenericLabels(var labels: Array<GenericLabel> = arrayOf()): Component {
-    companion object: Mapper<GenericLabels>()
+    companion object {
+        val mapper = object: Mapper<GenericLabels>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising GenericLabels mapper")
+        }
+    }
 }
 
 /**
@@ -55,7 +74,13 @@ class GenericLabels(var labels: Array<GenericLabel> = arrayOf()): Component {
 data class RunwayLabel(var positionToRunway: Byte = 0): Component {
     var dirUnitVector = ImmutableVector2(0f, 0f)
     var dirSet = false
-    companion object: Mapper<RunwayLabel>() {
+    companion object {
+        val mapper = object: Mapper<RunwayLabel>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising RunwayLabel mapper")
+        }
+
         const val BEFORE: Byte = 0
         const val RIGHT: Byte = 1
         const val LEFT: Byte = -1
@@ -64,17 +89,35 @@ data class RunwayLabel(var positionToRunway: Byte = 0): Component {
 
 /** Component for tagging drawables that should remain the same size regardless of zoom level */
 class ConstantZoomSize: Component {
-    companion object: Mapper<ConstantZoomSize>()
+    companion object {
+        val mapper = object: Mapper<ConstantZoomSize>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising ConstantZoomSize mapper")
+        }
+    }
 }
 
 /** Component for tagging shapeRenderer shapes that should remain the same size regardless of zoom level */
 class SRConstantZoomSize: Component {
-    companion object: Mapper<SRConstantZoomSize>()
+    companion object {
+        val mapper = object: Mapper<SRConstantZoomSize>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising SRConstantZoomSize mapper")
+        }
+    }
 }
 
 /** Component for shapeRenderer rendering colour */
 data class SRColor(var color: Color = Color()): Component {
-    companion object: Mapper<SRColor>()
+    companion object {
+        val mapper = object: Mapper<SRColor>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising SRColor mapper")
+        }
+    }
 }
 
 /**
@@ -83,17 +126,35 @@ data class SRColor(var color: Color = Color()): Component {
  * family must also be implemented in RenderingSystem)
  */
 class RenderLast: Component {
-    companion object: Mapper<RenderLast>()
+    companion object {
+        val mapper = object: Mapper<RenderLast>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising RenderLast mapper")
+        }
+    }
 }
 
 /** Component for tagging generic shapes that should not be rendered for whatever reason */
 class DoNotRenderShape: Component {
-    companion object: Mapper<DoNotRenderShape>()
+    companion object {
+        val mapper = object: Mapper<DoNotRenderShape>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising DoNotRenderShape mapper")
+        }
+    }
 }
 
 /** Component for tagging [GenericLabel]s, [GenericLabels] that should not be rendered for whatever reason */
 class DoNotRenderLabel: Component {
-    companion object: Mapper<DoNotRenderLabel>()
+    companion object {
+        val mapper = object: Mapper<DoNotRenderLabel>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising DoNotRenderLabel mapper")
+        }
+    }
 }
 
 /**
@@ -120,7 +181,13 @@ class Datatag(var xOffset: Float = 0f, var yOffset: Float = 0f, var minimised: B
     var renderLast = false
     val datatagInfoMap = HashMap<String, String>()
 
-    companion object: Mapper<Datatag>()
+    companion object {
+        val mapper = object: Mapper<Datatag>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising Datatag mapper")
+        }
+    }
 
     /** Called when the aircraft who owns this datatag despawns */
     fun despawn() {
@@ -136,10 +203,22 @@ data class InitialClientDatatagPosition(var xOffset: Float = 0f, var yOffset: Fl
                                         var flashing: Boolean = false): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.INITIAL_CLIENT_DATATAG_POSITION
 
-    companion object: Mapper<InitialClientDatatagPosition>()
+    companion object {
+        val mapper = object: Mapper<InitialClientDatatagPosition>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising InitialClientDatatagPosition mapper")
+        }
+    }
 }
 
 /** Component for storing route leg segments to be rendered by the rendering system */
 data class RouteSegment(val segments: GdxArray<Route.LegSegment> = GdxArray()): Component {
-    companion object: Mapper<RouteSegment>()
+    companion object {
+        val mapper = object: Mapper<RouteSegment>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising RouteSegment mapper")
+        }
+    }
 }

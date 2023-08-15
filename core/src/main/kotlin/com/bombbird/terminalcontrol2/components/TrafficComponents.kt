@@ -10,6 +10,7 @@ import com.bombbird.terminalcontrol2.entities.WakeZone
 import com.bombbird.terminalcontrol2.json.BaseComponentJSONInterface
 import com.bombbird.terminalcontrol2.json.DoNotOverwriteSavedJSON
 import com.bombbird.terminalcontrol2.utilities.AircraftTypeData
+import com.bombbird.terminalcontrol2.utilities.FileLog
 import com.squareup.moshi.JsonClass
 import ktx.ashley.Mapper
 import ktx.collections.GdxArray
@@ -19,7 +20,13 @@ import ktx.collections.GdxArray
 class ActiveLanding: Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.ACTIVE_LANDING
 
-    companion object: Mapper<ActiveLanding>()
+    companion object {
+        val mapper = object: Mapper<ActiveLanding>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising ActiveLanding mapper")
+        }
+    }
 }
 
 /** Component for tagging runway that is active for takeoffs */
@@ -27,7 +34,13 @@ class ActiveLanding: Component, BaseComponentJSONInterface {
 class ActiveTakeoff: Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.ACTIVE_TAKEOFF
 
-    companion object: Mapper<ActiveTakeoff>()
+    companion object {
+        val mapper = object: Mapper<ActiveTakeoff>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising ActiveTakeoff mapper")
+        }
+    }
 }
 
 /** Component for tagging traffic distribution at an airport */
@@ -35,17 +48,35 @@ data class RandomAirlineData(val airlineDistribution: CumulativeDistribution<Tri
     Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.RANDOM_AIRLINE_DATA
 
-    companion object: Mapper<RandomAirlineData>()
+    companion object {
+        val mapper = object: Mapper<RandomAirlineData>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising RandomAirlineData mapper")
+        }
+    }
 }
 
 /** Component for tagging the approach NOZ for a runway */
 data class ApproachNOZ(var appNoz: ApproachNormalOperatingZone): Component {
-    companion object: Mapper<ApproachNOZ>()
+    companion object {
+        val mapper = object: Mapper<ApproachNOZ>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising ApproachNOZ mapper")
+        }
+    }
 }
 
 /** Component for tagging the departure NOZ for a runway */
 data class DepartureNOZ(var depNoz: DepartureNormalOperatingZone): Component {
-    companion object: Mapper<DepartureNOZ>()
+    companion object {
+        val mapper = object: Mapper<DepartureNOZ>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising DepartureNOZ mapper")
+        }
+    }
 }
 
 /** Component for tagging the active runway configuration of an airport */
@@ -53,12 +84,24 @@ data class DepartureNOZ(var depNoz: DepartureNormalOperatingZone): Component {
 data class ActiveRunwayConfig(var configId: Byte = 0): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.ACTIVE_RUNWAY_CONFIG
 
-    companion object: Mapper<ActiveRunwayConfig>()
+    companion object {
+        val mapper = object: Mapper<ActiveRunwayConfig>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising ActiveRunwayConfig mapper")
+        }
+    }
 }
 
 /** Component for tagging a pending runway configuration change for an airport */
 data class PendingRunwayConfig(var pendingId: Byte = 0, var timeRemaining: Float = 0f): Component {
-    companion object: Mapper<PendingRunwayConfig>()
+    companion object {
+        val mapper = object: Mapper<PendingRunwayConfig>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising PendingRunwayConfig mapper")
+        }
+    }
 }
 
 /** Component for tagging a closed airport for arrivals */
@@ -66,7 +109,13 @@ data class PendingRunwayConfig(var pendingId: Byte = 0, var timeRemaining: Float
 class ArrivalClosed: Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.ARRIVAL_CLOSED
 
-    companion object: Mapper<ArrivalClosed>()
+    companion object {
+        val mapper = object: Mapper<ArrivalClosed>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising ArrivalClosed mapper")
+        }
+    }
 }
 
 /** Component for tagging a closed airport for departures and backlog information */
@@ -74,19 +123,37 @@ class ArrivalClosed: Component, BaseComponentJSONInterface {
 data class DepartureInfo(var closed: Boolean = false, var backlog: Int = 0): Component, BaseComponentJSONInterface, DoNotOverwriteSavedJSON {
     override val componentType = BaseComponentJSONInterface.ComponentType.DEPARTURE_INFO
 
-    companion object: Mapper<DepartureInfo>()
+    companion object {
+        val mapper = object: Mapper<DepartureInfo>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising DepartureInfo mapper")
+        }
+    }
 }
 
 /** Component for tagging the maximum number of departures an airport can depart in advance */
 data class MaxAdvancedDepartures(var maxAdvanceDepartures: Int = 10): Component {
-    companion object: Mapper<MaxAdvancedDepartures>()
+    companion object {
+        val mapper = object: Mapper<MaxAdvancedDepartures>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising MaxAdvancedDepartures mapper")
+        }
+    }
 }
 
 /** Component for tagging the next departure aircraft entity of the airport */
 data class AirportNextDeparture(var aircraft: Entity = Entity()): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.AIRPORT_NEXT_DEPARTURE
 
-    companion object: Mapper<AirportNextDeparture>()
+    companion object {
+        val mapper = object: Mapper<AirportNextDeparture>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising AirportNextDeparture mapper")
+        }
+    }
 }
 
 /** Component for tagging the information of a previous arrival aircraft of the runway */
@@ -95,7 +162,13 @@ data class RunwayPreviousArrival(var timeSinceTouchdownS: Float = 0f, var wakeCa
                                  var recat: Char = AircraftTypeData.AircraftPerfData.RECAT_D): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.RUNWAY_PREVIOUS_ARRIVAL
 
-    companion object: Mapper<RunwayPreviousArrival>()
+    companion object {
+        val mapper = object: Mapper<RunwayPreviousArrival>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising RunwayPreviousArrival mapper")
+        }
+    }
 }
 
 /** Component for tagging the information of a previous departure aircraft of the runway */
@@ -103,7 +176,13 @@ data class RunwayPreviousArrival(var timeSinceTouchdownS: Float = 0f, var wakeCa
 data class RunwayPreviousDeparture(var timeSinceDepartureS: Float = 0f, var wakeCat: Char = AircraftTypeData.AircraftPerfData.WAKE_MEDIUM,
                                    var recat: Char = AircraftTypeData.AircraftPerfData.RECAT_D): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.RUNWAY_PREVIOUS_DEPARTURE
-    companion object: Mapper<RunwayPreviousDeparture>()
+    companion object {
+        val mapper = object: Mapper<RunwayPreviousDeparture>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising RunwayPreviousDeparture mapper")
+        }
+    }
 }
 
 /** Component for tagging if a runway is occupied by an aircraft */
@@ -111,12 +190,24 @@ data class RunwayPreviousDeparture(var timeSinceDepartureS: Float = 0f, var wake
 class RunwayOccupied: Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.RUNWAY_OCCUPIED
 
-    companion object: Mapper<RunwayOccupied>()
+    companion object {
+        val mapper = object: Mapper<RunwayOccupied>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising RunwayOccupied mapper")
+        }
+    }
 }
 
 /** Component for tagging the aircraft closest to landing on the runway */
 data class RunwayNextArrival(var aircraft: Entity = Entity(), var distFromThrPx: Float = 0f): Component {
-    companion object: Mapper<RunwayNextArrival>()
+    companion object {
+        val mapper = object: Mapper<RunwayNextArrival>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising RunwayNextArrival mapper")
+        }
+    }
 }
 
 /**
@@ -124,7 +215,13 @@ data class RunwayNextArrival(var aircraft: Entity = Entity(), var distFromThrPx:
  * is updated once every second and used to reduce the number of comparisons required during the conflict check
  */
 data class ConflictAble(var conflictLevel: Int = Int.MAX_VALUE): Component {
-    companion object: Mapper<ConflictAble>()
+    companion object {
+        val mapper = object: Mapper<ConflictAble>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising ConflictAble mapper")
+        }
+    }
 }
 
 /**
@@ -134,7 +231,13 @@ data class ConflictAble(var conflictLevel: Int = Int.MAX_VALUE): Component {
 data class WakeTrail(val wakeZones: Queue<Pair<Position, WakeZone?>> = Queue(), var distNmCounter: Float = 0f): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.WAKE_TRAIL
 
-    companion object: Mapper<WakeTrail>()
+    companion object {
+        val mapper = object: Mapper<WakeTrail>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising WakeTrail mapper")
+        }
+    }
 }
 
 /**
@@ -146,5 +249,11 @@ data class WakeInfo(var aircraftCallsign: String = "", var leadingWake: Char = '
                     var distFromAircraft: Float = 0f): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.WAKE_INFO
 
-    companion object: Mapper<WakeInfo>()
+    companion object {
+        val mapper = object: Mapper<WakeInfo>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising WakeInfo mapper")
+        }
+    }
 }

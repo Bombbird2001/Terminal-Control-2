@@ -133,9 +133,6 @@ class RadarScreen private constructor(private val connectionHost: String, privat
     // Selected aircraft
     var selectedAircraft: Aircraft? = null
 
-    // Datatag family for updating styles
-    private val datatagFamily = allOf(Datatag::class, FlightType::class).get()
-
     // Networking client
     private val networkClient: NetworkClient
         get() = if (!isPublicMultiplayer()) GAME.lanClient else GAME.publicClient
@@ -148,6 +145,9 @@ class RadarScreen private constructor(private val connectionHost: String, privat
     var connectedToHostCallback: (() -> Unit)? = null
 
     companion object {
+        // Datatag family for updating styles
+        private val datatagFamily = allOf(Datatag::class, FlightType::class).get()
+
         /**
          * Returns a new instance of single player RadarScreen
          * @return RadarScreen object in single player mode

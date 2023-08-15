@@ -9,6 +9,7 @@ import com.bombbird.terminalcontrol2.global.MAX_TRAIL_DOTS
 import com.bombbird.terminalcontrol2.json.BaseComponentJSONInterface
 import com.bombbird.terminalcontrol2.json.DoNotOverwriteSavedJSON
 import com.bombbird.terminalcontrol2.utilities.AircraftTypeData
+import com.bombbird.terminalcontrol2.utilities.FileLog
 import com.squareup.moshi.JsonClass
 import ktx.ashley.Mapper
 
@@ -17,7 +18,13 @@ import ktx.ashley.Mapper
 data class AirportInfo(var arptId: Byte = 0, var icaoCode: String = "", var name: String = "", var tfcRatio: Byte = 1): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.AIRPORT_INFO
 
-    companion object: Mapper<AirportInfo>()
+    companion object {
+        val mapper = object: Mapper<AirportInfo>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising AirportInfo mapper")
+        }
+    }
 }
 
 /** Component for tagging runway related information */
@@ -27,12 +34,24 @@ data class RunwayInfo(var rwyId: Byte = 0, var rwyName: String = "", var lengthM
     override val componentType = BaseComponentJSONInterface.ComponentType.RUNWAY_INFO
 
     lateinit var airport: Airport
-    companion object: Mapper<RunwayInfo>()
+    companion object {
+        val mapper = object: Mapper<RunwayInfo>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising RunwayInfo mapper")
+        }
+    }
 }
 
 /** Component for tagging the real-life airport METAR code to use when requesting live weather */
 data class RealLifeMetarIcao(var realLifeIcao: String = ""): Component {
-    companion object: Mapper<RealLifeMetarIcao>()
+    companion object {
+        val mapper = object: Mapper<RealLifeMetarIcao>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising RealLifeMetarIcao mapper")
+        }
+    }
 }
 
 /** Component for tagging airport METAR information */
@@ -44,12 +63,24 @@ data class MetarInfo(var letterCode: Char? = null, var rawMetar: String? = null,
     override val componentType = BaseComponentJSONInterface.ComponentType.METAR_INFO
 
     val windVectorPx = Vector2()
-    companion object: Mapper<MetarInfo>()
+    companion object {
+        val mapper = object: Mapper<MetarInfo>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising MetarInfo mapper")
+        }
+    }
 }
 
 /** Component for tagging runway tailwind, crosswind component data */
 data class RunwayWindComponents(var tailwindKt: Float = 0f, var crosswindKt: Float = 0f): Component {
-    companion object: Mapper<RunwayWindComponents>()
+    companion object {
+        val mapper = object: Mapper<RunwayWindComponents>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising RunwayWindComponents mapper")
+        }
+    }
 }
 
 /** Component for tagging random weather generation data */
@@ -60,7 +91,13 @@ data class RandomMetarInfo(var windDirDist: CumulativeDistribution<Short> = Cumu
                            var windshearLogCoefficients: Pair<Float, Float>? = null): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.RANDOM_METAR_INFO
 
-    companion object: Mapper<RandomMetarInfo>()
+    companion object {
+        val mapper = object: Mapper<RandomMetarInfo>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising RandomMetarInfo mapper")
+        }
+    }
 }
 
 /**
@@ -72,7 +109,13 @@ data class RandomMetarInfo(var windDirDist: CumulativeDistribution<Short> = Cumu
  */
 data class SectorInfo(var sectorId: Byte = 0, var frequency: String = "121.5",
                       var arrivalCallsign: String = "Approach", var departureCallsign: String = "Departure"): Component {
-    companion object: Mapper<SectorInfo>() {
+    companion object {
+        val mapper = object: Mapper<SectorInfo>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising SectorInfo mapper")
+        }
+
         const val TOWER: Byte = -1
         const val CENTRE: Byte = -2
     }
@@ -80,7 +123,13 @@ data class SectorInfo(var sectorId: Byte = 0, var frequency: String = "121.5",
 
 /** Component for tagging an ACC sector's information */
 data class ACCSectorInfo(var sectorId: Byte = 0, var frequency: String = "121.5", var accCallsign: String = "Control"): Component {
-    companion object: Mapper<ACCSectorInfo>()
+    companion object {
+        val mapper = object: Mapper<ACCSectorInfo>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising ACCSectorInfo mapper")
+        }
+    }
 }
 
 /**
@@ -89,7 +138,13 @@ data class ACCSectorInfo(var sectorId: Byte = 0, var frequency: String = "121.5"
  * Additional tagging of [GPolygon] or [GCircle] is required for boundary information
  */
 data class MinAltSectorInfo(var minAltFt: Int? = null, var restricted: Boolean = false): Component {
-    companion object: Mapper<MinAltSectorInfo>()
+    companion object {
+        val mapper = object: Mapper<MinAltSectorInfo>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising MinAltSectorInfo mapper")
+        }
+    }
 }
 
 /** Component for tagging waypoint related information */
@@ -97,14 +152,26 @@ data class MinAltSectorInfo(var minAltFt: Int? = null, var restricted: Boolean =
 data class WaypointInfo(var wptId: Short = 0, var wptName: String = "-----"): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.WAYPOINT_INFO
 
-    companion object: Mapper<WaypointInfo>()
+    companion object {
+        val mapper = object: Mapper<WaypointInfo>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising WaypointInfo mapper")
+        }
+    }
 }
 
 /** Component for tagging a published hold procedure */
 data class PublishedHoldInfo(var wptId: Short = 0, var maxAltFt: Int? = null, var minAltFt: Int? = null,
                              var maxSpdKtLower: Short = 230, var maxSpdKtHigher: Short = 240, var inboundHdgDeg: Short = 360, var legDistNm: Byte = 5,
                              var turnDir: Byte = CommandTarget.TURN_RIGHT): Component {
-     companion object: Mapper<PublishedHoldInfo>()
+     companion object {
+        val mapper = object: Mapper<PublishedHoldInfo>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising PublishedHoldInfo mapper")
+        }
+    }
 }
 
 /**
@@ -121,7 +188,13 @@ data class AircraftInfo(var icaoCallsign: String = "SHIBA1", var icaoType: Strin
     var minAcc: Float = 0f
     var maxVs: Float = 0f
     var minVs: Float = 0f
-    companion object: Mapper<AircraftInfo>()
+    companion object {
+        val mapper = object: Mapper<AircraftInfo>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising AircraftInfo mapper")
+        }
+    }
 }
 
 /** Component for tagging the arrival airport for an aircraft */
@@ -129,7 +202,13 @@ data class AircraftInfo(var icaoCallsign: String = "SHIBA1", var icaoType: Strin
 data class ArrivalAirport(var arptId: Byte): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.ARRIVAL_AIRPORT
 
-    companion object: Mapper<ArrivalAirport>()
+    companion object {
+        val mapper = object: Mapper<ArrivalAirport>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising ArrivalAirport mapper")
+        }
+    }
 }
 
 /** Component for tagging the departure airport (and runway after cleared for takeoff) for an aircraft */
@@ -137,12 +216,24 @@ data class ArrivalAirport(var arptId: Byte): Component, BaseComponentJSONInterfa
 data class DepartureAirport(var arptId: Byte, var rwyId: Byte): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.DEPARTURE_AIRPORT
 
-    companion object: Mapper<DepartureAirport>()
+    companion object {
+        val mapper = object: Mapper<DepartureAirport>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising DepartureAirport mapper")
+        }
+    }
 }
 
 /** Component for tagging aircraft trail positions */
 data class TrailInfo(val positions: Queue<Position> = Queue(MAX_TRAIL_DOTS)): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.TRAIL_INFO
 
-    companion object: Mapper<TrailInfo>()
+    companion object {
+        val mapper = object: Mapper<TrailInfo>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising TrailInfo mapper")
+        }
+    }
 }

@@ -5,6 +5,7 @@ import com.bombbird.terminalcontrol2.entities.Airport
 import com.bombbird.terminalcontrol2.global.CLIENT_SCREEN
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.json.BaseComponentJSONInterface
+import com.bombbird.terminalcontrol2.utilities.FileLog
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import ktx.ashley.Mapper
@@ -21,7 +22,13 @@ data class ApproachInfo(var approachName: String = "", var airportId: Byte = 0, 
         throw NullPointerException("No runway with ID $rwyId found in airport with ID $airportId")
     }
 
-    companion object: Mapper<ApproachInfo>()
+    companion object {
+        val mapper = object: Mapper<ApproachInfo>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising ApproachInfo mapper")
+        }
+    }
 }
 
 /** Component for tagging localizer information */
@@ -29,7 +36,13 @@ data class ApproachInfo(var approachName: String = "", var airportId: Byte = 0, 
 data class Localizer(var maxDistNm: Byte = 0): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.LOCALIZER
 
-    companion object: Mapper<Localizer>()
+    companion object {
+        val mapper = object: Mapper<Localizer>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising Localizer mapper")
+        }
+    }
 }
 
 /** Component for tagging the distance from the runway threshold to turn and line up (in an offset approach) */
@@ -37,7 +50,13 @@ data class Localizer(var maxDistNm: Byte = 0): Component, BaseComponentJSONInter
 data class LineUpDist(var lineUpDistNm: Float = 0f): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.LINE_UP_DIST
 
-    companion object: Mapper<LineUpDist>()
+    companion object {
+        val mapper = object: Mapper<LineUpDist>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising LineUpDist mapper")
+        }
+    }
 }
 
 /** Component for tagging glide slope information */
@@ -45,7 +64,13 @@ data class LineUpDist(var lineUpDistNm: Float = 0f): Component, BaseComponentJSO
 data class GlideSlope(var glideAngle: Float = 0f, var offsetNm: Float = 0f, var maxInterceptAlt: Short = 0): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.GLIDE_SLOPE
 
-    companion object: Mapper<GlideSlope>()
+    companion object {
+        val mapper = object: Mapper<GlideSlope>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising GlideSlope mapper")
+        }
+    }
 }
 
 /** Component for tagging step-down approach information */
@@ -53,7 +78,13 @@ data class GlideSlope(var glideAngle: Float = 0f, var offsetNm: Float = 0f, var 
 data class StepDown(var altAtDist: Array<Step> = arrayOf()): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.STEP_DOWN
 
-    companion object: Mapper<StepDown>()
+    companion object {
+        val mapper = object: Mapper<StepDown>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising StepDown mapper")
+        }
+    }
 
     /** Class for steps on the step-down approach */
     @JsonClass(generateAdapter = true)
@@ -83,7 +114,13 @@ data class StepDown(var altAtDist: Array<Step> = arrayOf()): Component, BaseComp
 data class Circling(var minBreakoutAlt: Int = 0, var maxBreakoutAlt: Int = 0, var breakoutDir: Byte = CommandTarget.TURN_LEFT): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.CIRCLING
 
-    companion object: Mapper<Circling>()
+    companion object {
+        val mapper = object: Mapper<Circling>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising Circling mapper")
+        }
+    }
 }
 
 /** Component for tagging approach minimums information */
@@ -91,7 +128,13 @@ data class Circling(var minBreakoutAlt: Int = 0, var maxBreakoutAlt: Int = 0, va
 data class Minimums(var baroAltFt: Short = 0, var rvrM: Short = 0): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.MINIMUMS
 
-    companion object: Mapper<Minimums>()
+    companion object {
+        val mapper = object: Mapper<Minimums>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising Minimums mapper")
+        }
+    }
 }
 
 /**
@@ -102,7 +145,13 @@ data class Minimums(var baroAltFt: Short = 0, var rvrM: Short = 0): Component, B
 class Visual: Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.VISUAL
 
-    companion object: Mapper<Visual>()
+    companion object {
+        val mapper = object: Mapper<Visual>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising Visual mapper")
+        }
+    }
 
     override fun equals(other: Any?): Boolean {
         if (other == null) return false
