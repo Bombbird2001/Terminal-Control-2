@@ -12,7 +12,7 @@ import com.bombbird.terminalcontrol2.TerminalControl2
 /** Launches the iOS (RoboVM) application. */
 class IOSLauncher : IOSApplication.Delegate() {
 	override fun createApplication(): IOSApplication {
-		return IOSApplication(TerminalControl2(IOSFileHandler()), IOSApplicationConfiguration().apply {
+		return IOSApplication(TerminalControl2(IOSFileHandler(), IOSTTSHandler()), IOSApplicationConfiguration().apply {
             // Configure your application here.
         })
 	}

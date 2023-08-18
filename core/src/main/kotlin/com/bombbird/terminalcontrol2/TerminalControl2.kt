@@ -19,6 +19,7 @@ import com.bombbird.terminalcontrol2.screens.settings.GameSettings
 import com.bombbird.terminalcontrol2.screens.settings.MainSettings
 import com.bombbird.terminalcontrol2.screens.settings.TrafficSettings
 import com.bombbird.terminalcontrol2.sounds.SoundManager
+import com.bombbird.terminalcontrol2.sounds.TextToSpeechInterface
 import com.bombbird.terminalcontrol2.ui.CustomDialog
 import com.bombbird.terminalcontrol2.utilities.FileLog
 import kotlinx.coroutines.launch
@@ -34,7 +35,7 @@ import ktx.scene2d.*
  *
  * [clearScreen] is set to false as it will be handled by the individual screens
  */
-class TerminalControl2(val externalFileHandler: ExternalFileHandler) : KtxGame<KtxScreen>(clearScreen = false) {
+class TerminalControl2(val externalFileHandler: ExternalFileHandler, val ttsHandler: TextToSpeechInterface) : KtxGame<KtxScreen>(clearScreen = false) {
     lateinit var batch: SpriteBatch
     lateinit var engine: Engine
     lateinit var soundManager: SoundManager
