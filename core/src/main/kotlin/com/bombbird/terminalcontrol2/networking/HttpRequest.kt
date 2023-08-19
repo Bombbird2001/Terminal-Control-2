@@ -189,7 +189,8 @@ object HttpRequest {
 
     /** Class representing data sent by authorization endpoint with symmetric key for room data encryption */
     @JsonClass(generateAdapter = true)
-    data class AuthorizationResponse(val success: Boolean, val key: String, val nonce: String, val iv: String)
+    data class AuthorizationResponse(val success: Boolean, val roomKey: String, val clientKey: String,
+                                     val nonce: String, val iv: String)
 
     private val moshi = Moshi.Builder().build()
 

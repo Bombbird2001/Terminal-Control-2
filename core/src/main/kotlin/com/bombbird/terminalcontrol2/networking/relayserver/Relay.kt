@@ -67,14 +67,17 @@ interface RelayServer {
  * Interface for performing authorization on the relay server
  */
 interface RelayAuthorization {
+    /** Class representing the data sent to the client when authorization succeeds */
+    class RoomAuthorizationResult(val roomKey: String, val clientKey: String, val nonce: String, val iv: String)
+
     /**
      * Attempts to add the UUID to the list of authorized UUID for the room
      * @param roomID ID of the room
      * @param uuid UUID of the player to authorize
-     * @return a pair containing the secret symmetric key, challenge nonce and random IV if authorization is successful,
-     * else null if it fails or room is not found
+     * @return a [RoomAuthorizationResult] containing the server symmetric key, client symmetric key, challenge nonce
+     * and random IV if authorization is successful, else null if it fails or room is not found
      */
-    fun authorizeUUIDToRoom(roomID: Short, uuid: UUID): Triple<String, String, String>?
+    fun authorizeUUIDToRoom(roomID: Short, uuid: UUID): RoomAuthorizationResult?
 
     /**
      * Creates a new pending room

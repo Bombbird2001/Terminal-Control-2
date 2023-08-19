@@ -33,13 +33,15 @@ class LANServer(
     onConnect: (ConnectionMeta) -> Unit,
     onDisconnect: (ConnectionMeta) -> Unit
 ) : NetworkServer(gameServer, onReceive, onConnect, onDisconnect) {
+    private class DiffieHellmanPair(val serverDH: DiffieHellman, val clientDH: DiffieHellman)
+
     override val serverKryo: Kryo
         get() = server.kryo
 
     private val server = Server(SERVER_WRITE_BUFFER_SIZE, SERVER_READ_BUFFER_SIZE)
 
     /** Maps [Connection] to their respective Diffie-Hellman instances while the key has not been established */
-    private val connectionDHMap = GdxArrayMap<Connection, DiffieHellman>(PLAYER_SIZE)
+    private val connectionDHMap = GdxArrayMap<Connection, DiffieHellmanPair>(PLAYER_SIZE)
 
     /** Maps [Connection] to their respective [Encryptor], [Decrypter] containing the secret key */
     private val connectionEncDecMap = GdxArrayMap<Connection, Pair<Encryptor, Decrypter>>(PLAYER_SIZE)
@@ -90,13 +92,22 @@ class LANServer(
             override fun received(connection: Connection, obj: Any?) {
                 val encryptorDecrypter = connectionEncDecMap[connection]
 
-                if (encryptorDecrypter == null && obj is DiffieHellmanValue) {
-                    val dh = connectionDHMap[connection] ?: return
-                    val secretKey = dh.getAES128Key(obj.xy)
+                if (encryptorDecrypter == null && obj is DiffieHellmanValueOld) {
+                    // Will prevent connection from a client with build version < 10; but such a client would not even
+                    // have the new DH class registered to Kryo, so it would disconnect by itself anyway
+                    // We can't send a ConnectionError since that has to be encrypted as well, so we have no choice but
+                    // to close the connection directly
+                    return connection.close()
+                }
+
+                if (encryptorDecrypter == null && obj is DiffieHellmanValues) {
+                    val dhPair = connectionDHMap[connection] ?: return
+                    val serverSecretKey = dhPair.serverDH.getAES128Key(obj.serverXy)
+                    val clientSecretKey = dhPair.clientDH.getAES128Key(obj.clientXy)
                     val encryptor = AESGCMEncryptor(this@LANServer::getSerialisedBytes)
                     val decrypter = AESGCMDecrypter(this@LANServer::fromSerializedBytes)
-                    encryptor.setKey(secretKey)
-                    decrypter.setKey(secretKey)
+                    encryptor.setKey(serverSecretKey)
+                    decrypter.setKey(clientSecretKey)
                     connectionEncDecMap[connection] = Pair(encryptor, decrypter)
                     connectionDHMap.removeKey(connection)
 
@@ -137,10 +148,12 @@ class LANServer(
              * @param connection the incoming connection
              */
             override fun connected(connection: Connection) {
-                val dh = DiffieHellman(DIFFIE_HELLMAN_GENERATOR, DIFFIE_HELLMAN_PRIME)
-                val toSend = dh.getExchangeValue()
-                connectionDHMap[connection] = dh
-                connection.sendTCP(DiffieHellmanValue(toSend))
+                val serverKeyDH = DiffieHellman(DIFFIE_HELLMAN_GENERATOR, DIFFIE_HELLMAN_PRIME)
+                val serverToSend = serverKeyDH.getExchangeValue()
+                val clientKeyDH = DiffieHellman(DIFFIE_HELLMAN_GENERATOR, DIFFIE_HELLMAN_PRIME)
+                val clientToSend = clientKeyDH.getExchangeValue()
+                connectionDHMap[connection] = DiffieHellmanPair(serverKeyDH, clientKeyDH)
+                connection.sendTCP(DiffieHellmanValues(serverToSend, clientToSend))
             }
 
             /**
@@ -148,6 +161,8 @@ class LANServer(
              * @param connection the disconnecting client
              */
             override fun disconnected(connection: Connection?) {
+                connectionDHMap.removeKey(connection)
+                connectionEncDecMap.removeKey(connection)
                 gameServer.postRunnableAfterEngineUpdate {
                     // Remove entries only after this engine update to prevent threading issues
                     val conn = connectionMetaMap[connection] ?: return@postRunnableAfterEngineUpdate

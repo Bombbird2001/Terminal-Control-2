@@ -10,7 +10,8 @@ import com.bombbird.terminalcontrol2.navigation.Approach
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.navigation.SidStar
 import com.bombbird.terminalcontrol2.networking.dataclasses.*
-import com.bombbird.terminalcontrol2.networking.encryption.DiffieHellmanValue
+import com.bombbird.terminalcontrol2.networking.encryption.DiffieHellmanValueOld
+import com.bombbird.terminalcontrol2.networking.encryption.DiffieHellmanValues
 import com.bombbird.terminalcontrol2.networking.encryption.EncryptedData
 import com.bombbird.terminalcontrol2.networking.relayserver.*
 import com.bombbird.terminalcontrol2.screens.RadarScreen
@@ -167,13 +168,14 @@ fun registerClassesToKryo(kryo: Kryo?) {
         // Encryption classes
         register(EncryptedData::class.java)
         register(BigInteger::class.java)
-        register(DiffieHellmanValue::class.java)
+        register(DiffieHellmanValueOld::class.java)
 
         // New classes will all be added sequentially to the back to prevent relay from failing to parse
         // earlier classes
         register(NightModeData::class.java)
         register(ClearedForTakeoffData::class.java)
         register(ClientData::class.java)
+        register(DiffieHellmanValues::class.java)
 
     } ?: FileLog.info("NetworkingTools", "Null kryo passed, unable to register classes")
 }

@@ -2,7 +2,7 @@ package com.bombbird.terminalcontrol2.networking.encryption
 
 import com.bombbird.terminalcontrol2.utilities.FileLog
 import java.lang.Exception
-import java.security.SecureRandom
+import java.math.BigInteger
 import javax.crypto.Cipher
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
@@ -52,16 +52,17 @@ class AESGCMEncryptor(private val serializeObj: (Any) -> ByteArray?): Encryptor 
     companion object {
         const val ENCRYPTION_MODE = "AES/GCM/NoPadding"
         const val AES_KEY_LENGTH_BYTES = 16
-        const val GCM_TAG_LENGTH_BYTES = 16
+        const val GCM_TAG_LENGTH_BYTES = 12
     }
 
     private lateinit var secretKey: SecretKey
     private val cipher = Cipher.getInstance(ENCRYPTION_MODE)
-    private val random = SecureRandom()
+    private var ivCounter = BigInteger.ZERO
 
     override fun encrypt(dataToEncrypt: NeedsEncryption): EncryptedData? {
         val iv = ByteArray(GCM_TAG_LENGTH_BYTES)
-        random.nextBytes(iv)
+        val bigIntArray = ivCounter.toByteArray()
+        bigIntArray.copyInto(iv, destinationOffset = iv.size - bigIntArray.size)
         return encryptWithIV(iv, dataToEncrypt)
     }
 
@@ -69,6 +70,7 @@ class AESGCMEncryptor(private val serializeObj: (Any) -> ByteArray?): Encryptor 
         try {
             val gcmPara = GCMParameterSpec(8 * iv.size, iv)
             cipher.init(Cipher.ENCRYPT_MODE, secretKey, gcmPara)
+            ivCounter = BigInteger(iv) + BigInteger.ONE
             return EncryptedData(iv, cipher.doFinal(serializeObj(dataToEncrypt) ?: return null))
         } catch (e: Exception) {
             FileLog.info("AESGCMEncryptor", "Failed to encrypt due to\n${e.stackTraceToString()}")

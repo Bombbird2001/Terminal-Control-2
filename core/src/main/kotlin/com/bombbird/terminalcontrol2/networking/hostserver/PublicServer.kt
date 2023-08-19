@@ -121,9 +121,10 @@ class PublicServer(
             return false
         }
         setRoomId(roomCreation.roomId)
-        val key = SecretKeySpec(Base64.decodeBase64(roomCreation.authResponse.key), 0, AESGCMEncryptor.AES_KEY_LENGTH_BYTES, "AES")
-        encryptor.setKey(key)
-        decrypter.setKey(key)
+        val roomKey = SecretKeySpec(Base64.decodeBase64(roomCreation.authResponse.roomKey), 0, AESGCMEncryptor.AES_KEY_LENGTH_BYTES, "AES")
+        val hostKey = SecretKeySpec(Base64.decodeBase64(roomCreation.authResponse.clientKey), 0, AESGCMEncryptor.AES_KEY_LENGTH_BYTES, "AES")
+        encryptor.setKey(hostKey)
+        decrypter.setKey(roomKey)
 
         val iv = Base64.decodeBase64(roomCreation.authResponse.iv)
         val ciphertext = encryptor.encryptWithIV(iv, RelayNonce(roomCreation.authResponse.nonce))?.ciphertext

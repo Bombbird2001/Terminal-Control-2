@@ -93,9 +93,10 @@ class PublicClient: NetworkClient() {
             return
         }
 
-        val key = SecretKeySpec(Base64.decodeBase64(authResponse.key), 0, AESGCMEncryptor.AES_KEY_LENGTH_BYTES, "AES")
-        encryptor.setKey(key)
-        decrypter.setKey(key)
+        val roomKey = SecretKeySpec(Base64.decodeBase64(authResponse.roomKey), 0, AESGCMEncryptor.AES_KEY_LENGTH_BYTES, "AES")
+        val clientKey = SecretKeySpec(Base64.decodeBase64(authResponse.clientKey), 0, AESGCMEncryptor.AES_KEY_LENGTH_BYTES, "AES")
+        encryptor.setKey(clientKey)
+        decrypter.setKey(roomKey)
 
         val iv = Base64.decodeBase64(authResponse.iv)
         val ciphertext = encryptor.encryptWithIV(iv, RelayNonce(authResponse.nonce))?.ciphertext ?: return

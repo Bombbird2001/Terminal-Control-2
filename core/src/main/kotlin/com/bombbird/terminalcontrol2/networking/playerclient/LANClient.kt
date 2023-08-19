@@ -35,17 +35,25 @@ class LANClient(lanClientDiscoveryHandler: LANClientDiscoveryHandler): NetworkCl
         setDiscoveryHandler(lanClientDiscoveryHandler)
         addListener(object: Listener {
             override fun received(connection: Connection, obj: Any?) {
-                if (!secretKeyCalculated && obj is DiffieHellmanValue) {
+                if (!secretKeyCalculated && obj is DiffieHellmanValueOld) {
+                    // Will prevent connection to a host with build version < 10
+                    return connection.close()
+                }
+
+                if (!secretKeyCalculated && obj is DiffieHellmanValues) {
                     // Calculate DH values
-                    val dh = DiffieHellman(DIFFIE_HELLMAN_GENERATOR, DIFFIE_HELLMAN_PRIME)
-                    val toSend = dh.getExchangeValue()
-                    val secretKey = dh.getAES128Key(obj.xy)
-                    encryptor.setKey(secretKey)
-                    decrypter.setKey(secretKey)
+                    val serverDH = DiffieHellman(DIFFIE_HELLMAN_GENERATOR, DIFFIE_HELLMAN_PRIME)
+                    val clientDH = DiffieHellman(DIFFIE_HELLMAN_GENERATOR, DIFFIE_HELLMAN_PRIME)
+                    val serverToSend = serverDH.getExchangeValue()
+                    val clientToSend = clientDH.getExchangeValue()
+                    val serverSecretKey = serverDH.getAES128Key(obj.serverXy)
+                    val clientSecretKey = clientDH.getAES128Key(obj.clientXy)
+                    encryptor.setKey(clientSecretKey)
+                    decrypter.setKey(serverSecretKey)
 
                     // Key established
                     secretKeyCalculated = true
-                    connection.sendTCP(DiffieHellmanValue(toSend))
+                    connection.sendTCP(DiffieHellmanValues(serverToSend, clientToSend))
                     return
                 }
 

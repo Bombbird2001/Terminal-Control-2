@@ -18,9 +18,9 @@ import kotlin.Exception
 
 object RelayEndpoint {
     /** Moshi with RoomJSON adapter for JSON serialization */
-    private val roomListType = Types.newParameterizedType(List::class.java, RelayServer.Room::class.java)
+    private val roomListType = Types.newParameterizedType(List::class.java, Room::class.java)
     private val moshi = Moshi.Builder().add(RoomJSONAdapter).build()
-    private val moshiGamesAdapter = moshi.adapter<List<RelayServer.Room>>(roomListType)
+    private val moshiGamesAdapter = moshi.adapter<List<Room>>(roomListType)
     @OptIn(ExperimentalStdlibApi::class)
     private val moshiAuthRequestAdapter = moshi.adapter<HttpRequest.AuthorizationRequest>()
     @OptIn(ExperimentalStdlibApi::class)
@@ -75,8 +75,8 @@ object RelayEndpoint {
 
                 // Get symmetric key, nonce and output to JSON
                 val res = relayServer.authorizeUUIDToRoom(authReq.roomId, UUID.fromString(authReq.uuid))
-                val authResponse = if (res == null) HttpRequest.AuthorizationResponse(false, "", "", "")
-                else HttpRequest.AuthorizationResponse(true, res.first, res.second, res.third)
+                val authResponse = if (res == null) HttpRequest.AuthorizationResponse(false, "", "", "", "")
+                else HttpRequest.AuthorizationResponse(true, res.roomKey, res.clientKey, res.nonce, res.iv)
                 val responseJson = moshiAuthResponseAdapter.toJson(authResponse)
 
                 val output = exchange.responseBody
@@ -105,7 +105,7 @@ object RelayEndpoint {
 
                 // Get symmetric key and output to JSON
                 val roomResponse = relayServer.createPendingRoom() ?:
-                HttpRequest.RoomCreationStatus(false, Short.MAX_VALUE, HttpRequest.AuthorizationResponse(false, "", "", ""))
+                HttpRequest.RoomCreationStatus(false, Short.MAX_VALUE, HttpRequest.AuthorizationResponse(false, "", "", "", ""))
                 val responseJson = moshiRoomCreationsStatusAdapter.toJson(roomResponse)
 
                 val output = exchange.responseBody
