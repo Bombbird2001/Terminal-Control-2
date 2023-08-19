@@ -78,7 +78,7 @@ class TokenSentence {
             if (!tokenList.isEmpty) builder.append(' ')
             builder.append(token.toTTSString())
         }
-        return removeExtraCharacters(builder.toString())
+        return removeExtraCharacters(builder.toString()).lowercase()
     }
 
     /** Adds a token to the sentence */

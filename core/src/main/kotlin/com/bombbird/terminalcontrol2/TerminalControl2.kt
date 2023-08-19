@@ -20,6 +20,7 @@ import com.bombbird.terminalcontrol2.screens.settings.MainSettings
 import com.bombbird.terminalcontrol2.screens.settings.TrafficSettings
 import com.bombbird.terminalcontrol2.sounds.SoundManager
 import com.bombbird.terminalcontrol2.sounds.TextToSpeechInterface
+import com.bombbird.terminalcontrol2.sounds.TextToSpeechManager
 import com.bombbird.terminalcontrol2.ui.CustomDialog
 import com.bombbird.terminalcontrol2.utilities.FileLog
 import com.bombbird.terminalcontrol2.utilities.loadCallsigns
@@ -46,6 +47,7 @@ class TerminalControl2(val externalFileHandler: ExternalFileHandler, val ttsHand
     val lanClientDiscoveryHandler = LANClientDiscoveryHandler()
     val lanClient = LANClient(lanClientDiscoveryHandler)
     val publicClient = PublicClient()
+    val ttsManager = TextToSpeechManager()
 
     /** Quits the current game running */
     fun quitCurrentGame() {

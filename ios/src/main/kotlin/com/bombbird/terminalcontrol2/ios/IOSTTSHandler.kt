@@ -11,11 +11,7 @@ class IOSTTSHandler: TextToSpeechInterface {
         TODO("Not yet implemented")
     }
 
-    override fun checkAndUpdateVoice(voice: String): String {
-        TODO("Not yet implemented")
-    }
-
-    override fun loadVoices() {
+    override fun getRandomVoice(): String? {
         TODO("Not yet implemented")
     }
 

@@ -78,6 +78,9 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                 }
             }
             with<RouteSegment>()
+            with<TTSVoice> {
+                voice = GAME.ttsManager.getRandomVoice()
+            }
         } else {
             with<ConflictAble>()
             with<WakeTrail>()

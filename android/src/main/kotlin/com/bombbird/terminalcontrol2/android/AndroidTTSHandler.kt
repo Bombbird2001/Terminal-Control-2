@@ -1,5 +1,6 @@
 package com.bombbird.terminalcontrol2.android
 
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.speech.tts.TextToSpeech
 import android.speech.tts.TextToSpeech.OnInitListener
@@ -15,6 +16,36 @@ class AndroidTTSHandler(private val app: AndroidApplication): TextToSpeechInterf
     private var tts: TextToSpeech? = null
     private val voiceArray = GdxArray<String>()
 
+    /** Starts the TTS initialisation process */
+    fun initialiseTTS() {
+        val ttsIntent = Intent()
+        ttsIntent.action = TextToSpeech.Engine.ACTION_CHECK_TTS_DATA
+        try {
+            app.startActivityForResult(ttsIntent, AndroidLauncher.ACT_CHECK_TTS_DATA)
+        } catch (e: ActivityNotFoundException) {
+            e.printStackTrace()
+            // toastManager.initTTSFail()
+        }
+    }
+
+    /** Loads all available voices for this device */
+    private fun loadVoices() {
+        tts?.let {
+            try {
+                if (it.voices.isEmpty()) return
+            } catch (e: Exception) {
+                return
+            }
+            it.voices?.let { voices ->
+                for (available in voices) {
+                    if (available.locale.language == Locale.ENGLISH.language) {
+                        voiceArray.add(available.name)
+                    }
+                }
+            }
+        } ?: return
+    }
+
     override fun sayText(text: String, voice: String) {
         tts?.let {
             it.voice = Voice(voice, Locale.ENGLISH, Voice.QUALITY_HIGH, Voice.LATENCY_NORMAL, false, null)
@@ -26,30 +57,12 @@ class AndroidTTSHandler(private val app: AndroidApplication): TextToSpeechInterf
         tts?.stop()
     }
 
-    override fun checkAndUpdateVoice(voice: String): String {
-        if (voiceArray.contains(voice)) return voice
-        return voiceArray.random() ?: voice
-    }
-
-    override fun loadVoices() {
-        tts?.let {
-            try {
-                if (it.voices.isEmpty()) return
-            } catch (e: Exception) {
-                return
-            }
-            it.voices?.let { voices ->
-                for (available in voices) {
-                    if ("en" == available.name.substring(0, 2)) {
-                        voiceArray.add(available.name)
-                    }
-                }
-            }
-        } ?: return
+    override fun getRandomVoice(): String? {
+        return voiceArray.random()
     }
 
     override fun quit() {
-        TODO("Not yet implemented")
+        tts?.stop()
     }
 
     /**

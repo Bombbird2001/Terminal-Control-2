@@ -117,6 +117,7 @@ fun loadAllComponents() {
     TakeoffClimb.initialise()
     TakeoffRoll.initialise()
     TrailInfo.initialise()
+    TTSVoice.initialise()
     Visual.initialise()
     VisualApproach.initialise()
     VisualArmed.initialise()

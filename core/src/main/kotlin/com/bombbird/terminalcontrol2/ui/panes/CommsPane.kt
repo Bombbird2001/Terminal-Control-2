@@ -184,7 +184,7 @@ class CommsPane {
         }
 
         addMessage(sentence.toTextSentence(), getMessageTypeForAircraftType(flightType.type))
-        println(sentence.toTTSSentence())
+        aircraft[TTSVoice.mapper]?.voice?.let { voice -> GAME.ttsManager.say(sentence.toTTSSentence(), voice) }
 
         // Play contact sound
         GAME.soundManager.playInitialContact()
@@ -241,7 +241,7 @@ class CommsPane {
             .addTokens(*lateralClearance)
 
         addMessage(sentence.toTextSentence(), ARRIVAL)
-        println(sentence.toTTSSentence())
+        aircraft[TTSVoice.mapper]?.voice?.let { voice -> GAME.ttsManager.say(sentence.toTTSSentence(), voice) }
     }
 
     /**
@@ -268,7 +268,7 @@ class CommsPane {
             .addComma().addTokens(*lateralClearance)
 
         addMessage(sentence.toTextSentence(), ARRIVAL)
-        println(sentence.toTTSSentence())
+        aircraft[TTSVoice.mapper]?.voice?.let { voice -> GAME.ttsManager.say(sentence.toTTSSentence(), voice) }
     }
 
     /**
@@ -355,7 +355,8 @@ class CommsPane {
             .addToken(LiteralToken(bye))
 
         addMessage(sentence2.toTextSentence(), getMessageTypeForAircraftType(flightType.type))
-        println(sentence2.toTTSSentence())
+        // println(sentence2.toTTSSentence())
+        aircraft[TTSVoice.mapper]?.voice?.let { voice -> GAME.ttsManager.say(sentence2.toTTSSentence(), voice) }
     }
 
     /**
