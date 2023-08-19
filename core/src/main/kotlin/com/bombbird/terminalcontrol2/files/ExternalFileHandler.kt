@@ -19,3 +19,10 @@ interface ExternalFileHandler {
      */
     fun selectAndSaveToFile(data: String, onSuccess: () -> Unit, onFailure: (String) -> Unit)
 }
+
+/** Stub external file handler for testing, not implemented or not required */
+object StubExternalFileHandler : ExternalFileHandler {
+    override fun selectAndReadFromFile(onComplete: (String?) -> Unit, onFailure: (String) -> Unit) {}
+
+    override fun selectAndSaveToFile(data: String, onSuccess: () -> Unit, onFailure: (String) -> Unit) {}
+}

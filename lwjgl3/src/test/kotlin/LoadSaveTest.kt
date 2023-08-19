@@ -4,6 +4,7 @@ import com.bombbird.terminalcontrol2.components.Altitude
 import com.bombbird.terminalcontrol2.files.*
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.networking.GameServer
+import com.bombbird.terminalcontrol2.sounds.StubTextToSpeech
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.adapter
 import io.kotest.core.spec.style.FunSpec
@@ -22,11 +23,7 @@ object LoadSaveTest: FunSpec() {
     init {
         Gdx.app = Lwjgl3StubApplication
 
-        GAME = TerminalControl2(object : ExternalFileHandler {
-            override fun selectAndReadFromFile(onComplete: (String?) -> Unit, onFailure: (String) -> Unit) {}
-
-            override fun selectAndSaveToFile(data: String, onSuccess: () -> Unit, onFailure: (String) -> Unit) {}
-        })
+        GAME = TerminalControl2(StubExternalFileHandler, StubTextToSpeech)
 
         val gs = GameServer.testGameServer().apply {
             saveID = TEST_SAVE_ID

@@ -1,11 +1,12 @@
 import com.bombbird.terminalcontrol2.TerminalControl2
-import com.bombbird.terminalcontrol2.files.ExternalFileHandler
+import com.bombbird.terminalcontrol2.files.StubExternalFileHandler
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.networking.GameServer
 import com.bombbird.terminalcontrol2.networking.HttpRequest
 import com.bombbird.terminalcontrol2.networking.hostserver.PublicServer
 import com.bombbird.terminalcontrol2.networking.playerclient.PublicClient
 import com.bombbird.terminalcontrol2.relay.RelayServer
+import com.bombbird.terminalcontrol2.sounds.StubTextToSpeech
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.booleans.shouldBeFalse
@@ -24,11 +25,7 @@ object RelayServerTest: FunSpec() {
         // Start the relay server and endpoint
         RelayServer.main(arrayOf("test"))
 
-        GAME = TerminalControl2(object : ExternalFileHandler {
-            override fun selectAndReadFromFile(onComplete: (String?) -> Unit, onFailure: (String) -> Unit) {}
-
-            override fun selectAndSaveToFile(data: String, onSuccess: () -> Unit, onFailure: (String) -> Unit) {}
-        })
+        GAME = TerminalControl2(StubExternalFileHandler, StubTextToSpeech)
 
         test("No games running") {
             HttpRequest.sendPublicGamesRequest {

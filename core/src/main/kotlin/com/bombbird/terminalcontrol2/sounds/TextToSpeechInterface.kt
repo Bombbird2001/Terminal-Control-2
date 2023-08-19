@@ -12,3 +12,16 @@ interface TextToSpeechInterface {
 
     fun quit()
 }
+
+/** Stub TTS interface for testing, not implemented or not required */
+object StubTextToSpeech : TextToSpeechInterface {
+    override fun sayText(text: String, voice: String) {}
+
+    override fun cancel() {}
+
+    override fun checkAndUpdateVoice(voice: String): String { return "" }
+
+    override fun loadVoices() {}
+
+    override fun quit() {}
+}

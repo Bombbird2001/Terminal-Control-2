@@ -1,5 +1,5 @@
 import com.bombbird.terminalcontrol2.TerminalControl2
-import com.bombbird.terminalcontrol2.files.ExternalFileHandler
+import com.bombbird.terminalcontrol2.files.StubExternalFileHandler
 import com.bombbird.terminalcontrol2.global.CLIENT_SCREEN
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.isGameInitialised
@@ -7,17 +7,14 @@ import com.bombbird.terminalcontrol2.networking.ConnectionMeta
 import com.bombbird.terminalcontrol2.networking.GameServer
 import com.bombbird.terminalcontrol2.networking.NetworkServer
 import com.bombbird.terminalcontrol2.screens.RadarScreen
+import com.bombbird.terminalcontrol2.sounds.StubTextToSpeech
 import com.esotericsoftware.kryo.Kryo
 import java.util.*
 import kotlin.collections.AbstractList
 
 /** Initialises the game and game server for test purposes, if not already initialised */
 internal fun testInitialiseGameAndServer() {
-    if (!isGameInitialised) GAME = TerminalControl2(object : ExternalFileHandler {
-        override fun selectAndReadFromFile(onComplete: (String?) -> Unit, onFailure: (String) -> Unit) {}
-
-        override fun selectAndSaveToFile(data: String, onSuccess: () -> Unit, onFailure: (String) -> Unit) {}
-    })
+    if (!isGameInitialised) GAME = TerminalControl2(StubExternalFileHandler, StubTextToSpeech)
     if (GAME.gameServer == null) {
         val newGameServer = GameServer.testGameServer()
         newGameServer.networkServer = object : NetworkServer(newGameServer, { _, _ -> }, { _ -> }, { _ -> }) {
