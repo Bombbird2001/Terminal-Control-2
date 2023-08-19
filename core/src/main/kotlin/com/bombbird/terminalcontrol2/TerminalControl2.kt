@@ -22,6 +22,7 @@ import com.bombbird.terminalcontrol2.sounds.SoundManager
 import com.bombbird.terminalcontrol2.sounds.TextToSpeechInterface
 import com.bombbird.terminalcontrol2.ui.CustomDialog
 import com.bombbird.terminalcontrol2.utilities.FileLog
+import com.bombbird.terminalcontrol2.utilities.loadCallsigns
 import kotlinx.coroutines.launch
 import ktx.app.KtxGame
 import ktx.app.KtxScreen
@@ -100,6 +101,7 @@ class TerminalControl2(val externalFileHandler: ExternalFileHandler, val ttsHand
                 loadPlayerUUID()
                 loadAvailableAirports()
                 loadAllDatatagLayouts()
+                loadCallsigns()
             }
 
             // Initialize logging system

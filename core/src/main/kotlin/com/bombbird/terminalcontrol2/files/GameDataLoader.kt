@@ -22,8 +22,8 @@ import ktx.collections.GdxArray
 import ktx.collections.set
 import ktx.collections.toGdxArray
 
-private const val aircraftPerfPath = "Data/aircraft.perf"
-private const val disallowedCallsignPath = "Data/disallowed.callsign"
+private const val AIRCRAFT_PERF_PATH = "Data/aircraft.perf"
+private const val DISALLOWED_CALLSIGN_PATH = "Data/disallowed.callsign"
 
 private const val WORLD_MAX_PLAYERS = "MAX_PLAYERS"
 private const val WORLD_MIN_ALT = "MIN_ALT"
@@ -83,7 +83,7 @@ const val HOLD_LEG = "HOLD"
 
 /** Loads the "aircraft.perf" file located in the "Data" subfolder in the assets into aircraft performance map */
 fun loadAircraftData() {
-    aircraftPerfPath.toInternalFile().readString().toLines().toTypedArray().apply {
+    AIRCRAFT_PERF_PATH.toInternalFile().readString().toLines().toTypedArray().apply {
         for (line in this) {
             val lineData = line.trim().split(" ")
             val type = lineData[0]
@@ -111,7 +111,7 @@ fun loadAircraftData() {
 
 /** Loads the "disallowed.callsign" file located in the "Data" subfolder in the assets into the set of disallowed callsigns */
 fun loadDisallowedCallsigns() {
-    disallowedCallsignPath.toInternalFile().readString().toLines().toTypedArray().apply {
+    DISALLOWED_CALLSIGN_PATH.toInternalFile().readString().toLines().toTypedArray().apply {
         for (line in this) disallowedCallsigns.add(line.trim())
     }
 }

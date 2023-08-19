@@ -15,14 +15,10 @@ import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.ui.datatag.getNewDatatagLabelText
 import com.bombbird.terminalcontrol2.ui.removeMouseScrollListeners
 import com.bombbird.terminalcontrol2.ui.datatag.updateDatatagText
-import com.bombbird.terminalcontrol2.utilities.AircraftTypeData
-import com.bombbird.terminalcontrol2.utilities.getACCSectorForPosition
-import com.bombbird.terminalcontrol2.utilities.removeExtraCharacters
-import com.bombbird.terminalcontrol2.utilities.FileLog
+import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.get
 import ktx.scene2d.*
 import java.time.LocalTime
-import kotlin.math.roundToInt
 
 /** Communications pane class to display all "communications" between player and aircraft */
 class CommsPane {
@@ -116,6 +112,9 @@ class CommsPane {
         val clearanceState = aircraft[ClearanceAct.mapper]?.actingClearance?.clearanceState ?: return
         val alt = aircraft[Altitude.mapper] ?: return
         val arrivalAirport = aircraft[ArrivalAirport.mapper]
+        val departureAirport = aircraft[DepartureAirport.mapper]
+
+        val sentence = TokenSentence()
 
         // Get the callsign of the player
         val thisSector = CLIENT_SCREEN?.let {
@@ -146,33 +145,46 @@ class CommsPane {
         val clearedHdg = if (flightType.type != FlightType.DEPARTURE) clearanceState.vectorHdg else null
         val clearedDirect = if (flightType.type != FlightType.DEPARTURE && clearanceState.route.size > 0) clearanceState.route[0]
         else null
-        val inbound = if (clearedHdg != null) ", heading ${if (clearedHdg < 100) "0" else ""}$clearedHdg"
-        else if (clearedDirect != null && clearedDirect is Route.WaypointLeg && MathUtils.randomBoolean()) {
-            ", inbound ${CLIENT_SCREEN?.waypoints?.get(clearedDirect.wptId)?.entity?.get(WaypointInfo.mapper)?.wptName}"
-        } else ""
+        val inboundTokens = if (clearedHdg != null) {
+            arrayOf(TokenSentence.COMMA_TOKEN, LiteralToken("heading"), HeadingToken(clearedHdg))
+        } else if (clearedDirect != null && clearedDirect is Route.WaypointLeg && MathUtils.randomBoolean()) {
+            arrayOf(TokenSentence.COMMA_TOKEN, LiteralToken("inbound"),
+                WaypointToken(CLIENT_SCREEN?.waypoints?.get(clearedDirect.wptId)?.entity?.get(WaypointInfo.mapper)?.wptName ?: ""))
+        } else arrayOf()
+
+        sentence.addTokens(LiteralToken(yourCallsign), LiteralToken(randomGreeting)).addComma()
+            .addTokens(CallsignToken(acInfo.icaoCallsign), LiteralToken(aircraftWake)).addComma().addTokens(*altitudeAction)
 
         // Get current SID/STAR name
-        val depArr = if (flightType.type == FlightType.DEPARTURE) "departure" else "arrival"
-        val starSid = if (clearedHdg != null) "" else when (MathUtils.random(3)) {
-            0 -> "on the ${clearanceState.routePrimaryName} $depArr"
-            1 -> ", ${clearanceState.routePrimaryName}"
-            2 -> ", ${clearanceState.routePrimaryName} $depArr"
-            else -> ""
+        val depArrToken = LiteralToken(if (flightType.type == FlightType.DEPARTURE) "departure" else "arrival")
+        val sidStarName = clearanceState.routePrimaryName
+        val sidStarObj = CLIENT_SCREEN?.airports?.get(arrivalAirport?.arptId)?.entity?.get(STARChildren.mapper)?.starMap?.get(sidStarName) ?:
+        CLIENT_SCREEN?.airports?.get(departureAirport?.arptId)?.entity?.get(SIDChildren.mapper)?.sidMap?.get(sidStarName)
+        val sidStarToken = if (sidStarObj == null) LiteralToken("") else PronounceableToken(sidStarName, sidStarObj)
+        if (clearedHdg == null) when (MathUtils.random(3)) {
+            0 -> sentence.addTokens(LiteralToken("on the"), sidStarToken, depArrToken)
+            1 -> sentence.addComma().addToken(sidStarToken)
+            2 -> sentence.addComma().addTokens(sidStarToken, depArrToken)
         }
 
-        // Get current airport ATIS letter
-        val atisLetter = CLIENT_SCREEN?.airports?.get(arrivalAirport?.arptId)?.entity?.get(MetarInfo.mapper)?.letterCode
-        val atis = if (atisLetter != null && MathUtils.randomBoolean(0.7f)) {
-            when (MathUtils.random(3)) {
-                0 -> ", information $atisLetter"
-                1 -> ", we have $atisLetter"
-                2 -> ", we have information $atisLetter"
-                else -> " with $atisLetter"
-            }
-        } else ""
+        sentence.addTokens(*inboundTokens)
 
-        val preFinalMsg = "$yourCallsign $randomGreeting, ${acInfo.icaoCallsign} $aircraftWake, $altitudeAction $starSid$inbound$atis"
-        addMessage(removeExtraCharacters(preFinalMsg), getMessageTypeForAircraftType(flightType.type))
+        // Get current airport ATIS letter
+        val informationToken = LiteralToken("information")
+        val weHaveToken = LiteralToken("we have")
+        val atisLetter = CLIENT_SCREEN?.airports?.get(arrivalAirport?.arptId)?.entity?.get(MetarInfo.mapper)?.letterCode
+        if (atisLetter != null && MathUtils.randomBoolean(0.7f)) {
+            val atisToken = AtisToken(atisLetter)
+            when (MathUtils.random(3)) {
+                0 -> sentence.addComma().addTokens(informationToken, atisToken)
+                1 -> sentence.addComma().addTokens(weHaveToken, atisToken)
+                2 -> sentence.addComma().addTokens(weHaveToken, informationToken, atisToken)
+                else -> sentence.addTokens(LiteralToken("with"), atisToken)
+            }
+        }
+
+        addMessage(sentence.toTextSentence(), getMessageTypeForAircraftType(flightType.type))
+        println(sentence.toTTSSentence())
 
         // Play contact sound
         GAME.soundManager.playInitialContact()
@@ -221,11 +233,15 @@ class CommsPane {
         val altitudeAction = getAltitudePhraseology(alt.altitudeFt, clearanceState.clearedAlt)
 
         // If aircraft is vectored, say heading, else say missed approach procedure
-        val lateralClearance = if (clearanceState.vectorHdg != null) "heading ${clearanceState.vectorHdg}"
-        else ""
+        val lateralClearance = clearanceState.vectorHdg?.let { hdg -> arrayOf(LiteralToken("heading"), HeadingToken(hdg)) } ?: arrayOf()
 
-        val preFinalMsg = "$yourCallsign hello, ${acInfo.icaoCallsign} $aircraftWake, missed approach, $altitudeAction, $lateralClearance"
-        addMessage(removeExtraCharacters(preFinalMsg), ARRIVAL)
+        val sentence = TokenSentence().addTokens(LiteralToken(yourCallsign), LiteralToken("hello")).addComma()
+            .addTokens(CallsignToken(acInfo.icaoCallsign), LiteralToken(aircraftWake)).addComma()
+            .addToken(LiteralToken("missed approach")).addComma().addTokens(*altitudeAction).addComma()
+            .addTokens(*lateralClearance)
+
+        addMessage(sentence.toTextSentence(), ARRIVAL)
+        println(sentence.toTTSSentence())
     }
 
     /**
@@ -245,11 +261,14 @@ class CommsPane {
         val altitudeAction = getAltitudePhraseology(alt.altitudeFt, clearanceState.clearedAlt)
 
         // If aircraft is vectored, say heading, else say missed approach procedure
-        val lateralClearance = if (clearanceState.vectorHdg != null) "heading ${clearanceState.vectorHdg}"
-        else ""
+        val lateralClearance = clearanceState.vectorHdg?.let { hdg -> arrayOf(LiteralToken("heading"), HeadingToken(hdg)) } ?: arrayOf()
 
-        val preFinalMsg = "${acInfo.icaoCallsign} $aircraftWake, missed approach, $altitudeAction, $lateralClearance"
-        addMessage(removeExtraCharacters(preFinalMsg), ARRIVAL)
+        val sentence = TokenSentence().addTokens(CallsignToken(acInfo.icaoCallsign), LiteralToken(aircraftWake))
+            .addComma().addToken(LiteralToken("missed approach")).addComma().addTokens(*altitudeAction)
+            .addComma().addTokens(*lateralClearance)
+
+        addMessage(sentence.toTextSentence(), ARRIVAL)
+        println(sentence.toTTSSentence())
     }
 
     /**
@@ -308,8 +327,12 @@ class CommsPane {
         }
         val nextCallsign = nextSectorInfo.callsign
 
-        val finalMsg = "${acInfo.icaoCallsign} $aircraftWake, contact $nextCallsign on ${nextSectorInfo.frequency}"
-        addMessage(removeExtraCharacters(finalMsg), OTHERS)
+        val sentence = TokenSentence().addTokens(CallsignToken(acInfo.icaoCallsign), LiteralToken(aircraftWake))
+            .addComma().addTokens(LiteralToken("contact"), LiteralToken(nextCallsign),
+                FrequencyToken(nextSectorInfo.frequency))
+
+        addMessage(sentence.toTextSentence(), OTHERS)
+        println(sentence.toTTSSentence())
 
         // Aircraft read-back segment
         val switchMsg = when (MathUtils.random(2)) {
@@ -327,8 +350,12 @@ class CommsPane {
             else -> ""
         }
 
-        val preFinalMsg = "$switchMsg ${nextSectorInfo.frequency}, ${acInfo.icaoCallsign} $aircraftWake, $bye"
-        addMessage(removeExtraCharacters(preFinalMsg), getMessageTypeForAircraftType(flightType.type))
+        val sentence2 = TokenSentence().addTokens(LiteralToken(switchMsg), FrequencyToken(nextSectorInfo.frequency))
+            .addComma().addTokens(CallsignToken(acInfo.icaoCallsign), LiteralToken(aircraftWake)).addComma()
+            .addToken(LiteralToken(bye))
+
+        addMessage(sentence2.toTextSentence(), getMessageTypeForAircraftType(flightType.type))
+        println(sentence2.toTTSSentence())
     }
 
     /**
@@ -350,27 +377,29 @@ class CommsPane {
      * @param clearedAltFt the altitude the aircraft is cleared to fly to
      * @return the string denoting the altitude information transmitted by the aircraft
      */
-    private fun getAltitudePhraseology(currAltFt: Float, clearedAltFt: Int): String {
-        val currAltitude = currAltFt.let { currAlt ->
-            val roundedFL = (currAlt / 100f).roundToInt()
-            if (roundedFL * 100 >= TRANS_LVL * 100) "FL$roundedFL"
-            else "${roundedFL * 100} feet"
-        }
-
-        val clearedAlt = clearedAltFt.let { clearedAlt ->
-            val roundedFL = (clearedAlt / 100f).roundToInt()
-            if (roundedFL * 100 >= TRANS_LVL * 100) "FL$roundedFL"
-            else "${roundedFL * 100} feet"
-        }
-
+    private fun getAltitudePhraseology(currAltFt: Float, clearedAltFt: Int): Array<CommsToken> {
         val altDiff = clearedAltFt - currAltFt
         val shorten = MathUtils.randomBoolean()
+        val forToken = LiteralToken("for")
+        val throughToken = LiteralToken("through")
+        val levellingToken = LiteralToken("levelling off")
+        val atToken = LiteralToken("at")
+        val currAltToken = AltitudeToken(currAltFt)
+        val clearedAltToken = AltitudeToken(clearedAltFt.toFloat())
         return when {
-            MathUtils.randomBoolean(0.1f) -> ""
-            altDiff < -400 -> if (shorten) "descending $currAltitude for $clearedAlt" else "descending through $currAltitude for $clearedAlt"
-            altDiff > 400 -> if (shorten) "climbing $currAltitude for $clearedAlt" else "climbing through $currAltitude for $clearedAlt"
-            altDiff >= -50 && altDiff <= 50 -> if (shorten) " $clearedAlt" else "at $clearedAlt"
-            else -> if (shorten) "levelling off $clearedAlt" else "levelling off at $clearedAlt"
+            MathUtils.randomBoolean(0.1f) -> arrayOf()
+            altDiff < -400 -> {
+                val descendingToken = LiteralToken("descending")
+                if (shorten) arrayOf(descendingToken, currAltToken, forToken, clearedAltToken)
+                else arrayOf(descendingToken, throughToken, currAltToken, forToken, clearedAltToken)
+            }
+            altDiff > 400 -> {
+                val climbingToken = LiteralToken("climbing")
+                if (shorten) arrayOf(climbingToken, currAltToken, forToken, clearedAltToken)
+                else arrayOf(climbingToken, throughToken, currAltToken, forToken, clearedAltToken)
+            }
+            altDiff >= -50 && altDiff <= 50 -> if (shorten) arrayOf(clearedAltToken) else arrayOf(atToken, clearedAltToken)
+            else -> if (shorten) arrayOf(levellingToken, clearedAltToken) else arrayOf(levellingToken, atToken, clearedAltToken)
         }
     }
 
