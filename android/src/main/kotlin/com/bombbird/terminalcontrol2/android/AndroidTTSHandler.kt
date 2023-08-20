@@ -30,6 +30,7 @@ class AndroidTTSHandler(private val app: AndroidApplication): TextToSpeechInterf
 
     /** Loads all available voices for this device */
     private fun loadVoices() {
+        voiceArray.clear()
         tts?.let {
             try {
                 if (it.voices.isEmpty()) return
@@ -53,7 +54,7 @@ class AndroidTTSHandler(private val app: AndroidApplication): TextToSpeechInterf
         }
     }
 
-    override fun cancel() {
+    override fun onQuitGame() {
         tts?.stop()
     }
 
@@ -61,7 +62,7 @@ class AndroidTTSHandler(private val app: AndroidApplication): TextToSpeechInterf
         return voiceArray.random()
     }
 
-    override fun quit() {
+    override fun onQuitApp() {
         tts?.stop()
     }
 
@@ -97,7 +98,7 @@ class AndroidTTSHandler(private val app: AndroidApplication): TextToSpeechInterf
                     // toastManager.ttsLangNotSupported()
                 } else {
                     FileLog.info("Android TTS", "TTS initialized successfully")
-                    tts?.setSpeechRate(1.5f)
+                    tts?.setSpeechRate(1.25f)
                     loadVoices()
                 }
             }

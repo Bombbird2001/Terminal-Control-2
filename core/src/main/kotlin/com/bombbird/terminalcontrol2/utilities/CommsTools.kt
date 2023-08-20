@@ -34,7 +34,14 @@ private val NATO_ALPHABET_PHONETIC = hashMapOf(
     'X' to "X-ray",
     'Y' to "Yankee",
     'Z' to "Zulu",
+    '1' to "One",
+    '2' to "Two",
     '3' to "Tree",
+    '4' to "Four",
+    '5' to "Five",
+    '6' to "Six",
+    '7' to "Seven",
+    '8' to "Eight",
     '9' to "Niner",
     '0' to "Zero",
     '.' to "Decimal"
@@ -55,7 +62,6 @@ fun loadCallsigns() {
 /** Class for abstracting a collection of [CommsToken] to be made into a text or TTS sentence */
 class TokenSentence {
     companion object {
-        val SPACE_TOKEN = LiteralToken(" ")
         val COMMA_TOKEN = LiteralToken(",")
     }
 
@@ -91,11 +97,6 @@ class TokenSentence {
     fun addTokens(vararg tokens: CommsToken): TokenSentence {
         tokenList.addAll(*tokens)
         return this
-    }
-
-    /** Adds a space to the sentence */
-    fun addSpace(): TokenSentence {
-        return addToken(SPACE_TOKEN)
     }
 
     /** Adds a comma and space to the sentence */

@@ -7,7 +7,7 @@ class IOSTTSHandler: TextToSpeechInterface {
         TODO("Not yet implemented")
     }
 
-    override fun cancel() {
+    override fun onQuitGame() {
         TODO("Not yet implemented")
     }
 
@@ -15,7 +15,7 @@ class IOSTTSHandler: TextToSpeechInterface {
         TODO("Not yet implemented")
     }
 
-    override fun quit() {
+    override fun onQuitApp() {
         TODO("Not yet implemented")
     }
 }

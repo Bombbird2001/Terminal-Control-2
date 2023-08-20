@@ -37,7 +37,7 @@ import ktx.scene2d.*
  *
  * [clearScreen] is set to false as it will be handled by the individual screens
  */
-class TerminalControl2(val externalFileHandler: ExternalFileHandler, val ttsHandler: TextToSpeechInterface) : KtxGame<KtxScreen>(clearScreen = false) {
+class TerminalControl2(val externalFileHandler: ExternalFileHandler, ttsHandler: TextToSpeechInterface) : KtxGame<KtxScreen>(clearScreen = false) {
     lateinit var batch: SpriteBatch
     lateinit var engine: Engine
     lateinit var soundManager: SoundManager
@@ -47,7 +47,7 @@ class TerminalControl2(val externalFileHandler: ExternalFileHandler, val ttsHand
     val lanClientDiscoveryHandler = LANClientDiscoveryHandler()
     val lanClient = LANClient(lanClientDiscoveryHandler)
     val publicClient = PublicClient()
-    val ttsManager = TextToSpeechManager()
+    val ttsManager = TextToSpeechManager(ttsHandler)
 
     /** Quits the current game running */
     fun quitCurrentGame() {
@@ -64,6 +64,7 @@ class TerminalControl2(val externalFileHandler: ExternalFileHandler, val ttsHand
         GAME.removeScreen<CustomWeatherSettings>()
         GAME.removeScreen<TrafficSettings>()
         GAME.gameServer = null
+        ttsManager.quitGame()
     }
 
     /**
@@ -107,7 +108,7 @@ class TerminalControl2(val externalFileHandler: ExternalFileHandler, val ttsHand
             }
 
             // Initialize logging system
-            FileLog.initializeFile("Logs/BUILD $BUILD_VERSION.log")
+            // FileLog.initializeFile("Logs/BUILD $BUILD_VERSION.log")
             println("------------------------------------------------------")
             FileLog.info("TerminalControl2", "Game initialized")
 
@@ -148,5 +149,6 @@ class TerminalControl2(val externalFileHandler: ExternalFileHandler, val ttsHand
         lanClient.dispose()
         publicClient.dispose()
         FileLog.close()
+        ttsManager.disposeSafely()
     }
 }
