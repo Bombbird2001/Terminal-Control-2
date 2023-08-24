@@ -5,6 +5,7 @@ import io.github.jonelo.jAdapterForNativeTTS.engines.SpeechEngine
 import io.github.jonelo.jAdapterForNativeTTS.engines.SpeechEngineNative
 import io.github.jonelo.jAdapterForNativeTTS.engines.VoicePreferences
 import ktx.collections.GdxArray
+import ktx.collections.GdxSet
 import java.util.Locale
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
@@ -14,7 +15,8 @@ import kotlin.concurrent.thread
 class DesktopTTSHandler: TextToSpeechInterface {
     private lateinit var speechEngine: SpeechEngine
     private lateinit var voicePrefs: VoicePreferences
-    private var availableVoices = GdxArray<String>()
+    private val voiceArray = GdxArray<String>()
+    private val voiceSet = GdxSet<String>()
     private val speechQueue = LinkedBlockingQueue<SpeechQueueItem>()
     private val running = AtomicBoolean(true)
 
@@ -26,9 +28,13 @@ class DesktopTTSHandler: TextToSpeechInterface {
         voicePrefs = VoicePreferences().apply {
             language = Locale.ENGLISH.language
         }
-        availableVoices.clear()
+        voiceArray.clear()
+        voiceSet.clear()
         for (voice in speechEngine.availableVoices) {
-            if (voice.matches(voicePrefs)) availableVoices.add(voice.name)
+            if (voice.matches(voicePrefs)) {
+                voiceArray.add(voice.name)
+                voiceSet.add(voice.name)
+            }
         }
         speechEngine.setRate(20)
 
@@ -61,7 +67,11 @@ class DesktopTTSHandler: TextToSpeechInterface {
     }
 
     override fun getRandomVoice(): String? {
-        return availableVoices.random()
+        return voiceArray.random()
+    }
+
+    override fun checkVoiceAvailable(voice: String): Boolean {
+        return voiceSet.contains(voice)
     }
 
     override fun onQuitApp() {

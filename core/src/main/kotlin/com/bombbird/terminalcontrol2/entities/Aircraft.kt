@@ -49,6 +49,9 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
         with<AffectedByWind>()
         with<InitialClientDatatagPosition>()
         with<TrailInfo>()
+        with<TTSVoice> {
+            voice = GAME.ttsManager.getRandomVoice()
+        }
         if (onClient) {
             with<RadarData> {
                 position.x = posX
@@ -79,7 +82,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
             }
             with<RouteSegment>()
             with<TTSVoice> {
-                voice = GAME.ttsManager.getRandomVoice()
+                voice = getServerElseRandomVoice(callsign).apply { println("$callsign: $this") }
             }
         } else {
             with<ConflictAble>()
@@ -101,6 +104,16 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
 
     /** Empty aircraft constructor in case of missing information */
     constructor(): this("EMPTY", 0f, 0f, 0f, "B77W", FlightType.ARRIVAL)
+
+    /**
+     * Gets the server-side voice if the client is also the host, or a random voice if the client is not the host
+     * @param callsign the callsign of the aircraft
+     */
+    private fun getServerElseRandomVoice(callsign: String): String? {
+        val serverVoice = GAME.gameServer?.aircraft?.get(callsign)?.entity?.get(TTSVoice.mapper)?.voice
+            ?: return GAME.ttsManager.getRandomVoice()
+        return GAME.ttsManager.checkVoiceElseRandomVoice(serverVoice) ?: GAME.ttsManager.getRandomVoice()
+    }
 
     companion object {
         /** De-serialises a [SerialisedAircraft] and creates a new [Aircraft] object from it */

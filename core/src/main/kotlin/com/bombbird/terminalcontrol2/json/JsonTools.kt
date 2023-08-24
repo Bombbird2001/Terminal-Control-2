@@ -44,7 +44,7 @@ interface BaseComponentJSONInterface {
         AFFECTED_BY_WIND, ON_GROUND, RUNWAY_CHILDREN,  APPROACH_CHILDREN, VISUAL_APPROACH, DEPENDENT_OPPOSITE_RUNWAY, DEPENDENT_PARALLEL_RUNWAY,
         CROSSING_RUNWAY,  ARRIVAL_ROUTE_ZONE, DEPARTURE_ROUTE_ZONE, ACTIVE_LANDING, ACTIVE_TAKEOFF, RANDOM_AIRLINE_DATA,
         ACTIVE_RUNWAY_CONFIG, ARRIVAL_CLOSED, DEPARTURE_INFO, AIRPORT_NEXT_DEPARTURE, RUNWAY_PREVIOUS_ARRIVAL, RUNWAY_PREVIOUS_DEPARTURE,
-        RUNWAY_OCCUPIED, WAKE_TRAIL, WAKE_INFO, INITIAL_CLIENT_DATATAG_POSITION, TRAIL_INFO
+        RUNWAY_OCCUPIED, WAKE_TRAIL, WAKE_INFO, INITIAL_CLIENT_DATATAG_POSITION, TRAIL_INFO, TTS_VOICE
     }
 
     val componentType: ComponentType
@@ -141,6 +141,7 @@ private fun getPolymorphicComponentAdapter(): PolymorphicJsonAdapterFactory<Base
         .withSubtype(WakeInfo::class.java, BaseComponentJSONInterface.ComponentType.WAKE_INFO.name)
         .withSubtype(InitialClientDatatagPosition::class.java, BaseComponentJSONInterface.ComponentType.INITIAL_CLIENT_DATATAG_POSITION.name)
         .withSubtype(TrailInfo::class.java, BaseComponentJSONInterface.ComponentType.TRAIL_INFO.name)
+        .withSubtype(TTSVoice::class.java, BaseComponentJSONInterface.ComponentType.TTS_VOICE.name)
 }
 
 /** Interface for implementing JSON serialization for subclasses of Leg */

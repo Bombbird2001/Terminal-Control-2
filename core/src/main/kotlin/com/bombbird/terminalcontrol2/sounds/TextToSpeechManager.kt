@@ -16,6 +16,15 @@ class TextToSpeechManager(private val ttsHandler: TextToSpeechInterface): Dispos
         return ttsHandler.getRandomVoice()
     }
 
+    /**
+     * Checks whether the input voice is available on the device, if so returns the original inut voice, else, returns
+     * a random available voice
+     * @param voice the voice to check
+     */
+    fun checkVoiceElseRandomVoice(voice: String): String? {
+        return if (ttsHandler.checkVoiceAvailable(voice)) voice else getRandomVoice()
+    }
+
     /** Called when player quits a game */
     fun quitGame() {
         ttsHandler.onQuitGame()

@@ -15,6 +15,10 @@ class IOSTTSHandler: TextToSpeechInterface {
         TODO("Not yet implemented")
     }
 
+    override fun checkVoiceAvailable(voice: String): Boolean {
+        TODO("Not yet implemented")
+    }
+
     override fun onQuitApp() {
         TODO("Not yet implemented")
     }

@@ -15,6 +15,12 @@ interface TextToSpeechInterface {
     /** Returns a random voice, or null if no voices available */
     fun getRandomVoice(): String?
 
+    /**
+     * Checks whether the input voice is available on the device
+     * @param voice the voice to check
+     */
+    fun checkVoiceAvailable(voice: String): Boolean
+
     /** To be called when the app is quitting */
     fun onQuitApp()
 }
@@ -26,6 +32,8 @@ object StubTextToSpeech : TextToSpeechInterface {
     override fun onQuitGame() {}
 
     override fun getRandomVoice(): String { return "" }
+
+    override fun checkVoiceAvailable(voice: String): Boolean { return false }
 
     override fun onQuitApp() {}
 }

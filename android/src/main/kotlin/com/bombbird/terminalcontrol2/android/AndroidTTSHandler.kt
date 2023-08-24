@@ -9,12 +9,14 @@ import com.badlogic.gdx.backends.android.AndroidApplication
 import com.bombbird.terminalcontrol2.sounds.TextToSpeechInterface
 import com.bombbird.terminalcontrol2.utilities.FileLog
 import ktx.collections.GdxArray
+import ktx.collections.GdxSet
 import java.util.*
 
 /** TTS handler for Android platform */
 class AndroidTTSHandler(private val app: AndroidApplication): TextToSpeechInterface, OnInitListener {
     private var tts: TextToSpeech? = null
     private val voiceArray = GdxArray<String>()
+    private val voiceSet = GdxSet<String>()
 
     /** Starts the TTS initialisation process */
     fun initialiseTTS() {
@@ -31,6 +33,7 @@ class AndroidTTSHandler(private val app: AndroidApplication): TextToSpeechInterf
     /** Loads all available voices for this device */
     private fun loadVoices() {
         voiceArray.clear()
+        voiceSet.clear()
         tts?.let {
             try {
                 if (it.voices.isEmpty()) return
@@ -41,6 +44,7 @@ class AndroidTTSHandler(private val app: AndroidApplication): TextToSpeechInterf
                 for (available in voices) {
                     if (available.locale.language == Locale.ENGLISH.language) {
                         voiceArray.add(available.name)
+                        voiceSet.add(available.name)
                     }
                 }
             }
@@ -60,6 +64,10 @@ class AndroidTTSHandler(private val app: AndroidApplication): TextToSpeechInterf
 
     override fun getRandomVoice(): String? {
         return voiceArray.random()
+    }
+
+    override fun checkVoiceAvailable(voice: String): Boolean {
+        return voiceSet.contains(voice)
     }
 
     override fun onQuitApp() {
