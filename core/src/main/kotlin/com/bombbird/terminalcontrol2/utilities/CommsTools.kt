@@ -167,7 +167,8 @@ class WaypointToken(private val waypointName: String): CommsToken() {
     }
 
     override fun toTTSString(): String {
-        // TODO Add spoken waypoint name
+        // Convert to individual NATO alphabets for waypoints with 3 or fewer letters
+        if (waypointName.length <= 3) return splitCharacterToNatoPhonetic(waypointName)
         return waypointName
     }
 }
