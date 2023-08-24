@@ -1,6 +1,7 @@
 package com.bombbird.terminalcontrol2.ui.datatag
 
 import com.badlogic.ashley.core.Entity
+import com.badlogic.gdx.Application
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.scenes.scene2d.InputEvent
 import com.badlogic.gdx.scenes.scene2d.ui.ImageButton
@@ -90,7 +91,8 @@ fun setDatatagFlash(datatag: Datatag, aircraft: Aircraft, flash: Boolean) {
 /** Updates the label style to use smaller fonts when radar is zoomed out */
 fun updateDatatagLabelSize(datatag: Datatag, smaller: Boolean) {
     datatag.labelArray.forEach {  label ->
-        label.style = Scene2DSkin.defaultSkin.get(if (smaller) "DatatagSmall" else "Datatag", LabelStyle::class.java)
+        val styleToUse = "${if (smaller) "DatatagSmall" else "Datatag"}${if (Gdx.app.type == Application.ApplicationType.Android) "Mobile" else ""}"
+        label.style = Scene2DSkin.defaultSkin.get(styleToUse, LabelStyle::class.java)
         label.pack()
     }
     updateDatatagSize(datatag)
