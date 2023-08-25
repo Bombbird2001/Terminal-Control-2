@@ -309,13 +309,16 @@ fun getNextMaxSpd(route: Route): Short? {
 }
 
 /**
- * Gets the highest minimum altitude restriction for all waypoints in the route
+ * Gets the highest minimum altitude restriction for all waypoints in the route,
+ * until a go around leg is reached
  * @param route the route to refer to
- * @return the minimum altitude, or null if a minimum altitude restriction does not exist
+ * @return the minimum altitude, or null if a minimum altitude restriction does
+ * not exist
  */
 fun getHighestMinAlt(route: Route): Int? {
     var currMin: Int? = null
     for (i in 0 until route.size) {
+        if (route[i].phase == Leg.MISSED_APP) return currMin
         val wptLeg = route[i] as? WaypointLeg ?: continue
         if (wptLeg.legActive && wptLeg.altRestrActive && wptLeg.minAltFt != null &&
             (currMin == null || wptLeg.minAltFt > currMin)) currMin = wptLeg.minAltFt
@@ -324,13 +327,16 @@ fun getHighestMinAlt(route: Route): Int? {
 }
 
 /**
- * Gets the lowest maximum altitude restriction for all waypoints in the route
+ * Gets the lowest maximum altitude restriction for all waypoints in the route,
+ * until a go around leg is reached
  * @param route the route to refer to
- * @return the maximum altitude, or null if a maximum altitude restriction does not exist
+ * @return the maximum altitude, or null if a maximum altitude restriction does
+ * not exist
  */
 fun getLowestMaxAlt(route: Route): Int? {
     var currMax: Int? = null
     for (i in 0 until route.size) {
+        if (route[i].phase == Leg.MISSED_APP) return currMax
         val wptLeg = route[i] as? WaypointLeg ?: continue
         if (wptLeg.legActive && wptLeg.altRestrActive && wptLeg.maxAltFt != null &&
             (currMax == null || wptLeg.maxAltFt < currMax)) currMax = wptLeg.maxAltFt
