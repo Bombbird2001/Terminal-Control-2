@@ -82,7 +82,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
             }
             with<RouteSegment>()
             with<TTSVoice> {
-                voice = getServerElseRandomVoice(callsign).apply { println("$callsign: $this") }
+                voice = getServerElseRandomVoice(callsign)
             }
         } else {
             with<ConflictAble>()

@@ -55,11 +55,6 @@ fun updateDatatagStyle(datatag: Datatag, flightType: Byte, selected: Boolean) {
     } else ""
     datatag.imgButton.style = Scene2DSkin.defaultSkin.get("Datatag${colour}${background}", ImageButton.ImageButtonStyle::class.java)
     datatag.currentDatatagStyle = "Datatag${colour}${background}"
-
-    // Try to fix when datatag remains orange
-    if (!datatag.flashingOrange && colour == "Orange") {
-        updateDatatagStyle(datatag, flightType, false)
-    }
 }
 
 /**
@@ -76,13 +71,12 @@ fun setDatatagFlash(datatag: Datatag, aircraft: Aircraft, flash: Boolean) {
         datatag.flashTimer.scheduleTask(object: Timer.Task() {
             override fun run() {
                 // Every 1 second, update the datatag flashing orange status, and call updateDatatagStyle
-                datatag.flashingOrange = !datatag.flashingOrange
+                datatag.flashingOrange = !datatag.flashingOrange && datatag.flashing
                 updateDatatagStyle(datatag, aircraft.entity[FlightType.mapper]?.type ?: return, CLIENT_SCREEN?.selectedAircraft == aircraft)
             }
         }, 0f, 1f)
     } else {
         datatag.flashTimer.clear()
-        datatag.flashing = false
         datatag.flashingOrange = false
         updateDatatagStyle(datatag, aircraft.entity[FlightType.mapper]?.type ?: return, CLIENT_SCREEN?.selectedAircraft == aircraft)
     }
