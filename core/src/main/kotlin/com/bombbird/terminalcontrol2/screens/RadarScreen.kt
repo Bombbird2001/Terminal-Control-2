@@ -381,7 +381,7 @@ class RadarScreen private constructor(private val connectionHost: String, privat
             val multiplayerType = if (isPublicMultiplayer()) "Public multiplayer"
             else "LAN multiplayer/Singleplayer"
             HttpRequest.sendCrashReport(e, "RadarScreen", multiplayerType)
-            GAME.quitCurrentGameWithDialog(CustomDialog("Error", "An error occurred", "", "Ok"))
+            GAME.quitCurrentGameWithDialog { CustomDialog("Error", "An error occurred", "", "Ok") }
         }
     }
 
@@ -573,7 +573,7 @@ class RadarScreen private constructor(private val connectionHost: String, privat
                 times++
                 if (times >= 10) {
                     FileLog.info("RadarScreen", "Game server not running - timeout")
-                    return GAME.quitCurrentGameWithDialog(CustomDialog("Error", "Timeout when connecting to server", "", "Ok"))
+                    return GAME.quitCurrentGameWithDialog { CustomDialog("Error", "Timeout when connecting to server", "", "Ok") }
                 }
                 continue
             }
@@ -617,8 +617,8 @@ class RadarScreen private constructor(private val connectionHost: String, privat
                 networkClient.reconnect()
             } catch (e: IOException) {
                 FileLog.warn("RadarScreen", "Failed to reconnect to server")
-                GAME.quitCurrentGameWithDialog(CustomDialog("Disconnected", "You have been disconnected from the server - most likely the host quit the game",
-                    "", "Ok"))
+                GAME.quitCurrentGameWithDialog { CustomDialog("Disconnected", "You have been disconnected from the server - most likely the host quit the game",
+                    "", "Ok") }
             }
         }
     }

@@ -67,7 +67,8 @@ class LANClient(lanClientDiscoveryHandler: LANClientDiscoveryHandler): NetworkCl
 
             override fun disconnected(connection: Connection?) {
                 if (GAME.shownScreen is RadarScreen && GAME.gameServer == null)
-                    GAME.quitCurrentGameWithDialog(CustomDialog("Disconnected", "You have been disconnected from the server - most likely the host quit the game", "", "Ok"))
+                    GAME.quitCurrentGameWithDialog { CustomDialog("Disconnected", "You have been disconnected" +
+                            " from the server - most likely the host quit the game", "", "Ok") }
             }
         })
     }
@@ -97,7 +98,7 @@ class LANClient(lanClientDiscoveryHandler: LANClientDiscoveryHandler): NetworkCl
             if (e is ClosedSelectorException) return@setUncaughtExceptionHandler
 
             HttpRequest.sendCrashReport(Exception(e), "LANClient", "LAN multiplayer/Singleplayer")
-            GAME.quitCurrentGameWithDialog(CustomDialog("Error", "An error occurred", "", "Ok"))
+            GAME.quitCurrentGameWithDialog { CustomDialog("Error", "An error occurred", "", "Ok") }
         }
     }
 

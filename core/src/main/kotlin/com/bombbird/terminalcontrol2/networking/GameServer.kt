@@ -322,7 +322,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
                     else -> "Singleplayer"
                 }
                 HttpRequest.sendCrashReport(e, "GameServer", multiplayerType)
-                GAME.quitCurrentGameWithDialog(CustomDialog("Error", "An error occurred", "", "Ok"))
+                GAME.quitCurrentGameWithDialog { CustomDialog("Error", "An error occurred", "", "Ok") }
             }
         }
     }
@@ -535,7 +535,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
             if (!sectorMap.containsKey(conn.uuid)) return
             val newPlayerNo = playerNo.decrementAndGet().toByte()
             if (newPlayerNo <= 0) {
-                return GAME.quitCurrentGameWithDialog(CustomDialog("Game closed", "All players have left the game", "", "Ok"))
+                return GAME.quitCurrentGameWithDialog { CustomDialog("Game closed", "All players have left the game", "", "Ok") }
             }
             val sectorControlled = sectorMap[conn.uuid]
             if (sectorControlled != null) networkServer.sendToAllTCP(PlayerLeft(sectorControlled))

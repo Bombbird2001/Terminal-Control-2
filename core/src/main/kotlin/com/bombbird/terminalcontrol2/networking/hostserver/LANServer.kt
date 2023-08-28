@@ -64,10 +64,10 @@ class LANServer(
             } catch (e: BindException) {
                 // If reached last available combination, all combinations taken, exit with error
                 if (entry.index == LAN_TCP_PORTS.size - 1) {
-                    return GAME.quitCurrentGameWithDialog(
-                        CustomDialog("Error starting game",
-                            "If you see this error, consider restarting your device and try again.", "", "Ok")
-                    )
+                    return GAME.quitCurrentGameWithDialog {
+                        CustomDialog("Error starting game", "If you see this error, consider restarting your " +
+                                "device and try again.", "", "Ok" )
+                    }
                 }
             }
         }
@@ -79,7 +79,7 @@ class LANServer(
 
             val multiplayerType = if (gameServer.maxPlayersAllowed > 1) "LAN multiplayer" else "Singleplayer"
             HttpRequest.sendCrashReport(Exception(e), "LANServer", multiplayerType)
-            GAME.quitCurrentGameWithDialog(CustomDialog("Error", "An error occurred", "", "Ok"))
+            GAME.quitCurrentGameWithDialog { CustomDialog("Error", "An error occurred", "", "Ok") }
         }
         server.addListener(object : Listener {
             /**

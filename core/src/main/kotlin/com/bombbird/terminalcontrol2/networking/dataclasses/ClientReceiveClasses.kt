@@ -39,7 +39,7 @@ class RequestClientData: NeedsEncryption
 data class ConnectionError(private val cause: String = "Unknown cause"): ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
         FileLog.info("NetworkingTools", "Connection failed - $cause")
-        GAME.quitCurrentGameWithDialog(CustomDialog("Failed to connect", cause, "", "Ok"))
+        GAME.quitCurrentGameWithDialog { CustomDialog("Failed to connect", cause, "", "Ok") }
     }
 }
 

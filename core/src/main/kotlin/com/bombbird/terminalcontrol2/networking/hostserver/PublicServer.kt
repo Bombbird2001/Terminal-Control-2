@@ -77,7 +77,7 @@ class PublicServer(
             if (e is ClosedSelectorException) return@setUncaughtExceptionHandler
 
             HttpRequest.sendCrashReport(Exception(e), "PublicServer", "Public multiplayer")
-            GAME.quitCurrentGameWithDialog(CustomDialog("Error", "An error occurred", "", "Ok"))
+            GAME.quitCurrentGameWithDialog { CustomDialog("Error", "An error occurred", "", "Ok") }
         }
         CLIENT_TCP_PORT_IN_USE = RELAY_TCP_PORT
         CLIENT_UDP_PORT_IN_USE = RELAY_UDP_PORT
@@ -111,13 +111,13 @@ class PublicServer(
             roomCreation = HttpRequest.sendCreateGameRequest()
         } catch (e: UnknownHostException) {
             // Could not resolve host from DNS, most likely network error
-            GAME.quitCurrentGameWithDialog(CustomDialog("Failed to connect",
-                "Please check your network connection and try again.", "", "Ok"))
+            GAME.quitCurrentGameWithDialog { CustomDialog("Failed to connect",
+                "Please check your network connection and try again.", "", "Ok") }
             return false
         }
         if (roomCreation?.success != true) {
-            GAME.quitCurrentGameWithDialog(CustomDialog("Failed to connect",
-                "Room creation failed", "", "Ok"))
+            GAME.quitCurrentGameWithDialog { CustomDialog("Failed to connect",
+                "Room creation failed", "", "Ok") }
             return false
         }
         setRoomId(roomCreation.roomId)
@@ -128,8 +128,8 @@ class PublicServer(
         val iv = Base64.decodeBase64(roomCreation.authResponse.iv)
         val ciphertext = encryptor.encryptWithIV(iv, RelayNonce(roomCreation.authResponse.nonce))?.ciphertext
         if (ciphertext == null) {
-            GAME.quitCurrentGameWithDialog(CustomDialog("Failed to connect",
-                "Authorization challenge failed", "", "Ok"))
+            GAME.quitCurrentGameWithDialog { CustomDialog("Failed to connect",
+                "Authorization challenge failed", "", "Ok") }
             return false
         }
         relayChallenge = RelayChallenge(ciphertext)
@@ -140,8 +140,8 @@ class PublicServer(
     private fun setRoomId(roomId: Short) {
         if (roomId == Short.MAX_VALUE) {
             // Failed to create room, stop server
-            return GAME.quitCurrentGameWithDialog(CustomDialog("Failed to connect",
-                "Room creation failed", "", "Ok"))
+            return GAME.quitCurrentGameWithDialog { CustomDialog("Failed to connect",
+                "Room creation failed", "", "Ok") }
         }
 
         if (this.roomId == Short.MAX_VALUE)
