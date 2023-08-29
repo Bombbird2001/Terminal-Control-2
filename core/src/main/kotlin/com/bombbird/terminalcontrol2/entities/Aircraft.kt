@@ -83,6 +83,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
             with<RouteSegment>()
             with<TTSVoice> {
                 voice = getServerElseRandomVoice(callsign)
+                setOnServerIfHost(callsign, voice)
             }
         } else {
             with<ConflictAble>()
@@ -113,6 +114,17 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
         val serverVoice = GAME.gameServer?.aircraft?.get(callsign)?.entity?.get(TTSVoice.mapper)?.voice
             ?: return GAME.ttsManager.getRandomVoice()
         return GAME.ttsManager.checkVoiceElseRandomVoice(serverVoice) ?: GAME.ttsManager.getRandomVoice()
+    }
+
+    /**
+     * Updates the voice stored on server-side if client is also the host
+     * @param callsign the callsign of the aircraft
+     * @param voice the voice to set
+     */
+    private fun setOnServerIfHost(callsign: String, voice: String?) {
+        GAME.gameServer?.let {
+            it.aircraft[callsign]?.entity?.get(TTSVoice.mapper)?.voice = voice
+        }
     }
 
     companion object {

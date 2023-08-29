@@ -17,7 +17,7 @@ class TextToSpeechManager(private val ttsHandler: TextToSpeechInterface): Dispos
     }
 
     /**
-     * Checks whether the input voice is available on the device, if so returns the original inut voice, else, returns
+     * Checks whether the input voice is available on the device, if so returns the original input voice, else, returns
      * a random available voice
      * @param voice the voice to check
      */
