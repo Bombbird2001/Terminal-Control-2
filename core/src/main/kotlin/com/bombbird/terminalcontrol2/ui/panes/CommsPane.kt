@@ -356,7 +356,7 @@ class CommsPane {
 
         addMessage(sentence2.toTextSentence(), getMessageTypeForAircraftType(flightType.type))
         // println(sentence2.toTTSSentence())
-        aircraft[TTSVoice.mapper]?.voice?.let { voice -> GAME.ttsManager.say(sentence2.toTTSSentence(), voice) }
+        // aircraft[TTSVoice.mapper]?.voice?.let { voice -> GAME.ttsManager.say(sentence2.toTTSSentence(), voice) }
     }
 
     /**

@@ -70,13 +70,15 @@ class TerminalControl2(val externalFileHandler: ExternalFileHandler, ttsHandler:
 
     /**
      * Quits the current game, and show an additional dialog in the main menu upon exit
-     * @param dialog the dialog to show
+     * @param dialogCreator a function to create the dialog to show -  this is to prevent threading issues when
+     * calling this function on a thread other than the main rendering thread
      */
-    fun quitCurrentGameWithDialog(dialog: CustomDialog) {
-        FileLog.warn("TerminalControl2", "Quitting current game with dialog ${dialog.text}")
+    fun quitCurrentGameWithDialog(dialogCreator: () -> CustomDialog) {
         Gdx.app.postRunnable {
             quitCurrentGame()
-            GAME.getScreen<MainMenu>().showDialog(dialog)
+            val dialog = dialogCreator()
+            GAME.getScreen<MainMenu>().showDialog(dialogCreator())
+            FileLog.warn("TerminalControl2", "Quitting current game with dialog ${dialog.text}")
         }
     }
 
@@ -110,7 +112,7 @@ class TerminalControl2(val externalFileHandler: ExternalFileHandler, ttsHandler:
             }
 
             // Initialize logging system
-            // FileLog.initializeFile("Logs/BUILD $BUILD_VERSION.log")
+            FileLog.initializeFile("Logs/BUILD $BUILD_VERSION.log")
             println("------------------------------------------------------")
             FileLog.info("TerminalControl2", "Game initialized")
 
