@@ -43,8 +43,8 @@ interface BaseComponentJSONInterface {
         G_POLYGON, POSITION, CUSTOM_POSITION, DIRECTION, SPEED, ALTITUDE, ACCELERATION, INDICATED_AIR_SPEED, GROUND_TRACK,
         AFFECTED_BY_WIND, ON_GROUND, RUNWAY_CHILDREN,  APPROACH_CHILDREN, VISUAL_APPROACH, DEPENDENT_OPPOSITE_RUNWAY, DEPENDENT_PARALLEL_RUNWAY,
         CROSSING_RUNWAY,  ARRIVAL_ROUTE_ZONE, DEPARTURE_ROUTE_ZONE, ACTIVE_LANDING, ACTIVE_TAKEOFF, RANDOM_AIRLINE_DATA,
-        ACTIVE_RUNWAY_CONFIG, ARRIVAL_CLOSED, DEPARTURE_INFO, AIRPORT_NEXT_DEPARTURE, RUNWAY_PREVIOUS_ARRIVAL, RUNWAY_PREVIOUS_DEPARTURE,
-        RUNWAY_OCCUPIED, WAKE_TRAIL, WAKE_INFO, INITIAL_CLIENT_DATATAG_POSITION, TRAIL_INFO, TTS_VOICE
+        ACTIVE_RUNWAY_CONFIG, ARRIVAL_CLOSED, TIME_SINCE_LAST_DEPARTURE, DEPARTURE_INFO, AIRPORT_NEXT_DEPARTURE, RUNWAY_PREVIOUS_ARRIVAL,
+        RUNWAY_PREVIOUS_DEPARTURE, RUNWAY_OCCUPIED, WAKE_TRAIL, WAKE_INFO, INITIAL_CLIENT_DATATAG_POSITION, TRAIL_INFO, TTS_VOICE
     }
 
     val componentType: ComponentType
@@ -132,6 +132,7 @@ private fun getPolymorphicComponentAdapter(): PolymorphicJsonAdapterFactory<Base
         .withSubtype(RandomAirlineData::class.java, BaseComponentJSONInterface.ComponentType.RANDOM_AIRLINE_DATA.name)
         .withSubtype(ActiveRunwayConfig::class.java, BaseComponentJSONInterface.ComponentType.ACTIVE_RUNWAY_CONFIG.name)
         .withSubtype(ArrivalClosed::class.java, BaseComponentJSONInterface.ComponentType.ARRIVAL_CLOSED.name)
+        .withSubtype(TimeSinceLastDeparture::class.java, BaseComponentJSONInterface.ComponentType.TIME_SINCE_LAST_DEPARTURE.name)
         .withSubtype(DepartureInfo::class.java, BaseComponentJSONInterface.ComponentType.DEPARTURE_INFO.name)
         .withSubtype(AirportNextDeparture::class.java, BaseComponentJSONInterface.ComponentType.AIRPORT_NEXT_DEPARTURE.name)
         .withSubtype(RunwayPreviousArrival::class.java, BaseComponentJSONInterface.ComponentType.RUNWAY_PREVIOUS_ARRIVAL.name)

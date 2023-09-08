@@ -145,6 +145,7 @@ class TrafficSystemInterval: IntervalSystem(1f) {
                 // Create random departure if airport does not have one queued
                 val depInfo = airport.entity[DepartureInfo.mapper] ?: return@apply
                 val maxAdvDep = airport.entity[MaxAdvancedDepartures.mapper] ?: return@apply
+                val timeSinceLastDep = airport.entity[TimeSinceLastDeparture.mapper] ?: return@apply
                 if (depInfo.closed) {
                     // Closed for departures - remove any existing next departure from the airport
                     val nextDepCallsign = airport.entity[AirportNextDeparture.mapper]?.aircraft?.get(AircraftInfo.mapper)?.icaoCallsign
@@ -160,23 +161,25 @@ class TrafficSystemInterval: IntervalSystem(1f) {
                 // If too many departures have departed already, do not depart
                 if (depInfo.backlog <= -maxAdvDep.maxAdvanceDepartures) return@apply
 
+                // If insufficient time has passed since last departure, do not depart
+                if (timeSinceLastDep.time < calculateAdditionalTimeToNextDeparture(depInfo.backlog, maxAdvDep.maxAdvanceDepartures)) return@apply
+
                 // Runway checks
-                val additionalTime = calculateAdditionalTimeToNextDeparture(depInfo.backlog, maxAdvDep.maxAdvanceDepartures)
                 // Check self and all related runways
                 if (hasNot(ActiveTakeoff.mapper)) return@apply // Not active for departures
-                if (!checkSameRunwayTraffic(this, additionalTime)) return@apply
-                get(OppositeRunway.mapper)?.let { if (!checkOppRunwayTraffic(it.oppRwy, additionalTime)) return@apply }
+                if (!checkSameRunwayTraffic(this)) return@apply
+                get(OppositeRunway.mapper)?.let { if (!checkOppRunwayTraffic(it.oppRwy)) return@apply }
                 get(DependentParallelRunway.mapper)?.let {
                     for (j in 0 until it.depParRwys.size)
-                        if (!checkDependentParallelRunwayTraffic(it.depParRwys[j], additionalTime)) return@apply
+                        if (!checkDependentParallelRunwayTraffic(it.depParRwys[j])) return@apply
                 }
                 get(DependentOppositeRunway.mapper)?.let {
                     for (j in 0 until it.depOppRwys.size)
-                        if (!checkDependentOppositeRunwayTraffic(it.depOppRwys[j], additionalTime)) return@apply
+                        if (!checkDependentOppositeRunwayTraffic(it.depOppRwys[j])) return@apply
                 }
                 get(CrossingRunway.mapper)?.let {
                     for (j in 0 until it.crossRwys.size)
-                        if (!checkCrossingRunwayTraffic(it.crossRwys[j], additionalTime)) return@apply
+                        if (!checkCrossingRunwayTraffic(it.crossRwys[j])) return@apply
                 }
 
                 // All related checks passed - clear next departure for takeoff

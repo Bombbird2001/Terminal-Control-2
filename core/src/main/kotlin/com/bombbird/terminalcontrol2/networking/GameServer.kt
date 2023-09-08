@@ -312,7 +312,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
                 handleGameRunningRequest(false)
                 loopRunning.set(true)
                 gameLoop()
-                stopNetworkingServer()
+                cleanUp()
                 saveGame(this)
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -330,10 +330,6 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
     /** Stops the game loop and exits server */
     fun stopServer() {
         setLoopingFalse()
-        FamilyWithListener.clearAllServerFamilyEntityListeners(engine)
-        engine.removeAllEntities()
-        engine.removeAllSystems()
-        FileLog.info("GameServer", "Game server stopped")
     }
 
     /** Initiates the host server for networking */
@@ -560,9 +556,15 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
         if (networkServer.beforeStart()) networkServer.start()
     }
 
-    /** Closes server and stops its thread */
-    private fun stopNetworkingServer() {
+    /** Cleans up the game server */
+    private fun cleanUp() {
+        FamilyWithListener.clearAllServerFamilyEntityListeners(engine)
+        engine.removeAllEntitiesOnMainThread(false)
+        engine.removeAllSystemsOnMainThread(false)
+
         networkServer.stop()
+
+        FileLog.info("GameServer", "Game server stopped")
     }
 
     /** Main game loop */

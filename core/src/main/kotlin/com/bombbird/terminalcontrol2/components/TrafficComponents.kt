@@ -118,7 +118,7 @@ class ArrivalClosed: Component, BaseComponentJSONInterface {
     }
 }
 
-/** Component for tagging a closed airport for departures and backlog information */
+/** Component for departure info for an airport, including closed status, backlog */
 @JsonClass(generateAdapter = true)
 data class DepartureInfo(var closed: Boolean = false, var backlog: Int = 0): Component, BaseComponentJSONInterface, DoNotOverwriteSavedJSON {
     override val componentType = BaseComponentJSONInterface.ComponentType.DEPARTURE_INFO
@@ -139,6 +139,20 @@ data class MaxAdvancedDepartures(var maxAdvanceDepartures: Int = 10): Component 
 
         fun initialise() {
             FileLog.info("Component", "Initialising MaxAdvancedDepartures mapper")
+        }
+    }
+}
+
+@JsonClass(generateAdapter = true)
+/** Component for tagging the time since a plane departed from the airport */
+data class TimeSinceLastDeparture(var time: Float = 0f): Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.TIME_SINCE_LAST_DEPARTURE
+
+    companion object {
+        val mapper = object: Mapper<TimeSinceLastDeparture>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising TimeSinceLastDeparture mapper")
         }
     }
 }

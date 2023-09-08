@@ -51,6 +51,7 @@ class TerminalControl2(val externalFileHandler: ExternalFileHandler, ttsHandler:
 
     /** Quits the current game running */
     fun quitCurrentGame() {
+        FileLog.info("TerminalControl2", "Quitting current game")
         // Quit the client, and if this client is also hosting the server it will be automatically closed
         // as part of the radarScreen's disposal process
         GAME.setScreen<MainMenu>()
@@ -72,6 +73,7 @@ class TerminalControl2(val externalFileHandler: ExternalFileHandler, ttsHandler:
      * @param dialog the dialog to show
      */
     fun quitCurrentGameWithDialog(dialog: CustomDialog) {
+        FileLog.warn("TerminalControl2", "Quitting current game with dialog ${dialog.text}")
         Gdx.app.postRunnable {
             quitCurrentGame()
             GAME.getScreen<MainMenu>().showDialog(dialog)

@@ -609,7 +609,7 @@ fun calculateTimeToThreshold(aircraft: Entity, rwy: Entity): Float {
  * @param rwy the runway to check traffic for
  * @return whether this runway is clear for departure
  */
-fun checkSameRunwayTraffic(rwy: Entity, additionalTime: Int): Boolean {
+fun checkSameRunwayTraffic(rwy: Entity): Boolean {
     val airport = rwy[RunwayInfo.mapper]?.airport ?: return false
     val nextDeparture = airport.entity[AirportNextDeparture.mapper]?.aircraft?.get(AircraftInfo.mapper)?.aircraftPerf ?: return false
     val prevDeparture = rwy[RunwayPreviousDeparture.mapper]
@@ -619,7 +619,7 @@ fun checkSameRunwayTraffic(rwy: Entity, additionalTime: Int): Boolean {
     if (rwy.has(RunwayOccupied.mapper)) return false
     // Check previous departure time required
     if (prevDeparture != null && WakeMatrix.getTimeRequired(prevDeparture.wakeCat, prevDeparture.recat,
-            nextDeparture.wakeCategory, nextDeparture.recat) + additionalTime > prevDeparture.timeSinceDepartureS) return false
+            nextDeparture.wakeCategory, nextDeparture.recat) > prevDeparture.timeSinceDepartureS) return false
     // Check previous arrival time required
     if (prevArrival != null && WakeMatrix.getTimeRequired(prevArrival.wakeCat, prevArrival.recat,
             nextDeparture.wakeCategory, nextDeparture.recat) > prevArrival.timeSinceTouchdownS) return false
@@ -632,7 +632,7 @@ fun checkSameRunwayTraffic(rwy: Entity, additionalTime: Int): Boolean {
  * @param rwy the opposite runway
  * @return whether the opposite runway is clear for departure from original runway
  */
-fun checkOppRunwayTraffic(rwy: Entity, additionalTime: Int): Boolean {
+fun checkOppRunwayTraffic(rwy: Entity): Boolean {
     val airport = rwy[RunwayInfo.mapper]?.airport ?: return false
     val nextDeparture = airport.entity[AirportNextDeparture.mapper]?.aircraft?.get(AircraftInfo.mapper)?.aircraftPerf ?: return false
     val prevDeparture = rwy[RunwayPreviousDeparture.mapper]
@@ -642,7 +642,7 @@ fun checkOppRunwayTraffic(rwy: Entity, additionalTime: Int): Boolean {
     if (rwy.has(RunwayOccupied.mapper)) return false
     // Check previous departure time required
     if (prevDeparture != null && WakeMatrix.getTimeRequired(prevDeparture.wakeCat, prevDeparture.recat,
-            nextDeparture.wakeCategory, nextDeparture.recat) + additionalTime > prevDeparture.timeSinceDepartureS) return false
+            nextDeparture.wakeCategory, nextDeparture.recat) > prevDeparture.timeSinceDepartureS) return false
     // Check previous arrival time required
     if (prevArrival != null && WakeMatrix.getTimeRequired(prevArrival.wakeCat, prevArrival.recat,
             nextDeparture.wakeCategory, nextDeparture.recat) > prevArrival.timeSinceTouchdownS) return false
@@ -655,13 +655,13 @@ fun checkOppRunwayTraffic(rwy: Entity, additionalTime: Int): Boolean {
  * @param rwy the dependent parallel runway
  * @return whether the dependent parallel runway is clear for departure from original runway
  */
-fun checkDependentParallelRunwayTraffic(rwy: Entity, additionalTime: Int): Boolean {
+fun checkDependentParallelRunwayTraffic(rwy: Entity): Boolean {
     val nextArrival = rwy[RunwayNextArrival.mapper]
     val prevDeparture = rwy[RunwayPreviousDeparture.mapper]
     // Check time from touchdown - minimum 60s
     if (nextArrival != null && calculateTimeToThreshold(nextArrival.aircraft, rwy) < 60) return false
     // Check time since departure - minimum 60s
-    if (prevDeparture != null && prevDeparture.timeSinceDepartureS < 60 + additionalTime) return false
+    if (prevDeparture != null && prevDeparture.timeSinceDepartureS < 60) return false
     return true
 }
 
@@ -670,13 +670,13 @@ fun checkDependentParallelRunwayTraffic(rwy: Entity, additionalTime: Int): Boole
  * @param rwy the dependent opposite runway
  * @return whether the dependent opposite runway is clear for departure from original runway
  */
-fun checkDependentOppositeRunwayTraffic(rwy: Entity, additionalTime: Int): Boolean {
+fun checkDependentOppositeRunwayTraffic(rwy: Entity): Boolean {
     val nextArrival = rwy[RunwayNextArrival.mapper]
     val prevDeparture = rwy[RunwayPreviousDeparture.mapper]
     // Check distance from touchdown - minimum 15nm away
     if (nextArrival != null && calculateDistFromThreshold(nextArrival.aircraft, rwy) < nmToPx(15)) return false
     // Check time since departure - minimum 60s
-    if (prevDeparture != null && prevDeparture.timeSinceDepartureS < 60 + additionalTime) return false
+    if (prevDeparture != null && prevDeparture.timeSinceDepartureS < 60) return false
     return true
 }
 
@@ -685,15 +685,12 @@ fun checkDependentOppositeRunwayTraffic(rwy: Entity, additionalTime: Int): Boole
  * @param rwy the intersecting runway
  * @return whether the intersecting runway is clear for departure from original runway
  */
-fun checkCrossingRunwayTraffic(rwy: Entity, additionalTime: Int): Boolean {
+fun checkCrossingRunwayTraffic(rwy: Entity): Boolean {
     val nextArrival = rwy[RunwayNextArrival.mapper]
-    val prevDeparture = rwy[RunwayPreviousDeparture.mapper]
     // Check if runway is occupied
     if (rwy.has(RunwayOccupied.mapper)) return false
     // Check time from touchdown - minimum 60s
     if (nextArrival != null && calculateTimeToThreshold(nextArrival.aircraft, rwy) < 60) return false
-    // No minimum time since departure needed, but check for additional time
-    if (prevDeparture != null && prevDeparture.timeSinceDepartureS < additionalTime) return false
     return true
 }
 
@@ -708,9 +705,9 @@ fun calculateAdditionalTimeToNextDeparture(backlog: Int, maxAdvDep: Int): Int {
     val threshold1 = (maxAdvDep * 0.5f).roundToInt()
     return when {
         backlog >= 10 -> 0
-        backlog >= -threshold1 -> 0 + 240 * (10 - backlog) / (10 + threshold1)
-        backlog >= -maxAdvDep -> 240 + (640 - 240) * (-threshold1 - backlog) / (maxAdvDep - threshold1)
-        else -> 640
+        backlog >= -threshold1 -> 0 + 120 * (10 - backlog) / (10 + threshold1)
+        backlog >= -maxAdvDep -> 120 + (320 - 120) * (-threshold1 - backlog) / (maxAdvDep - threshold1)
+        else -> 320
     }
 }
 

@@ -222,12 +222,51 @@ inline fun Engine.entityOnMainThread(onClient: Boolean, configure: EngineEntity.
  */
 fun Engine.removeEntityOnMainThread(entity: Entity, onClient: Boolean) {
     if (onClient && !isOnRenderingThread()) {
-        FileLog.warn("EngineEntity", "Entity created on non-rendering thread\n" +
+        FileLog.warn("EngineEntity", "Entity removed on non-rendering thread\n" +
                 Exception().stackTraceToString())
     } else if (!onClient && !isOnGameServerThread()) {
-        FileLog.warn("EngineEntity", "Entity created on non-game server thread\n" +
+        FileLog.warn("EngineEntity", "Entity removed on non-game server thread\n" +
                 Exception().stackTraceToString())
     }
 
     removeEntity(entity)
 }
+
+/**
+ * Removes all entities from the engine, checking if it is on the main rendering thread (if on client) or game server
+ * @param onClient whether the entities are removed on the client or server
+ */
+fun Engine.removeAllEntitiesOnMainThread(onClient: Boolean) {
+    if (onClient && !isOnRenderingThread()) {
+        FileLog.warn("EngineEntity", "Entities removed on non-rendering thread\n" +
+                Exception().stackTraceToString())
+    } else if (!onClient && !isOnGameServerThread()) {
+        FileLog.warn("EngineEntity", "Entities removed on non-game server thread\n" +
+                Exception().stackTraceToString())
+    }
+
+    removeAllEntities()
+}
+
+/**
+ * Removes all systems from the engine, checking if it is on the main rendering thread (if on client) or game server
+ * @param onClient whether the systems are removed on the client or server
+ */
+fun Engine.removeAllSystemsOnMainThread(onClient: Boolean) {
+    if (onClient && !isOnRenderingThread()) {
+        FileLog.warn("EngineEntity", "Systems removed on non-rendering thread\n" +
+                Exception().stackTraceToString())
+    } else if (!onClient && !isOnGameServerThread()) {
+        FileLog.warn("EngineEntity", "Systems removed on non-game server thread\n" +
+                Exception().stackTraceToString())
+    }
+
+    removeAllSystems()
+}
+
+//operator fun Entity.plusAssign(component: Component) {
+//    val threadName = Thread.currentThread().name
+//    if (threadName != GAME_SERVER_THREAD_NAME && threadName != "main")
+//        println(threadName)
+//    add(component)
+//}

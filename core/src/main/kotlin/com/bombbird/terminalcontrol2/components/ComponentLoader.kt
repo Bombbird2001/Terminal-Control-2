@@ -116,6 +116,7 @@ fun loadAllComponents() {
     StepDownApproach.initialise()
     TakeoffClimb.initialise()
     TakeoffRoll.initialise()
+    TimeSinceLastDeparture.initialise()
     TrailInfo.initialise()
     TTSVoice.initialise()
     Visual.initialise()

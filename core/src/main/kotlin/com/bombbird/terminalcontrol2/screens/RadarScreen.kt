@@ -33,6 +33,8 @@ import com.bombbird.terminalcontrol2.ui.datatag.updateDatatagStyle
 import com.bombbird.terminalcontrol2.ui.panes.UIPane
 import com.bombbird.terminalcontrol2.utilities.nmToPx
 import com.bombbird.terminalcontrol2.utilities.FileLog
+import com.bombbird.terminalcontrol2.utilities.removeAllEntitiesOnMainThread
+import com.bombbird.terminalcontrol2.utilities.removeAllSystemsOnMainThread
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import ktx.app.KtxScreen
@@ -48,7 +50,6 @@ import ktx.math.ImmutableVector2
 import java.io.IOException
 import java.nio.channels.ClosedSelectorException
 import java.util.concurrent.ConcurrentLinkedQueue
-import kotlin.concurrent.thread
 import kotlin.math.min
 
 /**
@@ -402,16 +403,17 @@ class RadarScreen private constructor(private val connectionHost: String, privat
         GAME.soundManager.stop()
 
         FamilyWithListener.clearAllClientFamilyEntityListeners(clientEngine)
-        clientEngine.removeAllEntities()
-        clientEngine.removeAllSystems()
+        clientEngine.removeAllEntitiesOnMainThread(true)
+        clientEngine.removeAllSystemsOnMainThread(true)
 
-        thread {
+        GAME.gameServer?.stopServer()
+
+        KtxAsync.launch(Dispatchers.IO) {
             try {
                 networkClient.stop()
             } catch (e: ClosedSelectorException) {
                 FileLog.info("RadarScreen", "Client channel selector already closed before disposal")
             }
-            GAME.gameServer?.stopServer()
         }
     }
 
