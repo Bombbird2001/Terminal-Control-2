@@ -195,13 +195,15 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                     if (serialisedAircraft.waitingTakeoff) this += WaitingTakeoff()
                     else if (datatag != null) addDatatagInputListeners(datatag, it)
                     datatag?.let { tag ->
-                        tag.xOffset = serialisedAircraft.initialDatatagXOffset
-                        tag.yOffset = serialisedAircraft.initialDatatagYOffset
                         tag.minimised = controllable?.sectorId != CLIENT_SCREEN?.playerSector || serialisedAircraft.initialDatatagMinimised
                         updateDatatagText(tag, getNewDatatagLabelText(this, tag.minimised))
+                        updateDatatagLabelSize(tag, true)
                         if (serialisedAircraft.initialDatatagFlashing &&
                             controllable?.sectorId == GAME.gameClientScreen?.playerSector)
                             setDatatagFlash(tag, it, true)
+
+                        tag.xOffset = serialisedAircraft.initialDatatagXOffset
+                        tag.yOffset = serialisedAircraft.initialDatatagYOffset
                     }
 
                     get(TrailInfo.mapper)?.apply {

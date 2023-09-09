@@ -82,9 +82,13 @@ fun setDatatagFlash(datatag: Datatag, aircraft: Aircraft, flash: Boolean) {
     }
 }
 
-/** Updates the label style to use smaller fonts when radar is zoomed out */
+/**
+ * Updates the label style to use smaller fonts when radar is zoomed out
+ * @param datatag the datatag to update
+ * @param smaller whether to use smaller fonts
+ */
 fun updateDatatagLabelSize(datatag: Datatag, smaller: Boolean) {
-    datatag.labelArray.forEach {  label ->
+    datatag.labelArray.forEach { label ->
         val styleToUse = "${if (smaller) "DatatagSmall" else "Datatag"}${if (Gdx.app.type == Application.ApplicationType.Android) "Mobile" else ""}"
         label.style = Scene2DSkin.defaultSkin.get(styleToUse, LabelStyle::class.java)
         label.pack()

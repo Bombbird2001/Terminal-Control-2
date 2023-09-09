@@ -1,6 +1,8 @@
 package com.bombbird.terminalcontrol2.components
 
 import com.badlogic.ashley.core.Component
+import com.badlogic.gdx.Application
+import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.scenes.scene2d.ui.ImageButton
 import com.badlogic.gdx.scenes.scene2d.ui.Label
@@ -175,14 +177,15 @@ class Datatag(var xOffset: Float = 0f, var yOffset: Float = 0f, var minimised: B
     var currentDatatagStyle = "DatatagGreenNoBG"
     val imgButton: ImageButton = ImageButton(Scene2DSkin.defaultSkin, "DatatagGreenNoBG")
     val clickSpot: ImageButton = ImageButton(Scene2DSkin.defaultSkin, "DatatagNoBG")
-    val labelArray: Array<Label> = arrayOf(Label("", Scene2DSkin.defaultSkin, "Datatag"), Label("", Scene2DSkin.defaultSkin, "Datatag"),
-                                           Label("", Scene2DSkin.defaultSkin, "Datatag"), Label("", Scene2DSkin.defaultSkin, "Datatag"))
+    val labelArray: Array<Label> = arrayOf(Label("", Scene2DSkin.defaultSkin, DEFAULT_LABEL_FONT), Label("", Scene2DSkin.defaultSkin, DEFAULT_LABEL_FONT),
+                                           Label("", Scene2DSkin.defaultSkin, DEFAULT_LABEL_FONT), Label("", Scene2DSkin.defaultSkin, DEFAULT_LABEL_FONT))
     var smallLabelFont = false
     var renderLast = false
     val datatagInfoMap = HashMap<String, String>()
 
     companion object {
         val mapper = object: Mapper<Datatag>() {}.mapper
+        private val DEFAULT_LABEL_FONT = "Datatag${if (Gdx.app.type == Application.ApplicationType.Android) "Mobile" else ""}"
 
         fun initialise() {
             FileLog.info("Component", "Initialising Datatag mapper")

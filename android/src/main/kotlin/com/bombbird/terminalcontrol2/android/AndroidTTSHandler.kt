@@ -67,7 +67,11 @@ class AndroidTTSHandler(private val app: AndroidApplication): TextToSpeechInterf
     }
 
     override fun checkVoiceAvailable(voice: String): Boolean {
-        return voiceSet.contains(voice)
+        val containsVoice = voiceSet.contains(voice)
+        if (!containsVoice) {
+            FileLog.warn("Android TTS", "Voice $voice not available; voices available: $voiceArray")
+        }
+        return containsVoice
     }
 
     override fun onQuitApp() {
