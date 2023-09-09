@@ -309,7 +309,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
                 FileLog.info("GameServer", "Game server started")
                 serverStartedCallback?.invoke()
                 // Pause the game initially (until at least 1 player connects)
-                handleGameRunningRequest(false)
+                updateGameRunningStatus(false)
                 loopRunning.set(true)
                 gameLoop()
                 cleanUp()
@@ -523,7 +523,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
                 FileLog.info("GameServer", "Sent InitialDataSendComplete")
             }
             // Unpause the game if it is currently paused
-            handleGameRunningRequest(true)
+            updateGameRunningStatus(true)
         }
 
         val onDisconnect = fun(conn: ConnectionMeta) {
@@ -652,10 +652,14 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
     }
 
     /**
-     * Handles received [GameRunningStatus] requests from clients
-     * @param running the running status sent in the request
+     * Sets the game running status to the requested state if possible
+     *
+     * If the game is paused and [running] is true, this will unpause the game
+     *
+     * If the game is not paused and [running] is false, this will pause the game if there is 1 player or less
+     * @param running the running status to be set
      */
-    fun handleGameRunningRequest(running: Boolean) {
+    fun updateGameRunningStatus(running: Boolean) {
         if (running) {
             if (gamePaused.get()) lock.withLock { pauseCondition.signal() }
             gamePaused.set(false)

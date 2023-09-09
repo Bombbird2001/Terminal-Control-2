@@ -33,6 +33,7 @@ class TrafficSystemInterval: IntervalSystem(1f) {
             .exclude(WaitingTakeoff::class, TakeoffRoll::class, LandingRoll::class).get()
         private val despawnFamily = allOf(Position::class, AircraftInfo::class, Controllable::class)
             .exclude(WaitingTakeoff::class, TakeoffRoll::class, LandingRoll::class).get()
+        private val timeSinceDepFamily = allOf(TimeSinceLastDeparture::class).get()
     }
 
     private val pendingRunwayChangeFamilyEntities = FamilyWithListener.newServerFamilyWithListener(pendingRunwayChangeFamily)
@@ -41,6 +42,7 @@ class TrafficSystemInterval: IntervalSystem(1f) {
     private val closestArrivalFamilyEntities = FamilyWithListener.newServerFamilyWithListener(closestArrivalFamily)
     private val conflictAbleFamilyEntities = FamilyWithListener.newServerFamilyWithListener(conflictAbleFamily)
     private val despawnFamilyEntities = FamilyWithListener.newServerFamilyWithListener(despawnFamily)
+    private val timeSinceDepFamilyEntities = FamilyWithListener.newServerFamilyWithListener(timeSinceDepFamily)
 
     private val startingAltitude = floor(getLowestAirportElevation() / VERT_SEP).roundToInt() * VERT_SEP
     private var conflictLevels = Array<GdxArray<Entity>>(0) {
@@ -129,6 +131,15 @@ class TrafficSystemInterval: IntervalSystem(1f) {
                     GAME.gameServer?.sendPendingRunwayUpdateToAll(arptInfo.arptId, null)
                     GAME.gameServer?.sendActiveRunwayUpdateToAll(arptInfo.arptId, config.id)
                 }
+            }
+        }
+
+        // Time since departure update
+        val timeSinceDep = timeSinceDepFamilyEntities.getEntities()
+        for (i in 0 until timeSinceDep.size()) {
+            timeSinceDep[i]?.apply {
+                val timeSinceLastDeparture = get(TimeSinceLastDeparture.mapper) ?: return@apply
+                timeSinceLastDeparture.time += interval
             }
         }
 
