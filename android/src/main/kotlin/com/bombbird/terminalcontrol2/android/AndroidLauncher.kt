@@ -6,6 +6,7 @@ import android.os.Bundle
 import com.badlogic.gdx.backends.android.AndroidApplication
 import com.badlogic.gdx.backends.android.AndroidApplicationConfiguration
 import com.bombbird.terminalcontrol2.TerminalControl2
+import com.bombbird.terminalcontrol2.utilities.FileLog
 
 /** Launches the Android application. */
 class AndroidLauncher : AndroidApplication() {
@@ -16,12 +17,14 @@ class AndroidLauncher : AndroidApplication() {
         const val ACT_INSTALL_TTS_DATA = 45513
     }
 
+    private lateinit var terminalControl2: TerminalControl2
     private val fileHandler = AndroidFileHandler(this)
     private val ttsHandler = AndroidTTSHandler(this)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        initialize(TerminalControl2(fileHandler, ttsHandler), AndroidApplicationConfiguration().apply {
+        terminalControl2 = TerminalControl2(fileHandler, ttsHandler)
+        initialize(terminalControl2, AndroidApplicationConfiguration().apply {
             // Configure your application here.
             numSamples = 0
             useAccelerometer = false
@@ -50,6 +53,18 @@ class AndroidLauncher : AndroidApplication() {
                 ttsHandler.handleInstallTTSResult()
             }
         }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        FileLog.info("AndroidLauncher", "onPause called")
+        terminalControl2.androidLifeCycleHandler.onPause()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        FileLog.info("AndroidLauncher", "onResume called")
+        terminalControl2.androidLifeCycleHandler.onResume()
     }
 
     override fun onDestroy() {

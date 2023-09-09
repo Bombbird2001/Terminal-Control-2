@@ -14,7 +14,7 @@ import ktx.ashley.plusAssign
 /** Class representing data sent on a client request to pause/run the game */
 data class GameRunningStatus(private val running: Boolean = true): ServerReceive, NeedsEncryption {
     override fun handleServerReceive(gs: GameServer, connection: ConnectionMeta) {
-        gs.handleGameRunningRequest(running)
+        gs.updateGameRunningStatus(running)
     }
 }
 
