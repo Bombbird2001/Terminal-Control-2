@@ -1,7 +1,7 @@
 package com.bombbird.terminalcontrol2.global
 
 import com.badlogic.ashley.core.Engine
-import com.badlogic.gdx.Gdx
+import com.badlogic.gdx.Application.ApplicationType
 import com.bombbird.terminalcontrol2.TerminalControl2
 import com.bombbird.terminalcontrol2.screens.RadarScreen
 import com.bombbird.terminalcontrol2.utilities.GRAVITY_ACCELERATION_MPS2
@@ -72,7 +72,7 @@ const val WAKE_DOT_SPACING_NM = 0.5f
 const val MAX_WAKE_DOTS = 16
 
 /** Application platform type */
-val APP_TYPE = Gdx.app?.type
+lateinit var APP_TYPE: ApplicationType
 
 /**
  * The current game instance (can be modified, but don't), client engine, and server engine (if [TerminalControl2.gameServer]

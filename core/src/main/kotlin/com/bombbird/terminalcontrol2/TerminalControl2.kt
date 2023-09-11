@@ -94,6 +94,8 @@ class TerminalControl2(val externalFileHandler: ExternalFileHandler, ttsHandler:
      * Sets the screen to [MainMenu] upon completion
      */
     override fun create() {
+        APP_TYPE = Gdx.app.type
+
         KtxAsync.initiate()
         KtxAsync.launch {
             assetStorage.apply {
