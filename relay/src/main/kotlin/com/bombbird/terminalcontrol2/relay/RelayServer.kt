@@ -1,6 +1,8 @@
 package com.bombbird.terminalcontrol2.relay
 
 import com.bombbird.terminalcontrol2.global.RELAY_BUFFER_SIZE
+import com.bombbird.terminalcontrol2.global.RELAY_TCP_PORT
+import com.bombbird.terminalcontrol2.global.RELAY_UDP_PORT
 import com.bombbird.terminalcontrol2.global.SERVER_WRITE_BUFFER_SIZE
 import com.bombbird.terminalcontrol2.networking.HttpRequest
 import com.bombbird.terminalcontrol2.networking.dataclasses.ConnectionError
@@ -139,12 +141,12 @@ object RelayServer: RelayServer, RelayAuthorization {
 
         // Shut down server before terminating program
         Runtime.getRuntime().addShutdownHook(Thread {
-            println("Server shutdown signal received")
+            FileLog.info("RelayServer", "Server shutdown signal received")
             stop()
         })
 
         registerClassesToKryo(server.kryo)
-        server.bind(57773, 57779)
+        server.bind(RELAY_TCP_PORT, RELAY_UDP_PORT)
         server.start()
 
         val test = args.isNotEmpty() && args[0] == "test"
@@ -173,6 +175,7 @@ object RelayServer: RelayServer, RelayAuthorization {
             connectionToRoomUUID[hostConnection] = Pair(roomID, newUUID)
             idToRoom[roomID] = Room(roomID, maxPlayers, hostConnection, mapName, pendingRoom.serverKey, pendingRoom.roomEncryptor, pendingRoom.hostDecrypter)
             hostConnectionToRoomMap[hostConnection] = roomID
+            RequestAuthenticator.connAddedToRoom(hostConnection)
             FileLog.info("RelayServer", "Room $roomID created - $mapName")
             return true
         }
@@ -191,6 +194,7 @@ object RelayServer: RelayServer, RelayAuthorization {
         if (!room.addPlayer(newUUID, clientConnection)) return 4 // UUID authorization failed
         connectionToRoomUUID[clientConnection] = Pair(roomId, newUUID)
         uuidToRoom[newUUID] = roomId
+        RequestAuthenticator.connAddedToRoom(clientConnection)
         return 0
     }
 

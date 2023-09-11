@@ -79,7 +79,9 @@ class Room(val id: Short, val maxPlayers: Byte, private val hostConnection: Conn
         pending.cancel()
         pending.run()
         if (connectedPlayers.containsKey(uuid)) return false
+        val decrypter = pendingUUIDToDecrypter.remove(uuid) ?: return false
         connectedPlayers[uuid] = conn
+        connectionToDecrypter[conn] = decrypter
         val encrypted = encryptIfNeeded(PlayerConnect(uuid.toString())) ?: return false
         hostConnection?.sendTCP(encrypted)
         return true

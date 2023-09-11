@@ -112,6 +112,14 @@ object RequestAuthenticator {
     }
 
     /**
+     * Removes the connection from the pending action map when the connection has been added to the room
+     * @param conn the connection to remove
+     */
+    fun connAddedToRoom(conn: Connection) {
+        authorisedConnectionsPendingAction.remove(conn)
+    }
+
+    /**
      * Checks if the connection has been authorised but is still pending further action (joining/creating room)
      * @param conn the connection to check
      * @return true if pending, else false

@@ -106,9 +106,9 @@ var LAN_TCP_PORTS = arrayOf(57773, 57783, 57793, 57803, 57813, 57823, 57833, 578
 var LAN_UDP_PORTS = arrayOf(57779, 57789, 57799, 57809, 57819, 57829, 57839, 57849, 57859, 57869)
 
 /** Relay server HTTPS endpoint port */
-const val RELAY_TCP_PORT = 57773
-const val RELAY_UDP_PORT = 57779
-const val RELAY_ENDPOINT_PORT = 57775
+const val RELAY_TCP_PORT = 57783
+const val RELAY_UDP_PORT = 57789
+const val RELAY_ENDPOINT_PORT = 57785
 const val RELAY_GAMES_PATH = "/games"
 const val RELAY_GAME_AUTH_PATH = "/gameAuth"
 const val RELAY_GAME_CREATE_PATH = "/gameCreate"
