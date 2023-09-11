@@ -168,13 +168,13 @@ private fun loadSave(gs: GameServer, saveId: Int, useBackup: Boolean) {
             } else {
                 FileLog.warn("GameSaverLoader", "Encountered JSON parsing error when loading ${saveId}-backup.json, exiting")
                 deleteBackupSave(saveId)
-                GAME.quitCurrentGameWithDialog(CustomDialog("Failed to load game", "Save files are corrupted", "", "Ok"))
+                GAME.quitCurrentGameWithDialog { CustomDialog("Failed to load game", "Save files are corrupted", "", "Ok") }
             }
             return
         }
 
         FileLog.warn("GameSaverLoader", "Encountered ${e.javaClass.name} when loading ${saveId}${if (useBackup) "-backup" else ""}.json, exiting")
-        GAME.quitCurrentGameWithDialog(CustomDialog("Error loading game", "Please try again.", "", "Ok"))
+        GAME.quitCurrentGameWithDialog { CustomDialog("Error loading game", "Please try again.", "", "Ok") }
     }
 }
 

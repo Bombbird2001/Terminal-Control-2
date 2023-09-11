@@ -3,10 +3,7 @@ package com.bombbird.terminalcontrol2.sounds
 import com.badlogic.gdx.audio.Sound
 import com.badlogic.gdx.utils.Disposable
 import com.badlogic.gdx.utils.Timer
-import com.bombbird.terminalcontrol2.global.ALERT_SOUND_ON
-import com.bombbird.terminalcontrol2.global.COMMS_OFF
-import com.bombbird.terminalcontrol2.global.COMMUNICATIONS_SOUND
-import com.bombbird.terminalcontrol2.global.GAME
+import com.bombbird.terminalcontrol2.global.*
 
 class SoundManager: Disposable {
     private var conflictPlaying = false
@@ -83,7 +80,8 @@ class SoundManager: Disposable {
 
     /** Returns true if player settings allow for sound effects to be played */
     private fun canPlaySoundEffect(): Boolean {
-        return COMMUNICATIONS_SOUND > COMMS_OFF
+        // We do not play sound effects if pilot voices are enabled
+        return COMMUNICATIONS_SOUND == COMMS_SOUND_EFFECTS
     }
 
     private fun canPlayAlerts(): Boolean {

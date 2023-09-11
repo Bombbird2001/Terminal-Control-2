@@ -227,11 +227,11 @@ object RouteToolsTest: FunSpec() {
         }
 
         test("Find next minimum altitude restriction") {
-            getNextMinAlt(route1) shouldBe 5000
-            getNextMinAlt(route2) shouldBe 5000
-            getNextMinAlt(route3).shouldBeNull()
-            getNextMinAlt(route4).shouldBeNull()
-            getNextMinAlt(Route().apply {
+            getHighestMinAlt(route1) shouldBe 5000
+            getHighestMinAlt(route2) shouldBe 5000
+            getHighestMinAlt(route3).shouldBeNull()
+            getHighestMinAlt(route4).shouldBeNull()
+            getHighestMinAlt(Route().apply {
                 add(Route.WaypointLeg(3, null, null, null, legActive = false, altRestrActive = true, spdRestrActive = false))
                 add(hold1)
                 add(Route.WaypointLeg(4, 10000, 2000, 230, legActive = true, altRestrActive = true, spdRestrActive = true))
@@ -240,11 +240,11 @@ object RouteToolsTest: FunSpec() {
         }
 
         test("Find next maximum altitude restriction") {
-            getNextMaxAlt(route1).shouldBeNull()
-            getNextMaxAlt(route2).shouldBeNull()
-            getNextMaxAlt(route3).shouldBeNull()
-            getNextMaxAlt(route4).shouldBeNull()
-            getNextMaxAlt(Route().apply {
+            getLowestMaxAlt(route1).shouldBeNull()
+            getLowestMaxAlt(route2).shouldBeNull()
+            getLowestMaxAlt(route3).shouldBeNull()
+            getLowestMaxAlt(route4).shouldBeNull()
+            getLowestMaxAlt(Route().apply {
                 add(wpt1)
                 add(wpt2)
                 add(Route.WaypointLeg(5, 9000, 2500, null, legActive = true, altRestrActive = true, spdRestrActive = true))

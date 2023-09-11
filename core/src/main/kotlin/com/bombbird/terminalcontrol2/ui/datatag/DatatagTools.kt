@@ -1,6 +1,7 @@
 package com.bombbird.terminalcontrol2.ui.datatag
 
 import com.badlogic.ashley.core.Entity
+import com.badlogic.gdx.Application
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.scenes.scene2d.InputEvent
 import com.badlogic.gdx.scenes.scene2d.ui.ImageButton
@@ -54,11 +55,6 @@ fun updateDatatagStyle(datatag: Datatag, flightType: Byte, selected: Boolean) {
     } else ""
     datatag.imgButton.style = Scene2DSkin.defaultSkin.get("Datatag${colour}${background}", ImageButton.ImageButtonStyle::class.java)
     datatag.currentDatatagStyle = "Datatag${colour}${background}"
-
-    // Try to fix when datatag remains orange
-    if (!datatag.flashingOrange && colour == "Orange") {
-        updateDatatagStyle(datatag, flightType, false)
-    }
 }
 
 /**
@@ -75,22 +71,26 @@ fun setDatatagFlash(datatag: Datatag, aircraft: Aircraft, flash: Boolean) {
         datatag.flashTimer.scheduleTask(object: Timer.Task() {
             override fun run() {
                 // Every 1 second, update the datatag flashing orange status, and call updateDatatagStyle
-                datatag.flashingOrange = !datatag.flashingOrange
+                datatag.flashingOrange = !datatag.flashingOrange && datatag.flashing
                 updateDatatagStyle(datatag, aircraft.entity[FlightType.mapper]?.type ?: return, CLIENT_SCREEN?.selectedAircraft == aircraft)
             }
         }, 0f, 1f)
     } else {
         datatag.flashTimer.clear()
-        datatag.flashing = false
         datatag.flashingOrange = false
         updateDatatagStyle(datatag, aircraft.entity[FlightType.mapper]?.type ?: return, CLIENT_SCREEN?.selectedAircraft == aircraft)
     }
 }
 
-/** Updates the label style to use smaller fonts when radar is zoomed out */
+/**
+ * Updates the label style to use smaller fonts when radar is zoomed out
+ * @param datatag the datatag to update
+ * @param smaller whether to use smaller fonts
+ */
 fun updateDatatagLabelSize(datatag: Datatag, smaller: Boolean) {
-    datatag.labelArray.forEach {  label ->
-        label.style = Scene2DSkin.defaultSkin.get(if (smaller) "DatatagSmall" else "Datatag", LabelStyle::class.java)
+    datatag.labelArray.forEach { label ->
+        val styleToUse = "${if (smaller) "DatatagSmall" else "Datatag"}${if (Gdx.app.type == Application.ApplicationType.Android) "Mobile" else ""}"
+        label.style = Scene2DSkin.defaultSkin.get(styleToUse, LabelStyle::class.java)
         label.pack()
     }
     updateDatatagSize(datatag)

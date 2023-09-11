@@ -145,44 +145,46 @@ class ConflictManager {
             appNoz1?.contains(pos1.x, pos1.y) == true && appNoz2?.contains(pos2.x, pos2.y) == true) return
 
         // Inhibit if both planes are departing from the same airport, and are both inside different NOZs of their departure runways
-        val depArpt1 = entity1[DepartureAirport.mapper] ?: return
-        val depArpt2 = entity2[DepartureAirport.mapper] ?: return
-        val depArptEntity1 = GAME.gameServer?.airports?.get(depArpt1.arptId) ?: return
-        val depArptEntity2 = GAME.gameServer?.airports?.get(depArpt2.arptId) ?: return
-        val depRwy1 = depArptEntity1.entity[RunwayChildren.mapper]?.rwyMap?.get(depArpt1.rwyId)
-        val depRwy2 = depArptEntity2.entity[RunwayChildren.mapper]?.rwyMap?.get(depArpt2.rwyId)
-        val depNoz1 = depRwy1?.entity?.get(DepartureNOZ.mapper)?.depNoz
-        val depNoz2 = depRwy2?.entity?.get(DepartureNOZ.mapper)?.depNoz
-        // Since depNoz1 and depNoz2 are nullable, the .contains method must return a true (not false or null)
-        if (dep1 === dep2 && depNoz1 !== depNoz2 &&
-            depNoz1?.contains(pos1.x, pos1.y) == true && depNoz2?.contains(pos2.x, pos2.y) == true) return
+        val depArpt1 = entity1[DepartureAirport.mapper]
+        val depArpt2 = entity2[DepartureAirport.mapper]
+        val depArptEntity1 = GAME.gameServer?.airports?.get(depArpt1?.arptId)
+        val depArptEntity2 = GAME.gameServer?.airports?.get(depArpt2?.arptId)
+        if (depArpt1 != null && depArpt2 != null && depArptEntity1 != null && depArptEntity2 != null) {
+            val depRwy1 = depArptEntity1.entity[RunwayChildren.mapper]?.rwyMap?.get(depArpt1.rwyId)
+            val depRwy2 = depArptEntity2.entity[RunwayChildren.mapper]?.rwyMap?.get(depArpt2.rwyId)
+            val depNoz1 = depRwy1?.entity?.get(DepartureNOZ.mapper)?.depNoz
+            val depNoz2 = depRwy2?.entity?.get(DepartureNOZ.mapper)?.depNoz
+            // Since depNoz1 and depNoz2 are nullable, the .contains method must return a true (not false or null)
+            if (dep1 === dep2 && depNoz1 !== depNoz2 &&
+                depNoz1?.contains(pos1.x, pos1.y) == true && depNoz2?.contains(pos2.x, pos2.y) == true) return
 
-        // Inhibit if either plane just did a go around
-        if (entity1.has(RecentGoAround.mapper) || entity2.has(RecentGoAround.mapper)) return
+            // Allow simultaneous departures on divergent headings of at least 15 degrees
+            if (entity1.has(DivergentDepartureAllowed.mapper) && entity2.has(DivergentDepartureAllowed.mapper) && depArptEntity1 == depArptEntity2) {
+                val track1 = convertWorldAndRenderDeg(entity1[Direction.mapper]?.trackUnitVector?.angleDeg() ?: 0f)
+                val track2 = convertWorldAndRenderDeg(entity2[Direction.mapper]?.trackUnitVector?.angleDeg() ?: 0f)
 
-        // Allow simultaneous departures on divergent headings of at least 15 degrees
-        if (entity1.has(DivergentDepartureAllowed.mapper) && entity2.has(DivergentDepartureAllowed.mapper) && depArptEntity1 == depArptEntity2) {
-            val track1 = convertWorldAndRenderDeg(entity1[Direction.mapper]?.trackUnitVector?.angleDeg() ?: 0f)
-            val track2 = convertWorldAndRenderDeg(entity2[Direction.mapper]?.trackUnitVector?.angleDeg() ?: 0f)
+                // Identify which plane is on the left, right
+                depArptEntity1.entity[Position.mapper]?.let { arptPos ->
+                    val plane1Offset = Vector2(pos1.x - arptPos.x, pos1.y - arptPos.y)
+                    val plane2Offset = Vector2(pos2.x - arptPos.x, pos2.y - arptPos.y)
 
-            // Identify which plane is on the left, right
-            depArptEntity1.entity[Position.mapper]?.let { arptPos ->
-                val plane1Offset = Vector2(pos1.x - arptPos.x, pos1.y - arptPos.y)
-                val plane2Offset = Vector2(pos2.x - arptPos.x, pos2.y - arptPos.y)
-
-                // Check which angle is more left
-                val plane1PosTrack = convertWorldAndRenderDeg(plane1Offset.angleDeg())
-                val plane2PosTrack = convertWorldAndRenderDeg(plane2Offset.angleDeg())
-                val plane2PosTrackDiff = findDeltaHeading(plane1PosTrack, plane2PosTrack, CommandTarget.TURN_DEFAULT)
-                if (plane2PosTrackDiff > 0) {
-                    // Plane 1 on left, 2 on right
-                    if (findDeltaHeading(track1, track2, CommandTarget.TURN_DEFAULT) >= 15) return
-                } else {
-                    // Plane 1 on right, 2 on left
-                    if (findDeltaHeading(track2, track1, CommandTarget.TURN_DEFAULT) >= 15) return
+                    // Check which angle is more left
+                    val plane1PosTrack = convertWorldAndRenderDeg(plane1Offset.angleDeg())
+                    val plane2PosTrack = convertWorldAndRenderDeg(plane2Offset.angleDeg())
+                    val plane2PosTrackDiff = findDeltaHeading(plane1PosTrack, plane2PosTrack, CommandTarget.TURN_DEFAULT)
+                    if (plane2PosTrackDiff > 0) {
+                        // Plane 1 on left, 2 on right
+                        if (findDeltaHeading(track1, track2, CommandTarget.TURN_DEFAULT) >= 15) return
+                    } else {
+                        // Plane 1 on right, 2 on left
+                        if (findDeltaHeading(track2, track1, CommandTarget.TURN_DEFAULT) >= 15) return
+                    }
                 }
             }
         }
+
+        // Inhibit if either plane just did a go around
+        if (entity1.has(RecentGoAround.mapper) || entity2.has(RecentGoAround.mapper)) return
 
         var latMinima = MIN_SEP
         val altMinima = VERT_SEP

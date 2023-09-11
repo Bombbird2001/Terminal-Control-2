@@ -49,6 +49,7 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advD
             with<MaxAdvancedDepartures> {
                 maxAdvanceDepartures = advDep
             }
+            with<TimeSinceLastDeparture>()
         }
     }
 

@@ -49,6 +49,9 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
         with<AffectedByWind>()
         with<InitialClientDatatagPosition>()
         with<TrailInfo>()
+        with<TTSVoice> {
+            voice = GAME.ttsManager.getRandomVoice()
+        }
         if (onClient) {
             with<RadarData> {
                 position.x = posX
@@ -78,6 +81,10 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                 }
             }
             with<RouteSegment>()
+            with<TTSVoice> {
+                voice = getServerElseRandomVoice(callsign)
+                setOnServerIfHost(callsign, voice)
+            }
         } else {
             with<ConflictAble>()
             with<WakeTrail>()
@@ -98,6 +105,27 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
 
     /** Empty aircraft constructor in case of missing information */
     constructor(): this("EMPTY", 0f, 0f, 0f, "B77W", FlightType.ARRIVAL)
+
+    /**
+     * Gets the server-side voice if the client is also the host, or a random voice if the client is not the host
+     * @param callsign the callsign of the aircraft
+     */
+    private fun getServerElseRandomVoice(callsign: String): String? {
+        val serverVoice = GAME.gameServer?.aircraft?.get(callsign)?.entity?.get(TTSVoice.mapper)?.voice
+            ?: return GAME.ttsManager.getRandomVoice()
+        return GAME.ttsManager.checkVoiceElseRandomVoice(serverVoice) ?: GAME.ttsManager.getRandomVoice()
+    }
+
+    /**
+     * Updates the voice stored on server-side if client is also the host
+     * @param callsign the callsign of the aircraft
+     * @param voice the voice to set
+     */
+    private fun setOnServerIfHost(callsign: String, voice: String?) {
+        GAME.gameServer?.let {
+            it.aircraft[callsign]?.entity?.get(TTSVoice.mapper)?.voice = voice
+        }
+    }
 
     companion object {
         /** De-serialises a [SerialisedAircraft] and creates a new [Aircraft] object from it */
@@ -146,7 +174,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                         serialisedAircraft.commandAlt, serialisedAircraft.expedite, serialisedAircraft.clearedIas,
                         serialisedAircraft.minIas, serialisedAircraft.maxIas, serialisedAircraft.optimalIas,
                     ).ActingClearance())
-                    serialisedAircraft.arrivalArptId?.let { arrId -> this += ArrivalAirport(arrId) }
+                    val arrAirportId = serialisedAircraft.arrivalArptId?.also { arrId -> this += ArrivalAirport(arrId) }
                     serialisedAircraft.departureArptId?.let { depId -> this += DepartureAirport(depId, 0) }
                     val controllable = get(Controllable.mapper)?.apply {
                         sectorId = serialisedAircraft.controlSectorId
@@ -155,7 +183,11 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                     get(RSSprite.mapper)?.drawable = getAircraftIcon(serialisedAircraft.flightType, serialisedAircraft.controlSectorId)
                     if (serialisedAircraft.gsCap) this += GlideSlopeCaptured()
                     if (serialisedAircraft.locCap) this += LocalizerCaptured()
-                    if (serialisedAircraft.visCap) this += VisualCaptured()
+                    if (serialisedAircraft.visCapRwy != null) {
+                        val visApp = CLIENT_SCREEN?.airports?.get(arrAirportId)?.entity?.get(RunwayChildren.mapper)
+                            ?.rwyMap?.get(serialisedAircraft.visCapRwy)?.entity?.get(VisualApproach.mapper)?.visual
+                        if (visApp != null) this += VisualCaptured(visApp)
+                    }
                     if (serialisedAircraft.contactToCentre) this += ContactToCentre()
                     if (serialisedAircraft.recentGoAround) this += RecentGoAround()
 
@@ -163,13 +195,15 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                     if (serialisedAircraft.waitingTakeoff) this += WaitingTakeoff()
                     else if (datatag != null) addDatatagInputListeners(datatag, it)
                     datatag?.let { tag ->
-                        tag.xOffset = serialisedAircraft.initialDatatagXOffset
-                        tag.yOffset = serialisedAircraft.initialDatatagYOffset
                         tag.minimised = controllable?.sectorId != CLIENT_SCREEN?.playerSector || serialisedAircraft.initialDatatagMinimised
                         updateDatatagText(tag, getNewDatatagLabelText(this, tag.minimised))
+                        updateDatatagLabelSize(tag, true)
                         if (serialisedAircraft.initialDatatagFlashing &&
                             controllable?.sectorId == GAME.gameClientScreen?.playerSector)
                             setDatatagFlash(tag, it, true)
+
+                        tag.xOffset = serialisedAircraft.initialDatatagXOffset
+                        tag.yOffset = serialisedAircraft.initialDatatagYOffset
                     }
 
                     get(TrailInfo.mapper)?.apply {
@@ -194,7 +228,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                                 val speedKts: Float = 0f, val vertSpdFpm: Float = 0f, val angularSpdDps: Float = 0f,
                                 val trackX: Float = 0f, val trackY: Float = 0f,
                                 val targetHdgDeg: Short = 0, val targetAltFt: Short = 0, val targetIasKt: Short = 0,
-                                val gsCap: Boolean = false, val locCap: Boolean = false, val visCap: Boolean = false,
+                                val gsCap: Boolean = false, val locCap: Boolean = false, val visCapRwy: Byte? = null,
                                 val contactToCentre: Boolean = false,
                                 val recentGoAround: Boolean = false
     )
@@ -226,7 +260,10 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                 speed.speedKts, speed.vertSpdFpm, speed.angularSpdDps, gs.trackVectorPxps.x, gs.trackVectorPxps.y,
                 cmdTarget.targetHdgDeg.toInt().toShort(), (cmdTarget.targetAltFt / 100f).roundToInt().toShort(), cmdTarget.targetIasKt,
                 has(GlideSlopeCaptured.mapper), has(LocalizerCaptured.mapper),
-                has(VisualCaptured.mapper) || (get(CirclingApproach.mapper)?.phase ?: 0) >= 1,
+                get(VisualCaptured.mapper)?.visApp?.get(ApproachInfo.mapper)?.rwyId ?: (get(CirclingApproach.mapper)?.let { app ->
+                    if (app.phase >= 1) app.circlingApp[ApproachInfo.mapper]?.rwyId
+                    else null
+                }),
                 has(ContactToCentre.mapper),
                 has(RecentGoAround.mapper)
             )
@@ -265,7 +302,11 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
             else remove<GlideSlopeCaptured>()
             if (data.locCap) this += LocalizerCaptured()
             else remove<LocalizerCaptured>()
-            if (data.visCap) this += VisualCaptured()
+            if (data.visCapRwy != null) {
+                val visApp = CLIENT_SCREEN?.airports?.get(get(ArrivalAirport.mapper)?.arptId)?.entity?.get(RunwayChildren.mapper)
+                    ?.rwyMap?.get(data.visCapRwy)?.entity?.get(VisualApproach.mapper)?.visual
+                if (visApp != null) this += VisualCaptured(visApp)
+            }
             else remove<VisualCaptured>()
             if (data.contactToCentre) this += ContactToCentre()
             else remove<ContactToCentre>()
@@ -302,7 +343,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                              val minIas: Short = 0, val maxIas: Short = 0, val optimalIas: Short = 0,
                              val arrivalArptId: Byte? = null, val departureArptId: Byte? = null,
                              val controlSectorId: Byte = 0, val controllerUUID: String? = null,
-                             val gsCap: Boolean = false, val locCap: Boolean = false, val visCap: Boolean = false,
+                             val gsCap: Boolean = false, val locCap: Boolean = false, val visCapRwy: Byte? = null,
                              val waitingTakeoff: Boolean = false,
                              val contactToCentre: Boolean = false,
                              val recentGoAround: Boolean = false,
@@ -356,7 +397,10 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                 arrArptId, depArptId,
                 controllable.sectorId, controllable.controllerUUID?.toString(),
                 has(GlideSlopeCaptured.mapper), has(LocalizerCaptured.mapper),
-                has(VisualCaptured.mapper) || (get(CirclingApproach.mapper)?.phase ?: 0) >= 1,
+                get(VisualCaptured.mapper)?.visApp?.get(ApproachInfo.mapper)?.rwyId ?: (get(CirclingApproach.mapper)?.let { app ->
+                    if (app.phase >= 1) app.circlingApp[ApproachInfo.mapper]?.rwyId
+                    else null
+                }),
                 has(WaitingTakeoff.mapper),
                 has(ContactToCentre.mapper),
                 has(RecentGoAround.mapper),

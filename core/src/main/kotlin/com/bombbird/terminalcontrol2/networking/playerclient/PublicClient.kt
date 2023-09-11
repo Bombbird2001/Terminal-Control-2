@@ -55,7 +55,8 @@ class PublicClient: NetworkClient() {
 
             override fun disconnected(connection: Connection?) {
                 if (GAME.shownScreen is RadarScreen)
-                    GAME.quitCurrentGameWithDialog(CustomDialog("Disconnected", "You have been disconnected from the server - most likely the host quit the game", "", "Ok"))
+                    GAME.quitCurrentGameWithDialog { CustomDialog("Disconnected", "You have been disconnected" +
+                            " from the server - most likely the host quit the game", "", "Ok") }
             }
         })
     }
@@ -78,7 +79,7 @@ class PublicClient: NetworkClient() {
         registerClassesToKryo(clientKryo)
 
         if (roomId == null) {
-            GAME.quitCurrentGameWithDialog(CustomDialog("Failed to connect", "Missing room ID", "", "Ok"))
+            GAME.quitCurrentGameWithDialog { CustomDialog("Failed to connect", "Missing room ID", "", "Ok") }
             return
         }
 
@@ -89,7 +90,7 @@ class PublicClient: NetworkClient() {
         // Send game join request to endpoint to retrieve symmetric key
         val authResponse = HttpRequest.sendGameAuthorizationRequest(roomId)
         if (authResponse?.success != true) {
-            GAME.quitCurrentGameWithDialog(CustomDialog("Failed to connect", "Endpoint authorization failed", "", "Ok"))
+            GAME.quitCurrentGameWithDialog { CustomDialog("Failed to connect", "Endpoint authorization failed", "", "Ok") }
             return
         }
 
@@ -110,7 +111,7 @@ class PublicClient: NetworkClient() {
             if (e is ClosedSelectorException) return@setUncaughtExceptionHandler
 
             HttpRequest.sendCrashReport(Exception(e), "PublicClient", "Public multiplayer")
-            GAME.quitCurrentGameWithDialog(CustomDialog("Error", "An error occurred", "", "Ok"))
+            GAME.quitCurrentGameWithDialog { CustomDialog("Error", "An error occurred", "", "Ok") }
         }
     }
 

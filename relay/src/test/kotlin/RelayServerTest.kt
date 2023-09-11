@@ -13,7 +13,6 @@ import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.collections.shouldBeIn
 import io.kotest.matchers.shouldBe
-import java.lang.IllegalStateException
 import java.util.UUID
 
 /** Kotest FunSpec class for testing relay server functionality */
@@ -84,7 +83,7 @@ object RelayServerTest: FunSpec() {
                 it.size shouldBe 0
             }
 
-            shouldThrow<IllegalStateException> {
+            shouldThrow<NullPointerException> {
                 connectAsClient(host.getRoomId())
             }
 
@@ -99,19 +98,19 @@ object RelayServerTest: FunSpec() {
                 it[0].roomId shouldBe host.getRoomId()
             }
 
-            shouldThrow<IllegalStateException> {
+            shouldThrow<NullPointerException> {
                 connectAsClient(0)
             }
 
-            shouldThrow<IllegalStateException> {
+            shouldThrow<NullPointerException> {
                 connectAsClient(350)
             }
 
-            shouldThrow<IllegalStateException> {
+            shouldThrow<NullPointerException> {
                 connectAsClient(777)
             }
 
-            shouldThrow<IllegalStateException> {
+            shouldThrow<NullPointerException> {
                 connectAsClient(Short.MAX_VALUE)
             }
 
@@ -161,7 +160,7 @@ object RelayServerTest: FunSpec() {
 
             val client = connectAsClient(host.getRoomId())
 
-            shouldThrow<IllegalStateException> {
+            shouldThrow<NullPointerException> {
                 connectAsClient(host.getRoomId(), false)
             }
 

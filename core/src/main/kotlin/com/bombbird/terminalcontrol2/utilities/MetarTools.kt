@@ -87,25 +87,29 @@ fun initialiseAirportMetarStatic() {
 /** Updates the in-game airports' METAR with the supplied [metarJson] string */
 fun updateAirportMetar(metarJson: String) {
     airportMetarMoshiAdapter.fromJson(metarJson)?.apply {
-        for (entry in entries) {
-            entry.value.let { GAME.gameServer?.airports?.get(entry.key)?.entity?.also { arpt ->
-                arpt[MetarInfo.mapper]?.apply {
-                    if (rawMetar != it.rawMetar) letterCode = letterCode?.let {
-                        if (it + 1 <= 'Z') it + 1 else 'A'
-                    } ?: MathUtils.random(65, 90).toChar()
-                    rawMetar = it.rawMetar ?: ""
-                    windHeadingDeg = it.windHeadingDeg ?: 0
-                    windSpeedKt = it.windSpeedKt ?: 0
-                    windGustKt = it.windGustKt ?: 0
-                    visibilityM = it.visibilityM ?: 10000
-                    ceilingHundredFtAGL = it.ceilingFtAGL
-                    windshear = it.windshear ?: ""
-                    updateWindVector(windVectorPx, windHeadingDeg, windSpeedKt)
-                    updateRunwayWindComponents(arpt)
-                    calculateRunwayConfigScores(arpt)
-                    checkRunwayConfigSelection(arpt)
+        GAME.gameServer?.let { gs ->
+            gs.postRunnableAfterEngineUpdate {
+                for (entry in entries) {
+                    entry.value.let { gs.airports[entry.key]?.entity?.also { arpt ->
+                        arpt[MetarInfo.mapper]?.apply {
+                            if (rawMetar != it.rawMetar) letterCode = letterCode?.let {
+                                if (it + 1 <= 'Z') it + 1 else 'A'
+                            } ?: MathUtils.random(65, 90).toChar()
+                            rawMetar = it.rawMetar ?: ""
+                            windHeadingDeg = it.windHeadingDeg ?: 0
+                            windSpeedKt = it.windSpeedKt ?: 0
+                            windGustKt = it.windGustKt ?: 0
+                            visibilityM = it.visibilityM ?: 10000
+                            ceilingHundredFtAGL = it.ceilingFtAGL
+                            windshear = it.windshear ?: ""
+                            updateWindVector(windVectorPx, windHeadingDeg, windSpeedKt)
+                            updateRunwayWindComponents(arpt)
+                            calculateRunwayConfigScores(arpt)
+                            checkRunwayConfigSelection(arpt)
+                        }
+                    }}
                 }
-            }}
+            }
         }
 
         notifyGameServerWeatherLoaded()

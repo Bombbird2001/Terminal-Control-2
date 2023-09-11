@@ -309,27 +309,39 @@ fun getNextMaxSpd(route: Route): Short? {
 }
 
 /**
- * Gets the next minimum altitude restriction for the route
+ * Gets the highest minimum altitude restriction for all waypoints in the route,
+ * until a go around leg is reached
  * @param route the route to refer to
- * @return the minimum altitude, or null if a minimum altitude restriction does not exist
+ * @return the minimum altitude, or null if a minimum altitude restriction does
+ * not exist
  */
-fun getNextMinAlt(route: Route): Int? {
-    for (i in 0 until route.size) return (route[i] as? WaypointLeg)?.let {
-        if (it.legActive && it.altRestrActive) it.minAltFt else null
-    } ?: continue
-    return null
+fun getHighestMinAlt(route: Route): Int? {
+    var currMin: Int? = null
+    for (i in 0 until route.size) {
+        if (route[i].phase == Leg.MISSED_APP) return currMin
+        val wptLeg = route[i] as? WaypointLeg ?: continue
+        if (wptLeg.legActive && wptLeg.altRestrActive && wptLeg.minAltFt != null &&
+            (currMin == null || wptLeg.minAltFt > currMin)) currMin = wptLeg.minAltFt
+    }
+    return currMin
 }
 
 /**
- * Gets the next maximum altitude restriction for the route
+ * Gets the lowest maximum altitude restriction for all waypoints in the route,
+ * until a go around leg is reached
  * @param route the route to refer to
- * @return the maximum altitude, or null if a maximum altitude restriction does not exist
+ * @return the maximum altitude, or null if a maximum altitude restriction does
+ * not exist
  */
-fun getNextMaxAlt(route: Route): Int? {
-    for (i in 0 until route.size) return (route[i] as? WaypointLeg)?.let {
-        if (it.legActive && it.altRestrActive) it.maxAltFt else null
-    } ?: continue
-    return null
+fun getLowestMaxAlt(route: Route): Int? {
+    var currMax: Int? = null
+    for (i in 0 until route.size) {
+        if (route[i].phase == Leg.MISSED_APP) return currMax
+        val wptLeg = route[i] as? WaypointLeg ?: continue
+        if (wptLeg.legActive && wptLeg.altRestrActive && wptLeg.maxAltFt != null &&
+            (currMax == null || wptLeg.maxAltFt < currMax)) currMax = wptLeg.maxAltFt
+    }
+    return currMax
 }
 
 /**

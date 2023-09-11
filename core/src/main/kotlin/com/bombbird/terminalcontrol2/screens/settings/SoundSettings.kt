@@ -29,7 +29,7 @@ class SoundSettings: BaseSettings() {
                         table {
                             defaultSettingsLabel("Communications:")
                             commsSelectBox = defaultSettingsSelectBox<String>().apply {
-                                setItems(OFF, SOUND_EFFECTS)
+                                setItems(OFF, SOUND_EFFECTS, PILOT_VOICES)
                             }
                             defaultSettingsLabel("Alerts:")
                             alertsSelectBox = defaultSettingsSelectBox<String>().apply {

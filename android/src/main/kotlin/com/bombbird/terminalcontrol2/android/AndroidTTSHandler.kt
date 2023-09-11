@@ -1,5 +1,6 @@
 package com.bombbird.terminalcontrol2.android
 
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.speech.tts.TextToSpeech
 import android.speech.tts.TextToSpeech.OnInitListener
@@ -8,30 +9,31 @@ import com.badlogic.gdx.backends.android.AndroidApplication
 import com.bombbird.terminalcontrol2.sounds.TextToSpeechInterface
 import com.bombbird.terminalcontrol2.utilities.FileLog
 import ktx.collections.GdxArray
+import ktx.collections.GdxSet
 import java.util.*
 
 /** TTS handler for Android platform */
 class AndroidTTSHandler(private val app: AndroidApplication): TextToSpeechInterface, OnInitListener {
     private var tts: TextToSpeech? = null
     private val voiceArray = GdxArray<String>()
+    private val voiceSet = GdxSet<String>()
 
-    override fun sayText(text: String, voice: String) {
-        tts?.let {
-            it.voice = Voice(voice, Locale.ENGLISH, Voice.QUALITY_HIGH, Voice.LATENCY_NORMAL, false, null)
-            it.speak(text, TextToSpeech.QUEUE_ADD, null, null)
+    /** Starts the TTS initialisation process */
+    fun initialiseTTS() {
+        val ttsIntent = Intent()
+        ttsIntent.action = TextToSpeech.Engine.ACTION_CHECK_TTS_DATA
+        try {
+            app.startActivityForResult(ttsIntent, AndroidLauncher.ACT_CHECK_TTS_DATA)
+        } catch (e: ActivityNotFoundException) {
+            e.printStackTrace()
+            // toastManager.initTTSFail()
         }
     }
 
-    override fun cancel() {
-        tts?.stop()
-    }
-
-    override fun checkAndUpdateVoice(voice: String): String {
-        if (voiceArray.contains(voice)) return voice
-        return voiceArray.random() ?: voice
-    }
-
-    override fun loadVoices() {
+    /** Loads all available voices for this device */
+    private fun loadVoices() {
+        voiceArray.clear()
+        voiceSet.clear()
         tts?.let {
             try {
                 if (it.voices.isEmpty()) return
@@ -40,16 +42,40 @@ class AndroidTTSHandler(private val app: AndroidApplication): TextToSpeechInterf
             }
             it.voices?.let { voices ->
                 for (available in voices) {
-                    if ("en" == available.name.substring(0, 2)) {
+                    if (available.locale.language == Locale.ENGLISH.language) {
                         voiceArray.add(available.name)
+                        voiceSet.add(available.name)
                     }
                 }
             }
         } ?: return
     }
 
-    override fun quit() {
-        TODO("Not yet implemented")
+    override fun sayText(text: String, voice: String) {
+        tts?.let {
+            it.voice = Voice(voice, Locale.ENGLISH, Voice.QUALITY_HIGH, Voice.LATENCY_NORMAL, false, null)
+            it.speak(text, TextToSpeech.QUEUE_ADD, null, null)
+        }
+    }
+
+    override fun onQuitGame() {
+        tts?.stop()
+    }
+
+    override fun getRandomVoice(): String? {
+        return voiceArray.random()
+    }
+
+    override fun checkVoiceAvailable(voice: String): Boolean {
+        val containsVoice = voiceSet.contains(voice)
+        if (!containsVoice) {
+            FileLog.warn("Android TTS", "Voice $voice not available; voices available: $voiceArray")
+        }
+        return containsVoice
+    }
+
+    override fun onQuitApp() {
+        tts?.stop()
     }
 
     /**
@@ -84,7 +110,7 @@ class AndroidTTSHandler(private val app: AndroidApplication): TextToSpeechInterf
                     // toastManager.ttsLangNotSupported()
                 } else {
                     FileLog.info("Android TTS", "TTS initialized successfully")
-                    tts?.setSpeechRate(1.5f)
+                    tts?.setSpeechRate(1.25f)
                     loadVoices()
                 }
             }

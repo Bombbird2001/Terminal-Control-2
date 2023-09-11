@@ -20,6 +20,7 @@ import com.bombbird.terminalcontrol2.ui.datatag.updateDatatagText
 import com.bombbird.terminalcontrol2.ui.panes.CommsPane
 import com.bombbird.terminalcontrol2.utilities.getAircraftIcon
 import com.bombbird.terminalcontrol2.utilities.FileLog
+import com.bombbird.terminalcontrol2.utilities.removeAllEntitiesOnMainThread
 import com.bombbird.terminalcontrol2.utilities.removeEntityOnMainThread
 import ktx.ashley.*
 import java.util.*
@@ -39,7 +40,7 @@ class RequestClientData: NeedsEncryption
 data class ConnectionError(private val cause: String = "Unknown cause"): ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
         FileLog.info("NetworkingTools", "Connection failed - $cause")
-        GAME.quitCurrentGameWithDialog(CustomDialog("Failed to connect", cause, "", "Ok"))
+        GAME.quitCurrentGameWithDialog { CustomDialog("Failed to connect", cause, "", "Ok") }
     }
 }
 
@@ -83,7 +84,7 @@ class ClearAllClientData: ClientReceive, NeedsEncryption {
         rs.updatedWaypointMapping.clear()
         rs.publishedHolds.clear()
         rs.minAltSectors.clear()
-        getEngine(true).removeAllEntities()
+        getEngine(true).removeAllEntitiesOnMainThread(true)
         rs.afterClearData()
     }
 }

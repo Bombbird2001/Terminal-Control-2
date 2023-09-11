@@ -2,26 +2,38 @@ package com.bombbird.terminalcontrol2.sounds
 
 /** Interface for calling Text-to-speech functionality on various platforms */
 interface TextToSpeechInterface {
+    /**
+     * Says the input text with the given voice
+     * @param text text to say
+     * @param voice voice to use
+      */
     fun sayText(text: String, voice: String)
 
-    fun cancel()
+    /** To be called when the player exits from a game */
+    fun onQuitGame()
 
-    fun checkAndUpdateVoice(voice: String): String
+    /** Returns a random voice, or null if no voices available */
+    fun getRandomVoice(): String?
 
-    fun loadVoices()
+    /**
+     * Checks whether the input voice is available on the device
+     * @param voice the voice to check
+     */
+    fun checkVoiceAvailable(voice: String): Boolean
 
-    fun quit()
+    /** To be called when the app is quitting */
+    fun onQuitApp()
 }
 
 /** Stub TTS interface for testing, not implemented or not required */
 object StubTextToSpeech : TextToSpeechInterface {
     override fun sayText(text: String, voice: String) {}
 
-    override fun cancel() {}
+    override fun onQuitGame() {}
 
-    override fun checkAndUpdateVoice(voice: String): String { return "" }
+    override fun getRandomVoice(): String { return "" }
 
-    override fun loadVoices() {}
+    override fun checkVoiceAvailable(voice: String): Boolean { return false }
 
-    override fun quit() {}
+    override fun onQuitApp() {}
 }

@@ -20,8 +20,11 @@ import com.bombbird.terminalcontrol2.screens.settings.MainSettings
 import com.bombbird.terminalcontrol2.screens.settings.TrafficSettings
 import com.bombbird.terminalcontrol2.sounds.SoundManager
 import com.bombbird.terminalcontrol2.sounds.TextToSpeechInterface
+import com.bombbird.terminalcontrol2.sounds.TextToSpeechManager
 import com.bombbird.terminalcontrol2.ui.CustomDialog
+import com.bombbird.terminalcontrol2.utilities.AndroidLifeCycleHandler
 import com.bombbird.terminalcontrol2.utilities.FileLog
+import com.bombbird.terminalcontrol2.utilities.loadCallsigns
 import kotlinx.coroutines.launch
 import ktx.app.KtxGame
 import ktx.app.KtxScreen
@@ -35,7 +38,7 @@ import ktx.scene2d.*
  *
  * [clearScreen] is set to false as it will be handled by the individual screens
  */
-class TerminalControl2(val externalFileHandler: ExternalFileHandler, val ttsHandler: TextToSpeechInterface) : KtxGame<KtxScreen>(clearScreen = false) {
+class TerminalControl2(val externalFileHandler: ExternalFileHandler, ttsHandler: TextToSpeechInterface) : KtxGame<KtxScreen>(clearScreen = false) {
     lateinit var batch: SpriteBatch
     lateinit var engine: Engine
     lateinit var soundManager: SoundManager
@@ -45,9 +48,16 @@ class TerminalControl2(val externalFileHandler: ExternalFileHandler, val ttsHand
     val lanClientDiscoveryHandler = LANClientDiscoveryHandler()
     val lanClient = LANClient(lanClientDiscoveryHandler)
     val publicClient = PublicClient()
+    val ttsManager = TextToSpeechManager(ttsHandler)
+    val androidLifeCycleHandler = AndroidLifeCycleHandler()
+
+    init {
+        GAME = this
+    }
 
     /** Quits the current game running */
     fun quitCurrentGame() {
+        FileLog.info("TerminalControl2", "Quitting current game")
         // Quit the client, and if this client is also hosting the server it will be automatically closed
         // as part of the radarScreen's disposal process
         GAME.setScreen<MainMenu>()
@@ -61,16 +71,20 @@ class TerminalControl2(val externalFileHandler: ExternalFileHandler, val ttsHand
         GAME.removeScreen<CustomWeatherSettings>()
         GAME.removeScreen<TrafficSettings>()
         GAME.gameServer = null
+        ttsManager.quitGame()
     }
 
     /**
      * Quits the current game, and show an additional dialog in the main menu upon exit
-     * @param dialog the dialog to show
+     * @param dialogCreator a function to create the dialog to show -  this is to prevent threading issues when
+     * calling this function on a thread other than the main rendering thread
      */
-    fun quitCurrentGameWithDialog(dialog: CustomDialog) {
+    fun quitCurrentGameWithDialog(dialogCreator: () -> CustomDialog) {
         Gdx.app.postRunnable {
             quitCurrentGame()
-            GAME.getScreen<MainMenu>().showDialog(dialog)
+            val dialog = dialogCreator()
+            GAME.getScreen<MainMenu>().showDialog(dialogCreator())
+            FileLog.warn("TerminalControl2", "Quitting current game with dialog ${dialog.text}")
         }
     }
 
@@ -100,6 +114,7 @@ class TerminalControl2(val externalFileHandler: ExternalFileHandler, val ttsHand
                 loadPlayerUUID()
                 loadAvailableAirports()
                 loadAllDatatagLayouts()
+                loadCallsigns()
             }
 
             // Initialize logging system
@@ -108,8 +123,6 @@ class TerminalControl2(val externalFileHandler: ExternalFileHandler, val ttsHand
             FileLog.info("TerminalControl2", "Game initialized")
 
             // Assets are loaded
-            GAME = this@TerminalControl2
-
             batch = SpriteBatch()
             engine = Engine()
             soundManager = SoundManager()
@@ -144,5 +157,6 @@ class TerminalControl2(val externalFileHandler: ExternalFileHandler, val ttsHand
         lanClient.dispose()
         publicClient.dispose()
         FileLog.close()
+        ttsManager.disposeSafely()
     }
 }

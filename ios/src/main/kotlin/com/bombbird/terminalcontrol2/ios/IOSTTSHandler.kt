@@ -7,19 +7,19 @@ class IOSTTSHandler: TextToSpeechInterface {
         TODO("Not yet implemented")
     }
 
-    override fun cancel() {
+    override fun onQuitGame() {
         TODO("Not yet implemented")
     }
 
-    override fun checkAndUpdateVoice(voice: String): String {
+    override fun getRandomVoice(): String? {
         TODO("Not yet implemented")
     }
 
-    override fun loadVoices() {
+    override fun checkVoiceAvailable(voice: String): Boolean {
         TODO("Not yet implemented")
     }
 
-    override fun quit() {
+    override fun onQuitApp() {
         TODO("Not yet implemented")
     }
 }

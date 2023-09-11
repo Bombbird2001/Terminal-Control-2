@@ -8,7 +8,8 @@ import com.bombbird.terminalcontrol2.TerminalControl2
 
 /** Launches the desktop (LWJGL3) application. */
 fun main() {
-    Lwjgl3Application(TerminalControl2(DesktopFileHandler(), DesktopTTSHandler()), Lwjgl3ApplicationConfiguration().apply {
+    val desktopTTS = DesktopTTSHandler().apply { initializeEngine() }
+    Lwjgl3Application(TerminalControl2(DesktopFileHandler(), desktopTTS), Lwjgl3ApplicationConfiguration().apply {
         setTitle("Terminal Control 2")
         setWindowedMode(1920, 1440)
         setMaximized(true)

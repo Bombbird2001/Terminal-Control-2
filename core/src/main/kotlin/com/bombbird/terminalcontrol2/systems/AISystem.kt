@@ -944,39 +944,21 @@ class AISystem: EntitySystem() {
         val commandTarget = entity[CommandTarget.mapper] ?: return
         val flightType = entity[FlightType.mapper] ?: return
         val lastRestriction = entity[LastRestrictions.mapper] ?: LastRestrictions().apply { entity += this }
-        val nextRouteMinAlt = getNextMinAlt(actingClearance.route)
+        val highestMinAlt = getHighestMinAlt(actingClearance.route)
         val minAlt = lastRestriction.minAltFt.let { lastMinAlt ->
-            when {
-                lastMinAlt != null && nextRouteMinAlt != null -> min(lastMinAlt, nextRouteMinAlt)
-                lastMinAlt != null -> when (flightType.type) {
-                    FlightType.DEPARTURE -> lastMinAlt// No further min alts, use the last min alt
-                    FlightType.ARRIVAL -> null // No further min alts, but aircraft is an arrival so allow descent below previous min alt
-                    else -> null
-                }
-                nextRouteMinAlt != null -> when (flightType.type) {
-                    FlightType.DEPARTURE -> null// No min alts before
-                    FlightType.ARRIVAL -> nextRouteMinAlt // No min alts before, but aircraft is an arrival so must follow all subsequent min alts
-                    else -> null
-                }
+            when (flightType.type) {
+                FlightType.DEPARTURE -> lastMinAlt // If aircraft is a departure, use the last min alt
+                FlightType.ARRIVAL -> highestMinAlt // If aircraft is an arrival, use the subsequent highest min alt
                 else -> null
             }
         }
-        lastRestriction.minAltFt = nextRouteMinAlt
+        lastRestriction.minAltFt = minAlt
 
-        val nextRouteMaxAlt = getNextMaxAlt(actingClearance.route)
+        val lowestMaxAlt = getLowestMaxAlt(actingClearance.route)
         var maxAlt = lastRestriction.maxAltFt.let { lastMaxAlt ->
-            when {
-                lastMaxAlt != null && nextRouteMaxAlt != null -> max(lastMaxAlt, nextRouteMaxAlt)
-                lastMaxAlt != null -> when (flightType.type) {
-                    FlightType.DEPARTURE -> null// No further max alts, but aircraft is a departure so allow climb above previous min alt
-                    FlightType.ARRIVAL -> lastMaxAlt// No further max alts, use the last min alt
-                    else -> null
-                }
-                nextRouteMaxAlt != null -> when (flightType.type) {
-                    FlightType.DEPARTURE -> nextRouteMaxAlt// No max alts before, but aircraft is a departure so must follow all subsequent max alts
-                    FlightType.ARRIVAL -> null// No max alts before
-                    else -> null
-                }
+            when (flightType.type) {
+                FlightType.DEPARTURE -> lowestMaxAlt // If aircraft is a departure, use the subsequent lowest max alt
+                FlightType.ARRIVAL -> lastMaxAlt // If aircraft is an arrival, use the last max alt
                 else -> null
             }
         }

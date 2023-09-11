@@ -51,7 +51,6 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         private val gsCircleFamily: Family = allOf(GlideSlopeCircle::class, ApproachInfo::class).get()
         private val trajectoryFamily: Family = allOf(RadarData::class, Controllable::class, SRColor::class)
             .exclude(WaitingTakeoff::class).get()
-        private val visualFamily: Family = allOf(VisualCaptured::class, RadarData::class).get()
         private val datatagLineFamily: Family = allOf(Datatag::class, RadarData::class)
             .exclude(WaitingTakeoff::class).get()
         private val constCircleFamily: Family = allOf(Position::class, GCircle::class, SRColor::class, SRConstantZoomSize::class)
@@ -86,7 +85,6 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
     private val locFamilyEntities = FamilyWithListener.newClientFamilyWithListener(locFamily)
     private val gsCircleFamilyEntities = FamilyWithListener.newClientFamilyWithListener(gsCircleFamily)
     private val trajectoryFamilyEntities = FamilyWithListener.newClientFamilyWithListener(trajectoryFamily)
-    private val visualFamilyEntities = FamilyWithListener.newClientFamilyWithListener(visualFamily)
     private val datatagLineFamilyEntities = FamilyWithListener.newClientFamilyWithListener(datatagLineFamily)
     private val constCircleFamilyEntities = FamilyWithListener.newClientFamilyWithListener(constCircleFamily)
     private val rwyLabelFamilyEntities = FamilyWithListener.newClientFamilyWithListener(rwyLabelFamily)
@@ -230,14 +228,12 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
             }
         }
 
-        // Render line from aircraft on visual approach to runway touchdown zone
-        val visual = visualFamilyEntities.getEntities()
-        for (i in 0 until visual.size()) {
-            visual[i]?.apply {
-                val rwyPos = getOrLogMissing(VisualCaptured.mapper)?.visApp?.getOrLogMissing(Position.mapper) ?: return@apply
-                val rDataPos = getOrLogMissing(RadarData.mapper)?.position ?: return@apply
-                shapeRenderer.line(rwyPos.x, rwyPos.y, rDataPos.x, rDataPos.y)
-            }
+        // Render line from aircraft on visual approach to runway touchdown zone for current selected aircraft
+        CLIENT_SCREEN?.selectedAircraft?.let {
+            val rwyPos = it.entity[VisualCaptured.mapper]?.visApp?.getOrLogMissing(Position.mapper) ?: return@let
+            val rDataPos = it.entity.getOrLogMissing(RadarData.mapper)?.position ?: return@let
+            shapeRenderer.color = Color.WHITE
+            shapeRenderer.line(rwyPos.x, rwyPos.y, rDataPos.x, rDataPos.y)
         }
 
         // Render current UI selected aircraft's lateral navigation state, accessed via radarScreen's uiPane

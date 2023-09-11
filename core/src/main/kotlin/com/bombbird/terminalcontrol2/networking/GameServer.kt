@@ -309,10 +309,10 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
                 FileLog.info("GameServer", "Game server started")
                 serverStartedCallback?.invoke()
                 // Pause the game initially (until at least 1 player connects)
-                handleGameRunningRequest(false)
+                updateGameRunningStatus(false)
                 loopRunning.set(true)
                 gameLoop()
-                stopNetworkingServer()
+                cleanUp()
                 saveGame(this)
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -322,7 +322,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
                     else -> "Singleplayer"
                 }
                 HttpRequest.sendCrashReport(e, "GameServer", multiplayerType)
-                GAME.quitCurrentGameWithDialog(CustomDialog("Error", "An error occurred", "", "Ok"))
+                GAME.quitCurrentGameWithDialog { CustomDialog("Error", "An error occurred", "", "Ok") }
             }
         }
     }
@@ -330,10 +330,6 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
     /** Stops the game loop and exits server */
     fun stopServer() {
         setLoopingFalse()
-        FamilyWithListener.clearAllServerFamilyEntityListeners(engine)
-        engine.removeAllEntities()
-        engine.removeAllSystems()
-        FileLog.info("GameServer", "Game server stopped")
     }
 
     /** Initiates the host server for networking */
@@ -527,7 +523,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
                 FileLog.info("GameServer", "Sent InitialDataSendComplete")
             }
             // Unpause the game if it is currently paused
-            handleGameRunningRequest(true)
+            updateGameRunningStatus(true)
         }
 
         val onDisconnect = fun(conn: ConnectionMeta) {
@@ -535,7 +531,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
             if (!sectorMap.containsKey(conn.uuid)) return
             val newPlayerNo = playerNo.decrementAndGet().toByte()
             if (newPlayerNo <= 0) {
-                return GAME.quitCurrentGameWithDialog(CustomDialog("Game closed", "All players have left the game", "", "Ok"))
+                return GAME.quitCurrentGameWithDialog { CustomDialog("Game closed", "All players have left the game", "", "Ok") }
             }
             val sectorControlled = sectorMap[conn.uuid]
             if (sectorControlled != null) networkServer.sendToAllTCP(PlayerLeft(sectorControlled))
@@ -560,9 +556,15 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
         if (networkServer.beforeStart()) networkServer.start()
     }
 
-    /** Closes server and stops its thread */
-    private fun stopNetworkingServer() {
+    /** Cleans up the game server */
+    private fun cleanUp() {
+        FamilyWithListener.clearAllServerFamilyEntityListeners(engine)
+        engine.removeAllEntitiesOnMainThread(false)
+        engine.removeAllSystemsOnMainThread(false)
+
         networkServer.stop()
+
+        FileLog.info("GameServer", "Game server stopped")
     }
 
     /** Main game loop */
@@ -650,10 +652,14 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
     }
 
     /**
-     * Handles received [GameRunningStatus] requests from clients
-     * @param running the running status sent in the request
+     * Sets the game running status to the requested state if possible
+     *
+     * If the game is paused and [running] is true, this will unpause the game
+     *
+     * If the game is not paused and [running] is false, this will pause the game if there is 1 player or less
+     * @param running the running status to be set
      */
-    fun handleGameRunningRequest(running: Boolean) {
+    fun updateGameRunningStatus(running: Boolean) {
         if (running) {
             if (gamePaused.get()) lock.withLock { pauseCondition.signal() }
             gamePaused.set(false)

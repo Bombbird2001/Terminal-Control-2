@@ -431,8 +431,10 @@ class ControlPane {
 
         val effectiveMinAlt: Int
         val effectiveMaxAlt: Int
-        if (userClearanceState.clearedApp != null && hasOnlyWaypointLegsTillMissed(directLeg, userClearanceState.route)) {
+        if (userClearanceState.clearedApp != null && userClearanceState.vectorHdg == null
+            && hasOnlyWaypointLegsTillMissed(directLeg, userClearanceState.route)) {
             // Check if aircraft is cleared for the approach with no interruptions (i.e. no discontinuity, vector or hold legs)
+            // and is not being vectored
             userClearanceState.route.apply {
                 // Set to the FAF altitude (i.e. the minimum altitude restriction of the last waypoint)
                 val faf = getFafAltitude(userClearanceState.route) ?: run {
