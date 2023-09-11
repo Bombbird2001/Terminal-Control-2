@@ -102,8 +102,9 @@ const val GAME_SERVER_THREAD_NAME = "GameServerThread"
 const val LOCALHOST = "127.0.0.1"
 
 /** Server, client TCP/UDP ports available (up to 10, if all taken something is terribly wrong with the device) */
+const val UDP_TCP_OFFSET = 6
 var LAN_TCP_PORTS = arrayOf(57773, 57783, 57793, 57803, 57813, 57823, 57833, 57843, 57853, 57863)
-var LAN_UDP_PORTS = arrayOf(57779, 57789, 57799, 57809, 57819, 57829, 57839, 57849, 57859, 57869)
+var LAN_UDP_PORTS = LAN_TCP_PORTS.map { it + UDP_TCP_OFFSET }.toTypedArray()
 
 /** Relay server HTTPS endpoint port */
 const val RELAY_TCP_PORT = 57783

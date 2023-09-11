@@ -137,11 +137,13 @@ class GameLoading private constructor(): BasicUIScreen() {
         /**
          * Creates a new instance of GameLoading screen and loads the relevant objects to join a LAN multiplayer game
          * @param lanAddress the address of the LAN server to connect to
+         * @param tcpPort TCP port of the LAN server
+         * @param udpPort UDP port of the LAN server
          * @return the GameLoading screen
          */
-        fun joinLANMultiplayerGameLoading(lanAddress: String): GameLoading {
+        fun joinLANMultiplayerGameLoading(lanAddress: String, tcpPort: Int, udpPort: Int): GameLoading {
             val gameLoading = GameLoading()
-            val rs = RadarScreen.newLANMultiplayerRadarScreen(lanAddress).apply {
+            val rs = RadarScreen.joinLANMultiplayerRadarScreen(lanAddress, tcpPort, udpPort).apply {
                 dataLoadedCallback = gameLoading::gameClientLoaded
                 connectedToHostCallback = gameLoading::connectedToGameServer
             }

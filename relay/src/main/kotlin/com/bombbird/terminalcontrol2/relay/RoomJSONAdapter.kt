@@ -1,5 +1,6 @@
 package com.bombbird.terminalcontrol2.relay
 
+import com.bombbird.terminalcontrol2.global.RELAY_UDP_PORT
 import com.bombbird.terminalcontrol2.global.Secrets
 import com.bombbird.terminalcontrol2.screens.JoinGame
 import com.squareup.moshi.FromJson
@@ -9,7 +10,7 @@ import com.squareup.moshi.ToJson
 object RoomJSONAdapter {
     @ToJson
     fun toJson(room: Room): JoinGame.MultiplayerGameInfo {
-        return JoinGame.MultiplayerGameInfo(Secrets.RELAY_ADDRESS, room.getConnectedPlayerCount(), room.maxPlayers, room.mapName, room.id)
+        return JoinGame.MultiplayerGameInfo(Secrets.RELAY_ADDRESS, RELAY_UDP_PORT, room.getConnectedPlayerCount(), room.maxPlayers, room.mapName, room.id)
     }
 
     @FromJson

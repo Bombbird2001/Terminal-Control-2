@@ -114,7 +114,7 @@ class JoinGame: BasicUIScreen() {
                 for (game in games) publicGamesData.add(game)
             }
             lanGamesData.clear()
-            GAME.lanClientDiscoveryHandler.onDiscoveredHostDataMap = lanGamesData
+            GAME.lanClientDiscoveryHandler.onDiscoveredHostDataList = lanGamesData
             val jobs = ArrayList<Job>(LAN_UDP_PORTS.size)
             for (udpPort in LAN_UDP_PORTS) {
                 jobs.add(KtxAsync.launch(Dispatchers.IO) {
@@ -130,14 +130,15 @@ class JoinGame: BasicUIScreen() {
     /**
      * Class encapsulating the info related to a multiplayer game
      * @param address the address to connect to
+     * @param port the port to connect to
      * @param players the current number of players in game
      * @param maxPlayers the max number of players allowed in game
      * @param airportName the name of the airport being hosted
      * @param roomId the ID of the room (only for public multiplayer relay servers)
      */
     @JsonClass(generateAdapter = true)
-    class MultiplayerGameInfo(val address: String, val players: Byte, val maxPlayers: Byte, val airportName: String,
-                              val roomId: Short?)
+    class MultiplayerGameInfo(val address: String, val port: Int, val players: Byte, val maxPlayers: Byte,
+                              val airportName: String, val roomId: Short?)
 
     /** Displays all games found on LAN and public relay server, and sets the searching flag to false */
     private fun showFoundGames() {
@@ -149,7 +150,7 @@ class JoinGame: BasicUIScreen() {
                 for (i in 0 until lanGamesData.size) { lanGamesData[i]?.let { game ->
                     if (game.players >= game.maxPlayers) return@let // Server is full
                     textButton("${game.airportName} - ${game.players}/${game.maxPlayers} player${if (game.maxPlayers > 1) "s" else ""}          ${game.address}          Join", "JoinGameAirport").addChangeListener { _, _ ->
-                        GAME.addScreen(GameLoading.joinLANMultiplayerGameLoading(game.address))
+                        GAME.addScreen(GameLoading.joinLANMultiplayerGameLoading(game.address, game.port - UDP_TCP_OFFSET, game.port))
                         GAME.setScreen<GameLoading>()
                     }
                     row()

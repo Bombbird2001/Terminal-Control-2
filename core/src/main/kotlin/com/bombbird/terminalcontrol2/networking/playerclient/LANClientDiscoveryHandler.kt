@@ -6,7 +6,7 @@ import com.esotericsoftware.kryonet.ClientDiscoveryHandler
 import java.net.DatagramPacket
 
 class LANClientDiscoveryHandler: ClientDiscoveryHandler {
-    var onDiscoveredHostDataMap: MutableList<JoinGame.MultiplayerGameInfo>? = null
+    var onDiscoveredHostDataList: MutableList<JoinGame.MultiplayerGameInfo>? = null
 
     /** Data decoded from the datagram packet */
     private class DecodedData(val playerCount: Byte, val maxPlayers: Byte, val airport: String)
@@ -27,8 +27,8 @@ class LANClientDiscoveryHandler: ClientDiscoveryHandler {
     override fun onDiscoveredHost(datagramPacket: DatagramPacket?) {
         val data = datagramPacket?.data ?: return
         val decodedData = decodePacketData(data) ?: return
-        onDiscoveredHostDataMap?.add(JoinGame.MultiplayerGameInfo(datagramPacket.address.hostAddress,
-            decodedData.playerCount, decodedData.maxPlayers, decodedData.airport, null))
+        onDiscoveredHostDataList?.add(JoinGame.MultiplayerGameInfo(datagramPacket.address.hostAddress,
+            datagramPacket.port, decodedData.playerCount, decodedData.maxPlayers, decodedData.airport, null))
     }
 
     /**

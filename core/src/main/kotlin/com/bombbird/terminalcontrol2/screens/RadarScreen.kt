@@ -61,9 +61,12 @@ import kotlin.math.min
  *
  * Implements [GestureListener] and [InputProcessor] to handle input/gesture events to it
  * @param connectionHost the address of the host server to connect to; if null, no connection will be initiated
+ * @param connectionTcpPort the TCP port of the host server to connect to; if null, CLIENT_TCP_PORT_IN_USE will be used
+ * @param connectionUdpPort the UDP port of the host server to connect to; if null, CLIENT_UDP_PORT_IN_USE will be used
  * @param roomId the ID of the room to join (public multiplayer)
  */
-class RadarScreen private constructor(private val connectionHost: String, private var roomId: Short?): KtxScreen, GestureListener, InputProcessor {
+class RadarScreen private constructor(private val connectionHost: String, private val connectionTcpPort: Int?,
+                                      private val connectionUdpPort: Int?, private var roomId: Short?): KtxScreen, GestureListener, InputProcessor {
     private val clientEngine = getEngine(true)
     private val radarDisplayStage = safeStage(GAME.batch)
     private val constZoomStage = safeStage(GAME.batch)
@@ -154,7 +157,7 @@ class RadarScreen private constructor(private val connectionHost: String, privat
          * @return RadarScreen object in single player mode
          */
         fun newSinglePlayerRadarScreen(): RadarScreen {
-            return RadarScreen(LOCALHOST, null)
+            return RadarScreen(LOCALHOST, null, null, null)
         }
 
         /**
@@ -163,7 +166,18 @@ class RadarScreen private constructor(private val connectionHost: String, privat
          * @return RadarScreen object in LAN multiplayer mode
          */
         fun newLANMultiplayerRadarScreen(lanAddress: String): RadarScreen {
-            return RadarScreen(lanAddress, null)
+            return RadarScreen(lanAddress, null, null, null)
+        }
+
+        /**
+         * Returns a new instance of LAN multiplayer RadarScreen
+         * @param lanAddress address of the LAN server to connect to
+         * @param tcpPort TCP port of the LAN server to connect to
+         * @param udpPort UDP port of the LAN server to connect to
+         * @return RadarScreen object in LAN multiplayer mode
+         */
+        fun joinLANMultiplayerRadarScreen(lanAddress: String, tcpPort: Int, udpPort: Int): RadarScreen {
+            return RadarScreen(lanAddress, tcpPort, udpPort, null)
         }
 
         /**
@@ -171,7 +185,7 @@ class RadarScreen private constructor(private val connectionHost: String, privat
          * @return RadarScreen object in public multiplayer mode
          */
         fun newPublicMultiplayerRadarScreen(): RadarScreen {
-            return RadarScreen(Secrets.RELAY_ADDRESS, null)
+            return RadarScreen(Secrets.RELAY_ADDRESS, RELAY_TCP_PORT, RELAY_UDP_PORT, null)
         }
 
         /**
@@ -180,7 +194,7 @@ class RadarScreen private constructor(private val connectionHost: String, privat
          * @return RadarScreen object in public multiplayer mode
          */
         fun joinPublicMultiplayerRadarScreen(roomId: Short): RadarScreen {
-            return RadarScreen(Secrets.RELAY_ADDRESS, roomId)
+            return RadarScreen(Secrets.RELAY_ADDRESS, RELAY_TCP_PORT, RELAY_UDP_PORT, roomId)
         }
     }
 
@@ -585,12 +599,12 @@ class RadarScreen private constructor(private val connectionHost: String, privat
                 Thread.sleep(1000)
                 networkClient.beforeConnect(roomId)
                 networkClient.start()
-                networkClient.connect(5000, connectionHost, CLIENT_TCP_PORT_IN_USE, CLIENT_UDP_PORT_IN_USE)
+                networkClient.connect(3000, connectionHost, connectionTcpPort ?: CLIENT_TCP_PORT_IN_USE, connectionUdpPort ?: CLIENT_UDP_PORT_IN_USE)
                 break
             } catch (_: IOException) {
-                // Workaround for strange behaviour on some devices where the 5000ms timeout is ignored,
+                // Workaround for strange behaviour on some devices where the 3000ms timeout is ignored,
                 // an IOException is thrown instantly as server has not started up
-                Thread.sleep(4000)
+                Thread.sleep(3000)
             }
         }
     }
