@@ -2,6 +2,7 @@ import com.badlogic.gdx.Gdx
 import com.bombbird.terminalcontrol2.TerminalControl2
 import com.bombbird.terminalcontrol2.components.Altitude
 import com.bombbird.terminalcontrol2.files.*
+import com.bombbird.terminalcontrol2.global.APP_TYPE
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.networking.GameServer
 import com.bombbird.terminalcontrol2.sounds.StubTextToSpeech
@@ -24,6 +25,7 @@ object LoadSaveTest: FunSpec() {
         Gdx.app = Lwjgl3StubApplication
 
         GAME = TerminalControl2(StubExternalFileHandler, StubTextToSpeech)
+        APP_TYPE = Gdx.app.type
 
         val gs = GameServer.testGameServer().apply {
             saveID = TEST_SAVE_ID
