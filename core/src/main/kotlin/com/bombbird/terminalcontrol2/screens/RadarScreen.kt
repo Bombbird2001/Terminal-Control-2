@@ -14,6 +14,7 @@ import com.badlogic.gdx.math.Polygon
 import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.scenes.scene2d.Actor
 import com.bombbird.terminalcontrol2.components.AircraftInfo
+import com.bombbird.terminalcontrol2.components.Controllable
 import com.bombbird.terminalcontrol2.components.Datatag
 import com.bombbird.terminalcontrol2.components.FlightType
 import com.bombbird.terminalcontrol2.entities.*
@@ -695,13 +696,18 @@ class RadarScreen private constructor(private val connectionHost: String, privat
     }
 
     /**
-     * Sends the datatag position of the aircraft on client to the server
+     * Sends the datatag position of the aircraft on client to the server, only if the aircraft is under this player's control
      * @param aircraft the aircraft entity whose datatag position is being sent
      * @param xOffset the x position offset of the datatag from the aircraft radar blip
      * @param yOffset the y position offset of the datatag from the aircraft radar blip
      * @param minimised whether the datatag has been minimized
      */
-    fun sendAircraftDatatagPositionUpdate(aircraft: Entity, xOffset: Float, yOffset: Float, minimised: Boolean, flashing: Boolean) {
+    fun sendAircraftDatatagPositionUpdateIfControlled(aircraft: Entity, xOffset: Float, yOffset: Float, minimised: Boolean, flashing: Boolean) {
+        val controllable = aircraft[Controllable.mapper] ?: return
+        // We only send this if the aircraft's sector ID is the same as the player's sector, or, this aircraft is under
+        // tower or ACC control and the player is the host
+        if (controllable.sectorId != playerSector && (controllable.sectorId >= 0 || GAME.gameServer == null)) return
+
         val callsign = aircraft[AircraftInfo.mapper]?.icaoCallsign ?: return FileLog.info("RadarScreen", "Missing AircraftInfo component")
         networkClient.sendTCP(AircraftDatatagPositionUpdateData(callsign, xOffset, yOffset, minimised, flashing))
     }

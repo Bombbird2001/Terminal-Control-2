@@ -317,7 +317,7 @@ data class AircraftSectorUpdateData(private val callsign: String = "", private v
             aircraft.entity[Datatag.mapper]?.let {
                 it.minimised = newSector != rs.playerSector || it.minimised
                 updateDatatagText(it, getNewDatatagLabelText(aircraft.entity, it.minimised))
-                CLIENT_SCREEN?.sendAircraftDatatagPositionUpdate(aircraft.entity, it.xOffset, it.yOffset, it.minimised, it.flashing)
+                CLIENT_SCREEN?.sendAircraftDatatagPositionUpdateIfControlled(aircraft.entity, it.xOffset, it.yOffset, it.minimised, it.flashing)
             }
             if (newSector != rs.playerSector && controllable.controllerUUID.toString() == myUuid.toString() && newUUID != myUuid.toString()) {
                 // Send contact other sector message only if aircraft is not in player's sector, old UUID is this

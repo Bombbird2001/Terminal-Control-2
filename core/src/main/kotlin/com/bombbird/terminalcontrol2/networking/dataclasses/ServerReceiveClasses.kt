@@ -68,7 +68,9 @@ data class AircraftDatatagPositionUpdateData(private val aircraft: String = "", 
         // Validate that the sector controlling the aircraft is indeed the sector who sent the request
         val sendingSector = gs.sectorMap[connection.uuid] ?: return
         val controllingSector = aircraft.entity[Controllable.mapper]?.sectorId ?: return
-        if (sendingSector != controllingSector) return
+        // We only accept this if the aircraft's sector ID is the same as the player's sector, or, this aircraft is under
+        // tower or ACC control and the player is the host
+        if (sendingSector != controllingSector && (controllingSector >= 0 || GAME.gameClientScreen?.playerSector != sendingSector)) return
         // Update the aircraft's initial datatag position component
         aircraft.entity[InitialClientDatatagPosition.mapper]?.let {
             it.xOffset = xOffset
