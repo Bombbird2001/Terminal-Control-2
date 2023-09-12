@@ -5,6 +5,7 @@ import com.badlogic.ashley.core.EntitySystem
 import com.badlogic.ashley.core.Family
 import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
+import com.bombbird.terminalcontrol2.global.DATATAG_REFRESH_INTERVAL_S
 import com.bombbird.terminalcontrol2.global.RADAR_REFRESH_INTERVAL_S
 import com.bombbird.terminalcontrol2.ui.datatag.getNewDatatagLabelText
 import com.bombbird.terminalcontrol2.ui.datatag.updateDatatagText
@@ -23,6 +24,7 @@ class DataSystemClient: EntitySystem() {
     }
 
     private var radarDataTimer = 0f
+    private var datatagTimer = 0f
 
     private val radarDataUpdateFamilyEntities = FamilyWithListener.newClientFamilyWithListener(radarDataUpdateFamily)
     private val datatagUpdateFamilyEntities = FamilyWithListener.newClientFamilyWithListener(datatagUpdateFamily)
@@ -37,11 +39,17 @@ class DataSystemClient: EntitySystem() {
                 radarDataUpdate[i]?.apply { updateAircraftRadarData(this) }
             }
 
+            radarDataTimer -= RADAR_REFRESH_INTERVAL_S
+        }
+
+        datatagTimer += deltaTime
+        if (datatagTimer > DATATAG_REFRESH_INTERVAL_S) {
             val datatagUpdates = datatagUpdateFamilyEntities.getEntities()
             for (i in 0 until datatagUpdates.size()) {
                 datatagUpdates[i]?.apply { updateAircraftDatatagText(this) }
             }
-            radarDataTimer -= RADAR_REFRESH_INTERVAL_S
+
+            datatagTimer -= DATATAG_REFRESH_INTERVAL_S
         }
     }
 }
