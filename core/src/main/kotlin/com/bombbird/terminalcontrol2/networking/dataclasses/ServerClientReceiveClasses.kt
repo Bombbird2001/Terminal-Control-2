@@ -97,6 +97,7 @@ data class SectorSwapRequest(private val requestedSector: Byte? = null, private 
                         gs.sectorSwapRequests.removeIndex(i)
                 }
             }
+            gs.sectorJustSwapped = true
             return
         }
         // Not found - store new request in array

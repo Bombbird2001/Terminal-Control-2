@@ -304,8 +304,8 @@ class InitialDataSendComplete: ClientReceive, NeedsEncryption {
 
 /** Class representing data sent during aircraft sector update */
 data class AircraftSectorUpdateData(private val callsign: String = "", private val newSector: Byte = 0,
-                                    private val newUUID: String? = null, private val ignoreInitialContact: Boolean = false,
-                                    private val tagFlashing: Boolean = false):
+                                    private val newUUID: String? = null, private val needsInitialContact: Boolean = false,
+                                    private val tagFlashing: Boolean = false, private val tagMinimised: Boolean = false):
     ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
         // If the client has not received the initial load data, ignore this sector update
@@ -315,7 +315,7 @@ data class AircraftSectorUpdateData(private val callsign: String = "", private v
             controllable.sectorId = newSector
             aircraft.entity[RSSprite.mapper]?.drawable = getAircraftIcon(aircraft.entity[FlightType.mapper]?.type ?: return, newSector)
             aircraft.entity[Datatag.mapper]?.let {
-                it.minimised = newSector != rs.playerSector || it.minimised
+                it.minimised = newSector != rs.playerSector || tagMinimised
                 updateDatatagText(it, getNewDatatagLabelText(aircraft.entity, it.minimised))
                 CLIENT_SCREEN?.sendAircraftDatatagPositionUpdateIfControlled(aircraft.entity, it.xOffset, it.yOffset, it.minimised, it.flashing)
             }
@@ -326,12 +326,12 @@ data class AircraftSectorUpdateData(private val callsign: String = "", private v
             }
             if (newSector == rs.playerSector && controllable.controllerUUID.toString() != newUUID && newUUID == myUuid.toString()) {
                 // Send message only if aircraft is in player's sector, old UUID is not the player's UUID and the new UUID is the player's UUID
-                // If ignore initial contact, will not perform contact, but will flash if needed
-                if (!ignoreInitialContact) rs.uiPane.commsPane.also { commsPane ->
+                // Will only perform contact if needed
+                if (needsInitialContact) rs.uiPane.commsPane.also { commsPane ->
                     if (aircraft.entity.has(RecentGoAround.mapper)) commsPane.goAround(aircraft.entity)
                     else commsPane.initialContact(aircraft.entity)
                 }
-                if (!ignoreInitialContact || tagFlashing) {
+                if (needsInitialContact || tagFlashing) {
                     aircraft.entity += ContactNotification()
                     aircraft.entity[Datatag.mapper]?.let {
                         setDatatagFlash(it, aircraft, true)

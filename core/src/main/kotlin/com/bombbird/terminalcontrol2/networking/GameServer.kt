@@ -718,10 +718,12 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
      * @param callsign the callsign of the aircraft to update
      * @param newSector the new sector that the aircraft is under control of
      * @param newUUID the UUID of the new player the aircraft is under control of, or null if tower/ACC
+     * @param needsContact whether the aircraft needs to be contacted by the new controller
      */
-    fun sendAircraftSectorUpdateTCPToAll(callsign: String, newSector: Byte, newUUID: String?) {
-        val tagFlashing = aircraft[callsign]?.entity?.get(InitialClientDatatagPosition.mapper)?.flashing == true
-        networkServer.sendToAllTCP(AircraftSectorUpdateData(callsign, newSector, newUUID, sectorJustSwapped, tagFlashing))
+    fun sendAircraftSectorUpdateTCPToAll(callsign: String, newSector: Byte, newUUID: String?, needsContact: Boolean) {
+        val tagFlashing = (aircraft[callsign]?.entity?.get(InitialClientDatatagPosition.mapper)?.flashing == true) || needsContact
+        val tagMinimised = aircraft[callsign]?.entity?.get(InitialClientDatatagPosition.mapper)?.minimised == true && !needsContact
+        networkServer.sendToAllTCP(AircraftSectorUpdateData(callsign, newSector, newUUID, needsContact, tagFlashing, tagMinimised))
     }
 
     /**

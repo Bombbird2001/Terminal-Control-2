@@ -332,7 +332,6 @@ class CommsPane {
                 FrequencyToken(nextSectorInfo.frequency))
 
         addMessage(sentence.toTextSentence(), OTHERS)
-        println(sentence.toTTSSentence())
 
         // Aircraft read-back segment
         val switchMsg = when (MathUtils.random(2)) {

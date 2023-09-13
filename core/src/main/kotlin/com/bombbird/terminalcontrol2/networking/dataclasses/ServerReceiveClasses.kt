@@ -54,7 +54,7 @@ data class HandoverRequest(private val callsign: String = "", private val newSec
         // Request validated - update controllable ID and send update to clients
         controllable.sectorId = newSector
         val uuid = gs.sectorUUIDMap[newSector]?.toString()
-        gs.sendAircraftSectorUpdateTCPToAll(callsign, newSector, uuid)
+        gs.sendAircraftSectorUpdateTCPToAll(callsign, newSector, uuid, true)
     }
 }
 

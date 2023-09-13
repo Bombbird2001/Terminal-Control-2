@@ -20,7 +20,6 @@ import kotlin.math.roundToInt
 
 /** Helper class for managing conflicts between entities */
 class ConflictManager {
-
     companion object {
         const val PENALTY_DURATION_S = 3 // 1 point is deducted for every conflict every 3 seconds
     }
