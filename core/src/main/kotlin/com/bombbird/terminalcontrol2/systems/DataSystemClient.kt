@@ -9,6 +9,7 @@ import com.bombbird.terminalcontrol2.global.DATATAG_REFRESH_INTERVAL_S
 import com.bombbird.terminalcontrol2.global.RADAR_REFRESH_INTERVAL_S
 import com.bombbird.terminalcontrol2.ui.datatag.getNewDatatagLabelText
 import com.bombbird.terminalcontrol2.ui.datatag.updateDatatagText
+import com.bombbird.terminalcontrol2.utilities.pxpsToKt
 import ktx.ashley.allOf
 import ktx.ashley.get
 
@@ -64,6 +65,7 @@ fun updateAircraftRadarData(aircraft: Entity) {
         val dir = get(Direction.mapper) ?: return@apply
         val spd = get(Speed.mapper) ?: return@apply
         val alt = get(Altitude.mapper) ?: return@apply
+        val groundTrack = get(GroundTrack.mapper) ?: return@apply
         val radarData = get(RadarData.mapper) ?: return@apply
         radarData.position.x = pos.x
         radarData.position.y = pos.y
@@ -72,6 +74,7 @@ fun updateAircraftRadarData(aircraft: Entity) {
         radarData.speed.vertSpdFpm = spd.vertSpdFpm
         radarData.speed.angularSpdDps = spd.angularSpdDps
         radarData.altitude.altitudeFt = alt.altitudeFt
+        radarData.groundSpeed = groundTrack.trackVectorPxps.len().let { pxpsToKt(it) }
     }
 }
 

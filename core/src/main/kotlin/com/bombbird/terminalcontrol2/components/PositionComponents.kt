@@ -119,8 +119,9 @@ data class Acceleration(var dSpeedMps2: Float = 0f, var dVertSpdMps2: Float = 0f
     }
 }
 
-/** Component for radar returns (delayed reporting of [Position], [Direction], [Speed] and [Altitude]) */
-data class RadarData(val position: Position = Position(), val direction: Direction = Direction(), val speed: Speed = Speed(), val altitude: Altitude = Altitude()): Component {
+/** Component for radar returns (delayed reporting of [Position], [Direction], [Speed], [Altitude] and ground speed) */
+data class RadarData(val position: Position = Position(), val direction: Direction = Direction(), val speed: Speed = Speed(),
+                     val altitude: Altitude = Altitude(), var groundSpeed: Float = 0f): Component {
     companion object {
         val mapper = object: Mapper<RadarData>() {}.mapper
 

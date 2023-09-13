@@ -16,7 +16,6 @@ import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.ui.addChangeListener
 import com.bombbird.terminalcontrol2.utilities.convertWorldAndRenderDeg
 import com.bombbird.terminalcontrol2.utilities.modulateHeading
-import com.bombbird.terminalcontrol2.utilities.pxpsToKt
 import com.bombbird.terminalcontrol2.utilities.FileLog
 import ktx.ashley.get
 import ktx.ashley.has
@@ -242,7 +241,7 @@ private fun updateDatatagValueMap(entity: Entity): HashMap<String, String> {
         (it[0] as? Route.HoldLeg)?.wptId?.let { wptId -> GAME.gameClientScreen?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName }
     } else null} ?: latestClearance?.vectorHdg?.toString() ?: ""
     val sidStarApp = latestClearance?.clearedApp ?: latestClearance?.routePrimaryName ?: ""
-    val gs = entity[GroundTrack.mapper]?.trackVectorPxps?.len()?.let { pxpsToKt(it).roundToInt().toString() } ?: "<GS>"
+    val gs = radarData?.groundSpeed?.roundToInt()?.toString() ?: "<GS>"
     val clearedIas = latestClearance?.clearedIas?.toString() ?: "<Cleared IAS>"
     val arptId = entity[DepartureAirport.mapper]?.arptId ?: entity[ArrivalAirport.mapper]?.arptId
     val arptName = GAME.gameClientScreen?.airports?.get(arptId)?.entity?.get(AirportInfo.mapper)?.icaoCode ?: "<Arpt>"
