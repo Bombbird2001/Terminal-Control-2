@@ -46,6 +46,7 @@ fun loadAllComponents() {
     DecelerateTo240kts.initialise()
     DecelerateToAppSpd.initialise()
     DepartureAirport.initialise()
+    DepartureDependency.initialise()
     DepartureInfo.initialise()
     DepartureNOZ.initialise()
     DepartureRouteZone.initialise()

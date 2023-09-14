@@ -149,6 +149,35 @@ object CrossingRunwayAdapter {
     }
 }
 
+/** Data class for storing each dependency rule */
+@JsonClass(generateAdapter = true)
+data class DependencyRuleJSON(val dependeeRwy: RunwayRefJSON, val arrival: Boolean, val departure: Boolean)
+
+/** Data class for storing the departure dependency rules belonging to a runway */
+@JsonClass(generateAdapter = true)
+data class DepartureDependencyJSON(val dependencies: List<DependencyRuleJSON>)
+
+/** Adapter object for serialization between [DepartureDependency] and [DepartureDependencyJSON] */
+object DepartureDependencyAdapter {
+    @ToJson
+    fun toJson(deptDep: DepartureDependency): DepartureDependencyJSON {
+        val array = ArrayList<DependencyRuleJSON>()
+        for (i in 0 until deptDep.dependencies.size) deptDep.dependencies[i]?.let {
+            array.add(DependencyRuleJSON(toRunwayRefJSON(it.dependeeRwy), it.arrival, it.departure))
+        }
+        return DepartureDependencyJSON(array)
+    }
+
+    @FromJson
+    fun fromJson(deptDepJSON: DepartureDependencyJSON): DepartureDependency {
+        return DepartureDependency().apply {
+            deptDepJSON.dependencies.forEach {
+                delayedEntityRetrieval.add { DepartureDependency.DependencyRule(it.dependeeRwy.getRunwayEntity(), it.arrival, it.departure) }
+            }
+        }
+    }
+}
+
 /** Data class for storing arrival route zone information */
 @JsonClass(generateAdapter = true)
 data class ArrivalRouteZoneJSON(val starZones: List<RouteZone>, val appZones: List<RouteZone>)

@@ -137,6 +137,22 @@ data class CrossingRunway(val crossRwys: GdxArray<Entity> = GdxArray(3)): Compon
     }
 }
 
+/** Component to keep track of all dependencies for departure from a runway */
+data class DepartureDependency(val dependencies: GdxArray<DependencyRule> = GdxArray(3)): Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.DEPARTURE_DEPENDENCY
+
+    companion object {
+        val mapper = object: Mapper<DepartureDependency>() {}.mapper
+
+        fun initialise() {
+            FileLog.info("Component", "Initialising DepartureDependency mapper")
+        }
+    }
+
+    /** Inner class for defining a departure dependency */
+    class DependencyRule(val dependeeRwy: Entity, val arrival: Boolean, val departure: Boolean)
+}
+
 /** Component to store an arrival route's MVA exclusion zones */
 data class ArrivalRouteZone(val starZone: GdxArray<RouteZone> = GdxArray(), val appZone: GdxArray<RouteZone> = GdxArray()): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.ARRIVAL_ROUTE_ZONE

@@ -102,6 +102,7 @@ class TrafficSystemInterval: IntervalSystem(1f) {
                 val rwyObj = approach[ApproachInfo.mapper]?.rwyObj?.entity ?: return@apply
                 val rwyThrPos = rwyObj[CustomPosition.mapper] ?: return@apply
                 val pos = get(Position.mapper) ?: return@apply
+                if (has(LandingRoll.mapper)) return@apply
                 val distPx = calculateDistanceBetweenPoints(pos.x, pos.y, rwyThrPos.x, rwyThrPos.y)
                 // If no next arrival has been determined yet, add this arrival
                 if (rwyObj.hasNot(RunwayNextArrival.mapper)) rwyObj += RunwayNextArrival(this, distPx)
@@ -192,6 +193,12 @@ class TrafficSystemInterval: IntervalSystem(1f) {
                     for (j in 0 until it.crossRwys.size)
                         if (!checkCrossingRunwayTraffic(it.crossRwys[j])) return@apply
                 }
+                get(DepartureDependency.mapper)?.let {
+                    for (j in 0 until it.dependencies.size)
+                        if (!checkDepartureDependencyTraffic(it.dependencies[j])) return@apply
+                }
+
+                // TODO Check for go-around - minimum 90s
 
                 // All related checks passed - clear next departure for takeoff
                 val nextDep = airport.entity[AirportNextDeparture.mapper] ?: return@apply

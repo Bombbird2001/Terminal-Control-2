@@ -17,7 +17,7 @@ fun getMoshiWithAllAdapters(): Moshi {
         .add(RandomMetarDistributionAdapter).add(Vector2Adapter).add(ControllableAdapter).add(PendingClearanceAdapter)
         .add(ClearanceActAdapter).add(RunwayChildrenAdapter).add(ApproachChildrenAdapter)
         .add(VisualApproachAdapter).add(DependentOppositeRunwayAdapter).add(DependentParallelRunwayAdapter)
-        .add(CrossingRunwayAdapter).add(RandomAirlineDataAdapter).add(AirportNextDepartureAdapter)
+        .add(CrossingRunwayAdapter).add(DepartureDependencyAdapter).add(RandomAirlineDataAdapter).add(AirportNextDepartureAdapter)
         .add(WakeTrailAdapter).add(RouteAdapter).add(WaypointAdapter).add(ArrivalRouteZoneAdapter)
         .add(DepartureRouteZoneAdapter).add(RouteZoneAdapter).add(WakeZoneAdapter).add(TrailInfoAdapter)
         .add(getPolymorphicComponentAdapter()).add(getPolymorphicLegAdapter()).build()
@@ -42,9 +42,10 @@ interface BaseComponentJSONInterface {
         CLEARANCE_ACT_CHANGED, INITIAL_ARRIVAL_SPAWN, RECENT_GO_AROUND, PENDING_CRUISE_ALTITUDE, DIVERGENT_DEPARTURE_ALLOWED,
         G_POLYGON, POSITION, CUSTOM_POSITION, DIRECTION, SPEED, ALTITUDE, ACCELERATION, INDICATED_AIR_SPEED, GROUND_TRACK,
         AFFECTED_BY_WIND, ON_GROUND, RUNWAY_CHILDREN,  APPROACH_CHILDREN, VISUAL_APPROACH, DEPENDENT_OPPOSITE_RUNWAY, DEPENDENT_PARALLEL_RUNWAY,
-        CROSSING_RUNWAY,  ARRIVAL_ROUTE_ZONE, DEPARTURE_ROUTE_ZONE, ACTIVE_LANDING, ACTIVE_TAKEOFF, RANDOM_AIRLINE_DATA,
-        ACTIVE_RUNWAY_CONFIG, ARRIVAL_CLOSED, TIME_SINCE_LAST_DEPARTURE, DEPARTURE_INFO, AIRPORT_NEXT_DEPARTURE, RUNWAY_PREVIOUS_ARRIVAL,
-        RUNWAY_PREVIOUS_DEPARTURE, RUNWAY_OCCUPIED, WAKE_TRAIL, WAKE_INFO, INITIAL_CLIENT_DATATAG_POSITION, TRAIL_INFO, TTS_VOICE
+        CROSSING_RUNWAY, DEPARTURE_DEPENDENCY, ARRIVAL_ROUTE_ZONE, DEPARTURE_ROUTE_ZONE, ACTIVE_LANDING, ACTIVE_TAKEOFF,
+        RANDOM_AIRLINE_DATA, ACTIVE_RUNWAY_CONFIG, ARRIVAL_CLOSED, TIME_SINCE_LAST_DEPARTURE, DEPARTURE_INFO, AIRPORT_NEXT_DEPARTURE,
+        RUNWAY_PREVIOUS_ARRIVAL, RUNWAY_PREVIOUS_DEPARTURE, RUNWAY_OCCUPIED, WAKE_TRAIL, WAKE_INFO, INITIAL_CLIENT_DATATAG_POSITION,
+        TRAIL_INFO, TTS_VOICE
     }
 
     val componentType: ComponentType
@@ -125,6 +126,7 @@ private fun getPolymorphicComponentAdapter(): PolymorphicJsonAdapterFactory<Base
         .withSubtype(DependentOppositeRunway::class.java, BaseComponentJSONInterface.ComponentType.DEPENDENT_OPPOSITE_RUNWAY.name)
         .withSubtype(DependentParallelRunway::class.java, BaseComponentJSONInterface.ComponentType.DEPENDENT_PARALLEL_RUNWAY.name)
         .withSubtype(CrossingRunway::class.java, BaseComponentJSONInterface.ComponentType.CROSSING_RUNWAY.name)
+        .withSubtype(DepartureDependency::class.java, BaseComponentJSONInterface.ComponentType.DEPARTURE_DEPENDENCY.name)
         .withSubtype(ArrivalRouteZone::class.java, BaseComponentJSONInterface.ComponentType.ARRIVAL_ROUTE_ZONE.name)
         .withSubtype(DepartureRouteZone::class.java, BaseComponentJSONInterface.ComponentType.DEPARTURE_ROUTE_ZONE.name)
         .withSubtype(ActiveLanding::class.java, BaseComponentJSONInterface.ComponentType.ACTIVE_LANDING.name)

@@ -695,6 +695,28 @@ fun checkCrossingRunwayTraffic(rwy: Entity): Boolean {
 }
 
 /**
+ * Checks the traffic for a departure dependency rule
+ * @param depRule the departure dependency rule to check
+ * @return whether the departure dependency rule is clear for departure from original runway
+ */
+fun checkDepartureDependencyTraffic(depRule: DepartureDependency.DependencyRule): Boolean {
+    if (depRule.arrival) {
+        // Check that arrival has either landed, or is more than 80s away
+        val nextArrivalAircraft = depRule.dependeeRwy[RunwayNextArrival.mapper]?.aircraft
+        if (nextArrivalAircraft != null && !nextArrivalAircraft.has(LandingRoll.mapper) &&
+                calculateTimeToThreshold(nextArrivalAircraft, depRule.dependeeRwy) < 80) return false
+    }
+
+    if (depRule.departure) {
+        // Check that 60s has passed since last departure
+        val prevDeparture = depRule.dependeeRwy[RunwayPreviousDeparture.mapper]
+        if (prevDeparture != null && prevDeparture.timeSinceDepartureS < 60) return false
+    }
+
+    return true
+}
+
+/**
  * Calculates the minimum additional time from the previous departure to the next departure for an airport depending on
  * its departure backlog
  * @param backlog the number of departure aircraft waiting

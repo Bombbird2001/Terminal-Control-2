@@ -51,6 +51,7 @@ private const val AIRPORT_TFC = "TRAFFIC"
 private const val AIRPORT_DEP_PARALLEL = "DEPENDENT_PARALLEL"
 private const val AIRPORT_DEP_OPP = "DEPENDENT_OPPOSITE"
 private const val AIRPORT_CROSSING = "CROSSING"
+private const val AIRPORT_DEPT_DEP = "DEPARTURE_DEPEND"
 private const val AIRPORT_APP_NOZ = "APP_NOZ"
 private const val AIRPORT_DEP_NOZ = "DEP_NOZ"
 private const val AIRPORT_RWY_CONFIG_OBJ = "CONFIG"
@@ -214,6 +215,7 @@ fun loadWorldData(mainName: String, gameServer: GameServer) {
                         AIRPORT_DEP_PARALLEL -> parseDependentParallelRunways(lineData, currAirport ?: continue)
                         AIRPORT_DEP_OPP -> parseDependentOppositeRunways(lineData, currAirport ?: continue)
                         AIRPORT_CROSSING -> parseCrossingRunways(lineData, currAirport ?: continue)
+                        AIRPORT_DEPT_DEP -> parseDepartureDependency(lineData, currAirport ?: continue)
                         AIRPORT_APP_NOZ -> parseApproachNOZ(lineData, currAirport ?: continue)
                         AIRPORT_DEP_NOZ -> parseDepartureNOZ(lineData, currAirport ?: continue)
                         WORLD_SECTORS -> {
@@ -239,7 +241,7 @@ fun loadWorldData(mainName: String, gameServer: GameServer) {
                                 if (lineData[0] in arrayOf(
                                         WORLD_WAYPOINTS, WORLD_HOLDS, WORLD_MIN_ALT_SECTORS, WORLD_SHORELINE, AIRPORT_RWYS,
                                         WORLD_SECTORS, ACC_SECTORS, AIRPORT_TFC, AIRPORT_DEP_PARALLEL, AIRPORT_DEP_OPP,
-                                        AIRPORT_CROSSING, AIRPORT_APP_NOZ, AIRPORT_DEP_NOZ).map { "$it/" })
+                                        AIRPORT_CROSSING, AIRPORT_DEPT_DEP, AIRPORT_APP_NOZ, AIRPORT_DEP_NOZ).map { "$it/" })
                                     parseMode = lineData[0].substringBefore("/")
                                 else if (lineData[0] != "") FileLog.info("GameLoader", "Unknown parse mode ${lineData[0]} in line ${index + 1}")
                             }
@@ -485,6 +487,28 @@ private fun parseCrossingRunways(data: List<String>, airport: Airport) {
     val rwy2 = airport.getRunway(data[1])?.entity ?: return logMissingRunway(data[1])
     (rwy1[CrossingRunway.mapper] ?: CrossingRunway().apply { rwy1 += this }).crossRwys.add(rwy2)
     (rwy2[CrossingRunway.mapper] ?: CrossingRunway().apply { rwy2 += this }).crossRwys.add(rwy1)
+}
+
+/**
+ * Parse the given data into departure dependency rules, and adds it to the runway entity's [DepartureDependency] component
+ * @param data the line array of departure dependency data
+ * @param airport the airport to apply this to
+ */
+private fun parseDepartureDependency(data: List<String>, airport: Airport) {
+    val depRwy = airport.getRunway(data[0])?.entity ?: return logMissingRunway(data[0])
+    val dependencies = DepartureDependency()
+    for (i in 1 until data.size) {
+        val ruleData = data[i].split("-")
+        val dependentRwy = airport.getRunway(ruleData[0])?.entity
+        if (dependentRwy == null) {
+            logMissingRunway(ruleData[0])
+            continue
+        }
+        val isArrivalDependent = ruleData[1] == "ARR" || ruleData[1] == "ALL"
+        val isDepartureDependent = ruleData[1] == "DEP" || ruleData[1] == "ALL"
+        dependencies.dependencies.add(DepartureDependency.DependencyRule(dependentRwy, isArrivalDependent, isDepartureDependent))
+    }
+    depRwy += dependencies
 }
 
 /**
