@@ -107,7 +107,9 @@ class TrafficSystemInterval: IntervalSystem(1f) {
                 // If no next arrival has been determined yet, add this arrival
                 if (rwyObj.hasNot(RunwayNextArrival.mapper)) rwyObj += RunwayNextArrival(this, distPx)
                 else rwyObj[RunwayNextArrival.mapper]?.let {
-                    if (distPx < it.distFromThrPx) {
+                    if (distPx < it.distFromThrPx || it.aircraft.has(LandingRoll.mapper)) {
+                        // Update closest aircraft if it is closer than the current closest aircraft,
+                        // or if the current closest aircraft has already touched down
                         it.aircraft = this
                         it.distFromThrPx = distPx
                     }

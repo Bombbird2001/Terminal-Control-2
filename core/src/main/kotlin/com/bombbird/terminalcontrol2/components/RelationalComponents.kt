@@ -150,7 +150,7 @@ data class DepartureDependency(val dependencies: GdxArray<DependencyRule> = GdxA
     }
 
     /** Inner class for defining a departure dependency */
-    class DependencyRule(val dependeeRwy: Entity, val arrival: Boolean, val departure: Boolean)
+    class DependencyRule(val dependeeRwy: Entity, val arrivalSep: Int?, val departureSep: Int?)
 }
 
 /** Component to store an arrival route's MVA exclusion zones */

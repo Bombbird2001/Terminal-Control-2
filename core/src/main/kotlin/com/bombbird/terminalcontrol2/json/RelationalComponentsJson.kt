@@ -151,7 +151,7 @@ object CrossingRunwayAdapter {
 
 /** Data class for storing each dependency rule */
 @JsonClass(generateAdapter = true)
-data class DependencyRuleJSON(val dependeeRwy: RunwayRefJSON, val arrival: Boolean, val departure: Boolean)
+data class DependencyRuleJSON(val dependeeRwy: RunwayRefJSON, val arrivalSep: Int?, val departureSep: Int?)
 
 /** Data class for storing the departure dependency rules belonging to a runway */
 @JsonClass(generateAdapter = true)
@@ -163,7 +163,7 @@ object DepartureDependencyAdapter {
     fun toJson(deptDep: DepartureDependency): DepartureDependencyJSON {
         val array = ArrayList<DependencyRuleJSON>()
         for (i in 0 until deptDep.dependencies.size) deptDep.dependencies[i]?.let {
-            array.add(DependencyRuleJSON(toRunwayRefJSON(it.dependeeRwy), it.arrival, it.departure))
+            array.add(DependencyRuleJSON(toRunwayRefJSON(it.dependeeRwy), it.arrivalSep, it.departureSep))
         }
         return DepartureDependencyJSON(array)
     }
@@ -172,7 +172,7 @@ object DepartureDependencyAdapter {
     fun fromJson(deptDepJSON: DepartureDependencyJSON): DepartureDependency {
         return DepartureDependency().apply {
             deptDepJSON.dependencies.forEach {
-                delayedEntityRetrieval.add { DepartureDependency.DependencyRule(it.dependeeRwy.getRunwayEntity(), it.arrival, it.departure) }
+                delayedEntityRetrieval.add { DepartureDependency.DependencyRule(it.dependeeRwy.getRunwayEntity(), it.arrivalSep, it.departureSep) }
             }
         }
     }

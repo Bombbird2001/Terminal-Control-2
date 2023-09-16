@@ -323,6 +323,14 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advD
                 )
             }
         }
+
+        /** Clears all relational components for runway dependencies */
+        fun clearRunwayDependencies() {
+            entity.remove<DependentParallelRunway>()
+            entity.remove<DependentOppositeRunway>()
+            entity.remove<CrossingRunway>()
+            entity.remove<DepartureDependency>()
+        }
     }
 
     /** Creates a runway entity with the required components, and adds it to airport component's runway map */
@@ -334,9 +342,13 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advD
             // Check if a runway with the same ID already exists; if it does, overwrite the base runway components
             val loadedRwy = entity[RunwayChildren.mapper]?.rwyMap?.get(id)?.let {
                 for (i in 0 until rwy.entity.components.size()) it.entity += rwy.entity.components[i]
+                it.clearRunwayDependencies()
                 it
             }
-            if (loadedRwy == null) entity[RunwayChildren.mapper]?.rwyMap?.put(id, rwy)
+            if (loadedRwy == null) {
+                rwy.clearRunwayDependencies()
+                entity[RunwayChildren.mapper]?.rwyMap?.put(id, rwy)
+            }
             else getEngine(false).removeEntityOnMainThread(rwy.entity, false)
         }
     }

@@ -700,17 +700,18 @@ fun checkCrossingRunwayTraffic(rwy: Entity): Boolean {
  * @return whether the departure dependency rule is clear for departure from original runway
  */
 fun checkDepartureDependencyTraffic(depRule: DepartureDependency.DependencyRule): Boolean {
-    if (depRule.arrival) {
-        // Check that arrival has either landed, or is more than 80s away
+    depRule.arrivalSep?.let { arrSep ->
+        // Check that arrival has either landed, or required time is available before it lands
         val nextArrivalAircraft = depRule.dependeeRwy[RunwayNextArrival.mapper]?.aircraft
+        println(nextArrivalAircraft?.get(AircraftInfo.mapper)?.icaoCallsign)
         if (nextArrivalAircraft != null && !nextArrivalAircraft.has(LandingRoll.mapper) &&
-                calculateTimeToThreshold(nextArrivalAircraft, depRule.dependeeRwy) < 80) return false
+                calculateTimeToThreshold(nextArrivalAircraft, depRule.dependeeRwy) < arrSep) return false
     }
 
-    if (depRule.departure) {
-        // Check that 60s has passed since last departure
+    depRule.departureSep?.let { depSep ->
+        // Check that required time has passed since last departure
         val prevDeparture = depRule.dependeeRwy[RunwayPreviousDeparture.mapper]
-        if (prevDeparture != null && prevDeparture.timeSinceDepartureS < 60) return false
+        if (prevDeparture != null && prevDeparture.timeSinceDepartureS < depSep) return false
     }
 
     return true

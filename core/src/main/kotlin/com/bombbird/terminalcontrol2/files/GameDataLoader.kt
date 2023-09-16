@@ -506,7 +506,28 @@ private fun parseDepartureDependency(data: List<String>, airport: Airport) {
         }
         val isArrivalDependent = ruleData[1] == "ARR" || ruleData[1] == "ALL"
         val isDepartureDependent = ruleData[1] == "DEP" || ruleData[1] == "ALL"
-        dependencies.dependencies.add(DepartureDependency.DependencyRule(dependentRwy, isArrivalDependent, isDepartureDependent))
+        var minDepSep: Int? = null
+        var minArrSep: Int? = null
+        if (isArrivalDependent && isDepartureDependent) {
+            if (ruleData.size != 4) {
+                FileLog.info("GameLoader", "Departure dependency rule data (ALL) has ${ruleData.size} elements instead of 4")
+                continue
+            }
+            minArrSep = ruleData[2].toInt()
+            minDepSep = ruleData[3].toInt()
+        } else if (isArrivalDependent || isDepartureDependent) {
+            if (ruleData.size != 3) {
+                FileLog.info("GameLoader", "Departure dependency rule data ${ruleData[1]} has ${ruleData.size} elements instead of 3")
+                continue
+            }
+            val minSep = ruleData[2].toInt()
+            if (isArrivalDependent) minArrSep = minSep
+            else minDepSep = minSep
+        } else {
+            FileLog.info("GameLoader", "Unknown departure dependency rule type ${ruleData[1]}")
+            continue
+        }
+        dependencies.dependencies.add(DepartureDependency.DependencyRule(dependentRwy, minArrSep, minDepSep))
     }
     depRwy += dependencies
 }
