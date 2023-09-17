@@ -26,6 +26,7 @@ class LoadGame: BasicUIScreen() {
     private val startButton: KTextButton
     private val deleteButton: KTextButton
     private val exportButton: KTextButton
+    private var modificationInProgress = false
 
     init {
         stage.actors {
@@ -91,8 +92,7 @@ class LoadGame: BasicUIScreen() {
                             currSelectedMode = textButton("Singleplayer", "NewLoadGameAirport").cell(width = 300f, height = 550f / 3).apply {
                                 name = NewGame.SINGLE_PLAYER
                                 addChangeListener { event, _ ->
-                                    currSelectedMode?.isChecked = false
-                                    currSelectedMode = this
+                                    modeButtonClicked(this)
                                     event?.handle()
                                 }
                                 isChecked = true
@@ -101,8 +101,7 @@ class LoadGame: BasicUIScreen() {
                             textButton("Multiplayer\n(LAN)", "NewLoadGameAirport").cell(width = 300f, height = 550f / 3).apply {
                                 name = NewGame.LAN_MULTIPLAYER
                                 addChangeListener { event, _ ->
-                                    currSelectedMode?.isChecked = false
-                                    currSelectedMode = this
+                                    modeButtonClicked(this)
                                     event?.handle()
                                 }
                             }
@@ -110,8 +109,7 @@ class LoadGame: BasicUIScreen() {
                             textButton("Multiplayer\n(Public)", "NewLoadGameAirport").cell(width = 300f, height = 550f / 3).apply {
                                 name = NewGame.PUBLIC_MULTIPLAYER
                                 addChangeListener { event, _ ->
-                                    currSelectedMode?.isChecked = false
-                                    currSelectedMode = this
+                                    modeButtonClicked(this)
                                     event?.handle()
                                 }
                             }
@@ -157,6 +155,23 @@ class LoadGame: BasicUIScreen() {
                         GAME.setScreen<MainMenu>()
                     }
                 }
+            }
+        }
+    }
+
+    /**
+     * Called when a mode button is clicked
+     * @param button Button that was clicked
+     */
+    private fun modeButtonClicked(button: KTextButton) {
+        if (!modificationInProgress) {
+            if (currSelectedMode == button) {
+                button.isChecked = true
+            } else {
+                modificationInProgress = true
+                currSelectedMode?.isChecked = false
+                currSelectedMode = button
+                modificationInProgress = false
             }
         }
     }
@@ -212,12 +227,20 @@ class LoadGame: BasicUIScreen() {
                 val saveButton = textButton("${meta.mainName} - Score: ${meta.score}   High score: ${meta.highScore}\nLanded: ${meta.landed}   Departed: ${meta.departed}", "NewLoadGameAirport").cell(growX = true)
                 saveButton.name = game.first.toString()
                 saveButton.addChangeListener { _, _ ->
-                    currSelectedSaveButton?.isChecked = false
-                    currSelectedSaveButton = saveButton
-                    currSelectedSaveMeta = meta
-                    startButton.isVisible = true
-                    exportButton.isVisible = true
-                    deleteButton.isVisible = true
+                    if (currSelectedSaveButton == saveButton) {
+                        currSelectedSaveButton = null
+                        currSelectedSaveMeta = null
+                        startButton.isVisible = false
+                        exportButton.isVisible = false
+                        deleteButton.isVisible = false
+                    } else {
+                        currSelectedSaveButton?.isChecked = false
+                        currSelectedSaveButton = saveButton
+                        currSelectedSaveMeta = meta
+                        startButton.isVisible = true
+                        exportButton.isVisible = true
+                        deleteButton.isVisible = true
+                    }
                 }
                 row()
             }}
