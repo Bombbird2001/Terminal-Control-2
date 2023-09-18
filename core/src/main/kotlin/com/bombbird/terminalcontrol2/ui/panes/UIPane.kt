@@ -31,7 +31,7 @@ class UIPane(private val uiStage: Stage) {
 
     private var paneImage: KImageButton
     val paneWidth: Float
-        get() = max(UI_WIDTH * 0.28f, 400f)
+        get() = max(UI_WIDTH * 0.28f, 460f)
 
     // Main pane (when no aircraft selected)
     val mainInfoObj = MainInfoPane()
