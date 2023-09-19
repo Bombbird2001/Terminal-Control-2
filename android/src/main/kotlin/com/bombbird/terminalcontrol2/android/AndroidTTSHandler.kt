@@ -6,29 +6,17 @@ import android.speech.tts.TextToSpeech
 import android.speech.tts.TextToSpeech.OnInitListener
 import android.speech.tts.Voice
 import com.badlogic.gdx.backends.android.AndroidApplication
-import com.bombbird.terminalcontrol2.sounds.TextToSpeechInterface
+import com.bombbird.terminalcontrol2.sounds.TextToSpeechHandler
 import com.bombbird.terminalcontrol2.utilities.FileLog
 import ktx.collections.GdxArray
 import ktx.collections.GdxSet
 import java.util.*
 
 /** TTS handler for Android platform */
-class AndroidTTSHandler(private val app: AndroidApplication): TextToSpeechInterface, OnInitListener {
+class AndroidTTSHandler(private val app: AndroidApplication): TextToSpeechHandler(), OnInitListener {
     private var tts: TextToSpeech? = null
     private val voiceArray = GdxArray<String>()
     private val voiceSet = GdxSet<String>()
-
-    /** Starts the TTS initialisation process */
-    fun initialiseTTS() {
-        val ttsIntent = Intent()
-        ttsIntent.action = TextToSpeech.Engine.ACTION_CHECK_TTS_DATA
-        try {
-            app.startActivityForResult(ttsIntent, AndroidLauncher.ACT_CHECK_TTS_DATA)
-        } catch (e: ActivityNotFoundException) {
-            e.printStackTrace()
-            // toastManager.initTTSFail()
-        }
-    }
 
     /** Loads all available voices for this device */
     private fun loadVoices() {
@@ -49,6 +37,17 @@ class AndroidTTSHandler(private val app: AndroidApplication): TextToSpeechInterf
                 }
             }
         } ?: return
+    }
+
+    override fun init() {
+        val ttsIntent = Intent()
+        ttsIntent.action = TextToSpeech.Engine.ACTION_CHECK_TTS_DATA
+        try {
+            app.startActivityForResult(ttsIntent, AndroidLauncher.ACT_CHECK_TTS_DATA)
+        } catch (e: ActivityNotFoundException) {
+            e.printStackTrace()
+            // toastManager.initTTSFail()
+        }
     }
 
     override fun sayText(text: String, voice: String) {
@@ -101,7 +100,7 @@ class AndroidTTSHandler(private val app: AndroidApplication): TextToSpeechInterf
         app.startActivityForResult(ttsIntent, AndroidLauncher.ACT_CHECK_TTS_DATA)
     }
 
-    /** Sets initial properties after initialisation of TTS is complete  */
+    /** Sets initial properties after initialisation of TTS is complete */
     override fun onInit(status: Int) {
         if (status == TextToSpeech.SUCCESS) {
             if (tts != null) {

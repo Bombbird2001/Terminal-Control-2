@@ -728,9 +728,9 @@ fun calculateAdditionalTimeToNextDeparture(backlog: Int, maxAdvDep: Int): Int {
     val threshold1 = (maxAdvDep * 0.5f).roundToInt()
     return when {
         backlog >= 10 -> 0
-        backlog >= -threshold1 -> 0 + 120 * (10 - backlog) / (10 + threshold1)
-        backlog >= -maxAdvDep -> 120 + (320 - 120) * (-threshold1 - backlog) / (maxAdvDep - threshold1)
-        else -> 320
+        backlog >= -threshold1 -> 0 + 240 * (10 - backlog) / (10 + threshold1)
+        backlog >= -maxAdvDep -> 240 + (640 - 240) * (-threshold1 - backlog) / (maxAdvDep - threshold1)
+        else -> 640
     }
 }
 

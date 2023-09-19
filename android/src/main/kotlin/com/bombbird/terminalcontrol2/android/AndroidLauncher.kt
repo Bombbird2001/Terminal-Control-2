@@ -31,8 +31,6 @@ class AndroidLauncher : AndroidApplication() {
             useCompass = false
             useImmersiveMode = false
         })
-
-        ttsHandler.initialiseTTS()
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {

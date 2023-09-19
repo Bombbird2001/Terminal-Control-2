@@ -1,6 +1,6 @@
 package com.bombbird.terminalcontrol2.lwjgl3
 
-import com.bombbird.terminalcontrol2.sounds.TextToSpeechInterface
+import com.bombbird.terminalcontrol2.sounds.TextToSpeechHandler
 import io.github.jonelo.jAdapterForNativeTTS.engines.SpeechEngine
 import io.github.jonelo.jAdapterForNativeTTS.engines.SpeechEngineNative
 import io.github.jonelo.jAdapterForNativeTTS.engines.VoicePreferences
@@ -12,7 +12,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.thread
 
-class DesktopTTSHandler: TextToSpeechInterface {
+class DesktopTTSHandler: TextToSpeechHandler() {
     private lateinit var speechEngine: SpeechEngine
     private lateinit var voicePrefs: VoicePreferences
     private val voiceArray = GdxArray<String>()
@@ -22,8 +22,17 @@ class DesktopTTSHandler: TextToSpeechInterface {
 
     private class SpeechQueueItem(val text: String, val voice: String)
 
-    /** Initializes the Desktop TTS speech engine and gets available voices */
-    fun initializeEngine() {
+    /**
+     * Starts the speaking for the input [SpeechQueueItem]
+     * @param item item to be spoken
+     */
+    private fun saySpeechItem(item: SpeechQueueItem) {
+        speechEngine.setVoice(item.voice)
+        // waitFor blocks till the process is complete, so we won't have multiple speeches at once
+        speechEngine.say(item.text).waitFor()
+    }
+
+    override fun init() {
         speechEngine = SpeechEngineNative.getInstance()
         voicePrefs = VoicePreferences().apply {
             language = Locale.ENGLISH.language
@@ -45,16 +54,6 @@ class DesktopTTSHandler: TextToSpeechInterface {
                 saySpeechItem(item)
             }
         }
-    }
-
-    /**
-     * Starts the speaking for the input [SpeechQueueItem]
-     * @param item item to be spoken
-     */
-    private fun saySpeechItem(item: SpeechQueueItem) {
-        speechEngine.setVoice(item.voice)
-        // waitFor blocks till the process is complete, so we won't have multiple speeches at once
-        speechEngine.say(item.text).waitFor()
     }
 
     override fun sayText(text: String, voice: String) {

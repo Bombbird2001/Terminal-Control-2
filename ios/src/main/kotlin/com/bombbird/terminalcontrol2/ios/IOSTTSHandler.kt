@@ -1,8 +1,12 @@
 package com.bombbird.terminalcontrol2.ios
 
-import com.bombbird.terminalcontrol2.sounds.TextToSpeechInterface
+import com.bombbird.terminalcontrol2.sounds.TextToSpeechHandler
 
-class IOSTTSHandler: TextToSpeechInterface {
+class IOSTTSHandler: TextToSpeechHandler() {
+    override fun init() {
+        TODO("Not yet implemented")
+    }
+
     override fun sayText(text: String, voice: String) {
         TODO("Not yet implemented")
     }

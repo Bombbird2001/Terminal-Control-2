@@ -19,7 +19,7 @@ import com.bombbird.terminalcontrol2.screens.settings.GameSettings
 import com.bombbird.terminalcontrol2.screens.settings.MainSettings
 import com.bombbird.terminalcontrol2.screens.settings.TrafficSettings
 import com.bombbird.terminalcontrol2.sounds.SoundManager
-import com.bombbird.terminalcontrol2.sounds.TextToSpeechInterface
+import com.bombbird.terminalcontrol2.sounds.TextToSpeechHandler
 import com.bombbird.terminalcontrol2.sounds.TextToSpeechManager
 import com.bombbird.terminalcontrol2.ui.CustomDialog
 import com.bombbird.terminalcontrol2.utilities.AndroidLifeCycleHandler
@@ -38,7 +38,7 @@ import ktx.scene2d.*
  *
  * [clearScreen] is set to false as it will be handled by the individual screens
  */
-class TerminalControl2(val externalFileHandler: ExternalFileHandler, ttsHandler: TextToSpeechInterface) : KtxGame<KtxScreen>(clearScreen = false) {
+class TerminalControl2(val externalFileHandler: ExternalFileHandler, ttsHandler: TextToSpeechHandler) : KtxGame<KtxScreen>(clearScreen = false) {
     lateinit var batch: SpriteBatch
     lateinit var engine: Engine
     lateinit var soundManager: SoundManager
@@ -123,6 +123,8 @@ class TerminalControl2(val externalFileHandler: ExternalFileHandler, ttsHandler:
             FileLog.initializeFile("Logs/BUILD $BUILD_VERSION.log")
             println("------------------------------------------------------")
             FileLog.info("TerminalControl2", "Game initialized")
+            ttsManager.init()
+            FileLog.info("TerminalControl2", "TTS initialized")
 
             // Assets are loaded
             batch = SpriteBatch()

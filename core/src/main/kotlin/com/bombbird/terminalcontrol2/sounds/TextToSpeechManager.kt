@@ -4,7 +4,13 @@ import com.badlogic.gdx.utils.Disposable
 import com.bombbird.terminalcontrol2.global.COMMS_PILOT_VOICES
 import com.bombbird.terminalcontrol2.global.COMMUNICATIONS_SOUND
 
-class TextToSpeechManager(private val ttsHandler: TextToSpeechInterface): Disposable {
+class TextToSpeechManager(private val ttsHandler: TextToSpeechHandler): Disposable {
+    /** Initialises the TTS engine for the appropriate platform */
+    fun init() {
+        ttsHandler.init()
+
+    }
+
     /** Says the input text with the given voice */
     fun say(text: String, voice: String) {
         if (isVoiceDisabled()) return
