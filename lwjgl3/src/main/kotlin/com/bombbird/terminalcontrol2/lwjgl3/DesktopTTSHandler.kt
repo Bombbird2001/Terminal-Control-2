@@ -4,6 +4,7 @@ import com.bombbird.terminalcontrol2.sounds.TextToSpeechHandler
 import io.github.jonelo.jAdapterForNativeTTS.engines.SpeechEngine
 import io.github.jonelo.jAdapterForNativeTTS.engines.SpeechEngineNative
 import io.github.jonelo.jAdapterForNativeTTS.engines.VoicePreferences
+import io.github.jonelo.jAdapterForNativeTTS.engines.exceptions.SpeechEngineCreationException
 import ktx.collections.GdxArray
 import ktx.collections.GdxSet
 import java.util.Locale
@@ -33,7 +34,14 @@ class DesktopTTSHandler: TextToSpeechHandler() {
     }
 
     override fun init() {
-        speechEngine = SpeechEngineNative.getInstance()
+        try {
+            speechEngine = SpeechEngineNative.getInstance()
+        } catch (e: SpeechEngineCreationException) {
+            e.printStackTrace()
+            onInitFail?.invoke()
+            return
+        }
+
         voicePrefs = VoicePreferences().apply {
             language = Locale.ENGLISH.language
         }
@@ -45,8 +53,11 @@ class DesktopTTSHandler: TextToSpeechHandler() {
                 voiceSet.add(voice.name)
             }
         }
-        speechEngine.setRate(20)
 
+        voiceArray.clear()
+        if (voiceArray.isEmpty) onVoiceDataMissing?.invoke()
+
+        speechEngine.setRate(20)
         thread(name = "Desktop TTS") {
             while (running.get()) {
                 // Timeout to prevent this thread from being blocked forever even when app closes

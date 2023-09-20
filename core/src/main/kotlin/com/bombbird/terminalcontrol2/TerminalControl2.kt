@@ -123,8 +123,6 @@ class TerminalControl2(val externalFileHandler: ExternalFileHandler, ttsHandler:
             FileLog.initializeFile("Logs/BUILD $BUILD_VERSION.log")
             println("------------------------------------------------------")
             FileLog.info("TerminalControl2", "Game initialized")
-            ttsManager.init()
-            FileLog.info("TerminalControl2", "TTS initialized")
 
             // Assets are loaded
             batch = SpriteBatch()
@@ -147,6 +145,9 @@ class TerminalControl2(val externalFileHandler: ExternalFileHandler, ttsHandler:
 
             // Initialise Ashley component mapper indices
             loadAllComponents()
+
+            ttsManager.init()
+            FileLog.info("TerminalControl2", "TTS initialized")
         }
 
         BG_INDEX = MathUtils.random(1, 8)

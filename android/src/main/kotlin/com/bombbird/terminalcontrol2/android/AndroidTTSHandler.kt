@@ -37,6 +37,8 @@ class AndroidTTSHandler(private val app: AndroidApplication): TextToSpeechHandle
                 }
             }
         } ?: return
+
+        if (voiceArray.isEmpty) onVoiceDataMissing?.invoke()
     }
 
     override fun init() {
@@ -46,7 +48,7 @@ class AndroidTTSHandler(private val app: AndroidApplication): TextToSpeechHandle
             app.startActivityForResult(ttsIntent, AndroidLauncher.ACT_CHECK_TTS_DATA)
         } catch (e: ActivityNotFoundException) {
             e.printStackTrace()
-            // toastManager.initTTSFail()
+            onInitFail?.invoke()
         }
     }
 
@@ -106,7 +108,7 @@ class AndroidTTSHandler(private val app: AndroidApplication): TextToSpeechHandle
             if (tts != null) {
                 val result = tts?.setLanguage(Locale.ENGLISH)
                 if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-                    // toastManager.ttsLangNotSupported()
+                    onVoiceDataMissing?.invoke()
                 } else {
                     FileLog.info("Android TTS", "TTS initialized successfully")
                     tts?.setSpeechRate(1.25f)
@@ -114,7 +116,7 @@ class AndroidTTSHandler(private val app: AndroidApplication): TextToSpeechHandle
                 }
             }
         } else {
-            // toastManager.initTTSFail()
+            onInitFail?.invoke()
             FileLog.warn("Android TTS", "TTS initialization failed")
         }
     }

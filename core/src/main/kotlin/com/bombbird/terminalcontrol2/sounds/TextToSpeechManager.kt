@@ -1,14 +1,34 @@
 package com.bombbird.terminalcontrol2.sounds
 
+import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.utils.Disposable
 import com.bombbird.terminalcontrol2.global.COMMS_PILOT_VOICES
 import com.bombbird.terminalcontrol2.global.COMMUNICATIONS_SOUND
+import com.bombbird.terminalcontrol2.global.GAME
+import com.bombbird.terminalcontrol2.screens.MainMenu
+import com.bombbird.terminalcontrol2.ui.CustomDialog
 
 class TextToSpeechManager(private val ttsHandler: TextToSpeechHandler): Disposable {
     /** Initialises the TTS engine for the appropriate platform */
     fun init() {
-        ttsHandler.init()
+        ttsHandler.setOnInitFailAction {
+            Gdx.app.postRunnable {
+                CustomDialog("TTS error", "Text-to-Speech initialisation failed - " +
+                        "pilot voices will not work. Your device may not have a TTS engine " +
+                        "installed, please check your device TTS settings and try again.",
+                    "", "Ok").show(GAME.getScreen<MainMenu>().stage)
+            }
+        }
 
+        ttsHandler.setOnVoiceDataMissingAction {
+            Gdx.app.postRunnable {
+                CustomDialog("TTS error", "No voices found for Text-to-Speech - " +
+                        "pilot voices will not work. Please ensure that there are TTS voices " +
+                        "installed on your device and try again.",
+                    "", "Ok").show(GAME.getScreen<MainMenu>().stage)
+            }
+        }
+        ttsHandler.init()
     }
 
     /** Says the input text with the given voice */
