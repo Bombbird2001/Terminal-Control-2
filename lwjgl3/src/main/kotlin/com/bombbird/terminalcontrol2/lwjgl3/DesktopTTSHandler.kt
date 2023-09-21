@@ -54,7 +54,6 @@ class DesktopTTSHandler: TextToSpeechHandler() {
             }
         }
 
-        voiceArray.clear()
         if (voiceArray.isEmpty) onVoiceDataMissing?.invoke()
 
         speechEngine.setRate(20)
