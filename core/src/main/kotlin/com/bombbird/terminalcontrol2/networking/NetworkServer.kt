@@ -27,8 +27,8 @@ abstract class NetworkServer(
     private val manualKryo = Kryo().apply { registerClassesToKryo(this) }
     private val manualKryoLock = Any()
 
-    /** Starts the server */
-    abstract fun start()
+    /** Starts the server, returns true if successful, else false */
+    abstract fun start(): Boolean
 
     /** Stops the server, ending all connections from clients if any */
     abstract fun stop()

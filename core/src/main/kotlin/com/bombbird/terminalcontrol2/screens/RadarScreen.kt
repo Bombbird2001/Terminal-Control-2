@@ -149,6 +149,9 @@ class RadarScreen private constructor(private val connectionHost: String, privat
     var dataLoadedCallback: (() -> Unit)? = null
     var connectedToHostCallback: (() -> Unit)? = null
 
+    // Signal booleans for if host server start failed
+    var hostServerStartFailed = false
+
     companion object {
         // Datatag family for updating styles
         private val datatagFamily = allOf(Datatag::class, FlightType::class).get()
@@ -226,8 +229,7 @@ class RadarScreen private constructor(private val connectionHost: String, privat
         clientEngine.addSystem(TrafficSystemIntervalClient())
 
         KtxAsync.launch(Dispatchers.IO) {
-            attemptConnectionToServer()
-            running = true
+            running = attemptConnectionToServer()
         }
     }
 
@@ -574,23 +576,24 @@ class RadarScreen private constructor(private val connectionHost: String, privat
     }
 
     /**
-     * Attempt to connect to the server, retrying until success
-     *
-     * If client is already connected, the method will return
+     * Attempt to connect to the server, retrying until success. Returns true if connection to server was successful or
+     * client is already connected, else false
      */
-    private fun attemptConnectionToServer() {
-        if (networkClient.isConnected) return
+    private fun attemptConnectionToServer(): Boolean {
+        if (networkClient.isConnected) return true
         var times = 0
         while (true) {
+            if (hostServerStartFailed) return false
             val gs = GAME.gameServer
             // If the game server is not yet running, or if the game server is a public server and has yet to receive
             // its room ID
             if (gs != null && (!gs.gameRunning || (gs.publicServer && gs.getRoomId() == null))) {
-                Thread.sleep(3000)
+                Thread.sleep(2000)
                 times++
                 if (times >= 10) {
                     FileLog.info("RadarScreen", "Game server not running - timeout")
-                    return GAME.quitCurrentGameWithDialog { CustomDialog("Error", "Timeout when connecting to server", "", "Ok") }
+                    GAME.quitCurrentGameWithDialog { CustomDialog("Error", "Timeout when connecting to server", "", "Ok") }
+                    return false
                 }
                 continue
             }
@@ -601,7 +604,7 @@ class RadarScreen private constructor(private val connectionHost: String, privat
                 networkClient.beforeConnect(roomId)
                 networkClient.start()
                 networkClient.connect(3000, connectionHost, connectionTcpPort ?: CLIENT_TCP_PORT_IN_USE, connectionUdpPort ?: CLIENT_UDP_PORT_IN_USE)
-                break
+                return true
             } catch (_: IOException) {
                 // Workaround for strange behaviour on some devices where the 3000ms timeout is ignored,
                 // an IOException is thrown instantly as server has not started up

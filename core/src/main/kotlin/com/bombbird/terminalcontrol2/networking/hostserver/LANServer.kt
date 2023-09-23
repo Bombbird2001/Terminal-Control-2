@@ -52,7 +52,7 @@ class LANServer(
     /** Maps [UUID] to [Connection] */
     private val uuidConnectionMap = GdxArrayMap<UUID, Connection>(PLAYER_SIZE)
 
-    override fun start() {
+    override fun start(): Boolean {
         server.setDiscoveryHandler(LANServerDiscoveryHandler(gameServer))
         // Try all 10 available port combinations
         for (entry in LAN_TCP_PORTS.withIndex()) {
@@ -66,10 +66,11 @@ class LANServer(
             } catch (e: BindException) {
                 // If reached last available combination, all combinations taken, exit with error
                 if (entry.index == LAN_TCP_PORTS.size - 1) {
-                    return GAME.quitCurrentGameWithDialog {
+                    GAME.quitCurrentGameWithDialog {
                         CustomDialog("Error starting game", "If you see this error, consider restarting your " +
                                 "device and try again.", "", "Ok" )
                     }
+                    return false
                 }
             }
         }
@@ -171,6 +172,8 @@ class LANServer(
                 }
             }
         })
+
+        return true
     }
 
     override fun stop() {

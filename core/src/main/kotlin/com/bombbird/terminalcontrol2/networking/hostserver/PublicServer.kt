@@ -70,7 +70,7 @@ class PublicServer(
     /** Maps [UUID] to [ConnectionMeta] */
     private val uuidConnectionMap = GdxArrayMap<UUID, ConnectionMeta>(PLAYER_SIZE)
 
-    override fun start() {
+    override fun start(): Boolean {
         relayServerConnector.start()
         relayServerConnector.updateThread.setUncaughtExceptionHandler { _, e ->
             // We can ignore this, it happens sometimes when the client is stopped
@@ -82,6 +82,8 @@ class PublicServer(
         CLIENT_TCP_PORT_IN_USE = RELAY_TCP_PORT
         CLIENT_UDP_PORT_IN_USE = RELAY_UDP_PORT
         relayServerConnector.connect(5000, Secrets.RELAY_ADDRESS, RELAY_TCP_PORT, RELAY_UDP_PORT)
+
+        return true
     }
 
     override fun stop() {

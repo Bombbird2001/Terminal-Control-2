@@ -304,7 +304,10 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
                 FileLog.info("GameServer", "Starting game server")
                 saveID = saveId
                 loadGame(mainName, saveId)
-                startNetworkingServer()
+                if (!startNetworkingServer()) {
+                    GAME.gameClientScreen?.hostServerStartFailed = true
+                    return@thread
+                }
                 startTime = -1L
                 FileLog.info("GameServer", "Game server started")
                 serverStartedCallback?.invoke()
@@ -333,7 +336,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
     }
 
     /** Initiates the host server for networking */
-    private fun startNetworkingServer() {
+    private fun startNetworkingServer(): Boolean {
         val onReceive = { conn: ConnectionMeta, data: Any? ->
             // Called on data receive
             handleIncomingRequestServer(this, conn, data)
@@ -553,7 +556,11 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
         // Log.set(Log.LEVEL_DEBUG)
         networkServer = if (publicServer) PublicServer(this, onReceive, onConnect, onDisconnect, mainName)
         else LANServer(this, onReceive, onConnect, onDisconnect)
-        if (networkServer.beforeStart()) networkServer.start()
+        if (networkServer.beforeStart()) {
+            return networkServer.start()
+        }
+
+        return false
     }
 
     /** Cleans up the game server */
