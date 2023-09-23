@@ -108,7 +108,7 @@ private fun loadPlayerSettingsFromJson(playerSettingsJSON: PlayerSettingsJSON) {
  * Gets player settings from the global variables and returns a [PlayerSettingsJSON] object with them
  * @return a JSON object containing the current player global settings
  */
-private fun getJsonFromPlayerSettings(): PlayerSettingsJSON {
+fun getJsonFromPlayerSettings(): PlayerSettingsJSON {
     return PlayerSettingsJSON(TRAJECTORY_DURATION_S, RADAR_REFRESH_INTERVAL_S, TRAIL_DURATION_S, SHOW_UNCONTROLLED_AIRCRAFT_TRAIL,
         RANGE_RING_INTERVAL_NM, SHOW_MVA_ALTITUDE, REALISTIC_ILS_DISPLAY, COLOURFUL_STYLE, SHOW_DIST_TO_GO,
         DATATAG_STYLE_NAME, DATATAG_BACKGROUND, DATATAG_BORDER, DATATAG_ROW_SPACING_PX, COMMUNICATIONS_SOUND, ALERT_SOUND_ON,

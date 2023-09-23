@@ -2,6 +2,8 @@ package com.bombbird.terminalcontrol2.networking
 
 import com.badlogic.gdx.Application
 import com.badlogic.gdx.Gdx
+import com.bombbird.terminalcontrol2.files.PlayerSettingsJSON
+import com.bombbird.terminalcontrol2.files.getJsonFromPlayerSettings
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.screens.JoinGame
 import com.bombbird.terminalcontrol2.utilities.updateAirportMetar
@@ -325,8 +327,10 @@ object HttpRequest {
     /** Class representing the bug report sent to the server together with the password */
     @JsonClass(generateAdapter = true)
     data class BugReportRequest(val description: String, val logs: String, val gameSave: String,
+                                val playerSettings: PlayerSettingsJSON,
                                 val gameVersion: String = GAME_VERSION, val buildVersion: Int = BUILD_VERSION,
-                                val platform: String, val multiplayerType: String, val password: String = Secrets.BUG_REPORT_PW)
+                                val platform: String, val multiplayerType: String,
+                                val password: String = Secrets.BUG_REPORT_PW)
 
     /**
      * Sends an HTTP request to the bug report server
@@ -348,7 +352,8 @@ object HttpRequest {
         }
 
         val jsonString = Moshi.Builder().build().adapter<BugReportRequest>().toJson(
-            BugReportRequest(description, logs, gameSave, platform = platformName, multiplayerType = multiplayerType)
+            BugReportRequest(description, logs, gameSave, getJsonFromPlayerSettings(), platform = platformName,
+                multiplayerType = multiplayerType)
         )
 
         val request = Request.Builder()
