@@ -185,6 +185,9 @@ class ConflictManager {
         // Inhibit if either plane just did a go around
         if (entity1.has(RecentGoAround.mapper) || entity2.has(RecentGoAround.mapper)) return
 
+        // Inhibit if either plane is flying visual approach
+        if (entity1.has(VisualCaptured.mapper) || entity2.has(VisualCaptured.mapper)) return
+
         var latMinima = MIN_SEP
         val altMinima = VERT_SEP
         var conflictReason = Conflict.NORMAL_CONFLICT
