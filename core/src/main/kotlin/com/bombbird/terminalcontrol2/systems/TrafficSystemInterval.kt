@@ -239,8 +239,8 @@ class TrafficSystemInterval: IntervalSystem(1f) {
     }
 
     /** Creates the conflict level array upon loading world data (MAX_ALT required) */
-    fun initializeConflictLevelArray(maxAlt: Int) {
-        conflictLevels = Array(ceil((maxAlt + 1500f) / VERT_SEP).roundToInt() - startingAltitude / VERT_SEP) {
+    fun initializeConflictLevelArray(maxAlt: Int, vertSep: Int) {
+        conflictLevels = Array(ceil((maxAlt + 1500f) / vertSep).roundToInt() - startingAltitude / vertSep) {
             GdxArray()
         }
     }

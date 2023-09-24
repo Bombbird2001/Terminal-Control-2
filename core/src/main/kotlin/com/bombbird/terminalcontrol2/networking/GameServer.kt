@@ -281,7 +281,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
         if (saveId != null) loadSave(this, saveId)
         loadWorldData(mainName, this)
 
-        trafficSystemInterval.initializeConflictLevelArray(MAX_ALT)
+        trafficSystemInterval.initializeConflictLevelArray(MAX_ALT, VERT_SEP)
 
         FamilyWithListener.addAllServerFamilyEntityListeners()
 

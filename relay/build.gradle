@@ -1,4 +1,7 @@
-apply plugin: 'application'
+plugins {
+    id 'application'
+    id 'jacoco'
+}
 targetCompatibility = JavaVersion.VERSION_1_8
 sourceCompatibility = JavaVersion.VERSION_1_8
 
@@ -36,6 +39,18 @@ jar {
     }
 }
 
+jacoco {
+    toolVersion = "$jacocoVersion"
+    // reportsDirectory = layout.buildDirectory.dir('customJacocoReportDir') // optional
+}
+
+tasks.jacocoTestReport {
+    dependsOn(tasks.test)
+    reports {
+        xml.required.set(true)
+    }
+}
+
 test {
     // Enable JUnit 5 (Gradle 4.6+).
     useJUnitPlatform()
@@ -47,4 +62,6 @@ test {
     testLogging {
         events "passed", "skipped", "failed"
     }
+
+    finalizedBy jacocoTestReport
 }

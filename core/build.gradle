@@ -1,6 +1,7 @@
 plugins {
 	id 'java-test-fixtures'
 	id 'com.google.devtools.ksp'
+	id 'jacoco'
 }
 
 [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
@@ -40,6 +41,11 @@ dependencies {
 
 }
 
+jacoco {
+	toolVersion = "$jacocoVersion"
+	// reportsDirectory = layout.buildDirectory.dir('customJacocoReportDir') // optional
+}
+
 test {
 	// Enable JUnit 5 (Gradle 4.6+).
 	useJUnitPlatform()
@@ -50,6 +56,15 @@ test {
 	// Show test results.
 	testLogging {
 		events "passed", "skipped", "failed"
+	}
+
+	finalizedBy jacocoTestReport
+}
+
+tasks.jacocoTestReport {
+	dependsOn(tasks.test)
+	reports {
+		xml.required.set(true)
 	}
 }
 

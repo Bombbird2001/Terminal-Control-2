@@ -583,7 +583,10 @@ class RadarScreen private constructor(private val connectionHost: String, privat
         if (networkClient.isConnected) return true
         var times = 0
         while (true) {
-            if (hostServerStartFailed) return false
+            if (hostServerStartFailed) {
+                hostServerStartFailed = false
+                return false
+            }
             val gs = GAME.gameServer
             // If the game server is not yet running, or if the game server is a public server and has yet to receive
             // its room ID
