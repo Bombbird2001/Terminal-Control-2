@@ -304,7 +304,9 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
                 FileLog.info("GameServer", "Starting game server")
                 saveID = saveId
                 loadGame(mainName, saveId)
-                if (!startNetworkingServer()) {
+                val serverStartSuccess = startNetworkingServer()
+                FileLog.info("GameServer", networkServer.getConnectionStatus())
+                if (!serverStartSuccess) {
                     GAME.gameClientScreen?.hostServerStartFailed = true
                     return@thread
                 }
@@ -668,9 +670,15 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
      */
     fun updateGameRunningStatus(running: Boolean) {
         if (running) {
-            if (gamePaused.get()) lock.withLock { pauseCondition.signal() }
+            if (gamePaused.get()) lock.withLock {
+                FileLog.info("GameServer", "Resuming game loop")
+                pauseCondition.signal()
+            }
             gamePaused.set(false)
-        } else if (playerNo.get() <= 1) gamePaused.set(true)
+        } else if (playerNo.get() <= 1) {
+            FileLog.info("GameServer", "Pausing game loop")
+            gamePaused.set(true)
+        }
     }
 
     /**

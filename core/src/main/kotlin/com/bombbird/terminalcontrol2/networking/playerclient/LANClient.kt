@@ -118,6 +118,11 @@ class LANClient(lanClientDiscoveryHandler: LANClientDiscoveryHandler): NetworkCl
         client.dispose()
     }
 
+    override fun getConnectionStatus(): String {
+        return "Connection ${client.id}: ${client.remoteAddressTCP?.let { "TCP connected to $it" } ?: "TCP not connected"}, " +
+                (client.remoteAddressUDP?.let { "UDP connected to $it" } ?: "UDP not connected")
+    }
+
     fun discoverHosts(udpPort: Int) {
         client.discoverHosts(udpPort, 5000)
     }

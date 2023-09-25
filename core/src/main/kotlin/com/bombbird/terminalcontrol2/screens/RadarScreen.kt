@@ -230,6 +230,7 @@ class RadarScreen private constructor(private val connectionHost: String, privat
 
         KtxAsync.launch(Dispatchers.IO) {
             running = attemptConnectionToServer()
+            FileLog.info("RadarScreen", networkClient.getConnectionStatus())
         }
     }
 

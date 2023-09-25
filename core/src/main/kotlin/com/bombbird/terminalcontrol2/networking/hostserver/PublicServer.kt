@@ -155,6 +155,12 @@ class PublicServer(
         return roomId
     }
 
+    override fun getConnectionStatus(): String {
+        return "Connection ${relayServerConnector.id}: ${relayServerConnector.remoteAddressTCP?.let { "TCP connected to $it" }
+            ?: "TCP not connected"}, " +
+                (relayServerConnector.remoteAddressUDP?.let { "UDP connected to $it" } ?: "UDP not connected")
+    }
+
     override val connections: Collection<ConnectionMeta>
         get() {
             val conns = HashSet<ConnectionMeta>()

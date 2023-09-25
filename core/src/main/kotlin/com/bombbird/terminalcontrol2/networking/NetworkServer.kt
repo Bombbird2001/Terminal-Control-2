@@ -64,6 +64,9 @@ abstract class NetworkServer(
      */
     abstract fun getRoomId(): Short?
 
+    /** Gets the status of the connection, of both TCP and UDP */
+    abstract fun getConnectionStatus(): String
+
     abstract val connections: Collection<ConnectionMeta>
 
     /**

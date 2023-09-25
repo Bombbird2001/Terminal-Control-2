@@ -123,6 +123,11 @@ class PublicClient: NetworkClient() {
         client.dispose()
     }
 
+    override fun getConnectionStatus(): String {
+        return "Connection ${client.id}: ${client.remoteAddressTCP?.let { "TCP connected to $it" } ?: "TCP not connected"}, " +
+                (client.remoteAddressUDP?.let { "UDP connected to $it" } ?: "UDP not connected")
+    }
+
     /**
      * De-serializes the byte array in relay object received by relay host, and performs actions on the received object
      *

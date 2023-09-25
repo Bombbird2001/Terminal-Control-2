@@ -52,6 +52,10 @@ abstract class NetworkClient {
     /** Dispose of the client */
     abstract fun dispose()
 
+
+    /** Gets the status of the connection, of both TCP and UDP */
+    abstract fun getConnectionStatus(): String
+
     /**
      * Performs encryption on the input data if needed using the server's encryptor, and returns the encrypted result
      *

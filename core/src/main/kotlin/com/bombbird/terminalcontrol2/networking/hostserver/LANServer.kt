@@ -208,6 +208,10 @@ class LANServer(
         return null
     }
 
+    override fun getConnectionStatus(): String {
+        return "Connected to ${server.connections.size} clients"
+    }
+
     override val connections: Collection<ConnectionMeta>
         get() {
             val conns = HashSet<ConnectionMeta>()
