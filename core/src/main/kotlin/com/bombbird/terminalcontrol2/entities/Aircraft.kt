@@ -83,7 +83,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
             with<RouteSegment>()
             with<TTSVoice> {
                 voice = getServerElseRandomVoice(callsign)
-                setOnServerIfHost(callsign, voice)
+                setVoiceOnServerIfHost(callsign, voice)
             }
         } else {
             with<ConflictAble>()
@@ -121,7 +121,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
      * @param callsign the callsign of the aircraft
      * @param voice the voice to set
      */
-    private fun setOnServerIfHost(callsign: String, voice: String?) {
+    private fun setVoiceOnServerIfHost(callsign: String, voice: String?) {
         GAME.gameServer?.let {
             it.aircraft[callsign]?.entity?.get(TTSVoice.mapper)?.voice = voice
         }

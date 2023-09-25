@@ -21,7 +21,8 @@ object AircraftTypeData {
     }
 
     /**
-     * Gets the aircraft performance data for the specified aircraft ICAO type; a new instance is created for the random values
+     * Gets the aircraft performance data for the specified aircraft ICAO type;
+     * a new instance is created for the random values
      * @param icaoType the ICAO aircraft type
      * @param flightType the type of the flight
      * @return the new instance of [AircraftPerfData]

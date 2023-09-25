@@ -217,11 +217,11 @@ class AltitudeToken(private val altitude: Float): CommsToken() {
 /** Contains an ATIS letter to be spoken - converts the letter to its NATO phonetic token */
 class AtisToken(private val atisCode: Char): CommsToken() {
     override fun toString(): String {
-        return atisCode.toString()
+        return atisCode.uppercase()
     }
 
     override fun toTTSString(): String {
-        return NATO_ALPHABET_PHONETIC[atisCode] ?: atisCode.toString()
+        return NATO_ALPHABET_PHONETIC[atisCode.uppercaseChar()] ?: atisCode.toString()
     }
 }
 
@@ -230,7 +230,7 @@ class AtisToken(private val atisCode: Char): CommsToken() {
  * @param text the string to split and transform into individual NATO phonetic tokens
  */
 fun splitCharacterToNatoPhonetic(text: String): String {
-    return text.toCharArray().joinToString(" ") { NATO_ALPHABET_PHONETIC[it] ?: it.toString() }
+    return text.toCharArray().joinToString(" ") { NATO_ALPHABET_PHONETIC[it.uppercaseChar()] ?: it.toString() }
 }
 
 /**
