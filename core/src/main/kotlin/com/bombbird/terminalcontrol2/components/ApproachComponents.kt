@@ -5,7 +5,7 @@ import com.bombbird.terminalcontrol2.entities.Airport
 import com.bombbird.terminalcontrol2.global.CLIENT_SCREEN
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.json.BaseComponentJSONInterface
-import com.bombbird.terminalcontrol2.utilities.FileLog
+import com.bombbird.terminalcontrol2.utilities.InitializeCompanionObjectOnStart
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import ktx.ashley.Mapper
@@ -25,9 +25,7 @@ data class ApproachInfo(var approachName: String = "", var airportId: Byte = 0, 
     companion object {
         val mapper = object: Mapper<ApproachInfo>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising ApproachInfo mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -39,9 +37,7 @@ data class Localizer(var maxDistNm: Byte = 0): Component, BaseComponentJSONInter
     companion object {
         val mapper = object: Mapper<Localizer>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising Localizer mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -53,9 +49,7 @@ data class LineUpDist(var lineUpDistNm: Float = 0f): Component, BaseComponentJSO
     companion object {
         val mapper = object: Mapper<LineUpDist>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising LineUpDist mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -67,9 +61,7 @@ data class GlideSlope(var glideAngle: Float = 0f, var offsetNm: Float = 0f, var 
     companion object {
         val mapper = object: Mapper<GlideSlope>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising GlideSlope mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -81,9 +73,7 @@ data class StepDown(var altAtDist: Array<Step> = arrayOf()): Component, BaseComp
     companion object {
         val mapper = object: Mapper<StepDown>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising StepDown mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 
     /** Class for steps on the step-down approach */
@@ -117,9 +107,7 @@ data class Circling(var minBreakoutAlt: Int = 0, var maxBreakoutAlt: Int = 0, va
     companion object {
         val mapper = object: Mapper<Circling>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising Circling mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -131,9 +119,7 @@ data class Minimums(var baroAltFt: Short = 0, var rvrM: Short = 0): Component, B
     companion object {
         val mapper = object: Mapper<Minimums>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising Minimums mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -148,9 +134,7 @@ class Visual: Component, BaseComponentJSONInterface {
     companion object {
         val mapper = object: Mapper<Visual>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising Visual mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 
     override fun equals(other: Any?): Boolean {

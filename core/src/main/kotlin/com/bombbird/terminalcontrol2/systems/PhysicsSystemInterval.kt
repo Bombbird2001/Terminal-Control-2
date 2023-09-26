@@ -16,6 +16,8 @@ class PhysicsSystemInterval: IntervalSystem(1f) {
             .exclude(TakeoffRoll::class).get()
         private val accLimitFamily: Family = allOf(Speed::class, Altitude::class, Acceleration::class, AircraftInfo::class).get()
         private val affectedByWindFamily: Family = allOf(Position::class, AffectedByWind::class).get()
+
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 
     private val tasToIasFamilyEntities = FamilyWithListener.newServerFamilyWithListener(tasToIasFamily)

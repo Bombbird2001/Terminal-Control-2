@@ -4,7 +4,7 @@ import com.badlogic.ashley.core.Component
 import com.badlogic.gdx.utils.Queue
 import com.bombbird.terminalcontrol2.json.BaseComponentJSONInterface
 import com.bombbird.terminalcontrol2.navigation.ClearanceState
-import com.bombbird.terminalcontrol2.utilities.FileLog
+import com.bombbird.terminalcontrol2.utilities.InitializeCompanionObjectOnStart
 import com.squareup.moshi.JsonClass
 import ktx.ashley.Mapper
 import java.util.UUID
@@ -16,9 +16,7 @@ data class Controllable(var sectorId: Byte = 0, var controllerUUID: UUID? = null
     companion object {
         val mapper = object: Mapper<Controllable>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising Controllable mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -38,9 +36,7 @@ data class FlightType(var type: Byte = 0): Component, BaseComponentJSONInterface
     companion object {
         val mapper = object: Mapper<FlightType>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising FlightType mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
 
         const val ARRIVAL: Byte = 0
         const val DEPARTURE: Byte = 1
@@ -56,9 +52,7 @@ class WaitingTakeoff: Component, BaseComponentJSONInterface {
     companion object {
         val mapper = object: Mapper<WaitingTakeoff>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising WaitingTakeoff mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -70,9 +64,7 @@ data class ContactFromTower(var altitudeFt: Int = 0): Component, BaseComponentJS
     companion object {
         val mapper = object: Mapper<ContactFromTower>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising ContactFromTower mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -84,9 +76,7 @@ data class ContactToTower(var altitudeFt: Int = 0): Component, BaseComponentJSON
     companion object {
         val mapper = object: Mapper<ContactToTower>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising ContactToTower mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -98,9 +88,7 @@ data class ContactFromCentre(var altitudeFt: Int = 0): Component, BaseComponentJ
     companion object {
         val mapper = object: Mapper<ContactFromCentre>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising ContactFromCentre mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -112,9 +100,7 @@ data class ContactToCentre(var altitudeFt: Int = 0): Component, BaseComponentJSO
     companion object {
         val mapper = object: Mapper<ContactToCentre>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising ContactToCentre mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -126,9 +112,7 @@ class AccelerateToAbove250kts: Component, BaseComponentJSONInterface {
     companion object {
         val mapper = object: Mapper<AccelerateToAbove250kts>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising AccelerateToAbove250kts mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -140,9 +124,7 @@ class DecelerateTo240kts: Component, BaseComponentJSONInterface {
     companion object {
         val mapper = object: Mapper<AccelerateToAbove250kts>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising AccelerateToAbove250kts mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -154,9 +136,7 @@ class AppDecelerateTo190kts: Component, BaseComponentJSONInterface {
     companion object {
         val mapper = object: Mapper<AppDecelerateTo190kts>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising AppDecelerateTo190kts mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -171,9 +151,7 @@ class DecelerateToAppSpd: Component, BaseComponentJSONInterface {
     companion object {
         val mapper = object: Mapper<DecelerateToAppSpd>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising DecelerateToAppSpd mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -187,9 +165,7 @@ class PendingClearances(val clearanceQueue: Queue<ClearanceState.PendingClearanc
     companion object {
         val mapper = object: Mapper<PendingClearances>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising PendingClearances mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -202,9 +178,7 @@ class ClearanceAct(val actingClearance: ClearanceState.ActingClearance = Clearan
     companion object {
         val mapper = object: Mapper<ClearanceAct>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising ClearanceAct mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -220,9 +194,7 @@ class LatestClearanceChanged: Component, BaseComponentJSONInterface {
     companion object {
         val mapper = object: Mapper<LatestClearanceChanged>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising LatestClearanceChanged mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -238,9 +210,7 @@ class ClearanceActChanged: Component, BaseComponentJSONInterface {
     companion object {
         val mapper = object: Mapper<ClearanceActChanged>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising ClearanceActChanged mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -256,9 +226,7 @@ class InitialArrivalSpawn: Component, BaseComponentJSONInterface {
     companion object {
         val mapper = object: Mapper<InitialArrivalSpawn>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising InitialArrivalSpawn mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -270,9 +238,7 @@ class ContactNotification: Component {
     companion object {
         val mapper = object: Mapper<ContactNotification>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising ContactNotification mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -284,9 +250,7 @@ data class CanBeHandedOver(val nextSector: Byte = 0): Component {
     companion object {
         val mapper = object: Mapper<CanBeHandedOver>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising CanBeHandedOver mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -301,9 +265,7 @@ data class RecentGoAround(var timeLeft: Float = 60f): Component, BaseComponentJS
     companion object {
         val mapper = object: Mapper<RecentGoAround>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising RecentGoAround mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -318,9 +280,7 @@ data class PendingCruiseAltitude(var timeLeft: Float = 10f): Component, BaseComp
     companion object {
         val mapper = object: Mapper<PendingCruiseAltitude>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising PendingCruiseAltitude mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -336,8 +296,6 @@ data class DivergentDepartureAllowed(var timeLeft: Float = 120f): Component, Bas
     companion object {
         val mapper = object: Mapper<DivergentDepartureAllowed>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising DivergentDepartureAllowed mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }

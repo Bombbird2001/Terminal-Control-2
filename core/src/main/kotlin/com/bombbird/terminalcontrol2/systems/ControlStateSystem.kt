@@ -4,6 +4,7 @@ import com.badlogic.ashley.core.EntitySystem
 import com.badlogic.ashley.core.Family
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.GAME
+import com.bombbird.terminalcontrol2.utilities.InitializeCompanionObjectOnStart
 import ktx.ashley.*
 
 /**
@@ -15,6 +16,8 @@ class ControlStateSystem: EntitySystem() {
     companion object {
         private val latestClearanceChangedFamily: Family = allOf(LatestClearanceChanged::class, AircraftInfo::class, ClearanceAct::class).get()
         private val pendingFamily: Family = allOf(PendingClearances::class, ClearanceAct::class).get()
+
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 
     private val latestClearanceChangedFamilyEntities = FamilyWithListener.newServerFamilyWithListener(latestClearanceChangedFamily)

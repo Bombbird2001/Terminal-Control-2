@@ -34,6 +34,8 @@ class TrafficSystemInterval: IntervalSystem(1f) {
         private val despawnFamily = allOf(Position::class, AircraftInfo::class, Controllable::class)
             .exclude(WaitingTakeoff::class, TakeoffRoll::class, LandingRoll::class).get()
         private val timeSinceDepFamily = allOf(TimeSinceLastDeparture::class).get()
+
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 
     private val pendingRunwayChangeFamilyEntities = FamilyWithListener.newServerFamilyWithListener(pendingRunwayChangeFamily)

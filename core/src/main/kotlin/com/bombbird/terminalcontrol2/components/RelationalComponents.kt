@@ -9,7 +9,7 @@ import com.bombbird.terminalcontrol2.json.DoNotOverwriteSavedJSON
 import com.bombbird.terminalcontrol2.navigation.Approach
 import com.bombbird.terminalcontrol2.navigation.SidStar
 import com.bombbird.terminalcontrol2.traffic.RunwayConfiguration
-import com.bombbird.terminalcontrol2.utilities.FileLog
+import com.bombbird.terminalcontrol2.utilities.InitializeCompanionObjectOnStart
 import ktx.ashley.Mapper
 import ktx.collections.GdxArray
 import ktx.collections.GdxArrayMap
@@ -22,9 +22,7 @@ data class RunwayChildren(val rwyMap: GdxArrayMap<Byte, Airport.Runway> = GdxArr
     companion object {
         val mapper = object: Mapper<RunwayChildren>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising RunwayChildren mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -33,9 +31,7 @@ data class SIDChildren(val sidMap: GdxArrayMap<String, SidStar.SID> = GdxArrayMa
     companion object {
         val mapper = object: Mapper<SIDChildren>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising SIDChildren mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -44,9 +40,7 @@ data class STARChildren(val starMap: GdxArrayMap<String, SidStar.STAR> = GdxArra
     companion object {
         val mapper = object: Mapper<STARChildren>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising STARChildren mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -57,9 +51,7 @@ data class ApproachChildren(val approachMap: GdxArrayMap<String, Approach> = Gdx
     companion object {
         val mapper = object: Mapper<ApproachChildren>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising ApproachChildren mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -68,9 +60,7 @@ data class RunwayConfigurationChildren(val rwyConfigs: GdxArrayMap<Byte, RunwayC
     companion object {
         val mapper = object: Mapper<RunwayConfigurationChildren>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising RunwayConfigurationChildren mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -81,9 +71,7 @@ data class VisualApproach(val visual: Entity = Entity()): Component, BaseCompone
     companion object {
         val mapper = object: Mapper<VisualApproach>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising VisualApproach mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -92,9 +80,7 @@ data class OppositeRunway(val oppRwy: Entity = Entity()): Component {
     companion object {
         val mapper = object: Mapper<OppositeRunway>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising OppositeRunway mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -105,9 +91,7 @@ data class DependentOppositeRunway(val depOppRwys: GdxArray<Entity> = GdxArray(4
     companion object {
         val mapper = object: Mapper<DependentOppositeRunway>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising DependentOppositeRunway mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -118,9 +102,7 @@ data class DependentParallelRunway(val depParRwys: GdxArray<Entity> = GdxArray(4
     companion object {
         val mapper = object: Mapper<DependentParallelRunway>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising DependentParallelRunway mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -131,9 +113,7 @@ data class CrossingRunway(val crossRwys: GdxArray<Entity> = GdxArray(3)): Compon
     companion object {
         val mapper = object: Mapper<CrossingRunway>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising CrossingRunway mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -144,9 +124,7 @@ data class DepartureDependency(val dependencies: GdxArray<DependencyRule> = GdxA
     companion object {
         val mapper = object: Mapper<DepartureDependency>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising DepartureDependency mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 
     /** Inner class for defining a departure dependency */
@@ -160,9 +138,7 @@ data class ArrivalRouteZone(val starZone: GdxArray<RouteZone> = GdxArray(), val 
     companion object {
         val mapper = object: Mapper<ArrivalRouteZone>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising ArrivalRouteZone mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -173,8 +149,6 @@ data class DepartureRouteZone(val sidZone: GdxArray<RouteZone> = GdxArray()): Co
     companion object {
         val mapper = object: Mapper<DepartureRouteZone>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising DepartureRouteZone mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }

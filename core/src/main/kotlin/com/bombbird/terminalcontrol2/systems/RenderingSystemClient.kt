@@ -75,6 +75,8 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
 
         private val dotBlue: TextureRegion = Scene2DSkin.defaultSkin["DotBlue", TextureRegion::class.java]
         private val dotGreen: TextureRegion = Scene2DSkin.defaultSkin["DotGreen", TextureRegion::class.java]
+
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 
     private val lineArrayFamilyEntities = FamilyWithListener.newClientFamilyWithListener(lineArrayFamily)

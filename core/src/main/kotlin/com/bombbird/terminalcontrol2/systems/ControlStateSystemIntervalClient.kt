@@ -5,6 +5,7 @@ import com.badlogic.ashley.core.Family
 import com.badlogic.ashley.systems.IntervalSystem
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.*
+import com.bombbird.terminalcontrol2.utilities.InitializeCompanionObjectOnStart
 import com.bombbird.terminalcontrol2.utilities.getSectorForExtrapolatedPosition
 import ktx.ashley.*
 
@@ -17,6 +18,8 @@ import ktx.ashley.*
 class ControlStateSystemIntervalClient: IntervalSystem(1f) {
     companion object {
         private val handoverUpdateFamily: Family = allOf(Controllable::class, GroundTrack::class, Position::class, Altitude::class).get()
+
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 
     private val handoverUpdateFamilyEntities = FamilyWithListener.newClientFamilyWithListener(handoverUpdateFamily)

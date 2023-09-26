@@ -3,6 +3,7 @@ package com.bombbird.terminalcontrol2.systems
 import com.badlogic.ashley.core.Family
 import com.badlogic.ashley.systems.IntervalSystem
 import com.bombbird.terminalcontrol2.components.*
+import com.bombbird.terminalcontrol2.utilities.InitializeCompanionObjectOnStart
 import com.bombbird.terminalcontrol2.utilities.calculateIASFromTAS
 import com.bombbird.terminalcontrol2.utilities.getClosestAirportWindVector
 import ktx.ashley.allOf
@@ -19,6 +20,8 @@ class PhysicsSystemIntervalClient: IntervalSystem(1f) {
         private val tasToIasFamily: Family = allOf(Speed::class, IndicatedAirSpeed::class, Altitude::class)
             .exclude(TakeoffRoll::class).get()
         private val affectedByWindFamily: Family = allOf(Position::class, AffectedByWind::class).get()
+
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 
     private val tasToIasFamilyEntities = FamilyWithListener.newClientFamilyWithListener(tasToIasFamily)

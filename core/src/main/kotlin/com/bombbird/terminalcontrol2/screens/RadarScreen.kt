@@ -32,10 +32,7 @@ import com.bombbird.terminalcontrol2.ui.*
 import com.bombbird.terminalcontrol2.ui.datatag.updateDatatagLineSpacing
 import com.bombbird.terminalcontrol2.ui.datatag.updateDatatagStyle
 import com.bombbird.terminalcontrol2.ui.panes.UIPane
-import com.bombbird.terminalcontrol2.utilities.nmToPx
-import com.bombbird.terminalcontrol2.utilities.FileLog
-import com.bombbird.terminalcontrol2.utilities.removeAllEntitiesOnMainThread
-import com.bombbird.terminalcontrol2.utilities.removeAllSystemsOnMainThread
+import com.bombbird.terminalcontrol2.utilities.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import ktx.app.KtxScreen
@@ -155,6 +152,8 @@ class RadarScreen private constructor(private val connectionHost: String, privat
     companion object {
         // Datatag family for updating styles
         private val datatagFamily = allOf(Datatag::class, FlightType::class).get()
+
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
 
         /**
          * Returns a new instance of single player RadarScreen
@@ -607,12 +606,12 @@ class RadarScreen private constructor(private val connectionHost: String, privat
                 Thread.sleep(1000)
                 networkClient.beforeConnect(roomId)
                 networkClient.start()
-                networkClient.connect(3000, connectionHost, connectionTcpPort ?: CLIENT_TCP_PORT_IN_USE, connectionUdpPort ?: CLIENT_UDP_PORT_IN_USE)
+                networkClient.connect(CONNECTION_TIMEOUT, connectionHost, connectionTcpPort ?: CLIENT_TCP_PORT_IN_USE, connectionUdpPort ?: CLIENT_UDP_PORT_IN_USE)
                 return true
             } catch (_: IOException) {
-                // Workaround for strange behaviour on some devices where the 3000ms timeout is ignored,
+                // Workaround for strange behaviour on some devices where the connection timeout is ignored,
                 // an IOException is thrown instantly as server has not started up
-                Thread.sleep(3000)
+                Thread.sleep(CONNECTION_TIMEOUT.toLong())
             }
         }
     }

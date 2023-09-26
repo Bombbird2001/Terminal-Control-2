@@ -3,7 +3,7 @@ package com.bombbird.terminalcontrol2.components
 import com.badlogic.ashley.core.Component
 import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.json.BaseComponentJSONInterface
-import com.bombbird.terminalcontrol2.utilities.FileLog
+import com.bombbird.terminalcontrol2.utilities.InitializeCompanionObjectOnStart
 import com.squareup.moshi.JsonClass
 import ktx.ashley.Mapper
 
@@ -19,9 +19,7 @@ data class Position(var x: Float = 0f, var y: Float = 0f): Component, BaseCompon
     companion object {
         val mapper = object: Mapper<Position>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising Position mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -40,9 +38,7 @@ data class CustomPosition(var x: Float = 0f, var y: Float = 0f): Component, Base
     companion object {
         val mapper = object: Mapper<CustomPosition>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising CustomPosition mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -58,9 +54,7 @@ data class Direction(var trackUnitVector: Vector2 = Vector2()): Component, BaseC
     companion object {
         val mapper = object: Mapper<Direction>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising Direction mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -77,9 +71,7 @@ data class Speed(var speedKts: Float = 0f, var vertSpdFpm: Float = 0f, var angul
     companion object {
         val mapper = object: Mapper<Speed>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising Speed mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -94,9 +86,7 @@ data class Altitude(var altitudeFt: Float = 0f): Component, BaseComponentJSONInt
     companion object {
         val mapper = object: Mapper<Altitude>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising Altitude mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -113,9 +103,7 @@ data class Acceleration(var dSpeedMps2: Float = 0f, var dVertSpdMps2: Float = 0f
     companion object {
         val mapper = object: Mapper<Acceleration>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising Acceleration mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -125,9 +113,7 @@ data class RadarData(val position: Position = Position(), val direction: Directi
     companion object {
         val mapper = object: Mapper<RadarData>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising RadarData mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -148,9 +134,7 @@ data class IndicatedAirSpeed(var iasKt: Float = 0f): Component, BaseComponentJSO
     companion object {
         val mapper = object: Mapper<IndicatedAirSpeed>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising IndicatedAirSpeed mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -165,9 +149,7 @@ data class GroundTrack(var trackVectorPxps: Vector2 = Vector2()): Component, Bas
     companion object {
         val mapper = object: Mapper<GroundTrack>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising GroundTrack mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -186,9 +168,7 @@ data class AffectedByWind(var windVectorPxps: Vector2 = Vector2()): Component, B
     companion object {
         val mapper = object: Mapper<AffectedByWind>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising AffectedByWind mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -200,9 +180,7 @@ class OnGround: Component, BaseComponentJSONInterface {
     companion object {
         val mapper = object: Mapper<OnGround>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising OnGround mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -211,8 +189,6 @@ class GlideSlopeCircle(var positions: Array<Position>): Component {
     companion object {
         val mapper = object: Mapper<GlideSlopeCircle>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising GlideSlopeCircle mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }

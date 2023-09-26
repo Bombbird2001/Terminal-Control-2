@@ -25,6 +25,17 @@ object FileLog {
     }
 
     /**
+     * Logs a message with DEBUG level
+     * @param tag The tag of the message
+     * @param message The message
+     */
+    fun debug(tag: String, message: String) {
+        if (!DEBUG) return
+
+        Log.debug(tag, message)
+    }
+
+    /**
      * Logs a message with INFO level
      * @param tag The tag of the message
      * @param message The message

@@ -59,6 +59,8 @@ class AISystem: EntitySystem() {
             .oneOf(VisualCaptured::class, GlideSlopeCaptured::class).get()
         private val actingClearanceChangedFamily: Family = allOf(CommandTarget::class, ClearanceActChanged::class, ClearanceAct::class).get()
         private val expediteFamily: Family = allOf(CommandExpedite::class, CommandTarget::class, Altitude::class).get()
+
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 
     private val takeoffAccFamilyEntities = FamilyWithListener.newServerFamilyWithListener(takeoffAccFamily)

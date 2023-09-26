@@ -10,7 +10,7 @@ import com.bombbird.terminalcontrol2.entities.WakeZone
 import com.bombbird.terminalcontrol2.json.BaseComponentJSONInterface
 import com.bombbird.terminalcontrol2.json.DoNotOverwriteSavedJSON
 import com.bombbird.terminalcontrol2.utilities.AircraftTypeData
-import com.bombbird.terminalcontrol2.utilities.FileLog
+import com.bombbird.terminalcontrol2.utilities.InitializeCompanionObjectOnStart
 import com.squareup.moshi.JsonClass
 import ktx.ashley.Mapper
 import ktx.collections.GdxArray
@@ -23,9 +23,7 @@ class ActiveLanding: Component, BaseComponentJSONInterface {
     companion object {
         val mapper = object: Mapper<ActiveLanding>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising ActiveLanding mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -37,9 +35,7 @@ class ActiveTakeoff: Component, BaseComponentJSONInterface {
     companion object {
         val mapper = object: Mapper<ActiveTakeoff>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising ActiveTakeoff mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -51,9 +47,7 @@ data class RandomAirlineData(val airlineDistribution: CumulativeDistribution<Tri
     companion object {
         val mapper = object: Mapper<RandomAirlineData>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising RandomAirlineData mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -62,9 +56,7 @@ data class ApproachNOZ(var appNoz: ApproachNormalOperatingZone): Component {
     companion object {
         val mapper = object: Mapper<ApproachNOZ>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising ApproachNOZ mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -73,9 +65,7 @@ data class DepartureNOZ(var depNoz: DepartureNormalOperatingZone): Component {
     companion object {
         val mapper = object: Mapper<DepartureNOZ>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising DepartureNOZ mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -87,9 +77,7 @@ data class ActiveRunwayConfig(var configId: Byte = 0): Component, BaseComponentJ
     companion object {
         val mapper = object: Mapper<ActiveRunwayConfig>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising ActiveRunwayConfig mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -98,9 +86,7 @@ data class PendingRunwayConfig(var pendingId: Byte = 0, var timeRemaining: Float
     companion object {
         val mapper = object: Mapper<PendingRunwayConfig>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising PendingRunwayConfig mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -112,9 +98,7 @@ class ArrivalClosed: Component, BaseComponentJSONInterface {
     companion object {
         val mapper = object: Mapper<ArrivalClosed>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising ArrivalClosed mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -126,9 +110,7 @@ data class DepartureInfo(var closed: Boolean = false, var backlog: Int = 0): Com
     companion object {
         val mapper = object: Mapper<DepartureInfo>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising DepartureInfo mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -137,9 +119,7 @@ data class MaxAdvancedDepartures(var maxAdvanceDepartures: Int = 10): Component 
     companion object {
         val mapper = object: Mapper<MaxAdvancedDepartures>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising MaxAdvancedDepartures mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -151,9 +131,7 @@ data class TimeSinceLastDeparture(var time: Float = 0f): Component, BaseComponen
     companion object {
         val mapper = object: Mapper<TimeSinceLastDeparture>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising TimeSinceLastDeparture mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -164,9 +142,7 @@ data class AirportNextDeparture(var aircraft: Entity = Entity()): Component, Bas
     companion object {
         val mapper = object: Mapper<AirportNextDeparture>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising AirportNextDeparture mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -179,9 +155,7 @@ data class RunwayPreviousArrival(var timeSinceTouchdownS: Float = 0f, var wakeCa
     companion object {
         val mapper = object: Mapper<RunwayPreviousArrival>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising RunwayPreviousArrival mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -193,9 +167,7 @@ data class RunwayPreviousDeparture(var timeSinceDepartureS: Float = 0f, var wake
     companion object {
         val mapper = object: Mapper<RunwayPreviousDeparture>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising RunwayPreviousDeparture mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -207,9 +179,7 @@ class RunwayOccupied: Component, BaseComponentJSONInterface {
     companion object {
         val mapper = object: Mapper<RunwayOccupied>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising RunwayOccupied mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -218,9 +188,7 @@ data class RunwayNextArrival(var aircraft: Entity = Entity(), var distFromThrPx:
     companion object {
         val mapper = object: Mapper<RunwayNextArrival>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising RunwayNextArrival mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -232,9 +200,7 @@ data class ConflictAble(var conflictLevel: Int = Int.MAX_VALUE): Component {
     companion object {
         val mapper = object: Mapper<ConflictAble>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising ConflictAble mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -248,9 +214,7 @@ data class WakeTrail(val wakeZones: Queue<Pair<Position, WakeZone?>> = Queue(), 
     companion object {
         val mapper = object: Mapper<WakeTrail>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising WakeTrail mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -266,8 +230,6 @@ data class WakeInfo(var aircraftCallsign: String = "", var leadingWake: Char = '
     companion object {
         val mapper = object: Mapper<WakeInfo>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising WakeInfo mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }

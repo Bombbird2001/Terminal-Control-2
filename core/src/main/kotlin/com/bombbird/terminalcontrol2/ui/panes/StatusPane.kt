@@ -10,6 +10,7 @@ import com.bombbird.terminalcontrol2.traffic.ConflictManager
 import com.bombbird.terminalcontrol2.traffic.TrafficMode
 import com.bombbird.terminalcontrol2.ui.removeMouseScrollListeners
 import com.bombbird.terminalcontrol2.utilities.FileLog
+import com.bombbird.terminalcontrol2.utilities.InitializeCompanionObjectOnStart
 import ktx.ashley.allOf
 import ktx.ashley.exclude
 import ktx.ashley.get
@@ -29,6 +30,8 @@ class StatusPane {
 
         private val goAroundContactFamily: Family = allOf(RecentGoAround::class, ContactNotification::class).get()
         private val initialContactFamily: Family = allOf(ContactNotification::class).exclude(RecentGoAround::class).get()
+
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 
     lateinit var statusTable: KTableWidget

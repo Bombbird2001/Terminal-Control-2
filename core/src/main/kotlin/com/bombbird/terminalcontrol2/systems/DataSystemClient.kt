@@ -9,6 +9,7 @@ import com.bombbird.terminalcontrol2.global.DATATAG_REFRESH_INTERVAL_S
 import com.bombbird.terminalcontrol2.global.RADAR_REFRESH_INTERVAL_S
 import com.bombbird.terminalcontrol2.ui.datatag.getNewDatatagLabelText
 import com.bombbird.terminalcontrol2.ui.datatag.updateDatatagText
+import com.bombbird.terminalcontrol2.utilities.InitializeCompanionObjectOnStart
 import com.bombbird.terminalcontrol2.utilities.pxpsToKt
 import ktx.ashley.allOf
 import ktx.ashley.get
@@ -22,6 +23,8 @@ class DataSystemClient: EntitySystem() {
     companion object {
         private val radarDataUpdateFamily: Family = allOf(Position::class, Direction::class, Speed::class, Altitude::class, RadarData::class).get()
         private val datatagUpdateFamily: Family = allOf(AircraftInfo::class, RadarData::class, CommandTarget::class, Datatag::class).get()
+
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 
     private var radarDataTimer = 0f

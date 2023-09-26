@@ -4,6 +4,7 @@ import com.badlogic.ashley.core.Family
 import com.badlogic.ashley.systems.IntervalSystem
 import com.bombbird.terminalcontrol2.components.PendingRunwayConfig
 import com.bombbird.terminalcontrol2.global.CLIENT_SCREEN
+import com.bombbird.terminalcontrol2.utilities.InitializeCompanionObjectOnStart
 import ktx.ashley.allOf
 import ktx.ashley.get
 
@@ -15,6 +16,8 @@ import ktx.ashley.get
 class DataSystemIntervalClient: IntervalSystem(1f) {
     companion object {
         private val pendingRunwayChangeFamily: Family = allOf(PendingRunwayConfig::class).get()
+
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 
     private val pendingRunwayChangeFamilyEntities = FamilyWithListener.newClientFamilyWithListener(pendingRunwayChangeFamily)

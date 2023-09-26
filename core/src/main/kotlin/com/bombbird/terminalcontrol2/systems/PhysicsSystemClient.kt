@@ -20,6 +20,8 @@ class PhysicsSystemClient: EntitySystem() {
             .exclude(WaitingTakeoff::class).get()
         private val windAffectedFamily: Family = allOf(AffectedByWind::class, Position::class)
             .exclude(TakeoffRoll::class, LandingRoll::class).get()
+
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 
     private val positionUpdateFamilyEntities = FamilyWithListener.newClientFamilyWithListener(positionUpdateFamily)

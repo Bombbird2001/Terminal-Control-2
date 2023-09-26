@@ -3,7 +3,7 @@ package com.bombbird.terminalcontrol2.components
 import com.badlogic.ashley.core.Component
 import com.badlogic.ashley.core.Entity
 import com.bombbird.terminalcontrol2.json.BaseComponentJSONInterface
-import com.bombbird.terminalcontrol2.utilities.FileLog
+import com.bombbird.terminalcontrol2.utilities.InitializeCompanionObjectOnStart
 import com.squareup.moshi.JsonClass
 import ktx.ashley.Mapper
 
@@ -18,9 +18,7 @@ data class TakeoffRoll(var targetAccMps2: Float = 2f, var rwy: Entity = Entity()
     companion object {
         val mapper = object : Mapper<TakeoffRoll>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising TakeoffRoll mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -36,9 +34,7 @@ data class TakeoffClimb(var accelAltFt: Float = 1500f): Component, BaseComponent
     companion object {
         val mapper = object: Mapper<TakeoffClimb>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising TakeoffClimb mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -53,9 +49,7 @@ data class LandingRoll(var rwy: Entity = Entity()): Component, BaseComponentJSON
     companion object {
         val mapper = object: Mapper<LandingRoll>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising LandingRoll mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -81,9 +75,7 @@ data class CommandTarget(var targetHdgDeg: Float = 360f, var turnDir: Byte = TUR
     companion object {
         val mapper = object: Mapper<CommandTarget>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising CommandTarget mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
 
         const val TURN_DEFAULT: Byte = 0
         const val TURN_LEFT: Byte = -1
@@ -107,9 +99,7 @@ data class CommandVector(var heading: Short = 360, var turnDir: Byte = CommandTa
     companion object {
         val mapper = object: Mapper<CommandVector>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising CommandVector mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -129,9 +119,7 @@ data class CommandInitClimb(var heading: Short = 360, var minAltFt: Int = 0): Co
     companion object {
         val mapper = object: Mapper<CommandInitClimb>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising CommandInitClimb mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -157,9 +145,7 @@ data class CommandDirect(var wptId: Short = 0, var maxAltFt: Int? = null, var mi
     companion object {
         val mapper = object: Mapper<CommandDirect>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising CommandDirect mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -178,9 +164,7 @@ data class CommandHold(var wptId: Short = 0, var maxAltFt: Int? = null, var minA
     companion object {
         val mapper = object: Mapper<CommandHold>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising CommandHold mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -192,9 +176,7 @@ class CommandExpedite: Component, BaseComponentJSONInterface {
     companion object {
         val mapper = object: Mapper<CommandExpedite>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising CommandExpedite mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -206,9 +188,7 @@ class CommandCDA: Component, BaseComponentJSONInterface {
     companion object {
         val mapper = object: Mapper<CommandCDA>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising CommandCDA mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -223,9 +203,7 @@ data class LastRestrictions(var minAltFt: Int? = null, var maxAltFt: Int? = null
     companion object {
         val mapper = object: Mapper<LastRestrictions>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising LastRestrictions mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -241,9 +219,7 @@ data class VisualArmed(var visApp: Entity = Entity(), var parentApp: Entity = En
     companion object {
         val mapper = object: Mapper<VisualArmed>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising VisualArmed mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -257,9 +233,7 @@ data class VisualCaptured(var visApp: Entity = Entity(), var parentApp: Entity =
     companion object {
         val mapper = object: Mapper<VisualCaptured>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising VisualCaptured mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -274,9 +248,7 @@ data class LocalizerArmed(var locApp: Entity = Entity()): Component, BaseCompone
     companion object {
         val mapper = object: Mapper<LocalizerArmed>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising LocalizerArmed mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -290,9 +262,7 @@ data class LocalizerCaptured(var locApp: Entity = Entity()): Component, BaseComp
     companion object {
         val mapper = object: Mapper<LocalizerCaptured>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising LocalizerCaptured mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -307,9 +277,7 @@ data class GlideSlopeArmed(var gsApp: Entity = Entity()): Component, BaseCompone
     companion object {
         val mapper = object: Mapper<GlideSlopeArmed>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising GlideSlopeArmed mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -323,9 +291,7 @@ data class GlideSlopeCaptured(var gsApp: Entity = Entity()): Component, BaseComp
     companion object {
         val mapper = object: Mapper<GlideSlopeCaptured>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising GlideSlopeCaptured mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -339,9 +305,7 @@ data class StepDownApproach(var stepDownApp: Entity = Entity()): Component, Base
     companion object {
         val mapper = object: Mapper<StepDownApproach>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising StepDownApproach mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -359,8 +323,6 @@ data class CirclingApproach(var circlingApp: Entity = Entity(), var breakoutAlt:
     companion object {
         val mapper = object: Mapper<CirclingApproach>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising CirclingApproach mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }

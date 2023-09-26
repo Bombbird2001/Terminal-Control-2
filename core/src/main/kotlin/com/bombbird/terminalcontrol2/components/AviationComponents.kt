@@ -9,7 +9,7 @@ import com.bombbird.terminalcontrol2.global.MAX_TRAIL_DOTS
 import com.bombbird.terminalcontrol2.json.BaseComponentJSONInterface
 import com.bombbird.terminalcontrol2.json.DoNotOverwriteSavedJSON
 import com.bombbird.terminalcontrol2.utilities.AircraftTypeData
-import com.bombbird.terminalcontrol2.utilities.FileLog
+import com.bombbird.terminalcontrol2.utilities.InitializeCompanionObjectOnStart
 import com.squareup.moshi.JsonClass
 import ktx.ashley.Mapper
 
@@ -21,9 +21,7 @@ data class AirportInfo(var arptId: Byte = 0, var icaoCode: String = "", var name
     companion object {
         val mapper = object: Mapper<AirportInfo>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising AirportInfo mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -37,9 +35,7 @@ data class RunwayInfo(var rwyId: Byte = 0, var rwyName: String = "", var lengthM
     companion object {
         val mapper = object: Mapper<RunwayInfo>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising RunwayInfo mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -48,9 +44,7 @@ data class RealLifeMetarIcao(var realLifeIcao: String = ""): Component {
     companion object {
         val mapper = object: Mapper<RealLifeMetarIcao>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising RealLifeMetarIcao mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -66,9 +60,7 @@ data class MetarInfo(var letterCode: Char? = null, var rawMetar: String? = null,
     companion object {
         val mapper = object: Mapper<MetarInfo>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising MetarInfo mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -77,9 +69,7 @@ data class RunwayWindComponents(var tailwindKt: Float = 0f, var crosswindKt: Flo
     companion object {
         val mapper = object: Mapper<RunwayWindComponents>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising RunwayWindComponents mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -94,9 +84,7 @@ data class RandomMetarInfo(var windDirDist: CumulativeDistribution<Short> = Cumu
     companion object {
         val mapper = object: Mapper<RandomMetarInfo>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising RandomMetarInfo mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -112,9 +100,7 @@ data class SectorInfo(var sectorId: Byte = 0, var frequency: String = "121.5",
     companion object {
         val mapper = object: Mapper<SectorInfo>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising SectorInfo mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
 
         const val TOWER: Byte = -1
         const val CENTRE: Byte = -2
@@ -126,9 +112,7 @@ data class ACCSectorInfo(var sectorId: Byte = 0, var frequency: String = "121.5"
     companion object {
         val mapper = object: Mapper<ACCSectorInfo>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising ACCSectorInfo mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -141,9 +125,7 @@ data class MinAltSectorInfo(var minAltFt: Int? = null, var restricted: Boolean =
     companion object {
         val mapper = object: Mapper<MinAltSectorInfo>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising MinAltSectorInfo mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -155,9 +137,7 @@ data class WaypointInfo(var wptId: Short = 0, var wptName: String = "-----"): Co
     companion object {
         val mapper = object: Mapper<WaypointInfo>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising WaypointInfo mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -168,9 +148,7 @@ data class PublishedHoldInfo(var wptId: Short = 0, var maxAltFt: Int? = null, va
      companion object {
         val mapper = object: Mapper<PublishedHoldInfo>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising PublishedHoldInfo mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -191,9 +169,7 @@ data class AircraftInfo(var icaoCallsign: String = "SHIBA1", var icaoType: Strin
     companion object {
         val mapper = object: Mapper<AircraftInfo>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising AircraftInfo mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -205,9 +181,7 @@ data class ArrivalAirport(var arptId: Byte): Component, BaseComponentJSONInterfa
     companion object {
         val mapper = object: Mapper<ArrivalAirport>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising ArrivalAirport mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -219,9 +193,7 @@ data class DepartureAirport(var arptId: Byte, var rwyId: Byte): Component, BaseC
     companion object {
         val mapper = object: Mapper<DepartureAirport>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising DepartureAirport mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -232,8 +204,6 @@ data class TrailInfo(val positions: Queue<Position> = Queue(MAX_TRAIL_DOTS)): Co
     companion object {
         val mapper = object: Mapper<TrailInfo>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising TrailInfo mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }

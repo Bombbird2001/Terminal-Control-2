@@ -12,7 +12,7 @@ import com.badlogic.gdx.scenes.scene2d.utils.Drawable
 import com.badlogic.gdx.utils.Timer
 import com.bombbird.terminalcontrol2.json.BaseComponentJSONInterface
 import com.bombbird.terminalcontrol2.navigation.Route
-import com.bombbird.terminalcontrol2.utilities.FileLog
+import com.bombbird.terminalcontrol2.utilities.InitializeCompanionObjectOnStart
 import com.squareup.moshi.JsonClass
 import ktx.ashley.Mapper
 import ktx.collections.GdxArray
@@ -24,9 +24,7 @@ data class RSSprite(var drawable: Drawable = BaseDrawable(), var width: Float = 
     companion object {
         val mapper = object: Mapper<RSSprite>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising RSSprite mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -39,9 +37,7 @@ class GenericLabel(var xOffset: Float = 0f, var yOffset: Float = 0f): Component 
     companion object {
         val mapper = object: Mapper<GenericLabel>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising GenericLabel mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 
     fun updateText(newText: String) {
@@ -58,9 +54,7 @@ class GenericLabels(var labels: Array<GenericLabel> = arrayOf()): Component {
     companion object {
         val mapper = object: Mapper<GenericLabels>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising GenericLabels mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -79,9 +73,7 @@ data class RunwayLabel(var positionToRunway: Byte = 0): Component {
     companion object {
         val mapper = object: Mapper<RunwayLabel>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising RunwayLabel mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
 
         const val BEFORE: Byte = 0
         const val RIGHT: Byte = 1
@@ -94,9 +86,7 @@ class ConstantZoomSize: Component {
     companion object {
         val mapper = object: Mapper<ConstantZoomSize>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising ConstantZoomSize mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -105,9 +95,7 @@ class SRConstantZoomSize: Component {
     companion object {
         val mapper = object: Mapper<SRConstantZoomSize>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising SRConstantZoomSize mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -116,9 +104,7 @@ data class SRColor(var color: Color = Color()): Component {
     companion object {
         val mapper = object: Mapper<SRColor>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising SRColor mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -131,9 +117,7 @@ class RenderLast: Component {
     companion object {
         val mapper = object: Mapper<RenderLast>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising RenderLast mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -142,9 +126,7 @@ class DoNotRenderShape: Component {
     companion object {
         val mapper = object: Mapper<DoNotRenderShape>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising DoNotRenderShape mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -153,9 +135,7 @@ class DoNotRenderLabel: Component {
     companion object {
         val mapper = object: Mapper<DoNotRenderLabel>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising DoNotRenderLabel mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -187,9 +167,7 @@ class Datatag(var xOffset: Float = 0f, var yOffset: Float = 0f, var minimised: B
         val mapper = object: Mapper<Datatag>() {}.mapper
         private val DEFAULT_LABEL_FONT = "Datatag${if (Gdx.app.type == Application.ApplicationType.Android) "Mobile" else ""}"
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising Datatag mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 
     /** Called when the aircraft who owns this datatag despawns */
@@ -209,9 +187,7 @@ data class InitialClientDatatagPosition(var xOffset: Float = 0f, var yOffset: Fl
     companion object {
         val mapper = object: Mapper<InitialClientDatatagPosition>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising InitialClientDatatagPosition mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
 
@@ -220,8 +196,6 @@ data class RouteSegment(val segments: GdxArray<Route.LegSegment> = GdxArray()): 
     companion object {
         val mapper = object: Mapper<RouteSegment>() {}.mapper
 
-        fun initialise() {
-            FileLog.info("Component", "Initialising RouteSegment mapper")
-        }
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }

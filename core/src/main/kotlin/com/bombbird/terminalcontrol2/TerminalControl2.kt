@@ -21,6 +21,7 @@ import com.bombbird.terminalcontrol2.screens.settings.TrafficSettings
 import com.bombbird.terminalcontrol2.sounds.SoundManager
 import com.bombbird.terminalcontrol2.sounds.TextToSpeechHandler
 import com.bombbird.terminalcontrol2.sounds.TextToSpeechManager
+import com.bombbird.terminalcontrol2.systems.loadAllFamilies
 import com.bombbird.terminalcontrol2.ui.CustomDialog
 import com.bombbird.terminalcontrol2.utilities.AndroidLifeCycleHandler
 import com.bombbird.terminalcontrol2.utilities.FileLog
@@ -143,8 +144,9 @@ class TerminalControl2(val externalFileHandler: ExternalFileHandler, ttsHandler:
             addScreen(ReportBug())
             setScreen<MainMenu>()
 
-            // Initialise Ashley component mapper indices
+            // Initialise Ashley component mapper indices, family bits to prevent threading issues when hosting
             loadAllComponents()
+            loadAllFamilies()
 
             ttsManager.init()
             FileLog.info("TerminalControl2", "TTS initialized")

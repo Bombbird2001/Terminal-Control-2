@@ -32,6 +32,8 @@ class ControlStateSystemInterval: IntervalSystem(1f) {
         private val goAroundFamily: Family = allOf(RecentGoAround::class).get()
         private val pendingCruiseFamily: Family = allOf(PendingCruiseAltitude::class, ClearanceAct::class, AircraftInfo::class).get()
         private val divergentDepFamily: Family = allOf(DivergentDepartureAllowed::class).get()
+
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 
     private val contactFromTowerFamilyEntities = FamilyWithListener.newServerFamilyWithListener(contactFromTowerFamily)

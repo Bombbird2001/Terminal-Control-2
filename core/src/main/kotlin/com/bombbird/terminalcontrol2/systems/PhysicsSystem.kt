@@ -36,6 +36,8 @@ class PhysicsSystem: EntitySystem() {
             .exclude(TakeoffRoll::class, LandingRoll::class, WaitingTakeoff::class).get()
         private val glideSlopeCapturedFamily: Family = allOf(Altitude::class, Speed::class, GlideSlopeCaptured::class).get()
         private val gsFamily: Family = allOf(Position::class, Altitude::class, GroundTrack::class, Speed::class, Direction::class, Acceleration::class).get()
+
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 
     private val positionUpdateFamilyEntities = FamilyWithListener.newServerFamilyWithListener(positionUpdateFamily)
@@ -206,7 +208,10 @@ class PhysicsSystem: EntitySystem() {
                     dir.trackUnitVector * max(ktToPxps(speed.speedKts) + tailwind, 0f)
                 } else {
                     val tasVector = dir.trackUnitVector * ktToPxps(speed.speedKts.toInt())
-                    if (affectedByWind != null) tasVector.plusAssign(affectedByWind.windVectorPxps)
+                    affectedByWind?.windVectorPxps?.let {
+                        if (it.x.isNaN() || it.y.isNaN()) return@let
+                        tasVector.plusAssign(it)
+                    }
                     tasVector
                 }
             }
