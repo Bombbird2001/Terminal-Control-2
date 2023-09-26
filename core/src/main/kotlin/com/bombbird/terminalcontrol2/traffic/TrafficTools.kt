@@ -704,7 +704,6 @@ fun checkDepartureDependencyTraffic(depRule: DepartureDependency.DependencyRule)
     depRule.arrivalSep?.let { arrSep ->
         // Check that arrival has either landed, or required time is available before it lands
         val nextArrivalAircraft = depRule.dependeeRwy[RunwayNextArrival.mapper]?.aircraft
-        println(nextArrivalAircraft?.get(AircraftInfo.mapper)?.icaoCallsign)
         if (nextArrivalAircraft != null && !nextArrivalAircraft.has(LandingRoll.mapper) &&
                 calculateTimeToThreshold(nextArrivalAircraft, depRule.dependeeRwy) < arrSep) return false
     }
