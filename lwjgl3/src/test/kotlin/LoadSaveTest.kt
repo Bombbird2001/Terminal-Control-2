@@ -4,6 +4,7 @@ import com.bombbird.terminalcontrol2.components.Altitude
 import com.bombbird.terminalcontrol2.files.*
 import com.bombbird.terminalcontrol2.global.APP_TYPE
 import com.bombbird.terminalcontrol2.global.GAME
+import com.bombbird.terminalcontrol2.global.GAME_SERVER_THREAD_NAME
 import com.bombbird.terminalcontrol2.networking.GameServer
 import com.bombbird.terminalcontrol2.sounds.StubTextToSpeech
 import com.squareup.moshi.Moshi
@@ -73,6 +74,9 @@ object LoadSaveTest: FunSpec() {
             saveMetaHandle.exists().shouldBeFalse()
             backupHandle.exists().shouldBeFalse()
             backupMetaHandle.exists().shouldBeFalse()
+
+            // Suppress entity created on wrong thread log message
+            Thread.currentThread().name = GAME_SERVER_THREAD_NAME
         }
 
         /** Writes the main save data to the relevant files */

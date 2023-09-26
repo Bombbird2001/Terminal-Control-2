@@ -2,6 +2,7 @@ import com.bombbird.terminalcontrol2.TerminalControl2
 import com.bombbird.terminalcontrol2.files.StubExternalFileHandler
 import com.bombbird.terminalcontrol2.global.CLIENT_SCREEN
 import com.bombbird.terminalcontrol2.global.GAME
+import com.bombbird.terminalcontrol2.global.GAME_SERVER_THREAD_NAME
 import com.bombbird.terminalcontrol2.global.isGameInitialised
 import com.bombbird.terminalcontrol2.networking.ConnectionMeta
 import com.bombbird.terminalcontrol2.networking.GameServer
@@ -14,6 +15,8 @@ import kotlin.collections.AbstractList
 
 /** Initialises the game and game server for test purposes, if not already initialised */
 internal fun testInitialiseGameAndServer() {
+    // Suppress entity created on wrong thread log message
+    Thread.currentThread().name = GAME_SERVER_THREAD_NAME
     if (!isGameInitialised) GAME = TerminalControl2(StubExternalFileHandler, StubTextToSpeech)
     if (GAME.gameServer == null) {
         val newGameServer = GameServer.testGameServer()
@@ -34,6 +37,10 @@ internal fun testInitialiseGameAndServer() {
 
             override fun getRoomId(): Short? {
                 return null
+            }
+
+            override fun getConnectionStatus(): String {
+                return ""
             }
 
             override val connections = object : AbstractList<ConnectionMeta>() {
