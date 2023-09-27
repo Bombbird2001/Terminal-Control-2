@@ -941,7 +941,7 @@ private fun parseLeg(legType: String, data: String, onWarning: (String, String) 
     val aboveAltRegex = " $ABOVE_ALT_REGEX ".toRegex() // Altitude values of at least 1 digit, with "A" as a prefix
     val belowAltRegex = " $BELOW_ALT_REGEX ".toRegex() // Altitude values of at least 1 digit, with "B" as a prefix
     val spdRegex = " S(\\d{3}) ".toRegex() // Speed values of 3 digits, with "S" as a prefix
-    val wptRegex = " ([A-Z]{2}|[A-Z]{3}|[A-Z]{5}|RW[0-9]{2}[LCR]?) ".toRegex() // Only waypoints with 2, 3 or 5 letters allowed, or of the form RWXX or RWXXL/C/R
+    val wptRegex = " (?!RIGHT)([A-Z]{2}|[A-Z]{3}|[A-Z]{5}|RW[0-9]{2}[LCR]?) ".toRegex() // Only waypoints with 2, 3 or 5 letters allowed, or of the form RWXX or RWXXL/C/R
     val foRegex = " FLYOVER ".toRegex() // For flyover waypoints
     val dirRegex = " (LEFT|RIGHT) ".toRegex() // For forced turn directions
     when (legType) {
