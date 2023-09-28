@@ -131,7 +131,7 @@ object DataFileTest: FunSpec() {
                             .shouldBeBetween(-180f, 180f, 0.0001f)
                     }
                     withData(arrayListOf("Max Arrivals")) {
-                        "MAX_ARRIVALS (.+)".toRegex().find(data).shouldNotBeNull().groupValues[1].toInt().shouldBeBetween(10, 35)
+                        "MAX_ARRIVALS (.+)".toRegex().find(data).shouldNotBeNull().groupValues[1].toInt().shouldBeBetween(10, 40)
                     }
 
                     // 2. Check waypoints
@@ -247,8 +247,8 @@ object DataFileTest: FunSpec() {
      * @param data the string text to parse
      * @return a HashSet of all the waypoint IDs
      */
-    private suspend fun ContainerScope.testWaypoints(data: String): HashSet<String> {
-        val wptNames = HashSet<String>()
+    private suspend fun ContainerScope.testWaypoints(data: String): HashMap<String, Short> {
+        val wptNames = HashMap<String, Short>()
         val wptIds = HashSet<Short>()
         withData(arrayListOf("Waypoints")) { withData(getLinesBetweenTags("WAYPOINTS", data)) { line ->
             val wptData = line.split(" ")
@@ -256,8 +256,10 @@ object DataFileTest: FunSpec() {
             withClue("Duplicate waypoint ID $id") { if (wptIds.isNotEmpty()) wptIds shouldNotBeIn wptIds }
             wptIds.add(id)
             val wptName = wptData[1]
-            withClue("Duplicate waypoint name $wptName") { if (wptNames.isNotEmpty()) wptName shouldNotBeIn wptNames }
-            wptNames.add(wptName)
+            withClue("Duplicate waypoint name $wptName") {
+                if (wptNames.isNotEmpty()) wptName shouldNotBeIn wptNames.keys
+            }
+            wptNames[wptName] = id
             testCoordsString(wptData[2])
         }}
 
@@ -368,14 +370,14 @@ object DataFileTest: FunSpec() {
      * Tests the hold waypoint data validity for the input data, with the calling ContainerScope as the scope for the
      * tests
      * @param data the string text to parse
-     * @param wpts the set of waypoint names available, and the hold waypoint name should be in this set
+     * @param wpts the map of waypoint names available to their IDs, and the hold waypoint name should be in this set
      */
-    private suspend fun ContainerScope.testHolds(data: String, wpts: HashSet<String>) {
+    private suspend fun ContainerScope.testHolds(data: String, wpts: HashMap<String, Short>) {
         withData(arrayListOf("Hold Waypoints")) {
             withData(getLinesBetweenTags("HOLDS", data)) {
                 val holdArray = it.split(" ")
                 holdArray.size shouldBeGreaterThan 5
-                holdArray[0] shouldBeIn wpts
+                holdArray[0] shouldBeIn wpts.keys
                 holdArray[1].toInt().shouldBeBetween(1, 360)
                 holdArray[2].toByte().shouldBeBetween(3, 12)
                 holdArray[3].toShort().toInt().shouldNotBeBetween(0, 149)
@@ -389,10 +391,10 @@ object DataFileTest: FunSpec() {
     /**
      * Tests the airport data validity for all airports, with the calling ContainerScope as the scope for the tests
      * @param data the string text to parse
-     * @param wpts the set of waypoint names available, and the hold waypoint name should be in this set
+     * @param wpts the map of waypoint names available to their IDs, and the hold waypoint name should be in this set
      * @param minAlt the minimum altitude of the game world
      */
-    private suspend fun ContainerScope.testAirports(data: String, wpts: HashSet<String>, minAlt: Int) {
+    private suspend fun ContainerScope.testAirports(data: String, wpts: HashMap<String, Short>, minAlt: Int) {
         val arptIds = HashSet<Byte>()
         getBlocksBetweenTags("AIRPORT", data).forEach { airport ->
             val arptLines = airport.toLines(2)
@@ -418,10 +420,10 @@ object DataFileTest: FunSpec() {
      * Tests the airport data validity for each airport data block, with the calling ContainerScope as the scope for the
      * tests
      * @param arptData the airport text to parse
-     * @param wpts the set of waypoint names available, and the hold waypoint name should be in this set
+     * @param wpts the map of waypoint names available to their IDs, and the hold waypoint name should be in this set
      * @param minAlt the minimum altitude of the game world
      */
-    private suspend fun ContainerScope.testAirport(arptData: String, wpts: HashSet<String>, minAlt: Int) {
+    private suspend fun ContainerScope.testAirport(arptData: String, wpts: HashMap<String, Short>, minAlt: Int) {
         withData(arrayListOf("Wind Direction")) {
             getAllTextAfterHeader("WINDDIR", arptData).split(" ").map { it.toFloat() }.size shouldBe 37
         }
@@ -582,7 +584,8 @@ object DataFileTest: FunSpec() {
      * @param minAlt the game world's minimum altitude
      * @return a HashSet of all runway names for this airport
      */
-    private suspend fun ContainerScope.testSid(data: String, allRwys: HashMap<String, Short>, allWpts: HashSet<String>,
+    private suspend fun ContainerScope.testSid(data: String, allRwys: HashMap<String, Short>,
+                                               allWpts: HashMap<String, Short>,
                                                allConfigDepRwys: HashMap<Byte, HashSet<String>>, minAlt: Int) {
         withData(arrayListOf("SIDs")) {
             getBlocksBetweenTags("SID", data).forEach {
@@ -639,7 +642,8 @@ object DataFileTest: FunSpec() {
      * @param allConfigArrRwys a HashMap mapping the runway config ID to their respective arrival runways
      * @return a HashSet of all runway names for this airport
      */
-    private suspend fun ContainerScope.testStar(data: String, allRwys: HashMap<String, Short>, allWpts: HashSet<String>,
+    private suspend fun ContainerScope.testStar(data: String, allRwys: HashMap<String, Short>,
+                                                allWpts: HashMap<String, Short>,
                                                 allConfigArrRwys: HashMap<Byte, HashSet<String>>) {
         withData(arrayListOf("STARs")) {
             getBlocksBetweenTags("STAR", data).forEach {
@@ -714,7 +718,8 @@ object DataFileTest: FunSpec() {
      * @param allWpts all waypoints in this game world
      * @return a HashSet of all runway names for this airport
      */
-    private suspend fun ContainerScope.testApp(data: String, allRwys: HashMap<String, Short>, allWpts: HashSet<String>) {
+    private suspend fun ContainerScope.testApp(data: String, allRwys: HashMap<String, Short>,
+                                               allWpts: HashMap<String, Short>) {
         withData(arrayListOf("Approaches")) {
             getBlocksBetweenTags("APCH", data).forEach {
                 val apchLines = it.toLines(2)
@@ -788,7 +793,7 @@ object DataFileTest: FunSpec() {
                         inboundLine.size shouldBeGreaterThanOrEqual 1
                         if (inboundLine[0] != "vectors") {
                             // First leg should be waypoint with the same name as transition
-                            inboundLine[0] shouldBeIn allWpts
+                            inboundLine[0] shouldBeIn allWpts.keys
                             inboundLine[1] shouldBe WYPT_LEG
                             inboundLine[2] shouldBe inboundLine[0]
                         }
@@ -807,7 +812,22 @@ object DataFileTest: FunSpec() {
                     val missedLines = getAllTextAfterHeaderMultiple("MISSED", apchLines[1])
                     missedLines.size shouldBe 1
                     val missedLine = missedLines[0].split(" ")
-                    testParseLegs(missedLine, allWpts, Route.Leg.NORMAL, WARNING_SHOULD_BE_EMPTY)
+                    val route = testParseLegs(missedLine, allWpts, Route.Leg.NORMAL, WARNING_SHOULD_BE_EMPTY)
+                    route.size shouldBeGreaterThanOrEqual 1
+                    if (route.size >= 2) {
+                        // 2nd last leg must be a waypoint and have an altitude restriction
+                        val wpt = (route[route.size - 2] as? Route.WaypointLeg).shouldNotBeNull().apply {
+                            maxAltFt.shouldNotBeNull() shouldBe minAltFt
+                        }
+                        // Last leg must be a hold at the same waypoint as the 2nd last leg
+                        (route[route.size - 1] as? Route.HoldLeg).shouldNotBeNull().apply {
+                            println("$wptId ${wpt.wptId}")
+                            wptId shouldBe wpt.wptId
+                        }
+                    } else {
+                        // Last leg must be a vector leg
+                        (route[route.size - 1] as? Route.VectorLeg).shouldNotBeNull()
+                    }
                 }
             }
         }

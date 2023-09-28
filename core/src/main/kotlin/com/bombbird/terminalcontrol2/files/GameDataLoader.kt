@@ -864,22 +864,27 @@ private fun parseSIDSTARAllowedConfigs(data: List<String>, sidStar: SidStar) {
  */
 private fun parseLegs(data: List<String>, flightPhase: Byte, onWarning: (String, String) -> Unit = { type, msg ->
     FileLog.info(type, msg)
-}, testingWpts: HashSet<String>? = null): Route {
+}, testingWpts: HashMap<String, Short>? = null): Route {
     val route = Route()
 
-    val onInitClimb = if (testingWpts != null) { _: Short, _: Int -> }
-    else { hdg: Short, minAlt: Int -> route.add(Route.InitClimbLeg(hdg, minAlt, flightPhase)) }
-    val onHdg = if (testingWpts != null) { _: Short, _: Byte -> }
-    else { hdg: Short, turnDir: Byte -> route.add(Route.VectorLeg(hdg, turnDir, flightPhase)) }
-    val onWpt = if (testingWpts != null) { wptName: String, _: Int?, _: Int?, _: Short?, _: Boolean, _: Byte ->
-        if (!testingWpts.contains(wptName)) onWarning("GameDataLoader", "Waypoint $wptName not in game world")
+    val onInitClimb = { hdg: Short, minAlt: Int -> route.add(Route.InitClimbLeg(hdg, minAlt, flightPhase)) }
+    val onHdg = { hdg: Short, turnDir: Byte -> route.add(Route.VectorLeg(hdg, turnDir, flightPhase)) }
+    val onWpt = if (testingWpts != null) { wptName: String, maxAlt: Int?, minAlt: Int?, maxSpd: Short?, flyOver: Boolean,
+                                           turnDir: Byte ->
+        val wptId = testingWpts[wptName]
+        if (wptId == null) onWarning("GameDataLoader", "Waypoint $wptName not in game world")
+        else route.add(Route.WaypointLeg(wptId, maxAlt, minAlt, maxSpd,
+            legActive = true, altRestrActive = true, spdRestrActive = true, flyOver, turnDir, flightPhase))
     }
     else { wptName: String, maxAlt: Int?, minAlt: Int?, maxSpd: Short?, flyOver: Boolean, turnDir: Byte ->
         route.add(Route.WaypointLeg(wptName, maxAlt, minAlt, maxSpd,
             legActive = true, altRestrActive = true, spdRestrActive = true, flyOver, turnDir, flightPhase))
     }
     val onHold = if (testingWpts != null) { wptName: String ->
-        if (!testingWpts.contains(wptName)) onWarning("GameDataLoader", "Waypoint $wptName not in game world")
+        val wptId = testingWpts[wptName]
+        if (wptId == null) onWarning("GameDataLoader", "Waypoint $wptName not in game world")
+        else route.add(Route.HoldLeg(wptId, null, null, null,
+            null, 360, 5, CommandTarget.TURN_RIGHT, flightPhase))
     }
     else { wptName: String ->
         GAME.gameServer?.publishedHolds?.get(wptName)?.entity?.get(PublishedHoldInfo.mapper)?.let { publishedHold ->
@@ -912,14 +917,15 @@ private fun parseLegs(data: List<String>, flightPhase: Byte, onWarning: (String,
 }
 
 /**
- * Tries to parse the given [data], [flightPhase] into a route
+ * Tries to parse the given [data], [flightPhase] into a route and returns it (for further testing if needed)
  * @param data the line array for the legs
  * @param allWpts all the waypoint names in the game world
  * @param flightPhase the phase of flight for this specific set of legs
  * @param onWarning the function to invoke when a warning occurs while parsing
  */
-fun testParseLegs(data: List<String>, allWpts: HashSet<String>, flightPhase: Byte, onWarning: (String, String) -> Unit) {
-    parseLegs(data, flightPhase, onWarning, allWpts)
+fun testParseLegs(data: List<String>, allWpts: HashMap<String, Short>, flightPhase: Byte,
+                  onWarning: (String, String) -> Unit): Route {
+    return parseLegs(data, flightPhase, onWarning, allWpts)
 }
 
 /**
