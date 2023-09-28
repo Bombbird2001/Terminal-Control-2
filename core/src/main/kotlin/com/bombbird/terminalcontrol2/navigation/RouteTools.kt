@@ -635,6 +635,8 @@ fun getZonesForInitialRunwayClimb(route: Route, rwy: Entity): GdxArray<RouteZone
     val rwyLengthHalf = (rwy[RunwayInfo.mapper]?.lengthM ?: return zones) / 2f
     val rwyDir = rwy[Direction.mapper]?.trackUnitVector ?: return zones
     val startPos = Vector2(rwyPos.x, rwyPos.y) + rwyDir * (mToPx(rwyLengthHalf))
+    // Also add a buffer zone around the runway
+    zones.add(RouteZone(rwyPos.x, rwyPos.y, startPos.x, startPos.y, 3f, null))
     (route[0] as? WaypointLeg)?.apply {
         val wptPos = GAME.gameServer?.waypoints?.get(wptId)?.entity?.get(Position.mapper) ?: return@apply
         zones.add(RouteZone(startPos.x, startPos.y, wptPos.x, wptPos.y, ROUTE_RNP_NM, null))
