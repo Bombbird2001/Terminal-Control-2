@@ -99,7 +99,8 @@ class TrafficSystemInterval: IntervalSystem(1f) {
         val closestRunwayArrival = closestArrivalFamilyEntities.getEntities()
         for (i in 0 until closestRunwayArrival.size()) {
             closestRunwayArrival[i]?.apply {
-                val approach = get(LocalizerCaptured.mapper)?.locApp ?: get(GlideSlopeCaptured.mapper)?.gsApp ?:
+                val approach = get(LocalizerArmed.mapper)?.locApp ?: get(LocalizerCaptured.mapper)?.locApp ?:
+                get(GlideSlopeCaptured.mapper)?.gsApp ?: get(VisualArmed.mapper)?.visApp ?:
                 get(VisualCaptured.mapper)?.visApp ?: return@apply
                 val rwyObj = approach[ApproachInfo.mapper]?.rwyObj?.entity ?: return@apply
                 val rwyThrPos = rwyObj[CustomPosition.mapper] ?: return@apply

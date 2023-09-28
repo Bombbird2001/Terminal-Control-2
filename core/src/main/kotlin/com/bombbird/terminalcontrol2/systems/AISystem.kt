@@ -685,7 +685,7 @@ class AISystem: EntitySystem() {
                         (circleApp.breakoutAlt - 100)
                         cmd.targetIasKt = get(AircraftInfo.mapper)?.aircraftPerf?.appSpd ?: 135
                         circleApp.phase3Timer -= deltaTime
-                        // Once 30 seconds has passed, transition to visual captured mode
+                        // Once 50 seconds has passed, transition to visual captured mode
                         if (circleApp.phase3Timer < 0) {
                             remove<CirclingApproach>()
                             this += VisualCaptured(visApp, circleApp.circlingApp)

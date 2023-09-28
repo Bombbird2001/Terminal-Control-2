@@ -647,8 +647,8 @@ fun checkOppRunwayTraffic(rwy: Entity): Boolean {
     // Check previous arrival time required
     if (prevArrival != null && WakeMatrix.getTimeRequired(prevArrival.wakeCat, prevArrival.recat,
             nextDeparture.wakeCategory, nextDeparture.recat) > prevArrival.timeSinceTouchdownS) return false
-    // Check distance from touchdown - minimum 15nm away
-    return nextArrival == null || calculateDistFromThreshold(nextArrival.aircraft, rwy) >= nmToPx(15)
+    // Check distance from touchdown - minimum 18nm away
+    return nextArrival == null || nextArrival.distFromThrPx >= nmToPx(18)
 }
 
 /**
@@ -674,8 +674,8 @@ fun checkDependentParallelRunwayTraffic(rwy: Entity): Boolean {
 fun checkDependentOppositeRunwayTraffic(rwy: Entity): Boolean {
     val nextArrival = rwy[RunwayNextArrival.mapper]
     val prevDeparture = rwy[RunwayPreviousDeparture.mapper]
-    // Check distance from touchdown - minimum 15nm away
-    if (nextArrival != null && calculateDistFromThreshold(nextArrival.aircraft, rwy) < nmToPx(15)) return false
+    // Check distance from touchdown - minimum 18nm away
+    if (nextArrival != null && nextArrival.distFromThrPx < nmToPx(18)) return false
     // Check time since departure - minimum 60s
     if (prevDeparture != null && prevDeparture.timeSinceDepartureS < 60) return false
     return true
