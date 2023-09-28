@@ -99,7 +99,7 @@ fun loadAircraftData() {
             val oew = lineData[12].toInt()
             val mtow = lineData[13].toInt()
             AircraftTypeData.addAircraftPerf(type, AircraftTypeData.AircraftPerfData(wakeCat, recat,
-                jetThrust, propPower * 2, propArea,
+                jetThrust, propPower, propArea,
                 minCd0RefArea, maxCdRefArea,
                 maxIas, maxMach, typAppSpd, (typVr - 10).toShort(), // Values given in file is V2, estimate -10 knots for Vr
                 oew, mtow))

@@ -113,15 +113,17 @@ object AircraftTypeData {
         var massKg: Int
 
         init {
-            val loadFactor = MathUtils.random(0.1f, when (flightType) {
-                FlightType.DEPARTURE -> 0.9f
-                FlightType.EN_ROUTE -> 0.6f
-                else -> 0.3f
-            }) // Load factor between 10% and 90% (for departures), 60% (for en-route) or 30% (for arrivals)
+            // Load factor between 30% and 90% (for departures),
+            // 20% and 60% (for en-route) or 10% and 30% (for arrivals)
+            val loadFactor = when (flightType) {
+                FlightType.DEPARTURE -> MathUtils.random(0.3f, 0.9f)
+                FlightType.EN_ROUTE -> MathUtils.random(0.2f, 0.6f)
+                else -> MathUtils.random(0.1f, 0.3f)
+            }
             appSpd = (typApp * (1 + 0.19f * (loadFactor - 0.5f))).roundToInt().toShort()
             vR = (typVr * (1 + 0.19f * (loadFactor - 0.5f))).roundToInt().toShort()
             climbOutSpeed = (vR + MathUtils.random(5, 10)).toShort()
-            tripIas = (maxIas * MathUtils.random(0.9f, 0.97f)).roundToInt().toShort()
+            tripIas = (maxIas * MathUtils.random(0.9f, 0.95f)).roundToInt().toShort()
             tripMach = maxMach * MathUtils.random(0.915f, 0.945f)
             massKg = (operatingEmptyWeightKg + (maxTakeoffWeightKg - operatingEmptyWeightKg) * loadFactor).roundToInt()
             maxAlt = calculateMaxAlt(this)
