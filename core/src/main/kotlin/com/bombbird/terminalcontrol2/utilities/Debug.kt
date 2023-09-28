@@ -3,7 +3,9 @@ package com.bombbird.terminalcontrol2.utilities
 import com.badlogic.ashley.core.*
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer
+import com.badlogic.gdx.math.GeometryUtils
 import com.badlogic.gdx.math.Vector2
+import com.badlogic.gdx.scenes.scene2d.ui.Label
 import com.badlogic.gdx.utils.Queue
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.*
@@ -11,6 +13,7 @@ import com.bombbird.terminalcontrol2.systems.TrafficSystemInterval
 import com.esotericsoftware.minlog.Log
 import ktx.ashley.*
 import ktx.collections.toGdxArray
+import ktx.scene2d.Scene2DSkin
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
@@ -117,6 +120,46 @@ fun renderSelectedAircraftRouteZones(shapeRenderer: ShapeRenderer) {
         }
         entity[DepartureRouteZone.mapper]?.let {
             for (i in 0 until it.sidZone.size) shapeRenderer.polygon(it.sidZone[i].entity[GPolygon.mapper]?.vertices ?: continue)
+        }
+    }
+}
+
+/** Renders the MVA exclusion zone minimum altitude for the current selected aircraft */
+fun renderRouteZoneAlts() {
+    GAME.gameServer?.aircraft?.get(CLIENT_SCREEN?.selectedAircraft?.entity?.get(AircraftInfo.mapper)?.icaoCallsign)?.apply {
+        entity[ArrivalRouteZone.mapper]?.let {
+            for (i in 0 until it.starZone.size) {
+                val polygon = it.starZone[i].entity[GPolygon.mapper] ?: continue
+                val minAlt = it.starZone[i].entity[Altitude.mapper]?.altitudeFt ?: continue
+                Label(minAlt.toString(), Scene2DSkin.defaultSkin, "GameInfo").apply {
+                    val centroid = Vector2()
+                    GeometryUtils.polygonCentroid(polygon.vertices, 0, polygon.vertices.size, centroid)
+                    setPosition(centroid.x, centroid.y)
+                    draw(GAME.batch, 1f)
+                }
+            }
+            for (i in 0 until it.appZone.size) {
+                val polygon = it.appZone[i].entity[GPolygon.mapper] ?: continue
+                val minAlt = it.appZone[i].entity[Altitude.mapper]?.altitudeFt ?: continue
+                Label(minAlt.toString(), Scene2DSkin.defaultSkin, "GameInfo").apply {
+                    val centroid = Vector2()
+                    GeometryUtils.polygonCentroid(polygon.vertices, 0, polygon.vertices.size, centroid)
+                    setPosition(centroid.x, centroid.y)
+                    draw(GAME.batch, 1f)
+                }
+            }
+        }
+        entity[DepartureRouteZone.mapper]?.let {
+            for (i in 0 until it.sidZone.size) {
+                val polygon = it.sidZone[i].entity[GPolygon.mapper] ?: continue
+                val minAlt = it.sidZone[i].entity[Altitude.mapper]?.altitudeFt ?: continue
+                Label(minAlt.toString(), Scene2DSkin.defaultSkin, "GameInfo").apply {
+                    val centroid = Vector2()
+                    GeometryUtils.polygonCentroid(polygon.vertices, 0, polygon.vertices.size, centroid)
+                    setPosition(centroid.x, centroid.y)
+                    draw(GAME.batch, 1f)
+                }
+            }
         }
     }
 }
@@ -263,10 +306,3 @@ fun Engine.removeAllSystemsOnMainThread(onClient: Boolean) {
 
     removeAllSystems()
 }
-
-//operator fun Entity.plusAssign(component: Component) {
-//    val threadName = Thread.currentThread().name
-//    if (threadName != GAME_SERVER_THREAD_NAME && threadName != "main")
-//        println(threadName)
-//    add(component)
-//}

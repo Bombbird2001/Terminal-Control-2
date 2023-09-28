@@ -12,10 +12,7 @@ import com.bombbird.terminalcontrol2.entities.Waypoint
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.json.getMoshiWithAllAdapters
 import com.bombbird.terminalcontrol2.json.runDelayedEntityRetrieval
-import com.bombbird.terminalcontrol2.navigation.Approach
-import com.bombbird.terminalcontrol2.navigation.ClearanceState
-import com.bombbird.terminalcontrol2.navigation.Route
-import com.bombbird.terminalcontrol2.navigation.getZonesForRoute
+import com.bombbird.terminalcontrol2.navigation.*
 import com.bombbird.terminalcontrol2.utilities.AircraftTypeData
 import com.bombbird.terminalcontrol2.utilities.UsabilityFilter
 import com.bombbird.terminalcontrol2.utilities.checkClearanceEquality
@@ -103,18 +100,18 @@ object JsonTest: FunSpec() {
                     add(Route.WaypointLeg(3, null, 2000, 230, legActive = true, altRestrActive = true, spdRestrActive = true, phase = Route.Leg.APP))
                     add(Route.WaypointLeg(4, 12000, 5000, null, legActive = true, altRestrActive = false, spdRestrActive = true, phase = Route.Leg.APP))
                 })
-                routeZones.addAll(getZonesForRoute(routeLegs))
+                routeZones.addAll(getZonesForArrivalRoute(routeLegs))
                 missedLegs.setToRoute(Route().apply {
                     add(Route.InitClimbLeg(45, 1000, phase = Route.Leg.MISSED_APP))
                     add(Route.WaypointLeg(5, null, 3000, null, legActive = true, altRestrActive = true, spdRestrActive = true, phase = Route.Leg.MISSED_APP))
                     add(Route.HoldLeg(5, null, 4000, 230, 240, 45, 5, CommandTarget.TURN_RIGHT, phase = Route.Leg.MISSED_APP))
                 })
-                missedRouteZones.addAll(getZonesForRoute(missedLegs))
+                missedRouteZones.addAll(getZonesForDepartureRoute(missedLegs))
                 transitions["TESTT"] = Route().apply {
                     add(Route.WaypointLeg(6, null, 2000, 230, legActive = true, altRestrActive = true, spdRestrActive = true, phase = Route.Leg.APP_TRANS))
                     add(Route.WaypointLeg(7, 12000, 5000, null, legActive = true, altRestrActive = false, spdRestrActive = true, phase = Route.Leg.APP_TRANS))
                 }
-                transitionRouteZones["TESTT"] = getZonesForRoute(transitions["TESTT"])
+                transitionRouteZones["TESTT"] = getZonesForArrivalRoute(transitions["TESTT"])
             }.shouldNotBeNull()
             app2 = Approach("LDA05R", 0, 1, 7f, 11f, 625, 2700, false, UsabilityFilter.DAY_AND_NIGHT).apply {
                 addLocalizer(30, 20)
@@ -124,13 +121,13 @@ object JsonTest: FunSpec() {
                     add(Route.WaypointLeg(8, null, 2000, 230, legActive = true, altRestrActive = true, spdRestrActive = true, phase = Route.Leg.APP))
                     add(Route.WaypointLeg(9, 12000, 5000, null, legActive = true, altRestrActive = false, spdRestrActive = true, phase = Route.Leg.APP))
                 })
-                routeZones.addAll(getZonesForRoute(routeLegs))
+                routeZones.addAll(getZonesForArrivalRoute(routeLegs))
                 missedLegs.setToRoute(Route().apply {
                     add(Route.InitClimbLeg(45, 1000, phase = Route.Leg.MISSED_APP))
                     add(Route.WaypointLeg(10, null, 3000, null, legActive = true, altRestrActive = true, spdRestrActive = true, phase = Route.Leg.MISSED_APP))
                     add(Route.HoldLeg(10, null, 4000, 230, 240, 45, 5, CommandTarget.TURN_RIGHT, phase = Route.Leg.MISSED_APP))
                 })
-                missedRouteZones.addAll(getZonesForRoute(missedLegs))
+                missedRouteZones.addAll(getZonesForDepartureRoute(missedLegs))
             }.shouldNotBeNull()
             app3 = Approach("CIRCLE05L", 0, 0, -1f, 1f, 1220, 4000, false, UsabilityFilter.DAY_AND_NIGHT).apply {
                 addLocalizer(225, 20)
@@ -741,7 +738,7 @@ object JsonTest: FunSpec() {
         test("ArrivalRouteZone serialization") {
             val arrivalRouteZoneAdapter = testMoshi.adapter<ArrivalRouteZone>()
             val arrivalRouteZone1 = ArrivalRouteZone().apply {
-                starZone.addAll(getZonesForRoute(route1.shouldNotBeNull()))
+                starZone.addAll(getZonesForArrivalRoute(route1.shouldNotBeNull()))
                 appZone.addAll(app1.shouldNotBeNull().transitionRouteZones["TESTT"])
                 appZone.addAll(app1.shouldNotBeNull().routeZones)
                 appZone.addAll(app1.shouldNotBeNull().missedRouteZones)
@@ -757,7 +754,7 @@ object JsonTest: FunSpec() {
         test("DepartureRouteZone serialization") {
             val departureRouteZoneAdapter = testMoshi.adapter<DepartureRouteZone>()
             val departureRouteZone = DepartureRouteZone().apply {
-                sidZone.addAll(getZonesForRoute(route1.shouldNotBeNull()))
+                sidZone.addAll(getZonesForDepartureRoute(route1.shouldNotBeNull()))
             }
             departureRouteZoneAdapter.fromJson(departureRouteZoneAdapter.toJson(departureRouteZone)).shouldNotBeNull() should matchDepartureZone(departureRouteZone)
         }

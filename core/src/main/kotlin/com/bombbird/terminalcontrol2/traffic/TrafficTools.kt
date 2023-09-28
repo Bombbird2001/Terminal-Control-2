@@ -82,7 +82,7 @@ fun createArrival(callsign: String, icaoType: String, airport: Entity, gs: GameS
 
     gs.aircraft.put(callsign, Aircraft(callsign, spawnPos.first, spawnPos.second, 0f, icaoType, FlightType.ARRIVAL, false).apply {
         entity += ArrivalAirport(airport[AirportInfo.mapper]?.arptId ?: 0)
-        entity += ArrivalRouteZone().apply { starZone.addAll(getZonesForRoute(origStarRoute)) }
+        entity += ArrivalRouteZone().apply { starZone.addAll(getZonesForArrivalRoute(origStarRoute)) }
         var alt = calculateArrivalSpawnAltitude(entity, airport, origStarRoute, spawnPos.first, spawnPos.second, starRoute)
         alt = amendAltForNearbyTraffic(alt, spawnPos.first, spawnPos.second, entity)
         entity[Altitude.mapper]?.altitudeFt = alt
@@ -342,7 +342,7 @@ fun clearForTakeoff(aircraft: Entity, rwy: Entity) {
         get(DepartureRouteZone.mapper)?.sidZone?.also {
             it.clear()
             it.addAll(getZonesForInitialRunwayClimb(sidRoute, rwy))
-            it.addAll(getZonesForRoute(sidRoute))
+            it.addAll(getZonesForDepartureRoute(sidRoute))
         }
         // Set initial clearance state
         this += ClearanceAct(ClearanceState(sid?.name ?: "", sidRoute, Route(),

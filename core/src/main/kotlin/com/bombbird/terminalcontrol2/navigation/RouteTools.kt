@@ -13,7 +13,7 @@ import ktx.ashley.get
 import ktx.collections.GdxArray
 import ktx.math.plus
 import ktx.math.times
-import kotlin.math.min
+import kotlin.math.max
 
 /** Helper file containing functions for dealing with aircraft route shenanigans */
 
@@ -559,11 +559,43 @@ fun removeApproachLegs(route: Route, hiddenLegs: Route) {
 }
 
 /**
- * Gets the route MVA exclusion zones for the input route
+ * Gets the route MVA exclusion zones for the input arrival route
  * @param route the route to find zones for
  * @return an array of route zones for each waypoint -> waypoint segment on the route
  */
-fun getZonesForRoute(route: Route): GdxArray<RouteZone> {
+fun getZonesForArrivalRoute(route: Route): GdxArray<RouteZone> {
+    if (route.size == 0) return GdxArray()
+    val segmentArray = GdxArray<LegSegment>()
+    calculateRouteSegments(route, segmentArray, route[0])
+    val routeZones = GdxArray<RouteZone>()
+    var currMinAlt: Int? = null
+    for (i in segmentArray.size - 1 downTo  0) {
+        segmentArray[i]?.apply {
+            val finalLeg1 = leg1
+            val finalLeg2 = leg2
+            if (finalLeg1 is WaypointLeg && finalLeg2 is WaypointLeg) {
+                val wpt1Pos = GAME.gameServer?.waypoints?.get(finalLeg1.wptId)?.entity?.get(Position.mapper) ?: return@apply
+                val wpt2Pos = GAME.gameServer?.waypoints?.get(finalLeg2.wptId)?.entity?.get(Position.mapper) ?: return@apply
+                // Get the lower altitude restriction among leg2 and the current min alt; or if one is null, use altitude restriction
+                // of the other; if both null, use null
+                val finalMinAlt = currMinAlt
+                val minAlt = if (finalLeg2.minAltFt == null) finalMinAlt
+                else if (finalMinAlt != null) max(finalMinAlt, finalLeg2.minAltFt)
+                else finalLeg2.minAltFt
+                currMinAlt = minAlt
+                routeZones.add(RouteZone(wpt1Pos.x, wpt1Pos.y, wpt2Pos.x, wpt2Pos.y, ROUTE_RNP_NM, minAlt))
+            }
+        }
+    }
+    return routeZones
+}
+
+/**
+ * Gets the route MVA exclusion zones for the input departure route
+ * @param route the route to find zones for
+ * @return an array of route zones for each waypoint -> waypoint segment on the route
+ */
+fun getZonesForDepartureRoute(route: Route): GdxArray<RouteZone> {
     if (route.size == 0) return GdxArray()
     val segmentArray = GdxArray<LegSegment>()
     calculateRouteSegments(route, segmentArray, route[0])
@@ -576,19 +608,14 @@ fun getZonesForRoute(route: Route): GdxArray<RouteZone> {
             if (finalLeg1 is WaypointLeg && finalLeg2 is WaypointLeg) {
                 val wpt1Pos = GAME.gameServer?.waypoints?.get(finalLeg1.wptId)?.entity?.get(Position.mapper) ?: return@apply
                 val wpt2Pos = GAME.gameServer?.waypoints?.get(finalLeg2.wptId)?.entity?.get(Position.mapper) ?: return@apply
-                // Get the lower altitude restriction among the 2 waypoints; or if one is null, use altitude restriction
+                // Get the lower altitude restriction among leg1 and the current min alt; or if one is null, use altitude restriction
                 // of the other; if both null, use null
-                val minAlt = if (finalLeg1.minAltFt == null && finalLeg2.minAltFt == null) null
-                else if (finalLeg1.minAltFt == null) finalLeg2.minAltFt
-                else if (finalLeg2.minAltFt == null) finalLeg1.minAltFt
-                else min(finalLeg1.minAltFt, finalLeg2.minAltFt)
-                // Get the lowest of the current minimum altitude and the minimum altitude of the 2 new waypoints
-                val finalCurrMinAlt = currMinAlt
-                val newCurrMinAlt = if (minAlt == null) finalCurrMinAlt
-                else if (finalCurrMinAlt == null) minAlt
-                else min(finalCurrMinAlt, minAlt)
-                currMinAlt = newCurrMinAlt
-                routeZones.add(RouteZone(wpt1Pos.x, wpt1Pos.y, wpt2Pos.x, wpt2Pos.y, ROUTE_RNP_NM, newCurrMinAlt))
+                val finalMinAlt = currMinAlt
+                val minAlt = if (finalLeg1.minAltFt == null) finalMinAlt
+                else if (finalMinAlt != null) max(finalMinAlt, finalLeg1.minAltFt)
+                else finalLeg1.minAltFt
+                currMinAlt = minAlt
+                routeZones.add(RouteZone(wpt1Pos.x, wpt1Pos.y, wpt2Pos.x, wpt2Pos.y, ROUTE_RNP_NM, minAlt))
             }
         }
     }

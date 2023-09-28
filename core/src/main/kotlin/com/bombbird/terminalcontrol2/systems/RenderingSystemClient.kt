@@ -385,6 +385,9 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         GAME.batch.begin()
         GAME.batch.packedColor = Color.WHITE_FLOAT_BITS // Prevent fading out behaviour during selectBox animations due to tint being changed
 
+        // Debug: Render route zone min altitude
+        // renderRouteZoneAlts()
+
         // Update runway labels rendering size, position
         val rwyLabels = rwyLabelFamilyEntities.getEntities()
         for (i in 0 until rwyLabels.size()) {

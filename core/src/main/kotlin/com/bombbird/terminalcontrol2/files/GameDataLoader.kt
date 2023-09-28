@@ -6,10 +6,7 @@ import com.bombbird.terminalcontrol2.entities.*
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.json.BaseComponentJSONInterface
 import com.bombbird.terminalcontrol2.json.DoNotOverwriteSavedJSON
-import com.bombbird.terminalcontrol2.navigation.Approach
-import com.bombbird.terminalcontrol2.navigation.Route
-import com.bombbird.terminalcontrol2.navigation.SidStar
-import com.bombbird.terminalcontrol2.navigation.getZonesForRoute
+import com.bombbird.terminalcontrol2.navigation.*
 import com.bombbird.terminalcontrol2.networking.GameServer
 import com.bombbird.terminalcontrol2.traffic.RunwayConfiguration
 import com.bombbird.terminalcontrol2.traffic.disallowedCallsigns
@@ -179,8 +176,8 @@ fun loadWorldData(mainName: String, gameServer: GameServer) {
                 "/$STAR_OBJ" -> currStar = null
                 SID_STAR_RWY -> if (currSid != null) parseSIDRwyRoute(lineData, currSid) else if (currStar != null) parseSTARRwyRoute(lineData, currStar)
                 SID_STAR_APP_ROUTE -> {
-                    if (currSid != null) parseSIDSTARRoute(lineData, currSid)
-                    else if (currStar != null) parseSIDSTARRoute(lineData, currStar)
+                    if (currSid != null) parseSIDRoute(lineData, currSid)
+                    else if (currStar != null) parseSTARRoute(lineData, currStar)
                     else if (currApp != null) parseApproachRoute(lineData, currApp)
                 }
                 SID_OUTBOUND -> if (currSid != null) parseSIDSTARinOutboundRoute(lineData, currSid)
@@ -727,14 +724,14 @@ private fun parseApproachRoute(data: List<String>, approach: Approach) {
     }
     approach.routeLegs.extendRoute(parseLegs(data.subList(1, data.size), Route.Leg.APP))
     approach.routeZones.clear()
-    approach.routeZones.addAll(getZonesForRoute(approach.routeLegs))
+    approach.routeZones.addAll(getZonesForArrivalRoute(approach.routeLegs))
 }
 
 /** Parse the given [data] into approach transition legs data, and adds it to the supplied [approach]'s [Approach.transitions] */
 private fun parseApproachTransition(data: List<String>, approach: Approach) {
     val transRoute = parseLegs(data.subList(2, data.size), Route.Leg.APP_TRANS)
     approach.transitions[data[1]] = transRoute
-    approach.transitionRouteZones[data[1]] = getZonesForRoute(transRoute)
+    approach.transitionRouteZones[data[1]] = getZonesForArrivalRoute(transRoute)
 }
 
 /**
@@ -749,7 +746,7 @@ private fun parseApproachMissed(data: List<String>, approach: Approach) {
     approach.missedLegs.add(Route.DiscontinuityLeg(Route.Leg.MISSED_APP))
     approach.missedLegs.extendRoute(parseLegs(data.subList(1, data.size), Route.Leg.MISSED_APP))
     approach.missedRouteZones.clear()
-    approach.missedRouteZones.addAll(getZonesForRoute(approach.missedLegs))
+    approach.missedRouteZones.addAll(getZonesForDepartureRoute(approach.missedLegs))
 }
 
 /**
@@ -827,17 +824,31 @@ private fun parseSTARRwyRoute(data: List<String>, star: SidStar.STAR) {
 }
 
 /**
- * Parse the given [data] into route legs data, and adds it to the supplied [sidStar]'s [SidStar.routeLegs]
+ * Parse the given [data] into route legs data, and adds it to the supplied [sid]'s [SidStar.routeLegs]
  * @param data the line array for the legs
- * @param sidStar the [SidStar] to add the legs to
+ * @param sid the [SidStar.SID] to add the legs to
  */
-private fun parseSIDSTARRoute(data: List<String>, sidStar: SidStar) {
-    if (sidStar.routeLegs.size > 0) {
-        FileLog.info("GameLoader", "Multiple routes for SID/STAR: ${sidStar.name}")
+private fun parseSIDRoute(data: List<String>, sid: SidStar.SID) {
+    if (sid.routeLegs.size > 0) {
+        FileLog.info("GameLoader", "Multiple routes for SID: ${sid.name}")
     }
-    sidStar.routeLegs.extendRoute(parseLegs(data.subList(1, data.size), Route.Leg.NORMAL))
-    sidStar.routeZones.clear()
-    sidStar.routeZones.addAll(getZonesForRoute(sidStar.routeLegs))
+    sid.routeLegs.extendRoute(parseLegs(data.subList(1, data.size), Route.Leg.NORMAL))
+    sid.routeZones.clear()
+    sid.routeZones.addAll(getZonesForDepartureRoute(sid.routeLegs))
+}
+
+/**
+ * Parse the given [data] into route legs data, and adds it to the supplied [star]'s [SidStar.routeLegs]
+ * @param data the line array for the legs
+ * @param star the [SidStar.STAR] to add the legs to
+ */
+private fun parseSTARRoute(data: List<String>, star: SidStar.STAR) {
+    if (star.routeLegs.size > 0) {
+        FileLog.info("GameLoader", "Multiple routes for STAR: ${star.name}")
+    }
+    star.routeLegs.extendRoute(parseLegs(data.subList(1, data.size), Route.Leg.NORMAL))
+    star.routeZones.clear()
+    star.routeZones.addAll(getZonesForArrivalRoute(star.routeLegs))
 }
 
 /** Parse the given [data] into the route data for the inbound/outbound segment of the SID/STAR respectively, and adds it to the supplied [sidStar]'s [SidStar.routeLegs] */

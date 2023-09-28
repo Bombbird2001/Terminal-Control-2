@@ -214,7 +214,7 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
                             it.appZone.addAll(trans)
                         }
                         app.transitions[clearedTrans]?.let { trans ->
-                            it.appZone.addAll(getZonesForRoute(Route().apply {
+                            it.appZone.addAll(getZonesForArrivalRoute(Route().apply {
                                 if (trans.size > 0) add(trans[trans.size - 1])
                                 if (app.routeLegs.size > 0) add(app.routeLegs[0])
                             }))
