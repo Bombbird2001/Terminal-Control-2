@@ -1,5 +1,6 @@
 package com.bombbird.terminalcontrol2.screens.settings
 
+import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.scenes.scene2d.ui.CheckBox
 import com.badlogic.gdx.scenes.scene2d.ui.Label
 import com.badlogic.gdx.scenes.scene2d.ui.Slider
@@ -127,7 +128,10 @@ class TrafficSettings: BaseGameSettings() {
                 }
             }
             if (trafficMode != TrafficMode.NORMAL) trafficValue = trafficValueSlider.value
-            else if (prevTrafficMode == TrafficMode.FLOW_RATE) trafficValue = 1f
+            else {
+                if (prevTrafficMode == TrafficMode.FLOW_RATE) trafficValue = 6f
+                trafficValue = MathUtils.clamp(trafficValue, 4f, MAX_ARRIVALS.toFloat())
+            }
             for (airportEntry in Entries(airports)) {
                 val airport = airportEntry.value
                 val arptInfo = airport.entity[AirportInfo.mapper] ?: continue
