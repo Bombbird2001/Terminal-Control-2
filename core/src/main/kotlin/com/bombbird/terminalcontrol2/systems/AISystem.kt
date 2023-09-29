@@ -143,7 +143,7 @@ class AISystem: EntitySystem() {
                 val perf = get(AircraftInfo.mapper)?.aircraftPerf ?: return@apply
                 if (alt.altitudeFt > tkOff.accelAltFt) {
                     // Climbed past acceleration altitude, set new target IAS and remove takeoff climb component
-                    cmd.targetIasKt = min(getNextMaxSpd(clearanceAct.route)?.toInt() ?: 250, min(250, perf.maxIas.toInt())).toShort()
+                    cmd.targetIasKt = min(getNextMaxSpd(clearanceAct.route)?.toInt() ?: 250, min(250, perf.tripIas.toInt())).toShort()
                     clearanceAct.clearedIas = cmd.targetIasKt
                     remove<TakeoffClimb>()
                     this += LatestClearanceChanged()

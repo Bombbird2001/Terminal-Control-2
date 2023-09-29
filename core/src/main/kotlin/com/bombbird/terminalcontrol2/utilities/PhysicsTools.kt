@@ -12,7 +12,8 @@ import com.bombbird.terminalcontrol2.navigation.getFirstWaypointLegInSector
 import ktx.ashley.get
 import kotlin.math.*
 
-/** PHYSICSSSSSSSSSSSSSSSSSSSSSSS
+/**
+ * PHYSICSSSSSSSSSSSSSSSSSSSSSSS
  *
  * Note that for all calculations that involve atmospheric conditions, the atmosphere will be assumed to follow ISA
  * conditions; this is to prevent me from going crazy

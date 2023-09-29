@@ -165,7 +165,7 @@ fun getMinMaxOptimalIAS(entity: Entity): Triple<Short, Short, Short> {
     }
     val optimalSpd: Short = MathUtils.clamp(when {
         takingOff -> perf.climbOutSpeed
-        below10000ft -> min(250, perf.maxIas.toInt()).toShort()
+        below10000ft -> min(250, perf.tripIas.toInt()).toShort()
         between10000ftAndCrossover -> perf.tripIas
         aboveCrossover -> calculateIASFromMach(altitude.altitudeFt, perf.tripMach).roundToInt().toShort()
         else -> 240
