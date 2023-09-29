@@ -648,7 +648,7 @@ class AISystem: EntitySystem() {
                         val arptMetar = GAME.gameServer?.airports?.get(appInfo.airportId)?.entity?.get(MetarInfo.mapper)
                         if (arptMetar != null && mins != null &&
                             ((arptMetar.visibilityM < mins.rvrM) ||
-                            (arptMetar.ceilingHundredFtAGL ?: Short.MAX_VALUE) * 100 < mins.baroAltFt)) return@apply initiateGoAround(this)
+                            (arptMetar.ceilingHundredFtAGL ?: Short.MAX_VALUE) * 100 < mins.baroAltFt)) return@apply initiateGoAround(this, RecentGoAround.RWY_NOT_IN_SIGHT)
                         circleApp.phase = 1
                     }
                     1 -> {
@@ -719,12 +719,13 @@ class AISystem: EntitySystem() {
                 // Check RVR requirement - 100m leeway
                 val rvrRequired = ((visParentApp ?: appLat)[Minimums.mapper]?.rvrM ?: 100) - 100
                 if (pxToM(distFromRwyPx) < rvrRequired) {
-                    if (arptMetar.visibilityM < rvrRequired) return@apply initiateGoAround(this)
+                    if (arptMetar.visibilityM < rvrRequired) return@apply initiateGoAround(this, RecentGoAround.RWY_NOT_IN_SIGHT)
                 }
 
                 // Check decision altitude/height requirement
                 val decisionAlt = (visParentApp ?: appVert)[Minimums.mapper]?.baroAltFt ?: 0
-                if (alt.altitudeFt < decisionAlt && (arptMetar.ceilingHundredFtAGL ?: Short.MAX_VALUE) * 100 < decisionAlt) return@apply initiateGoAround(this)
+                if (alt.altitudeFt < decisionAlt && (arptMetar.ceilingHundredFtAGL ?: Short.MAX_VALUE) * 100 < decisionAlt)
+                    return@apply initiateGoAround(this, RecentGoAround.RWY_NOT_IN_SIGHT)
 
                 // Check distance
                 // For visual approach, check for stabilized approach by 1.2nm from threshold
@@ -737,7 +738,7 @@ class AISystem: EntitySystem() {
                 // For approach with glide slope, check speed not more than 20 knots above approach speed
                 val maxAllowableIas = perf.appSpd + (if (gsApp != null) 20 else 10)
                 if (ias.iasKt > maxAllowableIas) {
-                    return@apply initiateGoAround(this)
+                    return@apply initiateGoAround(this, RecentGoAround.TOO_FAST)
                 }
 
                 // Check altitude
@@ -755,7 +756,7 @@ class AISystem: EntitySystem() {
                     (getAppAltAtPos(appVert, pos.x, pos.y, 0f) ?: return@apply) + 200
                 }
                 if (alt.altitudeFt > maxAllowableAlt) {
-                    return@apply initiateGoAround(this)
+                    return@apply initiateGoAround(this, RecentGoAround.TOO_HIGH)
                 }
 
                 // Check position; only when aircraft is still more than 0.5nm from runway threshold
@@ -767,20 +768,20 @@ class AISystem: EntitySystem() {
                 val appTrack = convertWorldAndRenderDeg(appLat[Direction.mapper]?.trackUnitVector?.angleDeg() ?: return@apply) + 180
                 val deviation = abs(findDeltaHeading(trackToRwy, appTrack, CommandTarget.TURN_DEFAULT))
                 if (pxToNm(distFromRwyPx) > 0.5f && deviation > maxAllowableDeviation) {
-                    return@apply initiateGoAround(this)
+                    return@apply initiateGoAround(this, RecentGoAround.UNSTABLE)
                 }
 
                 // Check wind
                 // For all approaches, runway tailwind should be maximum 15 knots, crosswind should be maximum 25 knots
                 rwyObj[RunwayWindComponents.mapper]?.let {
-                    if (it.tailwindKt > 15 || it.crosswindKt > 25) return@apply initiateGoAround(this)
+                    if (it.tailwindKt > 15 || it.crosswindKt > 25) return@apply initiateGoAround(this, RecentGoAround.STRONG_TAILWIND)
                 }
 
                 // Check runway occupancy
                 // For all approaches, go around if runway is still occupied by the time aircraft reaches 150 feet AGL
                 val rwyAlt = rwyObj[Altitude.mapper]?.altitudeFt
                 if (rwyAlt != null && rwyObj.has(RunwayOccupied.mapper) && alt.altitudeFt < rwyAlt + 150) {
-                    return@apply initiateGoAround(this)
+                    return@apply initiateGoAround(this, RecentGoAround.RWY_NOT_CLEAR)
                 }
 
                 // Check opposite runway aircraft departure
@@ -789,14 +790,14 @@ class AISystem: EntitySystem() {
                 if (pxToNm(distFromRwyPx) < 7) {
                     rwyObj[OppositeRunway.mapper]?.oppRwy?.get(RunwayPreviousDeparture.mapper)?.let {
                         if (it.timeSinceDepartureS < 135) {
-                            return@apply initiateGoAround(this)
+                            return@apply initiateGoAround(this, RecentGoAround.TRAFFIC_TOO_CLOSE)
                         }
                     }
                     rwyObj[DependentOppositeRunway.mapper]?.depOppRwys?.let { depOppRwys ->
                         for (j in 0 until depOppRwys.size) {
                             depOppRwys[j][RunwayPreviousDeparture.mapper]?.let {
                                 if (it.timeSinceDepartureS < 135) {
-                                    return@apply initiateGoAround(this)
+                                    return@apply initiateGoAround(this, RecentGoAround.TRAFFIC_TOO_CLOSE)
                                 }
                             }
                         }
@@ -1119,8 +1120,9 @@ class AISystem: EntitySystem() {
     /**
      * Initiates a go around for the input aircraft entity
      * @param entity the aircraft entity
+     * @param reason the reason for the go around
      */
-    private fun initiateGoAround(entity: Entity) {
+    private fun initiateGoAround(entity: Entity, reason: Byte) {
         entity.apply {
             // Remove all approach components
             removeAllApproachComponents(entity)
@@ -1153,8 +1155,8 @@ class AISystem: EntitySystem() {
             val arptAltitude = GAME.gameServer?.airports?.get(get(ArrivalAirport.mapper)?.arptId)?.entity?.get(Altitude.mapper)?.altitudeFt?.roundToInt() ?: 0
             entity += ContactFromTower(arptAltitude + MathUtils.random(600, 1100))
 
-            // Add the go around flag
-            entity += RecentGoAround()
+            // Add the go around flag with reason
+            entity += RecentGoAround(reason = reason)
         }
     }
 }

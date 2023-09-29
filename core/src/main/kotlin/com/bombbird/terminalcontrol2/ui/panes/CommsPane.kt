@@ -209,6 +209,7 @@ class CommsPane {
         val flightType = aircraft[FlightType.mapper] ?: return
         val acInfo = aircraft[AircraftInfo.mapper] ?: return
         val clearanceState = aircraft[ClearanceAct.mapper]?.actingClearance?.clearanceState ?: return
+        val goAroundReasonStr = getGoAroundReason(aircraft[RecentGoAround.mapper]?.reason)
         val alt = aircraft[Altitude.mapper] ?: return
 
         // Get the callsign of the player
@@ -237,7 +238,7 @@ class CommsPane {
 
         val sentence = TokenSentence().addTokens(LiteralToken(yourCallsign), LiteralToken("hello")).addComma()
             .addTokens(CallsignToken(acInfo.icaoCallsign), LiteralToken(aircraftWake)).addComma()
-            .addToken(LiteralToken("missed approach")).addComma().addTokens(*altitudeAction).addComma()
+            .addToken(LiteralToken("missed approach$goAroundReasonStr")).addComma().addTokens(*altitudeAction).addComma()
             .addTokens(*lateralClearance)
 
         addMessage(sentence.toTextSentence(), ARRIVAL)
@@ -253,6 +254,7 @@ class CommsPane {
         val acInfo = aircraft[AircraftInfo.mapper] ?: return
         val clearanceState = aircraft[ClearanceAct.mapper]?.actingClearance?.clearanceState ?: return
         val alt = aircraft[Altitude.mapper] ?: return
+        val goAroundReasonStr = getGoAroundReason(aircraft[RecentGoAround.mapper]?.reason)
 
         // Get the wake category of the aircraft
         val aircraftWake = getWakePhraseology(acInfo.aircraftPerf.wakeCategory)
@@ -264,7 +266,7 @@ class CommsPane {
         val lateralClearance = clearanceState.vectorHdg?.let { hdg -> arrayOf(LiteralToken("heading"), HeadingToken(hdg)) } ?: arrayOf()
 
         val sentence = TokenSentence().addTokens(CallsignToken(acInfo.icaoCallsign), LiteralToken(aircraftWake))
-            .addComma().addToken(LiteralToken("missed approach")).addComma().addTokens(*altitudeAction)
+            .addComma().addToken(LiteralToken("missed approach$goAroundReasonStr")).addComma().addTokens(*altitudeAction)
             .addComma().addTokens(*lateralClearance)
 
         addMessage(sentence.toTextSentence(), ARRIVAL)
@@ -428,6 +430,29 @@ class CommsPane {
             else -> {
                 FileLog.info("CommsPane", "Unknown flight type $flightType")
                 OTHERS
+            }
+        }
+    }
+
+    /**
+     * Gets the appropriate go-around reason string for the input reason
+     * @param reason the reason for the go-around
+     * @return the string denoting the reason for the go-around
+     */
+    private fun getGoAroundReason(reason: Byte?): String {
+        return when (reason) {
+            RecentGoAround.RWY_NOT_IN_SIGHT -> ", runway not in sight"
+            RecentGoAround.RWY_NOT_CLEAR -> ", runway not clear"
+            RecentGoAround.TOO_HIGH -> " due to being too high"
+            RecentGoAround.TOO_FAST -> " due to being too fast"
+            RecentGoAround.UNSTABLE -> ", unstable approach"
+            RecentGoAround.TRAFFIC_TOO_CLOSE -> ", traffic too close"
+            RecentGoAround.STRONG_TAILWIND -> " due to strong tailwind"
+            RecentGoAround.RWY_CLOSED -> " due to runway closed"
+            RecentGoAround.WINDSHEAR -> " due to windshear"
+            else -> {
+                FileLog.warn("CommsPane", "Unknown go-around reason $reason")
+                ""
             }
         }
     }
