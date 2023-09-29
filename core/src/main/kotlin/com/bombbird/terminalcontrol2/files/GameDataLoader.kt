@@ -94,14 +94,15 @@ fun loadAircraftData() {
             val maxCdRefArea = lineData[7].toFloat()
             val maxIas = lineData[8].toShort()
             val maxMach = lineData[9].toFloat()
-            val typAppSpd = lineData[10].toShort()
-            val typVr = lineData[11].toShort()
-            val oew = lineData[12].toInt()
-            val mtow = lineData[13].toInt()
+            val svcCeil = lineData[10].toInt()
+            val typAppSpd = lineData[11].toShort()
+            val typVr = lineData[12].toShort()
+            val oew = lineData[13].toInt()
+            val mtow = lineData[14].toInt()
             AircraftTypeData.addAircraftPerf(type, AircraftTypeData.AircraftPerfData(wakeCat, recat,
                 jetThrust, propPower, propArea,
                 minCd0RefArea, maxCdRefArea,
-                maxIas, maxMach, typAppSpd, (typVr - 10).toShort(), // Values given in file is V2, estimate -10 knots for Vr
+                maxIas, maxMach, svcCeil, typAppSpd, (typVr - 10).toShort(), // Values given in file is V2, estimate -10 knots for Vr
                 oew, mtow))
         }
     }

@@ -314,7 +314,7 @@ fun calculateRequiredAcceleration(initialSpdKt: Short, targetSpdKt: Short, dista
 }
 
 /**
- * Calculates the maximum achievable vertical speed (i.e. maximum descent rate), in feet per minute, given the
+ * Calculates the maximum achievable vertical speed (i.e. maximum climb rate), in feet per minute, given the
  * [aircraftPerfData], [altitudeFt], [tasKt] and [accMps2] of the plane and whether it is on approach or expediting ([approachExpedite])
  * @param aircraftPerfData the aircraft performance data of the aircraft
  * @param altitudeFt the altitude, in feet, the aircraft is flying at
@@ -365,14 +365,17 @@ fun calculateVerticalSpd(netForceN: Float, tasKt: Float, accMps2: Float, massKg:
  * Calculate the maximum attainable flight level altitude for the input aircraft performance data
  * @param aircraftPerfData the aircraft performance data
  * @return the maximum attainable altitude, in feet rounded down to the closest flight level, that the aircraft can sustain
- * at least 1000 feet per minute of climb
+ * at least 1000 (500 for turboprops/propellers) feet per minute of climb
  */
 fun calculateMaxAlt(aircraftPerfData: AircraftTypeData.AircraftPerfData): Int {
     val crossOverAlt = calculateCrossoverAltitude(aircraftPerfData.tripIas, aircraftPerfData.tripMach)
-    for (i in 45 downTo 8) {
+    val minClimbRateAtCruiseAlt = if (aircraftPerfData.propPowerWSLISA == null) 1000 else 500
+    for (i in aircraftPerfData.serviceCeiling / 1000 downTo 8) {
         val alt = i * 1000f
         val iasToUse = if (alt > crossOverAlt) calculateIASFromMach(alt, aircraftPerfData.tripMach) else aircraftPerfData.tripIas.toFloat()
-        if (calculateMaxVerticalSpd(aircraftPerfData, alt, calculateTASFromIAS(alt, iasToUse), 0f, approachExpedite = false, takingOff = false, takeoffClimb = false) > 1000) return alt.roundToInt()
+        if (calculateMaxVerticalSpd(aircraftPerfData, alt, calculateTASFromIAS(alt, iasToUse), 0f,
+                approachExpedite = false, takingOff = false, takeoffClimb = false) > minClimbRateAtCruiseAlt)
+            return alt.roundToInt()
     }
     return 8000
 }

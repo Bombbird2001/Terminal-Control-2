@@ -57,7 +57,7 @@ object DataFileTest: FunSpec() {
             }.toList()
             withData(allAircraft) {
                 val acData = it.split(" ")
-                acData.size shouldBe 14
+                acData.size shouldBe 15
                 acData[0].length shouldBe 4
                 acData[1] shouldBeIn WAKE_CATS
                 acData[2] shouldBeIn RECAT_CATS
@@ -69,10 +69,11 @@ object DataFileTest: FunSpec() {
                     acData[7].toFloat()
                     acData[8].toShort() shouldBeLessThan 390
                     acData[9].toFloat() shouldBeLessThan 1f
-                    acData[10].toShort() shouldBeLessThan 200
+                    acData[10].toInt() shouldBeInRange 10000..60000
                     acData[11].toShort() shouldBeLessThan 200
-                    acData[12].toInt()
+                    acData[12].toShort() shouldBeLessThan 200
                     acData[13].toInt()
+                    acData[14].toInt()
                 } catch (e: NumberFormatException) {
                     e.stackTraceToString().shouldBeNull()
                 }

@@ -165,6 +165,22 @@ object PhysicsToolsTest: FunSpec() {
                 vR = 170
             }
             calculateMaxAlt(aircraftPerfData) shouldBe 34000
+
+            calculateMaxAlt(AircraftTypeData.AircraftPerfData(AircraftTypeData.AircraftPerfData.WAKE_LIGHT,
+                AircraftTypeData.AircraftPerfData.RECAT_E, null, 4102000, 24.26f,
+                0.4575f, 6.1f, 200, 0.465f, 25000, 116, 113, 13450, 23000).apply {
+                massKg = 13450
+                tripMach = 0.43f
+                tripIas = 190
+            }) shouldBe 25000
+
+            calculateMaxAlt(AircraftTypeData.AircraftPerfData(AircraftTypeData.AircraftPerfData.WAKE_LIGHT,
+                AircraftTypeData.AircraftPerfData.RECAT_E, null, 4102000, 24.26f,
+                0.4575f, 6.1f, 200, 0.465f, 25000, 116, 113, 13450, 23000).apply {
+                massKg = 23000
+                tripMach = 0.43f
+                tripIas = 190
+            }) shouldBe 22000
         }
 
         test("Gradient calculations") {

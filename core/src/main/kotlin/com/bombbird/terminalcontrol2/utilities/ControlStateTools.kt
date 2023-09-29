@@ -129,7 +129,7 @@ fun getMinMaxOptimalIAS(entity: Entity): Triple<Short, Short, Short> {
         below10000ft -> min(250, perf.maxIas.toInt()).toShort()
         between10000ftAndCrossover -> perf.maxIas
         aboveCrossover -> calculateIASFromMach(altitude.altitudeFt, perf.maxMach).roundToInt().toShort()
-        else -> 250
+        else -> min(250, perf.maxIas.toInt()).toShort()
     }
     val nextRouteMaxSpd = getNextMaxSpd(actingClearance.route)
     // SID/STAR enforced max speeds

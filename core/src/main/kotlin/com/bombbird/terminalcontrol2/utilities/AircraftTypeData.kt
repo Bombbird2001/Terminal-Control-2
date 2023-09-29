@@ -85,6 +85,7 @@ object AircraftTypeData {
                            val thrustNSLISA: Int? = 1026000, val propPowerWSLISA: Int? = null, val propArea: Float? = null,
                            val minCd0TimesRefArea: Float = 6.552f, val maxCdTimesRefArea: Float = 41.496f,
                            val maxIas: Short = 340, val maxMach: Float = 0.89f,
+                           @Json(ignore = true) val serviceCeiling: Int = 43100,
                            @Json(ignore = true) private val typApp: Short = 149,
                            @Json(ignore = true) private val typVr: Short = 158,
                            @Json(ignore = true) private val operatingEmptyWeightKg: Int = 167829,
@@ -138,7 +139,7 @@ object AircraftTypeData {
         fun newInstance(flightType: Byte): AircraftPerfData {
             return AircraftPerfData(wakeCategory, recat,
                 thrustNSLISA, propPowerWSLISA, propArea,
-                minCd0TimesRefArea, maxCdTimesRefArea, maxIas, maxMach, typApp, typVr,
+                minCd0TimesRefArea, maxCdTimesRefArea, maxIas, maxMach, serviceCeiling, typApp, typVr,
                 operatingEmptyWeightKg, maxTakeoffWeightKg, flightType)
         }
     }
