@@ -20,15 +20,16 @@ class MenuNotificationManager(private val stage: Stage) {
                     " issues. Please report them by emailing bombbirddev@gmail.com, or by clicking the \"Report Bug\"" +
                     " button in the Pause screen or info menu. Please include as much information as possible," +
                     " including the build version (in info menu), expected behaviour and steps to reproduce the bug." +
-                    " Screenshots and video recordings are very helpful too.\n\nCurrently, there are 3 default airports" +
+                    " Screenshots and video recordings are very helpful too.\n\nCurrently, there are 4 default airports" +
                     " for testing, and more will be added as testing goes on. We hope you will enjoy the new" +
                     " multiplayer functionality, have fun!", 800, 1800)
         )
         add(
-            MenuNotification("tctt-added", "New airport available!", "TCTT has been added to the" +
-                    " game. Custom datatag layouts have also been enabled: Settings => Datatag => Datatag style. As" +
-                    " always, please report bugs encountered by clicking the \"Report Bug\" button in the Pause" +
-                    " screen, or from the info menu. We hope you will enjoy the new map, have fun!", 600, 1400)
+            MenuNotification("tcbb-added", "New airport available!", "TCBB has been added to the" +
+                    " game. The issue causing the occasional rendering bug on game load has been identified and fixed," +
+                    " along with a few other bug fixes. As always, please report bugs encountered by clicking the" +
+                    " \"Report Bug\" button in the Pause screen, or from the info menu. We hope you will enjoy the new" +
+                    " map, have fun!", 600, 1400)
         )
     }
 
