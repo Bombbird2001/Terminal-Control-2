@@ -9,6 +9,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle
 import com.badlogic.gdx.utils.Timer
 import com.badlogic.gdx.utils.Timer.Task
 import com.bombbird.terminalcontrol2.components.*
+import com.bombbird.terminalcontrol2.entities.Airport
 import com.bombbird.terminalcontrol2.entities.SectorContactable
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.Route
@@ -19,6 +20,8 @@ import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.get
 import ktx.scene2d.*
 import java.time.LocalTime
+import kotlin.math.roundToInt
+import kotlin.math.sqrt
 
 /** Communications pane class to display all "communications" between player and aircraft */
 class CommsPane {
@@ -391,6 +394,125 @@ class CommsPane {
         if (type == EmergencyPending.PRESSURE_LOSS) sentence.addToken(LiteralToken("performing emergency descent to 10000 feet")).addComma()
 
         sentence.addToken(LiteralToken(if (MathUtils.randomBoolean()) "requesting return to airport" else "we would like to return to the airport"))
+
+        addMessage(sentence.toTextSentence(), WARNING)
+    }
+
+    /**
+     * Adds a message sent by the aircraft when nearing completion of
+     * emergency checklists, as well as whether a fuel dump is needed
+     * @param aircraft the aircraft declaring an emergency
+     * @param needsFuelDump whether the aircraft needs to dump fuel
+     */
+    fun checklistNearingDone(aircraft: Entity, needsFuelDump: Boolean) {
+        val acInfo = aircraft[AircraftInfo.mapper] ?: return
+
+        // Get the wake category of the aircraft
+        val aircraftWake = getWakePhraseology(acInfo.aircraftPerf.wakeCategory)
+
+        val sentence = TokenSentence().addTokens(CallsignToken(acInfo.icaoCallsign), LiteralToken(aircraftWake))
+            .addComma().addToken(LiteralToken(
+                if (MathUtils.randomBoolean()) "we're almost done with checklists"
+                else "we need a few more minutes to run checklists"))
+
+        if (needsFuelDump) sentence.addComma().addToken(LiteralToken(
+            if (MathUtils.randomBoolean()) "we need to dump fuel after"
+            else "we also require fuel dumping"
+        ))
+
+        addMessage(sentence.toTextSentence(), WARNING)
+    }
+
+    /**
+     * Adds a message sent by the aircraft to notify of its fuel dumping status
+     * @param aircraft the aircraft declaring an emergency
+     * @param dumpEnding whether the aircraft is ending fuel dumping, else it has
+     * just started fuel dumping
+     */
+    fun fuelDumpStatus(aircraft: Entity, dumpEnding: Boolean) {
+        val acInfo = aircraft[AircraftInfo.mapper] ?: return
+
+        // Get the wake category of the aircraft
+        val aircraftWake = getWakePhraseology(acInfo.aircraftPerf.wakeCategory)
+
+        val sentence = TokenSentence().addTokens(CallsignToken(acInfo.icaoCallsign), LiteralToken(aircraftWake))
+            .addComma().addToken(LiteralToken(
+                if (dumpEnding) {
+                    if (MathUtils.randomBoolean()) "we will need a few more minutes for fuel dumping"
+                    else "we are almost done with dumping fuel"
+                }
+                else {
+                    if (MathUtils.randomBoolean()) "we are dumping fuel"
+                    else "we're dumping fuel now"
+                }
+            ))
+
+        addMessage(sentence.toTextSentence(), WARNING)
+
+        if (!dumpEnding) {
+            // Add ATC fuel dump broadcast
+            // Get the closest airport to aircraft
+            val aircraftPos = aircraft[Position.mapper] ?: return
+            val aircraftAlt = aircraft[Altitude.mapper] ?: return
+            var closestAirport: Airport? = null
+            var closestDistPxSq = -1f
+            CLIENT_SCREEN?.airports?.also {
+                for (i in 0 until it.size) it.getValueAt(i).let { arpt ->
+                    val pos = arpt.entity[Position.mapper] ?: return@let
+                    val deltaX = pos.x - aircraftPos.x
+                    val deltaY = pos.y - aircraftPos.y
+                    val radiusSq = deltaX * deltaX + deltaY * deltaY
+                    if (closestAirport == null || radiusSq < closestDistPxSq) {
+                        closestAirport = arpt
+                        closestDistPxSq = radiusSq
+                    }
+                }
+            }
+
+            val finalAirportPos = closestAirport?.entity?.get(Position.mapper) ?: return
+            val airportName = closestAirport?.entity?.get(AirportInfo.mapper)?.name ?: return
+
+            val trackDir = getRequiredTrack(finalAirportPos.x, finalAirportPos.y, aircraftPos.x, aircraftPos.y)
+            val directionString = when {
+                330 <= trackDir || trackDir <= 30 -> "north"
+                withinRange(trackDir, 30f, 60f) -> "north-east"
+                withinRange(trackDir, 60f, 120f) -> "east"
+                withinRange(trackDir, 120f, 150f) -> "south-east"
+                withinRange(trackDir, 150f, 210f) -> "south"
+                withinRange(trackDir, 210f, 240f) -> "south-west"
+                withinRange(trackDir, 240f, 300f) -> "west"
+                withinRange(trackDir, 300f, 330f) -> "north-west"
+                else -> "unknown direction"
+            }
+
+            val sentence2 = TokenSentence().addTokens(LiteralToken("Attention all aircraft, fuel dumping in progress"),
+                LiteralToken(splitCharacterToNatoPhonetic(sqrt(closestDistPxSq.toDouble()).roundToInt().toString())),
+                LiteralToken("miles"), LiteralToken(directionString), LiteralToken("of"), LiteralToken(airportName))
+                .addComma().addToken(AltitudeToken(aircraftAlt.altitudeFt))
+
+            addMessage(sentence2.toTextSentence(), OTHERS)
+        }
+    }
+
+    /**
+     * Adds a message sent by the aircraft when it is ready for approach, and
+     * may need to remain on the runway after landing
+     * @param aircraft the aircraft declaring an emergency
+     * @param immobilizeOnLanding whether the aircraft needs to remain on the runway after landing
+     */
+    fun readyForApproach(aircraft: Entity, immobilizeOnLanding: Boolean) {
+        val acInfo = aircraft[AircraftInfo.mapper] ?: return
+
+        // Get the wake category of the aircraft
+        val aircraftWake = getWakePhraseology(acInfo.aircraftPerf.wakeCategory)
+
+        val sentence = TokenSentence().addTokens(CallsignToken(acInfo.icaoCallsign), LiteralToken(aircraftWake),
+            LiteralToken("is ready for approach"))
+
+        if (immobilizeOnLanding) sentence.addComma().addToken(LiteralToken(
+            if (MathUtils.randomBoolean()) "we are unable to taxi off the runway after landing"
+            else "we need to remain on the runway after landing"
+        ))
 
         addMessage(sentence.toTextSentence(), WARNING)
     }

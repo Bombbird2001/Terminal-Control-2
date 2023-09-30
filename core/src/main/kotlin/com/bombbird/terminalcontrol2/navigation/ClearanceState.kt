@@ -227,6 +227,16 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
         }
     }
 
+    /** Inactivates any altitude and speed restrictions on the current route */
+    fun deactivateAllRouteRestrictions() {
+        for (i in 0 until route.size) {
+            (route[i] as? Route.WaypointLeg)?.let {
+                it.altRestrActive = false
+                it.spdRestrActive = false
+            }
+        }
+    }
+
     /**
      * Clearance class that also contains a [timeLeft] value that keeps track of the time remaining before the [clearanceState]
      * should be executed

@@ -469,3 +469,42 @@ data class EmergencyStart(val callsign: String = "", val type: Byte = -1): Clien
         }
     }
 }
+
+/**
+ * Class representing data sent from server to clients to notify the controlling
+ * player that the aircraft is nearing completion of emergency checklists, and
+ * may need a fuel dump
+ */
+data class ChecklistsNearingDone(val callsign: String = "", val needsFuelDump: Boolean = false): ClientReceive, NeedsEncryption {
+    override fun handleClientReceive(rs: RadarScreen) {
+        rs.aircraft[callsign]?.apply {
+            rs.uiPane.commsPane.checklistNearingDone(entity, needsFuelDump)
+        }
+    }
+}
+
+/**
+ * Class representing data sent from server to clients to notify the controlling
+ * player of the aircraft's fuel dumping status, either it just started or it
+ * will end soon
+ */
+data class FuelDumpStatus(val callsign: String = "", val dumpingEnding: Boolean = false): ClientReceive, NeedsEncryption {
+    override fun handleClientReceive(rs: RadarScreen) {
+        rs.aircraft[callsign]?.apply {
+            rs.uiPane.commsPane.fuelDumpStatus(entity, dumpingEnding)
+        }
+    }
+}
+
+/**
+ * Class representing data sent from server to clients to notify the controlling
+ * player that the aircraft is ready for approach, and may remain on the runway
+ * after landing
+ */
+data class ReadyForApproach(val callsign: String = "", val immobilizeOnLanding: Boolean): ClientReceive, NeedsEncryption {
+    override fun handleClientReceive(rs: RadarScreen) {
+        rs.aircraft[callsign]?.apply {
+            rs.uiPane.commsPane.readyForApproach(entity, immobilizeOnLanding)
+        }
+    }
+}

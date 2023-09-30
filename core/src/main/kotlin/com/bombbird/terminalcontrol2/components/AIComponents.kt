@@ -330,7 +330,7 @@ data class CirclingApproach(var circlingApp: Entity = Entity(), var breakoutAlt:
 
 /** Component for tagging a pending emergency (unlucky plane lol) */
 @JsonClass(generateAdapter = true)
-data class EmergencyPending(var type: Byte, var activationAlt: Int): Component, BaseComponentJSONInterface {
+data class EmergencyPending(var active: Boolean, var type: Byte, var activationAlt: Int): Component, BaseComponentJSONInterface {
     override val componentType: BaseComponentJSONInterface.ComponentType = BaseComponentJSONInterface.ComponentType.EMERGENCY_PENDING
 
     companion object {
@@ -349,7 +349,8 @@ data class EmergencyPending(var type: Byte, var activationAlt: Int): Component, 
 
 /** Component for tagging aircraft with active emergency running checklists */
 @JsonClass(generateAdapter = true)
-data class RunningChecklists(var timeLeft: Float, var informedNearingDone: Boolean): Component, BaseComponentJSONInterface {
+data class RunningChecklists(var timeLeft: Float, var timeLeftToInformNearDone: Float,
+                             var informedNearingDone: Boolean): Component, BaseComponentJSONInterface {
     override val componentType: BaseComponentJSONInterface.ComponentType = BaseComponentJSONInterface.ComponentType.RUNNING_CHECKLISTS
 
     companion object {
@@ -362,10 +363,16 @@ data class RunningChecklists(var timeLeft: Float, var informedNearingDone: Boole
 /** Component for tagging aircraft who require fuel dumping */
 @JsonClass(generateAdapter = true)
 data class RequiresFuelDump(var active: Boolean, var timeLeft: Float, var timeLeftToInformStart: Float,
-                            var informedDumpStarted: Boolean, var informedNearingDone: Boolean): Component, BaseComponentJSONInterface {
+                            var timeLeftToInformNearDone: Float, var informedDumpStarted: Boolean,
+                            var informedNearingDone: Boolean): Component, BaseComponentJSONInterface {
     override val componentType: BaseComponentJSONInterface.ComponentType = BaseComponentJSONInterface.ComponentType.REQUIRES_FUEL_DUMP
 
     companion object {
+        val canDumpFuel = arrayOf("A332", "A333", "A339", "A342", "A343", "A345",
+            "A346", "A359", "A35K", "A388", "B742", "B743", "B744", "B748",
+            "B762", "B763", "B764", "B772", "B77L", "B773", "B77W", "B788",
+            "B789", "B78X", "MD11")
+
         val mapper = object: Mapper<RequiresFuelDump>() {}.mapper
 
         fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
@@ -374,11 +381,11 @@ data class RequiresFuelDump(var active: Boolean, var timeLeft: Float, var timeLe
 
 /** Component for tagging emergency aircraft who will stay on the runway upon landing */
 @JsonClass(generateAdapter = true)
-data class ImmobilzeOnLanding(var timeLeft: Float): Component, BaseComponentJSONInterface {
+data class ImmobilizeOnLanding(var timeLeft: Float): Component, BaseComponentJSONInterface {
     override val componentType: BaseComponentJSONInterface.ComponentType = BaseComponentJSONInterface.ComponentType.IMMOBILIZE_ON_LANDING
 
     companion object {
-        val mapper = object: Mapper<ImmobilzeOnLanding>() {}.mapper
+        val mapper = object: Mapper<ImmobilizeOnLanding>() {}.mapper
 
         fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }

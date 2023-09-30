@@ -929,6 +929,38 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
     }
 
     /**
+     * Sends a message to clients to inform them that an aircraft is nearing completion
+     * of emergency checklists, and may require a fuel dump
+     * @param callsign the callsign of the aircraft
+     * @param needsFuelDump whether the aircraft needs a fuel dump
+     */
+    fun sendAircraftChecklistsNearingDone(callsign: String, needsFuelDump: Boolean) {
+        networkServer.sendToAllTCP(ChecklistsNearingDone(callsign, needsFuelDump))
+    }
+
+    /**
+     * Sends a message to clients to inform them of the aircraft's fuel dumping
+     * status
+     * @param callsign the callsign of the aircraft
+     * @param dumpEnding whether the aircraft is ending the fuel dump, else it has
+     * just started
+     */
+    fun sendAircraftFuelDumpStatus(callsign: String, dumpEnding: Boolean) {
+        networkServer.sendToAllTCP(FuelDumpStatus(callsign, dumpEnding))
+    }
+
+    /**
+     * Sends a message to clients to inform them that an aircraft has completed
+     * emergency checklists and is ready for approach, and may need to remain on
+     * the runway after landing
+     * @param callsign the callsign of the aircraft
+     * @param immobilizeOnLanding whether the aircraft needs to remain on the runway after landing
+     */
+    fun sendAircraftReadyForApproach(callsign: String, immobilizeOnLanding: Boolean) {
+        networkServer.sendToAllTCP(ReadyForApproach(callsign, immobilizeOnLanding))
+    }
+
+    /**
      * Adds a runnable to be run on the main server thread after the current engine update
      * @param runnable the runnable to add
      */
