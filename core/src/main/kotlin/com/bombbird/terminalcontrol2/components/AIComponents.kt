@@ -326,3 +326,61 @@ data class CirclingApproach(var circlingApp: Entity = Entity(), var breakoutAlt:
         fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
+
+
+/** Component for tagging a pending emergency (unlucky plane lol) */
+@JsonClass(generateAdapter = true)
+data class EmergencyPending(var type: Byte, var activationAlt: Int): Component, BaseComponentJSONInterface {
+    override val componentType: BaseComponentJSONInterface.ComponentType = BaseComponentJSONInterface.ComponentType.EMERGENCY_PENDING
+
+    companion object {
+        const val BIRD_STRIKE: Byte = 0
+        const val ENGINE_FAIL: Byte = 1
+        const val HYDRAULIC_FAIL: Byte = 2
+        const val FUEL_LEAK: Byte = 3
+        const val MEDICAL: Byte = 4
+        const val PRESSURE_LOSS: Byte = 5
+
+        val mapper = object: Mapper<EmergencyPending>() {}.mapper
+
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
+    }
+}
+
+/** Component for tagging aircraft with active emergency running checklists */
+@JsonClass(generateAdapter = true)
+data class RunningChecklists(var timeLeft: Float, var informedNearingDone: Boolean): Component, BaseComponentJSONInterface {
+    override val componentType: BaseComponentJSONInterface.ComponentType = BaseComponentJSONInterface.ComponentType.RUNNING_CHECKLISTS
+
+    companion object {
+        val mapper = object: Mapper<RunningChecklists>() {}.mapper
+
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
+    }
+}
+
+/** Component for tagging aircraft who require fuel dumping */
+@JsonClass(generateAdapter = true)
+data class RequiresFuelDump(var active: Boolean, var timeLeft: Float, var timeLeftToInformStart: Float,
+                            var informedDumpStarted: Boolean, var informedNearingDone: Boolean): Component, BaseComponentJSONInterface {
+    override val componentType: BaseComponentJSONInterface.ComponentType = BaseComponentJSONInterface.ComponentType.REQUIRES_FUEL_DUMP
+
+    companion object {
+        val mapper = object: Mapper<RequiresFuelDump>() {}.mapper
+
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
+    }
+}
+
+/** Component for tagging emergency aircraft who will stay on the runway upon landing */
+@JsonClass(generateAdapter = true)
+data class ImmobilzeOnLanding(var timeLeft: Float): Component, BaseComponentJSONInterface {
+    override val componentType: BaseComponentJSONInterface.ComponentType = BaseComponentJSONInterface.ComponentType.IMMOBILIZE_ON_LANDING
+
+    companion object {
+        val mapper = object: Mapper<ImmobilzeOnLanding>() {}.mapper
+
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
+    }
+}
+

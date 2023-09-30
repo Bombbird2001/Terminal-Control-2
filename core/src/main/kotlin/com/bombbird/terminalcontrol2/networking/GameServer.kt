@@ -920,6 +920,15 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
     }
 
     /**
+     * Sends a message to clients to inform them that an aircraft has declared an emergency
+     * @param callsign the callsign of the aircraft
+     * @param emergencyType the type of emergency declared
+     */
+    fun sendAircraftDeclareEmergency(callsign: String, emergencyType: Byte) {
+        networkServer.sendToAllTCP(EmergencyStart(callsign, emergencyType))
+    }
+
+    /**
      * Adds a runnable to be run on the main server thread after the current engine update
      * @param runnable the runnable to add
      */

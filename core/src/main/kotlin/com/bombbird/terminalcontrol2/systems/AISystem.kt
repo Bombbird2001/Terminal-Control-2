@@ -59,6 +59,8 @@ class AISystem: EntitySystem() {
             .oneOf(VisualCaptured::class, GlideSlopeCaptured::class).get()
         private val actingClearanceChangedFamily: Family = allOf(CommandTarget::class, ClearanceActChanged::class, ClearanceAct::class).get()
         private val expediteFamily: Family = allOf(CommandExpedite::class, CommandTarget::class, Altitude::class).get()
+        private val pendingEmergencyFamily: Family = allOf(EmergencyPending::class, Altitude::class, AircraftInfo::class).get()
+        private val runningChecklistFamily: Family = allOf(RunningChecklists::class, AircraftInfo::class).get()
 
         fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
@@ -87,6 +89,8 @@ class AISystem: EntitySystem() {
     private val checkTouchdownFamilyEntities = FamilyWithListener.newServerFamilyWithListener(checkTouchdownFamily)
     private val actingClearanceChangedFamilyEntities = FamilyWithListener.newServerFamilyWithListener(actingClearanceChangedFamily)
     private val expediteFamilyEntities = FamilyWithListener.newServerFamilyWithListener(expediteFamily)
+    private val pendingEmergencyFamilyEntities = FamilyWithListener.newServerFamilyWithListener(pendingEmergencyFamily)
+    private val runningChecklistFamilyEntities = FamilyWithListener.newServerFamilyWithListener(runningChecklistFamily)
 
     /** Main update function */
     override fun update(deltaTime: Float) {
@@ -850,6 +854,21 @@ class AISystem: EntitySystem() {
                 if (abs(alt.altitudeFt - cmd.targetAltFt) < 500) remove<CommandExpedite>()
             }
         }
+
+        // Update aircraft with pending emergency
+        val pendingEmergencyFamily = pendingEmergencyFamilyEntities.getEntities()
+        for (i in 0 until pendingEmergencyFamily.size()) {
+            pendingEmergencyFamily[i]?.apply {
+                val acInfo = get(AircraftInfo.mapper) ?: return@apply
+                val pendingEmer = get(EmergencyPending.mapper) ?: return@apply
+                val alt = get(Altitude.mapper) ?: return@apply
+
+                if (alt.altitudeFt < pendingEmer.activationAlt) return@apply
+
+                GAME.gameServer?.sendAircraftDeclareEmergency(acInfo.icaoCallsign, pendingEmer.type)
+                remove<EmergencyPending>()
+            }
+        }
     }
 
     /**
@@ -1158,5 +1177,20 @@ class AISystem: EntitySystem() {
             // Add the go around flag with reason
             entity += RecentGoAround(reason = reason)
         }
+    }
+
+    /**
+     * Returns the altitude the aircraft is targeting after emergency starts depending on emergency type
+     * @param currentAlt the current altitude of the aircraft
+     * @param type the type of emergency
+     * @param arptElevation the elevation of the airport the aircraft is flying from
+     */
+    private fun getClearedAltitudeAfterEmergency(currentAlt: Float, type: Byte, arptElevation: Int): Int {
+        // Minimum altitude to maintain is 2000 feet AGL
+        val minLevelOffAlt = arptElevation + 2000f
+
+        // Pressure loss means emergency descent to 10000 feet
+        if (type == EmergencyPending.PRESSURE_LOSS) return 10000
+        return ceil(max(currentAlt, minLevelOffAlt) / 1000).toInt() * 1000
     }
 }

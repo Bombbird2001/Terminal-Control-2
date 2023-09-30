@@ -153,6 +153,7 @@ class Datatag(var xOffset: Float = 0f, var yOffset: Float = 0f, var minimised: B
     val flashTimer = Timer()
     var flashing = false
     var flashingOrange = false
+    var emergency = false
     var initialPosSet = false
     var currentDatatagStyle = "DatatagGreenNoBG"
     val imgButton: ImageButton = ImageButton(Scene2DSkin.defaultSkin, "DatatagGreenNoBG")

@@ -13,10 +13,7 @@ import com.bombbird.terminalcontrol2.systems.updateAircraftRadarData
 import com.bombbird.terminalcontrol2.traffic.ConflictManager
 import com.bombbird.terminalcontrol2.traffic.TrafficMode
 import com.bombbird.terminalcontrol2.ui.*
-import com.bombbird.terminalcontrol2.ui.datatag.addDatatagInputListeners
-import com.bombbird.terminalcontrol2.ui.datatag.getNewDatatagLabelText
-import com.bombbird.terminalcontrol2.ui.datatag.setDatatagFlash
-import com.bombbird.terminalcontrol2.ui.datatag.updateDatatagText
+import com.bombbird.terminalcontrol2.ui.datatag.*
 import com.bombbird.terminalcontrol2.ui.panes.CommsPane
 import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.*
@@ -452,6 +449,23 @@ data class ClearedForTakeoffData(val callsign: String = "", val depArptId: Byte 
             entity[Datatag.mapper]?.let { addDatatagInputListeners(it, this) }
             entity.remove<WaitingTakeoff>()
             entity += DepartureAirport(depArptId, 0)
+        }
+    }
+}
+
+/**
+ * Class representing data sent from server to clients to declare an emergency for an aircraft, with the type of
+ * emergency
+ */
+data class EmergencyStart(val callsign: String = "", val type: Byte = -1): ClientReceive, NeedsEncryption {
+    override fun handleClientReceive(rs: RadarScreen) {
+        rs.aircraft[callsign]?.apply {
+            entity[FlightType.mapper]?.type = FlightType.ARRIVAL
+            entity[Datatag.mapper]?.let {
+                it.emergency = true
+                updateDatatagStyle(it, FlightType.ARRIVAL, rs.selectedAircraft == this)
+            }
+            rs.uiPane.commsPane.declareEmergency(entity, type)
         }
     }
 }

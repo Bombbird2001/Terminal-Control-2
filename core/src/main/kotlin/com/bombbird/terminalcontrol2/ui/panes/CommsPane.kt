@@ -356,8 +356,43 @@ class CommsPane {
             .addToken(LiteralToken(bye))
 
         addMessage(sentence2.toTextSentence(), getMessageTypeForAircraftType(flightType.type))
-        // println(sentence2.toTTSSentence())
-        // aircraft[TTSVoice.mapper]?.voice?.let { voice -> GAME.ttsManager.say(sentence2.toTTSSentence(), voice) }
+    }
+
+    /**
+     * Adds a message sent by the aircraft declaring an emergency
+     * @param aircraft the aircraft declaring an emergency
+     * @param type the type of emergency declared
+     */
+    fun declareEmergency(aircraft: Entity, type: Byte) {
+        val acInfo = aircraft[AircraftInfo.mapper] ?: return
+
+        // Get the wake category of the aircraft
+        val aircraftWake = getWakePhraseology(acInfo.aircraftPerf.wakeCategory)
+
+        val emergencyTypeString = when (type) {
+            EmergencyPending.BIRD_STRIKE -> if (MathUtils.randomBoolean()) "we had a bird strike" else "declaring emergency due to bird strike"
+            EmergencyPending.ENGINE_FAIL -> {
+                val side = if (MathUtils.randomBoolean()) "left" else "right"
+                if (MathUtils.randomBoolean()) "we have a $side engine failure" else "declaring emergency due to $side engine failure"
+            }
+            EmergencyPending.HYDRAULIC_FAIL -> if (MathUtils.randomBoolean()) "we have a hydraulic problem" else "declaring emergency due to hydraulic failure"
+            EmergencyPending.FUEL_LEAK -> if (MathUtils.randomBoolean()) "we have a fuel leak" else "declaring emergency due to fuel leak"
+            EmergencyPending.MEDICAL -> if (MathUtils.randomBoolean()) "we have a medical emergency" else "declaring a medical emergency"
+            EmergencyPending.PRESSURE_LOSS -> if (MathUtils.randomBoolean()) "we have a cabin pressure problem" else "declaring emergency due to loss of cabin pressure"
+            else -> {
+                FileLog.warn("CommsPane", "Unknown emergency type $type")
+                return
+            }
+        }
+
+        val sentence = TokenSentence().addTokens(LiteralToken("Mayday, mayday, mayday,"), CallsignToken(acInfo.icaoCallsign), LiteralToken(aircraftWake))
+            .addComma().addToken(LiteralToken(emergencyTypeString)).addComma()
+
+        if (type == EmergencyPending.PRESSURE_LOSS) sentence.addToken(LiteralToken("performing emergency descent to 10000 feet")).addComma()
+
+        sentence.addToken(LiteralToken(if (MathUtils.randomBoolean()) "requesting return to airport" else "we would like to return to the airport"))
+
+        addMessage(sentence.toTextSentence(), WARNING)
     }
 
     /**
