@@ -391,3 +391,11 @@ data class ImmobilizeOnLanding(var timeLeft: Float): Component, BaseComponentJSO
     }
 }
 
+/** Component for tagging an aircraft that is ready for approach - only needed on client for UI */
+class ReadyForApproachClient: Component {
+    companion object {
+        val mapper = object: Mapper<ReadyForApproachClient>() {}.mapper
+
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
+    }
+}

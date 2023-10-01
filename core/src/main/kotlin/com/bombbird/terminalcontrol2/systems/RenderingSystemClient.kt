@@ -46,7 +46,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
             .exclude(DoNotRenderShape::class).get()
         private val circleFamily: Family = allOf(Position::class, GCircle::class, SRColor::class)
             .exclude(SRConstantZoomSize::class, DoNotRenderShape::class).get()
-        private val runwayFamily: Family = allOf(RunwayInfo::class, SRColor::class).exclude(DoNotRenderShape::class).get()
+        private val runwayFamily: Family = allOf(RunwayInfo::class).exclude(DoNotRenderShape::class).get()
         private val locFamily: Family = allOf(Position::class, Localizer::class, Direction::class, ApproachInfo::class).get()
         private val gsCircleFamily: Family = allOf(GlideSlopeCircle::class, ApproachInfo::class).get()
         private val trajectoryFamily: Family = allOf(RadarData::class, Controllable::class, SRColor::class)
@@ -64,7 +64,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         private val aircraftFamily: Family = allOf(AircraftInfo::class, RadarData::class, RSSprite::class, TrailInfo::class, FlightType::class, Controllable::class)
             .exclude(WaitingTakeoff::class).get()
         private val constSizeLabelFamily: Family = allOf(GenericLabel::class, Position::class, ConstantZoomSize::class)
-            .exclude(DoNotRenderLabel::class).get()
+            .exclude(DoNotRenderLabel::class, RunwayClosed::class).get()
         private val constSizeLabelArrayFamily: Family = allOf(GenericLabels::class, Position::class, ConstantZoomSize::class)
             .exclude(DoNotRenderLabel::class).get()
         private val datatagFamily: Family = allOf(Datatag::class, RadarData::class)
@@ -198,9 +198,9 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
                 val pos = getOrLogMissing(Position.mapper) ?: return@apply
                 val rect = getOrLogMissing(GRect.mapper) ?: return@apply
                 val deg = getOrLogMissing(Direction.mapper) ?: return@apply
-                val srColor = getOrLogMissing(SRColor.mapper) ?: return@apply
                 rect.height = rwyWidthPx
-                shapeRenderer.color = srColor.color
+                shapeRenderer.color = if ((has(ActiveLanding.mapper) || has(ActiveTakeoff.mapper)) && hasNot(RunwayClosed.mapper)) RUNWAY_ACTIVE
+                else RUNWAY_INACTIVE
                 shapeRenderer.rect(pos.x, pos.y - rect.height / 2, 0f, rect.height / 2, rect.width, rect.height, 1f, 1f, deg.trackUnitVector.angleDeg())
             }
         }
@@ -214,6 +214,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
                 val dir = getOrLogMissing(Direction.mapper)?.trackUnitVector ?: return@apply
                 val appInfo = getOrLogMissing(ApproachInfo.mapper) ?: return@apply
                 if (appInfo.rwyObj.entity.hasNot(ActiveLanding.mapper)) return@apply
+                if (appInfo.rwyObj.entity.has(RunwayClosed.mapper)) return@apply
                 // Offset if glideslope is present
                 val gs = get(GlideSlope.mapper)
                 val offsetNm = gs?.offsetNm ?: 0f
@@ -373,6 +374,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
                 val gsCirclePos = getOrLogMissing(GlideSlopeCircle.mapper) ?: return@apply
                 val appInfo = getOrLogMissing(ApproachInfo.mapper) ?: return@apply
                 if (appInfo.rwyObj.entity.hasNot(ActiveLanding.mapper)) return@apply
+                if (appInfo.rwyObj.entity.has(RunwayClosed.mapper)) return@apply
                 shapeRenderer.color = Color.CYAN
                 for (pos in gsCirclePos.positions) {
                     shapeRenderer.circle((pos.x - camX) / camZoom, (pos.y - camY) / camZoom, 4f)

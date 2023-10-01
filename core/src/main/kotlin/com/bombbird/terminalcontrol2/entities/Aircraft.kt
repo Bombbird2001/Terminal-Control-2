@@ -196,6 +196,8 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                     else if (datatag != null) addDatatagInputListeners(datatag, it)
                     datatag?.let { tag ->
                         tag.minimised = controllable?.sectorId != CLIENT_SCREEN?.playerSector || serialisedAircraft.initialDatatagMinimised
+                        tag.emergency = serialisedAircraft.isActiveEmergency
+                        updateDatatagStyle(tag, serialisedAircraft.flightType, false)
                         updateDatatagText(tag, getNewDatatagLabelText(this, tag.minimised))
                         updateDatatagLabelSize(tag, true)
                         if (serialisedAircraft.initialDatatagFlashing &&
@@ -211,6 +213,9 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                         val trailY = serialisedAircraft.trailY
                         for (i in trailX.indices) positions.addLast(Position(trailX[i], trailY[i]))
                     }
+
+                    if (serialisedAircraft.isActiveEmergency) this += EmergencyPending(true, 0, 0)
+                    if (serialisedAircraft.isEmergencyReadyForApproach) this += ReadyForApproachClient()
                 }
             }
         }
@@ -337,6 +342,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                              val trackX: Float = 0f, val trackY: Float = 0f,
                              val targetHdgDeg: Short = 0, val targetAltFt: Short = 0, val targetIasKt: Short = 0,
                              val flightType: Byte = 0,
+                             val isActiveEmergency: Boolean = false, val isEmergencyReadyForApproach: Boolean = false,
                              val routePrimaryName: String = "", val commandRoute: Route.SerialisedRoute = Route.SerialisedRoute(), val commandHiddenLegs: Route.SerialisedRoute = Route.SerialisedRoute(),
                              val vectorHdg: Short? = null, val vectorTurnDir: Byte? = null, // Vector HDG will be null if aircraft is flying route
                              val commandAlt: Int = 0, val expedite: Boolean = false, val clearedIas: Short = 0,
@@ -383,6 +389,8 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
             val trails = get(TrailInfo.mapper) ?: return emptySerialisableObject("TrailInfo")
             val trailArray = ArrayList<Position>()
             for (trail in QueueIterator(trails.positions)) trailArray.add(trail)
+            val isActiveEmergency = get(EmergencyPending.mapper)?.active == true
+            val isReadyForApproach = isActiveEmergency && hasNot(RunningChecklists.mapper) && hasNot(RequiresFuelDump.mapper)
             return SerialisedAircraft(
                 position.x, position.y,
                 altitude.altitudeFt,
@@ -390,7 +398,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                 direction.trackUnitVector.x, direction.trackUnitVector.y,
                 speed.speedKts, speed.vertSpdFpm, speed.angularSpdDps, track.trackVectorPxps.x, track.trackVectorPxps.y,
                 cmdTarget.targetHdgDeg.toInt().toShort(), (cmdTarget.targetAltFt / 100f).roundToInt().toShort(), cmdTarget.targetIasKt,
-                flightType.type,
+                flightType.type, isActiveEmergency, isReadyForApproach,
                 clearance.routePrimaryName, clearance.route.getSerialisedObject(), clearance.hiddenLegs.getSerialisedObject(),
                 clearance.vectorHdg, clearance.vectorTurnDir, clearance.clearedAlt, has(CommandExpedite.mapper), clearance.clearedIas,
                 clearance.minIas, clearance.maxIas, clearance.optimalIas,

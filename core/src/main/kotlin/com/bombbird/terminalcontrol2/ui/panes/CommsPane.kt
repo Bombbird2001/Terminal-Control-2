@@ -89,7 +89,7 @@ class CommsPane {
                 "Alert"
             }
             WARNING -> {
-                GAME.soundManager.playWarning()
+                GAME.soundManager.playWarningUnlessPilotVoice()
                 "Warning"
             }
             else -> {
@@ -103,6 +103,15 @@ class CommsPane {
         labelScroll.layout()
         convoLabels.addLast(commsLabel)
         labelScroll.scrollTo(0f, 0f, 0f, 0f)
+    }
+
+    /**
+     * Says the token sentence in TTS using the aircraft's voice
+     * @param aircraft the aircraft entity to say the sentence
+     * @param sentence the sentence to say
+     */
+    private fun saySentenceInTTS(aircraft: Entity, sentence: TokenSentence) {
+        aircraft[TTSVoice.mapper]?.voice?.let { voice -> GAME.ttsManager.say(sentence.toTTSSentence(), voice) }
     }
 
     /**
@@ -187,7 +196,7 @@ class CommsPane {
         }
 
         addMessage(sentence.toTextSentence(), getMessageTypeForAircraftType(flightType.type))
-        aircraft[TTSVoice.mapper]?.voice?.let { voice -> GAME.ttsManager.say(sentence.toTTSSentence(), voice) }
+        saySentenceInTTS(aircraft, sentence)
 
         // Play contact sound
         GAME.soundManager.playInitialContact()
@@ -245,7 +254,7 @@ class CommsPane {
             .addTokens(*lateralClearance)
 
         addMessage(sentence.toTextSentence(), ARRIVAL)
-        aircraft[TTSVoice.mapper]?.voice?.let { voice -> GAME.ttsManager.say(sentence.toTTSSentence(), voice) }
+        saySentenceInTTS(aircraft, sentence)
     }
 
     /**
@@ -273,7 +282,7 @@ class CommsPane {
             .addComma().addTokens(*lateralClearance)
 
         addMessage(sentence.toTextSentence(), ARRIVAL)
-        aircraft[TTSVoice.mapper]?.voice?.let { voice -> GAME.ttsManager.say(sentence.toTTSSentence(), voice) }
+        saySentenceInTTS(aircraft, sentence)
     }
 
     /**
@@ -395,7 +404,10 @@ class CommsPane {
 
         sentence.addToken(LiteralToken(if (MathUtils.randomBoolean()) "requesting return to airport" else "we would like to return to the airport"))
 
+        if (type == EmergencyPending.MEDICAL) sentence.addComma().addToken(LiteralToken("we require medical assistance on landing"))
+
         addMessage(sentence.toTextSentence(), WARNING)
+        saySentenceInTTS(aircraft, sentence)
     }
 
     /**
@@ -421,6 +433,7 @@ class CommsPane {
         ))
 
         addMessage(sentence.toTextSentence(), WARNING)
+        saySentenceInTTS(aircraft, sentence)
     }
 
     /**
@@ -448,6 +461,7 @@ class CommsPane {
             ))
 
         addMessage(sentence.toTextSentence(), WARNING)
+        saySentenceInTTS(aircraft, sentence)
 
         if (!dumpEnding) {
             // Add ATC fuel dump broadcast
@@ -486,8 +500,8 @@ class CommsPane {
             }
 
             val sentence2 = TokenSentence().addTokens(LiteralToken("Attention all aircraft, fuel dumping in progress"),
-                LiteralToken(splitCharacterToNatoPhonetic(sqrt(closestDistPxSq.toDouble()).roundToInt().toString())),
-                LiteralToken("miles"), LiteralToken(directionString), LiteralToken("of"), LiteralToken(airportName))
+                NumberToken(pxToNm(sqrt(closestDistPxSq.toDouble()).toFloat()).roundToInt()), LiteralToken("miles"),
+                LiteralToken(directionString), LiteralToken("of"), LiteralToken(airportName))
                 .addComma().addToken(AltitudeToken(aircraftAlt.altitudeFt))
 
             addMessage(sentence2.toTextSentence(), OTHERS)
@@ -515,6 +529,7 @@ class CommsPane {
         ))
 
         addMessage(sentence.toTextSentence(), WARNING)
+        saySentenceInTTS(aircraft, sentence)
     }
 
     /**

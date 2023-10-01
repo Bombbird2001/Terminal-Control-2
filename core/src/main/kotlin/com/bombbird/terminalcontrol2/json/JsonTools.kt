@@ -45,7 +45,7 @@ interface BaseComponentJSONInterface {
         CROSSING_RUNWAY, DEPARTURE_DEPENDENCY, ARRIVAL_ROUTE_ZONE, DEPARTURE_ROUTE_ZONE, ACTIVE_LANDING, ACTIVE_TAKEOFF,
         RANDOM_AIRLINE_DATA, ACTIVE_RUNWAY_CONFIG, ARRIVAL_CLOSED, TIME_SINCE_LAST_DEPARTURE, DEPARTURE_INFO, AIRPORT_NEXT_DEPARTURE,
         RUNWAY_PREVIOUS_ARRIVAL, RUNWAY_PREVIOUS_DEPARTURE, RUNWAY_OCCUPIED, WAKE_TRAIL, WAKE_INFO, INITIAL_CLIENT_DATATAG_POSITION,
-        TRAIL_INFO, TTS_VOICE, EMERGENCY_PENDING, RUNNING_CHECKLISTS, REQUIRES_FUEL_DUMP, IMMOBILIZE_ON_LANDING
+        TRAIL_INFO, TTS_VOICE, EMERGENCY_PENDING, RUNNING_CHECKLISTS, REQUIRES_FUEL_DUMP, IMMOBILIZE_ON_LANDING, RUNWAY_CLOSED
     }
 
     val componentType: ComponentType
@@ -145,6 +145,11 @@ private fun getPolymorphicComponentAdapter(): PolymorphicJsonAdapterFactory<Base
         .withSubtype(InitialClientDatatagPosition::class.java, BaseComponentJSONInterface.ComponentType.INITIAL_CLIENT_DATATAG_POSITION.name)
         .withSubtype(TrailInfo::class.java, BaseComponentJSONInterface.ComponentType.TRAIL_INFO.name)
         .withSubtype(TTSVoice::class.java, BaseComponentJSONInterface.ComponentType.TTS_VOICE.name)
+        .withSubtype(EmergencyPending::class.java, BaseComponentJSONInterface.ComponentType.EMERGENCY_PENDING.name)
+        .withSubtype(RunningChecklists::class.java, BaseComponentJSONInterface.ComponentType.RUNNING_CHECKLISTS.name)
+        .withSubtype(RequiresFuelDump::class.java, BaseComponentJSONInterface.ComponentType.REQUIRES_FUEL_DUMP.name)
+        .withSubtype(ImmobilizeOnLanding::class.java, BaseComponentJSONInterface.ComponentType.IMMOBILIZE_ON_LANDING.name)
+        .withSubtype(RunwayClosed::class.java, BaseComponentJSONInterface.ComponentType.RUNWAY_CLOSED.name)
 }
 
 /** Interface for implementing JSON serialization for subclasses of Leg */

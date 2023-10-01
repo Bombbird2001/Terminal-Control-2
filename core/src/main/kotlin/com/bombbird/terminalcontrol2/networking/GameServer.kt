@@ -961,6 +961,16 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
     }
 
     /**
+     * Sends a message to clients to inform them of a change in runway closed state
+     * @param airportId the ID of the airport
+     * @param runwayId the ID of the runway
+     * @param closed whether the runway is closed
+     */
+    fun sendRunwayClosedState(airportId: Byte, runwayId: Byte, closed: Boolean) {
+        networkServer.sendToAllTCP(RunwayClosedState(airportId, runwayId, closed))
+    }
+
+    /**
      * Adds a runnable to be run on the main server thread after the current engine update
      * @param runnable the runnable to add
      */

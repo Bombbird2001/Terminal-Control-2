@@ -225,6 +225,17 @@ class AtisToken(private val atisCode: Char): CommsToken() {
     }
 }
 
+/** Contains an integer to be spoken - converts the number to its NATO phonetic token */
+class NumberToken(private val number: Int): CommsToken() {
+    override fun toString(): String {
+        return number.toString()
+    }
+
+    override fun toTTSString(): String {
+        return replaceDigitsOnlyToNatoPhonetic(number.toString())
+    }
+}
+
 /**
  * Splits the input [text] to follow NATO phonetic standards for both alphabets and digits
  * @param text the string to split and transform into individual NATO phonetic tokens

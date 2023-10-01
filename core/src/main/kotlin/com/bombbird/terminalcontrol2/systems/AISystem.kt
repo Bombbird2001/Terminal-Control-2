@@ -62,6 +62,7 @@ class AISystem: EntitySystem() {
         private val pendingEmergencyFamily: Family = allOf(EmergencyPending::class, Altitude::class, AircraftInfo::class, FlightType::class, DepartureAirport::class).get()
         private val runningChecklistFamily: Family = allOf(RunningChecklists::class, AircraftInfo::class).get()
         private val dumpingFuelFamily: Family = allOf(RequiresFuelDump::class, AircraftInfo::class).get()
+        private val stayOnRunwayFamily: Family = allOf(ImmobilizeOnLanding::class, LandingRoll::class).get()
 
         fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
@@ -93,6 +94,7 @@ class AISystem: EntitySystem() {
     private val pendingEmergencyFamilyEntities = FamilyWithListener.newServerFamilyWithListener(pendingEmergencyFamily)
     private val runningChecklistFamilyEntities = FamilyWithListener.newServerFamilyWithListener(runningChecklistFamily)
     private val dumpingFuelFamilyEntities = FamilyWithListener.newServerFamilyWithListener(dumpingFuelFamily)
+    private val stayOnRunwayFamilyEntities = FamilyWithListener.newServerFamilyWithListener(stayOnRunwayFamily)
 
     /** Main update function */
     override fun update(deltaTime: Float) {
@@ -166,7 +168,7 @@ class AISystem: EntitySystem() {
                 val acc = get(Acceleration.mapper) ?: return@apply
                 val gsKt = pxpsToKt(get(GroundTrack.mapper)?.trackVectorPxps?.len() ?: return@apply)
                 acc.dSpeedMps2 = if (gsKt > 60) -1.5f else -1f
-                if (gsKt < 35) {
+                if (gsKt < 35 && hasNot(ImmobilizeOnLanding.mapper)) {
                     GAME.gameServer?.let {
                         get(LandingRoll.mapper)?.rwy?.let { landingRwy ->
                             landingRwy[RunwayNextArrival.mapper]?.also { nextArr ->
@@ -192,6 +194,12 @@ class AISystem: EntitySystem() {
                     }
 
                     despawnAircraft(this)
+                }
+
+                // For emergencies that will remain on runway
+                if (gsKt < 1) {
+                    get(Speed.mapper)?.speedKts = 0f
+                    acc.dSpeedMps2 = 0f
                 }
             }
         }
@@ -647,6 +655,7 @@ class AISystem: EntitySystem() {
                 val rwy = appInfo.rwyObj.entity
                 val rwyDir = rwy[Direction.mapper] ?: return@apply
                 val rwyPos = rwy[CustomPosition.mapper] ?: return@apply // Use threshold position for reference
+                val oppRwyHdg = modulateHeading(convertWorldAndRenderDeg(rwyDir.trackUnitVector.angleDeg()) + MAG_HDG_DEV + 180)
                 when (circleApp.phase.toInt()) {
                     0 -> if (alt.altitudeFt < circleApp.breakoutAlt &&
                         (has(LocalizerCaptured.mapper) || has(GlideSlopeCaptured.mapper) || has(StepDownApproach.mapper))) {
@@ -655,7 +664,8 @@ class AISystem: EntitySystem() {
                         val arptMetar = GAME.gameServer?.airports?.get(appInfo.airportId)?.entity?.get(MetarInfo.mapper)
                         if (arptMetar != null && mins != null &&
                             ((arptMetar.visibilityM < mins.rvrM) ||
-                            (arptMetar.ceilingHundredFtAGL ?: Short.MAX_VALUE) * 100 < mins.baroAltFt)) return@apply initiateGoAround(this, RecentGoAround.RWY_NOT_IN_SIGHT)
+                            (arptMetar.ceilingHundredFtAGL ?: Short.MAX_VALUE) * 100 < mins.baroAltFt))
+                            return@apply initiateGoAround(this, RecentGoAround.RWY_NOT_IN_SIGHT)
                         circleApp.phase = 1
                     }
                     1 -> {
@@ -678,15 +688,16 @@ class AISystem: EntitySystem() {
                         if (circleApp.phase1Timer < 0) circleApp.phase = 2
                     }
                     2 -> {
-                        cmd.targetHdgDeg = modulateHeading(convertWorldAndRenderDeg(rwyDir.trackUnitVector.angleDeg()) + MAG_HDG_DEV + 180)
+                        cmd.targetHdgDeg = oppRwyHdg
                         cmd.targetAltFt = circleApp.breakoutAlt - 100
                         val toRwy = Vector2(rwyPos.x - pos.x, rwyPos.y - pos.y)
                         val dotProduct = dir.trackUnitVector.dot(toRwy)
                         // If aircraft has passed abeam runway, start 50 seconds timer in phase 3
-                        if (dotProduct < 0) circleApp.phase = 3
+                        if (dotProduct < 0 && findDeltaHeading(dir.trackUnitVector.angleDeg(),
+                                rwyDir.trackUnitVector.angleDeg() + 180, CommandTarget.TURN_DEFAULT) < 10f) circleApp.phase = 3
                     }
                     3 -> {
-                        cmd.targetHdgDeg = modulateHeading(convertWorldAndRenderDeg(rwyDir.trackUnitVector.angleDeg()) + MAG_HDG_DEV + 180)
+                        cmd.targetHdgDeg = oppRwyHdg
                         val visApp = rwy[VisualApproach.mapper]?.visual ?: return@apply
                         cmd.targetAltFt = getAppAltAtPos(visApp, pos.x, pos.y, -pxpsToKt(get(GroundTrack.mapper)?.trackVectorPxps?.len() ?: 0f))?.toInt() ?:
                         (circleApp.breakoutAlt - 100)
@@ -784,10 +795,10 @@ class AISystem: EntitySystem() {
                     if (it.tailwindKt > 15 || it.crosswindKt > 25) return@apply initiateGoAround(this, RecentGoAround.STRONG_TAILWIND)
                 }
 
-                // Check runway occupancy
-                // For all approaches, go around if runway is still occupied by the time aircraft reaches 150 feet AGL
+                // Check runway occupancy or runway closed
+                // For all approaches, go around if runway is still occupied or closed by the time aircraft reaches 150 feet AGL
                 val rwyAlt = rwyObj[Altitude.mapper]?.altitudeFt
-                if (rwyAlt != null && rwyObj.has(RunwayOccupied.mapper) && alt.altitudeFt < rwyAlt + 150) {
+                if (rwyAlt != null && (rwyObj.has(RunwayOccupied.mapper) || rwyObj.has(RunwayClosed.mapper)) && alt.altitudeFt < rwyAlt + 150) {
                     return@apply initiateGoAround(this, RecentGoAround.RWY_NOT_CLEAR)
                 }
 
@@ -844,6 +855,11 @@ class AISystem: EntitySystem() {
                         prevArr.recat = aircraftPerf.recat
                         prevArr.timeSinceTouchdownS = 0f
                     }
+                    // If is emergency that will stay on runway, close runway
+                    if (has(ImmobilizeOnLanding.mapper)) {
+                        val airport = rwyEntity[RunwayInfo.mapper]?.airport ?: return@apply
+                        airport.setRunwayClosed(rwyEntity[RunwayInfo.mapper]?.rwyId ?: return@apply, true)
+                    }
                 }
             }
         }
@@ -875,6 +891,9 @@ class AISystem: EntitySystem() {
 
                 val arptElevation = GAME.gameServer?.airports?.get(departureAirport.arptId)?.entity?.get(Altitude.mapper)?.altitudeFt ?: 0f
                 get(FlightType.mapper)?.type = FlightType.ARRIVAL
+                this += ArrivalAirport(departureAirport.arptId)
+                remove<DepartureAirport>()
+                remove<ContactToCentre>()
                 setCurrentAndPendingClearanceToAltitude(this,
                     getClearedAltitudeAfterEmergency(alt.altitudeFt, pendingEmer.type, arptElevation))
                 GAME.gameServer?.sendAircraftDeclareEmergency(acInfo.icaoCallsign, pendingEmer.type)
@@ -905,6 +924,7 @@ class AISystem: EntitySystem() {
                 if (runningChecklists.timeLeft < 0) {
                     remove<RunningChecklists>()
                     if (!has(RequiresFuelDump.mapper)) setReadyForApproachStatus(this)
+                    else get(RequiresFuelDump.mapper)?.active = true
                 }
             }
         }
@@ -930,6 +950,22 @@ class AISystem: EntitySystem() {
                 if (fuelDump.timeLeft < 0) {
                     remove<RequiresFuelDump>()
                     setReadyForApproachStatus(this)
+                }
+            }
+        }
+
+        // Update aircraft immobilized on runway
+        val immobilizedFamily = stayOnRunwayFamilyEntities.getEntities()
+        for (i in 0 until immobilizedFamily.size()) {
+            immobilizedFamily[i]?.apply {
+                val immobilized = get(ImmobilizeOnLanding.mapper) ?: return@apply
+                immobilized.timeLeft -= deltaTime
+
+                if (immobilized.timeLeft < 0) {
+                    val landingRwy = get(LandingRoll.mapper)?.rwy ?: return@apply
+                    val airport = landingRwy[RunwayInfo.mapper]?.airport ?: return@apply
+                    airport.setRunwayClosed(landingRwy[RunwayInfo.mapper]?.rwyId ?: return@apply, false)
+                    remove<ImmobilizeOnLanding>()
                 }
             }
         }

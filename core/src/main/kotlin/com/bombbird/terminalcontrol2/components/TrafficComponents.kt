@@ -39,6 +39,18 @@ class ActiveTakeoff: Component, BaseComponentJSONInterface {
     }
 }
 
+/** Component for tagging runway that is closed */
+@JsonClass(generateAdapter = true)
+class RunwayClosed: Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.RUNWAY_CLOSED
+
+    companion object {
+        val mapper = object: Mapper<RunwayClosed>() {}.mapper
+
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
+    }
+}
+
 /** Component for tagging traffic distribution at an airport */
 data class RandomAirlineData(val airlineDistribution: CumulativeDistribution<Triple<String, Boolean, GdxArray<String>>> = CumulativeDistribution()):
     Component, BaseComponentJSONInterface {

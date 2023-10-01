@@ -9,9 +9,12 @@ import com.bombbird.terminalcontrol2.screens.MainMenu
 import com.bombbird.terminalcontrol2.ui.CustomDialog
 
 class TextToSpeechManager(private val ttsHandler: TextToSpeechHandler): Disposable {
+    private var ttsNotAvailable = false
+
     /** Initialises the TTS engine for the appropriate platform */
     fun init() {
         ttsHandler.setOnInitFailAction {
+            ttsNotAvailable = true
             Gdx.app.postRunnable {
                 CustomDialog("TTS error", "Text-to-Speech initialisation failed - " +
                         "pilot voices will not work. Your device may not have a TTS engine " +
@@ -21,6 +24,7 @@ class TextToSpeechManager(private val ttsHandler: TextToSpeechHandler): Disposab
         }
 
         ttsHandler.setOnVoiceDataMissingAction {
+            ttsNotAvailable = true
             Gdx.app.postRunnable {
                 CustomDialog("TTS error", "No voices found for Text-to-Speech - " +
                         "pilot voices will not work. Please ensure that there are TTS voices " +
@@ -33,7 +37,7 @@ class TextToSpeechManager(private val ttsHandler: TextToSpeechHandler): Disposab
 
     /** Says the input text with the given voice */
     fun say(text: String, voice: String) {
-        if (isVoiceDisabled()) return
+        if (ttsNotAvailable || isVoiceDisabled()) return
         ttsHandler.sayText(text, voice)
     }
 
@@ -59,6 +63,11 @@ class TextToSpeechManager(private val ttsHandler: TextToSpeechHandler): Disposab
     /** Performs clean up actions for TTS handler when being disposed */
     override fun dispose() {
         ttsHandler.onQuitApp()
+    }
+
+    /** Returns true if TTS is not available */
+    fun isTTSNotAvailable(): Boolean {
+        return ttsNotAvailable
     }
 
     /** Checks whether the game sound settings has disabled pilot voices */
