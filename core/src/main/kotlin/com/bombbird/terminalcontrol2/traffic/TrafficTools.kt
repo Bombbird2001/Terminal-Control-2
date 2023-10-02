@@ -830,8 +830,13 @@ fun updateWakeTrailState(aircraft: Entity, system: TrafficSystemInterval) {
  * @param airport the airport the aircraft is flying from, for elevation information
  */
 private fun addEmergencyIfNeeded(aircraft: Entity, airport: Entity) {
-    // TODO Use emergency level settings to determine probability to use
-    if (MathUtils.randomBoolean(0.005f)) {
+    val emerChance = when (GAME.gameServer?.emergencyRate) {
+        GameServer.EMERGENCY_LOW -> 0.005f
+        GameServer.EMERGENCY_MEDIUM -> 0.01f
+        GameServer.EMERGENCY_HIGH -> 0.02f
+        else -> 0f
+    }
+    if (MathUtils.randomBoolean(emerChance)) {
         val elevation = airport[Altitude.mapper]?.altitudeFt ?: return
         val emerType = MathUtils.random(EmergencyPending.BIRD_STRIKE.toInt(), EmergencyPending.PRESSURE_LOSS.toInt()).toByte()
         val activationAlt = when (emerType) {

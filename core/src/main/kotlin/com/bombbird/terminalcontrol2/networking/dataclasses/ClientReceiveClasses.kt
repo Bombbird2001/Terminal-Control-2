@@ -489,6 +489,9 @@ data class EmergencyStart(val callsign: String = "", val type: Byte = -1): Clien
 data class ChecklistsNearingDone(val callsign: String = "", val needsFuelDump: Boolean = false): ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
         rs.aircraft[callsign]?.apply {
+            if (needsFuelDump)
+                entity += RequiresFuelDump(false, 0f, 0f, 0f,
+                    informedDumpStarted = true, informedNearingDone = true)
             if (entity[Controllable.mapper]?.sectorId != rs.playerSector) return
             entity += ContactNotification()
             entity[Datatag.mapper]?.let {
@@ -507,6 +510,7 @@ data class ChecklistsNearingDone(val callsign: String = "", val needsFuelDump: B
 data class FuelDumpStatus(val callsign: String = "", val dumpingEnding: Boolean = false): ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
         rs.aircraft[callsign]?.apply {
+            entity[RequiresFuelDump.mapper]?.active = true
             if (entity[Controllable.mapper]?.sectorId != rs.playerSector) return
             entity += ContactNotification()
             entity[Datatag.mapper]?.let {
@@ -525,6 +529,7 @@ data class FuelDumpStatus(val callsign: String = "", val dumpingEnding: Boolean 
 data class ReadyForApproach(val callsign: String = "", val immobilizeOnLanding: Boolean = false): ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
         rs.aircraft[callsign]?.apply {
+            entity[RequiresFuelDump.mapper]?.active = false
             entity += ReadyForApproachClient()
             if (entity[Controllable.mapper]?.sectorId != rs.playerSector) return
             entity += ContactNotification()
