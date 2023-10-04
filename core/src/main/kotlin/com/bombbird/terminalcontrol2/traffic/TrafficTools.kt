@@ -604,6 +604,7 @@ fun calculateDistFromThreshold(aircraft: Entity, rwy: Entity): Float {
 fun calculateTimeToThreshold(aircraft: Entity, rwy: Entity): Float {
     val distPx = calculateDistFromThreshold(aircraft, rwy)
     val gsPxps = aircraft[GroundTrack.mapper]?.trackVectorPxps?.len() ?: return Float.MAX_VALUE
+    if (gsPxps == 0f) return Float.MAX_VALUE
     return distPx / gsPxps
 }
 

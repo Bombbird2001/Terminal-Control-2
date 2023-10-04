@@ -30,7 +30,7 @@ class StatusPane {
 
         private val goAroundContactFamily: Family = allOf(RecentGoAround::class, ContactNotification::class).get()
         private val initialContactFamily: Family = allOf(ContactNotification::class).exclude(RecentGoAround::class).get()
-        private val emergencyStartedFamily: Family = allOf(EmergencyPending::class).get()
+        private val emergencyStartedFamily: Family = allOf(EmergencyPending::class, Speed::class).get()
 
         fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
@@ -129,10 +129,10 @@ class StatusPane {
         for (i in 0 until emergencyStarted.size()) {
             emergencyStarted[i]?.apply {
                 val emergency = get(EmergencyPending.mapper) ?: return@apply
+                val speed = get(Speed.mapper) ?: return@apply
                 if (!emergency.active) return@apply
                 val callsign = get(AircraftInfo.mapper)?.icaoCallsign ?: return@apply
-                val emergencyType = emergency.type
-                val emergencyTypeString = when (emergencyType) {
+                val emergencyTypeString = when (val emergencyType = emergency.type) {
                     EmergencyPending.BIRD_STRIKE -> "Bird strike"
                     EmergencyPending.ENGINE_FAIL -> "Engine failure"
                     EmergencyPending.HYDRAULIC_FAIL -> "Hydraulic failure"
@@ -145,6 +145,9 @@ class StatusPane {
                     }
                 }
                 val statusString = when {
+                    speed.speedKts < 60 && has(ImmobilizeOnLanding.mapper) -> ", landed, staying on runway"
+                    speed.speedKts < 60 -> ", landed"
+                    has(ReadyForApproachClient.mapper) && has(ImmobilizeOnLanding.mapper) -> ", ready for approach, will stay on runway"
                     has(ReadyForApproachClient.mapper) -> ", ready for approach"
                     get(RequiresFuelDump.mapper)?.active == true -> ", dumping fuel"
                     get(RequiresFuelDump.mapper)?.active == false -> ", running checklists, requires fuel dump"

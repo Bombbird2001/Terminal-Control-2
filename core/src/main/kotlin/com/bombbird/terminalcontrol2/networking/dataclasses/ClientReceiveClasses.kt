@@ -531,6 +531,7 @@ data class ReadyForApproach(val callsign: String = "", val immobilizeOnLanding: 
         rs.aircraft[callsign]?.apply {
             entity[RequiresFuelDump.mapper]?.active = false
             entity += ReadyForApproachClient()
+            if (immobilizeOnLanding) entity += ImmobilizeOnLanding(0f)
             if (entity[Controllable.mapper]?.sectorId != rs.playerSector) return
             entity += ContactNotification()
             entity[Datatag.mapper]?.let {
