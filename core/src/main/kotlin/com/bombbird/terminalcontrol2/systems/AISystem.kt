@@ -598,7 +598,8 @@ class AISystem: EntitySystem() {
                 val cmd = get(CommandTarget.mapper) ?: return@apply
                 val alt = get(Altitude.mapper) ?: return@apply
                 val gsApp = get(GlideSlopeArmed.mapper)?.gsApp ?: return@apply
-                if (alt.altitudeFt < (gsApp[GlideSlope.mapper]?.maxInterceptAlt ?: return@apply)) {
+                // 25 feet leeway max capture altitude
+                if (alt.altitudeFt < ((gsApp[GlideSlope.mapper]?.maxInterceptAlt ?: return@apply)) + 25) {
                     val gsAltAtPos = getAppAltAtPos(gsApp, pos.x, pos.y, 0f) ?: return@apply
                     // Maintain altitude if below the GS capture altitude
                     if (alt.altitudeFt < gsAltAtPos) {
