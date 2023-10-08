@@ -1,11 +1,13 @@
 package com.bombbird.terminalcontrol2.systems
 
+import com.badlogic.ashley.core.Entity
 import com.badlogic.ashley.core.Family
 import com.badlogic.ashley.systems.IntervalSystem
 import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.utils.Queue
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.GAME
+import com.bombbird.terminalcontrol2.global.MAG_HDG_DEV
 import com.bombbird.terminalcontrol2.global.TRACK_EXTRAPOLATE_TIME_S
 import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.navigation.Route
@@ -265,7 +267,7 @@ class ControlStateSystemInterval: IntervalSystem(1f) {
                     val newClearance = ClearanceState(currClearance.routePrimaryName,
                         Route.fromSerialisedObject(currClearance.route.getSerialisedObject()),
                         Route.fromSerialisedObject(currClearance.hiddenLegs.getSerialisedObject()),
-                        currClearance.vectorHdg, currClearance.vectorTurnDir, acInfo.aircraftPerf.maxAlt, false,
+                        currClearance.vectorHdg, currClearance.vectorTurnDir, calculateFinalCruiseAlt(this), false,
                         acInfo.aircraftPerf.tripIas, currClearance.minIas, currClearance.maxIas, currClearance.optimalIas,
                         currClearance.clearedApp, currClearance.clearedTrans)
                     val pendingClearances = get(PendingClearances.mapper)
@@ -290,5 +292,23 @@ class ControlStateSystemInterval: IntervalSystem(1f) {
                 if (divDep.timeLeft < 0) remove<DivergentDepartureAllowed>()
             }
         }
+    }
+
+    /**
+     * Calculates the final cruising altitude for the aircraft based on its route and max alt
+     * @param aircraft the aircraft to calculate the final cruising altitude for
+     */
+    private fun calculateFinalCruiseAlt(aircraft: Entity): Int {
+        val perfData = aircraft[AircraftInfo.mapper]?.aircraftPerf ?: return 0
+        val clearanceAct = aircraft[ClearanceAct.mapper]?.actingClearance?.clearanceState ?: return perfData.maxAlt
+        val route = clearanceAct.route
+        if (route.size == 0) return perfData.maxAlt
+
+        // Calculate heading from current aircraft position to last waypoint on route
+        val pos = aircraft[Position.mapper] ?: return perfData.maxAlt
+        val lastWptId = (route[route.size - 1] as? Route.WaypointLeg)?.wptId ?: return perfData.maxAlt
+        val lastWptPos = GAME.gameServer?.waypoints?.get(lastWptId)?.entity?.get(Position.mapper) ?: return perfData.maxAlt
+        val requiredHdg = getRequiredTrack(pos.x, pos.y, lastWptPos.x, lastWptPos.y) + MAG_HDG_DEV
+        return getCruiseAltForHeading(requiredHdg, perfData.maxAlt)
     }
 }

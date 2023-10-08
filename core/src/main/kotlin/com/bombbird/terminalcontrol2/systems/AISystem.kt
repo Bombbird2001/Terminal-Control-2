@@ -356,7 +356,7 @@ class AISystem: EntitySystem() {
                 val groundSpeed = trackAndGS.second
                 // Set command target heading to target track + magnetic heading variation
                 cmdTarget.targetHdgDeg = modulateHeading(targetTrack + MAG_HDG_DEV)
-                cmdTarget.turnDir = getAppropriateTurnDir(cmdTarget.targetHdgDeg, convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()), cmdDir.turnDir)
+                cmdTarget.turnDir = getAppropriateTurnDir(cmdTarget.targetHdgDeg, convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()) + MAG_HDG_DEV, cmdDir.turnDir)
 
                 // Calculate distance between aircraft and waypoint and check if aircraft should move to next leg
                 val deltaX = wpt.x - pos.x
@@ -416,7 +416,8 @@ class AISystem: EntitySystem() {
                             }
                             // Turn direction is opposite to the hold direction
                             val reqTurnDir = (-cmdHold.legDir).toByte()
-                            cmdTarget.turnDir = getAppropriateTurnDir(cmdTarget.targetHdgDeg, convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()), reqTurnDir)
+                            cmdTarget.turnDir = getAppropriateTurnDir(cmdTarget.targetHdgDeg,
+                                convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()) + MAG_HDG_DEV, reqTurnDir)
                         }
                         2.byte -> {
                             // Fly 30 degrees off from the opposite of inbound leg, towards the outbound leg
@@ -439,7 +440,8 @@ class AISystem: EntitySystem() {
                     if (cmdHold.flyOutbound) {
                         // Fly opposite heading of inbound leg
                         cmdTarget.targetHdgDeg = modulateHeading(cmdHold.inboundHdg + 180f)
-                        cmdTarget.turnDir = getAppropriateTurnDir(cmdTarget.targetHdgDeg, convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()), cmdHold.legDir)
+                        cmdTarget.turnDir = getAppropriateTurnDir(cmdTarget.targetHdgDeg,
+                            convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()) + MAG_HDG_DEV, cmdHold.legDir)
                         val distToTurnPx = nmToPx(cmdHold.legDist.toInt())
                         if (distPxFromWpt2 > distToTurnPx * distToTurnPx) cmdHold.flyOutbound = false // Outbound leg complete, fly inbound leg
                     } else {
@@ -464,8 +466,8 @@ class AISystem: EntitySystem() {
                 if (cmd.turnDir == CommandTarget.TURN_DEFAULT) return@apply // Return if turn direction not specified
                 val dir = get(Direction.mapper) ?: return@apply
                 val actingClearance = get(ClearanceAct.mapper)?.actingClearance ?: return@apply
-                val actlHdg = convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()) + MAG_HDG_DEV
-                val appropriateTurnDir = getAppropriateTurnDir(cmd.targetHdgDeg, actlHdg, cmd.turnDir)
+                val appropriateTurnDir = getAppropriateTurnDir(cmd.targetHdgDeg,
+                    convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()) + MAG_HDG_DEV, cmd.turnDir)
                 if (appropriateTurnDir != cmd.turnDir) {
                     // Aircraft has reached the end of turn
                     cmd.turnDir = appropriateTurnDir
@@ -1202,8 +1204,8 @@ class AISystem: EntitySystem() {
      */
     private fun getAppropriateTurnDir(targetHeading: Float, currHeading: Float, cmdTurnDir: Byte): Byte {
         // Maintain the turn direction until magnitude of deltaHeading is less than 3 degrees
-        return if (withinRange(findDeltaHeading(currHeading,
-                targetHeading - MAG_HDG_DEV, CommandTarget.TURN_DEFAULT), -3f, 3f)) CommandTarget.TURN_DEFAULT
+        return if (withinRange(findDeltaHeading(currHeading, targetHeading,CommandTarget.TURN_DEFAULT),
+                -3f, 3f)) CommandTarget.TURN_DEFAULT
         else cmdTurnDir
     }
 

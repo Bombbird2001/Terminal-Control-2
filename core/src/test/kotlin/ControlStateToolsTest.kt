@@ -235,5 +235,19 @@ object ControlStateToolsTest: FunSpec() {
                 (((crossOverAlt - 9000f) / (acPerf.maxAlt - 10000)) * (acPerf.climbOutSpeed * 2f / 9) + acPerf.climbOutSpeed * 10f / 9).roundToInt().toShort(),
                 currMaxIas, currIas)
         }
+
+        test("Cruise altitude based on heading") {
+            getCruiseAltForHeading(0f, 39000) shouldBe 39000
+            getCruiseAltForHeading(90f, 38000) shouldBe 37000
+            getCruiseAltForHeading(120f, 41000) shouldBe 41000
+            getCruiseAltForHeading(125f, 42000) shouldBe 41000
+            getCruiseAltForHeading(155f, 43000) shouldBe 41000
+            getCruiseAltForHeading(160f, 60000) shouldBe 57000
+            getCruiseAltForHeading(180f, 32000) shouldBe 32000
+            getCruiseAltForHeading(210f, 35000) shouldBe 34000
+            getCruiseAltForHeading(270f, 42000) shouldBe 40000
+            getCruiseAltForHeading(300f, 43000) shouldBe 43000
+            getCruiseAltForHeading(330f, 60000) shouldBe 59000
+        }
     }
 }

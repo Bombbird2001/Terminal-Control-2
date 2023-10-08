@@ -261,3 +261,21 @@ fun getSectorForExtrapolatedPosition(posX: Float, posY: Float, track: Vector2, e
     val newY = posY + track.y * extrapolateTime
     return getSectorForPosition(newX, newY, useServerSectors)
 }
+
+/**
+ * Gets the correct cruise altitude for the given heading and max aircraft altitude, following RVSM rules if applicable
+ * @param hdg the heading of the aircraft
+ * @param maxAlt the maximum altitude the aircraft can fly at
+ */
+fun getCruiseAltForHeading(hdg: Float, maxAlt: Int): Int {
+    val correctedHdg = modulateHeading(hdg)
+    return if (correctedHdg in 180.0..359.0) {
+        // Westbound - even flight levels (except above FL410)
+        if (maxAlt >= 43000) 43000 + ((maxAlt - 43000) / 4000) * 4000
+        else min(40000, (maxAlt / 2000) * 2000)
+    } else {
+        // Eastbound - odd flight levels (except above FL410)
+        if (maxAlt >= 45000) 45000 + ((maxAlt - 45000) / 4000) * 4000
+        else min(41000, 1000 + ((maxAlt - 1000) / 2000) * 2000)
+    }
+}
