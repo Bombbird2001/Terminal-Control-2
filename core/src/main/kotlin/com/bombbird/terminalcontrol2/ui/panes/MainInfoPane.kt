@@ -19,6 +19,7 @@ import com.bombbird.terminalcontrol2.ui.removeMouseScrollListeners
 import com.bombbird.terminalcontrol2.utilities.UsabilityFilter
 import ktx.ashley.get
 import ktx.ashley.has
+import ktx.ashley.remove
 import ktx.collections.GdxArray
 import ktx.collections.GdxArrayMap
 import ktx.collections.set
@@ -338,6 +339,7 @@ class MainInfoPane {
                                     arpt.activateRunwayConfig(configIdToUse)
                                     server.sendActiveRunwayUpdateToAll(arptId, configIdToUse)
                                     server.sendPendingRunwayUpdateToAll(arptId, null)
+                                    arpt.entity.remove<PendingRunwayConfig>()
                                 }
                             }
                         }

@@ -36,8 +36,8 @@ data class HandoverRequest(private val callsign: String = "", private val newSec
         // Validate new sector
         if (newSector == SectorInfo.TOWER) {
             // Validate approach status
-            if (aircraft.hasNot(LocalizerCaptured.mapper) && aircraft.hasNot(GlideSlopeCaptured.mapper) && aircraft.hasNot(
-                    VisualCaptured.mapper))
+            if (aircraft.hasNot(LocalizerCaptured.mapper) && aircraft.hasNot(GlideSlopeCaptured.mapper)
+                && aircraft.hasNot(VisualCaptured.mapper) && (aircraft[CirclingApproach.mapper]?.phase ?: 0) < 1)
                 return
         } else if (newSector == SectorInfo.CENTRE) {
             // Validate aircraft altitude
