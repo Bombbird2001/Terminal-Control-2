@@ -111,6 +111,17 @@ object CommsToolTest: FunSpec() {
             sentence.toTTSSentence() shouldBe "Alpha Bravo Charlie".lowercase()
         }
 
+        test("Number token") {
+            val sentence = TokenSentence()
+            sentence.addToken(NumberToken(123))
+            sentence.addComma()
+            sentence.addToken(NumberToken(456))
+            sentence.addComma()
+            sentence.addToken(NumberToken(789))
+            sentence.toTextSentence() shouldBe "123, 456, 789"
+            sentence.toTTSSentence() shouldBe "One Two Tree, Four Five Six, Seven Eight Niner".lowercase()
+        }
+
         test("Split character to NATO phonetic") {
             splitCharacterToNatoPhonetic("Shiba") shouldBe "Sierra Hotel India Bravo Alpha"
             splitCharacterToNatoPhonetic("FLE119") shouldBe "Foxtrot Lima Echo One One Niner"

@@ -71,7 +71,6 @@ class GameSettings: BaseGameSettings() {
                             }
                             defaultSettingsLabel("Emergencies:")
                             emergencySelectBox = defaultSettingsSelectBox<String>().apply {
-                                isDisabled = true
                                 setItems(OFF, LOW, MEDIUM, HIGH)
                             }
                             newSettingsRow()

@@ -17,6 +17,14 @@ class SoundManager: Disposable {
     private val initialContactAudio: Sound = GAME.assetStorage["Audio/initial_contact.wav"]
     private val runwayChangeAudio: Sound = GAME.assetStorage["Audio/rwy_change.wav"]
 
+    /** Plays the warning sound effect for pilot communication that requires player attention */
+    fun playWarningUnlessPilotVoice() {
+        if (!conflictPlaying && canPlaySoundEffect()) {
+            conflictAudio.play(0.8f)
+            conflictPlaying = true
+        }
+    }
+
     /** Loops the warning audio effect  */
     fun playWarning() {
         if (!conflictPlaying && COMMUNICATIONS_SOUND > COMMS_OFF) {
@@ -81,7 +89,8 @@ class SoundManager: Disposable {
     /** Returns true if player settings allow for sound effects to be played */
     private fun canPlaySoundEffect(): Boolean {
         // We do not play sound effects if pilot voices are enabled
-        return COMMUNICATIONS_SOUND == COMMS_SOUND_EFFECTS
+        // Unless TTS initialization failed
+        return COMMUNICATIONS_SOUND == COMMS_SOUND_EFFECTS || (COMMUNICATIONS_SOUND == COMMS_PILOT_VOICES && GAME.ttsManager.isTTSNotAvailable())
     }
 
     private fun canPlayAlerts(): Boolean {

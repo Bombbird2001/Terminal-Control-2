@@ -189,13 +189,18 @@ class ConflictManager {
         if (entity1.has(VisualCaptured.mapper) || entity2.has(VisualCaptured.mapper)) return
 
         var latMinima = MIN_SEP
-        val altMinima = VERT_SEP
+        var altMinima = VERT_SEP
         var conflictReason = Conflict.NORMAL_CONFLICT
-        // TODO Check for emergency -> Reduced minima by half
 
         val appRwy1 = app1?.entity?.get(ApproachInfo.mapper)?.rwyObj
         val appRwy2 = app2?.entity?.get(ApproachInfo.mapper)?.rwyObj
         val appRwy1Pos = appRwy1?.entity?.get(Position.mapper)
+
+        // Reduce vertical separation to half if aircraft is an emergency
+        if (entity1[EmergencyPending.mapper]?.active == true || entity2[EmergencyPending.mapper]?.active == true) {
+            altMinima = VERT_SEP / 2
+            conflictReason = Conflict.EMERGENCY_SEPARATION_CONFLICT
+        }
 
         // Reduce lateral separation to 2nm (staggered) if both aircraft are established on different final approach tracks
         if (appRwy1 !== appRwy2 && app1 != null && establishedOnFinalApproachTrack(app1.entity, pos1.x, pos1.y) &&
@@ -342,6 +347,7 @@ class ConflictManager {
             const val RESTRICTED: Byte = 6
             const val WAKE_INFRINGE: Byte = 7
             const val STORM: Byte = 8
+            const val EMERGENCY_SEPARATION_CONFLICT: Byte = 9
 
             /** Returns a default empty conflict object when a proper conflict object cannot be de-serialised */
             private fun getEmptyConflict(): Conflict {

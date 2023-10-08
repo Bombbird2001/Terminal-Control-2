@@ -189,13 +189,15 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                         if (visApp != null) this += VisualCaptured(visApp)
                     }
                     if (serialisedAircraft.contactToCentre) this += ContactToCentre()
-                    if (serialisedAircraft.recentGoAround) this += RecentGoAround()
+                    if (serialisedAircraft.recentGoAroundReason != null) this += RecentGoAround(reason =  serialisedAircraft.recentGoAroundReason)
 
                     val datatag = get(Datatag.mapper)
                     if (serialisedAircraft.waitingTakeoff) this += WaitingTakeoff()
                     else if (datatag != null) addDatatagInputListeners(datatag, it)
                     datatag?.let { tag ->
                         tag.minimised = controllable?.sectorId != CLIENT_SCREEN?.playerSector || serialisedAircraft.initialDatatagMinimised
+                        tag.emergency = serialisedAircraft.activeEmergencyReason != null
+                        updateDatatagStyle(tag, serialisedAircraft.flightType, false)
                         updateDatatagText(tag, getNewDatatagLabelText(this, tag.minimised))
                         updateDatatagLabelSize(tag, true)
                         if (serialisedAircraft.initialDatatagFlashing &&
@@ -211,6 +213,12 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                         val trailY = serialisedAircraft.trailY
                         for (i in trailX.indices) positions.addLast(Position(trailX[i], trailY[i]))
                     }
+
+                    if (serialisedAircraft.activeEmergencyReason != null) this += EmergencyPending(true, serialisedAircraft.activeEmergencyReason, 0)
+                    if (serialisedAircraft.isEmergencyDumpingFuel) this +=
+                        RequiresFuelDump(true, 0f, 0f, 0f,
+                            informedDumpStarted = false, informedNearingDone = false)
+                    if (serialisedAircraft.isEmergencyReadyForApproach) this += ReadyForApproachClient()
                 }
             }
         }
@@ -337,6 +345,8 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                              val trackX: Float = 0f, val trackY: Float = 0f,
                              val targetHdgDeg: Short = 0, val targetAltFt: Short = 0, val targetIasKt: Short = 0,
                              val flightType: Byte = 0,
+                             val activeEmergencyReason: Byte? = null, val isEmergencyDumpingFuel: Boolean = false,
+                             val isEmergencyReadyForApproach: Boolean = false,
                              val routePrimaryName: String = "", val commandRoute: Route.SerialisedRoute = Route.SerialisedRoute(), val commandHiddenLegs: Route.SerialisedRoute = Route.SerialisedRoute(),
                              val vectorHdg: Short? = null, val vectorTurnDir: Byte? = null, // Vector HDG will be null if aircraft is flying route
                              val commandAlt: Int = 0, val expedite: Boolean = false, val clearedIas: Short = 0,
@@ -346,7 +356,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                              val gsCap: Boolean = false, val locCap: Boolean = false, val visCapRwy: Byte? = null,
                              val waitingTakeoff: Boolean = false,
                              val contactToCentre: Boolean = false,
-                             val recentGoAround: Boolean = false,
+                             val recentGoAroundReason: Byte? = null,
                              val initialDatatagXOffset: Float = 0f, val initialDatatagYOffset: Float = 0f,
                              val initialDatatagMinimised: Boolean = false, val initialDatatagFlashing: Boolean = false,
                              val trailX: FloatArray = floatArrayOf(), val trailY: FloatArray = floatArrayOf()
@@ -383,6 +393,9 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
             val trails = get(TrailInfo.mapper) ?: return emptySerialisableObject("TrailInfo")
             val trailArray = ArrayList<Position>()
             for (trail in QueueIterator(trails.positions)) trailArray.add(trail)
+            val activeEmergencyType = get(EmergencyPending.mapper)?.let { if (it.active) it.type else null }
+            val isDumpingFuel = get(RequiresFuelDump.mapper)?.active == true
+            val isReadyForApproach = activeEmergencyType != null && hasNot(RunningChecklists.mapper) && hasNot(RequiresFuelDump.mapper)
             return SerialisedAircraft(
                 position.x, position.y,
                 altitude.altitudeFt,
@@ -390,7 +403,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                 direction.trackUnitVector.x, direction.trackUnitVector.y,
                 speed.speedKts, speed.vertSpdFpm, speed.angularSpdDps, track.trackVectorPxps.x, track.trackVectorPxps.y,
                 cmdTarget.targetHdgDeg.toInt().toShort(), (cmdTarget.targetAltFt / 100f).roundToInt().toShort(), cmdTarget.targetIasKt,
-                flightType.type,
+                flightType.type, activeEmergencyType, isDumpingFuel, isReadyForApproach,
                 clearance.routePrimaryName, clearance.route.getSerialisedObject(), clearance.hiddenLegs.getSerialisedObject(),
                 clearance.vectorHdg, clearance.vectorTurnDir, clearance.clearedAlt, has(CommandExpedite.mapper), clearance.clearedIas,
                 clearance.minIas, clearance.maxIas, clearance.optimalIas,
@@ -403,7 +416,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                 }),
                 has(WaitingTakeoff.mapper),
                 has(ContactToCentre.mapper),
-                has(RecentGoAround.mapper),
+                get(RecentGoAround.mapper)?.reason,
                 initialDatatagPosition.xOffset, initialDatatagPosition.yOffset,
                 initialDatatagPosition.minimised, initialDatatagPosition.flashing,
                 trailArray.map { it.x }.toFloatArray(), trailArray.map { it.y }.toFloatArray()

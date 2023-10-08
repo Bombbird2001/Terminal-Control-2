@@ -43,6 +43,7 @@ fun updateDatatagStyle(datatag: Datatag, flightType: Byte, selected: Boolean) {
     val background = if ((selected && DATATAG_BACKGROUND != DATATAG_BACKGROUND_OFF) || (DATATAG_BACKGROUND == DATATAG_BACKGROUND_ALWAYS)) "" else "NoBG"
     val showBorder = ((selected && DATATAG_BORDER != DATATAG_BORDER_OFF) || (DATATAG_BORDER == DATATAG_BORDER_ALWAYS))
     val colour = if (datatag.flashingOrange) "Orange"
+    else if (datatag.emergency) "Red"
     else if (showBorder) when (flightType) {
         FlightType.DEPARTURE -> "Green"
         FlightType.ARRIVAL -> "Blue"

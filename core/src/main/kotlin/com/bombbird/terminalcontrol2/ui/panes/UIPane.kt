@@ -12,6 +12,7 @@ import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.ui.addChangeListener
 import ktx.ashley.get
 import ktx.ashley.has
+import ktx.ashley.hasNot
 import ktx.collections.GdxArray
 import ktx.graphics.moveTo
 import ktx.scene2d.*
@@ -60,7 +61,7 @@ class UIPane(private val uiStage: Stage) {
     var aircraftMaxAlt: Int? = null
     var aircraftArrivalArptId: Byte? = null
     var appTrackCaptured = false
-    // var glidePathCaptured = false
+    var isEmergencyNotReadyForApproach = false
 
     init {
         uiStage.actors {
@@ -146,7 +147,7 @@ class UIPane(private val uiStage: Stage) {
         aircraftMaxAlt = aircraft.entity[AircraftInfo.mapper]?.aircraftPerf?.maxAlt ?: return
         aircraftArrivalArptId = aircraft.entity[ArrivalAirport.mapper]?.arptId
         appTrackCaptured = aircraft.entity.has(VisualCaptured.mapper) || aircraft.entity.has(LocalizerCaptured.mapper)
-        // glidePathCaptured = aircraft.entity.has(VisualCaptured.mapper) || aircraft.entity.has(GlideSlopeCaptured.mapper)
+        isEmergencyNotReadyForApproach = aircraft.entity[EmergencyPending.mapper]?.active == true && aircraft.entity.hasNot(ReadyForApproachClient.mapper)
         val latestActing = aircraft.entity[ClearanceAct.mapper]?.actingClearance ?: return
         userClearanceState.updateUIClearanceState(latestActing.clearanceState)
         clearanceState.updateUIClearanceState(latestActing.clearanceState)
@@ -211,6 +212,7 @@ class UIPane(private val uiStage: Stage) {
         userClearanceState.vectorHdg = null
         aircraftMaxAlt = null
         aircraftArrivalArptId = null
+        isEmergencyNotReadyForApproach = false
     }
 
     /** Helper function to set the UI pane to show [routeEditPane] from [controlPane] */

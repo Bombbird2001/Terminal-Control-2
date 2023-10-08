@@ -9,6 +9,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle
 import com.badlogic.gdx.utils.Timer
 import com.badlogic.gdx.utils.Timer.Task
 import com.bombbird.terminalcontrol2.components.*
+import com.bombbird.terminalcontrol2.entities.Airport
 import com.bombbird.terminalcontrol2.entities.SectorContactable
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.Route
@@ -19,6 +20,8 @@ import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.get
 import ktx.scene2d.*
 import java.time.LocalTime
+import kotlin.math.roundToInt
+import kotlin.math.sqrt
 
 /** Communications pane class to display all "communications" between player and aircraft */
 class CommsPane {
@@ -86,7 +89,7 @@ class CommsPane {
                 "Alert"
             }
             WARNING -> {
-                GAME.soundManager.playWarning()
+                GAME.soundManager.playWarningUnlessPilotVoice()
                 "Warning"
             }
             else -> {
@@ -100,6 +103,15 @@ class CommsPane {
         labelScroll.layout()
         convoLabels.addLast(commsLabel)
         labelScroll.scrollTo(0f, 0f, 0f, 0f)
+    }
+
+    /**
+     * Says the token sentence in TTS using the aircraft's voice
+     * @param aircraft the aircraft entity to say the sentence
+     * @param sentence the sentence to say
+     */
+    private fun saySentenceInTTS(aircraft: Entity, sentence: TokenSentence) {
+        aircraft[TTSVoice.mapper]?.voice?.let { voice -> GAME.ttsManager.say(sentence.toTTSSentence(), voice) }
     }
 
     /**
@@ -184,7 +196,7 @@ class CommsPane {
         }
 
         addMessage(sentence.toTextSentence(), getMessageTypeForAircraftType(flightType.type))
-        aircraft[TTSVoice.mapper]?.voice?.let { voice -> GAME.ttsManager.say(sentence.toTTSSentence(), voice) }
+        saySentenceInTTS(aircraft, sentence)
 
         // Play contact sound
         GAME.soundManager.playInitialContact()
@@ -242,7 +254,7 @@ class CommsPane {
             .addTokens(*lateralClearance)
 
         addMessage(sentence.toTextSentence(), ARRIVAL)
-        aircraft[TTSVoice.mapper]?.voice?.let { voice -> GAME.ttsManager.say(sentence.toTTSSentence(), voice) }
+        saySentenceInTTS(aircraft, sentence)
     }
 
     /**
@@ -270,7 +282,7 @@ class CommsPane {
             .addComma().addTokens(*lateralClearance)
 
         addMessage(sentence.toTextSentence(), ARRIVAL)
-        aircraft[TTSVoice.mapper]?.voice?.let { voice -> GAME.ttsManager.say(sentence.toTTSSentence(), voice) }
+        saySentenceInTTS(aircraft, sentence)
     }
 
     /**
@@ -356,8 +368,168 @@ class CommsPane {
             .addToken(LiteralToken(bye))
 
         addMessage(sentence2.toTextSentence(), getMessageTypeForAircraftType(flightType.type))
-        // println(sentence2.toTTSSentence())
-        // aircraft[TTSVoice.mapper]?.voice?.let { voice -> GAME.ttsManager.say(sentence2.toTTSSentence(), voice) }
+    }
+
+    /**
+     * Adds a message sent by the aircraft declaring an emergency
+     * @param aircraft the aircraft declaring an emergency
+     * @param type the type of emergency declared
+     */
+    fun declareEmergency(aircraft: Entity, type: Byte) {
+        val acInfo = aircraft[AircraftInfo.mapper] ?: return
+
+        // Get the wake category of the aircraft
+        val aircraftWake = getWakePhraseology(acInfo.aircraftPerf.wakeCategory)
+
+        val emergencyTypeString = when (type) {
+            EmergencyPending.BIRD_STRIKE -> if (MathUtils.randomBoolean()) "we had a bird strike" else "declaring emergency due to bird strike"
+            EmergencyPending.ENGINE_FAIL -> {
+                val side = if (MathUtils.randomBoolean()) "left" else "right"
+                if (MathUtils.randomBoolean()) "we have a $side engine failure" else "declaring emergency due to $side engine failure"
+            }
+            EmergencyPending.HYDRAULIC_FAIL -> if (MathUtils.randomBoolean()) "we have a hydraulic problem" else "declaring emergency due to hydraulic failure"
+            EmergencyPending.FUEL_LEAK -> if (MathUtils.randomBoolean()) "we have a fuel leak" else "declaring emergency due to fuel leak"
+            EmergencyPending.MEDICAL -> if (MathUtils.randomBoolean()) "we have a medical emergency" else "declaring a medical emergency"
+            EmergencyPending.PRESSURE_LOSS -> if (MathUtils.randomBoolean()) "we have a cabin pressure problem" else "declaring emergency due to loss of cabin pressure"
+            else -> {
+                FileLog.warn("CommsPane", "Unknown emergency type $type")
+                return
+            }
+        }
+
+        val sentence = TokenSentence().addTokens(LiteralToken("Mayday, mayday, mayday,"), CallsignToken(acInfo.icaoCallsign), LiteralToken(aircraftWake))
+            .addComma().addToken(LiteralToken(emergencyTypeString)).addComma()
+
+        if (type == EmergencyPending.PRESSURE_LOSS) sentence.addToken(LiteralToken("performing emergency descent to 10000 feet")).addComma()
+
+        sentence.addToken(LiteralToken(if (MathUtils.randomBoolean()) "requesting return to airport" else "we would like to return to the airport"))
+
+        if (type == EmergencyPending.MEDICAL) sentence.addComma().addToken(LiteralToken("we require medical assistance on landing"))
+
+        addMessage(sentence.toTextSentence(), WARNING)
+        saySentenceInTTS(aircraft, sentence)
+    }
+
+    /**
+     * Adds a message sent by the aircraft when nearing completion of
+     * emergency checklists, as well as whether a fuel dump is needed
+     * @param aircraft the aircraft declaring an emergency
+     * @param needsFuelDump whether the aircraft needs to dump fuel
+     */
+    fun checklistNearingDone(aircraft: Entity, needsFuelDump: Boolean) {
+        val acInfo = aircraft[AircraftInfo.mapper] ?: return
+
+        // Get the wake category of the aircraft
+        val aircraftWake = getWakePhraseology(acInfo.aircraftPerf.wakeCategory)
+
+        val sentence = TokenSentence().addTokens(CallsignToken(acInfo.icaoCallsign), LiteralToken(aircraftWake))
+            .addComma().addToken(LiteralToken(
+                if (MathUtils.randomBoolean()) "we're almost done with checklists"
+                else "we need a few more minutes to run checklists"))
+
+        if (needsFuelDump) sentence.addComma().addToken(LiteralToken(
+            if (MathUtils.randomBoolean()) "we need to dump fuel after"
+            else "we also require fuel dumping"
+        ))
+
+        addMessage(sentence.toTextSentence(), WARNING)
+        saySentenceInTTS(aircraft, sentence)
+    }
+
+    /**
+     * Adds a message sent by the aircraft to notify of its fuel dumping status
+     * @param aircraft the aircraft declaring an emergency
+     * @param dumpEnding whether the aircraft is ending fuel dumping, else it has
+     * just started fuel dumping
+     */
+    fun fuelDumpStatus(aircraft: Entity, dumpEnding: Boolean) {
+        val acInfo = aircraft[AircraftInfo.mapper] ?: return
+
+        // Get the wake category of the aircraft
+        val aircraftWake = getWakePhraseology(acInfo.aircraftPerf.wakeCategory)
+
+        val sentence = TokenSentence().addTokens(CallsignToken(acInfo.icaoCallsign), LiteralToken(aircraftWake))
+            .addComma().addToken(LiteralToken(
+                if (dumpEnding) {
+                    if (MathUtils.randomBoolean()) "we will need a few more minutes for fuel dumping"
+                    else "we are almost done with dumping fuel"
+                }
+                else {
+                    if (MathUtils.randomBoolean()) "we are dumping fuel"
+                    else "we're dumping fuel now"
+                }
+            ))
+
+        addMessage(sentence.toTextSentence(), WARNING)
+        saySentenceInTTS(aircraft, sentence)
+
+        if (!dumpEnding) {
+            // Add ATC fuel dump broadcast
+            // Get the closest airport to aircraft
+            val aircraftPos = aircraft[Position.mapper] ?: return
+            val aircraftAlt = aircraft[Altitude.mapper] ?: return
+            var closestAirport: Airport? = null
+            var closestDistPxSq = -1f
+            CLIENT_SCREEN?.airports?.also {
+                for (i in 0 until it.size) it.getValueAt(i).let { arpt ->
+                    val pos = arpt.entity[Position.mapper] ?: return@let
+                    val deltaX = pos.x - aircraftPos.x
+                    val deltaY = pos.y - aircraftPos.y
+                    val radiusSq = deltaX * deltaX + deltaY * deltaY
+                    if (closestAirport == null || radiusSq < closestDistPxSq) {
+                        closestAirport = arpt
+                        closestDistPxSq = radiusSq
+                    }
+                }
+            }
+
+            val finalAirportPos = closestAirport?.entity?.get(Position.mapper) ?: return
+            val airportName = closestAirport?.entity?.get(AirportInfo.mapper)?.name ?: return
+
+            val trackDir = getRequiredTrack(finalAirportPos.x, finalAirportPos.y, aircraftPos.x, aircraftPos.y)
+            val directionString = when {
+                330 <= trackDir || trackDir <= 30 -> "north"
+                withinRange(trackDir, 30f, 60f) -> "north-east"
+                withinRange(trackDir, 60f, 120f) -> "east"
+                withinRange(trackDir, 120f, 150f) -> "south-east"
+                withinRange(trackDir, 150f, 210f) -> "south"
+                withinRange(trackDir, 210f, 240f) -> "south-west"
+                withinRange(trackDir, 240f, 300f) -> "west"
+                withinRange(trackDir, 300f, 330f) -> "north-west"
+                else -> "unknown direction"
+            }
+
+            val sentence2 = TokenSentence().addTokens(LiteralToken("Attention all aircraft, fuel dumping in progress"),
+                NumberToken(pxToNm(sqrt(closestDistPxSq.toDouble()).toFloat()).roundToInt()), LiteralToken("miles"),
+                LiteralToken(directionString), LiteralToken("of"), LiteralToken(airportName))
+                .addComma().addToken(AltitudeToken(aircraftAlt.altitudeFt))
+
+            addMessage(sentence2.toTextSentence(), OTHERS)
+        }
+    }
+
+    /**
+     * Adds a message sent by the aircraft when it is ready for approach, and
+     * may need to remain on the runway after landing
+     * @param aircraft the aircraft declaring an emergency
+     * @param immobilizeOnLanding whether the aircraft needs to remain on the runway after landing
+     */
+    fun readyForApproach(aircraft: Entity, immobilizeOnLanding: Boolean) {
+        val acInfo = aircraft[AircraftInfo.mapper] ?: return
+
+        // Get the wake category of the aircraft
+        val aircraftWake = getWakePhraseology(acInfo.aircraftPerf.wakeCategory)
+
+        val sentence = TokenSentence().addTokens(CallsignToken(acInfo.icaoCallsign), LiteralToken(aircraftWake),
+            LiteralToken("is ready for approach"))
+
+        if (immobilizeOnLanding) sentence.addComma().addToken(LiteralToken(
+            if (MathUtils.randomBoolean()) "we are unable to taxi off the runway after landing"
+            else "we need to remain on the runway after landing"
+        ))
+
+        addMessage(sentence.toTextSentence(), WARNING)
+        saySentenceInTTS(aircraft, sentence)
     }
 
     /**

@@ -176,6 +176,11 @@ fun registerClassesToKryo(kryo: Kryo?) {
         register(ClearedForTakeoffData::class.java)
         register(ClientData::class.java)
         register(DiffieHellmanValues::class.java)
+        register(EmergencyStart::class.java)
+        register(ChecklistsNearingDone::class.java)
+        register(FuelDumpStatus::class.java)
+        register(ReadyForApproach::class.java)
+        register(RunwayClosedState::class.java)
 
     } ?: FileLog.info("NetworkingTools", "Null kryo passed, unable to register classes")
 }

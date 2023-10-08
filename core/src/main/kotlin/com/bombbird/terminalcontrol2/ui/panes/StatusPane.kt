@@ -30,6 +30,7 @@ class StatusPane {
 
         private val goAroundContactFamily: Family = allOf(RecentGoAround::class, ContactNotification::class).get()
         private val initialContactFamily: Family = allOf(ContactNotification::class).exclude(RecentGoAround::class).get()
+        private val emergencyStartedFamily: Family = allOf(EmergencyPending::class, Speed::class).get()
 
         fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
@@ -61,13 +62,13 @@ class StatusPane {
      */
     fun refreshStatusMessages() {
         statusMsgTable.clear()
-        getConflictMessages()
-        getEmergencyMessages()
-        getMissedApproachMessages()
-        getPendingRunwayChangeMessages()
-        getInitialContactMessages()
-        getAircraftRequestMessages()
-        getTrafficInfoMessages()
+        addConflictMessages()
+        addEmergencyMessages()
+        addMissedApproachMessages()
+        addPendingRunwayChangeMessages()
+        addInitialContactMessages()
+        addAircraftRequestMessages()
+        addTrafficInfoMessages()
     }
 
     /**
@@ -94,7 +95,7 @@ class StatusPane {
     }
 
     /** Gets ongoing conflicts and adds them as messages to the status pane */
-    private fun getConflictMessages() {
+    private fun addConflictMessages() {
         CLIENT_SCREEN?.also {
             for (i in 0 until it.conflicts.size) {
                 it.conflicts[i]?.apply {
@@ -110,6 +111,7 @@ class StatusPane {
                         ConflictManager.Conflict.RESTRICTED -> "Restricted area infringement"
                         ConflictManager.Conflict.WAKE_INFRINGE -> "Wake separation infringement"
                         ConflictManager.Conflict.STORM -> "Flying in bad weather"
+                        ConflictManager.Conflict.EMERGENCY_SEPARATION_CONFLICT -> "${MIN_SEP}nm, ${VERT_SEP / 2}ft infringement - emergency separation"
                         else -> {
                             FileLog.info("StatusPane", "Unknown conflict reason $reason")
                             "???"
@@ -122,15 +124,45 @@ class StatusPane {
     }
 
     /** Gets ongoing emergencies and adds their status as messages to the status pane */
-    private fun getEmergencyMessages() {
-        // TODO To be added after implementing emergency aircraft
+    private fun addEmergencyMessages() {
+        val emergencyStarted = getEngine(true).getEntitiesFor(emergencyStartedFamily)
+        for (i in 0 until emergencyStarted.size()) {
+            emergencyStarted[i]?.apply {
+                val emergency = get(EmergencyPending.mapper) ?: return@apply
+                val speed = get(Speed.mapper) ?: return@apply
+                if (!emergency.active) return@apply
+                val callsign = get(AircraftInfo.mapper)?.icaoCallsign ?: return@apply
+                val emergencyTypeString = when (val emergencyType = emergency.type) {
+                    EmergencyPending.BIRD_STRIKE -> "Bird strike"
+                    EmergencyPending.ENGINE_FAIL -> "Engine failure"
+                    EmergencyPending.HYDRAULIC_FAIL -> "Hydraulic failure"
+                    EmergencyPending.FUEL_LEAK -> "Fuel leak"
+                    EmergencyPending.MEDICAL -> "Medical emergency"
+                    EmergencyPending.PRESSURE_LOSS -> "Loss of pressure"
+                    else -> {
+                        FileLog.info("StatusPane", "Unknown emergency type $emergencyType")
+                        "???"
+                    }
+                }
+                val statusString = when {
+                    speed.speedKts < 60 && has(ImmobilizeOnLanding.mapper) -> ", landed, staying on runway"
+                    speed.speedKts < 60 -> ", landed"
+                    has(ReadyForApproachClient.mapper) && has(ImmobilizeOnLanding.mapper) -> ", ready for approach, will stay on runway"
+                    has(ReadyForApproachClient.mapper) -> ", ready for approach"
+                    get(RequiresFuelDump.mapper)?.active == true -> ", dumping fuel"
+                    get(RequiresFuelDump.mapper)?.active == false -> ", running checklists, requires fuel dump"
+                    else -> ", running checklists"
+                }
+                addMessage("$callsign: $emergencyTypeString$statusString", WARNING)
+            }
+        }
     }
 
     /**
      * Gets recent go-arounds that have contacted the player (either through a handover from tower, or directly informed
      * if still under the player's control) and adds them as messages to the status pane
      */
-    private fun getMissedApproachMessages() {
+    private fun addMissedApproachMessages() {
         val goAroundContacts = getEngine(true).getEntitiesFor(goAroundContactFamily)
         for (i in 0 until goAroundContacts.size()) {
             goAroundContacts[i]?.apply {
@@ -141,7 +173,7 @@ class StatusPane {
     }
 
     /** Gets pending runway changes for each airport and adds them as messages to the status pane */
-    private fun getPendingRunwayChangeMessages() {
+    private fun addPendingRunwayChangeMessages() {
         val airportEntries = Entries(CLIENT_SCREEN?.airports ?: return)
         airportEntries.forEach {
             val arpt = it.value
@@ -156,7 +188,7 @@ class StatusPane {
     }
 
     /** Gets initial aircraft contacts and adds them as messages to the status pane */
-    private fun getInitialContactMessages() {
+    private fun addInitialContactMessages() {
         val initialContacts = getEngine(true).getEntitiesFor(initialContactFamily)
         for (i in 0 until initialContacts.size()) {
             initialContacts[i]?.apply {
@@ -175,12 +207,12 @@ class StatusPane {
     }
 
     /** Gets aircraft requests and adds them as messages to the status pane */
-    private fun getAircraftRequestMessages() {
+    private fun addAircraftRequestMessages() {
         // TODO To be added after implementing aircraft requests
     }
 
     /** Gets traffic info for the game world and airports and adds them as messages to the status pane */
-    private fun getTrafficInfoMessages() {
+    private fun addTrafficInfoMessages() {
         CLIENT_SCREEN?.apply {
             val trafficMode = when (serverTrafficMode) {
                 TrafficMode.NORMAL -> "Normal"

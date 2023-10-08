@@ -238,9 +238,6 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advD
                 }
             }
             if (onClient) {
-                with<SRColor> {
-                    color = RUNWAY_INACTIVE
-                }
                 with<GRect> {
                     width = mToPx(runwayLengthM.toInt())
                 }
@@ -271,6 +268,7 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advD
                 ).apply {
                     if (serialisedRunway.landing) entity += ActiveLanding()
                     if (serialisedRunway.takeoff) entity += ActiveTakeoff()
+                    if (serialisedRunway.closed) entity += RunwayClosed()
                     serialisedRunway.approachNOZ?.let { entity += ApproachNOZ(ApproachNormalOperatingZone.fromSerialisedObject(it)) }
                     serialisedRunway.departureNOZ?.let { entity += DepartureNOZ(DepartureNormalOperatingZone.fromSerialisedObject(it)) }
                 }
@@ -285,7 +283,7 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advD
                                val displacedM: Short = 0, val intersectionM: Short = 0,
                                val rwyLabelPos: Byte = 0,
                                val towerName: String = "", val towerFreq: String = "",
-                               val landing: Boolean = false, val takeoff: Boolean = false,
+                               val landing: Boolean = false, val takeoff: Boolean = false, val closed: Boolean = false,
                                val approachNOZ: ApproachNormalOperatingZone.SerialisedApproachNOZ? = null,
                                val departureNOZ: DepartureNormalOperatingZone.SerialisedDepartureNOZ? = null)
 
@@ -306,8 +304,6 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advD
                 val direction = get(Direction.mapper) ?: return emptySerialisableObject("Direction")
                 val rwyInfo = get(RunwayInfo.mapper) ?: return emptySerialisableObject("RunwayInfo")
                 val rwyLabel = get(RunwayLabel.mapper) ?: return emptySerialisableObject("RunwayLabel")
-                val landing = get(ActiveLanding.mapper) != null
-                val takeoff = get(ActiveTakeoff.mapper) != null
                 val approachNOZ = get(ApproachNOZ.mapper)
                 val departureNOZ = get(DepartureNOZ.mapper)
                 return SerialisedRunway(
@@ -318,7 +314,7 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advD
                     rwyInfo.displacedThresholdM, rwyInfo.intersectionTakeoffM,
                     rwyLabel.positionToRunway,
                     rwyInfo.tower, rwyInfo.freq,
-                    landing, takeoff,
+                    has(ActiveLanding.mapper), has(ActiveTakeoff.mapper), has(RunwayClosed.mapper),
                     approachNOZ?.appNoz?.getSerialisableObject(), departureNOZ?.depNoz?.getSerialisableObject()
                 )
             }
@@ -391,11 +387,11 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advD
                 }
                 number += 18
                 if (number > 36) number -= 36
-                "$number$letter"
+                "${if (number < 10) "0" else ""}$number$letter"
             } else {
                 var number = rwyName.toInt() + 18
                 if (number > 36) number -= 36
-                number.toString()
+                "${if (number < 10) "0" else ""}$number"
             }
             this += OppositeRunway(getRunway(oppRwyName)?.entity ?: return@forEach)
         }}
@@ -424,7 +420,6 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advD
                             rwy.remove<ActiveTakeoff>()
                             rwy[ApproachNOZ.mapper]?.appNoz?.entity?.plusAssign(DoNotRenderShape())
                             rwy[DepartureNOZ.mapper]?.depNoz?.entity?.plusAssign(DoNotRenderShape())
-                            rwy[SRColor.mapper]?.color = RUNWAY_INACTIVE
                             rwy += DoNotRenderLabel()
                             rwy.remove<DoNotRenderShape>()
                         }
@@ -436,7 +431,6 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advD
                         rwyMap[config.arrRwys[i]?.entity?.get(RunwayInfo.mapper)?.rwyId]?.entity?.let { rwy ->
                             rwy += ActiveLanding()
                             rwy[ApproachNOZ.mapper]?.appNoz?.let { allAppNOZ.add(it) }
-                            rwy[SRColor.mapper]?.color = RUNWAY_ACTIVE
                             rwy.remove<DoNotRenderLabel>()
                             rwy[OppositeRunway.mapper]?.oppRwy?.add(DoNotRenderShape())
                             arrRwyNames[i] = rwy[RunwayInfo.mapper]?.rwyName ?: ""
@@ -454,7 +448,6 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advD
                         rwyMap[config.depRwys[i]?.entity?.get(RunwayInfo.mapper)?.rwyId]?.entity?.let {  rwy ->
                             rwy += ActiveTakeoff()
                             rwy[DepartureNOZ.mapper]?.depNoz?.let { allDepNoz.add(it) }
-                            rwy[SRColor.mapper]?.color = RUNWAY_ACTIVE
                             rwy.remove<DoNotRenderLabel>()
                             rwy[OppositeRunway.mapper]?.oppRwy?.add(DoNotRenderShape())
                             depRwyNames[i] = rwy[RunwayInfo.mapper]?.rwyName ?: ""
@@ -477,6 +470,26 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advD
             }
         }
         CLIENT_SCREEN?.uiPane?.mainInfoObj?.setAirportRunwayConfigPaneState(entity)
+    }
+
+    /**
+     * Updates closed state of runway with the provided ID, will also update the status of the opposite runway
+     * @param rwyId the ID of the runway to update
+     * @param closed whether the runway should be set to closed, else open
+     */
+    fun setRunwayClosed(rwyId: Byte, closed: Boolean) {
+        val arptId = entity[AirportInfo.mapper]?.arptId ?: return
+        entity[RunwayChildren.mapper]?.rwyMap?.get(rwyId)?.entity?.let { rwy ->
+            val oppRwy = rwy[OppositeRunway.mapper]?.oppRwy ?: return
+            if (closed) {
+                rwy += RunwayClosed()
+                oppRwy += RunwayClosed()
+            } else {
+                rwy.remove<RunwayClosed>()
+                oppRwy.remove<RunwayClosed>()
+            }
+            GAME.gameServer?.sendRunwayClosedState(arptId, rwyId, closed)
+        }
     }
 
     /**

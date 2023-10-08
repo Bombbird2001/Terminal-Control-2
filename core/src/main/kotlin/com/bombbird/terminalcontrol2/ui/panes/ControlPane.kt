@@ -357,7 +357,7 @@ class ControlPane {
     private fun updateApproachSelectBoxChoices(airportId: Byte?, currSelectedApp: String?) {
         modificationInProgress = true
         CLIENT_SCREEN?.airports?.get(airportId)?.entity?.let { arpt ->
-            updateAppTransBoxesDisabled(false)
+            updateAppTransBoxesDisabled(parentPane.isEmergencyNotReadyForApproach)
             appSelectBox.apply {
                 items = getAvailableApproaches(arpt, currSelectedApp)
             }

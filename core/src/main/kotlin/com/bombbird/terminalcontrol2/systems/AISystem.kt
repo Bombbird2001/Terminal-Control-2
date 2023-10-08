@@ -58,7 +58,11 @@ class AISystem: EntitySystem() {
         private val checkTouchdownFamily: Family = allOf(Altitude::class, Speed::class, Acceleration::class, Direction::class)
             .oneOf(VisualCaptured::class, GlideSlopeCaptured::class).get()
         private val actingClearanceChangedFamily: Family = allOf(CommandTarget::class, ClearanceActChanged::class, ClearanceAct::class).get()
-        private val expediteFamily: Family = allOf(CommandExpedite::class, CommandTarget::class, Altitude::class).get()
+        private val expediteFamily: Family = allOf(CommandExpedite::class, CommandTarget::class, Altitude::class, ClearanceAct::class).get()
+        private val pendingEmergencyFamily: Family = allOf(EmergencyPending::class, Altitude::class, AircraftInfo::class, FlightType::class, DepartureAirport::class).get()
+        private val runningChecklistFamily: Family = allOf(RunningChecklists::class, AircraftInfo::class).get()
+        private val dumpingFuelFamily: Family = allOf(RequiresFuelDump::class, AircraftInfo::class).get()
+        private val stayOnRunwayFamily: Family = allOf(ImmobilizeOnLanding::class, LandingRoll::class).get()
 
         fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
@@ -87,6 +91,10 @@ class AISystem: EntitySystem() {
     private val checkTouchdownFamilyEntities = FamilyWithListener.newServerFamilyWithListener(checkTouchdownFamily)
     private val actingClearanceChangedFamilyEntities = FamilyWithListener.newServerFamilyWithListener(actingClearanceChangedFamily)
     private val expediteFamilyEntities = FamilyWithListener.newServerFamilyWithListener(expediteFamily)
+    private val pendingEmergencyFamilyEntities = FamilyWithListener.newServerFamilyWithListener(pendingEmergencyFamily)
+    private val runningChecklistFamilyEntities = FamilyWithListener.newServerFamilyWithListener(runningChecklistFamily)
+    private val dumpingFuelFamilyEntities = FamilyWithListener.newServerFamilyWithListener(dumpingFuelFamily)
+    private val stayOnRunwayFamilyEntities = FamilyWithListener.newServerFamilyWithListener(stayOnRunwayFamily)
 
     /** Main update function */
     override fun update(deltaTime: Float) {
@@ -160,7 +168,7 @@ class AISystem: EntitySystem() {
                 val acc = get(Acceleration.mapper) ?: return@apply
                 val gsKt = pxpsToKt(get(GroundTrack.mapper)?.trackVectorPxps?.len() ?: return@apply)
                 acc.dSpeedMps2 = if (gsKt > 60) -1.5f else -1f
-                if (gsKt < 35) {
+                if (gsKt < 35 && hasNot(ImmobilizeOnLanding.mapper)) {
                     GAME.gameServer?.let {
                         get(LandingRoll.mapper)?.rwy?.let { landingRwy ->
                             landingRwy[RunwayNextArrival.mapper]?.also { nextArr ->
@@ -186,6 +194,12 @@ class AISystem: EntitySystem() {
                     }
 
                     despawnAircraft(this)
+                }
+
+                // For emergencies that will remain on runway
+                if (gsKt < 1) {
+                    get(Speed.mapper)?.speedKts = 0f
+                    acc.dSpeedMps2 = 0f
                 }
             }
         }
@@ -457,7 +471,8 @@ class AISystem: EntitySystem() {
                     cmd.turnDir = appropriateTurnDir
                     actingClearance.clearanceState.vectorTurnDir = appropriateTurnDir
                     val pendingClearances = get(PendingClearances.mapper)
-                    if (pendingClearances == null || pendingClearances.clearanceQueue.isEmpty) this += LatestClearanceChanged()
+                    if (pendingClearances == null || pendingClearances.clearanceQueue.isEmpty)
+                        this += LatestClearanceChanged()
                 }
             }
         }
@@ -641,6 +656,7 @@ class AISystem: EntitySystem() {
                 val rwy = appInfo.rwyObj.entity
                 val rwyDir = rwy[Direction.mapper] ?: return@apply
                 val rwyPos = rwy[CustomPosition.mapper] ?: return@apply // Use threshold position for reference
+                val oppRwyHdg = modulateHeading(convertWorldAndRenderDeg(rwyDir.trackUnitVector.angleDeg()) + MAG_HDG_DEV + 180)
                 when (circleApp.phase.toInt()) {
                     0 -> if (alt.altitudeFt < circleApp.breakoutAlt &&
                         (has(LocalizerCaptured.mapper) || has(GlideSlopeCaptured.mapper) || has(StepDownApproach.mapper))) {
@@ -649,7 +665,8 @@ class AISystem: EntitySystem() {
                         val arptMetar = GAME.gameServer?.airports?.get(appInfo.airportId)?.entity?.get(MetarInfo.mapper)
                         if (arptMetar != null && mins != null &&
                             ((arptMetar.visibilityM < mins.rvrM) ||
-                            (arptMetar.ceilingHundredFtAGL ?: Short.MAX_VALUE) * 100 < mins.baroAltFt)) return@apply initiateGoAround(this, RecentGoAround.RWY_NOT_IN_SIGHT)
+                            (arptMetar.ceilingHundredFtAGL ?: Short.MAX_VALUE) * 100 < mins.baroAltFt))
+                            return@apply initiateGoAround(this, RecentGoAround.RWY_NOT_IN_SIGHT)
                         circleApp.phase = 1
                     }
                     1 -> {
@@ -672,15 +689,16 @@ class AISystem: EntitySystem() {
                         if (circleApp.phase1Timer < 0) circleApp.phase = 2
                     }
                     2 -> {
-                        cmd.targetHdgDeg = modulateHeading(convertWorldAndRenderDeg(rwyDir.trackUnitVector.angleDeg()) + MAG_HDG_DEV + 180)
+                        cmd.targetHdgDeg = oppRwyHdg
                         cmd.targetAltFt = circleApp.breakoutAlt - 100
                         val toRwy = Vector2(rwyPos.x - pos.x, rwyPos.y - pos.y)
                         val dotProduct = dir.trackUnitVector.dot(toRwy)
                         // If aircraft has passed abeam runway, start 50 seconds timer in phase 3
-                        if (dotProduct < 0) circleApp.phase = 3
+                        if (dotProduct < 0 && findDeltaHeading(dir.trackUnitVector.angleDeg(),
+                                rwyDir.trackUnitVector.angleDeg() + 180, CommandTarget.TURN_DEFAULT) < 10f) circleApp.phase = 3
                     }
                     3 -> {
-                        cmd.targetHdgDeg = modulateHeading(convertWorldAndRenderDeg(rwyDir.trackUnitVector.angleDeg()) + MAG_HDG_DEV + 180)
+                        cmd.targetHdgDeg = oppRwyHdg
                         val visApp = rwy[VisualApproach.mapper]?.visual ?: return@apply
                         cmd.targetAltFt = getAppAltAtPos(visApp, pos.x, pos.y, -pxpsToKt(get(GroundTrack.mapper)?.trackVectorPxps?.len() ?: 0f))?.toInt() ?:
                         (circleApp.breakoutAlt - 100)
@@ -778,10 +796,10 @@ class AISystem: EntitySystem() {
                     if (it.tailwindKt > 15 || it.crosswindKt > 25) return@apply initiateGoAround(this, RecentGoAround.STRONG_TAILWIND)
                 }
 
-                // Check runway occupancy
-                // For all approaches, go around if runway is still occupied by the time aircraft reaches 150 feet AGL
+                // Check runway occupancy or runway closed
+                // For all approaches, go around if runway is still occupied or closed by the time aircraft reaches 150 feet AGL
                 val rwyAlt = rwyObj[Altitude.mapper]?.altitudeFt
-                if (rwyAlt != null && rwyObj.has(RunwayOccupied.mapper) && alt.altitudeFt < rwyAlt + 150) {
+                if (rwyAlt != null && (rwyObj.has(RunwayOccupied.mapper) || rwyObj.has(RunwayClosed.mapper)) && alt.altitudeFt < rwyAlt + 150) {
                     return@apply initiateGoAround(this, RecentGoAround.RWY_NOT_CLEAR)
                 }
 
@@ -838,6 +856,11 @@ class AISystem: EntitySystem() {
                         prevArr.recat = aircraftPerf.recat
                         prevArr.timeSinceTouchdownS = 0f
                     }
+                    // If is emergency that will stay on runway, close runway
+                    if (has(ImmobilizeOnLanding.mapper)) {
+                        val airport = rwyEntity[RunwayInfo.mapper]?.airport ?: return@apply
+                        airport.setRunwayClosed(rwyEntity[RunwayInfo.mapper]?.rwyId ?: return@apply, true)
+                    }
                 }
             }
         }
@@ -848,7 +871,103 @@ class AISystem: EntitySystem() {
             expediteClearFamily[i]?.apply {
                 val alt = get(Altitude.mapper) ?: return@apply
                 val cmd = get(CommandTarget.mapper) ?: return@apply
-                if (abs(alt.altitudeFt - cmd.targetAltFt) < 500) remove<CommandExpedite>()
+                val clearanceAct = get(ClearanceAct.mapper)?.actingClearance?.clearanceState ?: return@apply
+                if (abs(alt.altitudeFt - cmd.targetAltFt) < 500) {
+                    clearanceAct.expedite = false
+                    this += LatestClearanceChanged()
+                }
+            }
+        }
+
+        // Update aircraft with pending emergency
+        val pendingEmergencyFamily = pendingEmergencyFamilyEntities.getEntities()
+        for (i in 0 until pendingEmergencyFamily.size()) {
+            pendingEmergencyFamily[i]?.apply {
+                val acInfo = get(AircraftInfo.mapper) ?: return@apply
+                val pendingEmer = get(EmergencyPending.mapper) ?: return@apply
+                val alt = get(Altitude.mapper) ?: return@apply
+                val departureAirport = get(DepartureAirport.mapper) ?: return@apply
+
+                if (alt.altitudeFt < pendingEmer.activationAlt || pendingEmer.active) return@apply
+
+                val arptElevation = GAME.gameServer?.airports?.get(departureAirport.arptId)?.entity?.get(Altitude.mapper)?.altitudeFt ?: 0f
+                get(FlightType.mapper)?.type = FlightType.ARRIVAL
+                this += ArrivalAirport(departureAirport.arptId)
+                remove<DepartureAirport>()
+                remove<ContactToCentre>()
+                setCurrentAndPendingClearanceToAltitude(this,
+                    getClearedAltitudeAfterEmergency(alt.altitudeFt, pendingEmer.type, arptElevation))
+                GAME.gameServer?.sendAircraftDeclareEmergency(acInfo.icaoCallsign, pendingEmer.type)
+                this += RunningChecklists(MathUtils.random(300f, 600f), MathUtils.random(150f, 210f), false)
+                pendingEmer.active = true
+            }
+        }
+
+        // Update aircraft running checklists
+        val checklistFamily = runningChecklistFamilyEntities.getEntities()
+        for (i in 0 until checklistFamily.size()) {
+            checklistFamily[i]?.apply {
+                val acInfo = get(AircraftInfo.mapper) ?: return@apply
+                val runningChecklists = get(RunningChecklists.mapper) ?: return@apply
+
+                runningChecklists.timeLeft -= deltaTime
+                if (!runningChecklists.informedNearingDone &&
+                    runningChecklists.timeLeft < runningChecklists.timeLeftToInformNearDone) {
+                    val requiresFuelDump = RequiresFuelDump.canDumpFuel.contains(acInfo.icaoType) && MathUtils.randomBoolean()
+                    if (requiresFuelDump) {
+                        val fuelDumpTime = MathUtils.random(600f, 900f)
+                        this += RequiresFuelDump(false, fuelDumpTime, fuelDumpTime - MathUtils.random(45f, 60f),
+                            MathUtils.random(120f, 180f), informedDumpStarted = false,  informedNearingDone = false)
+                    }
+                    GAME.gameServer?.sendAircraftChecklistsNearingDone(acInfo.icaoCallsign, requiresFuelDump)
+                    runningChecklists.informedNearingDone = true
+                }
+                if (runningChecklists.timeLeft < 0) {
+                    remove<RunningChecklists>()
+                    if (!has(RequiresFuelDump.mapper)) setReadyForApproachStatus(this)
+                    else get(RequiresFuelDump.mapper)?.active = true
+                }
+            }
+        }
+
+        // Update aircraft dumping fuel
+        val fuelDumpFamily = dumpingFuelFamilyEntities.getEntities()
+        for (i in 0 until fuelDumpFamily.size()) {
+            fuelDumpFamily[i]?.apply {
+                val acInfo = get(AircraftInfo.mapper) ?: return@apply
+                val fuelDump = get(RequiresFuelDump.mapper) ?: return@apply
+
+                if (!fuelDump.active) return@apply
+
+                fuelDump.timeLeft -= deltaTime
+                if (!fuelDump.informedDumpStarted && fuelDump.timeLeft < fuelDump.timeLeftToInformStart) {
+                    GAME.gameServer?.sendAircraftFuelDumpStatus(acInfo.icaoCallsign, false)
+                    fuelDump.informedDumpStarted = true
+                }
+                if (!fuelDump.informedNearingDone && fuelDump.timeLeft < fuelDump.timeLeftToInformNearDone) {
+                    GAME.gameServer?.sendAircraftFuelDumpStatus(acInfo.icaoCallsign, true)
+                    fuelDump.informedNearingDone = true
+                }
+                if (fuelDump.timeLeft < 0) {
+                    remove<RequiresFuelDump>()
+                    setReadyForApproachStatus(this)
+                }
+            }
+        }
+
+        // Update aircraft immobilized on runway
+        val immobilizedFamily = stayOnRunwayFamilyEntities.getEntities()
+        for (i in 0 until immobilizedFamily.size()) {
+            immobilizedFamily[i]?.apply {
+                val immobilized = get(ImmobilizeOnLanding.mapper) ?: return@apply
+                immobilized.timeLeft -= deltaTime
+
+                if (immobilized.timeLeft < 0) {
+                    val landingRwy = get(LandingRoll.mapper)?.rwy ?: return@apply
+                    val airport = landingRwy[RunwayInfo.mapper]?.airport ?: return@apply
+                    airport.setRunwayClosed(landingRwy[RunwayInfo.mapper]?.rwyId ?: return@apply, false)
+                    remove<ImmobilizeOnLanding>()
+                }
             }
         }
     }
@@ -1002,13 +1121,15 @@ class AISystem: EntitySystem() {
         actingClearance.clearedIas = commandTarget.targetIasKt
         if (prevMaxIas != actingClearance.maxIas || prevClearedIas != actingClearance.clearedIas) {
             val pendingClearances = entity[PendingClearances.mapper]
-            if (pendingClearances == null || pendingClearances.clearanceQueue.isEmpty) entity += LatestClearanceChanged()
+            if (pendingClearances == null || pendingClearances.clearanceQueue.isEmpty)
+                entity += LatestClearanceChanged()
         }
     }
 
     /**
-     * Updates the command target parameters with the latest acting clearance; should be called only when the acting
-     * clearance has been changed due to player clearance
+     * Updates the command target parameters with the latest acting clearance;
+     * should be called only when the acting clearance has been changed due to
+     * player clearance, or in a way that requires a change in player clearance
      * @param entity the aircraft entity to apply the changes to
      */
     private fun setCommandTargetToNewActingClearance(entity: Entity) {
@@ -1115,7 +1236,8 @@ class AISystem: EntitySystem() {
         val prevClearedAlt = actingClearance.clearedAlt
         actingClearance.clearedAlt = findMissedApproachAlt(actingClearance.route) ?:
                 ((((GAME.gameServer?.airports?.get(entity[ArrivalAirport.mapper]?.arptId)?.entity?.get(Altitude.mapper)?.altitudeFt ?: 0f) / 1000).roundToInt() + 3) * 1000)
-        if (prevClearedAlt != actingClearance.clearedAlt) entity += LatestClearanceChanged()
+        if (prevClearedAlt != actingClearance.clearedAlt)
+            entity += LatestClearanceChanged()
     }
 
     /**
@@ -1159,5 +1281,67 @@ class AISystem: EntitySystem() {
             // Add the go around flag with reason
             entity += RecentGoAround(reason = reason)
         }
+    }
+
+    /**
+     * Returns the altitude the aircraft is targeting after emergency starts depending on emergency type
+     * @param currentAlt the current altitude of the aircraft
+     * @param type the type of emergency
+     * @param arptElevation the elevation of the airport the aircraft is flying from
+     */
+    private fun getClearedAltitudeAfterEmergency(currentAlt: Float, type: Byte, arptElevation: Float): Int {
+        // Minimum altitude to maintain is 2000 feet AGL
+        val minLevelOffAlt = arptElevation + 2000
+
+        // Pressure loss means emergency descent to 10000 feet
+        if (type == EmergencyPending.PRESSURE_LOSS) return 10000
+        return ceil(max(currentAlt, minLevelOffAlt) / 1000).toInt() * 1000
+    }
+
+    /**
+     * Sets the current clearance and any pending clearances' cleared altitude
+     * to the input altitude, clearing any altitude restrictions along the
+     * route and updating the aircraft command target altitude
+     * @param entity the aircraft entity
+     * @param newAlt the new altitude to set to
+     */
+    private fun setCurrentAndPendingClearanceToAltitude(entity: Entity, newAlt: Int) {
+        entity[ClearanceAct.mapper]?.actingClearance?.clearanceState?.let {
+            it.clearedAlt = newAlt
+            it.deactivateAllRouteRestrictions()
+        } ?: return
+
+        // Do the same for any pending clearances
+        entity[PendingClearances.mapper]?.clearanceQueue?.let { queue ->
+            for (i in 0 until queue.size) {
+                queue[i].clearanceState.let {
+                    it.clearedAlt = newAlt
+                    it.deactivateAllRouteRestrictions()
+                }
+            }
+        }
+
+        entity += ClearanceActChanged()
+        entity += LatestClearanceChanged()
+    }
+
+    /**
+     * Sets the entity to be ready for approach after performing checklists (and
+     * possibly dumping fuel), and may require the aircraft to remain the runway
+     * after landing depending on emergency type and RNG
+     */
+    private fun setReadyForApproachStatus(entity: Entity) {
+        val acInfo = entity[AircraftInfo.mapper] ?: return
+        val emergency = entity[EmergencyPending.mapper] ?: return
+        val immobilizeOnLanding = when (emergency.type) {
+            EmergencyPending.BIRD_STRIKE, EmergencyPending.ENGINE_FAIL -> MathUtils.randomBoolean(0.7f)
+            EmergencyPending.HYDRAULIC_FAIL, EmergencyPending.FUEL_LEAK -> true
+            EmergencyPending.MEDICAL -> false
+            EmergencyPending.PRESSURE_LOSS -> MathUtils.randomBoolean(0.3f)
+            else -> false
+        }
+        // Stay on runway for 5-10 mins if needed
+        if (immobilizeOnLanding) entity += ImmobilizeOnLanding(MathUtils.random(300f, 600f))
+        GAME.gameServer?.sendAircraftReadyForApproach(acInfo.icaoCallsign, immobilizeOnLanding)
     }
 }

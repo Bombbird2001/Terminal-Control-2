@@ -13,10 +13,7 @@ import com.bombbird.terminalcontrol2.systems.updateAircraftRadarData
 import com.bombbird.terminalcontrol2.traffic.ConflictManager
 import com.bombbird.terminalcontrol2.traffic.TrafficMode
 import com.bombbird.terminalcontrol2.ui.*
-import com.bombbird.terminalcontrol2.ui.datatag.addDatatagInputListeners
-import com.bombbird.terminalcontrol2.ui.datatag.getNewDatatagLabelText
-import com.bombbird.terminalcontrol2.ui.datatag.setDatatagFlash
-import com.bombbird.terminalcontrol2.ui.datatag.updateDatatagText
+import com.bombbird.terminalcontrol2.ui.datatag.*
 import com.bombbird.terminalcontrol2.ui.panes.CommsPane
 import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.*
@@ -452,6 +449,118 @@ data class ClearedForTakeoffData(val callsign: String = "", val depArptId: Byte 
             entity[Datatag.mapper]?.let { addDatatagInputListeners(it, this) }
             entity.remove<WaitingTakeoff>()
             entity += DepartureAirport(depArptId, 0)
+        }
+    }
+}
+
+/**
+ * Class representing data sent from server to clients to declare an emergency for an aircraft, with the type of
+ * emergency
+ */
+data class EmergencyStart(val callsign: String = "", val type: Byte = -1): ClientReceive, NeedsEncryption {
+    override fun handleClientReceive(rs: RadarScreen) {
+        rs.aircraft[callsign]?.apply {
+            val depArpt = entity[DepartureAirport.mapper] ?: return
+            entity[FlightType.mapper]?.type = FlightType.ARRIVAL
+            entity[RSSprite.mapper]?.drawable = getAircraftIcon(entity[FlightType.mapper]?.type ?: return,
+                entity[Controllable.mapper]?.sectorId ?: return)
+            entity[SRColor.mapper]?.color = ARRIVAL_BLUE
+            entity += ArrivalAirport(depArpt.arptId)
+            entity += EmergencyPending(true, type, 0)
+            entity.remove<DepartureAirport>()
+            if (entity[Controllable.mapper]?.sectorId != rs.playerSector) return
+            entity += ContactNotification()
+            entity[Datatag.mapper]?.let {
+                it.emergency = true
+                it.minimised = false
+                updateDatatagStyle(it, FlightType.ARRIVAL, rs.selectedAircraft == this)
+                setDatatagFlash(it, this, true)
+            }
+            rs.uiPane.commsPane.declareEmergency(entity, type)
+        }
+    }
+}
+
+/**
+ * Class representing data sent from server to clients to notify the controlling
+ * player that the aircraft is nearing completion of emergency checklists, and
+ * may need a fuel dump
+ */
+data class ChecklistsNearingDone(val callsign: String = "", val needsFuelDump: Boolean = false): ClientReceive, NeedsEncryption {
+    override fun handleClientReceive(rs: RadarScreen) {
+        rs.aircraft[callsign]?.apply {
+            if (needsFuelDump)
+                entity += RequiresFuelDump(false, 0f, 0f, 0f,
+                    informedDumpStarted = true, informedNearingDone = true)
+            if (entity[Controllable.mapper]?.sectorId != rs.playerSector) return
+            entity += ContactNotification()
+            entity[Datatag.mapper]?.let {
+                setDatatagFlash(it, this, true)
+            }
+            rs.uiPane.commsPane.checklistNearingDone(entity, needsFuelDump)
+        }
+    }
+}
+
+/**
+ * Class representing data sent from server to clients to notify the controlling
+ * player of the aircraft's fuel dumping status, either it just started or it
+ * will end soon
+ */
+data class FuelDumpStatus(val callsign: String = "", val dumpingEnding: Boolean = false): ClientReceive, NeedsEncryption {
+    override fun handleClientReceive(rs: RadarScreen) {
+        rs.aircraft[callsign]?.apply {
+            entity[RequiresFuelDump.mapper]?.active = true
+            if (entity[Controllable.mapper]?.sectorId != rs.playerSector) return
+            entity += ContactNotification()
+            entity[Datatag.mapper]?.let {
+                setDatatagFlash(it, this, true)
+            }
+            rs.uiPane.commsPane.fuelDumpStatus(entity, dumpingEnding)
+        }
+    }
+}
+
+/**
+ * Class representing data sent from server to clients to notify the controlling
+ * player that the aircraft is ready for approach, and may remain on the runway
+ * after landing
+ */
+data class ReadyForApproach(val callsign: String = "", val immobilizeOnLanding: Boolean = false): ClientReceive, NeedsEncryption {
+    override fun handleClientReceive(rs: RadarScreen) {
+        rs.aircraft[callsign]?.apply {
+            entity[RequiresFuelDump.mapper]?.active = false
+            entity += ReadyForApproachClient()
+            if (immobilizeOnLanding) entity += ImmobilizeOnLanding(0f)
+            if (entity[Controllable.mapper]?.sectorId != rs.playerSector) return
+            entity += ContactNotification()
+            entity[Datatag.mapper]?.let {
+                setDatatagFlash(it, this, true)
+            }
+            rs.uiPane.commsPane.readyForApproach(entity, immobilizeOnLanding)
+        }
+    }
+}
+
+/** Class representing data sent from server to clients to notify the player of a change in runway closed state */
+data class RunwayClosedState(val airportId: Byte = 0, val runwayId: Byte = 0, val closed: Boolean = false): ClientReceive, NeedsEncryption {
+    override fun handleClientReceive(rs: RadarScreen) {
+        val airport = rs.airports[airportId]?.entity ?: return
+        airport[RunwayChildren.mapper]?.rwyMap?.get(runwayId)?.apply {
+            val oppRwy = entity[OppositeRunway.mapper]?.oppRwy ?: return
+            if (closed && entity.hasNot(RunwayClosed.mapper)) {
+                entity += RunwayClosed()
+                oppRwy += RunwayClosed()
+                rs.uiPane.commsPane.addMessage("Runways ${entity[RunwayInfo.mapper]?.rwyName}, " +
+                        "${oppRwy[RunwayInfo.mapper]?.rwyName} at ${airport[AirportInfo.mapper]?.icaoCode} are closed",
+                    CommsPane.OTHERS)
+            } else if (!closed && entity.has(RunwayClosed.mapper)) {
+                entity.remove<RunwayClosed>()
+                oppRwy.remove<RunwayClosed>()
+                rs.uiPane.commsPane.addMessage("Runways ${entity[RunwayInfo.mapper]?.rwyName}, " +
+                        "${oppRwy[RunwayInfo.mapper]?.rwyName} at ${airport[AirportInfo.mapper]?.icaoCode} have reopened",
+                    CommsPane.OTHERS)
+            }
         }
     }
 }

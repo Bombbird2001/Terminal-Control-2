@@ -293,6 +293,7 @@ fun createRandomDeparture(airport: Entity, gs: GameServer) {
     gs.aircraft.put(callsign, Aircraft(callsign, 0f, 0f, 0f, icaoType, FlightType.DEPARTURE, false).apply {
         entity += WaitingTakeoff()
         entity += ClearanceAct()
+        addEmergencyIfNeeded(entity, airport)
         airport += AirportNextDeparture(entity)
         gs.sendAircraftSpawn(this)
     })
@@ -479,6 +480,7 @@ fun getAvailableApproaches(airport: Entity, currSelectedApp: String?): GdxArray<
             app.entity[ApproachInfo.mapper]?.also {
                 // Add to list of eligible approaches if its runway is active for landings and time restriction checks passes
                 if (rwys[it.rwyId]?.entity?.get(ActiveLanding.mapper) == null) return@forEach
+                if (rwys[it.rwyId]?.entity?.has(RunwayClosed.mapper) != false) return@forEach
                 if (!app.isUsableForDayNight()) return@forEach
                 array.add(it.approachName)
             }
@@ -602,6 +604,7 @@ fun calculateDistFromThreshold(aircraft: Entity, rwy: Entity): Float {
 fun calculateTimeToThreshold(aircraft: Entity, rwy: Entity): Float {
     val distPx = calculateDistFromThreshold(aircraft, rwy)
     val gsPxps = aircraft[GroundTrack.mapper]?.trackVectorPxps?.len() ?: return Float.MAX_VALUE
+    if (gsPxps == 0f) return Float.MAX_VALUE
     return distPx / gsPxps
 }
 
@@ -820,4 +823,38 @@ fun updateWakeTrailState(aircraft: Entity, system: TrafficSystemInterval) {
     }
     wake.wakeZones.addFirst(Pair(pos.copy(), newWakeZone))
     if (newWakeZone != null) system.addWakeZone(newWakeZone)
+}
+
+/**
+ * Adds emergency components to aircraft depending on RNG results
+ * @param aircraft the aircraft to maybe add emergency components to
+ * @param airport the airport the aircraft is flying from, for elevation information
+ */
+private fun addEmergencyIfNeeded(aircraft: Entity, airport: Entity) {
+    val emerChance = when (GAME.gameServer?.emergencyRate) {
+        GameServer.EMERGENCY_LOW -> 0.005f
+        GameServer.EMERGENCY_MEDIUM -> 0.01f
+        GameServer.EMERGENCY_HIGH -> 0.02f
+        else -> 0f
+    }
+    if (MathUtils.randomBoolean(emerChance)) {
+        val elevation = airport[Altitude.mapper]?.altitudeFt ?: return
+        val emerType = MathUtils.random(EmergencyPending.BIRD_STRIKE.toInt(), EmergencyPending.PRESSURE_LOSS.toInt()).toByte()
+        val activationAlt = when (emerType) {
+            EmergencyPending.BIRD_STRIKE -> {
+                if (elevation > 7000) MathUtils.random(2300, 1500) + elevation
+                else MathUtils.random(2300, 7000) + elevation
+            }
+            EmergencyPending.ENGINE_FAIL -> MathUtils.random(2300, 5000) + elevation
+            EmergencyPending.HYDRAULIC_FAIL -> MathUtils.random(2300, 5000) + elevation
+            EmergencyPending.MEDICAL -> MathUtils.random(4000, 14000) + elevation
+            EmergencyPending.PRESSURE_LOSS -> MathUtils.random(12000f, 14500f)
+            EmergencyPending.FUEL_LEAK -> MathUtils.random(11000f, 14500f)
+            else -> {
+                FileLog.info("TrafficTools", "Unknown emergency type $emerType")
+                return
+            }
+        }
+        aircraft += EmergencyPending(false, emerType, activationAlt.roundToInt())
+    }
 }
