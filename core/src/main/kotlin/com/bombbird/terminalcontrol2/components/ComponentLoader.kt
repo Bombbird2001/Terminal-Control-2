@@ -31,6 +31,7 @@ fun loadAllComponents() {
     CommandHold.initialise()
     CommandInitClimb.initialise()
     CommandTarget.initialise()
+    CommandTargetVertSpd.initialise()
     CommandVector.initialise()
     ConflictAble.initialise()
     ConstantZoomSize.initialise()

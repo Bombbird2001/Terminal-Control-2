@@ -114,10 +114,11 @@ class PhysicsSystem: EntitySystem() {
                 val cmd = get(CommandTarget.mapper) ?: return@apply
 
                 // Reach target altitude within 10 seconds, capped by aircraft performance constraints
-                var targetVS = (cmd.targetAltFt - alt.altitudeFt) / 10 * 60
+                var targetVS = get(CommandTargetVertSpd.mapper)?.targetVertSpdFpm ?: ((cmd.targetAltFt - alt.altitudeFt) / 10 * 60)
                 targetVS = MathUtils.clamp(targetVS, aircraftInfo.minVs, aircraftInfo.maxVs) // Clamp to min, max VS (from aircraft performance)
                 val maxVsToUse = if (has(CommandExpedite.mapper)) MAX_VS_EXPEDITE else MAX_VS
                 targetVS = MathUtils.clamp(targetVS, -maxVsToUse, maxVsToUse) // Clamp to ensure no crazy rate of climb/descent
+                remove<CommandTargetVertSpd>()
 
                 // Reach target vertical speed within 3 seconds, but is capped between -0.25G and 0.25G
                 val targetVAcc = (targetVS - spd.vertSpdFpm) / 3

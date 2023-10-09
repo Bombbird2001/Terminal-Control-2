@@ -192,6 +192,18 @@ class CommandCDA: Component, BaseComponentJSONInterface {
     }
 }
 
+/** Component for tagging an aircraft that should fly with a target vertical speed instead of the min/max achievable */
+@JsonClass(generateAdapter = true)
+data class CommandTargetVertSpd(var targetVertSpdFpm: Float = 0f): Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.COMMAND_TARGET_VERT_SPD
+
+    companion object {
+        val mapper = object: Mapper<CommandTargetVertSpd>() {}.mapper
+
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
+    }
+}
+
 /**
  * Component for storing an aircraft's most recent [minAltFt], [maxAltFt] and [maxSpdKt], since the route class does not store
  * previous legs and cannot provide information about past restrictions

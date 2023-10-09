@@ -13,11 +13,12 @@ import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.IOException
+import java.util.concurrent.TimeUnit
 
 object HttpRequest {
     private val JSON_MEDIA_TYPE: MediaType = "application/json; charset=utf-8".toMediaType()
     private val TEXT_MEDIA_TYPE: MediaType = "text/plain; charset=utf-8".toMediaType()
-    private val client = OkHttpClient()
+    private val client = OkHttpClient.Builder().connectTimeout(5, TimeUnit.SECONDS).build()
 
     /** Helper class that specifies the JSON format to send METAR requests to the server */
     @JsonClass(generateAdapter = true)

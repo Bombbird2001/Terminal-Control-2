@@ -5,6 +5,7 @@ import com.bombbird.terminalcontrol2.files.getSaveJSONString
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.screens.settings.MainSettings
 import com.bombbird.terminalcontrol2.ui.addChangeListener
+import com.bombbird.terminalcontrol2.utilities.FileLog
 import ktx.scene2d.*
 
 /** Pause screen which extends [BasicUIScreen] */
@@ -37,6 +38,9 @@ class PauseScreen: BasicUIScreen() {
                     row().padTop(30f)
                     textButton("Bug Report", "PauseScreen").cell(align = Align.center, colspan = 3, width = BUTTON_WIDTH_MEDIUM, height = BUTTON_HEIGHT_BIG)
                         .addChangeListener { _, _ ->
+                            // Log connection status before bug report
+                            GAME.gameServer?.let { FileLog.info("PauseScreen", it.networkServer.getConnectionStatus()) }
+                            GAME.gameClientScreen?.let { FileLog.info("PauseScreen", it.networkClient.getConnectionStatus()) }
                             val bugReportScreen = GAME.getScreen<ReportBug>()
                             bugReportScreen.prevScreen = this@PauseScreen
                             bugReportScreen.setSaveGame(GAME.gameServer?.let { getSaveJSONString(it) } ?: "")

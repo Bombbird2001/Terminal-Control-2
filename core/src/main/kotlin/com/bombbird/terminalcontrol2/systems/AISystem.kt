@@ -618,9 +618,13 @@ class AISystem: EntitySystem() {
                 // 25 feet leeway max capture altitude
                 if (alt.altitudeFt < ((gsApp[GlideSlope.mapper]?.maxInterceptAlt ?: return@apply)) + 25) {
                     val gsAltAtPos = getAppAltAtPos(gsApp, pos.x, pos.y, 0f) ?: return@apply
-                    // Maintain altitude if below the GS capture altitude
-                    if (alt.altitudeFt < gsAltAtPos) {
-                        cmd.targetAltFt = alt.altitudeFt.toInt()
+                    // If below the GS capture altitude and more than 100 feet above command target altitude,
+                    // fly at half the descent angle of the glide slope
+                    if (alt.altitudeFt < gsAltAtPos && alt.altitudeFt > cmd.targetAltFt + 100) {
+                        val groundSpeedPxps = get(GroundTrack.mapper)?.trackVectorPxps?.len() ?: ktToPxps(140)
+                        val descentAngle = (gsApp[GlideSlope.mapper]?.glideAngle ?: 3f) / 2
+                        val descentRatePxps = -groundSpeedPxps * tan(Math.toRadians(descentAngle.toDouble()))
+                        this += CommandTargetVertSpd(pxToFt(descentRatePxps.toFloat() * 60))
                     }
                     // Capture glide slope when within 20 feet and below the max intercept altitude (and localizer is captured)
                     if (abs(alt.altitudeFt - gsAltAtPos) < 20) {

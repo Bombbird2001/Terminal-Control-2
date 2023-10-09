@@ -136,7 +136,7 @@ class RadarScreen private constructor(private val connectionHost: String, privat
     var selectedAircraft: Aircraft? = null
 
     // Networking client
-    private val networkClient: NetworkClient
+    val networkClient: NetworkClient
         get() = if (!isPublicMultiplayer()) GAME.lanClient else GAME.publicClient
 
     // Blocking queue to store runnables to be run in the main thread after engine update
