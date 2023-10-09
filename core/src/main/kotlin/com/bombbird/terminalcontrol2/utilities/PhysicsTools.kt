@@ -246,15 +246,15 @@ fun calculateIASFromMach(altitudeFt: Float, mach: Float): Float {
  * @param altitudeFt the altitude, in feet, the aircraft is flying at
  * @param tasKt the TAS, in knots, the aircraft is flying at
  * @param vertSpdFpm the minimum vertical speed, in feet per minute, the aircraft is required to maintain during climb
- * @param approachExpedite whether the aircraft is on approach or expediting
+ * @param onApproach whether the aircraft is on approach or expediting
  * @param takingOff whether the aircraft is in takeoff or landing roll
  * @param takeoffClimb whether the aircraft is still in the takeoff climb phase
  * @return the maximum acceleration, in metres per second^2, that is achievable by the aircraft
  */
 fun calculateMaxAcceleration(aircraftPerfData: AircraftTypeData.AircraftPerfData, altitudeFt: Float, tasKt: Float, vertSpdFpm: Float,
-                             approachExpedite: Boolean, takingOff: Boolean, takeoffClimb: Boolean): Float {
+                             onApproach: Boolean, takingOff: Boolean, takeoffClimb: Boolean): Float {
     val thrust = calculateMaxThrust(aircraftPerfData, altitudeFt, tasKt)
-    val drag = if (approachExpedite) calculateMaxDrag(aircraftPerfData, altitudeFt, tasKt, takingOff, takeoffClimb)
+    val drag = if (onApproach) calculateMaxDrag(aircraftPerfData, altitudeFt, tasKt, takingOff, takeoffClimb)
     else calculateMinDrag(aircraftPerfData, altitudeFt, tasKt, takingOff, takeoffClimb)
     return calculateAcceleration(thrust, drag, aircraftPerfData.massKg) + (if (takingOff) 0f else calculateAccelerationDueToVertSpd(vertSpdFpm, tasKt))
 }
@@ -316,20 +316,22 @@ fun calculateRequiredAcceleration(initialSpdKt: Short, targetSpdKt: Short, dista
 
 /**
  * Calculates the maximum achievable vertical speed (i.e. maximum climb rate), in feet per minute, given the
- * [aircraftPerfData], [altitudeFt], [tasKt] and [accMps2] of the plane and whether it is on approach or expediting ([approachExpedite])
+ * [aircraftPerfData], [altitudeFt], [tasKt] and [accMps2] of the plane and whether it is on approach or expediting ([onApproach])
  * @param aircraftPerfData the aircraft performance data of the aircraft
  * @param altitudeFt the altitude, in feet, the aircraft is flying at
  * @param tasKt the TAS, in knots, the aircraft is flying at
  * @param accMps2 the acceleration, in metres per second^2, the aircraft is experiencing
- * @param approachExpedite whether the aircraft is on approach or expediting
+ * @param onApproach whether the aircraft is on approach
  * @param takingOff whether the aircraft is in takeoff or landing roll
  * @return the maximum vertical speed, in feet per minute, that is achievable by the aircraft
  */
-fun calculateMaxVerticalSpd(aircraftPerfData: AircraftTypeData.AircraftPerfData, altitudeFt: Float, tasKt: Float, accMps2: Float, approachExpedite: Boolean, takingOff: Boolean, takeoffClimb: Boolean): Float {
+fun calculateMaxVerticalSpd(aircraftPerfData: AircraftTypeData.AircraftPerfData, altitudeFt: Float, tasKt: Float, accMps2: Float, onApproach: Boolean, takingOff: Boolean, takeoffClimb: Boolean): Float {
     val thrustN = calculateMaxThrust(aircraftPerfData, altitudeFt, tasKt)
-    val dragN = if (approachExpedite) calculateMaxDrag(aircraftPerfData, altitudeFt, tasKt, takingOff, takeoffClimb)
-    else calculateMinDrag(aircraftPerfData, altitudeFt, tasKt, takingOff, takeoffClimb)
-    return calculateVerticalSpd(thrustN - dragN, tasKt, accMps2, aircraftPerfData.massKg)
+    val dragN = calculateMinDrag(aircraftPerfData, altitudeFt, tasKt, takingOff, takeoffClimb)
+    val maxVertSpd = calculateVerticalSpd(thrustN - dragN, tasKt, accMps2, aircraftPerfData.massKg)
+    // If aircraft is on approach, taking off or in takeoff climb, it should climb at 1000fpm minimum
+    if (onApproach || takingOff || takeoffClimb) return max(maxVertSpd, 1000f)
+    return maxVertSpd
 }
 
 /**
@@ -375,7 +377,7 @@ fun calculateMaxAlt(aircraftPerfData: AircraftTypeData.AircraftPerfData): Int {
         val alt = i * 1000f
         val iasToUse = if (alt > crossOverAlt) calculateIASFromMach(alt, aircraftPerfData.tripMach) else aircraftPerfData.tripIas.toFloat()
         if (calculateMaxVerticalSpd(aircraftPerfData, alt, calculateTASFromIAS(alt, iasToUse), 0f,
-                approachExpedite = false, takingOff = false, takeoffClimb = false) > minClimbRateAtCruiseAlt)
+                onApproach = false, takingOff = false, takeoffClimb = false) > minClimbRateAtCruiseAlt)
             return alt.roundToInt()
     }
     return 8000

@@ -262,6 +262,17 @@ class ConflictManager {
             val approachCaptured = it.has(GlideSlopeCaptured.mapper) || it.has(StepDownApproach.mapper) ||
                     (it[CirclingApproach.mapper]?.phase ?: 0) >= 1 || it.has(VisualCaptured.mapper)
 
+            // Whether the aircraft has already captured localizer but not the glide slope yet, but is above the ROC
+            // slope
+            val aboveGsRoc = !approachCaptured && it.has(LocalizerCaptured.mapper) && (it[GlideSlopeArmed.mapper]?.let { gsArmed ->
+                val gs = gsArmed.gsApp[GlideSlope.mapper] ?: return@let false
+                val appPos = gsArmed.gsApp[Position.mapper] ?: return@let false
+                val gradientRatio = 102 / gs.glideAngle
+                val distFromTouchdownPx = calculateDistanceBetweenPoints(pos.x, pos.y, appPos.x, appPos.y) + nmToPx(gs.offsetNm)
+                val rwyAlt = gsArmed.gsApp[ApproachInfo.mapper]?.rwyObj?.entity?.get(Altitude.mapper)?.altitudeFt ?: return@let false
+                alt.altitudeFt > rwyAlt + pxToFt(distFromTouchdownPx) / gradientRatio
+            } ?: false)
+
             // Whether the aircraft is following vectors (if false, it is following the route)
             val underVector = getLatestClearanceState(it)?.vectorHdg != null
 
@@ -289,9 +300,9 @@ class ConflictManager {
                     // descending order, and all subsequent sectors will not trigger a conflict
                     if (minAlt != null && alt.altitudeFt > minAlt - 25) return@forEach
 
-                    // If aircraft is already on glide slope, step down, circling (phase 1 or later) or visual approach
-                    // and sector is not restricted, skip checking
-                    if (!sectorInfo.restricted && approachCaptured)
+                    // If aircraft is already on glide slope, step down, circling (phase 1 or later) or visual approach,
+                    // or is above the ROC slope of the glide slope, and sector is not restricted, skip checking
+                    if (!sectorInfo.restricted && (approachCaptured || aboveGsRoc))
                         return@apply
 
                     // If aircraft is not being vectored (i.e. SID/STAR/approach), is within the route's MVA exclusion

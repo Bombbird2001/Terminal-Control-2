@@ -116,6 +116,12 @@ fun isInsideLocArc(locApp: Entity, posX: Float, posY: Float, angleDeg: Float, di
     return checkInArc(pos.x, pos.y, convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()), nmToPx(distNm.toFloat()), angleDeg, posX, posY)
 }
 
+/**
+ * Checks whether the aircraft is considered to be in the final approach track of the given approach
+ * @param app the approach entity
+ * @param posX the x coordinate of aircraft position
+ * @param posY the y coordinate of aircraft position
+ */
 fun establishedOnFinalApproachTrack(app: Entity, posX: Float, posY: Float): Boolean {
     val rwy = app[ApproachInfo.mapper]?.rwyObj ?: return false
     val pos = rwy.entity[Position.mapper] ?: return false

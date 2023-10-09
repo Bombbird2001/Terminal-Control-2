@@ -600,7 +600,7 @@ class AISystem: EntitySystem() {
                 // Alternatively, if aircraft is within 2 degrees of LOC track, capture
                 val trackToLoc = Vector2(locPos.x - pos.x, locPos.y - pos.y)
                 val targetHdg = convertWorldAndRenderDeg(trackToLoc.angleDeg()) + MAG_HDG_DEV
-                if (abs(findDeltaHeading(targetHdg, locCourseHdg, CommandTarget.TURN_DEFAULT)) < 1.5) {
+                if (abs(findDeltaHeading(targetHdg, locCourseHdg, CommandTarget.TURN_DEFAULT)) < 2) {
                     remove<LocalizerArmed>()
                     this += LocalizerCaptured(locApp)
                 }
