@@ -1,5 +1,6 @@
 package com.bombbird.terminalcontrol2.utilities
 
+import com.bombbird.terminalcontrol2.files.saveGame
 import com.bombbird.terminalcontrol2.global.GAME
 
 /**
@@ -8,7 +9,11 @@ import com.bombbird.terminalcontrol2.global.GAME
 class AndroidLifeCycleHandler {
     /** Called when onPause is called on Android app */
     fun onPause() {
-        GAME.gameServer?.updateGameRunningStatus(false)
+        // Perform a save on app pause due to possibility of being killed by Android system
+        GAME.gameServer?.let {
+            it.postRunnableAfterPause { saveGame(it) }
+            it.updateGameRunningStatus(false)
+        }
     }
 
     /** Called when onResume is called on Android app */

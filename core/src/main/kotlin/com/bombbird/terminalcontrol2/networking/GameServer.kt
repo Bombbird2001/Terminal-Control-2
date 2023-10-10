@@ -136,6 +136,9 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
     private val gamePaused = AtomicBoolean(false)
     private var lock = ReentrantLock()
     private val pauseCondition = lock.newCondition()
+    // Blocking queue to store runnables to be run after a game pause
+    private val pendingPauseQueue = ConcurrentLinkedQueue<Runnable>()
+
     val initialisingWeather = AtomicBoolean(true)
     private val initialWeatherCondition = lock.newCondition()
     private val playerNo = AtomicInteger(0)
@@ -624,6 +627,10 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
             }
 
             if (gamePaused.get()) lock.withLock {
+                // Process pending pause runnables
+                while (true) {
+                    pendingPauseQueue.poll()?.run() ?: break
+                }
                 pauseCondition.await()
                 currMs = System.currentTimeMillis()
             }
@@ -968,6 +975,14 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
      */
     fun sendRunwayClosedState(airportId: Byte, runwayId: Byte, closed: Boolean) {
         networkServer.sendToAllTCP(RunwayClosedState(airportId, runwayId, closed))
+    }
+
+    /**
+     * Adds a runnable to be run on the main server thread after the next game pause occurs
+     * @param runnable the runnable to add
+     */
+    fun postRunnableAfterPause(runnable: Runnable) {
+        pendingPauseQueue.offer(runnable)
     }
 
     /**
