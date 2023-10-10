@@ -10,6 +10,7 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import com.badlogic.gdx.math.Intersector
 import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.scenes.scene2d.Stage
+import com.badlogic.gdx.scenes.scene2d.ui.Label
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.Aircraft
 import com.bombbird.terminalcontrol2.global.*
@@ -26,6 +27,7 @@ import ktx.collections.set
 import ktx.math.*
 import ktx.scene2d.Scene2DSkin
 import kotlin.math.min
+import kotlin.math.roundToInt
 import kotlin.math.sqrt
 
 /**
@@ -99,6 +101,8 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
     private val contactDotFamilyEntities = FamilyWithListener.newClientFamilyWithListener(contactDotFamily)
     private val waypointFamilyEntities = FamilyWithListener.newClientFamilyWithListener(waypointFamily)
     private val routeFamilyEntities = FamilyWithListener.newClientFamilyWithListener(routeFamily)
+
+    private val distMeasureLabel = Label("", Scene2DSkin.defaultSkin, "DistMeasure")
 
     /** Main update function */
     override fun update(deltaTime: Float) {
@@ -303,6 +307,14 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
                         shapeRenderer.circle(pos2.x, pos2.y, nmToPx(latSepRequiredNm) / 2)
                     }
                 }
+            }
+        }
+
+        // Render distance measuring line
+        GAME.gameClientScreen?.let {
+            if (!it.distMeasurePoint1.isZero || !it.distMeasurePoint2.isZero) {
+                shapeRenderer.color = Color.WHITE
+                shapeRenderer.line(it.distMeasurePoint1, it.distMeasurePoint2)
             }
         }
 
@@ -598,6 +610,20 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
                     label.draw(GAME.batch, 1f)
                     labelY += (label.height + DATATAG_ROW_SPACING_PX)
                 }
+            }
+        }
+
+        // Render dist measure label
+        GAME.gameClientScreen?.let {
+            if (!it.distMeasurePoint1.isZero || !it.distMeasurePoint2.isZero) {
+                val distNm = pxToNm(calculateDistanceBetweenPoints(it.distMeasurePoint1.x, it.distMeasurePoint1.y,
+                    it.distMeasurePoint2.x, it.distMeasurePoint2.y))
+                distMeasureLabel.setText(((distNm * 10).roundToInt() / 10f).toString())
+                distMeasureLabel.pack()
+                val centerX = ((it.distMeasurePoint1.x + it.distMeasurePoint2.x) / 2 - camX) / camZoom
+                val centerY = ((it.distMeasurePoint1.y + it.distMeasurePoint2.y) / 2 - camY) / camZoom
+                distMeasureLabel.setPosition(centerX - distMeasureLabel.width / 2, centerY - distMeasureLabel.height / 2)
+                distMeasureLabel.draw(GAME.batch, 1f)
             }
         }
 

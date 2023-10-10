@@ -1,9 +1,7 @@
 package com.bombbird.terminalcontrol2.screens
 
 import com.badlogic.ashley.core.Entity
-import com.badlogic.gdx.Gdx
-import com.badlogic.gdx.InputMultiplexer
-import com.badlogic.gdx.InputProcessor
+import com.badlogic.gdx.*
 import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.OrthographicCamera
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer
@@ -148,6 +146,13 @@ class RadarScreen private constructor(private val connectionHost: String, privat
 
     // Signal booleans for if host server start failed
     var hostServerStartFailed = false
+
+    // Custom input variables
+    private var isDistMeasureDragging = false
+    private var isZoomPinching = false
+    private var waitForZoomPinchTimer = 0f
+    var distMeasurePoint1 = Vector2()
+    var distMeasurePoint2 = Vector2()
 
     companion object {
         // Datatag family for updating styles
@@ -322,6 +327,37 @@ class RadarScreen private constructor(private val connectionHost: String, privat
     }
 
     /**
+     * Handles custom inputs for distance measuring using right mouse (on desktop) or delayed pinching on Android
+     * @param delta time passed since last frame
+     */
+    private fun processDistanceMeasurerInputs(delta: Float) {
+        if (Gdx.input.isButtonPressed(Input.Buttons.RIGHT) && Gdx.app.type == Application.ApplicationType.Desktop) {
+            if (!isDistMeasureDragging) {
+                distMeasurePoint1 = unprojectFromRadarCamera(Gdx.input.x.toFloat(), Gdx.input.y.toFloat())
+            }
+            distMeasurePoint2 = unprojectFromRadarCamera(Gdx.input.x.toFloat(), Gdx.input.y.toFloat())
+            isDistMeasureDragging = true
+        } else if (Gdx.input.isTouched(0) && Gdx.input.isTouched(1) && Gdx.app.type == Application.ApplicationType.Android) {
+            // We wait for 0.5 second before enabling distance measuring - isZoomPinching must remain false for this 0.5 second
+            if (waitForZoomPinchTimer < 0.5f) {
+                waitForZoomPinchTimer += delta
+                if (isZoomPinching) waitForZoomPinchTimer = 0f
+                isZoomPinching = false
+                return
+            }
+
+            isDistMeasureDragging = true
+            distMeasurePoint1 = unprojectFromRadarCamera(Gdx.input.getX(0).toFloat(), Gdx.input.getY(0).toFloat())
+            distMeasurePoint2 = unprojectFromRadarCamera(Gdx.input.getX(1).toFloat(), Gdx.input.getY(1).toFloat())
+        } else {
+            isDistMeasureDragging = false
+            waitForZoomPinchTimer = 0f
+            distMeasurePoint1.setZero()
+            distMeasurePoint2.setZero()
+        }
+    }
+
+    /**
      * Helper function for unprojecting from screen coordinates to camera world coordinates, as unfortunately Camera's
      * unproject function is not accurate in this case
      */
@@ -390,8 +426,11 @@ class RadarScreen private constructor(private val connectionHost: String, privat
             // Prevent lag spikes from causing huge deviations in simulation
             val cappedDelta = min(delta, 1f / 30)
 
-            runCameraAnimations(cappedDelta)
-            if (running) clientEngine.update(cappedDelta)
+            if (running) {
+                runCameraAnimations(cappedDelta)
+                clientEngine.update(cappedDelta)
+                processDistanceMeasurerInputs(cappedDelta)
+            }
 
             // Process pending runnables
             while (true) { pendingRunnablesQueue.poll()?.run() ?: break }
@@ -434,7 +473,8 @@ class RadarScreen private constructor(private val connectionHost: String, privat
         }
     }
 
-    /** Updates various global constants, variables upon a screen resize, to ensure UI will fit to the new screen size
+    /**
+     * Updates various global constants, variables upon a screen resize, to ensure UI will fit to the new screen size
      *
      * Updates the viewport and camera's projectionMatrix of [radarDisplayStage], [constZoomStage], [uiStage] and [shapeRenderer]
      */
@@ -476,6 +516,7 @@ class RadarScreen private constructor(private val connectionHost: String, privat
 
     /** Implements [GestureListener.pan], pans the camera on detecting pan gesture */
     override fun pan(x: Float, y: Float, deltaX: Float, deltaY: Float): Boolean {
+        if (isDistMeasureDragging) return true
         (radarDisplayStage.camera as OrthographicCamera).apply {
             translate(-deltaX * zoom * UI_WIDTH / WIDTH, deltaY * zoom * UI_HEIGHT / HEIGHT)
         }
@@ -490,13 +531,17 @@ class RadarScreen private constructor(private val connectionHost: String, privat
 
     /** Implements [GestureListener.zoom], changes camera zoom on pinch (mobile) */
     override fun zoom(initialDistance: Float, distance: Float): Boolean {
+        if (isDistMeasureDragging) return true
         if (initialDistance != prevInitDist) {
             prevInitDist = initialDistance
             prevZoom = (radarDisplayStage.camera as OrthographicCamera).zoom
         }
         (radarDisplayStage.camera as OrthographicCamera).apply {
             val ratio = initialDistance / distance
-            clampUpdateCamera(prevZoom * ratio - zoom)
+            if (ratio < 0.95 || ratio > 1.05) {
+                isZoomPinching = true
+                clampUpdateCamera(prevZoom * ratio - zoom)
+            }
         }
         return true
     }
