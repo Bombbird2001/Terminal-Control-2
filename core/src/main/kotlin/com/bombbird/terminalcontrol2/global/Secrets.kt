@@ -11,4 +11,5 @@ object Secrets {
     var RELAY_ENDPOINT_URL = ""
     const val RELAY_ENDPOINT_AUTH_PW = ""
     const val RELAY_ENDPOINT_CREATE_PW = ""
+    const val DISCORD_INVITE_LINK = ""
 }
