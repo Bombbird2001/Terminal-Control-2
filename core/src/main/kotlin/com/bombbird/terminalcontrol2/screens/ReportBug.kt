@@ -62,8 +62,8 @@ class ReportBug: BasicUIScreen() {
                                         else if (it.maxPlayersAllowed > 1) "LAN multiplayer"
                                         else "Singleplayer"
                                     } ?: GAME.gameClientScreen?.let {
-                                        if (it.isPublicMultiplayer()) "Public multiplayer"
-                                        else "LAN multiplayer/Singleplayer"
+                                        if (it.isPublicMultiplayer()) "Public multiplayer (client)"
+                                        else "LAN multiplayer/Singleplayer (client)"
                                     } ?: "Unknown"
                                     HttpRequest.sendBugReport(textInput.text, logs, saveString, multiplayerType, {
                                         val sendEmail = imageCheckbox.isChecked
