@@ -27,8 +27,8 @@ class TextToSpeechManager(private val ttsHandler: TextToSpeechHandler): Disposab
             ttsNotAvailable = true
             Gdx.app.postRunnable {
                 CustomDialog("TTS error", "No voices found for Text-to-Speech - " +
-                        "pilot voices will not work. Please ensure that there are TTS voices " +
-                        "installed on your device and try again.",
+                        "pilot voices will not work. Please ensure that there are English TTS " +
+                        "voices installed on your device and try again.",
                     "", "Ok").show(GAME.getScreen<MainMenu>().stage)
             }
         }

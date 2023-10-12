@@ -1,6 +1,7 @@
 package com.bombbird.terminalcontrol2.lwjgl3
 
 import com.bombbird.terminalcontrol2.sounds.TextToSpeechHandler
+import com.bombbird.terminalcontrol2.utilities.FileLog
 import io.github.jonelo.jAdapterForNativeTTS.engines.SpeechEngine
 import io.github.jonelo.jAdapterForNativeTTS.engines.SpeechEngineNative
 import io.github.jonelo.jAdapterForNativeTTS.engines.VoicePreferences
@@ -56,7 +57,10 @@ class DesktopTTSHandler: TextToSpeechHandler() {
             }
         }
 
-        if (voiceArray.isEmpty) onVoiceDataMissing?.invoke()
+        if (voiceArray.isEmpty) {
+            FileLog.warn("Desktop TTS", "No English voices found; all voices available: ${speechEngine?.availableVoices?.joinToString { it.name }}")
+            onVoiceDataMissing?.invoke()
+        }
 
         speechEngine?.setRate(20)
         thread(name = "Desktop TTS") {

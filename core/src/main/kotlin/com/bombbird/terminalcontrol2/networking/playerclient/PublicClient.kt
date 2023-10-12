@@ -56,7 +56,7 @@ class PublicClient: NetworkClient() {
             override fun disconnected(connection: Connection?) {
                 if (GAME.shownScreen is RadarScreen)
                     GAME.quitCurrentGameWithDialog { CustomDialog("Disconnected", "You have been disconnected" +
-                            " from the server - most likely the host quit the game", "", "Ok") }
+                            " from the server - either the host quit the game or your internet connection is unstable", "", "Ok") }
             }
         })
     }

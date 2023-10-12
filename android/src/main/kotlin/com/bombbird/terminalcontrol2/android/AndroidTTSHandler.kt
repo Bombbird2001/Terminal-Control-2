@@ -24,9 +24,9 @@ class AndroidTTSHandler(private val app: AndroidApplication): TextToSpeechHandle
         voiceSet.clear()
         tts?.let {
             try {
-                if (it.voices.isEmpty()) return
+                if (it.voices.isEmpty()) return@let
             } catch (e: Exception) {
-                return
+                return@let
             }
             it.voices?.let { voices ->
                 for (available in voices) {
@@ -36,9 +36,12 @@ class AndroidTTSHandler(private val app: AndroidApplication): TextToSpeechHandle
                     }
                 }
             }
-        } ?: return
+        }
 
-        if (voiceArray.isEmpty) onVoiceDataMissing?.invoke()
+        if (voiceArray.isEmpty) {
+            FileLog.warn("Android TTS", "No English voices found; all voices available: ${tts?.voices?.joinToString { it.name }}")
+            onVoiceDataMissing?.invoke()
+        }
     }
 
     override fun init() {
