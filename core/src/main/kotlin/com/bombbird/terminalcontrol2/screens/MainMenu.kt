@@ -24,7 +24,7 @@ class MainMenu: BasicUIScreen() {
                     // debugAll()
                     table {
                         textButton("Join Our\nDiscord!", "Menu").cell(width = BUTTON_WIDTH_MEDIUM,
-                            height = BUTTON_HEIGHT_MAIN * 1.4f, align = Align.left, expandX = true).addChangeListener { _, _ ->
+                            height = BUTTON_HEIGHT_MAIN * 1.2f, align = Align.left, expandX = true).addChangeListener { _, _ ->
                             Gdx.net.openURI(DISCORD_INVITE_LINK)
                         }
                     }.cell(growX = true, uniformX = true)
