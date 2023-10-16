@@ -324,12 +324,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
                 saveGame(this)
             } catch (e: Exception) {
                 e.printStackTrace()
-                val multiplayerType = when {
-                    isPublicMultiplayer() -> "Public multiplayer"
-                    maxPlayersAllowed > 1 -> "LAN multiplayer"
-                    else -> "Singleplayer"
-                }
-                HttpRequest.sendCrashReport(e, "GameServer", multiplayerType)
+                HttpRequest.sendCrashReport(e, "GameServer", getMultiplayerType())
                 GAME.quitCurrentGameWithDialog { CustomDialog("Error", "An error occurred", "", "Ok") }
             }
         }
@@ -1007,7 +1002,16 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
     }
 
     /** Returns true if server is hosting a public multiplayer game, else false */
-    fun isPublicMultiplayer(): Boolean {
+    private fun isPublicMultiplayer(): Boolean {
         return getRoomId() != null
+    }
+
+    /** Returns the type of multiplayer game being hosted */
+    fun getMultiplayerType(): String {
+        return when {
+            isPublicMultiplayer() -> MULTIPLAYER_PUBLIC
+            maxPlayersAllowed > 1 -> MULTIPLAYER_LAN
+            else -> SINGLEPLAYER
+        }
     }
 }

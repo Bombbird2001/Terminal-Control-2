@@ -57,14 +57,8 @@ class ReportBug: BasicUIScreen() {
                                     backButton.isDisabled = true
                                     setText("Sending report...")
                                     val logs = getExtDir("Logs/BUILD $BUILD_VERSION.log")?.readString() ?: "Logs not found"
-                                    val multiplayerType = GAME.gameServer?.let {
-                                        if (it.isPublicMultiplayer()) "Public multiplayer"
-                                        else if (it.maxPlayersAllowed > 1) "LAN multiplayer"
-                                        else "Singleplayer"
-                                    } ?: GAME.gameClientScreen?.let {
-                                        if (it.isPublicMultiplayer()) "Public multiplayer (client)"
-                                        else "LAN multiplayer/Singleplayer (client)"
-                                    } ?: "Unknown"
+                                    val multiplayerType = GAME.gameServer?.getMultiplayerType()
+                                        ?: GAME.gameClientScreen?.getMultiplayerType() ?: MULTIPLAYER_UNKNOWN
                                     HttpRequest.sendBugReport(textInput.text, logs, saveString, multiplayerType, {
                                         val sendEmail = imageCheckbox.isChecked
                                         CustomDialog("Report sent", "Bug report sent successfully. Thank you for reporting the bug!" +

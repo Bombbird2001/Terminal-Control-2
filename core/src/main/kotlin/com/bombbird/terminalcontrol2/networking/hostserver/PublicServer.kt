@@ -76,7 +76,7 @@ class PublicServer(
             // We can ignore this, it happens sometimes when the client is stopped
             if (e is ClosedSelectorException) return@setUncaughtExceptionHandler
 
-            HttpRequest.sendCrashReport(Exception(e), "PublicServer", "Public multiplayer")
+            HttpRequest.sendCrashReport(Exception(e), "PublicServer", MULTIPLAYER_PUBLIC)
             GAME.quitCurrentGameWithDialog { CustomDialog("Error", "An error occurred", "", "Ok") }
         }
         CLIENT_TCP_PORT_IN_USE = RELAY_TCP_PORT

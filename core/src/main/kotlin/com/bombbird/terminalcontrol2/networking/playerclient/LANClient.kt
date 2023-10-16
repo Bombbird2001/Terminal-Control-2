@@ -105,7 +105,7 @@ class LANClient(lanClientDiscoveryHandler: LANClientDiscoveryHandler): NetworkCl
             // We can ignore this, it happens sometimes when the client is stopped
             if (e is ClosedSelectorException) return@setUncaughtExceptionHandler
 
-            HttpRequest.sendCrashReport(Exception(e), "LANClient", "LAN multiplayer/Singleplayer")
+            HttpRequest.sendCrashReport(Exception(e), "LANClient", MULTIPLAYER_SINGLEPLAYER_LAN_CLIENT)
             GAME.quitCurrentGameWithDialog { CustomDialog("Error", "An error occurred", "", "Ok") }
         }
     }

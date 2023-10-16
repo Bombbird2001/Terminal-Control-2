@@ -110,7 +110,7 @@ class PublicClient: NetworkClient() {
             // We can ignore this, it happens sometimes when the client is stopped
             if (e is ClosedSelectorException) return@setUncaughtExceptionHandler
 
-            HttpRequest.sendCrashReport(Exception(e), "PublicClient", "Public multiplayer")
+            HttpRequest.sendCrashReport(Exception(e), "PublicClient", MULTIPLAYER_PUBLIC_CLIENT)
             GAME.quitCurrentGameWithDialog { CustomDialog("Error", "An error occurred", "", "Ok") }
         }
     }

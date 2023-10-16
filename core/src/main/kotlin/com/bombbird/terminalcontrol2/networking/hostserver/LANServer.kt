@@ -80,8 +80,7 @@ class LANServer(
             // We can ignore this, it happens sometimes when the client is stopped
             if (e is ClosedSelectorException) return@setUncaughtExceptionHandler
 
-            val multiplayerType = if (gameServer.maxPlayersAllowed > 1) "LAN multiplayer" else "Singleplayer"
-            HttpRequest.sendCrashReport(Exception(e), "LANServer", multiplayerType)
+            HttpRequest.sendCrashReport(Exception(e), "LANServer", gameServer.getMultiplayerType())
             GAME.quitCurrentGameWithDialog { CustomDialog("Error", "An error occurred", "", "Ok") }
         }
         server.addListener(object : Listener {

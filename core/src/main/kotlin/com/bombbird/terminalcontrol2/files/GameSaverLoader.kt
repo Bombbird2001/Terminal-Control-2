@@ -129,15 +129,21 @@ fun loadSave(gs: GameServer, saveId: Int) {
  */
 @OptIn(ExperimentalStdlibApi::class)
 private fun loadSave(gs: GameServer, saveId: Int, useBackup: Boolean) {
-        val moshi = getMoshiWithAllAdapters()
-        val saveFolderHandle = getExtDir("Saves") ?: return
-        if (!saveFolderHandle.exists()) return
-        val saveHandle = saveFolderHandle.child("${saveId}${if (useBackup) "-backup" else ""}.json")
-        if (!saveHandle.exists()) {
-            FileLog.warn("GameSaverLoader", "${saveId}.json missing, attempting to use backup")
+    val moshi = getMoshiWithAllAdapters()
+    val saveFolderHandle = getExtDir("Saves") ?: return
+    if (!saveFolderHandle.exists()) return
+    val saveHandle = saveFolderHandle.child("${saveId}${if (useBackup) "-backup" else ""}.json")
+    if (!saveHandle.exists()) {
+        FileLog.warn("GameSaverLoader", "${saveId}.json missing, attempting to use backup")
+        if (!useBackup) {
             loadSave(gs, saveId, true)
-            return
+        } else {
+            FileLog.warn("GameSaverLoader", "${saveId}-backup.json missing, exiting")
+            GAME.quitCurrentGameWithDialog { CustomDialog("Failed to load game", "Save files are missing", "", "Ok") }
         }
+        return
+    }
+
     try {
         val saveObject = moshi.adapter<GameServerSave>().fromJson(saveHandle.readString()) ?: return
         setGameServerFields(gs, saveObject)

@@ -175,3 +175,11 @@ const val HALF_TURN_RATE_THRESHOLD_IAS = 251
 
 /** LibGDX preference file name */
 const val PREFS_FILE_NAME = "com.bombbird.terminalcontrol2.prefs"
+
+/** Multiplayer type strings */
+const val MULTIPLAYER_UNKNOWN = "Unknown"
+const val SINGLEPLAYER = "Singleplayer"
+const val MULTIPLAYER_LAN = "LAN multiplayer"
+const val MULTIPLAYER_PUBLIC = "Public multiplayer"
+const val MULTIPLAYER_SINGLEPLAYER_LAN_CLIENT = "LAN multiplayer/Singleplayer (client)"
+const val MULTIPLAYER_PUBLIC_CLIENT = "Public multiplayer (client)"

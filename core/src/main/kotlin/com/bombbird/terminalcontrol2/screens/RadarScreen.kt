@@ -233,8 +233,13 @@ class RadarScreen private constructor(private val connectionHost: String, privat
         clientEngine.addSystem(TrafficSystemIntervalClient())
 
         KtxAsync.launch(Dispatchers.IO) {
-            running = attemptConnectionToServer()
-            FileLog.info("RadarScreen", networkClient.getConnectionStatus())
+            try {
+                running = attemptConnectionToServer()
+                FileLog.info("RadarScreen", networkClient.getConnectionStatus())
+            } catch (e: Exception) {
+                HttpRequest.sendCrashReport(e, "RadarScreen", getMultiplayerType())
+                GAME.quitCurrentGameWithDialog { CustomDialog("Error", "An error occurred", "", "Ok") }
+            }
         }
     }
 
@@ -435,9 +440,7 @@ class RadarScreen private constructor(private val connectionHost: String, privat
             // Process pending runnables
             while (true) { pendingRunnablesQueue.poll()?.run() ?: break }
         } catch (e: Exception) {
-            val multiplayerType = if (isPublicMultiplayer()) "Public multiplayer"
-            else "LAN multiplayer/Singleplayer"
-            HttpRequest.sendCrashReport(e, "RadarScreen", multiplayerType)
+            HttpRequest.sendCrashReport(e, "RadarScreen", getMultiplayerType())
             GAME.quitCurrentGameWithDialog { CustomDialog("Error", "An error occurred", "", "Ok") }
         }
     }
@@ -779,7 +782,12 @@ class RadarScreen private constructor(private val connectionHost: String, privat
     }
 
     /** Returns true if client is in public multiplayer game, else false */
-    fun isPublicMultiplayer(): Boolean {
+    private fun isPublicMultiplayer(): Boolean {
         return roomId != null
+    }
+
+    /** Returns the type of multiplayer the client is in */
+    fun getMultiplayerType(): String {
+        return if (isPublicMultiplayer()) MULTIPLAYER_PUBLIC_CLIENT else MULTIPLAYER_SINGLEPLAYER_LAN_CLIENT
     }
 }
