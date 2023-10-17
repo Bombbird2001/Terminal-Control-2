@@ -30,7 +30,8 @@ class AndroidTTSHandler(private val app: AndroidApplication): TextToSpeechHandle
             }
             it.voices?.let { voices ->
                 for (available in voices) {
-                    if (available.locale.language == Locale.ENGLISH.language) {
+                    if (available.locale.language == Locale.ENGLISH.language ||
+                        available.locale.language == Locale.ENGLISH.isO3Language) {
                         voiceArray.add(available.name)
                         voiceSet.add(available.name)
                     }
@@ -39,7 +40,8 @@ class AndroidTTSHandler(private val app: AndroidApplication): TextToSpeechHandle
         }
 
         if (voiceArray.isEmpty) {
-            FileLog.warn("Android TTS", "No English voices found; all voices available: ${tts?.voices?.joinToString { it.name }}")
+            FileLog.warn("Android TTS", "No English voices found; all voices available: " +
+                    "${tts?.voices?.joinToString { "${it.name} (${it.locale.language})" }}")
             onVoiceDataMissing?.invoke()
         }
     }
