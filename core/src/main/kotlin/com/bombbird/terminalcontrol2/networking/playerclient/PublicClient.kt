@@ -124,8 +124,12 @@ class PublicClient: NetworkClient() {
     }
 
     override fun getConnectionStatus(): String {
-        return "Connection ${client.id}: ${client.remoteAddressTCP?.let { "TCP connected to $it" } ?: "TCP not connected"}, " +
-                (client.remoteAddressUDP?.let { "UDP connected to $it" } ?: "UDP not connected")
+        val udp = try {
+            client.remoteAddressUDP?.let { "UDP connected to $it" } ?: "UDP not connected"
+        } catch (e: NullPointerException) {
+            "UDP not initialized"
+        }
+        return "Connection ${client.id}: ${client.remoteAddressTCP?.let { "TCP connected to $it" } ?: "TCP not connected"}, $udp"
     }
 
     /**
