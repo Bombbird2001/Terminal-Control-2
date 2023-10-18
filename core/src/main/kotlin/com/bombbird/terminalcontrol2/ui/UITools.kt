@@ -1,5 +1,6 @@
 package com.bombbird.terminalcontrol2.ui
 
+import com.badlogic.gdx.Application
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.OrthographicCamera
 import com.badlogic.gdx.graphics.g2d.Batch
@@ -138,4 +139,8 @@ fun <T> KTableWidget.defaultSettingsSelectBoxSmall(): KSelectBox<T> {
 /** Creates a new row with default spacing for settings pane */
 fun KTableWidget.newSettingsRow() {
     row().padTop(30f)
+}
+
+fun isMobile(): Boolean {
+    return Gdx.app.type == Application.ApplicationType.Android || Gdx.app.type == Application.ApplicationType.iOS
 }

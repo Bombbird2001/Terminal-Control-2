@@ -3,6 +3,7 @@ package com.bombbird.terminalcontrol2.entities
 import com.badlogic.gdx.graphics.Color
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.getEngine
+import com.bombbird.terminalcontrol2.ui.isMobile
 import com.bombbird.terminalcontrol2.utilities.FileLog
 import com.bombbird.terminalcontrol2.utilities.entityOnMainThread
 import ktx.ashley.get
@@ -21,7 +22,7 @@ class Waypoint(id: Short, name: String, posX: Short, posY: Short, onClient: Bool
         }
         if (onClient) {
             with<GenericLabel> {
-                updateStyle("Waypoint")
+                updateStyle(if (isMobile()) "WaypointMobile" else "Waypoint")
                 updateText(name)
                 xOffset = -label.prefWidth / 2
                 yOffset = 12f

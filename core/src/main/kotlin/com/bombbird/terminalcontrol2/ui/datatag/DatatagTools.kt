@@ -1,7 +1,6 @@
 package com.bombbird.terminalcontrol2.ui.datatag
 
 import com.badlogic.ashley.core.Entity
-import com.badlogic.gdx.Application
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.scenes.scene2d.InputEvent
 import com.badlogic.gdx.scenes.scene2d.ui.ImageButton
@@ -14,6 +13,7 @@ import com.bombbird.terminalcontrol2.entities.Aircraft
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.ui.addChangeListener
+import com.bombbird.terminalcontrol2.ui.isMobile
 import com.bombbird.terminalcontrol2.utilities.convertWorldAndRenderDeg
 import com.bombbird.terminalcontrol2.utilities.modulateHeading
 import com.bombbird.terminalcontrol2.utilities.FileLog
@@ -89,7 +89,7 @@ fun setDatatagFlash(datatag: Datatag, aircraft: Aircraft, flash: Boolean) {
  */
 fun updateDatatagLabelSize(datatag: Datatag, smaller: Boolean) {
     datatag.labelArray.forEach { label ->
-        val styleToUse = "${if (smaller) "DatatagSmall" else "Datatag"}${if (Gdx.app.type == Application.ApplicationType.Android) "Mobile" else ""}"
+        val styleToUse = "${if (smaller) "DatatagSmall" else "Datatag"}${if (isMobile()) "Mobile" else ""}"
         label.style = Scene2DSkin.defaultSkin.get(styleToUse, LabelStyle::class.java)
         label.pack()
     }

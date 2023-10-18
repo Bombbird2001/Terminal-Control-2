@@ -1,8 +1,6 @@
 package com.bombbird.terminalcontrol2.components
 
 import com.badlogic.ashley.core.Component
-import com.badlogic.gdx.Application
-import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.scenes.scene2d.ui.ImageButton
 import com.badlogic.gdx.scenes.scene2d.ui.Label
@@ -12,6 +10,7 @@ import com.badlogic.gdx.scenes.scene2d.utils.Drawable
 import com.badlogic.gdx.utils.Timer
 import com.bombbird.terminalcontrol2.json.BaseComponentJSONInterface
 import com.bombbird.terminalcontrol2.navigation.Route
+import com.bombbird.terminalcontrol2.ui.isMobile
 import com.bombbird.terminalcontrol2.utilities.InitializeCompanionObjectOnStart
 import com.squareup.moshi.JsonClass
 import ktx.ashley.Mapper
@@ -166,7 +165,7 @@ class Datatag(var xOffset: Float = 0f, var yOffset: Float = 0f, var minimised: B
 
     companion object {
         val mapper = object: Mapper<Datatag>() {}.mapper
-        private val DEFAULT_LABEL_FONT = "Datatag${if (Gdx.app.type == Application.ApplicationType.Android) "Mobile" else ""}"
+        private val DEFAULT_LABEL_FONT = "Datatag${if (isMobile()) "Mobile" else ""}"
 
         fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }

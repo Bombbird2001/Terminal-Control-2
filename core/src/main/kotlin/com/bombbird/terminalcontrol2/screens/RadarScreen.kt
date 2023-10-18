@@ -342,7 +342,7 @@ class RadarScreen private constructor(private val connectionHost: String, privat
             }
             distMeasurePoint2 = unprojectFromRadarCamera(Gdx.input.x.toFloat(), Gdx.input.y.toFloat())
             isDistMeasureDragging = true
-        } else if (Gdx.input.isTouched(0) && Gdx.input.isTouched(1) && Gdx.app.type == Application.ApplicationType.Android) {
+        } else if (Gdx.input.isTouched(0) && Gdx.input.isTouched(1) && isMobile()) {
             // We wait for 0.5 second before enabling distance measuring - isZoomPinching must remain false for this 0.5 second
             if (waitForZoomPinchTimer < 0.5f) {
                 waitForZoomPinchTimer += delta
