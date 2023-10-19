@@ -77,6 +77,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
 
         private val dotBlue: TextureRegion = Scene2DSkin.defaultSkin["DotBlue", TextureRegion::class.java]
         private val dotGreen: TextureRegion = Scene2DSkin.defaultSkin["DotGreen", TextureRegion::class.java]
+        private val dotRed: TextureRegion = Scene2DSkin.defaultSkin["DotRed", TextureRegion::class.java]
 
         fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
@@ -627,14 +628,8 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
             }
         }
 
-        // Render contact notification dots for 1s every 2s
+        // Render contact/conflict notification dots for 1s every 2s
         if (System.currentTimeMillis() % 2000 > 1000) {
-            val leftX = uiPane.paneWidth + 15 - UI_WIDTH / 2
-            val rightX = UI_WIDTH / 2 - 15
-            val bottomY = 15f - UI_HEIGHT / 2
-            val topY = UI_HEIGHT / 2 - 15
-            val centreX = uiPane.paneWidth / 2
-            val centreY = 0f
             val contactDots = contactDotFamilyEntities.getEntities()
             for (i in 0 until contactDots.size()) {
                 contactDots[i]?.apply {
@@ -642,17 +637,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
                     val flightType = getOrLogMissing(FlightType.mapper) ?: return@apply
                     val radarX = (radarData.position.x - camX) / camZoom
                     val radarY = (radarData.position.y - camY) / camZoom
-                    val intersectionVector = Vector2()
-                    run {
-                        if (Intersector.intersectSegments(centreX, centreY, radarX, radarY, leftX, topY, rightX, topY, intersectionVector))
-                            return@run
-                        if (Intersector.intersectSegments(centreX, centreY, radarX, radarY, rightX, topY, rightX, bottomY, intersectionVector))
-                            return@run
-                        if (Intersector.intersectSegments(centreX, centreY, radarX, radarY, rightX, bottomY, leftX, bottomY, intersectionVector))
-                            return@run
-                        Intersector.intersectSegments(centreX, centreY, radarX, radarY, leftX, bottomY, leftX, topY, intersectionVector)
-                    }
-                    if (!intersectionVector.isZero) {
+                    calculateContactDotPosition(radarX, radarY)?.let {
                         val textureToDraw = when (flightType.type) {
                             FlightType.ARRIVAL -> dotBlue
                             FlightType.DEPARTURE -> dotGreen
@@ -661,7 +646,28 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
                                 null
                             }
                         }
-                        if (textureToDraw != null) GAME.batch.draw(textureToDraw, intersectionVector.x - 7, intersectionVector.y - 7, 14f, 14f)
+                        if (textureToDraw != null) GAME.batch.draw(textureToDraw, it.x - 7, it.y - 7, 14f, 14f)
+                    }
+                }
+            }
+            CLIENT_SCREEN?.also {
+                for (i in 0 until it.conflicts.size) {
+                    it.conflicts[i]?.apply {
+                        val pos1 = entity1.getOrLogMissing(RadarData.mapper)?.position ?: return@apply
+                        val pos2 = entity2?.get(RadarData.mapper)?.position
+                        val radarX1 = (pos1.x - camX) / camZoom
+                        val radarY1 = (pos1.y - camY) / camZoom
+                        if (pos2 != null) {
+                            val radarX2 = (pos2.x - camX) / camZoom
+                            val radarY2 = (pos2.y - camY) / camZoom
+                            calculateContactDotPosition((radarX1 + radarX2) / 2, (radarY1 + radarY2) / 2)?.let { pos ->
+                                GAME.batch.draw(dotRed, pos.x - 7, pos.y - 7, 14f, 14f)
+                            }
+                        } else {
+                            calculateContactDotPosition(radarX1, radarY1)?.let { pos ->
+                                GAME.batch.draw(dotRed, pos.x - 7, pos.y - 7, 14f, 14f)
+                            }
+                        }
                     }
                 }
             }
@@ -837,5 +843,30 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
             wptEntity.remove<DoNotRenderShape>()
             wptEntity.remove<DoNotRenderLabel>()
         }
+    }
+
+    /**
+     * Calculates the position of the flashing contact dot to render based on the world position of the event
+     * @param radarX the x coordinate of the event
+     * @param radarY the y coordinate of the event
+     */
+    private fun calculateContactDotPosition(radarX: Float, radarY: Float): Vector2? {
+        val leftX = uiPane.paneWidth + 15 - UI_WIDTH / 2
+        val rightX = UI_WIDTH / 2 - 15
+        val bottomY = 15f - UI_HEIGHT / 2
+        val topY = UI_HEIGHT / 2 - 15
+        val centreX = uiPane.paneWidth / 2
+        val centreY = 0f
+
+        val intersectionVector = Vector2()
+        if (Intersector.intersectSegments(centreX, centreY, radarX, radarY, leftX, topY, rightX, topY, intersectionVector))
+            return intersectionVector
+        if (Intersector.intersectSegments(centreX, centreY, radarX, radarY, rightX, topY, rightX, bottomY, intersectionVector))
+            return intersectionVector
+        if (Intersector.intersectSegments(centreX, centreY, radarX, radarY, rightX, bottomY, leftX, bottomY, intersectionVector))
+            return intersectionVector
+        if (Intersector.intersectSegments(centreX, centreY, radarX, radarY, leftX, bottomY, leftX, topY, intersectionVector))
+            return intersectionVector
+        return null
     }
 }
