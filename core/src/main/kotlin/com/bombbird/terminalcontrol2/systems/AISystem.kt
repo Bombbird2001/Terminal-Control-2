@@ -752,6 +752,26 @@ class AISystem: EntitySystem() {
                 if (alt.altitudeFt < decisionAlt && (arptMetar.ceilingHundredFtAGL ?: Short.MAX_VALUE) * 100 < decisionAlt)
                     return@apply initiateGoAround(this, RecentGoAround.RWY_NOT_IN_SIGHT)
 
+                // Check opposite runway aircraft departure
+                // For all approaches, go around if aircraft is less than 7nm from runway and a departure has taken off
+                // less than 135s ago from the opposite (including dependent) runway
+                if (pxToNm(distFromRwyPx) < 7) {
+                    rwyObj[OppositeRunway.mapper]?.oppRwy?.get(RunwayPreviousDeparture.mapper)?.let {
+                        if (it.timeSinceDepartureS < 135) {
+                            return@apply initiateGoAround(this, RecentGoAround.TRAFFIC_TOO_CLOSE)
+                        }
+                    }
+                    rwyObj[DependentOppositeRunway.mapper]?.depOppRwys?.let { depOppRwys ->
+                        for (j in 0 until depOppRwys.size) {
+                            depOppRwys[j][RunwayPreviousDeparture.mapper]?.let {
+                                if (it.timeSinceDepartureS < 135) {
+                                    return@apply initiateGoAround(this, RecentGoAround.TRAFFIC_TOO_CLOSE)
+                                }
+                            }
+                        }
+                    }
+                }
+
                 // Check distance
                 // For visual approach, check for stabilized approach by 1.2nm from threshold
                 // For approach with localizer and/or glide slope, check for stabilized approach by 3.2nm from threshold
@@ -789,10 +809,12 @@ class AISystem: EntitySystem() {
                 // For approach with localizer, aircraft position should be within 1 degree of track to localizer
                 val maxAllowableDeviation = if (locApp != null) 1 else 20
                 val locPos = locApp?.get(Position.mapper)
+                // We ignore deviation if a final line up is required for localizer
+                val isLineUp = locApp?.get(LineUpDist.mapper) != null
                 val trackToRwy = getRequiredTrack(pos.x, pos.y,  locPos?.x ?: rwyPos.x, locPos?.y ?: rwyPos.y)
                 val appTrack = convertWorldAndRenderDeg(appLat[Direction.mapper]?.trackUnitVector?.angleDeg() ?: return@apply) + 180
                 val deviation = abs(findDeltaHeading(trackToRwy, appTrack, CommandTarget.TURN_DEFAULT))
-                if (pxToNm(distFromRwyPx) > 0.5f && deviation > maxAllowableDeviation) {
+                if (!isLineUp && pxToNm(distFromRwyPx) > 0.5f && deviation > maxAllowableDeviation) {
                     return@apply initiateGoAround(this, RecentGoAround.UNSTABLE)
                 }
 
@@ -807,26 +829,6 @@ class AISystem: EntitySystem() {
                 val rwyAlt = rwyObj[Altitude.mapper]?.altitudeFt
                 if (rwyAlt != null && (rwyObj.has(RunwayOccupied.mapper) || rwyObj.has(RunwayClosed.mapper)) && alt.altitudeFt < rwyAlt + 150) {
                     return@apply initiateGoAround(this, RecentGoAround.RWY_NOT_CLEAR)
-                }
-
-                // Check opposite runway aircraft departure
-                // For all approaches, go around if aircraft is less than 7nm from runway and a departure has taken off
-                // less than 135s ago from the opposite (including dependent) runway
-                if (pxToNm(distFromRwyPx) < 7) {
-                    rwyObj[OppositeRunway.mapper]?.oppRwy?.get(RunwayPreviousDeparture.mapper)?.let {
-                        if (it.timeSinceDepartureS < 135) {
-                            return@apply initiateGoAround(this, RecentGoAround.TRAFFIC_TOO_CLOSE)
-                        }
-                    }
-                    rwyObj[DependentOppositeRunway.mapper]?.depOppRwys?.let { depOppRwys ->
-                        for (j in 0 until depOppRwys.size) {
-                            depOppRwys[j][RunwayPreviousDeparture.mapper]?.let {
-                                if (it.timeSinceDepartureS < 135) {
-                                    return@apply initiateGoAround(this, RecentGoAround.TRAFFIC_TOO_CLOSE)
-                                }
-                            }
-                        }
-                    }
                 }
             }
         }
