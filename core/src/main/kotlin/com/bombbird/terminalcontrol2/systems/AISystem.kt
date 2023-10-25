@@ -27,7 +27,7 @@ import kotlin.math.*
  */
 class AISystem: EntitySystem() {
     companion object {
-        private val takeoffAccFamily: Family = allOf(Acceleration::class, AircraftInfo::class, TakeoffRoll::class, Speed::class, AffectedByWind::class)
+        private val takeoffAccFamily: Family = allOf(Acceleration::class, Altitude::class, AircraftInfo::class, TakeoffRoll::class, Speed::class, IndicatedAirSpeed::class, AffectedByWind::class)
             .exclude(WaitingTakeoff::class).get()
         private val takeoffClimbFamily: Family = allOf(Altitude::class, CommandTarget::class, TakeoffClimb::class, ClearanceAct::class, AircraftInfo::class).get()
         private val landingAccFamily: Family = allOf(Acceleration::class, LandingRoll::class, GroundTrack::class).get()

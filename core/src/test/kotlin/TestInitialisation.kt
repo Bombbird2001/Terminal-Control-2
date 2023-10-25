@@ -1,9 +1,6 @@
 import com.bombbird.terminalcontrol2.TerminalControl2
 import com.bombbird.terminalcontrol2.files.StubExternalFileHandler
-import com.bombbird.terminalcontrol2.global.CLIENT_SCREEN
-import com.bombbird.terminalcontrol2.global.GAME
-import com.bombbird.terminalcontrol2.global.GAME_SERVER_THREAD_NAME
-import com.bombbird.terminalcontrol2.global.isGameInitialised
+import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.networking.ConnectionMeta
 import com.bombbird.terminalcontrol2.networking.GameServer
 import com.bombbird.terminalcontrol2.networking.NetworkServer
@@ -53,6 +50,9 @@ internal fun testInitialiseGameAndServer() {
 
         }
         GAME.gameServer = newGameServer
+        val engine = getEngine(false)
+        engine.removeAllSystems()
+        engine.removeAllEntities()
     }
 }
 
