@@ -4,6 +4,7 @@ import com.badlogic.ashley.core.Engine
 import com.badlogic.ashley.core.Entity
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.getEngine
+import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.systems.AISystem
 import com.bombbird.terminalcontrol2.systems.FamilyWithListener
 import com.bombbird.terminalcontrol2.utilities.calculateMaxAcceleration
@@ -61,6 +62,73 @@ object AISystemTest: FunSpec() {
             entity.has(DivergentDepartureAllowed.mapper).shouldBeTrue()
             entity.hasNot(TakeoffRoll.mapper).shouldBeTrue()
         }
+
+        test("Takeoff climb to acceleration phase - trip IAS more than 250 knots, no route speed restriction") {
+            initTakeoffClimbEntity()
+            entity[ClearanceAct.mapper]?.actingClearance?.clearanceState?.route.shouldNotBeNull().add(Route.WaypointLeg())
+            runUpdate()
+            entity[CommandTarget.mapper]?.targetIasKt.shouldNotBeNull().shouldBe(250)
+            entity[ClearanceAct.mapper]?.actingClearance?.clearanceState?.clearedIas?.shouldNotBeNull().shouldBe(250)
+            entity.hasNot(TakeoffClimb.mapper).shouldBeTrue()
+        }
+
+        test("Takeoff climb to acceleration phase - trip IAS less than 250 knots, no route speed restriction") {
+            initTakeoffClimbEntity()
+            entity[AircraftInfo.mapper]?.aircraftPerf?.tripIas = 200
+            entity[ClearanceAct.mapper]?.actingClearance?.clearanceState?.route.shouldNotBeNull().add(Route.WaypointLeg())
+            runUpdate()
+            entity[CommandTarget.mapper]?.targetIasKt.shouldNotBeNull().shouldBe(200)
+            entity[ClearanceAct.mapper]?.actingClearance?.clearanceState?.clearedIas?.shouldNotBeNull().shouldBe(200)
+            entity.hasNot(TakeoffClimb.mapper).shouldBeTrue()
+        }
+
+        test("Takeoff climb to acceleration phase - trip IAS more than 250 knots, lower route speed restriction") {
+            initTakeoffClimbEntity()
+            entity[ClearanceAct.mapper]?.actingClearance?.clearanceState?.route.shouldNotBeNull().add(
+                Route.WaypointLeg(0, null, null, 230, true, true, true)
+            )
+            runUpdate()
+            entity[CommandTarget.mapper]?.targetIasKt.shouldNotBeNull().shouldBe(230)
+            entity[ClearanceAct.mapper]?.actingClearance?.clearanceState?.clearedIas?.shouldNotBeNull().shouldBe(230)
+            entity.hasNot(TakeoffClimb.mapper).shouldBeTrue()
+        }
+
+        test("Takeoff climb to acceleration phase - trip IAS more than 250 knots, higher route speed restriction") {
+            initTakeoffClimbEntity()
+            entity[ClearanceAct.mapper]?.actingClearance?.clearanceState?.route.shouldNotBeNull().add(
+                Route.WaypointLeg(0, null, null, 270, true, true, true)
+            )
+            runUpdate()
+            entity[CommandTarget.mapper]?.targetIasKt.shouldNotBeNull().shouldBe(250)
+            entity[ClearanceAct.mapper]?.actingClearance?.clearanceState?.clearedIas?.shouldNotBeNull().shouldBe(250)
+            entity.hasNot(TakeoffClimb.mapper).shouldBeTrue()
+        }
+
+        test("Takeoff climb to acceleration phase - trip IAS less than 250 knots, lower route speed restriction") {
+            initTakeoffClimbEntity()
+            entity[ClearanceAct.mapper]?.actingClearance?.clearanceState?.route.shouldNotBeNull().add(
+                Route.WaypointLeg(0, null, null, 190, true, true, true)
+            )
+            entity[AircraftInfo.mapper]?.aircraftPerf?.tripIas = 200
+            entity[ClearanceAct.mapper]?.actingClearance?.clearanceState?.route.shouldNotBeNull().add(Route.WaypointLeg())
+            runUpdate()
+            entity[CommandTarget.mapper]?.targetIasKt.shouldNotBeNull().shouldBe(190)
+            entity[ClearanceAct.mapper]?.actingClearance?.clearanceState?.clearedIas?.shouldNotBeNull().shouldBe(190)
+            entity.hasNot(TakeoffClimb.mapper).shouldBeTrue()
+        }
+
+        test("Takeoff climb to acceleration phase - trip IAS less than 250 knots, higher route speed restriction") {
+            initTakeoffClimbEntity()
+            entity[ClearanceAct.mapper]?.actingClearance?.clearanceState?.route.shouldNotBeNull().add(
+                Route.WaypointLeg(0, null, null, 230, true, true, true)
+            )
+            entity[AircraftInfo.mapper]?.aircraftPerf?.tripIas = 200
+            entity[ClearanceAct.mapper]?.actingClearance?.clearanceState?.route.shouldNotBeNull().add(Route.WaypointLeg())
+            runUpdate()
+            entity[CommandTarget.mapper]?.targetIasKt.shouldNotBeNull().shouldBe(200)
+            entity[ClearanceAct.mapper]?.actingClearance?.clearanceState?.clearedIas?.shouldNotBeNull().shouldBe(200)
+            entity.hasNot(TakeoffClimb.mapper).shouldBeTrue()
+        }
     }
 
     private fun runUpdate() {
@@ -75,5 +143,13 @@ object AISystemTest: FunSpec() {
         entity += Speed()
         entity += IndicatedAirSpeed()
         entity += AffectedByWind()
+    }
+
+    private fun initTakeoffClimbEntity() {
+        entity += Altitude(1501f)
+        entity += CommandTarget()
+        entity += AircraftInfo()
+        entity += TakeoffClimb()
+        entity += ClearanceAct()
     }
 }
