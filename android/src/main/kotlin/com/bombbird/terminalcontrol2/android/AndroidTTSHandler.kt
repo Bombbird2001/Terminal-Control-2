@@ -40,8 +40,12 @@ class AndroidTTSHandler(private val app: AndroidApplication): TextToSpeechHandle
         }
 
         if (voiceArray.isEmpty) {
-            FileLog.warn("Android TTS", "No English voices found; all voices available: " +
-                    "${tts?.voices?.joinToString { "${it.name} (${it.locale.language})" }}")
+            try {
+                FileLog.warn("Android TTS", "No English voices found; all voices available: " +
+                        "${tts?.voices?.joinToString { "${it.name} (${it.locale.language})" }}")
+            } catch (e: NullPointerException) {
+                FileLog.warn("Android TTS", "No English voices found; could not get voices available")
+            }
             onVoiceDataMissing?.invoke()
         }
     }

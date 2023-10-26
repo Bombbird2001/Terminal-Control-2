@@ -13,7 +13,7 @@ import com.esotericsoftware.kryonet.Client
 import com.esotericsoftware.kryonet.Connection
 import com.esotericsoftware.kryonet.Listener
 import com.bombbird.terminalcontrol2.utilities.FileLog
-import org.apache.commons.codec.binary.Base64
+import com.bombbird.terminalcontrol2.utilities.decodeBase64
 import java.lang.Exception
 import java.nio.channels.ClosedSelectorException
 import javax.crypto.spec.SecretKeySpec
@@ -94,12 +94,12 @@ class PublicClient: NetworkClient() {
             return
         }
 
-        val roomKey = SecretKeySpec(Base64.decodeBase64(authResponse.roomKey), 0, AESGCMEncryptor.AES_KEY_LENGTH_BYTES, "AES")
-        val clientKey = SecretKeySpec(Base64.decodeBase64(authResponse.clientKey), 0, AESGCMEncryptor.AES_KEY_LENGTH_BYTES, "AES")
+        val roomKey = SecretKeySpec(decodeBase64(authResponse.roomKey), 0, AESGCMEncryptor.AES_KEY_LENGTH_BYTES, "AES")
+        val clientKey = SecretKeySpec(decodeBase64(authResponse.clientKey), 0, AESGCMEncryptor.AES_KEY_LENGTH_BYTES, "AES")
         encryptor.setKey(clientKey)
         decrypter.setKey(roomKey)
 
-        val iv = Base64.decodeBase64(authResponse.iv)
+        val iv = decodeBase64(authResponse.iv)
         val ciphertext = encryptor.encryptWithIV(iv, RelayNonce(authResponse.nonce))?.ciphertext ?: return
         relayChallenge = RelayChallenge(ciphertext)
     }
