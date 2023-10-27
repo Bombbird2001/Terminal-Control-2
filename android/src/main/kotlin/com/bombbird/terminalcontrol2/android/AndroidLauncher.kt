@@ -17,14 +17,17 @@ class AndroidLauncher : AndroidApplication() {
         const val CREATE_SAVE_FILE = 45511
         const val ACT_CHECK_TTS_DATA = 45512
         const val ACT_INSTALL_TTS_DATA = 45513
+        const val ACT_IN_APP_UPDATE = 45514
     }
 
     private lateinit var terminalControl2: TerminalControl2
     private val fileHandler = AndroidFileHandler(this)
     private val ttsHandler = AndroidTTSHandler(this)
+    private val inAppUpdate = InAppUpdateManager(this)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        inAppUpdate.checkUpdateAvailable()
         terminalControl2 = TerminalControl2(fileHandler, ttsHandler)
         initialize(terminalControl2, AndroidApplicationConfiguration().apply {
             // Configure your application here.
