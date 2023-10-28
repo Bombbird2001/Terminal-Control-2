@@ -368,6 +368,7 @@ class CommsPane {
             .addToken(LiteralToken(bye))
 
         addMessage(sentence2.toTextSentence(), getMessageTypeForAircraftType(flightType.type))
+        if (CONTACT_OTHER_PILOT_READBACK) saySentenceInTTS(aircraft, sentence2)
     }
 
     /**

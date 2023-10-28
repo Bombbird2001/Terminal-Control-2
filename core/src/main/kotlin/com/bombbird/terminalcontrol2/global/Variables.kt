@@ -89,6 +89,7 @@ var DATATAG_ROW_SPACING_PX: Byte = 4
 /** Sound settings */
 var COMMUNICATIONS_SOUND = COMMS_PILOT_VOICES
 var ALERT_SOUND_ON = true
+var CONTACT_OTHER_PILOT_READBACK = false
 
 /** Advanced trajectory alert settings */
 var ADV_TRAJECTORY_DURATION_S = 0

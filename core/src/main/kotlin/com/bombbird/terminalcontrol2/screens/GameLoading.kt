@@ -2,10 +2,13 @@ package com.bombbird.terminalcontrol2.screens
 
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.scenes.scene2d.ui.ProgressBar
+import com.badlogic.gdx.utils.Align
 import com.badlogic.gdx.utils.Timer
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.networking.GameServer
 import com.bombbird.terminalcontrol2.ui.addChangeListener
+import com.bombbird.terminalcontrol2.utilities.getRandomTip
+import com.bombbird.terminalcontrol2.utilities.loadTips
 import ktx.scene2d.*
 
 /** The screen shown when loading the game */
@@ -170,6 +173,7 @@ class GameLoading private constructor(): BasicUIScreen() {
     }
 
     init {
+        loadTips()
         stage.actors {
             // UI container
             container = container {
@@ -191,6 +195,11 @@ class GameLoading private constructor(): BasicUIScreen() {
                             }
                         }
                         setAnimateDuration(0.25f)
+                    }
+                    row()
+                    label(getRandomTip(), "LoadingGameTip").cell(padTop = 50f, width = 1350f).apply {
+                        wrap = true
+                        setAlignment(Align.center)
                     }
                 }
             }

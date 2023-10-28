@@ -6,6 +6,7 @@ import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.ui.addChangeListener
 import com.bombbird.terminalcontrol2.ui.defaultSettingsLabel
 import com.bombbird.terminalcontrol2.ui.defaultSettingsSelectBox
+import com.bombbird.terminalcontrol2.ui.newSettingsRow
 import com.bombbird.terminalcontrol2.utilities.FileLog
 import ktx.scene2d.*
 
@@ -18,6 +19,7 @@ class SoundSettings: BaseSettings() {
 
     private val commsSelectBox: KSelectBox<String>
     private val alertsSelectBox: KSelectBox<String>
+    private val contactOtherSelectBox: KSelectBox<String>
 
     init {
         stage.actors {
@@ -33,6 +35,11 @@ class SoundSettings: BaseSettings() {
                             }
                             defaultSettingsLabel("Alerts:")
                             alertsSelectBox = defaultSettingsSelectBox<String>().apply {
+                                setItems(OFF, ON)
+                            }
+                            newSettingsRow()
+                            defaultSettingsLabel("Frequency change pilot readback:")
+                            contactOtherSelectBox = defaultSettingsSelectBox<String>().apply {
                                 setItems(OFF, ON)
                             }
                         }
@@ -67,6 +74,7 @@ class SoundSettings: BaseSettings() {
             }
         }
         alertsSelectBox.selected = if (ALERT_SOUND_ON) ON else OFF
+        contactOtherSelectBox.selected = if (CONTACT_OTHER_PILOT_READBACK) ON else OFF
     }
 
     /**
@@ -84,6 +92,7 @@ class SoundSettings: BaseSettings() {
             }
         }
         ALERT_SOUND_ON = alertsSelectBox.selected != OFF
+        CONTACT_OTHER_PILOT_READBACK = contactOtherSelectBox.selected != OFF
         savePlayerSettings()
     }
 }
