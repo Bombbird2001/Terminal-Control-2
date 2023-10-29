@@ -1283,11 +1283,14 @@ class AISystem: EntitySystem() {
             // Update clearance states
             entity += ClearanceActChanged()
             entity += LatestClearanceChanged()
-            val arptAltitude = GAME.gameServer?.airports?.get(get(ArrivalAirport.mapper)?.arptId)?.entity?.get(Altitude.mapper)?.altitudeFt?.roundToInt() ?: 0
+            val airport = GAME.gameServer?.airports?.get(get(ArrivalAirport.mapper)?.arptId)?.entity
+            val arptAltitude = airport?.get(Altitude.mapper)?.altitudeFt?.roundToInt() ?: 0
             entity += ContactFromTower(arptAltitude + MathUtils.random(600, 1100))
 
             // Add the go around flag with reason
             entity += RecentGoAround(reason = reason)
+            // Also add to the airport to pause departures till required time has passed
+            airport?.add(RecentGoAround(reason = reason))
         }
     }
 

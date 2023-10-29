@@ -367,6 +367,7 @@ fun clearForTakeoff(aircraft: Entity, rwy: Entity) {
             wakeCat = acPerf.wakeCategory
             recat = acPerf.recat
             timeSinceDepartureS = 0f
+            isTurboprop = acPerf.propPowerWSLISA != null
         }
         // Set airport previous departure
         rwyInfo.airport.entity[DepartureInfo.mapper]?.apply { backlog-- }
@@ -582,6 +583,12 @@ object WakeMatrix {
     }
 }
 
+private fun checkPrevTurboprop(prevDep: RunwayPreviousDeparture, nextDep: AircraftTypeData.AircraftPerfData): Boolean {
+    // If previous departure is a turboprop, and the next departure is a jet, then we need increased separation time
+    // of 180s
+    return prevDep.isTurboprop != true || nextDep.propPowerWSLISA != null || prevDep.timeSinceDepartureS >= 180
+}
+
 /**
  * Calculates the distance, in pixels, the aircraft is from the runway threshold
  * @param aircraft the aircraft
@@ -611,10 +618,10 @@ fun calculateTimeToThreshold(aircraft: Entity, rwy: Entity): Float {
 /**
  * Checks the traffic for the input runway
  * @param rwy the runway to check traffic for
+ * @param airport the airport the runway is in
  * @return whether this runway is clear for departure
  */
-fun checkSameRunwayTraffic(rwy: Entity): Boolean {
-    val airport = rwy[RunwayInfo.mapper]?.airport ?: return false
+fun checkSameRunwayTraffic(rwy: Entity, airport: Airport): Boolean {
     val nextDeparture = airport.entity[AirportNextDeparture.mapper]?.aircraft?.get(AircraftInfo.mapper)?.aircraftPerf ?: return false
     val prevDeparture = rwy[RunwayPreviousDeparture.mapper]
     val prevArrival = rwy[RunwayPreviousArrival.mapper]
@@ -627,6 +634,8 @@ fun checkSameRunwayTraffic(rwy: Entity): Boolean {
     // Check previous arrival time required
     if (prevArrival != null && WakeMatrix.getTimeRequired(prevArrival.wakeCat, prevArrival.recat,
             nextDeparture.wakeCategory, nextDeparture.recat) > prevArrival.timeSinceTouchdownS) return false
+    // Check turboprop separation
+    if (prevDeparture != null && !checkPrevTurboprop(prevDeparture, nextDeparture)) return false
     // Check time from touchdown - minimum 110s
     return nextArrival == null || calculateTimeToThreshold(nextArrival.aircraft, rwy) >= 110
 }
@@ -634,10 +643,10 @@ fun checkSameRunwayTraffic(rwy: Entity): Boolean {
 /**
  * Checks the traffic for the opposite runway
  * @param rwy the opposite runway
+ * @param airport the airport the runway is in
  * @return whether the opposite runway is clear for departure from original runway
  */
-fun checkOppRunwayTraffic(rwy: Entity): Boolean {
-    val airport = rwy[RunwayInfo.mapper]?.airport ?: return false
+fun checkOppRunwayTraffic(rwy: Entity, airport: Airport): Boolean {
     val nextDeparture = airport.entity[AirportNextDeparture.mapper]?.aircraft?.get(AircraftInfo.mapper)?.aircraftPerf ?: return false
     val prevDeparture = rwy[RunwayPreviousDeparture.mapper]
     val prevArrival = rwy[RunwayPreviousArrival.mapper]
@@ -650,6 +659,8 @@ fun checkOppRunwayTraffic(rwy: Entity): Boolean {
     // Check previous arrival time required
     if (prevArrival != null && WakeMatrix.getTimeRequired(prevArrival.wakeCat, prevArrival.recat,
             nextDeparture.wakeCategory, nextDeparture.recat) > prevArrival.timeSinceTouchdownS) return false
+    // Check turboprop separation
+    if (prevDeparture != null && !checkPrevTurboprop(prevDeparture, nextDeparture)) return false
     // Check distance from touchdown - minimum 18nm away
     return nextArrival == null || nextArrival.distFromThrPx >= nmToPx(18)
 }
@@ -657,30 +668,38 @@ fun checkOppRunwayTraffic(rwy: Entity): Boolean {
 /**
  * Checks the traffic for a dependent parallel runway
  * @param rwy the dependent parallel runway
+ * @param airport the airport the runway is in
  * @return whether the dependent parallel runway is clear for departure from original runway
  */
-fun checkDependentParallelRunwayTraffic(rwy: Entity): Boolean {
+fun checkDependentParallelRunwayTraffic(rwy: Entity, airport: Airport): Boolean {
+    val nextDeparture = airport.entity[AirportNextDeparture.mapper]?.aircraft?.get(AircraftInfo.mapper)?.aircraftPerf ?: return false
     val nextArrival = rwy[RunwayNextArrival.mapper]
     val prevDeparture = rwy[RunwayPreviousDeparture.mapper]
     // Check time from touchdown - minimum 60s
     if (nextArrival != null && calculateTimeToThreshold(nextArrival.aircraft, rwy) < 60) return false
     // Check time since departure - minimum 60s
     if (prevDeparture != null && prevDeparture.timeSinceDepartureS < 60) return false
+    // Check turboprop separation
+    if (prevDeparture != null && !checkPrevTurboprop(prevDeparture, nextDeparture)) return false
     return true
 }
 
 /**
  * Checks the traffic for a dependent opposite runway
  * @param rwy the dependent opposite runway
+ * @param airport the airport the runway is in
  * @return whether the dependent opposite runway is clear for departure from original runway
  */
-fun checkDependentOppositeRunwayTraffic(rwy: Entity): Boolean {
+fun checkDependentOppositeRunwayTraffic(rwy: Entity, airport: Airport): Boolean {
+    val nextDeparture = airport.entity[AirportNextDeparture.mapper]?.aircraft?.get(AircraftInfo.mapper)?.aircraftPerf ?: return false
     val nextArrival = rwy[RunwayNextArrival.mapper]
     val prevDeparture = rwy[RunwayPreviousDeparture.mapper]
     // Check distance from touchdown - minimum 18nm away
     if (nextArrival != null && nextArrival.distFromThrPx < nmToPx(18)) return false
     // Check time since departure - minimum 60s
     if (prevDeparture != null && prevDeparture.timeSinceDepartureS < 60) return false
+    // Check turboprop separation
+    if (prevDeparture != null && !checkPrevTurboprop(prevDeparture, nextDeparture)) return false
     return true
 }
 

@@ -174,7 +174,7 @@ data class RunwayPreviousArrival(var timeSinceTouchdownS: Float = 0f, var wakeCa
 /** Component for tagging the information of a previous departure aircraft of the runway */
 @JsonClass(generateAdapter = true)
 data class RunwayPreviousDeparture(var timeSinceDepartureS: Float = 0f, var wakeCat: Char = AircraftTypeData.AircraftPerfData.WAKE_MEDIUM,
-                                   var recat: Char = AircraftTypeData.AircraftPerfData.RECAT_D): Component, BaseComponentJSONInterface {
+                                   var recat: Char = AircraftTypeData.AircraftPerfData.RECAT_D, var isTurboprop: Boolean? = false): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.RUNWAY_PREVIOUS_DEPARTURE
     companion object {
         val mapper = object: Mapper<RunwayPreviousDeparture>() {}.mapper

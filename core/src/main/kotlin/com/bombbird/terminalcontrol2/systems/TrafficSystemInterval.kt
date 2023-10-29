@@ -181,18 +181,21 @@ class TrafficSystemInterval: IntervalSystem(1f) {
                 // If insufficient time has passed since last departure, do not depart
                 if (timeSinceLastDep.time < calculateAdditionalTimeToNextDeparture(depInfo.backlog, maxAdvDep.maxAdvanceDepartures)) return@apply
 
+                // Check for go-around - minimum 80s as stated in RecentGoAround component
+                if (airport.entity.has(RecentGoAround.mapper)) return@apply
+
                 // Runway checks
                 // Check self and all related runways
                 if (hasNot(ActiveTakeoff.mapper)) return@apply // Not active for departures
-                if (!checkSameRunwayTraffic(this)) return@apply
-                get(OppositeRunway.mapper)?.let { if (!checkOppRunwayTraffic(it.oppRwy)) return@apply }
+                if (!checkSameRunwayTraffic(this, airport)) return@apply
+                get(OppositeRunway.mapper)?.let { if (!checkOppRunwayTraffic(it.oppRwy, airport)) return@apply }
                 get(DependentParallelRunway.mapper)?.let {
                     for (j in 0 until it.depParRwys.size)
-                        if (!checkDependentParallelRunwayTraffic(it.depParRwys[j])) return@apply
+                        if (!checkDependentParallelRunwayTraffic(it.depParRwys[j], airport)) return@apply
                 }
                 get(DependentOppositeRunway.mapper)?.let {
                     for (j in 0 until it.depOppRwys.size)
-                        if (!checkDependentOppositeRunwayTraffic(it.depOppRwys[j])) return@apply
+                        if (!checkDependentOppositeRunwayTraffic(it.depOppRwys[j], airport)) return@apply
                 }
                 get(CrossingRunway.mapper)?.let {
                     for (j in 0 until it.crossRwys.size)
@@ -202,8 +205,6 @@ class TrafficSystemInterval: IntervalSystem(1f) {
                     for (j in 0 until it.dependencies.size)
                         if (!checkDepartureDependencyTraffic(it.dependencies[j])) return@apply
                 }
-
-                // TODO Check for go-around - minimum 90s
 
                 // All related checks passed - clear next departure for takeoff
                 val nextDep = airport.entity[AirportNextDeparture.mapper] ?: return@apply
