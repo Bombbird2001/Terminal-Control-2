@@ -882,6 +882,7 @@ class AISystem: EntitySystem() {
                 val clearanceAct = get(ClearanceAct.mapper)?.actingClearance?.clearanceState ?: return@apply
                 if (abs(alt.altitudeFt - cmd.targetAltFt) < 500) {
                     clearanceAct.expedite = false
+                    remove<CommandExpedite>()
                     this += LatestClearanceChanged()
                 }
             }
