@@ -90,6 +90,19 @@ class TerminalControl2(val externalFileHandler: ExternalFileHandler, ttsHandler:
     }
 
     /**
+     * Shows a dialog on the current screen
+     * @param dialogCreator a function to create the dialog to show -  this is to prevent threading issues when
+     * calling this function on a thread other than the main rendering thread
+     */
+    fun showDialogAtCurrentScreen(dialogCreator: () -> CustomDialog) {
+        Gdx.app.postRunnable {
+            val dialog = dialogCreator()
+            val currentScreen = GAME.currentScreen
+            (currentScreen as? ShowsDialog)?.showDialog(dialog)
+        }
+    }
+
+    /**
      * Overrides [KtxGame.create] to also initiate [KtxAsync], and load assets using [AssetStorage]
      *
      * Sets the screen to [MainMenu] upon completion

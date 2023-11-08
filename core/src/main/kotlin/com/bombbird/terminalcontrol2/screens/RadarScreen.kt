@@ -11,6 +11,7 @@ import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.math.Polygon
 import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.scenes.scene2d.Actor
+import com.badlogic.gdx.scenes.scene2d.ui.Dialog
 import com.bombbird.terminalcontrol2.components.AircraftInfo
 import com.bombbird.terminalcontrol2.components.Controllable
 import com.bombbird.terminalcontrol2.components.Datatag
@@ -62,7 +63,7 @@ import kotlin.math.min
  * @param roomId the ID of the room to join (public multiplayer)
  */
 class RadarScreen private constructor(private val connectionHost: String, private val connectionTcpPort: Int?,
-                                      private val connectionUdpPort: Int?, private var roomId: Short?): KtxScreen, GestureListener, InputProcessor {
+                                      private val connectionUdpPort: Int?, private var roomId: Short?): KtxScreen, GestureListener, InputProcessor, ShowsDialog {
     private val clientEngine = getEngine(true)
     private val radarDisplayStage = safeStage(GAME.batch)
     private val constZoomStage = safeStage(GAME.batch)
@@ -792,5 +793,13 @@ class RadarScreen private constructor(private val connectionHost: String, privat
     /** Returns the type of multiplayer the client is in */
     fun getMultiplayerType(): String {
         return if (isPublicMultiplayer()) MULTIPLAYER_PUBLIC_CLIENT else MULTIPLAYER_SINGLEPLAYER_LAN_CLIENT
+    }
+
+    /**
+     * Overrides [ShowsDialog.showDialog] to show the dialog on [uiStage]
+     * @param dialog the dialog to show
+     */
+    override fun showDialog(dialog: Dialog) {
+        dialog.show(uiStage)
     }
 }

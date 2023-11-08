@@ -1,6 +1,7 @@
 package com.bombbird.terminalcontrol2.files
 
 import com.badlogic.gdx.utils.ArrayMap.Entries
+import com.badlogic.gdx.utils.GdxRuntimeException
 import com.badlogic.gdx.utils.Queue.QueueIterator
 import com.bombbird.terminalcontrol2.components.AircraftInfo
 import com.bombbird.terminalcontrol2.components.AirportInfo
@@ -16,6 +17,7 @@ import com.bombbird.terminalcontrol2.json.runDelayedEntityRetrieval
 import com.bombbird.terminalcontrol2.networking.GameServer
 import com.bombbird.terminalcontrol2.systems.TrafficSystemInterval
 import com.bombbird.terminalcontrol2.ui.CustomDialog
+import com.bombbird.terminalcontrol2.ui.isMobile
 import com.bombbird.terminalcontrol2.utilities.FileLog
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.JsonDataException
@@ -101,12 +103,22 @@ fun saveGame(gs: GameServer) {
     val saveIndex = currSaveId ?: getNextAvailableSaveID() ?: return
     gs.saveID = saveIndex
     val saveHandle = saveFolderHandle.child("${saveIndex}.json")
-    saveHandle.writeString(saveString, false)
+    try {
+        saveHandle.writeString(saveString, false)
 
-    // Save meta information
-    val metaObject = GameSaveMeta(gs.mainName, gs.score, gs.highScore, gs.landed, gs.departed)
-    val metaHandle = saveFolderHandle.child("${saveIndex}.meta")
-    metaHandle.writeString(moshi.adapter<GameSaveMeta>().toJson(metaObject), false)
+        // Save meta information
+        val metaObject = GameSaveMeta(gs.mainName, gs.score, gs.highScore, gs.landed, gs.departed)
+        val metaHandle = saveFolderHandle.child("${saveIndex}.meta")
+        metaHandle.writeString(moshi.adapter<GameSaveMeta>().toJson(metaObject), false)
+    } catch (e: GdxRuntimeException) {
+        if (e.stackTraceToString().lowercase().contains("enospc")) {
+            val text = "Not enough space on device${if (isMobile()) " - consider moving game data to external storage in your device settings" else ""}"
+            GAME.showDialogAtCurrentScreen { CustomDialog("Failed to save game", text, "", "Ok") }
+            FileLog.warn("GameSaverLoader", "Could not save due to insufficient device space")
+        } else {
+            FileLog.warn("GameSaverLoader", "Could not save due to\n$e")
+        }
+    }
 }
 
 /**
