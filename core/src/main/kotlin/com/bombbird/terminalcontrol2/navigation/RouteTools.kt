@@ -407,12 +407,20 @@ fun setAllMissedLegsToNormal(route: Route) {
  * @param route the route to find the missed approach altitude in
  */
 fun findMissedApproachAlt(route: Route): Int? {
-    for (i in route.size - 1 downTo 0) route[i].apply {
-        if (phase != Leg.MISSED_APP) return null
-        (this as? WaypointLeg)?.minAltFt?.let { return it } ?:
-        (this as? InitClimbLeg)?.minAltFt?.let { return it }
+    // Find the highest min alt among all missed approach legs until reaching a vector/discontinuity/hold
+    var highestMinAlt: Int? = null
+    for (i in 0 until  route.size) route[i].apply {
+        if (phase != Leg.MISSED_APP) return highestMinAlt
+        if (this is DiscontinuityLeg || this is VectorLeg || this is HoldLeg) return highestMinAlt
+        val finalHighestAlt = highestMinAlt
+        (this as? WaypointLeg)?.minAltFt?.let {
+            if (finalHighestAlt == null || it > finalHighestAlt) highestMinAlt = it
+        } ?: (this as? InitClimbLeg)?.minAltFt?.let {
+            if (finalHighestAlt == null || it > finalHighestAlt) highestMinAlt = it
+        }
+        println("Highest min alt: $highestMinAlt")
     }
-    return null
+    return highestMinAlt
 }
 
 /**

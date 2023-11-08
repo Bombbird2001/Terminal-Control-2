@@ -4,6 +4,7 @@ import com.badlogic.gdx.math.Polygon
 import com.bombbird.terminalcontrol2.files.*
 import com.bombbird.terminalcontrol2.global.AVAIL_AIRPORTS
 import com.bombbird.terminalcontrol2.navigation.Route
+import com.bombbird.terminalcontrol2.navigation.findMissedApproachAlt
 import com.bombbird.terminalcontrol2.utilities.ABOVE_ALT_REGEX
 import com.bombbird.terminalcontrol2.utilities.BELOW_ALT_REGEX
 import com.bombbird.terminalcontrol2.utilities.toLines
@@ -813,21 +814,10 @@ object DataFileTest: FunSpec() {
                     val missedLines = getAllTextAfterHeaderMultiple("MISSED", apchLines[1])
                     missedLines.size shouldBe 1
                     val missedLine = missedLines[0].split(" ")
-                    val route = testParseLegs(missedLine, allWpts, Route.Leg.NORMAL, WARNING_SHOULD_BE_EMPTY)
+                    val route = testParseLegs(missedLine, allWpts, Route.Leg.MISSED_APP, WARNING_SHOULD_BE_EMPTY)
                     route.size shouldBeGreaterThanOrEqual 1
-                    if (route.size >= 2) {
-                        // 2nd last leg must be a waypoint and have an altitude restriction
-                        val wpt = (route[route.size - 2] as? Route.WaypointLeg).shouldNotBeNull().apply {
-                            maxAltFt.shouldNotBeNull() shouldBe minAltFt
-                        }
-                        // Last leg must be a hold at the same waypoint as the 2nd last leg
-                        (route[route.size - 1] as? Route.HoldLeg).shouldNotBeNull().apply {
-                            println("$wptId ${wpt.wptId}")
-                            wptId shouldBe wpt.wptId
-                        }
-                    } else {
-                        // Last leg must be a vector leg
-                        (route[route.size - 1] as? Route.VectorLeg).shouldNotBeNull()
+                    if (route.size > 1 || route[0] !is Route.VectorLeg) {
+                        findMissedApproachAlt(route).shouldNotBeNull()
                     }
                 }
             }

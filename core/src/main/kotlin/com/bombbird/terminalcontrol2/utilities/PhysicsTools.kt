@@ -576,55 +576,100 @@ fun calculateArrivalSpawnAltitude(aircraft: Entity, airport: Entity, origRoute: 
     // Find the distance between the first point with an upper altitude restriction if any, else select airport elevation as this point
     val distPxToAlt: Float
     val firstMaxAlt: Float
-    var maxStarAlt: Int? = null
+    val minStarAlt: Int?
+
+    val airportAlt = airport[Altitude.mapper]?.altitudeFt ?: 0f
+    val distPxToAirport: Float
     if (aircraftRoute.size == 0) {
         // No legs, select airport position and use airport elevation as closest point with max altitude restriction
-        firstMaxAlt = airport[Altitude.mapper]?.altitudeFt ?: 0f
+        firstMaxAlt = airportAlt
         val airportPos = airport[Position.mapper] ?: Position()
-        distPxToAlt = calculateDistanceBetweenPoints(posX, posY, airportPos.x, airportPos.y)
+        distPxToAirport = calculateDistanceBetweenPoints(posX, posY, airportPos.x, airportPos.y)
+        distPxToAlt = distPxToAirport
+        minStarAlt = null
     } else {
         // Find the closest point with a max altitude restriction
         var cumulativeDistPx = 0f
         var prevPos = Position(posX, posY)
         aircraftRoute.also { legs ->
+            // Try to find the first waypoint after or equal to the current direct that has a min, max alt restriction
+            var starMaxAltFound = false
+            var firstStarMaxAlt: Float? = null
+            var distToFirstStarMaxAlt: Float? = null
+            var starMinAltFound = false
+            var firstStarMinAlt: Int? = null
             for (i in 0 until legs.size) { (legs[i] as? Route.WaypointLeg)?.apply {
                 val thisWptPos = GAME.gameServer?.waypoints?.get(wptId)?.entity?.get(Position.mapper) ?: Position()
                 cumulativeDistPx += calculateDistanceBetweenPoints(prevPos.x, prevPos.y, thisWptPos.x, thisWptPos.y)
-                maxAltFt?.let {
-                    // When max altitude found, set the distance to the currently accumulated distance
-                    firstMaxAlt = it.toFloat()
-                    distPxToAlt = cumulativeDistPx
-                    return@also
+                if (maxAltFt != null && !starMaxAltFound) {
+                    firstStarMaxAlt = maxAltFt.toFloat()
+                    distToFirstStarMaxAlt = cumulativeDistPx
+                    starMaxAltFound = true
+                }
+                if (minAltFt != null && !starMinAltFound) {
+                    firstStarMinAlt = minAltFt
+                    starMinAltFound = true
                 }
                 prevPos = thisWptPos
             }}
-            // End of loop reached without a max alt being found - add distance between last position and airport
-            // and set airport elevation as max alt
+
+            // End of loop reached - add distance between last position and airport
             val airportPos = airport[Position.mapper] ?: Position()
             cumulativeDistPx += calculateDistanceBetweenPoints(prevPos.x, prevPos.y, airportPos.x, airportPos.y)
-            distPxToAlt = cumulativeDistPx
-            firstMaxAlt = airport[Altitude.mapper]?.altitudeFt ?: 0f
-        }
+            distPxToAirport = cumulativeDistPx
 
-        // Take into account any STAR max altitude restrictions
-        (aircraftRoute[0] as? Route.WaypointLeg)?.apply {
-            for (i in 0 until origRoute.size) (origRoute[i] as? Route.WaypointLeg)?.let { wpt ->
-                if (compareLegEquality(this, wpt)) return@apply // Once the current direct is reached, stop searching for max altitude restrictions
-                val currMaxStarAlt = maxStarAlt // Variable to bypass changing closure error
-                wpt.maxAltFt?.let { maxAlt ->
-                    if (currMaxStarAlt == null || currMaxStarAlt > maxAlt) maxStarAlt = maxAlt
-                }
+            val finalFirstStarMaxAlt = firstStarMaxAlt
+            val finalDistToFirstStarMaxAlt = distToFirstStarMaxAlt
+            if (finalFirstStarMaxAlt != null && finalDistToFirstStarMaxAlt != null) {
+                // Found a max alt restriction in the STAR
+                distPxToAlt = finalDistToFirstStarMaxAlt
+                firstMaxAlt = finalFirstStarMaxAlt
+            } else {
+                // Could not find max alt in STAR, use cumulative distance to airport and airport elevation
+                distPxToAlt = distPxToAirport
+                firstMaxAlt = airportAlt
             }
+
+            minStarAlt = firstStarMinAlt
         }
     }
 
-    // 12 - 16nm leeway
-    val effectiveDistPxToAlt = max(distPxToAlt - nmToPx(MathUtils.random(12, 16)), 0f)
+    // 1. Calculate a direct descent from spawn position to airport with 12 - 16nm leeway
     val aircraftPerf = aircraft[AircraftInfo.mapper]?.aircraftPerf ?: run {
         FileLog.info("PhysicsTools", "No aircraft performance data found")
         AircraftTypeData.AircraftPerfData()
     }
-    var currStepAlt = firstMaxAlt
+    val airportToPositionTrackPx = max(distPxToAirport - nmToPx(MathUtils.random(12, 16)), 0f)
+    val directNoRestrictionPathAlt = calculateTopAltitudeAtDistanceFromAlt(airport[Altitude.mapper]?.altitudeFt ?: 0f, airportToPositionTrackPx, aircraftPerf)
+
+    // 2. Calculate a direct descent from spawn position to first max alt restriction with 4 - 6nm leeway
+    val positionToMaxAltRestrictionTrackPx = max(distPxToAlt - nmToPx(MathUtils.random(4, 6)), 0f)
+    val maxAltRestrictionPathAlt = calculateTopAltitudeAtDistanceFromAlt(firstMaxAlt, positionToMaxAltRestrictionTrackPx, aircraftPerf)
+
+    // Take into account any STAR max altitude restrictions
+    var prevMaxStarAlt: Int? = null
+    (aircraftRoute[0] as? Route.WaypointLeg)?.apply {
+        for (i in 0 until origRoute.size) (origRoute[i] as? Route.WaypointLeg)?.let { wpt ->
+            if (compareLegEquality(this, wpt)) return@apply // Once the current direct is reached, stop searching for max altitude restrictions
+            wpt.maxAltFt?.let { maxAlt ->
+                val prevMaxAlt = prevMaxStarAlt
+                if (prevMaxAlt == null || prevMaxAlt > maxAlt) prevMaxStarAlt = maxAlt
+            }
+        }
+    }
+    val finalPrevMaxStarAlt = prevMaxStarAlt
+
+    // Spawn alt is the lower of the two, must be lower than any previous max alt restrictions, and must be at least the min star alt if any
+    var spawnAlt = min(directNoRestrictionPathAlt, maxAltRestrictionPathAlt)
+    if (finalPrevMaxStarAlt != null) spawnAlt = min(spawnAlt, finalPrevMaxStarAlt.toFloat())
+    if (minStarAlt != null) spawnAlt = max(spawnAlt, minStarAlt.toFloat())
+    return if (spawnAlt > TRANS_ALT && spawnAlt < TRANS_LVL * 100) TRANS_ALT.toFloat() else spawnAlt
+}
+
+private fun calculateTopAltitudeAtDistanceFromAlt(startAlt: Float, distPx: Float, aircraftPerf: AircraftTypeData.AircraftPerfData): Float {
+    val effectiveDistPxToAlt = if (distPx < 0) 0f else distPx
+
+    var currStepAlt = startAlt
     var currStepDist = 0f
     val stepSize = nmToPx(1)
     while (currStepDist < effectiveDistPxToAlt) {
@@ -650,8 +695,5 @@ fun calculateArrivalSpawnAltitude(aircraft: Entity, airport: Entity, origRoute: 
     val tasMpsAtTop = ktToMps(calculateTASFromIAS(estFinalAlt, if (estFinalAlt > crossOverAlt) calculateIASFromMach(estFinalAlt, aircraftPerf.tripMach)
     else aircraftPerf.tripIas.toFloat()))
     currStepAlt -= mToFt(tasMpsAtTop * tasMpsAtTop / 2 / GRAVITY_ACCELERATION_MPS2)
-    currStepAlt = min(currStepAlt, aircraftPerf.maxAlt.toFloat())
-    val finalMaxStarAlt = maxStarAlt // Another final variable to bypass changing closure error
-    val spawnAlt = if (finalMaxStarAlt == null) currStepAlt else min(currStepAlt, finalMaxStarAlt.toFloat())
-    return if (spawnAlt > TRANS_ALT && spawnAlt < TRANS_LVL * 100) TRANS_ALT.toFloat() else spawnAlt
+    return min(currStepAlt, aircraftPerf.maxAlt.toFloat())
 }
