@@ -134,7 +134,7 @@ class TerminalControl2(val externalFileHandler: ExternalFileHandler, ttsHandler:
             }
 
             // Initialize logging system
-            FileLog.initializeFile("Logs/BUILD $BUILD_VERSION.log")
+            FileLog.initializeFile()
             println("------------------------------------------------------")
             FileLog.info("TerminalControl2", "Game initialized")
 

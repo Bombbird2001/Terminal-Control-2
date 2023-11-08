@@ -1,6 +1,7 @@
 package com.bombbird.terminalcontrol2.utilities
 
 import com.bombbird.terminalcontrol2.files.getExtDir
+import com.bombbird.terminalcontrol2.global.BUILD_VERSION
 import com.esotericsoftware.minlog.Log
 import com.esotericsoftware.minlog.Log.*
 import java.io.PrintStream
@@ -10,17 +11,26 @@ object FileLog {
     private var printStream: PrintStream? = null
 
     /**
-     * Initializes the log system to use a file (or print to console)
-     * @param path The file path in the external directory to log to
+     * Initializes the log system to use a file
      */
-    fun initializeFile(path: String?) {
-        if (path == null) return
+    fun initializeFile() {
         try {
-            val fos = getExtDir(path)?.write(true) ?: return
+            val fos = getExtDir("Logs/BUILD $BUILD_VERSION.log")?.write(true) ?: return
             printStream = PrintStream(fos)
             System.setOut(printStream)
         } catch (e: Exception) {
             Log.warn("FileLog", "Failed to initialize file log system due to\n$e")
+        }
+
+        // Delete logs from older builds
+        val logsDir = getExtDir("Logs") ?: return
+        val logs = logsDir.list()
+        for (log in logs) {
+            val version = log.name().substringAfter("BUILD ").substringBefore(".log").toIntOrNull()
+            if (version == null || version < BUILD_VERSION) {
+                log.delete()
+                info("FileLog", "Deleted old log file ${log.name()}")
+            }
         }
     }
 
