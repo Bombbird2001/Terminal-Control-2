@@ -16,14 +16,14 @@ object CommsToolTest: FunSpec() {
 
         test("Callsign token - Not present in map") {
             val sentence = TokenSentence()
-            sentence.addToken(CallsignToken("SIA123"))
+            sentence.addToken(CallsignToken("SIA123", "super", false))
             sentence.addComma()
-            sentence.addToken(CallsignToken("EVA456"))
+            sentence.addToken(CallsignToken("EVA456", "heavy", false))
             sentence.addComma()
-            sentence.addToken(CallsignToken("JAL789"))
-            sentence.toTextSentence() shouldBe "SIA123, EVA456, JAL789"
-            sentence.toTTSSentence() shouldBe "sierra india alpha one two tree, " +
-                    "echo victor alpha four five six, juliet alpha lima seven eight niner"
+            sentence.addToken(CallsignToken("JAL789", "", true))
+            sentence.toTextSentence() shouldBe "SIA123 super, EVA456 heavy, JAL789 mayday"
+            sentence.toTTSSentence() shouldBe "sierra india alpha one two tree super, " +
+                    "echo victor alpha four five six heavy, juliet alpha lima seven eight niner mayday"
         }
 
         test("Pronounceable token") {

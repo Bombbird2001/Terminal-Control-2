@@ -418,7 +418,6 @@ fun findMissedApproachAlt(route: Route): Int? {
         } ?: (this as? InitClimbLeg)?.minAltFt?.let {
             if (finalHighestAlt == null || it > finalHighestAlt) highestMinAlt = it
         }
-        println("Highest min alt: $highestMinAlt")
     }
     return highestMinAlt
 }

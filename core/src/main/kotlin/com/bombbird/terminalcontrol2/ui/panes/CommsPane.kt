@@ -153,6 +153,9 @@ class CommsPane {
         // Get a random greeting
         val randomGreeting = getRandomGreeting()
 
+        // Check emergency
+        val isEmergency = aircraft[EmergencyPending.mapper]?.active == true
+
         // Get current inbound heading/direct
         val clearedHdg = if (flightType.type != FlightType.DEPARTURE) clearanceState.vectorHdg else null
         val clearedDirect = if (flightType.type != FlightType.DEPARTURE && clearanceState.route.size > 0) clearanceState.route[0]
@@ -165,7 +168,7 @@ class CommsPane {
         } else arrayOf()
 
         sentence.addTokens(LiteralToken(yourCallsign), LiteralToken(randomGreeting)).addComma()
-            .addTokens(CallsignToken(acInfo.icaoCallsign), LiteralToken(aircraftWake)).addComma().addTokens(*altitudeAction)
+            .addTokens(CallsignToken(acInfo.icaoCallsign, aircraftWake, isEmergency)).addComma().addTokens(*altitudeAction)
 
         // Get current SID/STAR name
         val depArrToken = LiteralToken(if (flightType.type == FlightType.DEPARTURE) "departure" else "arrival")
@@ -195,7 +198,7 @@ class CommsPane {
             }
         }
 
-        addMessage(sentence.toTextSentence(), getMessageTypeForAircraftType(flightType.type))
+        addMessage(sentence.toTextSentence(), if (isEmergency) WARNING else getMessageTypeForAircraftType(flightType.type))
         saySentenceInTTS(aircraft, sentence)
 
         // Play contact sound
@@ -239,6 +242,9 @@ class CommsPane {
         } ?: return
         val yourCallsign = thisSectorInfo.getControllerCallsignFrequency(flightType.type).callsign
 
+        // Check emergency
+        val isEmergency = aircraft[EmergencyPending.mapper]?.active == true
+
         // Get the wake category of the aircraft
         val aircraftWake = getWakePhraseology(acInfo.aircraftPerf.wakeCategory)
 
@@ -249,7 +255,7 @@ class CommsPane {
         val lateralClearance = clearanceState.vectorHdg?.let { hdg -> arrayOf(LiteralToken("heading"), HeadingToken(hdg)) } ?: arrayOf()
 
         val sentence = TokenSentence().addTokens(LiteralToken(yourCallsign), LiteralToken("hello")).addComma()
-            .addTokens(CallsignToken(acInfo.icaoCallsign), LiteralToken(aircraftWake)).addComma()
+            .addTokens(CallsignToken(acInfo.icaoCallsign, aircraftWake, isEmergency)).addComma()
             .addToken(LiteralToken("missed approach$goAroundReasonStr")).addComma().addTokens(*altitudeAction).addComma()
             .addTokens(*lateralClearance)
 
@@ -268,6 +274,9 @@ class CommsPane {
         val alt = aircraft[Altitude.mapper] ?: return
         val goAroundReasonStr = getGoAroundReason(aircraft[RecentGoAround.mapper]?.reason)
 
+        // Check emergency
+        val isEmergency = aircraft[EmergencyPending.mapper]?.active == true
+
         // Get the wake category of the aircraft
         val aircraftWake = getWakePhraseology(acInfo.aircraftPerf.wakeCategory)
 
@@ -277,7 +286,7 @@ class CommsPane {
         // If aircraft is vectored, say heading, else say missed approach procedure
         val lateralClearance = clearanceState.vectorHdg?.let { hdg -> arrayOf(LiteralToken("heading"), HeadingToken(hdg)) } ?: arrayOf()
 
-        val sentence = TokenSentence().addTokens(CallsignToken(acInfo.icaoCallsign), LiteralToken(aircraftWake))
+        val sentence = TokenSentence().addTokens(CallsignToken(acInfo.icaoCallsign, aircraftWake, isEmergency))
             .addComma().addToken(LiteralToken("missed approach$goAroundReasonStr")).addComma().addTokens(*altitudeAction)
             .addComma().addTokens(*lateralClearance)
 
@@ -295,6 +304,9 @@ class CommsPane {
         val flightType = aircraft[FlightType.mapper] ?: return
         val acInfo = aircraft[AircraftInfo.mapper] ?: return
         val pos = aircraft[Position.mapper] ?: return
+
+        // Check emergency
+        val isEmergency = aircraft[EmergencyPending.mapper]?.active == true
 
         // Controller segment
         // Get the wake category of the aircraft
@@ -341,7 +353,7 @@ class CommsPane {
         }
         val nextCallsign = nextSectorInfo.callsign
 
-        val sentence = TokenSentence().addTokens(CallsignToken(acInfo.icaoCallsign), LiteralToken(aircraftWake))
+        val sentence = TokenSentence().addTokens(CallsignToken(acInfo.icaoCallsign, aircraftWake, isEmergency))
             .addComma().addTokens(LiteralToken("contact"), LiteralToken(nextCallsign),
                 FrequencyToken(nextSectorInfo.frequency))
 
@@ -364,7 +376,7 @@ class CommsPane {
         }
 
         val sentence2 = TokenSentence().addTokens(LiteralToken(switchMsg), FrequencyToken(nextSectorInfo.frequency))
-            .addComma().addTokens(CallsignToken(acInfo.icaoCallsign), LiteralToken(aircraftWake)).addComma()
+            .addComma().addTokens(CallsignToken(acInfo.icaoCallsign, aircraftWake, isEmergency)).addComma()
             .addToken(LiteralToken(bye))
 
         addMessage(sentence2.toTextSentence(), getMessageTypeForAircraftType(flightType.type))
@@ -382,6 +394,9 @@ class CommsPane {
         // Get the wake category of the aircraft
         val aircraftWake = getWakePhraseology(acInfo.aircraftPerf.wakeCategory)
 
+        // Check emergency
+        val isEmergency = aircraft[EmergencyPending.mapper]?.active == true
+
         val emergencyTypeString = when (type) {
             EmergencyPending.BIRD_STRIKE -> if (MathUtils.randomBoolean()) "we had a bird strike" else "declaring emergency due to bird strike"
             EmergencyPending.ENGINE_FAIL -> {
@@ -398,7 +413,7 @@ class CommsPane {
             }
         }
 
-        val sentence = TokenSentence().addTokens(LiteralToken("Mayday, mayday, mayday,"), CallsignToken(acInfo.icaoCallsign), LiteralToken(aircraftWake))
+        val sentence = TokenSentence().addTokens(LiteralToken("Mayday, mayday, mayday,"), CallsignToken(acInfo.icaoCallsign, aircraftWake, isEmergency))
             .addComma().addToken(LiteralToken(emergencyTypeString)).addComma()
 
         if (type == EmergencyPending.PRESSURE_LOSS) sentence.addToken(LiteralToken("performing emergency descent to 10000 feet")).addComma()
@@ -423,7 +438,7 @@ class CommsPane {
         // Get the wake category of the aircraft
         val aircraftWake = getWakePhraseology(acInfo.aircraftPerf.wakeCategory)
 
-        val sentence = TokenSentence().addTokens(CallsignToken(acInfo.icaoCallsign), LiteralToken(aircraftWake))
+        val sentence = TokenSentence().addTokens(CallsignToken(acInfo.icaoCallsign, aircraftWake, true))
             .addComma().addToken(LiteralToken(
                 if (MathUtils.randomBoolean()) "we're almost done with checklists"
                 else "we need a few more minutes to run checklists"))
@@ -449,7 +464,7 @@ class CommsPane {
         // Get the wake category of the aircraft
         val aircraftWake = getWakePhraseology(acInfo.aircraftPerf.wakeCategory)
 
-        val sentence = TokenSentence().addTokens(CallsignToken(acInfo.icaoCallsign), LiteralToken(aircraftWake))
+        val sentence = TokenSentence().addTokens(CallsignToken(acInfo.icaoCallsign, aircraftWake, true))
             .addComma().addToken(LiteralToken(
                 if (dumpEnding) {
                     if (MathUtils.randomBoolean()) "we will need a few more minutes for fuel dumping"
@@ -521,7 +536,7 @@ class CommsPane {
         // Get the wake category of the aircraft
         val aircraftWake = getWakePhraseology(acInfo.aircraftPerf.wakeCategory)
 
-        val sentence = TokenSentence().addTokens(CallsignToken(acInfo.icaoCallsign), LiteralToken(aircraftWake),
+        val sentence = TokenSentence().addTokens(CallsignToken(acInfo.icaoCallsign, aircraftWake, true),
             LiteralToken("is ready for approach"))
 
         if (immobilizeOnLanding) sentence.addComma().addToken(LiteralToken(

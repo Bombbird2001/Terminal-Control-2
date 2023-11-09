@@ -357,17 +357,24 @@ object RouteToolsTest: FunSpec() {
                 add(discontinuity)
                 add(tempMissedLeg1)
             }
-            findMissedApproachAlt(tempRoute2) shouldBe 2000
+            // Since the route contains non-missed legs, the function should return null
+            findMissedApproachAlt(tempRoute2).shouldBeNull()
 
             val tempRoute3 = Route().apply {
-                add(wpt1)
-                add(vector1)
-                add(discontinuity)
                 add(initClimb1)
                 add(Route.WaypointLeg(9, null, null, null, legActive = true, altRestrActive = true,
                     spdRestrActive = true, phase = Route.Leg.MISSED_APP))
             }
             findMissedApproachAlt(tempRoute3) shouldBe 1500
+
+            val tempRoute4 = Route().apply {
+                add(initClimb1)
+                add(Route.WaypointLeg(10, null, 4000, null, legActive = true, altRestrActive = true,
+                    spdRestrActive = true, phase = Route.Leg.MISSED_APP))
+                add(Route.WaypointLeg(9, null, null, null, legActive = true, altRestrActive = true,
+                    spdRestrActive = true, phase = Route.Leg.MISSED_APP))
+            }
+            findMissedApproachAlt(tempRoute4) shouldBe 4000
 
             findMissedApproachAlt(route1).shouldBeNull()
         }

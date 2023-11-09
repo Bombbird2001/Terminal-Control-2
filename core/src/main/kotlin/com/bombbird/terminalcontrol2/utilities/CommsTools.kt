@@ -126,9 +126,9 @@ class LiteralToken(private val literal: String): CommsToken() {
 }
 
 /** Contains a callsign to be spoken - converts the callsign to the phonetic callsign */
-class CallsignToken(private val callsign: String): CommsToken() {
+class CallsignToken(private val callsign: String, private val wakeString: String, private val emergency: Boolean): CommsToken() {
     override fun toString(): String {
-        return callsign
+        return "$callsign $wakeString${if (emergency) " mayday" else ""}"
     }
 
     override fun toTTSString(): String {
@@ -138,14 +138,14 @@ class CallsignToken(private val callsign: String): CommsToken() {
             val flightNo = callsign.substring(3)
             val phoneticCallsign = CALLSIGN_TO_TTS[airlineCallsign]
             if (phoneticCallsign != null) {
-                return "$phoneticCallsign ${splitCharacterToNatoPhonetic(flightNo)}"
+                return "$phoneticCallsign ${splitCharacterToNatoPhonetic(flightNo)}${if (emergency) " mayday" else ""}"
             } else {
                 FileLog.info("CommsTools", "No phonetic callsign for $airlineCallsign")
             }
         }
 
         // Variation 2: Any other format - split into individual characters to convert to NATO phonetic
-        return splitCharacterToNatoPhonetic(callsign)
+        return "${splitCharacterToNatoPhonetic(callsign)} $wakeString${if (emergency) " mayday" else ""}"
     }
 }
 
