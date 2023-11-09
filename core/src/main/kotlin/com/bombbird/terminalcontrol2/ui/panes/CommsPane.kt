@@ -394,9 +394,6 @@ class CommsPane {
         // Get the wake category of the aircraft
         val aircraftWake = getWakePhraseology(acInfo.aircraftPerf.wakeCategory)
 
-        // Check emergency
-        val isEmergency = aircraft[EmergencyPending.mapper]?.active == true
-
         val emergencyTypeString = when (type) {
             EmergencyPending.BIRD_STRIKE -> if (MathUtils.randomBoolean()) "we had a bird strike" else "declaring emergency due to bird strike"
             EmergencyPending.ENGINE_FAIL -> {
@@ -413,7 +410,7 @@ class CommsPane {
             }
         }
 
-        val sentence = TokenSentence().addTokens(LiteralToken("Mayday, mayday, mayday,"), CallsignToken(acInfo.icaoCallsign, aircraftWake, isEmergency))
+        val sentence = TokenSentence().addTokens(LiteralToken("Mayday, mayday, mayday,"), CallsignToken(acInfo.icaoCallsign, aircraftWake, false))
             .addComma().addToken(LiteralToken(emergencyTypeString)).addComma()
 
         if (type == EmergencyPending.PRESSURE_LOSS) sentence.addToken(LiteralToken("performing emergency descent to 10000 feet")).addComma()

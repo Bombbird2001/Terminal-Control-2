@@ -154,6 +154,9 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         // Debug: Render all sectors
         // renderAllSectors(shapeRenderer)
 
+        // Debug: Render all ACC sectors
+        // renderAllACCSectors(shapeRenderer)
+
         // Render circles
         val circles = circleFamilyEntities.getEntities()
         for (i in 0 until circles.size()) {

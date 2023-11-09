@@ -202,6 +202,21 @@ fun renderAllSectors(shapeRenderer: ShapeRenderer) {
 }
 
 /**
+ * Renders all available ACC sectors for the map
+ * @param shapeRenderer the [ShapeRenderer] to use to render the zones
+ */
+fun renderAllACCSectors(shapeRenderer: ShapeRenderer) {
+    val colors = arrayOf(Color.WHITE, Color.BLUE, Color.YELLOW, Color.PURPLE, Color.CYAN, Color.MAGENTA, Color.CORAL, Color.GOLD, Color.CHARTREUSE, Color.FIREBRICK, Color.MAROON)
+    GAME.gameServer?.accSectors?.let {
+        for (i in 0 until it.size) {
+            val sector = it[i]
+            shapeRenderer.color = colors[i]
+            sector.entity[GPolygon.mapper]?.let { polygon -> shapeRenderer.polygon(polygon.vertices) }
+        }
+    }
+}
+
+/**
  * Helper extension function that logs down missing components - use for debugging components that should be present
  * but are missing
  * @param mapper the [ComponentMapper] of the component to get
