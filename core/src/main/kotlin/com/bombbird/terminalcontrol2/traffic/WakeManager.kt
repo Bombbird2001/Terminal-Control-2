@@ -2,14 +2,12 @@ package com.bombbird.terminalcontrol2.traffic
 
 import com.badlogic.ashley.core.Entity
 import com.badlogic.ashley.utils.ImmutableArray
-import com.bombbird.terminalcontrol2.components.AircraftInfo
-import com.bombbird.terminalcontrol2.components.Altitude
-import com.bombbird.terminalcontrol2.components.Position
-import com.bombbird.terminalcontrol2.components.WakeInfo
+import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.WakeZone
 import com.bombbird.terminalcontrol2.global.MAX_ALT
 import com.bombbird.terminalcontrol2.global.VERT_SEP
 import ktx.ashley.get
+import ktx.ashley.has
 import ktx.collections.GdxArray
 import kotlin.math.ceil
 import kotlin.math.floor
@@ -34,6 +32,8 @@ class WakeManager {
             val pos = it[Position.mapper] ?: return@forEach
             val alt = it[Altitude.mapper] ?: return@forEach
             val acInfo = it[AircraftInfo.mapper] ?: return@forEach
+            // We will not check wake separation for aircraft that have just taken off
+            if (it.has(TakeoffClimb.mapper)) return@forEach
 
             /**
              * Checks whether the current aircraft in the context has infringed wake separation for wake zones in the
