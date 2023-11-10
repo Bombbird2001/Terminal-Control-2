@@ -10,6 +10,7 @@ import com.squareup.moshi.JsonClass
 import ktx.ashley.get
 import ktx.ashley.has
 import ktx.ashley.plusAssign
+import ktx.ashley.remove
 import kotlin.math.min
 
 /**
@@ -197,6 +198,9 @@ class ClearanceState(var routePrimaryName: String = "", val route: Route = Route
                 entity += ContactToTower(min((alt + MathUtils.random(1100, 1500)).toInt(), MIN_ALT - 50))
             }
             clearedTrans = newClearance.clearedTrans
+
+            // Remove on go around route state if STAR changed
+            if (starChanged) entity.remove<OnGoAroundRoute>()
 
             // Update route polygons
             entity[ArrivalRouteZone.mapper]?.also {

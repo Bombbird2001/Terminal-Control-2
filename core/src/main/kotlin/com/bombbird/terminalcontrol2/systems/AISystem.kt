@@ -545,6 +545,7 @@ class AISystem: EntitySystem() {
                 // Change from armed to captured
                 this += VisualCaptured(vis.visApp, vis.parentApp)
                 remove<VisualArmed>()
+                remove<OnGoAroundRoute>()
             }
         }
 
@@ -594,6 +595,7 @@ class AISystem: EntitySystem() {
                 if (requiredDist * requiredDist > deltaX * deltaX + deltaY * deltaY) {
                     remove<LocalizerArmed>()
                     this += LocalizerCaptured(locApp)
+                    remove<OnGoAroundRoute>()
                     return@apply
                 }
 
@@ -603,6 +605,7 @@ class AISystem: EntitySystem() {
                 if (abs(findDeltaHeading(targetHdg, locCourseHdg, CommandTarget.TURN_DEFAULT)) < 2) {
                     remove<LocalizerArmed>()
                     this += LocalizerCaptured(locApp)
+                    remove<OnGoAroundRoute>()
                 }
             }
         }
@@ -1001,6 +1004,10 @@ class AISystem: EntitySystem() {
                 actingClearance.vectorTurnDir = CommandTarget.TURN_DEFAULT
                 cmd.targetAltFt = actingClearance.clearedAlt
             } else while (size > 0) get(0).let {
+                if (it.phase == Route.Leg.APP || it.phase == Route.Leg.APP_TRANS) {
+                    // Remove on go around route component
+                    entity.remove<OnGoAroundRoute>()
+                }
                 entity += when (it) {
                     is Route.VectorLeg -> {
                         actingClearance.vectorHdg = it.heading
@@ -1104,7 +1111,11 @@ class AISystem: EntitySystem() {
             var targetAlt = actingClearance.clearedAlt
             minAlt?.let {
                 if (targetAlt < it && altitudeFt >= it) targetAlt = it
-                else if (targetAlt < it && altitudeFt < it && flightType.type == FlightType.ARRIVAL) targetAlt = altitudeFt.toInt()
+                else if (targetAlt < it && altitudeFt < it) {
+                    // We set the target altitude to the current altitude if the aircraft is not on the missed approach track,
+                    // and the arrival has already descended below the min alt for some reason
+                    if (entity.hasNot(OnGoAroundRoute.mapper) && flightType.type == FlightType.ARRIVAL) targetAlt = altitudeFt.toInt()
+                }
             }
             maxAlt?.let {
                 if (targetAlt > it && altitudeFt <= it) targetAlt = it
@@ -1290,6 +1301,10 @@ class AISystem: EntitySystem() {
 
             // Add the go around flag with reason
             entity += RecentGoAround(reason = reason)
+            // Mark the aircraft as being on the go around route
+            // This component will be removed the next time the aircraft heads towards the first waypoint
+            // of the approach/transition route, or once the aircraft captures the approach track
+            entity += OnGoAroundRoute()
             // Also add to the airport to pause departures till required time has passed
             airport?.add(RecentGoAround(reason = reason))
         }

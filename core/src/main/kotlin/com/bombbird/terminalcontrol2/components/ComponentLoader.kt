@@ -86,6 +86,7 @@ fun loadAllComponents() {
     MetarInfo.initialise()
     MinAltSectorInfo.initialise()
     Minimums.initialise()
+    OnGoAroundRoute.initialise()
     OnGround.initialise()
     OppositeRunway.initialise()
     PendingClearances.initialise()

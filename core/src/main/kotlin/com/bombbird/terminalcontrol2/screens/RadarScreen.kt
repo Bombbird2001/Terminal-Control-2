@@ -504,7 +504,7 @@ class RadarScreen private constructor(private val connectionHost: String, privat
         if (count == 2 && !cameraAnimating) initiateCameraAnimation(x, y)
         deselectUISelectedAircraft()
         // toggleMinAltSectorsOnClick(x, y, unprojectFromRadarCamera, clientEngine)
-        // println("Clicked on: ${unprojectFromRadarCamera(x, y)}")
+        // println("Clicked on: ${unprojectFromRadarCamera(x, y).scl(1 / 25f)}")
         return true
     }
 

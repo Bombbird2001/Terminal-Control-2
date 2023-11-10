@@ -280,6 +280,23 @@ data class RecentGoAround(var timeLeft: Float = 80f, var reason: Byte? = null): 
 }
 
 /**
+ * Component for tagging aircraft that are on the go-around portion of their route
+ *
+ * This should be added when the aircraft initializes a go-around/missed approach, and removed the next time it heads
+ * towards a leg on the approach/transition phase, or once it captures the approach track, or when the STAR is changed
+ */
+@JsonClass(generateAdapter = true)
+class OnGoAroundRoute: Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.ON_GO_AROUND_ROUTE
+
+    companion object {
+        val mapper = object: Mapper<OnGoAroundRoute>() {}.mapper
+
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
+    }
+}
+
+/**
  * Component for tagging aircraft that has just been handed over to the ACC and is pending clearance to their cruise
  * altitude
  */
