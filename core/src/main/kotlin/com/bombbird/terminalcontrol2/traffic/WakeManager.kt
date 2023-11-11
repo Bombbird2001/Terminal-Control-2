@@ -4,8 +4,11 @@ import com.badlogic.ashley.core.Entity
 import com.badlogic.ashley.utils.ImmutableArray
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.WakeZone
+import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.MAX_ALT
 import com.bombbird.terminalcontrol2.global.VERT_SEP
+import com.bombbird.terminalcontrol2.utilities.calculateDistanceBetweenPoints
+import com.bombbird.terminalcontrol2.utilities.pxToNm
 import ktx.ashley.get
 import ktx.ashley.has
 import ktx.collections.GdxArray
@@ -52,7 +55,16 @@ class WakeManager {
                     // Check that distance of the wake zone is smaller than required separation
                     val reqDist = WakeMatrix.getDistanceRequired(wakeInfo.leadingWake, wakeInfo.leadingRecat,
                         acInfo.aircraftPerf.wakeCategory, acInfo.aircraftPerf.recat)
-                    if (reqDist < wakeInfo.distFromAircraft + 0.01f) return@apply
+                    // Calculate distance of aircraft from first wake point for increased accuracy to prevent
+                    // intermittent conflicts
+                    val frontAc = GAME.gameServer?.aircraft?.get(wakeInfo.aircraftCallsign)?.entity
+                    val frontAcPos = frontAc?.get(Position.mapper)
+                    val frontAcTrail = frontAc?.get(WakeTrail.mapper)?.wakeZones
+                    val firstPointPos = if (frontAcTrail?.isEmpty == false) frontAcTrail[0].first else null
+                    val frontAcDistNmFromFirstWakePoint = if (frontAcPos != null && firstPointPos != null) {
+                        pxToNm(calculateDistanceBetweenPoints(frontAcPos.x, frontAcPos.y, firstPointPos.x, firstPointPos.y))
+                    } else 0f
+                    if (reqDist < wakeInfo.distFromAircraft + frontAcDistNmFromFirstWakePoint + 0.05f) return@apply
                     // Check if aircraft is physically inside the wake zone; if so, add to the list of conflicts and skip
                     // all remaining wake zones
                     if (contains(pos.x, pos.y)) return true
