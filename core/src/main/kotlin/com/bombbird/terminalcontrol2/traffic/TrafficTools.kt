@@ -135,6 +135,7 @@ fun despawnAircraft(aircraft: Entity) {
         val callsign = aircraft[AircraftInfo.mapper]?.icaoCallsign ?: return
         it.aircraft.removeKey(callsign) // Remove from aircraft map
         engine.getSystem<TrafficSystemInterval>().removeAircraftOnDespawn(aircraft) // Remove from conflict levels
+        engine.getSystem<TrafficSystemInterval>().removeAircraftWakeZones(aircraft) // Remove wake zones
         it.sendAircraftDespawn(callsign) // Send removal data to all clients
     }
 }

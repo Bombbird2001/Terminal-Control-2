@@ -4,6 +4,7 @@ import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.MAG_HDG_DEV
+import com.bombbird.terminalcontrol2.global.WAKE_LENGTH_EXTENSION_NM
 import com.bombbird.terminalcontrol2.global.WAKE_WIDTH_NM
 import com.bombbird.terminalcontrol2.global.getEngine
 import com.bombbird.terminalcontrol2.utilities.convertWorldAndRenderDeg
@@ -286,14 +287,14 @@ class RouteZone(posX1: Float, posY1: Float, posX2: Float, posY2: Float, rnpNm: F
  *
  * This class should be initialized only on the server as it is not required on the client
  */
-class WakeZone(posX1: Float, posY1: Float, posX2: Float, posY2: Float, wakeAlt: Float, callsign: String, leadingWakeCat: Char, leadingRecatCat: Char): Zone {
+class WakeZone(prevPosX: Float, prevPosY: Float, currPosX: Float, currPosY: Float, wakeAlt: Float, callsign: String, leadingWakeCat: Char, leadingRecatCat: Char): Zone {
     val entity = getEngine(false).entityOnMainThread(false) {
         with<GPolygon> {
-            val halfWidth = Vector2(posX2 - posX1, posY2 - posY1).apply { scl(nmToPx(WAKE_WIDTH_NM / 2) / len()) }.rotate90(-1)
-            val halfWidthOppTrack = Vector2(halfWidth).rotate90(-1)
-            vertices = floatArrayOf(posX1 + halfWidth.x, posY1 + halfWidth.y, posX1 - halfWidth.x, posY1 - halfWidth.y,
-                posX2 - halfWidth.x - halfWidthOppTrack.x, posY2 - halfWidth.y - halfWidthOppTrack.y,
-                posX2 + halfWidth.x - halfWidthOppTrack.x, posY2 + halfWidth.y - halfWidthOppTrack.y)
+            val halfWidth = Vector2(currPosX - prevPosX, currPosY - prevPosY).apply { scl(nmToPx(WAKE_WIDTH_NM / 2) / len()) }.rotate90(-1)
+            val halfWidthOppTrack = Vector2(halfWidth).apply { scl(nmToPx(WAKE_LENGTH_EXTENSION_NM / 2) / len()) }.rotate90(-1)
+            vertices = floatArrayOf(prevPosX + halfWidth.x, prevPosY + halfWidth.y, prevPosX - halfWidth.x, prevPosY - halfWidth.y,
+                currPosX - halfWidth.x - halfWidthOppTrack.x, currPosY - halfWidth.y - halfWidthOppTrack.y,
+                currPosX + halfWidth.x - halfWidthOppTrack.x, currPosY + halfWidth.y - halfWidthOppTrack.y)
         }
         with<Altitude> {
             altitudeFt = wakeAlt
@@ -302,6 +303,10 @@ class WakeZone(posX1: Float, posY1: Float, posX2: Float, posY2: Float, wakeAlt: 
             aircraftCallsign = callsign
             leadingWake = leadingWakeCat
             leadingRecat = leadingRecatCat
+        }
+        with<Position> {
+            x = currPosX
+            y = currPosY
         }
     }
 

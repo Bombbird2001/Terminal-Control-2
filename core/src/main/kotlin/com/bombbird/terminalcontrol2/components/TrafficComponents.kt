@@ -245,3 +245,18 @@ data class WakeInfo(var aircraftCallsign: String = "", var leadingWake: Char = '
         fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
+
+/**
+ * Component for tagging the wake turbulence tolerance of an aircraft; this is updated every second to check if a go
+ * around is required due to wake turbulence
+ */
+@JsonClass(generateAdapter = true)
+data class WakeTolerance(var accumulation: Float = 0f): Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.WAKE_TOLERANCE
+
+    companion object {
+        val mapper = object: Mapper<WakeTolerance>() {}.mapper
+
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
+    }
+}

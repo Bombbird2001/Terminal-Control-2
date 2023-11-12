@@ -325,7 +325,13 @@ class TrafficSystemInterval: IntervalSystem(1f) {
             if (conflict.conflictLevel >= 0 && conflict.conflictLevel < conflictLevels.size)
                 conflictLevels[conflict.conflictLevel].removeValue(aircraft, false)
         }
+    }
 
+    /**
+     * Removes all wake zones for the aircraft
+     * @param aircraft the aircraft to remove wake zones from
+     */
+    fun removeAircraftWakeZones(aircraft: Entity) {
         aircraft[WakeTrail.mapper]?.wakeZones?.let { wakeZones ->
             for (point in Queue.QueueIterator(wakeZones)) {
                 point.second?.let {

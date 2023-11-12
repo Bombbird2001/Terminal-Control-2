@@ -36,6 +36,8 @@ class PhysicsSystem: EntitySystem() {
             .exclude(TakeoffRoll::class, LandingRoll::class, WaitingTakeoff::class).get()
         private val glideSlopeCapturedFamily: Family = allOf(Altitude::class, Speed::class, GlideSlopeCaptured::class).get()
         private val gsFamily: Family = allOf(Position::class, Altitude::class, GroundTrack::class, Speed::class, Direction::class, Acceleration::class).get()
+        private val wakeTrailUpdateFamily: Family = allOf(Position::class, Altitude::class, Speed::class, WakeTrail::class)
+            .exclude(TakeoffRoll::class, LandingRoll::class).get()
 
         fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
@@ -48,6 +50,7 @@ class PhysicsSystem: EntitySystem() {
     private val cmdTargetHeadingFamilyEntities = FamilyWithListener.newServerFamilyWithListener(cmdTargetHeadingFamily)
     private val glideSlopeCapturedFamilyEntities = FamilyWithListener.newServerFamilyWithListener(glideSlopeCapturedFamily)
     private val gsFamilyEntities = FamilyWithListener.newServerFamilyWithListener(gsFamily)
+    private val wakeTrailUpdateFamilyEntities = FamilyWithListener.newServerFamilyWithListener(wakeTrailUpdateFamily)
 
     /**
      * Main update function, for values that need to be updated frequently
@@ -68,15 +71,6 @@ class PhysicsSystem: EntitySystem() {
                 pos.y += velVector.y
                 dir.trackUnitVector.rotateDeg(-spd.angularSpdDps * deltaTime)
                 alt.altitudeFt += spd.vertSpdFpm / 60 * deltaTime
-
-                // Update wake travel distance if component present
-                get(WakeTrail.mapper)?.also {
-                    it.distNmCounter += spd.speedKts / 3600 * deltaTime // Convert knots to nautical miles per second
-                    if (it.distNmCounter > WAKE_DOT_SPACING_NM) {
-                        it.distNmCounter -= WAKE_DOT_SPACING_NM
-                        updateWakeTrailState(this, engine.getSystem())
-                    }
-                }
             }
         }
 
@@ -214,6 +208,20 @@ class PhysicsSystem: EntitySystem() {
                         tasVector.plusAssign(it)
                     }
                     tasVector
+                }
+            }
+        }
+
+        // Update aircraft wake trail
+        val wakeTrailUpdates = wakeTrailUpdateFamilyEntities.getEntities()
+        for (i in 0 until wakeTrailUpdates.size()) {
+            wakeTrailUpdates[i]?.apply {
+                val spd = get(Speed.mapper) ?: return@apply
+                val wakeTrail = get(WakeTrail.mapper) ?: return@apply
+                wakeTrail.distNmCounter += spd.speedKts / 3600 * deltaTime // Convert knots to nautical miles per second
+                if (wakeTrail.distNmCounter > WAKE_DOT_SPACING_NM) {
+                    wakeTrail.distNmCounter -= WAKE_DOT_SPACING_NM
+                    updateWakeTrailState(this, engine.getSystem())
                 }
             }
         }

@@ -134,6 +134,7 @@ fun loadAllComponents() {
     VisualCaptured.initialise()
     WaitingTakeoff.initialise()
     WakeInfo.initialise()
+    WakeTolerance.initialise()
     WakeTrail.initialise()
     WaypointInfo.initialise()
 }

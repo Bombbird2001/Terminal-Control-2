@@ -35,6 +35,7 @@ class WakeManager {
             val pos = it[Position.mapper] ?: return@forEach
             val alt = it[Altitude.mapper] ?: return@forEach
             val acInfo = it[AircraftInfo.mapper] ?: return@forEach
+            val wakeTolerance = it[WakeTolerance.mapper] ?: return@forEach
             // We will not check wake separation for aircraft that have just taken off
             if (it.has(TakeoffClimb.mapper)) return@forEach
 
@@ -69,14 +70,22 @@ class WakeManager {
                     } else 0f
 
                     // Calculate distance of follower aircraft from the wake zone start
-                    val distNmFromWakeStart = entity[GPolygon.mapper]?.vertices?.let { vertices ->
+                    val distNmFromWakeStart = entity[Position.mapper]?.let { wakePos ->
+                        // All new wake zones >= build 17 will have the position component
+                        pxToNm(calculateDistanceBetweenPoints(pos.x, pos.y, wakePos.x, wakePos.y))
+                    } ?: entity[GPolygon.mapper]?.vertices?.let { vertices ->
+                        // For older wake zones without position component, use vertices to estimate
                         val startX = (vertices[4] + vertices[6]) / 2
                         val startY = (vertices[5] + vertices[7]) / 2
                         pxToNm(calculateDistanceBetweenPoints(pos.x, pos.y, startX, startY))
                     } ?: 0f
 
                     val totalDist = wakeInfo.distFromAircraft + frontAcDistNmFromFirstWakePoint + distNmFromWakeStart
-                    if (reqDist > totalDist) return true
+                    val infringeDist = totalDist - reqDist
+                    if (infringeDist < 0) {
+                        wakeTolerance.accumulation -= infringeDist
+                        return true
+                    }
                 }
                 return false
             }
@@ -91,8 +100,13 @@ class WakeManager {
             }
 
             // Check wake zones in the sector above
-            if (sector + 1 >= 0 && sector + 1 < wakeLevels.size && checkWakeConflictForAircraftInSector(wakeLevels[sector + 1]))
+            if (sector + 1 >= 0 && sector + 1 < wakeLevels.size && checkWakeConflictForAircraftInSector(wakeLevels[sector + 1])) {
                 currentConflicts.add(ConflictManager.Conflict(it, null, null, 3f, ConflictManager.Conflict.WAKE_INFRINGE))
+                return@forEach
+            }
+
+            // If no conflicts found, reduce wake accumulation by 2
+            wakeTolerance.accumulation = (wakeTolerance.accumulation - 2).coerceAtLeast(0f)
         }
     }
 

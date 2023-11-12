@@ -775,6 +775,12 @@ class AISystem: EntitySystem() {
                     }
                 }
 
+                // Check wake turbulence tolerance at less than 7nm from runway
+                val wakeToleranceValue = get(WakeTolerance.mapper)?.accumulation ?: 0f
+                if (wakeToleranceValue > 30f && pxToNm(distFromRwyPx) < 7) {
+                    return@apply initiateGoAround(this, RecentGoAround.WAKE_TURBULENCE)
+                }
+
                 // Check distance
                 // For visual approach, check for stabilized approach by 1.2nm from threshold
                 // For approach with localizer and/or glide slope, check for stabilized approach by 3.2nm from threshold
@@ -872,6 +878,8 @@ class AISystem: EntitySystem() {
                         val airport = rwyEntity[RunwayInfo.mapper]?.airport ?: return@apply
                         airport.setRunwayClosed(rwyEntity[RunwayInfo.mapper]?.rwyId ?: return@apply, true)
                     }
+                    // Remove wake zones
+                    engine.getSystem<TrafficSystemInterval>().removeAircraftWakeZones(this)
                 }
             }
         }

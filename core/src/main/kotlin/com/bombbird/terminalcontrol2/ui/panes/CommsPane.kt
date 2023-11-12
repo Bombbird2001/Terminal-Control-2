@@ -635,6 +635,7 @@ class CommsPane {
             RecentGoAround.STRONG_TAILWIND -> " due to strong tailwind"
             RecentGoAround.RWY_CLOSED -> " due to runway closed"
             RecentGoAround.WINDSHEAR -> " due to windshear"
+            RecentGoAround.WAKE_TURBULENCE -> " due to wake turbulence"
             else -> {
                 FileLog.warn("CommsPane", "Unknown go-around reason $reason")
                 ""
