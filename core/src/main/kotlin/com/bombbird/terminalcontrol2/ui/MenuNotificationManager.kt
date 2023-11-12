@@ -25,11 +25,10 @@ class MenuNotificationManager(private val stage: Stage) {
                     " multiplayer functionality, have fun!", 800, 1800)
         )
         add(
-            MenuNotification("tcbb-added", "New airport available!", "TCBB has been added to the" +
-                    " game. The issue causing the occasional rendering bug on game load has been identified and fixed," +
-                    " along with a few other bug fixes. As always, please report bugs encountered by clicking the" +
-                    " \"Report Bug\" button in the Pause screen, or from the info menu. We hope you will enjoy the new" +
-                    " map, have fun!", 600, 1400)
+            MenuNotification("tchh-added", "New airport available!", "TCHH has been added to the" +
+                    " game. Aircraft can now go around due to wake turbulence on approach, and a few bugs have been fixed." +
+                    " As always, please report bugs encountered by clicking the \"Report Bug\" button in the Pause screen," +
+                    " or from the info menu. Enjoy the new map!", 600, 1400)
         )
     }
 
