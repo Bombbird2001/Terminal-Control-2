@@ -785,7 +785,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
      */
     private fun renderVector(posX: Float, posY: Float, hdg: Short, differs: Boolean) {
         shapeRenderer.color = if (differs) Color.YELLOW else Color.WHITE
-        val sectorBoundingRectangle = CLIENT_SCREEN?.primarySector?.boundingRectangle ?: return
+        val sectorBoundingRectangle = CLIENT_SCREEN?.primarySectorBound ?: return
         val lineEnd = pointsAtBorder(floatArrayOf(sectorBoundingRectangle.x, sectorBoundingRectangle.x  + sectorBoundingRectangle.width),
             floatArrayOf(sectorBoundingRectangle.y, sectorBoundingRectangle.y + sectorBoundingRectangle.height), posX, posY, hdg - MAG_HDG_DEV)
         shapeRenderer.line(posX, posY, lineEnd[0], lineEnd[1])

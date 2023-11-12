@@ -119,6 +119,7 @@ class IndividualSectorData(private val assignedSectorId: Byte = 0, private val s
         rs.playerSector = assignedSectorId
         sectors.onEach { sector -> rs.sectors.add(Sector.fromSerialisedObject(sector)) }
         rs.primarySector.vertices = primarySector
+        rs.primarySectorBound.set(rs.primarySector.boundingRectangle)
         rs.swapSectorRequest = null
         rs.incomingSwapRequests.clear()
         rs.uiPane.sectorPane.updateSectorDisplay(rs.sectors)

@@ -20,6 +20,7 @@ import com.bombbird.terminalcontrol2.utilities.FileLog
 import ktx.ashley.get
 import ktx.ashley.has
 import ktx.scene2d.Scene2DSkin
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /** Helper file for dealing with [Datatag] matters */
@@ -135,14 +136,25 @@ fun addDatatagInputListeners(datatag: Datatag, aircraft: Aircraft) {
         addListener(object: DragListener() {
             override fun drag(event: InputEvent?, x: Float, y: Float, pointer: Int) {
                 if (aircraft.entity.has(WaitingTakeoff.mapper)) return
-                datatag.xOffset += (x - this@apply.width / 2)
-                datatag.yOffset += (y - this@apply.height / 2)
-                datatag.dragging = true
+                val deltaX = x - this@apply.width / 2
+                val deltaY = y - this@apply.height / 2
+                // Stop dragging once x coordinate is more than limit, and player is trying to drag it even further out
+                // Same for y
+                if ((abs(datatag.xOffset) > (UI_WIDTH - (CLIENT_SCREEN?.uiPane?.paneWidth ?: 0f)) * 0.75f && deltaX / datatag.xOffset > 0) ||
+                    (abs(datatag.yOffset) > UI_HEIGHT * 0.75f && deltaY / datatag.yOffset > 0)) {
+                    cancel()
+                    datatag.dragging = false
+                } else {
+                    datatag.xOffset += deltaX
+                    datatag.yOffset += deltaY
+                    datatag.dragging = true
+                }
                 event?.handle()
             }
 
             override fun dragStop(event: InputEvent?, x: Float, y: Float, pointer: Int) {
                 CLIENT_SCREEN?.sendAircraftDatatagPositionUpdateIfControlled(aircraft.entity, datatag.xOffset, datatag.yOffset, datatag.minimised, datatag.flashing)
+                datatag.dragging = false
                 event?.handle()
             }
         })

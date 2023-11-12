@@ -9,6 +9,7 @@ import com.badlogic.gdx.input.GestureDetector
 import com.badlogic.gdx.input.GestureDetector.GestureListener
 import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.math.Polygon
+import com.badlogic.gdx.math.Rectangle
 import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.scenes.scene2d.Actor
 import com.badlogic.gdx.scenes.scene2d.ui.Dialog
@@ -104,6 +105,7 @@ class RadarScreen private constructor(private val connectionHost: String, privat
 
     // The primary TMA sector polygon without being split up into sub-sectors
     val primarySector = Polygon()
+    val primarySectorBound = Rectangle()
 
     // Range ring entities
     private val rangeRings = GdxArray<RangeRing>()
@@ -291,6 +293,8 @@ class RadarScreen private constructor(private val connectionHost: String, privat
             zoom += deltaZoom
             zoom = MathUtils.clamp(zoom, nmToPx(MIN_ZOOM_NM) / UI_HEIGHT, nmToPx(MAX_ZOOM_NM) / UI_HEIGHT)
             translate(uiPane.getRadarCameraOffsetForZoom(zoom - oldZoom), 0f)
+            position.x = MathUtils.clamp(position.x, primarySectorBound.x - nmToPx(20f), primarySectorBound.x + primarySectorBound.width + nmToPx(20f))
+            position.y = MathUtils.clamp(position.y, primarySectorBound.y - nmToPx(20f), primarySectorBound.y + primarySectorBound.height + nmToPx(20f))
             update()
 
             // shapeRenderer will follow radarDisplayCamera
