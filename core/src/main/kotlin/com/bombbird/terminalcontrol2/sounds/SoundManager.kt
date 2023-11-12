@@ -47,7 +47,7 @@ class SoundManager: Disposable {
                 override fun run() {
                     runwayChangePlaying = false
                 }
-            }, 2.0f)
+            }, 0.5f)
         }
     }
 
