@@ -97,6 +97,7 @@ class UIPane(private val uiStage: Stage) {
      * @param height the new height of the application
      */
     fun resize(width: Int, height: Int) {
+        uiStage.viewport.setWorldSize(UI_WIDTH, UI_HEIGHT)
         uiStage.viewport.update(width, height, true)
         uiStage.camera.apply {
             moveTo(Vector2(UI_WIDTH / 2, UI_HEIGHT / 2))

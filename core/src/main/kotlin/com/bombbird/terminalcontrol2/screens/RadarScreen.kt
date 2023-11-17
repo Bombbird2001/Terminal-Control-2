@@ -488,8 +488,12 @@ class RadarScreen private constructor(private val connectionHost: String, privat
      */
     override fun resize(width: Int, height: Int) {
         ScreenSize.updateScreenSizeParameters(width, height)
+        radarDisplayStage.viewport.setWorldSize(UI_WIDTH, UI_HEIGHT)
         radarDisplayStage.viewport.update(width, height)
+        radarDisplayStage.camera.update()
+        constZoomStage.viewport.setWorldSize(UI_WIDTH, UI_HEIGHT)
         constZoomStage.viewport.update(width, height)
+        constZoomStage.camera.update()
 
         // Resize the UI pane
         uiPane.resize(width, height)
