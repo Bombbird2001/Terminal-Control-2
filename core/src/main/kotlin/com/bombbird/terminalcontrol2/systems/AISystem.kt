@@ -1011,6 +1011,7 @@ class AISystem: EntitySystem() {
                 actingClearance.vectorHdg = cmd.targetHdgDeg.roundToInt().toShort()
                 actingClearance.vectorTurnDir = CommandTarget.TURN_DEFAULT
                 cmd.targetAltFt = actingClearance.clearedAlt
+                cmd.targetIasKt = actingClearance.clearedIas
             } else while (size > 0) get(0).let {
                 if (it.phase == Route.Leg.APP || it.phase == Route.Leg.APP_TRANS) {
                     // Remove on go around route component
@@ -1021,6 +1022,7 @@ class AISystem: EntitySystem() {
                         actingClearance.vectorHdg = it.heading
                         actingClearance.vectorTurnDir = it.turnDir
                         cmd.targetAltFt = actingClearance.clearedAlt
+                        cmd.targetIasKt = actingClearance.clearedIas
                         CommandVector(it.heading, it.turnDir)
                     }
                     is Route.InitClimbLeg -> {
@@ -1049,6 +1051,7 @@ class AISystem: EntitySystem() {
                     }
                     is Route.DiscontinuityLeg -> {
                         cmd.targetAltFt = actingClearance.clearedAlt
+                        cmd.targetIasKt = actingClearance.clearedIas
                         return@apply
                     }
                     else -> {
