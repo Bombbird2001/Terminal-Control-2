@@ -183,24 +183,11 @@ class VectorSubpane {
                 }
             }
         }
+
         var leftChanged = false
         var rightChanged = false
-        afterWptHdgLeg?.apply {
-            val newAftWptLeg = getAfterWptHdgLeg(this, route) ?: return@apply
-            vectorLabel.setText(newAftWptLeg.heading.toString())
-            val prevAftWptLeg = getAfterWptHdgLeg(this, parentPane.clearanceState.route)
-            vectorLabel.style = Scene2DSkin.defaultSkin["ControlPaneHdg${if (prevAftWptLeg?.heading != newAftWptLeg.heading && !parentPane.appTrackCaptured) "Changed" else ""}", Label.LabelStyle::class.java]
-            val wptName = CLIENT_SCREEN?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName
-            afterWaypointSelectBox.selected = if (wptName == null) "Now" else "After $wptName"
-            // Set style as changed if new after waypoint leg does not yet exist in acting clearance
-            afterWaypointSelectBox.style = Scene2DSkin.defaultSkin[if (wptName == null || getAfterWptHdgLeg(wptName, parentPane.clearanceState.route) == null) "ControlPaneChanged" else "ControlPane", SelectBoxStyle::class.java]
-            leftButton.isChecked = newAftWptLeg.turnDir == CommandTarget.TURN_LEFT
-            rightButton.isChecked = newAftWptLeg.turnDir == CommandTarget.TURN_RIGHT
-            leftChanged = (prevAftWptLeg?.turnDir == CommandTarget.TURN_LEFT && newAftWptLeg.turnDir == CommandTarget.TURN_DEFAULT) ||
-                    (newAftWptLeg.turnDir == CommandTarget.TURN_LEFT && prevAftWptLeg?.turnDir != CommandTarget.TURN_LEFT)
-            rightChanged = (prevAftWptLeg?.turnDir == CommandTarget.TURN_RIGHT && newAftWptLeg.turnDir == CommandTarget.TURN_DEFAULT) ||
-                    (newAftWptLeg.turnDir == CommandTarget.TURN_RIGHT && prevAftWptLeg?.turnDir != CommandTarget.TURN_RIGHT)
-        } ?: run {
+
+        fun setBoxToCurrentVectorHdg() {
             vectorLabel.setText(vectorHdg?.toString() ?: "0")
             vectorLabel.style = Scene2DSkin.defaultSkin["ControlPaneHdg${if (parentPane.clearanceState.vectorHdg != parentPane.userClearanceState.vectorHdg && !parentPane.appTrackCaptured) "Changed" else ""}", Label.LabelStyle::class.java]
             afterWaypointSelectBox.selectedIndex = 0
@@ -212,6 +199,25 @@ class VectorSubpane {
             rightChanged = (parentPane.clearanceState.vectorTurnDir == CommandTarget.TURN_RIGHT && parentPane.userClearanceState.vectorTurnDir == CommandTarget.TURN_DEFAULT) ||
                     (parentPane.userClearanceState.vectorTurnDir == CommandTarget.TURN_RIGHT && parentPane.clearanceState.vectorTurnDir != CommandTarget.TURN_RIGHT)
         }
+
+        if (vectorHdg == null) {
+            afterWptHdgLeg?.apply {
+                val newAftWptLeg = getAfterWptHdgLeg(this, route) ?: return@apply
+                vectorLabel.setText(newAftWptLeg.heading.toString())
+                val prevAftWptLeg = getAfterWptHdgLeg(this, parentPane.clearanceState.route)
+                vectorLabel.style = Scene2DSkin.defaultSkin["ControlPaneHdg${if (prevAftWptLeg?.heading != newAftWptLeg.heading && !parentPane.appTrackCaptured) "Changed" else ""}", Label.LabelStyle::class.java]
+                val wptName = CLIENT_SCREEN?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName
+                afterWaypointSelectBox.selected = if (wptName == null) "Now" else "After $wptName"
+                // Set style as changed if new after waypoint leg does not yet exist in acting clearance
+                afterWaypointSelectBox.style = Scene2DSkin.defaultSkin[if (wptName == null || getAfterWptHdgLeg(wptName, parentPane.clearanceState.route) == null) "ControlPaneChanged" else "ControlPane", SelectBoxStyle::class.java]
+                leftButton.isChecked = newAftWptLeg.turnDir == CommandTarget.TURN_LEFT
+                rightButton.isChecked = newAftWptLeg.turnDir == CommandTarget.TURN_RIGHT
+                leftChanged = (prevAftWptLeg?.turnDir == CommandTarget.TURN_LEFT && newAftWptLeg.turnDir == CommandTarget.TURN_DEFAULT) ||
+                        (newAftWptLeg.turnDir == CommandTarget.TURN_LEFT && prevAftWptLeg?.turnDir != CommandTarget.TURN_LEFT)
+                rightChanged = (prevAftWptLeg?.turnDir == CommandTarget.TURN_RIGHT && newAftWptLeg.turnDir == CommandTarget.TURN_DEFAULT) ||
+                        (newAftWptLeg.turnDir == CommandTarget.TURN_RIGHT && prevAftWptLeg?.turnDir != CommandTarget.TURN_RIGHT)
+            } ?: setBoxToCurrentVectorHdg()
+        } else setBoxToCurrentVectorHdg()
         leftButton.style = Scene2DSkin.defaultSkin[if (leftChanged) "ControlPaneHdgDirChanged" else "ControlPaneHdgDir", TextButton.TextButtonStyle::class.java]
         rightButton.style = Scene2DSkin.defaultSkin[if (rightChanged) "ControlPaneHdgDirChanged" else "ControlPaneHdgDir", TextButton.TextButtonStyle::class.java]
 
