@@ -10,8 +10,9 @@ import com.bombbird.terminalcontrol2.systems.FamilyWithListener
 import com.bombbird.terminalcontrol2.systems.RenderingSystemClient
 import com.bombbird.terminalcontrol2.systems.updateAircraftDatatagText
 import com.bombbird.terminalcontrol2.systems.updateAircraftRadarData
-import com.bombbird.terminalcontrol2.traffic.ConflictManager
 import com.bombbird.terminalcontrol2.traffic.TrafficMode
+import com.bombbird.terminalcontrol2.traffic.conflict.Conflict
+import com.bombbird.terminalcontrol2.traffic.conflict.PotentialConflict
 import com.bombbird.terminalcontrol2.ui.*
 import com.bombbird.terminalcontrol2.ui.datatag.*
 import com.bombbird.terminalcontrol2.ui.panes.CommsPane
@@ -391,18 +392,18 @@ data class RemoveCustomWaypointData(private val wptId: Short = -1): ClientReceiv
 }
 
 /** Class representing data sent for ongoing conflicts and potential conflicts */
-class ConflictData(private val conflicts: Array<ConflictManager.Conflict.SerialisedConflict> = arrayOf(),
-                   private val potentialConflicts: Array<ConflictManager.PotentialConflict.SerialisedPotentialConflict> = arrayOf()):
+class ConflictData(private val conflicts: Array<Conflict.SerialisedConflict> = arrayOf(),
+                   private val potentialConflicts: Array<PotentialConflict.SerialisedPotentialConflict> = arrayOf()):
     ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
         if (!rs.isInitialDataReceived()) return
         rs.conflicts.clear()
         rs.potentialConflicts.clear()
         conflicts.forEach { conflict ->
-            rs.conflicts.add(ConflictManager.Conflict.fromSerialisedObject(conflict))
+            rs.conflicts.add(Conflict.fromSerialisedObject(conflict))
         }
         potentialConflicts.forEach { potentialConflict ->
-            rs.potentialConflicts.add(ConflictManager.PotentialConflict.fromSerialisedObject(potentialConflict))
+            rs.potentialConflicts.add(PotentialConflict.fromSerialisedObject(potentialConflict))
         }
     }
 }

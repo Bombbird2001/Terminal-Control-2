@@ -157,6 +157,9 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         // Debug: Render all ACC sectors
         // renderAllACCSectors(shapeRenderer)
 
+        // Debug: Render all trajectory prediction points
+        renderAllTrajectoryPoints(shapeRenderer)
+
         // Render circles
         val circles = circleFamilyEntities.getEntities()
         for (i in 0 until circles.size()) {
@@ -310,6 +313,14 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
                     if (pos2 != null) {
                         shapeRenderer.circle(pos2.x, pos2.y, nmToPx(latSepRequiredNm) / 2)
                     }
+                }
+            }
+
+            shapeRenderer.color = Color.MAGENTA
+            for (i in 0 until it.predictedConflicts.size) {
+                val halfLength = nmToPx(1.5f)
+                it.predictedConflicts[i]?.apply {
+                    shapeRenderer.rect(posX - halfLength, posY - halfLength, halfLength * 2, halfLength * 2)
                 }
             }
         }

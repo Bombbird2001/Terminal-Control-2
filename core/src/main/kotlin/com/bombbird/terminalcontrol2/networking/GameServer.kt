@@ -15,6 +15,8 @@ import com.bombbird.terminalcontrol2.networking.hostserver.LANServer
 import com.bombbird.terminalcontrol2.networking.hostserver.PublicServer
 import com.bombbird.terminalcontrol2.systems.*
 import com.bombbird.terminalcontrol2.traffic.*
+import com.bombbird.terminalcontrol2.traffic.conflict.Conflict
+import com.bombbird.terminalcontrol2.traffic.conflict.PotentialConflict
 import com.bombbird.terminalcontrol2.ui.CustomDialog
 import com.bombbird.terminalcontrol2.utilities.*
 import com.bombbird.terminalcontrol2.utilities.FileLog
@@ -280,11 +282,14 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
         val trafficSystemInterval = TrafficSystemInterval()
         engine.addSystem(trafficSystemInterval)
         engine.addSystem(DataSystem())
+        val trajectorySystemInterval = TrajectorySystemInterval()
+        engine.addSystem(trajectorySystemInterval)
 
         if (saveId != null) loadSave(this, saveId)
         loadWorldData(mainName, this)
 
         trafficSystemInterval.initializeConflictLevelArray(MAX_ALT, VERT_SEP)
+        trajectorySystemInterval.initializeConflictLevelArray(MAX_ALT, VERT_SEP)
 
         FamilyWithListener.addAllServerFamilyEntityListeners()
 
@@ -870,10 +875,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
      * @param conflicts the list of ongoing conflicts
      * @param potentialConflicts the list of potential conflicts
      */
-    fun sendConflicts(
-        conflicts: GdxArray<ConflictManager.Conflict>,
-        potentialConflicts: GdxArray<ConflictManager.PotentialConflict>
-    ) {
+    fun sendConflicts(conflicts: GdxArray<Conflict>, potentialConflicts: GdxArray<PotentialConflict>) {
         networkServer.sendToAllTCP(
             ConflictData(
                 conflicts.toArray().map { it.getSerialisableObject() }.toTypedArray(),

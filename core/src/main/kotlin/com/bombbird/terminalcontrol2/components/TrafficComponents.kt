@@ -260,3 +260,15 @@ data class WakeTolerance(var accumulation: Float = 0f): Component, BaseComponent
         fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
+
+/**
+ * Component for tagging information related to a trajectory point, including the aircraft it belongs to, and how many
+ * seconds in advance the prediction is
+ */
+data class TrajectoryPointInfo(var aircraft: Entity = Entity(), var advanceTimingS: Int = 0): Component {
+    companion object {
+        val mapper = object: Mapper<TrajectoryPointInfo>() {}.mapper
+
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
+    }
+}

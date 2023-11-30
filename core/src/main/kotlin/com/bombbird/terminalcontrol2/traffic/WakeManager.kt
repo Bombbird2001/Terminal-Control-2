@@ -7,6 +7,7 @@ import com.bombbird.terminalcontrol2.entities.WakeZone
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.MAX_ALT
 import com.bombbird.terminalcontrol2.global.VERT_SEP
+import com.bombbird.terminalcontrol2.traffic.conflict.Conflict
 import com.bombbird.terminalcontrol2.utilities.calculateDistanceBetweenPoints
 import com.bombbird.terminalcontrol2.utilities.pxToNm
 import ktx.ashley.get
@@ -30,7 +31,7 @@ class WakeManager {
      * @param conflictAbles array of all the entities that should be checked for conflicts
      * @param currentConflicts the current list of conflicts already found in this update
      */
-    fun checkWakeConflicts(conflictAbles: ImmutableArray<Entity>, currentConflicts: GdxArray<ConflictManager.Conflict>) {
+    fun checkWakeConflicts(conflictAbles: ImmutableArray<Entity>, currentConflicts: GdxArray<Conflict>) {
         conflictAbles.forEach {
             val pos = it[Position.mapper] ?: return@forEach
             val alt = it[Altitude.mapper] ?: return@forEach
@@ -95,13 +96,13 @@ class WakeManager {
 
             // Check wake zones in this sector
             if (sector >= 0 && sector < wakeLevels.size && checkWakeConflictForAircraftInSector(wakeLevels[sector])) {
-                currentConflicts.add(ConflictManager.Conflict(it, null, null, 3f, ConflictManager.Conflict.WAKE_INFRINGE))
+                currentConflicts.add(Conflict(it, null, null, 3f, Conflict.WAKE_INFRINGE))
                 return@forEach
             }
 
             // Check wake zones in the sector above
             if (sector + 1 >= 0 && sector + 1 < wakeLevels.size && checkWakeConflictForAircraftInSector(wakeLevels[sector + 1])) {
-                currentConflicts.add(ConflictManager.Conflict(it, null, null, 3f, ConflictManager.Conflict.WAKE_INFRINGE))
+                currentConflicts.add(Conflict(it, null, null, 3f, Conflict.WAKE_INFRINGE))
                 return@forEach
             }
 

@@ -773,6 +773,10 @@ fun getLowestAirportElevation(): Float {
     return minElevation ?: 0f
 }
 
+fun getConflictStartAltitude(): Int {
+    return floor(getLowestAirportElevation() / VERT_SEP).roundToInt() * VERT_SEP
+}
+
 /**
  * Gets the sector index the entity belongs to based on its altitude, as well as the altitude of the lowest sector
  *

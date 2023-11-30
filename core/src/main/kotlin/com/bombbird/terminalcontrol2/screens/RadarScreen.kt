@@ -26,8 +26,10 @@ import com.bombbird.terminalcontrol2.networking.*
 import com.bombbird.terminalcontrol2.networking.dataclasses.*
 import com.bombbird.terminalcontrol2.networking.NetworkClient
 import com.bombbird.terminalcontrol2.systems.*
-import com.bombbird.terminalcontrol2.traffic.ConflictManager
 import com.bombbird.terminalcontrol2.traffic.TrafficMode
+import com.bombbird.terminalcontrol2.traffic.conflict.Conflict
+import com.bombbird.terminalcontrol2.traffic.conflict.PotentialConflict
+import com.bombbird.terminalcontrol2.traffic.conflict.PredictedConflict
 import com.bombbird.terminalcontrol2.ui.*
 import com.bombbird.terminalcontrol2.ui.datatag.updateDatatagLineSpacing
 import com.bombbird.terminalcontrol2.ui.datatag.updateDatatagStyle
@@ -123,8 +125,9 @@ class RadarScreen private constructor(private val connectionHost: String, privat
     val aircraft = GdxArrayMap<String, Aircraft>(AIRCRAFT_SIZE)
 
     // List of ongoing and potential conflicts to be rendered
-    val conflicts = GdxArray<ConflictManager.Conflict>(CONFLICT_SIZE)
-    val potentialConflicts = GdxArray<ConflictManager.PotentialConflict>(CONFLICT_SIZE)
+    val conflicts = GdxArray<Conflict>(CONFLICT_SIZE)
+    val potentialConflicts = GdxArray<PotentialConflict>(CONFLICT_SIZE)
+    val predictedConflicts = GdxArray<PredictedConflict>(CONFLICT_SIZE)
 
     // Server values - used in this case only for displaying traffic info on the status pane and serves no other purposes
     var serverTrafficMode = TrafficMode.NORMAL
