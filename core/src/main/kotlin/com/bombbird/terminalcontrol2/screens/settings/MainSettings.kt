@@ -43,7 +43,6 @@ class MainSettings: BasicUIScreen() {
                         }
                     }.cell(width = BUTTON_WIDTH_BIG, height = BUTTON_HEIGHT_BIG, padRight = 40f)
                     textButton("Alerts", "MainSettings").apply {
-                        isDisabled = true
                         addChangeListener { _, _ ->
                             if (!GAME.containsScreen<AlertSettings>()) GAME.addScreen(AlertSettings())
                             GAME.getScreen<AlertSettings>().setToCurrentClientSettings()

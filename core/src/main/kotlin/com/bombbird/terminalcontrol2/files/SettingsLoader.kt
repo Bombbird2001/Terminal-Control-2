@@ -43,7 +43,6 @@ data class PlayerSettingsJSON(
     var contactOtherPilotReadback: Boolean?,
 
     // Advanced trajectory settings
-    val advTrajectoryDurationS: Int,
     val apwDurationS: Int,
     val stcaDurationS: Int
 )
@@ -100,7 +99,6 @@ private fun loadPlayerSettingsFromJson(playerSettingsJSON: PlayerSettingsJSON) {
         CONTACT_OTHER_PILOT_READBACK = contactOtherPilotReadback ?: false
 
         // Advanced trajectory settings
-        ADV_TRAJECTORY_DURATION_S = advTrajectoryDurationS
         APW_DURATION_S = apwDurationS
         STCA_DURATION_S = stcaDurationS
     }
@@ -114,7 +112,7 @@ fun getJsonFromPlayerSettings(): PlayerSettingsJSON {
     return PlayerSettingsJSON(TRAJECTORY_DURATION_S, RADAR_REFRESH_INTERVAL_S, TRAIL_DURATION_S, SHOW_UNCONTROLLED_AIRCRAFT_TRAIL,
         RANGE_RING_INTERVAL_NM, SHOW_MVA_ALTITUDE, REALISTIC_ILS_DISPLAY, COLOURFUL_STYLE, SHOW_DIST_TO_GO,
         DATATAG_STYLE_NAME, DATATAG_BACKGROUND, DATATAG_BORDER, DATATAG_ROW_SPACING_PX, COMMUNICATIONS_SOUND, ALERT_SOUND_ON,
-        CONTACT_OTHER_PILOT_READBACK, ADV_TRAJECTORY_DURATION_S, APW_DURATION_S, STCA_DURATION_S)
+        CONTACT_OTHER_PILOT_READBACK, APW_DURATION_S, STCA_DURATION_S)
 }
 
 /** Adapter object for serializing UUID to and from JSON */

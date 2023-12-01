@@ -96,7 +96,6 @@ var ALERT_SOUND_ON = true
 var CONTACT_OTHER_PILOT_READBACK = false
 
 /** Advanced trajectory alert settings */
-var ADV_TRAJECTORY_DURATION_S = 0
 var APW_DURATION_S = 0
 var STCA_DURATION_S = 0
 

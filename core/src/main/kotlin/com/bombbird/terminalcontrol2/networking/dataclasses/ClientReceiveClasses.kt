@@ -414,7 +414,8 @@ class PredictedConflictData(private val predictedConflicts: Array<PredictedConfl
     override fun handleClientReceive(rs: RadarScreen) {
         if (!rs.isInitialDataReceived()) return
         rs.predictedConflicts.clear()
-        predictedConflicts.forEach { predictedConflict ->
+        predictedConflicts.filter { (it.name2 == null && it.advanceTimeS <= APW_DURATION_S) ||
+                (it.name2 != null && it.advanceTimeS <= STCA_DURATION_S) }.forEach { predictedConflict ->
             rs.predictedConflicts.add(PredictedConflict.fromSerialisedObject(predictedConflict))
         }
     }
