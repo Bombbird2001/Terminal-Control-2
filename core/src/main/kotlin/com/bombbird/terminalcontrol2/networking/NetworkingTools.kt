@@ -18,6 +18,7 @@ import com.bombbird.terminalcontrol2.screens.RadarScreen
 import com.bombbird.terminalcontrol2.traffic.*
 import com.bombbird.terminalcontrol2.traffic.conflict.Conflict
 import com.bombbird.terminalcontrol2.traffic.conflict.PotentialConflict
+import com.bombbird.terminalcontrol2.traffic.conflict.PredictedConflict
 import com.bombbird.terminalcontrol2.ui.*
 import com.bombbird.terminalcontrol2.utilities.*
 import com.esotericsoftware.kryo.Kryo
@@ -183,6 +184,9 @@ fun registerClassesToKryo(kryo: Kryo?) {
         register(FuelDumpStatus::class.java)
         register(ReadyForApproach::class.java)
         register(RunwayClosedState::class.java)
+        register(PredictedConflict.SerialisedPredictedConflict::class.java)
+        register(Array<PredictedConflict.SerialisedPredictedConflict>::class.java)
+        register(PredictedConflictData::class.java)
 
     } ?: FileLog.info("NetworkingTools", "Null kryo passed, unable to register classes")
 }

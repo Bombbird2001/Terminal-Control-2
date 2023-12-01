@@ -13,6 +13,7 @@ import com.bombbird.terminalcontrol2.systems.updateAircraftRadarData
 import com.bombbird.terminalcontrol2.traffic.TrafficMode
 import com.bombbird.terminalcontrol2.traffic.conflict.Conflict
 import com.bombbird.terminalcontrol2.traffic.conflict.PotentialConflict
+import com.bombbird.terminalcontrol2.traffic.conflict.PredictedConflict
 import com.bombbird.terminalcontrol2.ui.*
 import com.bombbird.terminalcontrol2.ui.datatag.*
 import com.bombbird.terminalcontrol2.ui.panes.CommsPane
@@ -404,6 +405,17 @@ class ConflictData(private val conflicts: Array<Conflict.SerialisedConflict> = a
         }
         potentialConflicts.forEach { potentialConflict ->
             rs.potentialConflicts.add(PotentialConflict.fromSerialisedObject(potentialConflict))
+        }
+    }
+}
+
+/** Class representing data sent for predicted conflicts */
+class PredictedConflictData(private val predictedConflicts: Array<PredictedConflict.SerialisedPredictedConflict> = arrayOf()): ClientReceive, NeedsEncryption {
+    override fun handleClientReceive(rs: RadarScreen) {
+        if (!rs.isInitialDataReceived()) return
+        rs.predictedConflicts.clear()
+        predictedConflicts.forEach { predictedConflict ->
+            rs.predictedConflicts.add(PredictedConflict.fromSerialisedObject(predictedConflict))
         }
     }
 }

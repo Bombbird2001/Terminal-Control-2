@@ -158,7 +158,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         // renderAllACCSectors(shapeRenderer)
 
         // Debug: Render all trajectory prediction points
-        renderAllTrajectoryPoints(shapeRenderer)
+        // renderAllTrajectoryPoints(shapeRenderer)
 
         // Render circles
         val circles = circleFamilyEntities.getEntities()

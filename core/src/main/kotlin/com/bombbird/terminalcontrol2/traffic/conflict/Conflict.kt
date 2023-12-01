@@ -100,6 +100,21 @@ class PotentialConflict(val entity1: Entity, val entity2: Entity, val latSepRequ
 /** Class to store information related to an instance of a predicted conflict between 2 entities */
 class PredictedConflict(val aircraft1: Entity, val aircraft2: Entity?, val advanceTimeS: Short, val posX: Float,
                         val posY: Float): SerialisableEntity<PredictedConflict.SerialisedPredictedConflict> {
+    companion object {
+        /** Returns a default empty predicted conflict object when a proper conflict object cannot be de-serialised */
+        private fun getEmptyConflict(): PredictedConflict {
+            return PredictedConflict(Entity(), null, 0, 0f, 0f)
+        }
+
+        /** De-serialises a [SerialisedPredictedConflict] and creates a new [PredictedConflict] object from it */
+        fun fromSerialisedObject(serialisedPredictedConflict: SerialisedPredictedConflict): PredictedConflict {
+            val entity1 = CLIENT_SCREEN?.aircraft?.get(serialisedPredictedConflict.name1)?.entity ?: return getEmptyConflict()
+            val entity2 = CLIENT_SCREEN?.aircraft?.get(serialisedPredictedConflict.name2)?.entity
+            return PredictedConflict(entity1, entity2, serialisedPredictedConflict.advanceTimeS,
+                serialisedPredictedConflict.posX, serialisedPredictedConflict.posY)
+        }
+    }
+
     /** Object that contains [PredictedConflict] data to be serialised by Kryo */
     data class SerialisedPredictedConflict(val name1: String = "", val name2: String? = null, val advanceTimeS: Short = 0,
                                            val posX: Float = 0f, val posY: Float = 0f)

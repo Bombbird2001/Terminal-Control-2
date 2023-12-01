@@ -17,6 +17,7 @@ import com.bombbird.terminalcontrol2.systems.*
 import com.bombbird.terminalcontrol2.traffic.*
 import com.bombbird.terminalcontrol2.traffic.conflict.Conflict
 import com.bombbird.terminalcontrol2.traffic.conflict.PotentialConflict
+import com.bombbird.terminalcontrol2.traffic.conflict.PredictedConflict
 import com.bombbird.terminalcontrol2.ui.CustomDialog
 import com.bombbird.terminalcontrol2.utilities.*
 import com.bombbird.terminalcontrol2.utilities.FileLog
@@ -880,6 +881,17 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
             ConflictData(
                 conflicts.toArray().map { it.getSerialisableObject() }.toTypedArray(),
                 potentialConflicts.toArray().map { it.getSerialisableObject() }.toTypedArray()
+            )
+        )
+    }
+
+    /**
+     * Sends a message to clients to update them on the [predictedConflicts] predicted by the APW/STCAS
+     */
+    fun sendPredictedConflicts(predictedConflicts: GdxArrayMap<String, PredictedConflict>) {
+        networkServer.sendToAllTCP(
+            PredictedConflictData(
+                Entries(predictedConflicts).map { it.value.getSerialisableObject() }.toTypedArray()
             )
         )
     }

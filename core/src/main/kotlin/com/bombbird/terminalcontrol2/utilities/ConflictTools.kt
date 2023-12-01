@@ -180,12 +180,11 @@ fun getMinimaRequired(aircraft1: Entity, aircraft2: Entity): ConflictMinima {
 }
 
 /**
- * Checks if the provided [points] will cause an MVA/restricted areas infringement for the [aircraft]
+ * Checks if the provided [point] will cause an MVA/restricted areas infringement for the [aircraft]
  *
- * Returns a pair containing the index of the first point that will cause infringement and the information associated
- * with it, or null if no infringement
+ * Returns a [MVAConflictInfo], or null if no infringement
  */
-fun checkMVARestrictedConflict(aircraft: Entity, points: GdxArray<Entity>): Pair<Int, MVAConflictInfo>? {
+fun checkMVARestrictedConflict(aircraft: Entity, point: Entity): MVAConflictInfo? {
     // Whether the aircraft has already captured the vertical component of the approach (or phase >= 1 for circling)
     val approachVertCaptured = aircraft.has(GlideSlopeCaptured.mapper) || aircraft.has(StepDownApproach.mapper) ||
             (aircraft[CirclingApproach.mapper]?.phase ?: 0) >= 1 || aircraft.has(VisualCaptured.mapper)
@@ -204,17 +203,25 @@ fun checkMVARestrictedConflict(aircraft: Entity, points: GdxArray<Entity>): Pair
     }
     aircraft[DepartureRouteZone.mapper]?.let { depZone -> routeZones.addAll(depZone.sidZone) }
 
-    for (i in 0 until points.size) {
-        val pos = points[i][Position.mapper] ?: continue
-        val alt = points[i][Altitude.mapper] ?: continue
+    val pos = point[Position.mapper] ?: return null
+    val alt = point[Altitude.mapper] ?: return null
 
-        checkPointMVARestrictedConflict(pos.x, pos.y, alt.altitudeFt, approachVertCaptured, gsArmed, underVector,
-            aircraft.has(RecentGoAround.mapper), routeZones)?.let {
-            return Pair(i, it)
-        }
+    checkPointMVARestrictedConflict(pos.x, pos.y, alt.altitudeFt, approachVertCaptured, gsArmed, underVector,
+        aircraft.has(RecentGoAround.mapper), routeZones)?.let {
+        return it
     }
 
     return null
+}
+
+/**
+ * Checks if the provided [point] will cause an MVA/restricted areas infringement for its aircraft
+ *
+ * Returns true if infringement, else false
+ */
+fun checkTrajectoryPointMVARestrictedConflict(point: Entity): Boolean {
+    val aircraft = point[TrajectoryPointInfo.mapper]?.aircraft ?: return false
+    return checkMVARestrictedConflict(aircraft, point) != null
 }
 
 /**
@@ -223,7 +230,7 @@ fun checkMVARestrictedConflict(aircraft: Entity, points: GdxArray<Entity>): Pair
  * Returns a [Conflict] object if infringement is found, or null if no infringement
  */
 fun checkAircraftMVARestrictedConflict(aircraft: Entity): Conflict? {
-    return checkMVARestrictedConflict(aircraft, GdxArray<Entity>(1).apply { add(aircraft) })?.second?.let {
+    return checkMVARestrictedConflict(aircraft, aircraft)?.let {
         Conflict(aircraft, null, it.minAltSectorIndex, 3f, it.reason)
     }
 }
@@ -237,8 +244,7 @@ fun checkAircraftMVARestrictedConflict(aircraft: Entity): Conflict? {
 private fun checkPointMVARestrictedConflict(posX: Float, posY: Float, altitude: Float, approachVertCaptured: Boolean,
                                             glideslopeArmed: GlideSlopeArmed?, underVector: Boolean,
                                             recentGoAround: Boolean, routeZones: GdxArray<RouteZone>): MVAConflictInfo? {
-    // Whether the aircraft has already captured localizer but not the glide slope yet, but is above the ROC
-    // slope
+    // Whether the aircraft has already captured localizer but not the glide slope yet, but is above the ROC slope
     val aboveGsRoc = !approachVertCaptured && (glideslopeArmed?.let { gsArmed ->
         val gs = gsArmed.gsApp[GlideSlope.mapper] ?: return@let false
         val appPos = gsArmed.gsApp[Position.mapper] ?: return@let false

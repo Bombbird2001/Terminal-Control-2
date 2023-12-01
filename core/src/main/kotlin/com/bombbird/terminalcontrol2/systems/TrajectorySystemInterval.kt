@@ -6,10 +6,12 @@ import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.TrajectoryPoint
 import com.bombbird.terminalcontrol2.global.*
+import com.bombbird.terminalcontrol2.traffic.conflict.TrajectoryManager
 import com.bombbird.terminalcontrol2.traffic.getConflictStartAltitude
 import com.bombbird.terminalcontrol2.traffic.getSectorIndexForAlt
 import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.allOf
+import ktx.ashley.exclude
 import ktx.ashley.get
 import ktx.collections.GdxArray
 import ktx.math.plus
@@ -23,7 +25,8 @@ import kotlin.math.*
  */
 class TrajectorySystemInterval: IntervalSystem(TRAJECTORY_UPDATE_INTERVAL_S) {
     companion object {
-        private val aircraftTrajectoryFamily = allOf(AircraftInfo::class, GroundTrack::class, Speed::class, Position::class, Altitude::class, CommandTarget::class).get()
+        private val aircraftTrajectoryFamily = allOf(AircraftInfo::class, GroundTrack::class, Speed::class, Position::class, Altitude::class, CommandTarget::class)
+            .exclude(WaitingTakeoff::class, LandingRoll::class, TakeoffRoll::class).get()
 
         fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
@@ -37,6 +40,7 @@ class TrajectorySystemInterval: IntervalSystem(TRAJECTORY_UPDATE_INTERVAL_S) {
             GdxArray()
         }
     }
+    private val trajectoryManager = TrajectoryManager()
 
     override fun updateInterval() {
         // Clear all trajectory points
@@ -53,6 +57,9 @@ class TrajectorySystemInterval: IntervalSystem(TRAJECTORY_UPDATE_INTERVAL_S) {
                 calculateTrajectory(this)
             }
         }
+
+        // Check for conflicts among predicted points
+        trajectoryManager.checkTrajectoryConflicts(trajectoryTimeStates)
     }
 
     /** Gets all trajectory points of an aircraft */
@@ -63,23 +70,24 @@ class TrajectorySystemInterval: IntervalSystem(TRAJECTORY_UPDATE_INTERVAL_S) {
         val requiredTime = MAX_TRAJECTORY_ADVANCE_TIME_S
         val cmdTarget = aircraft[CommandTarget.mapper] ?: return
         val groundTrack = aircraft[GroundTrack.mapper] ?: return
+        val altitude = aircraft[Altitude.mapper]?.altitudeFt ?: return
         val speed = aircraft[Speed.mapper] ?: return
         val aircraftPos = aircraft[Position.mapper] ?: return
         val winds = aircraft[AffectedByWind.mapper] ?: return
         val targetHeading = cmdTarget.targetHdgDeg
         val currTrack = convertWorldAndRenderDeg(groundTrack.trackVectorPxps.angleDeg())
-        val currHdg = modulateHeading(currTrack + MAG_HDG_DEV)
         val groundSpeedPxps = groundTrack.trackVectorPxps.len()
         // This is the vector the aircraft is turning towards, excluding effects of wind
-        val targetTrueHeadingPxps = Vector2(Vector2.Y).rotateDeg(-(targetHeading + MAG_HDG_DEV)).scl(ktToPxps(speed.speedKts))
-        // This is the track heading the aircraft is turning towards, including effects of wind
-        var targetTrack = convertWorldAndRenderDeg((targetTrueHeadingPxps + winds.windVectorPxps).angleDeg())
+        val targetTrueHeadingPxps = Vector2(Vector2.Y).rotateDeg(-(targetHeading - MAG_HDG_DEV)).scl(ktToPxps(speed.speedKts))
+        // This is the track vector the aircraft is turning towards, including effects of wind
+        val targetTrackPxps = targetTrueHeadingPxps + winds.windVectorPxps
+        var targetTrack = convertWorldAndRenderDeg(targetTrackPxps.angleDeg())
         targetTrack = modulateHeading(targetTrack)
-        val deltaHeading = findDeltaHeading(currHdg, targetHeading, cmdTarget.turnDir)
+        val deltaHeading = findDeltaHeading(currTrack, targetTrack, cmdTarget.turnDir)
         if (abs(deltaHeading) > 5) {
             // Calculate arc if aircraft is turning > 5 degrees
             // Turn rate in degrees/second
-            var turnRate = if (speed.speedKts > HALF_TURN_RATE_THRESHOLD_IAS) MAX_HIGH_SPD_ANGULAR_SPD else MAX_LOW_SPD_ANGULAR_SPD
+            var turnRate = if (calculateIASFromTAS(altitude, speed.speedKts) > HALF_TURN_RATE_THRESHOLD_IAS) MAX_HIGH_SPD_ANGULAR_SPD else MAX_LOW_SPD_ANGULAR_SPD
             // In px: r = v/w - turnRate must be converted to radians/second, GS is in px/second
             val turnRadiusPx = groundSpeedPxps / Math.toRadians(turnRate.toDouble()).toFloat()
             val centerOffsetAngle = convertWorldAndRenderDeg(currTrack + 90)
@@ -138,15 +146,13 @@ class TrajectorySystemInterval: IntervalSystem(TRAJECTORY_UPDATE_INTERVAL_S) {
             // Straight trajectory - just add ground track in px/s * time(s)
             var i = TRAJECTORY_UPDATE_INTERVAL_S
             while (i <= requiredTime) {
-                val trackVectorPx = groundTrack.trackVectorPxps * i
+                val trackVectorPx = targetTrackPxps * i
                 pointList.add(Position(aircraftPos.x + trackVectorPx.x, aircraftPos.y + trackVectorPx.y))
                 i += TRAJECTORY_UPDATE_INTERVAL_S
             }
         }
 
         // Calculate altitude at each point
-        val altitude = aircraft[Altitude.mapper]?.altitudeFt ?: return
-        // val acInfo = aircraft[AircraftInfo.mapper] ?: return
         val gsCap = aircraft[GlideSlopeCaptured.mapper]?.gsApp
         var index = 1
         for (positionPoint in pointList) {
