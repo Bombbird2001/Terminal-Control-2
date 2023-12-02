@@ -77,7 +77,8 @@ class TrajectoryManager {
         if (distPx < nmToPx(conflictMinimaRequired.latMinima) &&
             abs(alt1.altitudeFt - alt2.altitudeFt) < conflictMinimaRequired.vertMinima - 25) {
             val entryKey = "${acInfo1.icaoCallsign}${acInfo2.icaoCallsign}"
-            val existingEntry = predictedConflicts[entryKey]
+            val entryKey2 = "${acInfo2.icaoCallsign}${acInfo1.icaoCallsign}"
+            val existingEntry = predictedConflicts[entryKey] ?: predictedConflicts[entryKey2]
             if (existingEntry == null || existingEntry.advanceTimeS > advanceTimeS)
                 predictedConflicts[entryKey] = PredictedConflict(aircraft1, aircraft2, advanceTimeS.toShort(),
                     (pos1.x + pos2.x) / 2, (pos1.y + pos2.y) / 2)

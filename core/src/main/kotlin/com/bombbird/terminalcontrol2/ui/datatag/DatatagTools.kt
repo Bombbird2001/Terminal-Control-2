@@ -43,7 +43,8 @@ fun updateDatatagText(datatag: Datatag, newText: Array<String>) {
 fun updateDatatagStyle(datatag: Datatag, flightType: Byte, selected: Boolean) {
     val background = if ((selected && DATATAG_BACKGROUND != DATATAG_BACKGROUND_OFF) || (DATATAG_BACKGROUND == DATATAG_BACKGROUND_ALWAYS)) "" else "NoBG"
     val showBorder = ((selected && DATATAG_BORDER != DATATAG_BORDER_OFF) || (DATATAG_BORDER == DATATAG_BORDER_ALWAYS))
-    val colour = if (datatag.flashingOrange) "Orange"
+    val colour = if (datatag.flashingMagenta) "Magenta"
+    else if (datatag.flashingOrange) "Orange"
     else if (datatag.emergency) "Red"
     else if (showBorder) when (flightType) {
         FlightType.DEPARTURE -> "Green"
@@ -59,26 +60,59 @@ fun updateDatatagStyle(datatag: Datatag, flightType: Byte, selected: Boolean) {
 }
 
 /**
+ * Starts flashing the [datatag] for [aircraft] contact/request notification
+ */
+fun startDatatagNotificationFlash(datatag: Datatag, aircraft: Aircraft) {
+    setDatatagFlash(datatag, aircraft, true, datatag.shouldFlashMagenta)
+}
+
+/**
+ * Stops flashing the [datatag] for [aircraft] contact/request
+ */
+fun stopDatatagContactFlash(datatag: Datatag, aircraft: Aircraft) {
+    setDatatagFlash(datatag, aircraft, false, datatag.shouldFlashMagenta)
+}
+
+/**
+ * Starts flashing the [datatag] for a predicted conflict involving the [aircraft]
+ */
+fun startDatatagPredictedConflictFlash(datatag: Datatag, aircraft: Aircraft) {
+    setDatatagFlash(datatag, aircraft, datatag.shouldFlashOrange, true)
+}
+
+/**
+ * Stops flashing the [datatag] for a predicted conflict involving the [aircraft]
+ */
+fun stopDatatagPredictedConflictFlash(datatag: Datatag, aircraft: Aircraft) {
+    setDatatagFlash(datatag, aircraft, datatag.shouldFlashOrange, false)
+}
+
+/**
  * Sets the flashing status of the datatag
  * @param datatag the datatag to set flash
  * @param aircraft the aircraft the datatag belongs to
- * @param flash whether to start or stop the flash
+ * @param flashOrange whether to start or stop the orange flash
+ * @param flashMagenta whether to start or stop the magenta flash
  */
-fun setDatatagFlash(datatag: Datatag, aircraft: Aircraft, flash: Boolean) {
-    if (datatag.flashing == flash) return
-    datatag.flashing = flash
-    CLIENT_SCREEN?.sendAircraftDatatagPositionUpdateIfControlled(aircraft.entity, datatag.xOffset, datatag.yOffset, datatag.minimised, flash)
-    if (flash) {
-        datatag.flashTimer.scheduleTask(object: Timer.Task() {
+private fun setDatatagFlash(datatag: Datatag, aircraft: Aircraft, flashOrange: Boolean, flashMagenta: Boolean) {
+    if (datatag.shouldFlashOrange == flashOrange && datatag.shouldFlashMagenta == flashMagenta) return
+    datatag.shouldFlashOrange = flashOrange
+    datatag.shouldFlashMagenta = flashMagenta
+    CLIENT_SCREEN?.sendAircraftDatatagPositionUpdateIfControlled(aircraft.entity, datatag.xOffset, datatag.yOffset, datatag.minimised, flashOrange)
+
+    if (flashOrange || flashMagenta) {
+        if (datatag.flashTimer.isEmpty) datatag.flashTimer.scheduleTask(object: Timer.Task() {
             override fun run() {
                 // Every 1 second, update the datatag flashing orange status, and call updateDatatagStyle
-                datatag.flashingOrange = !datatag.flashingOrange && datatag.flashing
+                datatag.flashingOrange = !datatag.flashingOrange && datatag.shouldFlashOrange
+                datatag.flashingMagenta = !datatag.flashingMagenta && datatag.shouldFlashMagenta
                 updateDatatagStyle(datatag, aircraft.entity[FlightType.mapper]?.type ?: return, CLIENT_SCREEN?.selectedAircraft == aircraft)
             }
         }, 0f, 1f)
     } else {
         datatag.flashTimer.clear()
         datatag.flashingOrange = false
+        datatag.flashingMagenta = false
         updateDatatagStyle(datatag, aircraft.entity[FlightType.mapper]?.type ?: return, CLIENT_SCREEN?.selectedAircraft == aircraft)
     }
 }
@@ -153,7 +187,8 @@ fun addDatatagInputListeners(datatag: Datatag, aircraft: Aircraft) {
             }
 
             override fun dragStop(event: InputEvent?, x: Float, y: Float, pointer: Int) {
-                CLIENT_SCREEN?.sendAircraftDatatagPositionUpdateIfControlled(aircraft.entity, datatag.xOffset, datatag.yOffset, datatag.minimised, datatag.flashing)
+                CLIENT_SCREEN?.sendAircraftDatatagPositionUpdateIfControlled(aircraft.entity, datatag.xOffset,
+                    datatag.yOffset, datatag.minimised, datatag.shouldFlashOrange)
                 datatag.dragging = false
                 event?.handle()
             }
@@ -172,7 +207,8 @@ fun addDatatagInputListeners(datatag: Datatag, aircraft: Aircraft) {
                 datatag.tapTimer.clear()
                 Gdx.app.postRunnable {
                     updateDatatagText(datatag, getNewDatatagLabelText(aircraft.entity, datatag.minimised))
-                    CLIENT_SCREEN?.sendAircraftDatatagPositionUpdateIfControlled(aircraft.entity, datatag.xOffset, datatag.yOffset, datatag.minimised, datatag.flashing)
+                    CLIENT_SCREEN?.sendAircraftDatatagPositionUpdateIfControlled(aircraft.entity, datatag.xOffset,
+                        datatag.yOffset, datatag.minimised, datatag.shouldFlashOrange)
                 }
             } else datatag.tapTimer.scheduleTask(object : Timer.Task() {
                 override fun run() {

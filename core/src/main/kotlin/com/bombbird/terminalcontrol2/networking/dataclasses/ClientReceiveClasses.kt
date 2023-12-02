@@ -19,6 +19,7 @@ import com.bombbird.terminalcontrol2.ui.datatag.*
 import com.bombbird.terminalcontrol2.ui.panes.CommsPane
 import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.*
+import ktx.collections.GdxArrayMap
 import java.util.*
 
 /**
@@ -316,7 +317,7 @@ data class AircraftSectorUpdateData(private val callsign: String = "", private v
             aircraft.entity[Datatag.mapper]?.let {
                 it.minimised = newSector != rs.playerSector || tagMinimised
                 updateDatatagText(it, getNewDatatagLabelText(aircraft.entity, it.minimised))
-                CLIENT_SCREEN?.sendAircraftDatatagPositionUpdateIfControlled(aircraft.entity, it.xOffset, it.yOffset, it.minimised, it.flashing)
+                CLIENT_SCREEN?.sendAircraftDatatagPositionUpdateIfControlled(aircraft.entity, it.xOffset, it.yOffset, it.minimised, it.shouldFlashOrange)
             }
             if (newSector != rs.playerSector && controllable.controllerUUID.toString() == myUuid.toString() && newUUID != myUuid.toString()) {
                 // Send contact other sector message only if aircraft is not in player's sector, old UUID is this
@@ -333,12 +334,12 @@ data class AircraftSectorUpdateData(private val callsign: String = "", private v
                 if (needsInitialContact || tagFlashing) {
                     aircraft.entity += ContactNotification()
                     aircraft.entity[Datatag.mapper]?.let {
-                        setDatatagFlash(it, aircraft, true)
+                        startDatatagNotificationFlash(it, aircraft)
                     }
                 }
             } else if (newSector != rs.playerSector || newUUID != myUuid.toString()) {
                 aircraft.entity.remove<ContactNotification>()
-                aircraft.entity[Datatag.mapper]?.let { setDatatagFlash(it, aircraft, false) }
+                aircraft.entity[Datatag.mapper]?.let { stopDatatagContactFlash(it, aircraft) }
             }
             controllable.controllerUUID = newUUID?.let { UUID.fromString(it) }
             if (rs.selectedAircraft == aircraft) rs.setUISelectedAircraft(aircraft)
@@ -414,9 +415,29 @@ class PredictedConflictData(private val predictedConflicts: Array<PredictedConfl
     override fun handleClientReceive(rs: RadarScreen) {
         if (!rs.isInitialDataReceived()) return
         rs.predictedConflicts.clear()
+        val noConflictAircraftMap = GdxArrayMap<String, Aircraft>(rs.aircraft)
         predictedConflicts.filter { (it.name2 == null && it.advanceTimeS <= APW_DURATION_S) ||
                 (it.name2 != null && it.advanceTimeS <= STCA_DURATION_S) }.forEach { predictedConflict ->
-            rs.predictedConflicts.add(PredictedConflict.fromSerialisedObject(predictedConflict))
+            val conflict = PredictedConflict.fromSerialisedObject(predictedConflict)
+            rs.predictedConflicts.add(conflict)
+
+            // Flash datatag of the aircraft involved
+            val aircraft1Callsign = conflict.aircraft1[AircraftInfo.mapper]?.icaoCallsign ?: return@forEach
+            val aircraft1 = rs.aircraft[aircraft1Callsign] ?: return@forEach
+            aircraft1.entity[Datatag.mapper]?.let { startDatatagPredictedConflictFlash(it, aircraft1) }
+            noConflictAircraftMap.removeKey(aircraft1Callsign)
+
+            val aircraft2Callsign = conflict.aircraft2?.get(AircraftInfo.mapper)?.icaoCallsign
+            val aircraft2 = rs.aircraft[aircraft2Callsign]
+            aircraft2?.entity?.get(Datatag.mapper)?.let {
+                startDatatagPredictedConflictFlash(it, aircraft2)
+                noConflictAircraftMap.removeKey(aircraft2Callsign)
+            }
+        }
+
+        // Disable predicted conflict flashes for aircraft not involved in any predicted conflicts
+        Entries(noConflictAircraftMap).forEach { entry ->
+            entry.value.entity[Datatag.mapper]?.let { stopDatatagPredictedConflictFlash(it, entry.value) }
         }
     }
 }
@@ -489,7 +510,7 @@ data class EmergencyStart(val callsign: String = "", val type: Byte = -1): Clien
                 it.emergency = true
                 it.minimised = false
                 updateDatatagStyle(it, FlightType.ARRIVAL, rs.selectedAircraft == this)
-                setDatatagFlash(it, this, true)
+                startDatatagNotificationFlash(it, this)
             }
             rs.uiPane.commsPane.declareEmergency(entity, type)
         }
@@ -510,7 +531,7 @@ data class ChecklistsNearingDone(val callsign: String = "", val needsFuelDump: B
             if (entity[Controllable.mapper]?.sectorId != rs.playerSector) return
             entity += ContactNotification()
             entity[Datatag.mapper]?.let {
-                setDatatagFlash(it, this, true)
+                startDatatagNotificationFlash(it, this)
             }
             rs.uiPane.commsPane.checklistNearingDone(entity, needsFuelDump)
         }
@@ -529,7 +550,7 @@ data class FuelDumpStatus(val callsign: String = "", val dumpingEnding: Boolean 
             if (entity[Controllable.mapper]?.sectorId != rs.playerSector) return
             entity += ContactNotification()
             entity[Datatag.mapper]?.let {
-                setDatatagFlash(it, this, true)
+                startDatatagNotificationFlash(it, this)
             }
             rs.uiPane.commsPane.fuelDumpStatus(entity, dumpingEnding)
         }
@@ -550,7 +571,7 @@ data class ReadyForApproach(val callsign: String = "", val immobilizeOnLanding: 
             if (entity[Controllable.mapper]?.sectorId != rs.playerSector) return
             entity += ContactNotification()
             entity[Datatag.mapper]?.let {
-                setDatatagFlash(it, this, true)
+                startDatatagNotificationFlash(it, this)
             }
             rs.uiPane.commsPane.readyForApproach(entity, immobilizeOnLanding)
         }

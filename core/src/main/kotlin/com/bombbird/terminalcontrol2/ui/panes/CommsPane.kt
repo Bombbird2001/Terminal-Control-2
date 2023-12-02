@@ -210,7 +210,7 @@ class CommsPane {
                 minimised = false
                 Gdx.app.postRunnable {
                     updateDatatagText(this, getNewDatatagLabelText(aircraft, minimised))
-                    CLIENT_SCREEN?.sendAircraftDatatagPositionUpdateIfControlled(aircraft, xOffset, yOffset, minimised, flashing)
+                    CLIENT_SCREEN?.sendAircraftDatatagPositionUpdateIfControlled(aircraft, xOffset, yOffset, minimised, shouldFlashOrange)
                 }
             }
         }
