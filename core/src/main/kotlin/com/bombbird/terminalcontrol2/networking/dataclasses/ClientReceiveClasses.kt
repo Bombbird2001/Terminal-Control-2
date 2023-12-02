@@ -19,6 +19,7 @@ import com.bombbird.terminalcontrol2.ui.datatag.*
 import com.bombbird.terminalcontrol2.ui.panes.CommsPane
 import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.*
+import ktx.collections.GdxArray
 import ktx.collections.GdxArrayMap
 import java.util.*
 
@@ -414,10 +415,26 @@ class ConflictData(private val conflicts: Array<Conflict.SerialisedConflict> = a
 class PredictedConflictData(private val predictedConflicts: Array<PredictedConflict.SerialisedPredictedConflict> = arrayOf()): ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
         if (!rs.isInitialDataReceived()) return
+
+        // Get ongoing conflicts to exclude from predicted conflicts
+        val conflictNames = GdxArray<String>()
+        for (i in 0 until rs.conflicts.size) {
+            val conflict = rs.conflicts[i]
+            val name1 = conflict.entity1.getOrLogMissing(AircraftInfo.mapper)?.icaoCallsign ?: continue
+            val name2 = conflict.entity2?.get(AircraftInfo.mapper)?.icaoCallsign ?: ""
+            conflictNames.add("$name1$name2")
+        }
+
         rs.predictedConflicts.clear()
         val noConflictAircraftMap = GdxArrayMap<String, Aircraft>(rs.aircraft)
-        predictedConflicts.filter { (it.name2 == null && it.advanceTimeS <= APW_DURATION_S) ||
-                (it.name2 != null && it.advanceTimeS <= STCA_DURATION_S) }.forEach { predictedConflict ->
+        predictedConflicts.filter {
+            val entry = "${it.name1}${it.name2 ?: ""}"
+            val entry2 = "${it.name2 ?: ""}${it.name1}"
+            ((it.name2 == null && it.advanceTimeS <= APW_DURATION_S) ||
+                    (it.name2 != null && it.advanceTimeS <= STCA_DURATION_S)) &&
+                    !conflictNames.contains(entry, false) &&
+                    !conflictNames.contains(entry2, false)
+        }.forEach { predictedConflict ->
             val conflict = PredictedConflict.fromSerialisedObject(predictedConflict)
             rs.predictedConflicts.add(conflict)
 
