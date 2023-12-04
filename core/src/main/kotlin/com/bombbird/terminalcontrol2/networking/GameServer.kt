@@ -290,7 +290,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
         loadWorldData(mainName, this)
 
         trafficSystemInterval.initializeConflictLevelArray(MAX_ALT, VERT_SEP)
-        trajectorySystemInterval.initializeConflictLevelArray(MAX_ALT, VERT_SEP)
+        trajectorySystemInterval.initializeConflictLevelArray(VERT_SEP)
 
         FamilyWithListener.addAllServerFamilyEntityListeners()
 
@@ -299,6 +299,8 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
             // initialisingWeather may have already changed in the line above if static/random weather is used which
             // will immediately set initialisingWeather to false
             if (initialisingWeather.get()) initialWeatherCondition.await()
+
+            // appTestArrival(this)
         }
     }
 
@@ -886,12 +888,15 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
     }
 
     /**
-     * Sends a message to clients to update them on the [predictedConflicts] predicted by the APW/STCAS
+     * Sends a message to clients to update them on the [predictedConflicts] predicted by the APW/STCA
      */
     fun sendPredictedConflicts(predictedConflicts: GdxArrayMap<String, PredictedConflict>) {
+        // Send only conflicts that are below the maximum altitude to clients, since they don't need to know about
+        // higher altitude conflicts which will be handled by ACC
         networkServer.sendToAllTCP(
             PredictedConflictData(
-                Entries(predictedConflicts).map { it.value.getSerialisableObject() }.toTypedArray()
+                Entries(predictedConflicts).filter { it.value.altFt <= MAX_ALT + 1500 }
+                    .map { it.value.getSerialisableObject() }.toTypedArray()
             )
         )
     }

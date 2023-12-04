@@ -327,3 +327,18 @@ data class DivergentDepartureAllowed(var timeLeft: Float = 120f): Component, Bas
         fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
+
+/**
+ * Component for tagging aircraft that have been cleared to temporary altitude by the ACC to prevent conflict with
+ * another aircraft, and stores the final target altitude to clear it to once the conflict is resolved
+ */
+@JsonClass(generateAdapter = true)
+data class ACCTempAltitude(var tmpAltFt: Int = 0): Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.ACC_TEMP_ALTITUDE
+
+    companion object {
+        val mapper = object: Mapper<ACCTempAltitude>() {}.mapper
+
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
+    }
+}

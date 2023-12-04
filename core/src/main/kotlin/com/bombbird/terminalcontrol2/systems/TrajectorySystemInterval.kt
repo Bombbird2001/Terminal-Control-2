@@ -27,11 +27,13 @@ class TrajectorySystemInterval: IntervalSystem(TRAJECTORY_UPDATE_INTERVAL_S) {
     companion object {
         private val aircraftTrajectoryFamily = allOf(AircraftInfo::class, GroundTrack::class, Speed::class, Position::class, Altitude::class, CommandTarget::class)
             .exclude(WaitingTakeoff::class, LandingRoll::class, TakeoffRoll::class).get()
+        private val temporaryAltitudeFamily = allOf(ACCTempAltitude::class, Controllable::class).get()
 
         fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 
     private val aircraftTrajectoryEntities = FamilyWithListener.newServerFamilyWithListener(aircraftTrajectoryFamily)
+    private val temporaryAltitudeEntities = FamilyWithListener.newServerFamilyWithListener(temporaryAltitudeFamily)
 
     private val startingAltitude = getConflictStartAltitude()
     /** This stores the trajectory position divided in their respective conflict altitude levels, per time interval */
@@ -174,10 +176,10 @@ class TrajectorySystemInterval: IntervalSystem(TRAJECTORY_UPDATE_INTERVAL_S) {
         }
     }
 
-    /** Creates the conflict level array upon loading world data (MAX_ALT required) */
-    fun initializeConflictLevelArray(maxAlt: Int, vertSep: Int) {
+    /** Creates the conflict level array upon loading world data */
+    fun initializeConflictLevelArray(vertSep: Int) {
         trajectoryTimeStates = Array((MAX_TRAJECTORY_ADVANCE_TIME_S / TRAJECTORY_UPDATE_INTERVAL_S.toInt()).roundToInt()) {
-            Array(ceil((maxAlt + 1500f) / vertSep).roundToInt() - startingAltitude / vertSep) {
+            Array(ceil((TRAJECTORY_MAX_ALT + 1000f) / vertSep).roundToInt() - startingAltitude / vertSep) {
                 GdxArray()
             }
         }

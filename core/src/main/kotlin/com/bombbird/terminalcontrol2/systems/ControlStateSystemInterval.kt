@@ -4,7 +4,6 @@ import com.badlogic.ashley.core.Entity
 import com.badlogic.ashley.core.Family
 import com.badlogic.ashley.systems.IntervalSystem
 import com.badlogic.gdx.math.MathUtils
-import com.badlogic.gdx.utils.Queue
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.MAG_HDG_DEV
@@ -15,7 +14,6 @@ import com.bombbird.terminalcontrol2.navigation.calculateDistToGo
 import com.bombbird.terminalcontrol2.navigation.getNextWaypointWithSpdRestr
 import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.*
-import kotlin.math.max
 
 /**
  * System that is responsible for aircraft control states, updating at a lower frequency of 1hz
@@ -270,14 +268,7 @@ class ControlStateSystemInterval: IntervalSystem(1f) {
                         currClearance.vectorHdg, currClearance.vectorTurnDir, calculateFinalCruiseAlt(this), false,
                         acInfo.aircraftPerf.tripIas, currClearance.minIas, currClearance.maxIas, currClearance.optimalIas,
                         currClearance.clearedApp, currClearance.clearedTrans)
-                    val pendingClearances = get(PendingClearances.mapper)
-                    if (pendingClearances == null) this += PendingClearances(Queue<ClearanceState.PendingClearanceState>().apply {
-                        addLast(ClearanceState.PendingClearanceState(2f, newClearance))
-                    })
-                    else pendingClearances.clearanceQueue.apply {
-                        val lastTime = last().timeLeft
-                        addLast(ClearanceState.PendingClearanceState(max(2f - lastTime, 0.01f), newClearance))
-                    }
+                    addNewClearanceToPendingClearances(this, newClearance, 0)
                     remove<PendingCruiseAltitude>()
                 }
             }

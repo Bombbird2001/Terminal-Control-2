@@ -34,7 +34,7 @@ import kotlin.math.min
  * Also contains utility functions for updating the actual aircraft command state
  */
 @JsonClass(generateAdapter = true)
-class ClearanceState(var routePrimaryName: String = "", val route: Route = Route(), val hiddenLegs: Route = Route(),
+data class ClearanceState(var routePrimaryName: String = "", val route: Route = Route(), val hiddenLegs: Route = Route(),
                      var vectorHdg: Short? = null, var vectorTurnDir: Byte? = null,
                      var clearedAlt: Int = 0, var expedite: Boolean = false, var clearedIas: Short = 0,
                      var minIas: Short = 0, var maxIas: Short = 0, var optimalIas: Short = 0,
