@@ -18,6 +18,7 @@ import com.bombbird.terminalcontrol2.traffic.*
 import com.bombbird.terminalcontrol2.traffic.conflict.Conflict
 import com.bombbird.terminalcontrol2.traffic.conflict.PotentialConflict
 import com.bombbird.terminalcontrol2.traffic.conflict.PredictedConflict
+import com.bombbird.terminalcontrol2.traffic.conflict.TrajectoryManager
 import com.bombbird.terminalcontrol2.ui.CustomDialog
 import com.bombbird.terminalcontrol2.utilities.*
 import com.bombbird.terminalcontrol2.utilities.FileLog
@@ -890,7 +891,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
     /**
      * Sends a message to clients to update them on the [predictedConflicts] predicted by the APW/STCA
      */
-    fun sendPredictedConflicts(predictedConflicts: GdxArrayMap<String, PredictedConflict>) {
+    fun sendPredictedConflicts(predictedConflicts: GdxArrayMap<TrajectoryManager.ConflictPair, PredictedConflict>) {
         // Send only conflicts that are below the maximum altitude to clients, since they don't need to know about
         // higher altitude conflicts which will be handled by ACC
         networkServer.sendToAllTCP(

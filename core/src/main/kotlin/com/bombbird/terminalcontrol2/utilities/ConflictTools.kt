@@ -21,6 +21,7 @@ import ktx.collections.GdxArray
  * Checks and returns true if the provided [aircraft1] and [aircraft2] fulfil conditions for inhibition of conflicts
  */
 fun checkIsAircraftConflictInhibited(aircraft1: Entity, aircraft2: Entity): Boolean {
+    if (aircraft1 == aircraft2) return true
     val alt1 = aircraft1[Altitude.mapper] ?: return true
     val alt2 = aircraft2[Altitude.mapper] ?: return true
     val pos1 = aircraft1[Position.mapper] ?: return true

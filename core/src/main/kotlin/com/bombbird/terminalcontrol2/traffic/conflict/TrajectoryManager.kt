@@ -2,26 +2,52 @@ package com.bombbird.terminalcontrol2.traffic.conflict
 
 import com.badlogic.ashley.core.Entity
 import com.badlogic.ashley.utils.ImmutableArray
+import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.utils.ArrayMap
 import com.bombbird.terminalcontrol2.components.*
-import com.bombbird.terminalcontrol2.global.CONFLICT_SIZE
-import com.bombbird.terminalcontrol2.global.GAME
+import com.bombbird.terminalcontrol2.entities.TrajectoryPoint
+import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.traffic.getACCStartAltitude
+import com.bombbird.terminalcontrol2.traffic.getConflictStartAltitude
+import com.bombbird.terminalcontrol2.traffic.getSectorIndexForAlt
 import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.get
 import ktx.ashley.hasNot
 import ktx.ashley.plusAssign
+import ktx.ashley.remove
 import ktx.collections.GdxArray
 import ktx.collections.GdxArrayMap
 import ktx.collections.set
-import kotlin.math.abs
-import kotlin.math.ceil
-import kotlin.math.floor
-import kotlin.math.roundToInt
+import ktx.math.plus
+import ktx.math.times
+import kotlin.math.*
 
 /** Helper class for checking trajectory point conflicts */
 class TrajectoryManager {
-    private val predictedConflicts = GdxArrayMap<String, PredictedConflict>(CONFLICT_SIZE)
+    /**
+     * Represents a predicted conflict key using aircraft callsign
+     */
+    class ConflictPair(val aircraft1: String, val aircraft2: String?, val advanceTimeS: Int) {
+        override fun equals(other: Any?): Boolean {
+            if (other !is ConflictPair) return false
+            return (aircraft1 == other.aircraft1 && aircraft2 == other.aircraft2) ||
+                    (aircraft1 == other.aircraft2 && aircraft2 == other.aircraft1)
+        }
+
+        override fun hashCode(): Int {
+            if (aircraft2 == null) return aircraft1.hashCode()
+            // Fix the ordering of string for calculating hashcode by putting the larger string first
+            if (aircraft1 > aircraft2) return "$aircraft1$aircraft2".hashCode()
+            return "$aircraft2$aircraft1".hashCode()
+        }
+    }
+
+    /**
+     * Represents a predicted conflict entry between two aircraft
+     */
+    private class PredictedConflictEntry(val key: ConflictPair, val value: PredictedConflict)
+
+    private val predictedConflicts = GdxArrayMap<ConflictPair, PredictedConflict>(false, CONFLICT_SIZE)
 
     /**
      * Checks for aircraft separation and MVA/restricted area conflicts for all trajectory points provided in
@@ -32,10 +58,10 @@ class TrajectoryManager {
         predictedConflicts.clear()
 
         // Check aircraft separation conflict
-        checkAllTrajectoryPointConflicts(allTrajectoryPoints)
+        predictedConflicts.putAll(checkAllTrajectoryPointConflicts(allTrajectoryPoints))
 
         // Check MVA/restricted area conflict
-        checkAllTrajectoryMVAConflicts(allTrajectoryPoints)
+        predictedConflicts.putAll(checkAllTrajectoryMVAConflicts(allTrajectoryPoints))
 
         // Send all predicted conflicts to clients using TCP
         GAME.gameServer?.sendPredictedConflicts(predictedConflicts)
@@ -43,60 +69,78 @@ class TrajectoryManager {
         resolveACCConflicts()
     }
 
-    private fun checkAllTrajectoryPointConflicts(allTrajectoryPoints: Array<Array<GdxArray<Entity>>>) {
+    private fun checkAllTrajectoryPointConflicts(allTrajectoryPoints: Array<Array<GdxArray<Entity>>>): GdxArrayMap<ConflictPair, PredictedConflict> {
+        val predictedConflicts = GdxArrayMap<ConflictPair, PredictedConflict>(false, CONFLICT_SIZE)
+
         // Check conflicts between all trajectory points
         for (i in allTrajectoryPoints.indices) {
             for (j in allTrajectoryPoints[i].indices) {
                 val pointList = allTrajectoryPoints[i][j]
                 for (k in 0 until pointList.size - 1) {
-                    checkTrajectoryPointConflict(pointList[k], pointList[k + 1])
+                    val entry1 = checkTrajectoryPointConflict(pointList[k], pointList[k + 1])
+                    if (entry1 != null &&
+                        (!predictedConflicts.containsKey(entry1.key)
+                                || predictedConflicts[entry1.key].advanceTimeS > entry1.key.advanceTimeS)) {
+                        predictedConflicts[entry1.key] = entry1.value
+                    }
                     // If a layer exists above, check with each aircraft in the above layer
                     if (j + 1 < allTrajectoryPoints[i].size) {
                         val abovePoints = allTrajectoryPoints[i][j + 1]
-                        for (l in 0 until abovePoints.size) checkTrajectoryPointConflict(pointList[k], abovePoints[l])
+                        for (l in 0 until abovePoints.size) {
+                            val entry2 = checkTrajectoryPointConflict(pointList[k], abovePoints[l])
+                            if (entry2 != null &&
+                                (!predictedConflicts.containsKey(entry2.key)
+                                        || predictedConflicts[entry2.key].advanceTimeS > entry2.key.advanceTimeS)) {
+                                predictedConflicts[entry2.key] = entry2.value
+                            }
+                        }
                     }
                 }
             }
         }
+
+        return predictedConflicts
     }
 
     /**
      * Checks if two trajectory points are in conflict; if so adds them to the list of predicted conflicts
      */
-    private fun checkTrajectoryPointConflict(point1: Entity, point2: Entity) {
-        val aircraft1 = point1[TrajectoryPointInfo.mapper]?.aircraft ?: return
-        val aircraft2 = point2[TrajectoryPointInfo.mapper]?.aircraft ?: return
-        val advanceTimeS = point1[TrajectoryPointInfo.mapper]?.advanceTimingS ?: return
+    private fun checkTrajectoryPointConflict(point1: Entity, point2: Entity): PredictedConflictEntry? {
+        val aircraft1 = point1[TrajectoryPointInfo.mapper]?.aircraft ?: return null
+        val aircraft2 = point2[TrajectoryPointInfo.mapper]?.aircraft ?: return null
+        val advanceTimeS = point1[TrajectoryPointInfo.mapper]?.advanceTimingS ?: return null
 
-        if (checkIsAircraftConflictInhibited(aircraft1, aircraft2)) return
+        if (checkIsAircraftConflictInhibited(aircraft1, aircraft2)) return null
 
         val conflictMinimaRequired = getMinimaRequired(aircraft1, aircraft2)
 
-        val alt1 = point1[Altitude.mapper] ?: return
-        val alt2 = point2[Altitude.mapper] ?: return
-        val pos1 = point1[Position.mapper] ?: return
-        val pos2 = point2[Position.mapper] ?: return
-        val acInfo1 = aircraft1[AircraftInfo.mapper] ?: return
-        val acInfo2 = aircraft2[AircraftInfo.mapper] ?: return
+        val alt1 = point1[Altitude.mapper] ?: return null
+        val alt2 = point2[Altitude.mapper] ?: return null
+        val pos1 = point1[Position.mapper] ?: return null
+        val pos2 = point2[Position.mapper] ?: return null
+        val acInfo1 = aircraft1[AircraftInfo.mapper] ?: return null
+        val acInfo2 = aircraft2[AircraftInfo.mapper] ?: return null
 
         // If lateral separation is less than minima, and vertical separation less than minima, predicted conflict exists
         val distPx = calculateDistanceBetweenPoints(pos1.x, pos1.y, pos2.x, pos2.y)
         if (distPx < nmToPx(conflictMinimaRequired.latMinima) &&
             abs(alt1.altitudeFt - alt2.altitudeFt) < conflictMinimaRequired.vertMinima - 25) {
-            val entryKey = "${acInfo1.icaoCallsign}${acInfo2.icaoCallsign}"
-            val entryKey2 = "${acInfo2.icaoCallsign}${acInfo1.icaoCallsign}"
-            val existingEntry = predictedConflicts[entryKey] ?: predictedConflicts[entryKey2]
-            if (existingEntry == null || existingEntry.advanceTimeS > advanceTimeS)
-                predictedConflicts[entryKey] = PredictedConflict(aircraft1, aircraft2, advanceTimeS.toShort(),
-                    (pos1.x + pos2.x) / 2, (pos1.y + pos2.y) / 2, (alt1.altitudeFt + alt2.altitudeFt) / 2)
+            val entryKey = ConflictPair(acInfo1.icaoCallsign, acInfo2.icaoCallsign, advanceTimeS)
+            val entry = PredictedConflict(aircraft1, aircraft2, advanceTimeS.toShort(), (pos1.x + pos2.x) / 2,
+                (pos1.y + pos2.y) / 2, (alt1.altitudeFt + alt2.altitudeFt) / 2)
+            return PredictedConflictEntry(entryKey, entry)
         }
+
+        return null
     }
 
     /**
-     * Checks all trajectory points for MVA/restricted area conflicts; if so adds them to the list of predicted conflicts
+     * Checks all trajectory points for MVA/restricted area conflicts, returns a map of predicted conflicts
      */
-    private fun checkAllTrajectoryMVAConflicts(allTrajectoryPoints: Array<Array<GdxArray<Entity>>>) {
+    private fun checkAllTrajectoryMVAConflicts(allTrajectoryPoints: Array<Array<GdxArray<Entity>>>): GdxArrayMap<ConflictPair, PredictedConflict> {
         // Check conflicts between all trajectory points and MVA/restricted areas
+        val mvaConflicts = GdxArrayMap<ConflictPair, PredictedConflict>(false, CONFLICT_SIZE)
+
         for (i in allTrajectoryPoints.indices) {
             for (j in allTrajectoryPoints[i].indices) {
                 val pointList = allTrajectoryPoints[i][j]
@@ -105,15 +149,18 @@ class TrajectoryManager {
                         val trajInfo = pointList[k][TrajectoryPointInfo.mapper] ?: continue
                         val pos = pointList[k][Position.mapper] ?: continue
                         val alt = pointList[k][Altitude.mapper] ?: continue
-                        val entryKey = trajInfo.aircraft[AircraftInfo.mapper]?.icaoCallsign ?: continue
-                        val existingEntry = predictedConflicts[entryKey]
+                        val entryKey = ConflictPair(trajInfo.aircraft[AircraftInfo.mapper]?.icaoCallsign ?: continue,
+                            null, trajInfo.advanceTimingS)
+                        val existingEntry = mvaConflicts[entryKey]
                         if (existingEntry == null || existingEntry.advanceTimeS > trajInfo.advanceTimingS)
-                            predictedConflicts[entryKey] = PredictedConflict(trajInfo.aircraft, null,
+                            mvaConflicts[entryKey] = PredictedConflict(trajInfo.aircraft, null,
                                 trajInfo.advanceTimingS.toShort(), pos.x, pos.y, alt.altitudeFt)
                     }
                 }
             }
         }
+
+        return mvaConflicts
     }
 
     /** Re-clear altitude for conflicts that has not been resolved */
@@ -134,7 +181,6 @@ class TrajectoryManager {
             
             val ac1Alt = conflict.aircraft1[Altitude.mapper]?.altitudeFt?.roundToInt() ?: continue
             val ac2Alt = conflict.aircraft2[Altitude.mapper]?.altitudeFt?.roundToInt() ?: continue
-            val conflictAlt = conflict.altFt.roundToInt()
 
             // Calculate new altitude clearances to avoid conflict
             val newAlts = when {
@@ -191,12 +237,208 @@ class TrajectoryManager {
     }
 
     /**
-     * Checks all input [aircraft] assigned a temporary altitude to see if they can be cleared to their original
+     * Checks all input [conflictAircraft] assigned a temporary altitude to see if they can be cleared to their original
      * target altitude
      */
-    fun checkAircraftConflictResolved(aircraft: ImmutableArray<Entity>) {
-        for (i in 0 until aircraft.size()) {
-            // TODO
+    fun resolveTempAltitudes(conflictAircraft: ImmutableArray<Entity>, allTrajectoryPoints: Array<Array<GdxArray<Entity>>>) {
+        for (i in 0 until conflictAircraft.size()) {
+            val aircraft = conflictAircraft[i] ?: continue
+            val controllable = aircraft[Controllable.mapper] ?: continue
+            if (controllable.sectorId != SectorInfo.CENTRE) {
+                aircraft.remove<ACCTempAltitude>()
+                continue
+            }
+            val finalAlt = aircraft[ACCTempAltitude.mapper]?.finalAltFt ?: continue
+            val currClearance = getLatestClearanceState(aircraft) ?: continue
+            val currClearedAlt = currClearance.clearedAlt
+
+            val offsetLevels = abs((currClearedAlt - finalAlt) / 1000f).toInt()
+            if (offsetLevels == 0) {
+                aircraft.remove<ACCTempAltitude>()
+                continue
+            }
+
+            // Binary search for the altitude that aircraft can be cleared to
+            var from = 0
+            var to = offsetLevels
+            while (from < to) {
+                val curr = (from + to + 1) / 2 // Ceiling
+                if (checkNewAltitudeClearOfConflict(aircraft, curr * 1000, allTrajectoryPoints)) {
+                    // No conflict, try closer to final alt
+                    from = curr
+                } else {
+                    // Conflict, try closer to current cleared alt
+                    to = curr - 1
+                }
+            }
+            if (from == 0) {
+                // Still have conflict, can't do anything
+                continue
+            }
+
+            // Clear aircraft to new altitude
+            val newClearance = currClearance.copy(clearedAlt = currClearance.clearedAlt + (from * 1000 * (if (finalAlt > currClearedAlt) 1 else -1)))
+            addNewClearanceToPendingClearances(aircraft, newClearance, 0)
         }
+    }
+
+    /**
+     * Calculates the new trajectory with a [newAltitude] and checks if using it will cause conflict with the current
+     * trajectory points; returns true if no conflict, else false
+     */
+    private fun checkNewAltitudeClearOfConflict(aircraft: Entity, newAltitude: Int, allTrajectoryPoints: Array<Array<GdxArray<Entity>>>): Boolean {
+        val traj = calculateTrajectory(aircraft, newAltitude)
+        for (i in 0 until traj.size) {
+            val point = traj[i].entity
+            val alt = point[Altitude.mapper]?.altitudeFt ?: continue
+            val altLevel = getSectorIndexForAlt(alt, getConflictStartAltitude())
+            val allPointsInCurrentTimePoint = allTrajectoryPoints[i]
+            // Check with all points in current layer
+            for (j in 0 until allPointsInCurrentTimePoint[altLevel].size) {
+                val entry = checkTrajectoryPointConflict(point, allPointsInCurrentTimePoint[altLevel][j])
+                if (entry != null) {
+                    // Conflict exists
+                    return false
+                }
+            }
+            // If a layer exists above, check with each point in the above layer
+            if (altLevel + 1 < allPointsInCurrentTimePoint.size) {
+                val abovePoints = allPointsInCurrentTimePoint[altLevel + 1]
+                for (k in 0 until abovePoints.size) {
+                    val entry2 = checkTrajectoryPointConflict(point, abovePoints[k])
+                    if (entry2 != null) {
+                        // Conflict exists
+                        return false
+                    }
+                }
+            }
+            // If a layer exists below, check with each point in the below layer
+            if (altLevel - 1 >= 0) {
+                val belowPoints = allPointsInCurrentTimePoint[altLevel - 1]
+                for (k in 0 until belowPoints.size) {
+                    val entry2 = checkTrajectoryPointConflict(point, belowPoints[k])
+                    if (entry2 != null) {
+                        // Conflict exists
+                        return false
+                    }
+                }
+            }
+        }
+
+        return true
+    }
+
+    /** Gets all trajectory points of an aircraft */
+    fun calculateTrajectory(aircraft: Entity, customTargetAlt: Int = -1): GdxArray<TrajectoryPoint> {
+        val trajPointList = GdxArray<TrajectoryPoint>()
+        val pointList = GdxArray<Position>()
+
+        // Calculate simple linear trajectory, plus arc if aircraft is turning > 5 degrees
+        val requiredTime = MAX_TRAJECTORY_ADVANCE_TIME_S
+        val cmdTarget = aircraft[CommandTarget.mapper] ?: return trajPointList
+        val groundTrack = aircraft[GroundTrack.mapper] ?: return trajPointList
+        val altitude = aircraft[Altitude.mapper]?.altitudeFt ?: return trajPointList
+        val speed = aircraft[Speed.mapper] ?: return trajPointList
+        val aircraftPos = aircraft[Position.mapper] ?: return trajPointList
+        val winds = aircraft[AffectedByWind.mapper] ?: return trajPointList
+        val targetHeading = cmdTarget.targetHdgDeg
+        val currTrack = convertWorldAndRenderDeg(groundTrack.trackVectorPxps.angleDeg())
+        val groundSpeedPxps = groundTrack.trackVectorPxps.len()
+        // This is the vector the aircraft is turning towards, excluding effects of wind
+        val targetTrueHeadingPxps = Vector2(Vector2.Y).rotateDeg(-(targetHeading - MAG_HDG_DEV)).scl(ktToPxps(speed.speedKts))
+        // This is the track vector the aircraft is turning towards, including effects of wind
+        val targetTrackPxps = targetTrueHeadingPxps + winds.windVectorPxps
+        var targetTrack = convertWorldAndRenderDeg(targetTrackPxps.angleDeg())
+        targetTrack = modulateHeading(targetTrack)
+        val deltaHeading = findDeltaHeading(currTrack, targetTrack, cmdTarget.turnDir)
+        if (abs(deltaHeading) > 5) {
+            // Calculate arc if aircraft is turning > 5 degrees
+            // Turn rate in degrees/second
+            var turnRate = if (calculateIASFromTAS(altitude, speed.speedKts) > HALF_TURN_RATE_THRESHOLD_IAS) MAX_HIGH_SPD_ANGULAR_SPD else MAX_LOW_SPD_ANGULAR_SPD
+            // In px: r = v/w - turnRate must be converted to radians/second, GS is in px/second
+            val turnRadiusPx = groundSpeedPxps / Math.toRadians(turnRate.toDouble()).toFloat()
+            val centerOffsetAngle = convertWorldAndRenderDeg(currTrack + 90)
+            val deltaX = turnRadiusPx * cos(Math.toRadians(centerOffsetAngle.toDouble())).toFloat()
+            val deltaY = turnRadiusPx * sin(Math.toRadians(centerOffsetAngle.toDouble())).toFloat()
+            val turnCenter = Vector2()
+            val centerToCircum = Vector2()
+            if (deltaHeading > 0) {
+                // Turning right
+                turnCenter.x = aircraftPos.x + deltaX
+                turnCenter.y = aircraftPos.y + deltaY
+                centerToCircum.x = -deltaX
+                centerToCircum.y = -deltaY
+            } else {
+                // Turning left
+                turnCenter.x = aircraftPos.x - deltaX
+                turnCenter.y = aircraftPos.y - deltaY
+                centerToCircum.x = deltaX
+                centerToCircum.y = deltaY
+                turnRate = -turnRate
+            }
+            var remainingAngle = deltaHeading
+            var prevPos = Vector2()
+            var prevTargetTrack = targetTrack
+            var i = TRAJECTORY_UPDATE_INTERVAL_S
+            while (i <= requiredTime) {
+                if (remainingAngle / turnRate > TRAJECTORY_UPDATE_INTERVAL_S) {
+                    remainingAngle -= turnRate * TRAJECTORY_UPDATE_INTERVAL_S
+                    centerToCircum.rotateDeg(-turnRate * TRAJECTORY_UPDATE_INTERVAL_S)
+                    val newVector = Vector2(turnCenter)
+                    prevPos = newVector.add(centerToCircum)
+                    val directWptPos = aircraft[CommandDirect.mapper]?.let {
+                        GAME.gameServer?.waypoints?.get(it.wptId)?.entity?.get(Position.mapper)
+                    }
+                    if (directWptPos != null) {
+                        // Do additional turn checking - this track is the absolute track between points and already includes wind
+                        val newTrack = modulateHeading(getRequiredTrack(prevPos.x, prevPos.y, directWptPos.x, directWptPos.y))
+                        remainingAngle += newTrack - prevTargetTrack // Add the difference in target track to remaining angle
+                        if (newTrack < 16 && newTrack > 0 && prevTargetTrack <= 360 && prevTargetTrack > 344) remainingAngle += 360f // In case new track rotates right past 360 hdg
+                        if (newTrack <= 360 && newTrack > 344 && prevTargetTrack < 16) remainingAngle -= 360f // In case new track rotates left past 360 hdg
+                        prevTargetTrack = newTrack
+                    }
+                } else {
+                    val remainingTime = TRAJECTORY_UPDATE_INTERVAL_S - remainingAngle / turnRate
+                    centerToCircum.rotateDeg(-remainingAngle)
+                    val newVector = Vector2(turnCenter)
+                    if (abs(remainingAngle) > 0.1) prevPos = newVector.add(centerToCircum)
+                    remainingAngle = 0f
+                    val straightVector = Vector2(Vector2.Y).scl(groundSpeedPxps * remainingTime).rotateDeg(-prevTargetTrack)
+                    prevPos.add(straightVector)
+                }
+                pointList.add(Position(prevPos.x, prevPos.y))
+                i += TRAJECTORY_UPDATE_INTERVAL_S
+            }
+        } else {
+            // Straight trajectory - just add ground track in px/s * time(s)
+            var i = TRAJECTORY_UPDATE_INTERVAL_S
+            while (i <= requiredTime) {
+                val trackVectorPx = targetTrackPxps * i
+                pointList.add(Position(aircraftPos.x + trackVectorPx.x, aircraftPos.y + trackVectorPx.y))
+                i += TRAJECTORY_UPDATE_INTERVAL_S
+            }
+        }
+
+        // Calculate altitude at each point
+        val gsCap = aircraft[GlideSlopeCaptured.mapper]?.gsApp
+        for (index in 1 .. pointList.size) {
+            val positionPoint = pointList[index - 1]
+            val timeS = index * TRAJECTORY_UPDATE_INTERVAL_S // Time from now in seconds
+            var targetAlt = if (customTargetAlt == -1) cmdTarget.targetAltFt.toFloat() else customTargetAlt.toFloat()
+            if (gsCap != null) targetAlt = (gsCap[ApproachInfo.mapper]?.rwyObj?.entity?.get(Altitude.mapper)?.altitudeFt ?: -100f) - 10f
+            val pointAltitude = if (altitude > targetAlt) {
+                // Descending
+                max(altitude + speed.vertSpdFpm * timeS / 60, targetAlt).toInt()
+            } else {
+                // Climbing
+                min(altitude + speed.vertSpdFpm * timeS / 60, targetAlt).toInt()
+            }
+            trajPointList.add(
+                TrajectoryPoint(aircraft, positionPoint.x,
+                positionPoint.y, pointAltitude.toFloat(), timeS.roundToInt())
+            )
+        }
+
+        return trajPointList
     }
 }

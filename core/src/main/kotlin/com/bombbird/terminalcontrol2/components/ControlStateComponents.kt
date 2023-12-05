@@ -333,7 +333,7 @@ data class DivergentDepartureAllowed(var timeLeft: Float = 120f): Component, Bas
  * another aircraft, and stores the final target altitude to clear it to once the conflict is resolved
  */
 @JsonClass(generateAdapter = true)
-data class ACCTempAltitude(var tmpAltFt: Int = 0): Component, BaseComponentJSONInterface {
+data class ACCTempAltitude(var finalAltFt: Int = 0): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.ACC_TEMP_ALTITUDE
 
     companion object {
