@@ -12,6 +12,7 @@ import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.Aircraft
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.Route
+import com.bombbird.terminalcontrol2.traffic.ConflictManager
 import com.bombbird.terminalcontrol2.ui.addChangeListener
 import com.bombbird.terminalcontrol2.ui.isMobile
 import com.bombbird.terminalcontrol2.utilities.convertWorldAndRenderDeg
@@ -212,7 +213,8 @@ fun getNewDatatagLabelText(entity: Entity, minimised: Boolean): Array<String> {
  */
 private fun getMinimisedLabelText(entity: Entity): Array<String> {
     val datatagMap = updateDatatagValueMap(entity)
-    return DATATAG_LAYOUTS[DATATAG_STYLE_NAME]?.generateTagText(datatagMap, true)?.split("\n")?.toTypedArray() ?: arrayOf()
+    return DATATAG_LAYOUTS[DATATAG_STYLE_NAME]?.generateTagText(datatagMap, true, checkAircraftHasWake(entity))
+        ?.split("\n")?.toTypedArray() ?: arrayOf()
 }
 
 /**
@@ -222,7 +224,8 @@ private fun getMinimisedLabelText(entity: Entity): Array<String> {
  */
 private fun getExpandedLabelText(entity: Entity): Array<String> {
     val datatagMap = updateDatatagValueMap(entity)
-    return DATATAG_LAYOUTS[DATATAG_STYLE_NAME]?.generateTagText(datatagMap, false)?.split("\n")?.toTypedArray() ?: arrayOf()
+    return DATATAG_LAYOUTS[DATATAG_STYLE_NAME]?.generateTagText(datatagMap, false, checkAircraftHasWake(entity))
+        ?.split("\n")?.toTypedArray() ?: arrayOf()
 }
 
 /**
@@ -280,4 +283,17 @@ private fun updateDatatagValueMap(entity: Entity): HashMap<String, String> {
     }
 
     return datatagMap
+}
+
+/**
+ * Checks if the provided [entity] is having wake turbulence conflict; returns true if so, else false
+ */
+private fun checkAircraftHasWake(entity: Entity): Boolean {
+    val conflicts = GAME.gameClientScreen?.conflicts ?: return false
+    for (i in 0 until conflicts.size) {
+        val conflict = conflicts[i]
+        if (conflict.entity1 == entity && conflict.reason == ConflictManager.Conflict.WAKE_INFRINGE) return true
+    }
+
+    return false
 }

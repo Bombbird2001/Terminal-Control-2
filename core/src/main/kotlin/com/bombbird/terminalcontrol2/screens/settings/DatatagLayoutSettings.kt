@@ -433,7 +433,7 @@ class DatatagLayoutSettings: BasicUIScreen() {
 
     /** Updates the preview label depending on the selected options, page and timing */
     private fun updatePreview() {
-        previewLabel.setText(currPreviewLayout.generateTagText(PREVIEW_DATA, !showingMainPage))
+        previewLabel.setText(currPreviewLayout.generateTagText(PREVIEW_DATA, !showingMainPage, false))
     }
 
     /** Update the choices available in the datatag config select box */

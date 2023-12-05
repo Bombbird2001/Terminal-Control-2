@@ -172,7 +172,11 @@ class DatatagConfig(val name: String) {
         return onlyShowWhenChanged.contains(field)
     }
 
-    fun generateTagText(fields: HashMap<String, String>, isMinimized: Boolean): String {
+    /**
+     * Generates the text to be displayed on the datatag, using the given [fields] and checking if the datatag
+     * [isMinimized] and whether it is undergoing [wakeTurbulence]]
+     */
+    fun generateTagText(fields: HashMap<String, String>, isMinimized: Boolean, wakeTurbulence: Boolean): String {
         val arrayToUse = if (isMinimized) {
             when {
                 miniArrangementFirstEmpty -> miniArrangementSecond
@@ -190,6 +194,10 @@ class DatatagConfig(val name: String) {
             }
             if (sbLine.isNotBlank() && sb.isNotEmpty()) sb.append("\n")
             if (sbLine.isNotBlank()) sb.append(sbLine)
+        }
+        if (wakeTurbulence) {
+            sb.append('\n')
+            sb.append(if (isMinimized) "Wake" else "Wake alert")
         }
         return sb.toString()
     }

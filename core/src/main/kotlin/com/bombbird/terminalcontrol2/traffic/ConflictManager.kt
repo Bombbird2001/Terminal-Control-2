@@ -345,8 +345,8 @@ class ConflictManager {
     }
 
     /** Nested class to store information related to an instance of a conflict */
-    class Conflict(val entity1: Entity, val entity2: Entity?, val minAltSectorIndex: Int?, val latSepRequiredNm: Float, val reason: Byte):
-        SerialisableEntity<Conflict.SerialisedConflict> {
+    class Conflict(val entity1: Entity, val entity2: Entity?, val minAltSectorIndex: Int?, val latSepRequiredNm: Float,
+                   val reason: Byte): SerialisableEntity<Conflict.SerialisedConflict> {
 
         companion object {
             const val NORMAL_CONFLICT: Byte = 0
