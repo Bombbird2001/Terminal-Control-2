@@ -60,11 +60,11 @@ fun addNewClearanceToPendingClearances(aircraft: Entity, clearance: AircraftCont
 fun addNewClearanceToPendingClearances(aircraft: Entity, clearance: ClearanceState, returnTripTime: Int) {
     val pendingClearances = aircraft[PendingClearances.mapper]
     if (pendingClearances == null) aircraft += PendingClearances(Queue<ClearanceState.PendingClearanceState>().apply {
-        addLast(ClearanceState.PendingClearanceState(2f, clearance))
+        addLast(ClearanceState.PendingClearanceState(max(2f - returnTripTime / 2000f, 0.01f), clearance))
     })
     else pendingClearances.clearanceQueue.apply {
         val lastTime = last().timeLeft
-        addLast(ClearanceState.PendingClearanceState(max(2f - - returnTripTime / 2000f - lastTime, 0.01f), clearance))
+        addLast(ClearanceState.PendingClearanceState(max(2f - returnTripTime / 2000f - lastTime, 0.01f), clearance))
     }
 }
 
