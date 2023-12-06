@@ -491,6 +491,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
                 val genericLabels = getOrLogMissing(GenericLabels.mapper) ?: return@apply
                 for (j in 0 until genericLabels.labels.size) {
                     val labelInfo = genericLabels.labels[j]
+                    if (labelInfo.label.text.isEmpty) continue
                     labelInfo.label.apply {
                         setPosition(pos.x + labelInfo.xOffset, pos.y + labelInfo.yOffset)
                         draw(GAME.batch, 1f)
@@ -562,6 +563,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
                 val genericLabels = getOrLogMissing(GenericLabels.mapper) ?: return@apply
                 for (j in 0 until genericLabels.labels.size) {
                     val labelInfo = genericLabels.labels[j]
+                    if (labelInfo.label.text.isEmpty) continue
                     labelInfo.label.apply {
                         setPosition((pos.x - camX) / camZoom + labelInfo.xOffset, (pos.y - camY) / camZoom + labelInfo.yOffset)
                         draw(GAME.batch, 1f)

@@ -82,7 +82,7 @@ var RANGE_RING_INTERVAL_NM = 0
 var SHOW_MVA_ALTITUDE = true
 var REALISTIC_ILS_DISPLAY = true
 var COLOURFUL_STYLE = true
-var SHOW_DIST_TO_GO = SHOW_DIST_TO_GO_HIDE // TODO Change to SHOW_DIST_TO_GO_ALL when implemented
+var SHOW_DIST_TO_GO = SHOW_DIST_TO_GO_ARRIVALS
 
 /** Datatag settings */
 var DATATAG_STYLE_NAME = DatatagConfig.DEFAULT

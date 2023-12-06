@@ -82,7 +82,6 @@ class DisplaySettings: BaseSettings() {
                             newSettingsRow()
                             defaultSettingsLabel("Show distance to go:")
                             distToGoSelectBox = defaultSettingsSelectBox<String>().apply {
-                                isDisabled = true
                                 setItems(OFF, ARRIVALS_ONLY, ALL_AIRCRAFT)
                             }
                         }

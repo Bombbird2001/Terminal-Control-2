@@ -85,7 +85,7 @@ private fun loadPlayerSettingsFromJson(playerSettingsJSON: PlayerSettingsJSON) {
         SHOW_MVA_ALTITUDE = showMvaAltitude
         REALISTIC_ILS_DISPLAY = realisticIlsDisplay
         COLOURFUL_STYLE = colourfulStyle
-        SHOW_DIST_TO_GO = SHOW_DIST_TO_GO_HIDE // TODO Change to SHOW_DIST_TO_GO_ALL when implemented
+        SHOW_DIST_TO_GO = showDistToGo
 
         // Datatag settings
         DATATAG_STYLE_NAME = datatagStyleName ?: DatatagConfig.DEFAULT

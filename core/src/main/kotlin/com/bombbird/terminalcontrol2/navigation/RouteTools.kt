@@ -422,6 +422,9 @@ fun findMissedApproachAlt(route: Route): Int? {
     return highestMinAlt
 }
 
+/** Data class for storing the cumulative distance to go at a particular waypoint leg */
+data class DistToGoAtLeg(val wpt: WaypointLeg, val distToGoPx: Float)
+
 /**
  * Calculates the distance, in pixels, on the route given aircraft position, and the starting and ending legs
  * @param aircraftPos the position of the aircraft; if null, will ignore position of the aircraft and calculate only between
@@ -429,9 +432,10 @@ fun findMissedApproachAlt(route: Route): Int? {
  * @param startLeg the leg to start calculating from
  * @param endLeg the leg to stop the calculation
  * @param route the route to use for the calculation
- * @return the distance to go on the route, in pixels
+ * @return an array of distance to go on the route, in pixels, for each waypoint leg in range
  */
-fun calculateDistToGo(aircraftPos: Position?, startLeg: Leg, endLeg: Leg, route: Route): Float {
+fun calculateAllDistToGo(aircraftPos: Position?, startLeg: Leg, endLeg: Leg, route: Route): GdxArray<DistToGoAtLeg> {
+    val distances = GdxArray<DistToGoAtLeg>()
     var cumulativeDist = 0f
     var prevX = aircraftPos?.x
     var prevY = aircraftPos?.y
@@ -448,16 +452,32 @@ fun calculateDistToGo(aircraftPos: Position?, startLeg: Leg, endLeg: Leg, route:
             val finalY = prevY
             if (finalX != null && finalY != null) {
                 cumulativeDist += calculateDistanceBetweenPoints(finalX, finalY, wptPos.x, wptPos.y)
+                distances.add(DistToGoAtLeg(this, cumulativeDist))
             }
             prevX = wptPos.x
             prevY = wptPos.y
         }
         if (foundStart && compareLegEquality(endLeg, leg)) {
             // End leg reached, return distance
-            return cumulativeDist
+            return distances
         }
     }}
-    return cumulativeDist
+    return distances
+}
+
+/**
+ * Calculates the distance, in pixels, on the route given aircraft position, and the starting and ending legs
+ * @param aircraftPos the position of the aircraft; if null, will ignore position of the aircraft and calculate only between
+ * the two provided legs
+ * @param startLeg the leg to start calculating from
+ * @param endLeg the leg to stop the calculation
+ * @param route the route to use for the calculation
+ * @return the distance to go on the route, in pixels
+ */
+fun calculateDistToGo(aircraftPos: Position?, startLeg: Leg, endLeg: Leg, route: Route): Float {
+    val distances = calculateAllDistToGo(aircraftPos, startLeg, endLeg, route)
+    if (distances.isEmpty) return 0f
+    return distances[distances.size - 1].distToGoPx
 }
 
 /**

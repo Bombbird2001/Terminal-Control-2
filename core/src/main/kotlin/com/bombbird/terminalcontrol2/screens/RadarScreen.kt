@@ -272,6 +272,7 @@ class RadarScreen private constructor(private val connectionHost: String, privat
                 updateDatatagStyle(datatag, flightType.type, true)
             }
             clientEngine.getSystem<RenderingSystemClient>().updateWaypointDisplay(aircraft)
+            updateDistToGo()
         }
     }
 
@@ -286,6 +287,7 @@ class RadarScreen private constructor(private val connectionHost: String, privat
             }
             selectedAircraft = null
             clientEngine.getSystem<RenderingSystemClient>().updateWaypointDisplay(null)
+            updateDistToGo()
         }
     }
 

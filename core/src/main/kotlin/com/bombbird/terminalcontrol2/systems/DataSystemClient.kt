@@ -5,14 +5,16 @@ import com.badlogic.ashley.core.EntitySystem
 import com.badlogic.ashley.core.Family
 import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
-import com.bombbird.terminalcontrol2.global.DATATAG_REFRESH_INTERVAL_S
-import com.bombbird.terminalcontrol2.global.RADAR_REFRESH_INTERVAL_S
+import com.bombbird.terminalcontrol2.global.*
+import com.bombbird.terminalcontrol2.navigation.calculateAllDistToGo
 import com.bombbird.terminalcontrol2.ui.datatag.getNewDatatagLabelText
 import com.bombbird.terminalcontrol2.ui.datatag.updateDatatagText
 import com.bombbird.terminalcontrol2.utilities.InitializeCompanionObjectOnStart
+import com.bombbird.terminalcontrol2.utilities.pxToNm
 import com.bombbird.terminalcontrol2.utilities.pxpsToKt
 import ktx.ashley.allOf
 import ktx.ashley.get
+import kotlin.math.roundToInt
 
 /**
  * System that is responsible solely for transmission of data
@@ -42,6 +44,9 @@ class DataSystemClient: EntitySystem() {
             for (i in 0 until radarDataUpdate.size()) {
                 radarDataUpdate[i]?.apply { updateAircraftRadarData(this) }
             }
+
+            // We also update the dist to go information here
+            updateDistToGo()
 
             radarDataTimer -= RADAR_REFRESH_INTERVAL_S
         }
@@ -89,5 +94,36 @@ fun updateAircraftDatatagText(aircraft: Entity) {
     aircraft.apply {
         val datatag = get(Datatag.mapper) ?: return@apply
         updateDatatagText(datatag, getNewDatatagLabelText(this, datatag.minimised))
+    }
+}
+
+/**
+ * Updates the dist to go information for the selected aircraft depending on settings, else hides dist to go information
+ */
+fun updateDistToGo() {
+    // Clear all waypoint dist to go display
+    val allWpts = GAME.gameClientScreen?.waypoints ?: return
+    for (wpt in allWpts.values.toList()) {
+        wpt.entity[GenericLabels.mapper]?.labels?.get(1)?.updateText("")
+    }
+
+    if (SHOW_DIST_TO_GO == SHOW_DIST_TO_GO_HIDE) return
+
+    val selectedAircraft = GAME.gameClientScreen?.selectedAircraft?.entity ?: return
+    val flightType = selectedAircraft[FlightType.mapper]?.type ?: return
+    if (SHOW_DIST_TO_GO == SHOW_DIST_TO_GO_ARRIVALS && flightType != FlightType.ARRIVAL) return
+
+    val radarData = selectedAircraft[RadarData.mapper] ?: return
+    val route = selectedAircraft[ClearanceAct.mapper]?.actingClearance?.clearanceState?.route ?: return
+    if (route.size == 0) return
+
+    val distances = calculateAllDistToGo(radarData.position, route[0], route[route.size - 1], route)
+    for (i in 0 until distances.size) {
+        val dist = distances[i]
+        val roundedDist = (pxToNm(dist.distToGoPx) * 10).roundToInt() / 10f
+        allWpts[dist.wpt.wptId]?.entity?.get(GenericLabels.mapper)?.labels?.get(1)?.apply {
+            updateText(roundedDist.toString())
+            xOffset = -label.prefWidth / 2
+        }
     }
 }

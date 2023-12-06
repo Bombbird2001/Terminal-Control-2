@@ -21,11 +21,17 @@ class Waypoint(id: Short, name: String, posX: Short, posY: Short, onClient: Bool
             y = posY.toFloat()
         }
         if (onClient) {
-            with<GenericLabel> {
-                updateStyle(if (isMobile()) "WaypointMobile" else "Waypoint")
-                updateText(name)
-                xOffset = -label.prefWidth / 2
-                yOffset = 12f
+            with<GenericLabels> {
+                val wptNameLabel = GenericLabel(yOffset = if (isMobile()) 16f else 12f).apply {
+                    updateStyle(if (isMobile()) "WaypointMobile" else "Waypoint")
+                    updateText(name)
+                    xOffset = -label.prefWidth / 2
+                }
+                val distToGoLabel = GenericLabel(0f, if (isMobile()) -20f else -16f).apply {
+                    updateStyle(if (isMobile()) "WaypointDistToGoMobile" else "WaypointDistToGo")
+                    updateText("")
+                }
+                labels = arrayOf(wptNameLabel, distToGoLabel)
             }
             with<ConstantZoomSize>()
             with<SRConstantZoomSize>()
