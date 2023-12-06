@@ -422,14 +422,14 @@ class PredictedConflictData(private val predictedConflicts: Array<PredictedConfl
             val conflict = rs.conflicts[i]
             val name1 = conflict.entity1.getOrLogMissing(AircraftInfo.mapper)?.icaoCallsign ?: continue
             val name2 = conflict.entity2?.get(AircraftInfo.mapper)?.icaoCallsign ?: ""
-            conflictNames.add("$name1$name2")
+            conflictNames.add("$name1${name2}_${conflict.reason}")
         }
 
         rs.predictedConflicts.clear()
         val noConflictAircraftMap = GdxArrayMap<String, Aircraft>(rs.aircraft)
         predictedConflicts.filter {
-            val entry = "${it.name1}${it.name2 ?: ""}"
-            val entry2 = "${it.name2 ?: ""}${it.name1}"
+            val entry = "${it.name1}${it.name2 ?: ""}_${it.reason}"
+            val entry2 = "${it.name2 ?: ""}${it.name1}_${it.reason}"
             ((it.name2 == null && it.advanceTimeS <= APW_DURATION_S) ||
                     (it.name2 != null && it.advanceTimeS <= STCA_DURATION_S)) &&
                     !conflictNames.contains(entry, false) &&

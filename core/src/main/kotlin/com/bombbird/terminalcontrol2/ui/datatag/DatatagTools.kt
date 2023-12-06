@@ -12,7 +12,7 @@ import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.Aircraft
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.Route
-import com.bombbird.terminalcontrol2.traffic.ConflictManager
+import com.bombbird.terminalcontrol2.traffic.conflict.Conflict
 import com.bombbird.terminalcontrol2.ui.addChangeListener
 import com.bombbird.terminalcontrol2.ui.isMobile
 import com.bombbird.terminalcontrol2.utilities.convertWorldAndRenderDeg
@@ -328,7 +328,7 @@ private fun checkAircraftHasWake(entity: Entity): Boolean {
     val conflicts = GAME.gameClientScreen?.conflicts ?: return false
     for (i in 0 until conflicts.size) {
         val conflict = conflicts[i]
-        if (conflict.entity1 == entity && conflict.reason == ConflictManager.Conflict.WAKE_INFRINGE) return true
+        if (conflict.entity1 == entity && conflict.reason == Conflict.WAKE_INFRINGE) return true
     }
 
     return false

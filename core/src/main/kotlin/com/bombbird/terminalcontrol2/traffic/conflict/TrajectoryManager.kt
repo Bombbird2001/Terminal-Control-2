@@ -126,8 +126,8 @@ class TrajectoryManager {
         if (distPx < nmToPx(conflictMinimaRequired.latMinima) &&
             abs(alt1.altitudeFt - alt2.altitudeFt) < conflictMinimaRequired.vertMinima - 25) {
             val entryKey = ConflictPair(acInfo1.icaoCallsign, acInfo2.icaoCallsign, advanceTimeS)
-            val entry = PredictedConflict(aircraft1, aircraft2, advanceTimeS.toShort(), (pos1.x + pos2.x) / 2,
-                (pos1.y + pos2.y) / 2, (alt1.altitudeFt + alt2.altitudeFt) / 2)
+            val entry = PredictedConflict(aircraft1, aircraft2, null, advanceTimeS.toShort(), (pos1.x + pos2.x) / 2,
+                (pos1.y + pos2.y) / 2, (alt1.altitudeFt + alt2.altitudeFt) / 2, conflictMinimaRequired.conflictReason)
             return PredictedConflictEntry(entryKey, entry)
         }
 
@@ -145,7 +145,8 @@ class TrajectoryManager {
             for (j in allTrajectoryPoints[i].indices) {
                 val pointList = allTrajectoryPoints[i][j]
                 for (k in 0 until pointList.size) {
-                    if (checkTrajectoryPointMVARestrictedConflict(pointList[k])) {
+                    val mvaConflict = checkTrajectoryPointMVARestrictedConflict(pointList[k])
+                    if (mvaConflict != null) {
                         val trajInfo = pointList[k][TrajectoryPointInfo.mapper] ?: continue
                         val pos = pointList[k][Position.mapper] ?: continue
                         val alt = pointList[k][Altitude.mapper] ?: continue
@@ -154,7 +155,8 @@ class TrajectoryManager {
                         val existingEntry = mvaConflicts[entryKey]
                         if (existingEntry == null || existingEntry.advanceTimeS > trajInfo.advanceTimingS)
                             mvaConflicts[entryKey] = PredictedConflict(trajInfo.aircraft, null,
-                                trajInfo.advanceTimingS.toShort(), pos.x, pos.y, alt.altitudeFt)
+                                mvaConflict.minAltSectorIndex, trajInfo.advanceTimingS.toShort(), pos.x, pos.y,
+                                alt.altitudeFt, mvaConflict.reason)
                     }
                 }
             }

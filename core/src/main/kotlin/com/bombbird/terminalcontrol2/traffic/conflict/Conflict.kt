@@ -98,26 +98,29 @@ class PotentialConflict(val entity1: Entity, val entity2: Entity, val latSepRequ
 }
 
 /** Class to store information related to an instance of a predicted conflict between 2 entities */
-class PredictedConflict(val aircraft1: Entity, val aircraft2: Entity?, val advanceTimeS: Short, val posX: Float,
-                        val posY: Float, val altFt: Float): SerialisableEntity<PredictedConflict.SerialisedPredictedConflict> {
+class PredictedConflict(val aircraft1: Entity, val aircraft2: Entity?, val minAltSectorIndex: Int?, val advanceTimeS: Short,
+                        val posX: Float, val posY: Float, val altFt: Float, val reason: Byte):
+    SerialisableEntity<PredictedConflict.SerialisedPredictedConflict> {
     companion object {
         /** Returns a default empty predicted conflict object when a proper conflict object cannot be de-serialised */
         private fun getEmptyConflict(): PredictedConflict {
-            return PredictedConflict(Entity(), null, 0, 0f, 0f, 0f)
+            return PredictedConflict(Entity(), null, null, 0, 0f, 0f, 0f, 0)
         }
 
         /** De-serialises a [SerialisedPredictedConflict] and creates a new [PredictedConflict] object from it */
         fun fromSerialisedObject(serialisedPredictedConflict: SerialisedPredictedConflict): PredictedConflict {
             val entity1 = CLIENT_SCREEN?.aircraft?.get(serialisedPredictedConflict.name1)?.entity ?: return getEmptyConflict()
             val entity2 = CLIENT_SCREEN?.aircraft?.get(serialisedPredictedConflict.name2)?.entity
-            return PredictedConflict(entity1, entity2, serialisedPredictedConflict.advanceTimeS,
-                serialisedPredictedConflict.posX, serialisedPredictedConflict.posY, 0f)
+            return PredictedConflict(entity1, entity2, serialisedPredictedConflict.minAltSectorIndex,
+                serialisedPredictedConflict.advanceTimeS, serialisedPredictedConflict.posX,
+                serialisedPredictedConflict.posY, 0f, serialisedPredictedConflict.reason)
         }
     }
 
     /** Object that contains [PredictedConflict] data to be serialised by Kryo */
-    data class SerialisedPredictedConflict(val name1: String = "", val name2: String? = null, val advanceTimeS: Short = 0,
-                                           val posX: Float = 0f, val posY: Float = 0f)
+    data class SerialisedPredictedConflict(val name1: String = "", val name2: String? = null,
+                                           val minAltSectorIndex: Int? = null, val advanceTimeS: Short = 0,
+                                           val posX: Float = 0f, val posY: Float = 0f, val reason: Byte = 0)
 
     /**
      * Returns a default empty [SerialisedPredictedConflict] due to missing component, and logs a message to the console
@@ -132,7 +135,8 @@ class PredictedConflict(val aircraft1: Entity, val aircraft2: Entity?, val advan
     override fun getSerialisableObject(): SerialisedPredictedConflict {
         val acInfo1 = aircraft1[AircraftInfo.mapper] ?: return emptySerialisableObject("AircraftInfo")
         val acInfo2 = aircraft2?.get(AircraftInfo.mapper)
-        return SerialisedPredictedConflict(acInfo1.icaoCallsign, acInfo2?.icaoCallsign, advanceTimeS, posX, posY)
+        return SerialisedPredictedConflict(acInfo1.icaoCallsign, acInfo2?.icaoCallsign, minAltSectorIndex, advanceTimeS,
+            posX, posY, reason)
     }
 }
 

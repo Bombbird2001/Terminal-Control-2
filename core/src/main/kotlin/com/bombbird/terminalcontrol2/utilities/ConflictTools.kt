@@ -216,13 +216,13 @@ fun checkMVARestrictedConflict(aircraft: Entity, point: Entity): MVAConflictInfo
 }
 
 /**
- * Checks if the provided [point] will cause an MVA/restricted areas infringement for its aircraft
+ * Checks if the provided [point] will cause an MVA/restricted area infringement for its aircraft
  *
- * Returns true if infringement, else false
+ * Returns an [MVAConflictInfo] object if infringement, else null
  */
-fun checkTrajectoryPointMVARestrictedConflict(point: Entity): Boolean {
-    val aircraft = point[TrajectoryPointInfo.mapper]?.aircraft ?: return false
-    return checkMVARestrictedConflict(aircraft, point) != null
+fun checkTrajectoryPointMVARestrictedConflict(point: Entity): MVAConflictInfo? {
+    val aircraft = point[TrajectoryPointInfo.mapper]?.aircraft ?: return null
+    return checkMVARestrictedConflict(aircraft, point)
 }
 
 /**

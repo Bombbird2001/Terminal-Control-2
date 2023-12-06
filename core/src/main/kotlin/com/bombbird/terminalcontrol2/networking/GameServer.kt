@@ -894,12 +894,9 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
     fun sendPredictedConflicts(predictedConflicts: GdxArrayMap<TrajectoryManager.ConflictPair, PredictedConflict>) {
         // Send only conflicts that are below the maximum altitude to clients, since they don't need to know about
         // higher altitude conflicts which will be handled by ACC
-        networkServer.sendToAllTCP(
-            PredictedConflictData(
-                Entries(predictedConflicts).filter { it.value.altFt <= MAX_ALT + 1500 }
-                    .map { it.value.getSerialisableObject() }.toTypedArray()
-            )
-        )
+        val data = Array(predictedConflicts.size) { predictedConflicts.getValueAt(it) }
+            .filter { it.altFt <= MAX_ALT + 1500}.map { it.getSerialisableObject() }.toTypedArray()
+        networkServer.sendToAllTCP(PredictedConflictData(data))
     }
 
     /** Sends a message to clients to inform them of the server's traffic settings */

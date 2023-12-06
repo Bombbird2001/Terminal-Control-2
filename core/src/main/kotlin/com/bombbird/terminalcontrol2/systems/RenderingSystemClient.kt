@@ -174,8 +174,24 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
             }
         }
 
-        // Render conflicting min alt sectors (will re-render over the existing Polygon/Circle)
         CLIENT_SCREEN?.also {
+            // Render min alt sectors with predicted conflicts (will re-render over existing Polygon/Circle)
+            shapeRenderer.color = Color.MAGENTA
+            for (i in 0 until it.predictedConflicts.size) {
+                it.predictedConflicts[i]?.apply {
+                    if (minAltSectorIndex != null && minAltSectorIndex < it.minAltSectors.size) {
+                        val minAltSector = it.minAltSectors[minAltSectorIndex]?.entity
+                        val polygon = minAltSector?.get(GPolygon.mapper)
+                        val circle = minAltSector?.get(GCircle.mapper)
+                        if (polygon != null) shapeRenderer.polygon(polygon.vertices)
+                        else if (circle != null) minAltSector[Position.mapper]?.let { pos ->
+                            shapeRenderer.circle(pos.x, pos.y, circle.radius)
+                        }
+                    }
+                }
+            }
+
+            // Render conflicting min alt sectors (will re-render over existing Polygon/Circle and predicted conflicts)
             shapeRenderer.color = Color.RED
             for (i in 0 until it.conflicts.size) {
                 it.conflicts[i]?.apply {
@@ -320,7 +336,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
 
             shapeRenderer.color = Color.MAGENTA
             for (i in 0 until it.predictedConflicts.size) {
-                val halfLength = nmToPx(1.5f)
+                val halfLength = nmToPx(0.75f)
                 it.predictedConflicts[i]?.apply {
                     shapeRenderer.rect(posX - halfLength, posY - halfLength, halfLength * 2, halfLength * 2)
                 }
