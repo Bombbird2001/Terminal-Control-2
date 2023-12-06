@@ -15,6 +15,10 @@ import com.bombbird.terminalcontrol2.networking.hostserver.LANServer
 import com.bombbird.terminalcontrol2.networking.hostserver.PublicServer
 import com.bombbird.terminalcontrol2.systems.*
 import com.bombbird.terminalcontrol2.traffic.*
+import com.bombbird.terminalcontrol2.traffic.conflict.Conflict
+import com.bombbird.terminalcontrol2.traffic.conflict.PotentialConflict
+import com.bombbird.terminalcontrol2.traffic.conflict.PredictedConflict
+import com.bombbird.terminalcontrol2.traffic.conflict.TrajectoryManager
 import com.bombbird.terminalcontrol2.ui.CustomDialog
 import com.bombbird.terminalcontrol2.utilities.*
 import com.bombbird.terminalcontrol2.utilities.FileLog
@@ -280,11 +284,14 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
         val trafficSystemInterval = TrafficSystemInterval()
         engine.addSystem(trafficSystemInterval)
         engine.addSystem(DataSystem())
+        val trajectorySystemInterval = TrajectorySystemInterval()
+        engine.addSystem(trajectorySystemInterval)
 
         if (saveId != null) loadSave(this, saveId)
         loadWorldData(mainName, this)
 
         trafficSystemInterval.initializeConflictLevelArray(MAX_ALT, VERT_SEP)
+        trajectorySystemInterval.initializeConflictLevelArray(VERT_SEP)
 
         FamilyWithListener.addAllServerFamilyEntityListeners()
 
@@ -293,6 +300,8 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
             // initialisingWeather may have already changed in the line above if static/random weather is used which
             // will immediately set initialisingWeather to false
             if (initialisingWeather.get()) initialWeatherCondition.await()
+
+            // appTestArrival(this)
         }
     }
 
@@ -870,14 +879,25 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
      * @param conflicts the list of ongoing conflicts
      * @param potentialConflicts the list of potential conflicts
      */
-    fun sendConflicts(
-        conflicts: GdxArray<ConflictManager.Conflict>,
-        potentialConflicts: GdxArray<ConflictManager.PotentialConflict>
-    ) {
+    fun sendConflicts(conflicts: GdxArray<Conflict>, potentialConflicts: GdxArray<PotentialConflict>) {
         networkServer.sendToAllTCP(
             ConflictData(
                 conflicts.toArray().map { it.getSerialisableObject() }.toTypedArray(),
                 potentialConflicts.toArray().map { it.getSerialisableObject() }.toTypedArray()
+            )
+        )
+    }
+
+    /**
+     * Sends a message to clients to update them on the [predictedConflicts] predicted by the APW/STCA
+     */
+    fun sendPredictedConflicts(predictedConflicts: GdxArrayMap<TrajectoryManager.ConflictPair, PredictedConflict>) {
+        // Send only conflicts that are below the maximum altitude to clients, since they don't need to know about
+        // higher altitude conflicts which will be handled by ACC
+        networkServer.sendToAllTCP(
+            PredictedConflictData(
+                Entries(predictedConflicts).filter { it.value.altFt <= MAX_ALT + 1500 }
+                    .map { it.value.getSerialisableObject() }.toTypedArray()
             )
         )
     }

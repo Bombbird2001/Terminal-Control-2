@@ -49,7 +49,11 @@ val AVAIL_AIRPORTS = GdxArrayMap<String, String?>().apply {
     put("TCPG", null)
 }
 
-/** Magnetic heading deviation in the current game - positive for Westward deviation and negative for Eastward deviation */
+/**
+ * Magnetic heading deviation in the current game - positive for Westward deviation and negative for Eastward deviation
+ *
+ * NOTE: True heading = Magentic heading - MAG_HDG_DEV
+ */
 var MAG_HDG_DEV = 0f
 
 /** Minimum, maximum, and additional user defined altitudes that can be cleared */
@@ -92,7 +96,6 @@ var ALERT_SOUND_ON = true
 var CONTACT_OTHER_PILOT_READBACK = false
 
 /** Advanced trajectory alert settings */
-var ADV_TRAJECTORY_DURATION_S = 0
 var APW_DURATION_S = 0
 var STCA_DURATION_S = 0
 

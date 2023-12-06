@@ -90,7 +90,7 @@ fun createArrival(callsign: String, icaoType: String, airport: Entity, gs: GameS
         val aircraftPerf = entity[AircraftInfo.mapper]?.aircraftPerf ?: AircraftTypeData.AircraftPerfData()
         val ias = calculateArrivalSpawnIAS(origStarRoute, starRoute, alt, aircraftPerf)
         val tas = calculateTASFromIAS(alt, ias.toFloat())
-        val clearedAlt = min((ceil(MAX_ALT / 1000f).roundToInt() - 1) * 1000, (alt / 1000).toInt() * 1000)
+        val clearedAlt = min(getACCStartAltitude(), (alt / 1000).toInt() * 1000)
         val speed = (entity[Speed.mapper] ?: Speed()).apply {
             speedKts = tas
             // Set to vertical speed required to reach cleared altitude in 10 seconds, capped by the minimum vertical speed
@@ -217,65 +217,66 @@ private fun amendAltForNearbyTraffic(currSpawnAlt: Float, posX: Float, posY: Flo
 }
 
 fun appTestArrival(gs: GameServer) {
-    gs.aircraft.put("SHIBA3", Aircraft("SHIBA3", -175f, -150f, 2000f, "B78X", FlightType.ARRIVAL, false).apply {
+    gs.aircraft.put("SHIBA3", Aircraft("SHIBA3", 250f, 750f, 23000f, "B78X", FlightType.ARRIVAL, false).apply {
         entity += ArrivalAirport(0)
-        entity[Direction.mapper]?.trackUnitVector?.rotateDeg(-70f)
+        entity[Direction.mapper]?.trackUnitVector?.rotateDeg(-150f)
         val ias = 240.toShort()
-        val tas = calculateTASFromIAS(2000f, ias.toFloat())
+        val tas = calculateTASFromIAS(23000f, ias.toFloat())
         entity[Speed.mapper]?.apply {
             speedKts = tas
             vertSpdFpm = 0f
         }
-        val clearedAlt = 2000
+        val clearedAlt = 10000
         entity += ClearanceAct(ClearanceState("NTN1A", Route(), Route(),
-                70, null, clearedAlt, false, ias).ActingClearance())
+                150, null, clearedAlt, false, ias).ActingClearance())
         entity[CommandTarget.mapper]?.apply {
             targetAltFt = clearedAlt
             targetIasKt = ias
-            targetHdgDeg = 70f
+            targetHdgDeg = 150f
         }
         entity += InitialArrivalSpawn()
     })
 
-    gs.aircraft.put("SHIBA4", Aircraft("SHIBA4", -200f, -125f, 2000f, "A359", FlightType.ARRIVAL, false).apply {
+    gs.aircraft.put("SHIBA4", Aircraft("SHIBA4", 250f, 750f, 20000f, "A359", FlightType.ARRIVAL, false).apply {
         entity += ArrivalAirport(0)
-        entity[Direction.mapper]?.trackUnitVector?.rotateDeg(-70f)
+        entity[Direction.mapper]?.trackUnitVector?.rotateDeg(-150f)
         val ias = 240.toShort()
-        val tas = calculateTASFromIAS(2000f, ias.toFloat())
+        val tas = calculateTASFromIAS(20000f, ias.toFloat())
         entity[Speed.mapper]?.apply {
             speedKts = tas
             vertSpdFpm = 0f
         }
-        val clearedAlt = 2000
+        val clearedAlt = 20000
         entity += ClearanceAct(ClearanceState("NTN1A", Route(), Route(),
-                70, null, clearedAlt, false, ias).ActingClearance())
+                150, null, clearedAlt, false, ias).ActingClearance())
         entity[CommandTarget.mapper]?.apply {
             targetAltFt = clearedAlt
             targetIasKt = ias
-            targetHdgDeg = 70f
+            targetHdgDeg = 150f
         }
         entity += InitialArrivalSpawn()
+        entity += ContactFromCentre(20500)
     })
 
-    gs.aircraft.put("SHIBA5", Aircraft("SHIBA5", 650f, 15f, 1800f, "B77W", FlightType.ARRIVAL, false).apply {
-        entity += ArrivalAirport(1)
-        entity[Direction.mapper]?.trackUnitVector?.rotateDeg(110f)
-        val ias = 190.toShort()
-        val tas = calculateTASFromIAS(1800f, ias.toFloat())
-        entity[Speed.mapper]?.apply {
-            speedKts = tas
-            vertSpdFpm = 0f
-        }
-        val clearedAlt = 1800
-        entity += ClearanceAct(ClearanceState("", Route(), Route(),
-                250, null, clearedAlt, false, ias).ActingClearance())
-        entity[CommandTarget.mapper]?.apply {
-            targetAltFt = clearedAlt
-            targetIasKt = ias
-            targetHdgDeg = 250f
-        }
-        entity += InitialArrivalSpawn()
-    })
+//    gs.aircraft.put("SHIBA5", Aircraft("SHIBA5", 650f, 15f, 1800f, "B77W", FlightType.ARRIVAL, false).apply {
+//        entity += ArrivalAirport(1)
+//        entity[Direction.mapper]?.trackUnitVector?.rotateDeg(110f)
+//        val ias = 190.toShort()
+//        val tas = calculateTASFromIAS(1800f, ias.toFloat())
+//        entity[Speed.mapper]?.apply {
+//            speedKts = tas
+//            vertSpdFpm = 0f
+//        }
+//        val clearedAlt = 1800
+//        entity += ClearanceAct(ClearanceState("", Route(), Route(),
+//                250, null, clearedAlt, false, ias).ActingClearance())
+//        entity[CommandTarget.mapper]?.apply {
+//            targetAltFt = clearedAlt
+//            targetIasKt = ias
+//            targetHdgDeg = 250f
+//        }
+//        entity += InitialArrivalSpawn()
+//    })
 }
 
 /**
@@ -771,6 +772,20 @@ fun getLowestAirportElevation(): Float {
         }
     }
     return minElevation ?: 0f
+}
+
+/**
+ * Gets the starting altitude for the conflict level distribution
+ */
+fun getConflictStartAltitude(): Int {
+    return floor(getLowestAirportElevation() / VERT_SEP).roundToInt() * VERT_SEP
+}
+
+/**
+ * Gets the minimum altitude that can be cleared by the ACC
+ */
+fun getACCStartAltitude(): Int {
+    return (ceil(MAX_ALT / 1000f).roundToInt() - 1) * 1000
 }
 
 /**

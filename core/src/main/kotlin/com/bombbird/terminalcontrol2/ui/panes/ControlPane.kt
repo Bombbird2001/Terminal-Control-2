@@ -11,7 +11,7 @@ import com.bombbird.terminalcontrol2.navigation.*
 import com.bombbird.terminalcontrol2.traffic.getAvailableApproaches
 import com.bombbird.terminalcontrol2.ui.addChangeListener
 import com.bombbird.terminalcontrol2.ui.disallowDisabledClickThrough
-import com.bombbird.terminalcontrol2.ui.datatag.setDatatagFlash
+import com.bombbird.terminalcontrol2.ui.datatag.stopDatatagContactFlash
 import com.bombbird.terminalcontrol2.utilities.*
 import com.bombbird.terminalcontrol2.utilities.FileLog
 import ktx.ashley.get
@@ -212,7 +212,7 @@ class ControlPane {
                                 parentPane.selAircraft?.let {
                                     it.entity.remove<ContactNotification>()
                                     it.entity[Datatag.mapper]?.let { datatag ->
-                                        setDatatagFlash(datatag, it, false)
+                                        stopDatatagContactFlash(datatag, it)
                                     }
                                 }
                                 if (text.toString() == HANDOVER) {
@@ -267,7 +267,7 @@ class ControlPane {
                                 parentPane.selAircraft?.let {
                                     it.entity.remove<ContactNotification>()
                                     it.entity[Datatag.mapper]?.let { datatag ->
-                                        setDatatagFlash(datatag, it, false)
+                                        stopDatatagContactFlash(datatag, it)
                                     }
                                 }
                                 // Manually hide acknowledge button since the removal of ContactNotification is not immediate

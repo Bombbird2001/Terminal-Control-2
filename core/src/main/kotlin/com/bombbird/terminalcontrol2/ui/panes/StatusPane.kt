@@ -6,8 +6,8 @@ import com.badlogic.gdx.scenes.scene2d.ui.Label
 import com.badlogic.gdx.utils.ArrayMap.Entries
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.*
-import com.bombbird.terminalcontrol2.traffic.ConflictManager
 import com.bombbird.terminalcontrol2.traffic.TrafficMode
+import com.bombbird.terminalcontrol2.traffic.conflict.Conflict
 import com.bombbird.terminalcontrol2.ui.removeMouseScrollListeners
 import com.bombbird.terminalcontrol2.utilities.FileLog
 import com.bombbird.terminalcontrol2.utilities.InitializeCompanionObjectOnStart
@@ -102,16 +102,16 @@ class StatusPane {
                     val name1 = entity1[AircraftInfo.mapper]?.icaoCallsign ?: return@apply
                     val name2 = entity2?.get(AircraftInfo.mapper)?.icaoCallsign
                     val message = "$name1${if (name2 != null) ", $name2" else ""}: ${when (reason) {
-                        ConflictManager.Conflict.NORMAL_CONFLICT -> "${MIN_SEP}nm, ${VERT_SEP}ft infringement"
-                        ConflictManager.Conflict.SAME_APP_LESS_THAN_10NM ->"2.5nm, ${VERT_SEP}ft infringement - both aircraft less than 10nm final on same approach"
-                        ConflictManager.Conflict.PARALLEL_DEP_APP -> "2nm, ${VERT_SEP}ft infringement - aircraft on dependent parallel approach"
-                        ConflictManager.Conflict.PARALLEL_INDEP_APP_NTZ -> "Simultaneous approach NTZ infringement"
-                        ConflictManager.Conflict.MVA -> "MVA sector infringement"
-                        ConflictManager.Conflict.SID_STAR_MVA -> "MVA sector infringement - aircraft deviates from route or is below minimum route altitude restriction"
-                        ConflictManager.Conflict.RESTRICTED -> "Restricted area infringement"
-                        ConflictManager.Conflict.WAKE_INFRINGE -> "Wake separation infringement"
-                        ConflictManager.Conflict.STORM -> "Flying in bad weather"
-                        ConflictManager.Conflict.EMERGENCY_SEPARATION_CONFLICT -> "${MIN_SEP}nm, ${VERT_SEP / 2}ft infringement - emergency separation"
+                        Conflict.NORMAL_CONFLICT -> "${MIN_SEP}nm, ${VERT_SEP}ft infringement"
+                        Conflict.SAME_APP_LESS_THAN_10NM ->"2.5nm, ${VERT_SEP}ft infringement - both aircraft less than 10nm final on same approach"
+                        Conflict.PARALLEL_DEP_APP -> "2nm, ${VERT_SEP}ft infringement - aircraft on dependent parallel approach"
+                        Conflict.PARALLEL_INDEP_APP_NTZ -> "Simultaneous approach NTZ infringement"
+                        Conflict.MVA -> "MVA sector infringement"
+                        Conflict.SID_STAR_MVA -> "MVA sector infringement - aircraft deviates from route or is below minimum route altitude restriction"
+                        Conflict.RESTRICTED -> "Restricted area infringement"
+                        Conflict.WAKE_INFRINGE -> "Wake separation infringement"
+                        Conflict.STORM -> "Flying in bad weather"
+                        Conflict.EMERGENCY_SEPARATION_CONFLICT -> "${MIN_SEP}nm, ${VERT_SEP / 2}ft infringement - emergency separation"
                         else -> {
                             FileLog.info("StatusPane", "Unknown conflict reason $reason")
                             "???"

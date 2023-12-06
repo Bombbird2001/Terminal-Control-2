@@ -203,7 +203,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                         updateDatatagLabelSize(tag, true)
                         if (serialisedAircraft.initialDatatagFlashing &&
                             controllable?.sectorId == GAME.gameClientScreen?.playerSector)
-                            setDatatagFlash(tag, it, true)
+                            startDatatagNotificationFlash(tag, it)
 
                         tag.xOffset = serialisedAircraft.initialDatatagXOffset
                         tag.yOffset = serialisedAircraft.initialDatatagYOffset

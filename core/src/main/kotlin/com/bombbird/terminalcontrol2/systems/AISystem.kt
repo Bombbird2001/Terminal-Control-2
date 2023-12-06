@@ -1233,7 +1233,7 @@ class AISystem: EntitySystem() {
      */
     private fun getAppropriateTurnDir(targetHeading: Float, currHeading: Float, cmdTurnDir: Byte): Byte {
         // Maintain the turn direction until magnitude of deltaHeading is less than 3 degrees
-        return if (withinRange(findDeltaHeading(currHeading, targetHeading,CommandTarget.TURN_DEFAULT),
+        return if (withinRange(findDeltaHeading(currHeading, targetHeading, CommandTarget.TURN_DEFAULT),
                 -3f, 3f)) CommandTarget.TURN_DEFAULT
         else cmdTurnDir
     }

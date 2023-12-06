@@ -16,6 +16,9 @@ import com.bombbird.terminalcontrol2.networking.encryption.EncryptedData
 import com.bombbird.terminalcontrol2.networking.relayserver.*
 import com.bombbird.terminalcontrol2.screens.RadarScreen
 import com.bombbird.terminalcontrol2.traffic.*
+import com.bombbird.terminalcontrol2.traffic.conflict.Conflict
+import com.bombbird.terminalcontrol2.traffic.conflict.PotentialConflict
+import com.bombbird.terminalcontrol2.traffic.conflict.PredictedConflict
 import com.bombbird.terminalcontrol2.ui.*
 import com.bombbird.terminalcontrol2.utilities.*
 import com.esotericsoftware.kryo.Kryo
@@ -128,10 +131,10 @@ fun registerClassesToKryo(kryo: Kryo?) {
 
         // Conflict classes
         register(ConflictData::class.java)
-        register(ConflictManager.Conflict.SerialisedConflict::class.java)
-        register(Array<ConflictManager.Conflict.SerialisedConflict>::class.java)
-        register(ConflictManager.PotentialConflict.SerialisedPotentialConflict::class.java)
-        register(Array<ConflictManager.PotentialConflict.SerialisedPotentialConflict>::class.java)
+        register(Conflict.SerialisedConflict::class.java)
+        register(Array<Conflict.SerialisedConflict>::class.java)
+        register(PotentialConflict.SerialisedPotentialConflict::class.java)
+        register(Array<PotentialConflict.SerialisedPotentialConflict>::class.java)
 
         // Miscellaneous event triggered updated classes
         register(AircraftSectorUpdateData::class.java)
@@ -181,6 +184,9 @@ fun registerClassesToKryo(kryo: Kryo?) {
         register(FuelDumpStatus::class.java)
         register(ReadyForApproach::class.java)
         register(RunwayClosedState::class.java)
+        register(PredictedConflict.SerialisedPredictedConflict::class.java)
+        register(Array<PredictedConflict.SerialisedPredictedConflict>::class.java)
+        register(PredictedConflictData::class.java)
 
     } ?: FileLog.info("NetworkingTools", "Null kryo passed, unable to register classes")
 }

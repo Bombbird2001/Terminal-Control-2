@@ -10,6 +10,7 @@ import com.badlogic.gdx.utils.Queue
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.systems.TrafficSystemInterval
+import com.bombbird.terminalcontrol2.systems.TrajectorySystemInterval
 import com.esotericsoftware.minlog.Log
 import ktx.ashley.*
 import ktx.collections.toGdxArray
@@ -212,6 +213,24 @@ fun renderAllACCSectors(shapeRenderer: ShapeRenderer) {
             val sector = it[i]
             shapeRenderer.color = colors[i]
             sector.entity[GPolygon.mapper]?.let { polygon -> shapeRenderer.polygon(polygon.vertices) }
+        }
+    }
+}
+
+/**
+ * Renders all trajectory prediction points
+ * @param shapeRenderer the [ShapeRenderer] to use to render the points
+ */
+fun renderAllTrajectoryPoints(shapeRenderer: ShapeRenderer) {
+    getEngine(false).getSystem<TrajectorySystemInterval>().trajectoryTimeStates.let {
+        shapeRenderer.color = Color.BROWN
+        for (i in it.indices) {
+            for (j in 0 until it[i].size) {
+                for (k in 0 until it[i][j].size) {
+                    val pos = it[i][j][k][Position.mapper] ?: continue
+                    shapeRenderer.circle(pos.x, pos.y, 5f)
+                }
+            }
         }
     }
 }

@@ -3,6 +3,7 @@ package com.bombbird.terminalcontrol2.components
 /** Initialises all components and assigns indices for their mappers to prevent race conditions */
 fun loadAllComponents() {
     ACCSectorInfo.initialise()
+    ACCTempAltitude.initialise()
     AccelerateToAbove250kts.initialise()
     Acceleration.initialise()
     ActiveLanding.initialise()
@@ -127,6 +128,7 @@ fun loadAllComponents() {
     TakeoffRoll.initialise()
     TimeSinceLastDeparture.initialise()
     TrailInfo.initialise()
+    TrajectoryPointInfo.initialise()
     TTSVoice.initialise()
     Visual.initialise()
     VisualApproach.initialise()

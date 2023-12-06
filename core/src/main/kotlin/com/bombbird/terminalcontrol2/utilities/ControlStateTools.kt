@@ -42,24 +42,29 @@ fun getAircraftIcon(flightType: Byte, sectorID: Byte): TextureRegionDrawable {
 }
 
 /**
- * Adds a new clearance sent by the client to the pending clearances for an aircraft
- * @param entity the aircraft entity to add the clearance to
- * @param clearance the [AircraftControlStateUpdateData] object that the clearance will be constructed from
- * @param returnTripTime the time taken for a ping to be sent and acknowledged, in ms, calculated by the server; half of
- * this value in seconds will be subtracted from the delay time (2s) to account for any ping time lag
+ * Adds a new [clearance] sent by the client to the pending clearances for an [aircraft], subtracting half of the
+ * [returnTripTime] (in ms) to compensate for network lag if any
  */
-fun addNewClearanceToPendingClearances(entity: Entity, clearance: AircraftControlStateUpdateData, returnTripTime: Int) {
-    val pendingClearances = entity[PendingClearances.mapper]
+fun addNewClearanceToPendingClearances(aircraft: Entity, clearance: AircraftControlStateUpdateData, returnTripTime: Int) {
     val newClearance = ClearanceState(clearance.primaryName, Route.fromSerialisedObject(clearance.route), Route.fromSerialisedObject(clearance.hiddenLegs),
         clearance.vectorHdg, clearance.vectorTurnDir, clearance.clearedAlt, clearance.expedite,
         clearance.clearedIas, clearance.minIas, clearance.maxIas, clearance.optimalIas,
         clearance.clearedApp, clearance.clearedTrans)
-    if (pendingClearances == null) entity += PendingClearances(Queue<ClearanceState.PendingClearanceState>().apply {
-        addLast(ClearanceState.PendingClearanceState(2f - returnTripTime / 2000f, newClearance))
+    addNewClearanceToPendingClearances(aircraft, newClearance, returnTripTime)
+}
+
+/**
+ * Adds a new [clearance] to the pending clearances for an [aircraft], subtracting half of the [returnTripTime] (in ms)
+ * to compensate for network lag if any
+ */
+fun addNewClearanceToPendingClearances(aircraft: Entity, clearance: ClearanceState, returnTripTime: Int) {
+    val pendingClearances = aircraft[PendingClearances.mapper]
+    if (pendingClearances == null) aircraft += PendingClearances(Queue<ClearanceState.PendingClearanceState>().apply {
+        addLast(ClearanceState.PendingClearanceState(2f, clearance))
     })
     else pendingClearances.clearanceQueue.apply {
         val lastTime = last().timeLeft
-        addLast(ClearanceState.PendingClearanceState(max(2f - returnTripTime / 2000f - lastTime, 0.01f), newClearance))
+        addLast(ClearanceState.PendingClearanceState(max(2f - - returnTripTime / 2000f - lastTime, 0.01f), clearance))
     }
 }
 

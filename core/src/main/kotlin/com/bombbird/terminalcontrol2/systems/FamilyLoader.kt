@@ -19,6 +19,7 @@ fun loadAllFamilies() {
     RenderingSystemClient.initialise()
     TrafficSystemInterval.initialise()
     TrafficSystemIntervalClient.initialise()
+    TrajectorySystemInterval.initialise()
 
     RadarScreen.initialise()
     StatusPane.initialise()

@@ -150,8 +150,10 @@ class Datatag(var xOffset: Float = 0f, var yOffset: Float = 0f, var minimised: B
     var clicks = 0
     val tapTimer = Timer()
     val flashTimer = Timer()
-    var flashing = false
+    var shouldFlashOrange = false
+    var shouldFlashMagenta = false
     var flashingOrange = false
+    var flashingMagenta = false
     var emergency = false
     var initialPosSet = false
     var currentDatatagStyle = "DatatagGreenNoBG"

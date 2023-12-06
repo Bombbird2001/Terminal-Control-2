@@ -78,6 +78,8 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         private val dotBlue: TextureRegion = Scene2DSkin.defaultSkin["DotBlue", TextureRegion::class.java]
         private val dotGreen: TextureRegion = Scene2DSkin.defaultSkin["DotGreen", TextureRegion::class.java]
         private val dotRed: TextureRegion = Scene2DSkin.defaultSkin["DotRed", TextureRegion::class.java]
+        private val dotMagenta: TextureRegion = Scene2DSkin.defaultSkin["DotMagenta", TextureRegion::class.java]
+        private const val DOT_RADIUS = 7f
 
         fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
@@ -156,6 +158,9 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
 
         // Debug: Render all ACC sectors
         // renderAllACCSectors(shapeRenderer)
+
+        // Debug: Render all trajectory prediction points
+        // renderAllTrajectoryPoints(shapeRenderer)
 
         // Render circles
         val circles = circleFamilyEntities.getEntities()
@@ -310,6 +315,14 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
                     if (pos2 != null) {
                         shapeRenderer.circle(pos2.x, pos2.y, nmToPx(latSepRequiredNm) / 2)
                     }
+                }
+            }
+
+            shapeRenderer.color = Color.MAGENTA
+            for (i in 0 until it.predictedConflicts.size) {
+                val halfLength = nmToPx(1.5f)
+                it.predictedConflicts[i]?.apply {
+                    shapeRenderer.rect(posX - halfLength, posY - halfLength, halfLength * 2, halfLength * 2)
                 }
             }
         }
@@ -649,7 +662,8 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
                                 null
                             }
                         }
-                        if (textureToDraw != null) GAME.batch.draw(textureToDraw, it.x - 7, it.y - 7, 14f, 14f)
+                        if (textureToDraw != null) GAME.batch.draw(textureToDraw, it.x - DOT_RADIUS, it.y - DOT_RADIUS,
+                            2 * DOT_RADIUS, 2 * DOT_RADIUS)
                     }
                 }
             }
@@ -664,12 +678,21 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
                             val radarX2 = (pos2.x - camX) / camZoom
                             val radarY2 = (pos2.y - camY) / camZoom
                             calculateContactDotPosition((radarX1 + radarX2) / 2, (radarY1 + radarY2) / 2)?.let { pos ->
-                                GAME.batch.draw(dotRed, pos.x - 7, pos.y - 7, 14f, 14f)
+                                GAME.batch.draw(dotRed, pos.x - DOT_RADIUS, pos.y - DOT_RADIUS, 2 * DOT_RADIUS, 2 * DOT_RADIUS)
                             }
                         } else {
                             calculateContactDotPosition(radarX1, radarY1)?.let { pos ->
-                                GAME.batch.draw(dotRed, pos.x - 7, pos.y - 7, 14f, 14f)
+                                GAME.batch.draw(dotRed, pos.x - DOT_RADIUS, pos.y - DOT_RADIUS, 2 * DOT_RADIUS, 2 * DOT_RADIUS)
                             }
+                        }
+                    }
+                }
+                for (i in 0 until it.predictedConflicts.size) {
+                    it.predictedConflicts[i]?.apply {
+                        val radarX = (posX - camX) / camZoom
+                        val radarY = (posY - camY) / camZoom
+                        calculateContactDotPosition(radarX, radarY)?.let { pos ->
+                            GAME.batch.draw(dotMagenta, pos.x - DOT_RADIUS, pos.y - DOT_RADIUS, 2 * DOT_RADIUS, 2 * DOT_RADIUS)
                         }
                     }
                 }

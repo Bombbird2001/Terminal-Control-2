@@ -8,13 +8,12 @@ import com.badlogic.gdx.utils.Queue
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.WakeZone
 import com.bombbird.terminalcontrol2.global.GAME
-import com.bombbird.terminalcontrol2.global.VERT_SEP
 import com.bombbird.terminalcontrol2.traffic.*
+import com.bombbird.terminalcontrol2.traffic.conflict.ConflictManager
 import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.*
 import ktx.collections.GdxArray
 import kotlin.math.ceil
-import kotlin.math.floor
 import kotlin.math.roundToInt
 
 /**
@@ -46,7 +45,7 @@ class TrafficSystemInterval: IntervalSystem(1f) {
     private val despawnFamilyEntities = FamilyWithListener.newServerFamilyWithListener(despawnFamily)
     private val timeSinceDepFamilyEntities = FamilyWithListener.newServerFamilyWithListener(timeSinceDepFamily)
 
-    private val startingAltitude = floor(getLowestAirportElevation() / VERT_SEP).roundToInt() * VERT_SEP
+    private val startingAltitude = getConflictStartAltitude()
     private var conflictLevels = Array<GdxArray<Entity>>(0) {
         GdxArray()
     }
