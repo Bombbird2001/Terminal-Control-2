@@ -14,6 +14,7 @@ import com.bombbird.terminalcontrol2.utilities.pxToNm
 import com.bombbird.terminalcontrol2.utilities.pxpsToKt
 import ktx.ashley.allOf
 import ktx.ashley.get
+import ktx.collections.GdxArray
 import kotlin.math.roundToInt
 
 /**
@@ -118,12 +119,15 @@ fun updateDistToGo() {
     if (route.size == 0) return
 
     val distances = calculateAllDistToGo(radarData.position, route[0], route[route.size - 1], route)
+    val shownWpts = GdxArray<Short>()
     for (i in 0 until distances.size) {
         val dist = distances[i]
+        if (shownWpts.contains(dist.wpt.wptId, false)) continue
         val roundedDist = (pxToNm(dist.distToGoPx) * 10).roundToInt() / 10f
         allWpts[dist.wpt.wptId]?.entity?.get(GenericLabels.mapper)?.labels?.get(1)?.apply {
             updateText(roundedDist.toString())
             xOffset = -label.prefWidth / 2
         }
+        shownWpts.add(dist.wpt.wptId)
     }
 }
