@@ -227,7 +227,7 @@ fun renderAllTrajectoryPoints(shapeRenderer: ShapeRenderer) {
         for (i in it.indices) {
             for (j in 0 until it[i].size) {
                 for (k in 0 until it[i][j].size) {
-                    val pos = it[i][j][k][Position.mapper] ?: continue
+                    val pos = it[i][j][k].entity[Position.mapper] ?: continue
                     shapeRenderer.circle(pos.x, pos.y, 5f)
                 }
             }

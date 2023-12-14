@@ -4,6 +4,7 @@ import com.badlogic.ashley.core.Entity
 import com.badlogic.ashley.utils.ImmutableArray
 import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.utils.ArrayMap
+import com.badlogic.gdx.utils.Pool
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.TrajectoryPoint
 import com.bombbird.terminalcontrol2.global.*
@@ -49,11 +50,30 @@ class TrajectoryManager {
 
     private val predictedConflicts = GdxArrayMap<ConflictPair, PredictedConflict>(false, CONFLICT_SIZE)
 
+    private val trajectoryPool = object : Pool<TrajectoryPoint>() {
+        override fun newObject(): TrajectoryPoint {
+            return TrajectoryPoint()
+        }
+    }
+
+    /**
+     * Frees [allTrajectoryPoints] back to the pool
+     */
+    fun freePooledTrajectoryPoints(allTrajectoryPoints: Array<Array<GdxArray<TrajectoryPoint>>>) {
+        for (i in allTrajectoryPoints.indices) {
+            for (j in 0 until allTrajectoryPoints[i].size) {
+                for (k in 0 until allTrajectoryPoints[i][j].size) {
+                    trajectoryPool.free(allTrajectoryPoints[i][j][k])
+                }
+            }
+        }
+    }
+
     /**
      * Checks for aircraft separation and MVA/restricted area conflicts for all trajectory points provided in
      * [allTrajectoryPoints]
      */
-    fun checkTrajectoryConflicts(allTrajectoryPoints: Array<Array<GdxArray<Entity>>>) {
+    fun checkTrajectoryConflicts(allTrajectoryPoints: Array<Array<GdxArray<TrajectoryPoint>>>) {
         // Clear all conflicts
         predictedConflicts.clear()
 
@@ -69,7 +89,7 @@ class TrajectoryManager {
         resolveACCConflicts()
     }
 
-    private fun checkAllTrajectoryPointConflicts(allTrajectoryPoints: Array<Array<GdxArray<Entity>>>): GdxArrayMap<ConflictPair, PredictedConflict> {
+    private fun checkAllTrajectoryPointConflicts(allTrajectoryPoints: Array<Array<GdxArray<TrajectoryPoint>>>): GdxArrayMap<ConflictPair, PredictedConflict> {
         val predictedConflicts = GdxArrayMap<ConflictPair, PredictedConflict>(false, CONFLICT_SIZE)
 
         // Check conflicts between all trajectory points
@@ -105,19 +125,19 @@ class TrajectoryManager {
     /**
      * Checks if two trajectory points are in conflict; if so adds them to the list of predicted conflicts
      */
-    private fun checkTrajectoryPointConflict(point1: Entity, point2: Entity): PredictedConflictEntry? {
-        val aircraft1 = point1[TrajectoryPointInfo.mapper]?.aircraft ?: return null
-        val aircraft2 = point2[TrajectoryPointInfo.mapper]?.aircraft ?: return null
-        val advanceTimeS = point1[TrajectoryPointInfo.mapper]?.advanceTimingS ?: return null
+    private fun checkTrajectoryPointConflict(point1: TrajectoryPoint, point2: TrajectoryPoint): PredictedConflictEntry? {
+        val aircraft1 = point1.entity[TrajectoryPointInfo.mapper]?.aircraft ?: return null
+        val aircraft2 = point2.entity[TrajectoryPointInfo.mapper]?.aircraft ?: return null
+        val advanceTimeS = point1.entity[TrajectoryPointInfo.mapper]?.advanceTimingS ?: return null
 
         if (checkIsAircraftConflictInhibited(aircraft1, aircraft2)) return null
 
         val conflictMinimaRequired = getMinimaRequired(aircraft1, aircraft2)
 
-        val alt1 = point1[Altitude.mapper] ?: return null
-        val alt2 = point2[Altitude.mapper] ?: return null
-        val pos1 = point1[Position.mapper] ?: return null
-        val pos2 = point2[Position.mapper] ?: return null
+        val alt1 = point1.entity[Altitude.mapper] ?: return null
+        val alt2 = point2.entity[Altitude.mapper] ?: return null
+        val pos1 = point1.entity[Position.mapper] ?: return null
+        val pos2 = point2.entity[Position.mapper] ?: return null
         val acInfo1 = aircraft1[AircraftInfo.mapper] ?: return null
         val acInfo2 = aircraft2[AircraftInfo.mapper] ?: return null
 
@@ -137,7 +157,7 @@ class TrajectoryManager {
     /**
      * Checks all trajectory points for MVA/restricted area conflicts, returns a map of predicted conflicts
      */
-    private fun checkAllTrajectoryMVAConflicts(allTrajectoryPoints: Array<Array<GdxArray<Entity>>>): GdxArrayMap<ConflictPair, PredictedConflict> {
+    private fun checkAllTrajectoryMVAConflicts(allTrajectoryPoints: Array<Array<GdxArray<TrajectoryPoint>>>): GdxArrayMap<ConflictPair, PredictedConflict> {
         // Check conflicts between all trajectory points and MVA/restricted areas
         val mvaConflicts = GdxArrayMap<ConflictPair, PredictedConflict>(false, CONFLICT_SIZE)
 
@@ -145,11 +165,11 @@ class TrajectoryManager {
             for (j in allTrajectoryPoints[i].indices) {
                 val pointList = allTrajectoryPoints[i][j]
                 for (k in 0 until pointList.size) {
-                    val mvaConflict = checkTrajectoryPointMVARestrictedConflict(pointList[k])
+                    val mvaConflict = checkTrajectoryPointMVARestrictedConflict(pointList[k].entity)
                     if (mvaConflict != null) {
-                        val trajInfo = pointList[k][TrajectoryPointInfo.mapper] ?: continue
-                        val pos = pointList[k][Position.mapper] ?: continue
-                        val alt = pointList[k][Altitude.mapper] ?: continue
+                        val trajInfo = pointList[k].entity[TrajectoryPointInfo.mapper] ?: continue
+                        val pos = pointList[k].entity[Position.mapper] ?: continue
+                        val alt = pointList[k].entity[Altitude.mapper] ?: continue
                         val entryKey = ConflictPair(trajInfo.aircraft[AircraftInfo.mapper]?.icaoCallsign ?: continue,
                             null, trajInfo.advanceTimingS)
                         val existingEntry = mvaConflicts[entryKey]
@@ -242,7 +262,7 @@ class TrajectoryManager {
      * Checks all input [conflictAircraft] assigned a temporary altitude to see if they can be cleared to their original
      * target altitude
      */
-    fun resolveTempAltitudes(conflictAircraft: ImmutableArray<Entity>, allTrajectoryPoints: Array<Array<GdxArray<Entity>>>) {
+    fun resolveTempAltitudes(conflictAircraft: ImmutableArray<Entity>, allTrajectoryPoints: Array<Array<GdxArray<TrajectoryPoint>>>) {
         for (i in 0 until conflictAircraft.size()) {
             val aircraft = conflictAircraft[i] ?: continue
             val controllable = aircraft[Controllable.mapper] ?: continue
@@ -288,11 +308,12 @@ class TrajectoryManager {
      * Calculates the new trajectory with a [newAltitude] and checks if using it will cause conflict with the current
      * trajectory points; returns true if no conflict, else false
      */
-    private fun checkNewAltitudeClearOfConflict(aircraft: Entity, newAltitude: Int, allTrajectoryPoints: Array<Array<GdxArray<Entity>>>): Boolean {
+    private fun checkNewAltitudeClearOfConflict(aircraft: Entity, newAltitude: Int,
+                                                allTrajectoryPoints: Array<Array<GdxArray<TrajectoryPoint>>>): Boolean {
         val traj = calculateTrajectory(aircraft, newAltitude)
         for (i in 0 until traj.size) {
-            val point = traj[i].entity
-            val alt = point[Altitude.mapper]?.altitudeFt ?: continue
+            val point = traj[i]
+            val alt = point.entity[Altitude.mapper]?.altitudeFt ?: continue
             val altLevel = getSectorIndexForAlt(alt, getConflictStartAltitude())
             val allPointsInCurrentTimePoint = allTrajectoryPoints[i]
             // Check with all points in current layer
@@ -435,10 +456,9 @@ class TrajectoryManager {
                 // Climbing
                 min(altitude + speed.vertSpdFpm * timeS / 60, targetAlt).toInt()
             }
-            trajPointList.add(
-                TrajectoryPoint(aircraft, positionPoint.x,
-                positionPoint.y, pointAltitude.toFloat(), timeS.roundToInt())
-            )
+            val trajPoint = trajectoryPool.obtain()
+            trajPoint.init(aircraft, positionPoint.x, positionPoint.y, pointAltitude.toFloat(), timeS.roundToInt())
+            trajPointList.add(trajPoint)
         }
 
         return trajPointList

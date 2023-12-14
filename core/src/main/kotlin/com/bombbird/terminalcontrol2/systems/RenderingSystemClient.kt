@@ -248,15 +248,21 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
                 val gs = get(GlideSlope.mapper)
                 val offsetNm = gs?.offsetNm ?: 0f
                 shapeRenderer.color = Color.CYAN
-                val startPos = Vector2(pos.x, pos.y) + dir * (nmToPx(1) - nmToPx(offsetNm))
+                dir.setLength((nmToPx(1) - nmToPx(offsetNm)))
+                val startPos = Vector2(pos.x, pos.y)
+                startPos.plusAssign(dir)
+                dir.setLength(1f)
                 val perpendicularVector = Vector2(dir).rotate90(-1).scl(nmToPx(0.4f))
                 for (j in 1..loc.maxDistNm step 2) {
                     if (j % 5 == 0) shapeRenderer.line(startPos - perpendicularVector, startPos + perpendicularVector)
-                    val endPos = startPos + dir * nmToPx(1)
+                    dir.setLength(nmToPx(1))
+                    val endPos = startPos + dir
                     shapeRenderer.line(startPos, endPos)
                     if ((j + 1) % 5 == 0) shapeRenderer.line(endPos - perpendicularVector, endPos + perpendicularVector)
-                    startPos.plusAssign(dir * nmToPx(2))
+                    dir.setLength(nmToPx(2))
+                    startPos.plusAssign(dir)
                 }
+                dir.setLength(1f)
             }
         }
 
@@ -375,6 +381,9 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         shapeRenderer.projectionMatrix = constZoomStage.camera.combined
         // Render datatag to aircraft icon line
         val datatagLines = datatagLineFamilyEntities.getEntities()
+        // Single float array instance to prevent reallocation and reduce memory usage
+        val xBorder = floatArrayOf(Float.MIN_VALUE, Float.MAX_VALUE)
+        val yBorder = floatArrayOf(Float.MIN_VALUE, Float.MAX_VALUE)
         for (i in 0 until datatagLines.size()) {
             datatagLines[i]?.apply {
                 val datatag = getOrLogMissing(Datatag.mapper) ?: return@apply
@@ -392,7 +401,11 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
                 var startX = leftX + width / 2
                 var startY = bottomY + height / 2
                 val degree = getRequiredTrack(startX, startY, radarX, radarY)
-                val results = pointsAtBorder(floatArrayOf(leftX, leftX + width), floatArrayOf(bottomY, bottomY + height), startX, startY, degree)
+                xBorder[0] = leftX
+                xBorder[1] = leftX + width
+                yBorder[0] = bottomY
+                yBorder[1] = bottomY + height
+                val results = pointsAtBorder(xBorder, yBorder, startX, startY, degree)
                 startX = results[0]
                 startY = results[1]
                 shapeRenderer.color = Color.WHITE

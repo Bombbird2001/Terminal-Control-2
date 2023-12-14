@@ -30,7 +30,7 @@ import kotlin.math.roundToInt
 const val LABEL_PADDING = 7
 
 /** Updates the text for the labels of the [datatag], and sets the new sizes accordingly */
-fun updateDatatagText(datatag: Datatag, newText: Array<String>) {
+fun updateDatatagText(datatag: Datatag, newText: List<String>) {
     for (i in 0 until datatag.labelArray.size) {
         datatag.labelArray[i].apply {
             setText(if (i < newText.size) newText[i] else "")
@@ -235,9 +235,9 @@ fun addDatatagInputListeners(datatag: Datatag, aircraft: Aircraft) {
  * Gets a new array of strings for the label text, depending on whether it is minimised
  * @param entity the aircraft to generate the datatag for
  * @param minimised whether the datatag should be minimised
- * @return an array of string denoting each line in the datatag
+ * @return a list of string denoting each line in the datatag
  */
-fun getNewDatatagLabelText(entity: Entity, minimised: Boolean): Array<String> {
+fun getNewDatatagLabelText(entity: Entity, minimised: Boolean): List<String> {
     return if (minimised) getMinimisedLabelText(entity)
     else getExpandedLabelText(entity)
 }
@@ -247,10 +247,10 @@ fun getNewDatatagLabelText(entity: Entity, minimised: Boolean): Array<String> {
  * @param entity the aircraft to generate the minimised datatag for
  * @return an array of string denoting each line in the datatag
  */
-private fun getMinimisedLabelText(entity: Entity): Array<String> {
+private fun getMinimisedLabelText(entity: Entity): List<String> {
     val datatagMap = updateDatatagValueMap(entity)
-    return DATATAG_LAYOUTS[DATATAG_STYLE_NAME]?.generateTagText(datatagMap, true, checkAircraftHasWake(entity))
-        ?.split("\n")?.toTypedArray() ?: arrayOf()
+    return DATATAG_LAYOUTS[DATATAG_STYLE_NAME]?.generateTagText(datatagMap, true,
+        checkAircraftHasWake(entity)) ?: listOf()
 }
 
 /**
@@ -258,10 +258,10 @@ private fun getMinimisedLabelText(entity: Entity): Array<String> {
  * @param entity the aircraft to generate the minimised datatag for
  * @return an array of string denoting each line in the datatag
  */
-private fun getExpandedLabelText(entity: Entity): Array<String> {
+private fun getExpandedLabelText(entity: Entity): List<String> {
     val datatagMap = updateDatatagValueMap(entity)
-    return DATATAG_LAYOUTS[DATATAG_STYLE_NAME]?.generateTagText(datatagMap, false, checkAircraftHasWake(entity))
-        ?.split("\n")?.toTypedArray() ?: arrayOf()
+    return DATATAG_LAYOUTS[DATATAG_STYLE_NAME]?.generateTagText(datatagMap, false,
+        checkAircraftHasWake(entity)) ?: listOf()
 }
 
 /**

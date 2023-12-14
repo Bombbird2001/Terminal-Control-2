@@ -176,7 +176,7 @@ class DatatagConfig(val name: String) {
      * Generates the text to be displayed on the datatag, using the given [fields] and checking if the datatag
      * [isMinimized] and whether it is undergoing [wakeTurbulence]]
      */
-    fun generateTagText(fields: HashMap<String, String>, isMinimized: Boolean, wakeTurbulence: Boolean): String {
+    fun generateTagText(fields: HashMap<String, String>, isMinimized: Boolean, wakeTurbulence: Boolean): List<String> {
         val arrayToUse = if (isMinimized) {
             when {
                 miniArrangementFirstEmpty -> miniArrangementSecond
@@ -184,21 +184,20 @@ class DatatagConfig(val name: String) {
                 else -> if (System.currentTimeMillis() % 4000 >= 2500) miniArrangementSecond else miniArrangementFirst
             }
         } else arrangement
-        val sb = StringBuilder()
+        val stringLines = ArrayList<String>()
+        val sbLine = StringBuilder()
         for (line in arrayToUse) {
-            val sbLine = StringBuilder()
+            sbLine.clear()
             for (field in line) {
-                val text = fields[field] ?: ""
-                if (text.isNotBlank() && sbLine.isNotEmpty()) sbLine.append(" ")
-                if (text.isNotBlank()) sbLine.append(text)
+                val text = fields[field]?.trim() ?: ""
+                if (text.isNotEmpty() && sbLine.isNotEmpty()) sbLine.append(" ")
+                if (text.isNotEmpty()) sbLine.append(text)
             }
-            if (sbLine.isNotBlank() && sb.isNotEmpty()) sb.append("\n")
-            if (sbLine.isNotBlank()) sb.append(sbLine)
+            if (sbLine.isNotEmpty()) stringLines.add(sbLine.toString())
         }
         if (wakeTurbulence) {
-            sb.append('\n')
-            sb.append(if (isMinimized) "Wake" else "Wake alert")
+            stringLines.add(if (isMinimized) "Wake" else "Wake alert")
         }
-        return sb.toString()
+        return stringLines
     }
 }

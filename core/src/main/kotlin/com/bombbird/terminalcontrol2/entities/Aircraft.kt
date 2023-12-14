@@ -59,7 +59,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
             }
             with<Datatag> {
                 updateDatatagStyle(this, flightType, false)
-                updateDatatagText(this, arrayOf("Test line 1", "Test line 2", "", "Test line 3"))
+                updateDatatagText(this, listOf("Test line 1", "Test line 2", "", "Test line 3"))
                 xOffset = -imgButton.width / 2
                 yOffset = 13f
             }

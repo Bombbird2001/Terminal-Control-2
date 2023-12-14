@@ -11,6 +11,7 @@ import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.*
 import ktx.math.plusAssign
 import ktx.math.times
+import ktx.math.timesAssign
 import kotlin.math.max
 import kotlin.math.tan
 
@@ -66,9 +67,11 @@ class PhysicsSystem: EntitySystem() {
                 val alt = get(Altitude.mapper) ?: return@apply
                 val spd = get(Speed.mapper) ?: return@apply
                 val dir = get(Direction.mapper) ?: return@apply
-                val velVector = dir.trackUnitVector.times(ktToPxps(spd.speedKts) * deltaTime)
+                val velVector = dir.trackUnitVector
+                velVector.timesAssign(ktToPxps(spd.speedKts) * deltaTime)
                 pos.x += velVector.x
                 pos.y += velVector.y
+                velVector.setLength(1f)
                 dir.trackUnitVector.rotateDeg(-spd.angularSpdDps * deltaTime)
                 alt.altitudeFt += spd.vertSpdFpm / 60 * deltaTime
             }

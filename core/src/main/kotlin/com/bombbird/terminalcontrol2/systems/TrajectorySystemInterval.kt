@@ -1,8 +1,8 @@
 package com.bombbird.terminalcontrol2.systems
 
-import com.badlogic.ashley.core.Entity
 import com.badlogic.ashley.systems.IntervalSystem
 import com.bombbird.terminalcontrol2.components.*
+import com.bombbird.terminalcontrol2.entities.TrajectoryPoint
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.traffic.conflict.TrajectoryManager
 import com.bombbird.terminalcontrol2.traffic.getConflictStartAltitude
@@ -33,7 +33,7 @@ class TrajectorySystemInterval: IntervalSystem(TRAJECTORY_UPDATE_INTERVAL_S) {
 
     private val startingAltitude = getConflictStartAltitude()
     /** This stores the trajectory position divided in their respective conflict altitude levels, per time interval */
-    var trajectoryTimeStates = Array<Array<GdxArray<Entity>>>(0) {
+    var trajectoryTimeStates = Array<Array<GdxArray<TrajectoryPoint>>>(0) {
         Array(0) {
             GdxArray()
         }
@@ -41,6 +41,8 @@ class TrajectorySystemInterval: IntervalSystem(TRAJECTORY_UPDATE_INTERVAL_S) {
     private val trajectoryManager = TrajectoryManager()
 
     override fun updateInterval() {
+        trajectoryManager.freePooledTrajectoryPoints(trajectoryTimeStates)
+
         // Clear all trajectory points
         for (i in trajectoryTimeStates.indices) {
             for (j in trajectoryTimeStates[i].indices) {
@@ -58,7 +60,7 @@ class TrajectorySystemInterval: IntervalSystem(TRAJECTORY_UPDATE_INTERVAL_S) {
                     val alt = point.entity[Altitude.mapper]?.altitudeFt ?: continue
                     val expectedSector = getSectorIndexForAlt(alt, startingAltitude)
                     if (expectedSector >= 0 && expectedSector < trajectoryTimeStates[j].size)
-                        trajectoryTimeStates[j][expectedSector].add(point.entity)
+                        trajectoryTimeStates[j][expectedSector].add(point)
                 }
             }
         }
