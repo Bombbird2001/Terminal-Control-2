@@ -445,12 +445,12 @@ object DataFileTest: FunSpec() {
         testDependentRunways("Dependent Parallel Runways", "DEPENDENT_PARALLEL", arptData, allRwys)
         testDependentRunways("Dependent Opposite Runways", "DEPENDENT_OPPOSITE", arptData, allRwys)
         testDependentRunways("Crossing Runways", "CROSSING", arptData, allRwys)
-        testRunwayZones("Approach NOZ", "APP_NOZ", arptData, allRwys)
-        testRunwayZones("Departure NOZ", "DEP_NOZ", arptData, allRwys)
+        testDepNOZ(arptData, allRwys)
         val configRwys = testRunwayConfigs(arptData, allRwys)
         testSid(arptData, allRwys, wpts, configRwys.first, minAlt)
         testStar(arptData, allRwys, wpts, configRwys.second)
-        testApp(arptData, allRwys, wpts, configRwys.second)
+        val allApproaches = testApp(arptData, allRwys, wpts, configRwys.second)
+        testAppNOZ(arptData, allApproaches)
         testTraffic(arptData)
     }
 
@@ -504,14 +504,36 @@ object DataFileTest: FunSpec() {
     }
 
     /**
-     * Tests the runway zones for the input airport data block, with the calling ContainerScope as the scope for the
+     * Tests the approach NOZs for the input airport [data] block, with the calling ContainerScope as the scope for the
      * tests
-     * @param data the string text to parse
+     * @param allApproaches name of all approaches in this airport
+     */
+    private suspend fun ContainerScope.testAppNOZ(data: String, allApproaches: HashSet<String>) {
+        withData(arrayListOf("Approach NOZ")) {
+            for (block in getBlocksBetweenTags("APP_NOZ", data)) {
+                for (zone in getAllTextAfterHeaderMultiple("ZONE", block)) {
+                    val zoneData = zone.split(" ")
+                    zoneData.size shouldBeGreaterThanOrEqual 5
+                    testCoordsString(zoneData[0])
+                    zoneData[1].toShort().shouldBeBetween(1, 360)
+                    zoneData[2].toFloat()
+                    zoneData[3].toFloat()
+                    for (i in 4 until zoneData.size) {
+                        allApproaches shouldContain zoneData[i]
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Tests the departure NOZs for the input airport [data] block, with the calling ContainerScope as the scope for the
+     * tests
      * @param allRwys all runways in this airport mapped to their elevation
      */
-    private suspend fun ContainerScope.testRunwayZones(testName: String, tag: String, data: String, allRwys: HashMap<String, Short>) {
-        withData(arrayListOf(testName)) {
-            withData(getLinesBetweenTags(tag, data)) {
+    private suspend fun ContainerScope.testDepNOZ(data: String, allRwys: HashMap<String, Short>) {
+        withData(arrayListOf("Departure NOZ")) {
+            withData(getLinesBetweenTags("DEP_NOZ", data)) {
                 val nozData = it.split(" ")
                 nozData.size shouldBe 5
                 allRwys.keys shouldContain nozData[0]
@@ -721,15 +743,17 @@ object DataFileTest: FunSpec() {
      * @param allRwys all runways in this airport mapped to their elevation
      * @param allWpts all waypoints in this game world
      * @param allConfigArrRwys a HashMap mapping the runway config ID to their respective arrival runways
-     * @return a HashSet of all runway names for this airport
+     * @return a HashSet of all approach names for this airport
      */
     private suspend fun ContainerScope.testApp(data: String, allRwys: HashMap<String, Short>,
-                                               allWpts: HashMap<String, Short>, allConfigArrRwys: HashMap<Byte, HashSet<String>>) {
+                                               allWpts: HashMap<String, Short>, allConfigArrRwys: HashMap<Byte, HashSet<String>>): HashSet<String> {
+        val appNames = HashSet<String>()
         withData(arrayListOf("Approaches")) {
             getBlocksBetweenTags("APCH", data).forEach {
                 val apchLines = it.toLines(2)
                 val infoLine = apchLines[0].split(" ")
                 infoLine.size shouldBe 6
+                appNames.add(infoLine[0])
                 withData(arrayListOf(infoLine[0])) {
                     infoLine[1] shouldBeIn TIME_SLOTS
                     val rwyName = infoLine[2]
@@ -830,11 +854,13 @@ object DataFileTest: FunSpec() {
                     withData(configArray) {configId ->
                         val id = configId.toByte()
                         val arrRwys = allConfigArrRwys[id].shouldNotBeNull()
-                        arrRwys.contains(rwyName).shouldBeTrue()
+                        arrRwys shouldContain rwyName
                     }
                 }
             }
         }
+
+        return appNames
     }
 
     /**
