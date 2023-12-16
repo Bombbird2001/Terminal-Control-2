@@ -1,6 +1,7 @@
 package com.bombbird.terminalcontrol2.navigation
 
 import com.badlogic.gdx.math.Vector2
+import com.badlogic.gdx.utils.Array.ArrayIterator
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.Airport
 import com.bombbird.terminalcontrol2.entities.RouteZone
@@ -48,6 +49,7 @@ class Approach(name: String, arptId: Byte, runwayId: Byte, posX: Float, posY: Fl
             baroAltFt = decisionAlt
             rvrM = rvr
         }
+        with<RunwayConfigurationList>()
     }
 
     /** Default approach for loading of saves */
@@ -68,6 +70,7 @@ class Approach(name: String, arptId: Byte, runwayId: Byte, posX: Float, posY: Fl
     fun getSerialisableObject(): SerialisedApproach {
         val appInfo = entity[ApproachInfo.mapper] ?: return SerialisedApproach()
         val pos = entity[Position.mapper] ?: return SerialisedApproach()
+        val runwayConfigs = entity[RunwayConfigurationList.mapper] ?: return SerialisedApproach()
         val dir = entity[Direction.mapper]
         val loc = entity[Localizer.mapper]
         val gs = entity[GlideSlope.mapper]
@@ -78,6 +81,7 @@ class Approach(name: String, arptId: Byte, runwayId: Byte, posX: Float, posY: Fl
             transitions.entries().map { SerialisedTransition(it.key, it.value.getSerialisedObject()) }.toTypedArray(),
             routeLegs.getSerialisedObject(),
             missedLegs.getSerialisedObject(),
+            ArrayIterator(runwayConfigs.rwyConfigs).toList().toByteArray(),
             if (loc != null && dir != null) (convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()) + 180 + MAG_HDG_DEV).roundToInt().toShort() else null, loc?.maxDistNm,
             gs?.glideAngle, gs?.offsetNm, gs?.maxInterceptAlt,
             stepDown?.altAtDist?.map { SerialisedStep(it.dist, it.alt) }?.toTypedArray()
@@ -96,6 +100,12 @@ class Approach(name: String, arptId: Byte, runwayId: Byte, posX: Float, posY: Fl
                 timeRestriction = serialisedApproach.timeRestriction
             ).apply {
                 setLegsFromSerialisedObject(serialisedApproach)
+                val rwyConfigs = entity[RunwayConfigurationList.mapper] ?: run {
+                    val rwyConfigs = RunwayConfigurationList()
+                    entity += rwyConfigs
+                    return@run rwyConfigs
+                }
+                for (config in serialisedApproach.allowedConfigs) rwyConfigs.rwyConfigs.add(config)
                 val locHdg = serialisedApproach.locHdg
                 val locDistNm = serialisedApproach.locDistNm
                 if (locHdg != null && locDistNm != null) {
@@ -122,6 +132,7 @@ class Approach(name: String, arptId: Byte, runwayId: Byte, posX: Float, posY: Fl
                              val transitions: Array<SerialisedTransition> = arrayOf(),
                              val routeLegs: Route.SerialisedRoute = Route.SerialisedRoute(),
                              val missedLegs: Route.SerialisedRoute = Route.SerialisedRoute(),
+                             val allowedConfigs: ByteArray = byteArrayOf(),
                              val locHdg: Short? = null, val locDistNm: Byte? = null,
                              val gsAngleDeg: Float? = null, val gsOffsetNm: Float? = null, val maxGsAlt: Short? = null,
                              val steps: Array<SerialisedStep>? = null)

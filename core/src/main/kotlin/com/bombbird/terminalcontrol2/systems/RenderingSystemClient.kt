@@ -242,8 +242,11 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
                 val loc = getOrLogMissing(Localizer.mapper) ?: return@apply
                 val dir = getOrLogMissing(Direction.mapper)?.trackUnitVector ?: return@apply
                 val appInfo = getOrLogMissing(ApproachInfo.mapper) ?: return@apply
+                val allowedConfigs = getOrLogMissing(RunwayConfigurationList.mapper)?.rwyConfigs ?: return@apply
                 if (appInfo.rwyObj.entity.hasNot(ActiveLanding.mapper)) return@apply
                 if (appInfo.rwyObj.entity.has(RunwayClosed.mapper)) return@apply
+                val activeConfig = CLIENT_SCREEN?.airports?.get(appInfo.airportId)?.entity?.get(ActiveRunwayConfig.mapper) ?: return@apply
+                if (!allowedConfigs.contains(activeConfig.configId, false)) return@apply
                 // Offset if glideslope is present
                 val gs = get(GlideSlope.mapper)
                 val offsetNm = gs?.offsetNm ?: 0f
@@ -431,8 +434,11 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
             gsCircles[i]?.apply {
                 val gsCirclePos = getOrLogMissing(GlideSlopeCircle.mapper) ?: return@apply
                 val appInfo = getOrLogMissing(ApproachInfo.mapper) ?: return@apply
+                val allowedConfigs = getOrLogMissing(RunwayConfigurationList.mapper)?.rwyConfigs ?: return@apply
                 if (appInfo.rwyObj.entity.hasNot(ActiveLanding.mapper)) return@apply
                 if (appInfo.rwyObj.entity.has(RunwayClosed.mapper)) return@apply
+                val activeConfig = CLIENT_SCREEN?.airports?.get(appInfo.airportId)?.entity?.get(ActiveRunwayConfig.mapper) ?: return@apply
+                if (!allowedConfigs.contains(activeConfig.configId, false)) return@apply
                 shapeRenderer.color = Color.CYAN
                 for (pos in gsCirclePos.positions) {
                     shapeRenderer.circle((pos.x - camX) / camZoom, (pos.y - camY) / camZoom, 4f)

@@ -63,10 +63,10 @@ data class RandomAirlineData(val airlineDistribution: CumulativeDistribution<Tri
     }
 }
 
-/** Component for tagging the approach NOZ for a runway */
-data class ApproachNOZ(var appNoz: ApproachNormalOperatingZone): Component {
+/** Component for tagging the approach NOZ groups for an airport */
+data class ApproachNOZGroup(var appNoz: GdxArray<ApproachNormalOperatingZone> = GdxArray()): Component {
     companion object {
-        val mapper = object: Mapper<ApproachNOZ>() {}.mapper
+        val mapper = object: Mapper<ApproachNOZGroup>() {}.mapper
 
         fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }

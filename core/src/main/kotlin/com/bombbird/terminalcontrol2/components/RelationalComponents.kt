@@ -55,10 +55,28 @@ data class ApproachChildren(val approachMap: GdxArrayMap<String, Approach> = Gdx
     }
 }
 
+/** Component to keep track of list of approach names only */
+class ApproachList(var approachList: Array<String> = arrayOf()): Component {
+    companion object {
+        val mapper = object: Mapper<ApproachList>() {}.mapper
+
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
+    }
+}
+
 /** Component to keep track of an airport's available runway configurations */
 data class RunwayConfigurationChildren(val rwyConfigs: GdxArrayMap<Byte, RunwayConfiguration> = GdxArrayMap()): Component {
     companion object {
         val mapper = object: Mapper<RunwayConfigurationChildren>() {}.mapper
+
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
+    }
+}
+
+/** Component to keep track of list of available runway configuration IDs only */
+data class RunwayConfigurationList(val rwyConfigs: GdxArray<Byte> = GdxArray()): Component {
+    companion object {
+        val mapper = object: Mapper<RunwayConfigurationList>() {}.mapper
 
         fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
@@ -148,6 +166,15 @@ data class DepartureRouteZone(val sidZone: GdxArray<RouteZone> = GdxArray()): Co
 
     companion object {
         val mapper = object: Mapper<DepartureRouteZone>() {}.mapper
+
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
+    }
+}
+
+/** Component to store an airport's NOZ groups */
+data class ApproachNOZChildren(val nozGroups: GdxArray<ApproachNOZGroup> = GdxArray()): Component {
+    companion object {
+        val mapper = object: Mapper<ApproachNOZChildren>() {}.mapper
 
         fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }

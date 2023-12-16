@@ -293,6 +293,7 @@ class MainInfoPane {
                             val arrRwys = config.arrRwys
                             val depRwys = config.depRwys
                             val sb = StringBuilder()
+                            if (config.name.isNotBlank()) sb.append(config.name).append("\n")
                             if (config.timeRestriction == UsabilityFilter.DAY_ONLY) sb.append("Day only\n")
                             else if (config.timeRestriction == UsabilityFilter.NIGHT_ONLY) sb.append("Night only\n")
                             sb.append("DEP: ")
@@ -306,6 +307,7 @@ class MainInfoPane {
                                 if (j < arrRwys.size - 1) sb.append(", ")
                             }
                             buttonArray.add(this@configTable.textButton(sb.toString(), "MenuPaneRunwayConfiguration").apply {
+                                label.wrap = true
                                 isChecked = airport.entity[ActiveRunwayConfig.mapper]?.configId == config.id
                                 name = config.id.toString()
                                 addChangeListener { _, _ ->

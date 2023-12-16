@@ -227,7 +227,7 @@ object DataFileTest: FunSpec() {
      */
     private fun getAllTextAfterHeaderMultiple(header: String, data: String): List<String> {
         val arrayList = ArrayList<String>()
-        "$header (.+)".toRegex().findAll(data).forEach { arrayList.add(it.groupValues[1]) }
+        "^$header (.+)".toRegex(RegexOption.MULTILINE).findAll(data).forEach { arrayList.add(it.groupValues[1]) }
         return arrayList.map { it.trim() }
     }
 
@@ -450,7 +450,7 @@ object DataFileTest: FunSpec() {
         val configRwys = testRunwayConfigs(arptData, allRwys)
         testSid(arptData, allRwys, wpts, configRwys.first, minAlt)
         testStar(arptData, allRwys, wpts, configRwys.second)
-        testApp(arptData, allRwys, wpts)
+        testApp(arptData, allRwys, wpts, configRwys.second)
         testTraffic(arptData)
     }
 
@@ -545,6 +545,8 @@ object DataFileTest: FunSpec() {
                     val configDepRwys = HashSet<String>()
                     val configArrRwys = HashSet<String>()
                     header[1] shouldBeIn TIME_SLOTS
+                    val name = getAllTextAfterHeader("NAME", config)
+                    name.trim().length shouldBeGreaterThan 0
                     val dep = getAllTextAfterHeader("DEP", config)
                     withData(arrayListOf("DEP $dep")) {
                         dep.split(" ").forEach { rwy ->
@@ -683,8 +685,8 @@ object DataFileTest: FunSpec() {
                     configArray.size shouldBeGreaterThan 0
                     withData(configArray) {configId ->
                         val id = configId.toByte()
-                        val depRwys = allConfigArrRwys[id].shouldNotBeNull()
-                        (starRwys intersect depRwys).size shouldBeGreaterThan 0
+                        val arrRwys = allConfigArrRwys[id].shouldNotBeNull()
+                        (starRwys intersect arrRwys).size shouldBeGreaterThan 0
                     }
                 }
             }
@@ -718,10 +720,11 @@ object DataFileTest: FunSpec() {
      * @param data the string text to parse
      * @param allRwys all runways in this airport mapped to their elevation
      * @param allWpts all waypoints in this game world
+     * @param allConfigArrRwys a HashMap mapping the runway config ID to their respective arrival runways
      * @return a HashSet of all runway names for this airport
      */
     private suspend fun ContainerScope.testApp(data: String, allRwys: HashMap<String, Short>,
-                                               allWpts: HashMap<String, Short>) {
+                                               allWpts: HashMap<String, Short>, allConfigArrRwys: HashMap<Byte, HashSet<String>>) {
         withData(arrayListOf("Approaches")) {
             getBlocksBetweenTags("APCH", data).forEach {
                 val apchLines = it.toLines(2)
@@ -729,7 +732,8 @@ object DataFileTest: FunSpec() {
                 infoLine.size shouldBe 6
                 withData(arrayListOf(infoLine[0])) {
                     infoLine[1] shouldBeIn TIME_SLOTS
-                    val alt = allRwys[infoLine[2]]
+                    val rwyName = infoLine[2]
+                    val alt = allRwys[rwyName]
                     val rwyAlt = alt.shouldNotBeNull()
                     testCoordsString(infoLine[3])
                     infoLine[4].toShort() shouldBeGreaterThanOrEqualTo rwyAlt
@@ -818,6 +822,15 @@ object DataFileTest: FunSpec() {
                     route.size shouldBeGreaterThanOrEqual 1
                     if (route.size > 1 || route[0] !is Route.VectorLeg) {
                         findMissedApproachAlt(route).shouldNotBeNull()
+                    }
+
+                    val allowedConfigs = getAllTextAfterHeader("ALLOWED_CONFIGS", apchLines[1])
+                    val configArray = allowedConfigs.split(" ")
+                    configArray.size shouldBeGreaterThan 0
+                    withData(configArray) {configId ->
+                        val id = configId.toByte()
+                        val arrRwys = allConfigArrRwys[id].shouldNotBeNull()
+                        arrRwys.contains(rwyName).shouldBeTrue()
                     }
                 }
             }

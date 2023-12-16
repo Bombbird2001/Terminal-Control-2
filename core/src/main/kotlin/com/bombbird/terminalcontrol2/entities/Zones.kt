@@ -25,9 +25,9 @@ interface Zone {
     fun contains(x: Float, y: Float): Boolean
 }
 
-/** Class for storing a runway's approach NOZ information */
+/** Class for storing an approach NOZ information */
 class ApproachNormalOperatingZone(posX: Float, posY: Float, appHdg: Short, private val widthNm: Float, private val lengthNm: Float,
-                                  onClient: Boolean = true): Zone, SerialisableEntity<ApproachNormalOperatingZone.SerialisedApproachNOZ> {
+                                  appNames: Array<String>, onClient: Boolean = true): Zone, SerialisableEntity<ApproachNormalOperatingZone.SerialisedApproachNOZ> {
     val entity = getEngine(onClient).entityOnMainThread(onClient) {
         with<Position> {
             x = posX
@@ -43,6 +43,9 @@ class ApproachNormalOperatingZone(posX: Float, posY: Float, appHdg: Short, priva
                 posX + halfWidthVec.x + lengthVec.x, posY + halfWidthVec.y + lengthVec.y,
                 posX - halfWidthVec.x + lengthVec.x, posY - halfWidthVec.y + lengthVec.y,
                 posX - halfWidthVec.x, posY - halfWidthVec.y)
+        }
+        with<ApproachList> {
+            approachList = appNames
         }
         if (onClient) {
             with<SRColor> {
@@ -66,8 +69,10 @@ class ApproachNormalOperatingZone(posX: Float, posY: Float, appHdg: Short, priva
         entity.apply {
             val pos = get(Position.mapper) ?: return emptySerialisableObject("Position")
             val dir = get(Direction.mapper) ?: return emptySerialisableObject("Direction")
+            val appNames = get(ApproachList.mapper) ?: return emptySerialisableObject("ApproachList")
             val appHdg = convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()) + 180 + MAG_HDG_DEV
-            return SerialisedApproachNOZ(pos.x, pos.y, appHdg.roundToInt().toShort(), widthNm, lengthNm)
+            return SerialisedApproachNOZ(pos.x, pos.y, appHdg.roundToInt().toShort(), widthNm, lengthNm,
+                appNames.approachList)
         }
     }
 
@@ -89,13 +94,15 @@ class ApproachNormalOperatingZone(posX: Float, posY: Float, appHdg: Short, priva
          */
         fun fromSerialisedObject(serialisedApproachNOZ: SerialisedApproachNOZ): ApproachNormalOperatingZone {
             return ApproachNormalOperatingZone(serialisedApproachNOZ.posX, serialisedApproachNOZ.posY,
-                serialisedApproachNOZ.appHdg, serialisedApproachNOZ.widthNm, serialisedApproachNOZ.lengthNm)
+                serialisedApproachNOZ.appHdg, serialisedApproachNOZ.widthNm, serialisedApproachNOZ.lengthNm,
+                serialisedApproachNOZ.appNames)
         }
     }
 
     /** Object that contains [ApproachNormalOperatingZone] data to be serialised by Kryo */
     class SerialisedApproachNOZ(val posX: Float = 0f, val posY: Float = 0f, val appHdg: Short = 0,
-                                val widthNm: Float = 0f, val lengthNm: Float = 0f)
+                                val widthNm: Float = 0f, val lengthNm: Float = 0f,
+                                val appNames: Array<String> = arrayOf())
 }
 
 /** Class for storing a runway's departure NOZ information */

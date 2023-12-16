@@ -187,6 +187,9 @@ fun registerClassesToKryo(kryo: Kryo?) {
         register(PredictedConflict.SerialisedPredictedConflict::class.java)
         register(Array<PredictedConflict.SerialisedPredictedConflict>::class.java)
         register(PredictedConflictData::class.java)
+        register(Array<ApproachNormalOperatingZone.SerialisedApproachNOZ>::class.java)
+        register(Array<Array<ApproachNormalOperatingZone.SerialisedApproachNOZ>>::class.java)
+        register(Array<String>::class.java)
 
     } ?: FileLog.info("NetworkingTools", "Null kryo passed, unable to register classes")
 }

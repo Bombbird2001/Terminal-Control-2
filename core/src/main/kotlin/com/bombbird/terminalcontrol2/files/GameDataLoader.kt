@@ -49,9 +49,11 @@ private const val AIRPORT_DEP_PARALLEL = "DEPENDENT_PARALLEL"
 private const val AIRPORT_DEP_OPP = "DEPENDENT_OPPOSITE"
 private const val AIRPORT_CROSSING = "CROSSING"
 private const val AIRPORT_DEPT_DEP = "DEPARTURE_DEPEND"
-private const val AIRPORT_APP_NOZ = "APP_NOZ"
+private const val AIRPORT_APP_NOZ_GROUP = "APP_NOZ"
+private const val AIRPORT_APP_NOZ = "ZONE"
 private const val AIRPORT_DEP_NOZ = "DEP_NOZ"
 private const val AIRPORT_RWY_CONFIG_OBJ = "CONFIG"
+private const val RWY_CONFIG_NAME = "NAME"
 private const val RWY_CONFIG_DEP = "DEP"
 private const val RWY_CONFIG_ARR = "ARR"
 private const val RWY_CONFIG_NTZ = "NTZ"
@@ -61,7 +63,7 @@ private const val SID_STAR_RWY = "RWY"
 private const val SID_STAR_APP_ROUTE = "ROUTE"
 private const val SID_OUTBOUND = "OUTBOUND"
 private const val STAR_INBOUND = "INBOUND"
-private const val SID_STAR_ALLOWED_CONFIGS = "ALLOWED_CONFIGS"
+private const val SID_STAR_APP_ALLOWED_CONFIGS = "ALLOWED_CONFIGS"
 private const val APCH_OBJ = "APCH"
 private const val APCH_LOC = "LOC"
 private const val APCH_GS = "GS"
@@ -153,6 +155,7 @@ fun loadWorldData(mainName: String, gameServer: GameServer) {
         var currSectorCount = 0.byte
         var currApp: Approach? = null
         var currRwyConfig: RunwayConfiguration? = null
+        var currAppNOZGroup: ApproachNOZGroup? = null
         for ((index, line) in withIndex()) {
             val lineData = line.trim().split(" ")
             when (lineData[0]) {
@@ -168,6 +171,7 @@ fun loadWorldData(mainName: String, gameServer: GameServer) {
                 AIRPORT_WS -> if (currAirport != null) parseWindshear(lineData, currAirport)
                 "$AIRPORT_RWY_CONFIG_OBJ/" -> if (currAirport != null) currRwyConfig = parseRunwayConfiguration(lineData, currAirport)
                 "/$AIRPORT_RWY_CONFIG_OBJ" -> currRwyConfig = null
+                RWY_CONFIG_NAME -> if (currRwyConfig != null) parseRwyConfigName(lineData, currRwyConfig)
                 RWY_CONFIG_DEP -> if (currAirport != null && currRwyConfig != null) parseRwyConfigRunways(lineData, currAirport, currRwyConfig, true)
                 RWY_CONFIG_ARR -> if (currAirport != null && currRwyConfig != null) parseRwyConfigRunways(lineData, currAirport, currRwyConfig, false)
                 RWY_CONFIG_NTZ -> if (currRwyConfig != null) parseRwyConfigNTZ(lineData, currRwyConfig)
@@ -183,9 +187,10 @@ fun loadWorldData(mainName: String, gameServer: GameServer) {
                 }
                 SID_OUTBOUND -> if (currSid != null) parseSIDSTARinOutboundRoute(lineData, currSid)
                 STAR_INBOUND -> if (currStar != null) parseSIDSTARinOutboundRoute(lineData, currStar)
-                SID_STAR_ALLOWED_CONFIGS -> {
+                SID_STAR_APP_ALLOWED_CONFIGS -> {
                     if (currSid != null) parseSIDSTARAllowedConfigs(lineData, currSid)
                     else if (currStar != null) parseSIDSTARAllowedConfigs(lineData, currStar)
+                    else if (currApp != null) parseApproachAllowedConfigs(lineData, currApp)
                 }
                 "$APCH_OBJ/" -> currApp = parseApproach(lineData, currAirport ?: continue)
                 "/$APCH_OBJ" -> currApp = null
@@ -196,6 +201,9 @@ fun loadWorldData(mainName: String, gameServer: GameServer) {
                 APCH_CIRCLING -> if (currApp != null) parseCircling(lineData, currApp)
                 APCH_TRANS -> if (currApp != null) parseApproachTransition(lineData, currApp)
                 APCH_MISSED -> if (currApp != null) parseApproachMissed(lineData, currApp)
+                "$AIRPORT_APP_NOZ_GROUP/" -> if (currAirport != null) currAppNOZGroup = addApproachNOZGroup(currAirport)
+                "/$AIRPORT_APP_NOZ_GROUP" -> currAppNOZGroup = null
+                AIRPORT_APP_NOZ -> parseApproachNOZ(lineData, currAppNOZGroup ?: continue)
                 "/$currSectorCount" -> currSectorCount = 0
                 "/$parseMode" -> {
                     if (parseMode == AIRPORT_TFC && currAirport != null) generateTrafficDistribution(currAirport)
@@ -214,7 +222,6 @@ fun loadWorldData(mainName: String, gameServer: GameServer) {
                         AIRPORT_DEP_OPP -> parseDependentOppositeRunways(lineData, currAirport ?: continue)
                         AIRPORT_CROSSING -> parseCrossingRunways(lineData, currAirport ?: continue)
                         AIRPORT_DEPT_DEP -> parseDepartureDependency(lineData, currAirport ?: continue)
-                        AIRPORT_APP_NOZ -> parseApproachNOZ(lineData, currAirport ?: continue)
                         AIRPORT_DEP_NOZ -> parseDepartureNOZ(lineData, currAirport ?: continue)
                         WORLD_SECTORS -> {
                             if (currSectorCount == 0.byte) currSectorCount = lineData[0].split("/")[0].toByte()
@@ -530,21 +537,17 @@ private fun parseDepartureDependency(data: List<String>, airport: Airport) {
     depRwy += dependencies
 }
 
-/**
- * Parse the given data into approach NOZ data, and adds it to the corresponding runway's [ApproachNOZ] component
- * @param data the line array of approach NOZ data
- * @param airport the airport that the parent runway belongs to
- */
-private fun parseApproachNOZ(data: List<String>, airport: Airport) {
-    if (data.size != 5) FileLog.info("GameLoader", "Approach NOZ data has ${data.size} elements instead of 5")
-    val name = data[0]
+/** Parse the given [data] into approach NOZ data, and adds it to the input [ApproachNOZGroup] component */
+private fun parseApproachNOZ(data: List<String>, approachNOZGroup: ApproachNOZGroup) {
+    if (data.size < 6) FileLog.info("GameLoader", "Approach NOZ data has ${data.size}; needs >= 6")
     val pos = data[1].split(",")
     val posX = nmToPx(pos[0].toFloat())
     val posY = nmToPx(pos[1].toFloat())
     val hdg = data[2].toShort()
     val width = data[3].toFloat()
     val length = data[4].toFloat()
-    airport.getRunway(name)?.entity?.plusAssign(ApproachNOZ(ApproachNormalOperatingZone(posX, posY, hdg, width, length, false)))
+    val appNames = data.subList(5, data.size).map { it.replace("-", " ") }.toTypedArray()
+    approachNOZGroup.appNoz.add(ApproachNormalOperatingZone(posX, posY, hdg, width, length, appNames, false))
 }
 
 /**
@@ -582,7 +585,15 @@ private fun parseRunwayConfiguration(data: List<String>, airport: Airport): Runw
             UsabilityFilter.DAY_AND_NIGHT
         }
     }
-    return RunwayConfiguration(id, dayNight).apply { airport.entity[RunwayConfigurationChildren.mapper]?.rwyConfigs?.put(id, this) }
+    return RunwayConfiguration(id, "", dayNight).apply { airport.entity[RunwayConfigurationChildren.mapper]?.rwyConfigs?.put(id, this) }
+}
+
+/**
+ * Parse the given [data] into a name for the provided [currRwyConfig]
+ */
+private fun parseRwyConfigName(data: List<String>, currRwyConfig: RunwayConfiguration) {
+    if (data.size < 2) FileLog.info("GameLoader", "Runway configuration name data has ${data.size} elements; needs >= 2")
+    currRwyConfig.name = data.subList(1, data.size).joinToString(" ")
 }
 
 /**
@@ -748,6 +759,30 @@ private fun parseApproachMissed(data: List<String>, approach: Approach) {
     approach.missedLegs.extendRoute(parseLegs(data.subList(1, data.size), Route.Leg.MISSED_APP))
     approach.missedRouteZones.clear()
     approach.missedRouteZones.addAll(getZonesForDepartureRoute(approach.missedLegs))
+}
+
+/**
+ * Parse the given [data] into approach allowed configurations data, and adds it to the supplied [approach]'s
+ * [RunwayConfigurationList] component
+ */
+private fun parseApproachAllowedConfigs(data: List<String>, approach: Approach) {
+    val rwyConfigs = approach.entity[RunwayConfigurationList.mapper] ?: run {
+        val rwyConfigs = RunwayConfigurationList()
+        approach.entity += rwyConfigs
+        return@run rwyConfigs
+    }
+    rwyConfigs.rwyConfigs.clear()
+    for (i in 1 until data.size) {
+        val configId = data[i].toByte()
+        rwyConfigs.rwyConfigs.add(configId)
+    }
+}
+
+/** Adds a new approach NOZ group to the [currAirport] */
+private fun addApproachNOZGroup(currAirport: Airport): ApproachNOZGroup {
+    val appNozGroup = ApproachNOZGroup()
+    currAirport.entity[ApproachNOZChildren.mapper]?.nozGroups?.add(appNozGroup)
+    return appNozGroup
 }
 
 /**

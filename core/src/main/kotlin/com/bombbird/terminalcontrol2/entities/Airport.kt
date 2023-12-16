@@ -8,6 +8,7 @@ import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.Approach
 import com.bombbird.terminalcontrol2.navigation.SidStar
 import com.bombbird.terminalcontrol2.traffic.RunwayConfiguration
+import com.bombbird.terminalcontrol2.traffic.getAvailableApproaches
 import com.bombbird.terminalcontrol2.ui.panes.CommsPane
 import com.bombbird.terminalcontrol2.utilities.*
 import com.bombbird.terminalcontrol2.utilities.FileLog
@@ -42,6 +43,7 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advD
             realLifeIcao = realLifeMetarIcao
         }
         with<MetarInfo>()
+        with<ApproachNOZChildren>()
         if (!onClient) {
             with<RandomMetarInfo>()
             with<RandomAirlineData>()
@@ -101,6 +103,17 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advD
                             rwyConfigs.put(sConfig.id, RunwayConfiguration.fromSerialisedObject(sConfig, get(RunwayChildren.mapper)?.rwyMap ?: continue))
                         }
                     }
+                    get(ApproachNOZChildren.mapper)?.apply {
+                        nozGroups.clear()
+                        for (i in 0 until serialisedAirport.appNOZGroups.size) {
+                            val serialisedNOZGroup = serialisedAirport.appNOZGroups[i]
+                            val nozGroup = ApproachNOZGroup()
+                            for (zone in serialisedNOZGroup) {
+                                nozGroup.appNoz.add(ApproachNormalOperatingZone.fromSerialisedObject(zone))
+                            }
+                            nozGroups.add(nozGroup)
+                        }
+                    }
                 }
                 arpt.updateFromSerialisedMetar(serialisedAirport.metar)
             }
@@ -117,7 +130,8 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advD
                             val stars: Array<SidStar.STAR.SerialisedSTAR> = arrayOf(),
                             val approaches: Array<Approach.SerialisedApproach> = arrayOf(),
                             val rwyConfigs: Array<RunwayConfiguration.SerialisedRwyConfig> = arrayOf(),
-                            val metar: SerialisedMetar = SerialisedMetar()
+                            val metar: SerialisedMetar = SerialisedMetar(),
+                            val appNOZGroups: Array<Array<ApproachNormalOperatingZone.SerialisedApproachNOZ>> = arrayOf()
     )
 
     /**
@@ -140,6 +154,12 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advD
             val stars = get(STARChildren.mapper) ?: return emptySerialisableObject("STARChildren")
             val approaches = get(ApproachChildren.mapper) ?: return emptySerialisableObject("ApproachChildren")
             val rwyConfigs = get(RunwayConfigurationChildren.mapper) ?: return emptySerialisableObject("RunwayConfigurationChildren")
+            val appNOZGroups = get(ApproachNOZChildren.mapper) ?: return emptySerialisableObject("ApproachNOZChildren")
+            val allNOZZones = Array(appNOZGroups.nozGroups.size) { groupNo ->
+                Array(appNOZGroups.nozGroups[groupNo].appNoz.size) { zoneNo ->
+                    appNOZGroups.nozGroups[groupNo].appNoz[zoneNo].getSerialisableObject()
+                }
+            }
             return SerialisedAirport(
                 position.x, position.y,
                 altitude.altitudeFt.toInt().toShort(),
@@ -150,7 +170,7 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advD
                 stars.starMap.map { it.value.getSerialisedObject() }.toTypedArray(),
                 approaches.approachMap.map { it.value.getSerialisableObject() }.toTypedArray(),
                 rwyConfigs.rwyConfigs.map { it.value.getSerialisedObject() }.toTypedArray(),
-                getSerialisedMetar()
+                getSerialisedMetar(), allNOZZones
             )
         }
     }
@@ -269,7 +289,6 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advD
                     if (serialisedRunway.landing) entity += ActiveLanding()
                     if (serialisedRunway.takeoff) entity += ActiveTakeoff()
                     if (serialisedRunway.closed) entity += RunwayClosed()
-                    serialisedRunway.approachNOZ?.let { entity += ApproachNOZ(ApproachNormalOperatingZone.fromSerialisedObject(it)) }
                     serialisedRunway.departureNOZ?.let { entity += DepartureNOZ(DepartureNormalOperatingZone.fromSerialisedObject(it)) }
                 }
             }
@@ -284,7 +303,6 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advD
                                val rwyLabelPos: Byte = 0,
                                val towerName: String = "", val towerFreq: String = "",
                                val landing: Boolean = false, val takeoff: Boolean = false, val closed: Boolean = false,
-                               val approachNOZ: ApproachNormalOperatingZone.SerialisedApproachNOZ? = null,
                                val departureNOZ: DepartureNormalOperatingZone.SerialisedDepartureNOZ? = null)
 
         /**
@@ -304,7 +322,6 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advD
                 val direction = get(Direction.mapper) ?: return emptySerialisableObject("Direction")
                 val rwyInfo = get(RunwayInfo.mapper) ?: return emptySerialisableObject("RunwayInfo")
                 val rwyLabel = get(RunwayLabel.mapper) ?: return emptySerialisableObject("RunwayLabel")
-                val approachNOZ = get(ApproachNOZ.mapper)
                 val departureNOZ = get(DepartureNOZ.mapper)
                 return SerialisedRunway(
                     position.x, position.y,
@@ -315,7 +332,7 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advD
                     rwyLabel.positionToRunway,
                     rwyInfo.tower, rwyInfo.freq,
                     has(ActiveLanding.mapper), has(ActiveTakeoff.mapper), has(RunwayClosed.mapper),
-                    approachNOZ?.appNoz?.getSerialisableObject(), departureNOZ?.depNoz?.getSerialisableObject()
+                    departureNOZ?.depNoz?.getSerialisableObject()
                 )
             }
         }
@@ -418,7 +435,6 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advD
                         rwyObj.entity.let { rwy ->
                             rwy.remove<ActiveLanding>()
                             rwy.remove<ActiveTakeoff>()
-                            rwy[ApproachNOZ.mapper]?.appNoz?.entity?.plusAssign(DoNotRenderShape())
                             rwy[DepartureNOZ.mapper]?.depNoz?.entity?.plusAssign(DoNotRenderShape())
                             rwy += DoNotRenderLabel()
                             rwy.remove<DoNotRenderShape>()
@@ -430,7 +446,6 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advD
                     for (i in 0 until config.arrRwys.size) {
                         rwyMap[config.arrRwys[i]?.entity?.get(RunwayInfo.mapper)?.rwyId]?.entity?.let { rwy ->
                             rwy += ActiveLanding()
-                            rwy[ApproachNOZ.mapper]?.appNoz?.let { allAppNOZ.add(it) }
                             rwy.remove<DoNotRenderLabel>()
                             rwy[OppositeRunway.mapper]?.oppRwy?.add(DoNotRenderShape())
                             arrRwyNames[i] = rwy[RunwayInfo.mapper]?.rwyName ?: ""
@@ -470,6 +485,38 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advD
             }
         }
         CLIENT_SCREEN?.uiPane?.mainInfoObj?.setAirportRunwayConfigPaneState(entity)
+
+        // Find NOZ group to render
+        val availableApproaches = getAvailableApproaches(entity, null)
+        availableApproaches.removeIndex(0)
+        val appNOZGroups = entity[ApproachNOZChildren.mapper]?.nozGroups
+        if (appNOZGroups != null) {
+            var foundGroupToRender = false
+            for (i in 0 until appNOZGroups.size) {
+                val nozGroup = appNOZGroups[i]
+                var foundZoneWithNoApp = false
+
+                if (!foundGroupToRender) for (j in 0 until nozGroup.appNoz.size) {
+                    val appNames = nozGroup.appNoz[j].entity[ApproachList.mapper]
+                    if (appNames == null) {
+                        foundZoneWithNoApp = true
+                        break
+                    }
+                    if (!availableApproaches.containsAny(GdxArray(appNames.approachList), false)) {
+                        foundZoneWithNoApp = true
+                        break
+                    }
+                }
+                // We will not render this group if a first group has already been found
+                else foundZoneWithNoApp = true
+
+                for (j in 0 until nozGroup.appNoz.size) {
+                    if (foundZoneWithNoApp) nozGroup.appNoz[j].entity += DoNotRenderShape()
+                    else nozGroup.appNoz[j].entity.remove<DoNotRenderShape>()
+                }
+                if (!foundZoneWithNoApp) foundGroupToRender = true
+            }
+        }
     }
 
     /**

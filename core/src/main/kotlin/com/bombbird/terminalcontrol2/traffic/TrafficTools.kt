@@ -477,11 +477,19 @@ private fun generateRandomCallsign(airline: String, private: Boolean, gs: GameSe
 fun getAvailableApproaches(airport: Entity, currSelectedApp: String?): GdxArray<String> {
     val array = GdxArray<String>().apply { add("Approach") }
     val rwys = airport[RunwayChildren.mapper]?.rwyMap ?: return array
+    val activeRwyConfig = airport[ActiveRunwayConfig.mapper]
+    if (activeRwyConfig == null) {
+        FileLog.info("TrafficTools", "No active runway configuration for approach selection")
+        return array
+    }
     airport[ApproachChildren.mapper]?.approachMap?.let { appMap ->
         Entries(appMap).forEach { appEntry ->
             val app = appEntry.value
+            val allowedConfigs = app.entity[RunwayConfigurationList.mapper]?.rwyConfigs ?: return@forEach
+            if (!allowedConfigs.contains(activeRwyConfig.configId, false)) return@forEach
             app.entity[ApproachInfo.mapper]?.also {
-                // Add to list of eligible approaches if its runway is active for landings and time restriction checks passes
+                // Add to list of eligible approaches if its runway is active for landings, time restriction checks passes
+                // and the runway configuration in use is one of the allowed configs
                 if (rwys[it.rwyId]?.entity?.get(ActiveLanding.mapper) == null) return@forEach
                 if (rwys[it.rwyId]?.entity?.has(RunwayClosed.mapper) != false) return@forEach
                 if (!app.isUsableForDayNight()) return@forEach

@@ -4,6 +4,7 @@ import com.badlogic.ashley.core.Entity
 import com.badlogic.gdx.math.Circle
 import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
+import com.bombbird.terminalcontrol2.entities.ApproachNormalOperatingZone
 import com.bombbird.terminalcontrol2.entities.RouteZone
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.MIN_SEP
@@ -27,43 +28,53 @@ fun checkIsAircraftConflictInhibited(aircraft1: Entity, aircraft2: Entity): Bool
     val pos1 = aircraft1[Position.mapper] ?: return true
     val pos2 = aircraft2[Position.mapper] ?: return true
 
-    val arrival1 = aircraft1[ArrivalAirport.mapper]?.arptId?.let {
+    val arrArpt1 = aircraft1[ArrivalAirport.mapper]?.arptId?.let {
         GAME.gameServer?.airports?.get(it)?.entity
     }
-    val arrival2 = aircraft2[ArrivalAirport.mapper]?.arptId?.let {
+    val arrArpt2 = aircraft2[ArrivalAirport.mapper]?.arptId?.let {
         GAME.gameServer?.airports?.get(it)?.entity
     }
-    val dep1 = aircraft1[DepartureAirport.mapper]?.arptId?.let {
-        GAME.gameServer?.airports?.get(it)?.entity
-    }
-    val dep2 = aircraft2[DepartureAirport.mapper]?.arptId?.let {
-        GAME.gameServer?.airports?.get(it)?.entity
-    }
+    val dep1 = aircraft1[DepartureAirport.mapper]
+    val dep2 = aircraft2[DepartureAirport.mapper]
+    val depArpt1 = GAME.gameServer?.airports?.get(dep1?.arptId)?.entity
+    val depArpt2 = GAME.gameServer?.airports?.get(dep2?.arptId)?.entity
 
     // Inhibit if either plane is less than 1000 ft AGL (to their respective arrival/departure airports)
-    val arptElevation1 = (arrival1 ?: dep1)?.get(Altitude.mapper)?.altitudeFt ?: 0f
-    val arptElevation2 = (arrival2 ?: dep2)?.get(Altitude.mapper)?.altitudeFt ?: 0f
+    val arptElevation1 = (arrArpt1 ?: depArpt1)?.get(Altitude.mapper)?.altitudeFt ?: 0f
+    val arptElevation2 = (arrArpt2 ?: depArpt2)?.get(Altitude.mapper)?.altitudeFt ?: 0f
     if (alt1.altitudeFt < arptElevation1 + 1000 || alt2.altitudeFt < arptElevation2 + 1000) return true
 
     // Inhibit if both planes are arriving at same airport, and are both inside different NOZs of their cleared approaches
-    val app1 = aircraft1[ClearanceAct.mapper]?.actingClearance?.clearanceState?.clearedApp?.let { arrival1?.get(
+    val app1 = aircraft1[ClearanceAct.mapper]?.actingClearance?.clearanceState?.clearedApp?.let { arrArpt1?.get(
         ApproachChildren.mapper)?.approachMap?.get(it) }
-    val app2 = aircraft2[ClearanceAct.mapper]?.actingClearance?.clearanceState?.clearedApp?.let { arrival2?.get(
+    val app2 = aircraft2[ClearanceAct.mapper]?.actingClearance?.clearanceState?.clearedApp?.let { arrArpt2?.get(
         ApproachChildren.mapper)?.approachMap?.get(it) }
-    val appNoz1 = app1?.entity?.get(ApproachInfo.mapper)?.rwyObj?.entity?.get(ApproachNOZ.mapper)?.appNoz
-    val appNoz2 = app2?.entity?.get(ApproachInfo.mapper)?.rwyObj?.entity?.get(ApproachNOZ.mapper)?.appNoz
-    // Since appNoz1 and appNoz2 are nullable, the .contains method must return a true (not false or null)
-    if (arrival1 === arrival2 && appNoz1 !== appNoz2 &&
-        appNoz1?.contains(pos1.x, pos1.y) == true && appNoz2?.contains(pos2.x, pos2.y) == true) return true
+    val app1Name = app1?.entity?.get(ApproachInfo.mapper)?.approachName
+    val app2Name = app2?.entity?.get(ApproachInfo.mapper)?.approachName
+    val nozGroups = if (arrArpt1 != null && arrArpt1 == arrArpt2 && app1Name != null && app2Name != null) {
+        arrArpt1[ApproachNOZChildren.mapper]?.nozGroups
+    } else null
+    if (nozGroups != null && app1Name != null && app2Name != null) {
+        // Find an approach NOZ group containing both approaches each in a different zone
+        for (i in 0 until nozGroups.size) {
+            val zones = nozGroups[i].appNoz
+            var app1Zone: ApproachNormalOperatingZone? = null
+            var app2Zone: ApproachNormalOperatingZone? = null
+            for (j in 0 until zones.size) {
+                val zone = zones[j]
+                val appNames = zone.entity[ApproachList.mapper] ?: continue
+                if (appNames.approachList.contains(app1Name) && zone.contains(pos1.x, pos1.y)) app1Zone = zone
+                if (appNames.approachList.contains(app2Name) && zone.contains(pos2.x, pos2.y)) app2Zone = zone
+            }
+            // If approach NOZs are found for both, and are not the same zone, inhibit
+            if (app1Zone != null && app2Zone != null && app1Zone !== app2Zone) return true
+        }
+    }
 
     // Inhibit if both planes are departing from the same airport, and are both inside different NOZs of their departure runways
-    val depArpt1 = aircraft1[DepartureAirport.mapper]
-    val depArpt2 = aircraft2[DepartureAirport.mapper]
-    val depArptEntity1 = GAME.gameServer?.airports?.get(depArpt1?.arptId)
-    val depArptEntity2 = GAME.gameServer?.airports?.get(depArpt2?.arptId)
-    if (depArpt1 != null && depArpt2 != null && depArptEntity1 != null && depArptEntity2 != null) {
-        val depRwy1 = depArptEntity1.entity[RunwayChildren.mapper]?.rwyMap?.get(depArpt1.rwyId)
-        val depRwy2 = depArptEntity2.entity[RunwayChildren.mapper]?.rwyMap?.get(depArpt2.rwyId)
+    if (dep1 != null && dep2 != null && depArpt1 != null && depArpt2 != null) {
+        val depRwy1 = depArpt1[RunwayChildren.mapper]?.rwyMap?.get(dep1.rwyId)
+        val depRwy2 = depArpt2[RunwayChildren.mapper]?.rwyMap?.get(dep2.rwyId)
         val depNoz1 = depRwy1?.entity?.get(DepartureNOZ.mapper)?.depNoz
         val depNoz2 = depRwy2?.entity?.get(DepartureNOZ.mapper)?.depNoz
         // Since depNoz1 and depNoz2 are nullable, the .contains method must return a true (not false or null)
@@ -71,12 +82,12 @@ fun checkIsAircraftConflictInhibited(aircraft1: Entity, aircraft2: Entity): Bool
             depNoz1?.contains(pos1.x, pos1.y) == true && depNoz2?.contains(pos2.x, pos2.y) == true) return true
 
         // Allow simultaneous departures on divergent headings of at least 15 degrees
-        if (aircraft1.has(DivergentDepartureAllowed.mapper) && aircraft2.has(DivergentDepartureAllowed.mapper) && depArptEntity1 == depArptEntity2) {
+        if (aircraft1.has(DivergentDepartureAllowed.mapper) && aircraft2.has(DivergentDepartureAllowed.mapper) && depArpt1 == depArpt2) {
             val track1 = convertWorldAndRenderDeg(aircraft1[Direction.mapper]?.trackUnitVector?.angleDeg() ?: 0f)
             val track2 = convertWorldAndRenderDeg(aircraft2[Direction.mapper]?.trackUnitVector?.angleDeg() ?: 0f)
 
             // Identify which plane is on the left, right
-            depArptEntity1.entity[Position.mapper]?.let { arptPos ->
+            depArpt1[Position.mapper]?.let { arptPos ->
                 val plane1Offset = Vector2(pos1.x - arptPos.x, pos1.y - arptPos.y)
                 val plane2Offset = Vector2(pos2.x - arptPos.x, pos2.y - arptPos.y)
 
@@ -125,8 +136,8 @@ fun getMinimaRequired(aircraft1: Entity, aircraft2: Entity): ConflictMinima {
         ApproachChildren.mapper)?.approachMap?.get(it) }
     val app2 = aircraft2[ClearanceAct.mapper]?.actingClearance?.clearanceState?.clearedApp?.let { arrival2?.get(
         ApproachChildren.mapper)?.approachMap?.get(it) }
-    val appNoz1 = app1?.entity?.get(ApproachInfo.mapper)?.rwyObj?.entity?.get(ApproachNOZ.mapper)?.appNoz
-    val appNoz2 = app2?.entity?.get(ApproachInfo.mapper)?.rwyObj?.entity?.get(ApproachNOZ.mapper)?.appNoz
+    val appNoz1 = app1?.entity?.get(ApproachInfo.mapper)?.rwyObj?.entity?.get(ApproachNOZGroup.mapper)?.appNoz
+    val appNoz2 = app2?.entity?.get(ApproachInfo.mapper)?.rwyObj?.entity?.get(ApproachNOZGroup.mapper)?.appNoz
 
     var latMinima = MIN_SEP
     var altMinima = VERT_SEP

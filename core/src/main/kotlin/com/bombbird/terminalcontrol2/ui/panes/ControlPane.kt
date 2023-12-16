@@ -542,7 +542,8 @@ class ControlPane {
         updateApproachSelectBoxChoices(parentPane.aircraftArrivalArptId, appName)
 
         altSelectBox.selected = if (clearedAlt >= TRANS_LVL * 100) "FL${clearedAlt / 100}" else clearedAlt.toString()
-        spdSelectBox.selected = clearedSpd
+        if (spdSelectBox.items.contains(clearedSpd, false)) spdSelectBox.selected = clearedSpd
+        else spdSelectBox.selected = optimalSpd
         modificationInProgress = true
         appSelectBox.selected = appName ?: NO_APP_SELECTION
         modificationInProgress = false
