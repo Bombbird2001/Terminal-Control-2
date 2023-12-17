@@ -47,8 +47,7 @@ class DisplaySettings: BaseSettings() {
                             }
                             defaultSettingsLabel("Radar sweep:")
                             radarSweepSelectBox = defaultSettingsSelectBox<String>().apply {
-                                isDisabled = true
-                                setItems("0.5$SECONDS_SUFFIX", "1$SECONDS_SUFFIX", "2$SECONDS_SUFFIX", "4$SECONDS_SUFFIX", "10$SECONDS_SUFFIX") // TODO Incremental unlocks
+                                setItems("0.5$SECONDS_SUFFIX", "1$SECONDS_SUFFIX", "2$SECONDS_SUFFIX", "4$SECONDS_SUFFIX", "6$SECONDS_SUFFIX")
                             }
                             newSettingsRow()
                             defaultSettingsLabel("Aircraft trail:")
