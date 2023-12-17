@@ -68,10 +68,14 @@ class PhysicsSystem: EntitySystem() {
                 val spd = get(Speed.mapper) ?: return@apply
                 val dir = get(Direction.mapper) ?: return@apply
                 val velVector = dir.trackUnitVector
-                velVector.timesAssign(ktToPxps(spd.speedKts) * deltaTime)
-                pos.x += velVector.x
-                pos.y += velVector.y
-                velVector.setLength(1f)
+                if (spd.speedKts > 0) {
+                    // > 0 check to prevent the unit vector from being set to 0 and losing direction information
+                    // (Mutating it directly for memory optimisations is a necessary evil)
+                    velVector.timesAssign(ktToPxps(spd.speedKts) * deltaTime)
+                    pos.x += velVector.x
+                    pos.y += velVector.y
+                    velVector.setLength(1f)
+                }
                 dir.trackUnitVector.rotateDeg(-spd.angularSpdDps * deltaTime)
                 alt.altitudeFt += spd.vertSpdFpm / 60 * deltaTime
             }
@@ -202,8 +206,7 @@ class PhysicsSystem: EntitySystem() {
                 val affectedByWind = get(AffectedByWind.mapper)
 
                 groundTrack.trackVectorPxps = if (takeoffRoll != null || landingRoll != null) {
-                    val tailwind = affectedByWind?.windVectorPxps?.dot(dir.trackUnitVector) ?: 0f
-                    dir.trackUnitVector * max(ktToPxps(speed.speedKts) + tailwind, 0f)
+                    dir.trackUnitVector * max(ktToPxps(speed.speedKts), 0f)
                 } else {
                     val tasVector = dir.trackUnitVector * ktToPxps(speed.speedKts.toInt())
                     affectedByWind?.windVectorPxps?.let {

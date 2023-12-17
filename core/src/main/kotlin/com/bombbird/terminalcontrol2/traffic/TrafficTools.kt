@@ -331,7 +331,7 @@ fun clearForTakeoff(aircraft: Entity, rwy: Entity) {
             val wind = getClosestAirportWindVector(pos.x, pos.y)
             calculateIASFromTAS(rwyAlt, pxpsToKt(wind.dot(dir.trackUnitVector)))
         }
-        get(Speed.mapper)?.speedKts = -tailwind
+        get(Speed.mapper)?.speedKts = 5f
         // Calculate required acceleration
         val acPerf = get(AircraftInfo.mapper)?.aircraftPerf ?: return@apply
         this += TakeoffRoll(max(1.5f,

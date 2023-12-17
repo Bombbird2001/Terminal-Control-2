@@ -27,7 +27,8 @@ import kotlin.math.*
  */
 class AISystem: EntitySystem() {
     companion object {
-        private val takeoffAccFamily: Family = allOf(Acceleration::class, Altitude::class, AircraftInfo::class, TakeoffRoll::class, Speed::class, IndicatedAirSpeed::class, AffectedByWind::class)
+        private val takeoffAccFamily: Family = allOf(Acceleration::class, Altitude::class, AircraftInfo::class,
+            TakeoffRoll::class, Speed::class, IndicatedAirSpeed::class, AffectedByWind::class, Direction::class)
             .exclude(WaitingTakeoff::class).get()
         private val takeoffClimbFamily: Family = allOf(Altitude::class, CommandTarget::class, TakeoffClimb::class, ClearanceAct::class, AircraftInfo::class).get()
         private val landingAccFamily: Family = allOf(Acceleration::class, LandingRoll::class, GroundTrack::class).get()
@@ -117,7 +118,9 @@ class AISystem: EntitySystem() {
                 val alt = get(Altitude.mapper) ?: return@apply
                 val aircraftInfo = get(AircraftInfo.mapper) ?: return@apply
                 val ias = get(IndicatedAirSpeed.mapper) ?: return@apply
-                ias.iasKt = calculateIASFromTAS(alt.altitudeFt, spd.speedKts)
+                val dir = get(Direction.mapper) ?: return@apply
+                val tailwindPxps = get(AffectedByWind.mapper)?.windVectorPxps?.dot(dir.trackUnitVector) ?: 0f
+                ias.iasKt = calculateIASFromTAS(alt.altitudeFt, spd.speedKts - pxpsToKt(tailwindPxps))
                 if (ias.iasKt >= aircraftInfo.aircraftPerf.vR) {
                     // Transition to takeoff climb mode
                     remove<TakeoffRoll>()
