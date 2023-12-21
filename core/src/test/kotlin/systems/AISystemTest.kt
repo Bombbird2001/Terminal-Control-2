@@ -56,7 +56,7 @@ object AISystemTest: FunSpec() {
             val takeoffAcc = entity[TakeoffRoll.mapper]?.targetAccMps2.shouldNotBeNull()
             val acPerf = entity[AircraftInfo.mapper]?.aircraftPerf.shouldNotBeNull()
             entity[AircraftInfo.mapper]?.maxAcc = calculateMaxAcceleration(acPerf, alt, 0f, 0f,
-                onApproach = false, takingOff = true, takeoffClimb = false)
+                onApproach = false, takingOff = true, takeoffGoAround = false)
             val acMaxAcc = entity[AircraftInfo.mapper]?.maxAcc.shouldNotBeNull()
             runUpdate()
             entity[Acceleration.mapper]?.dSpeedMps2 shouldBe min(takeoffAcc, acMaxAcc)
@@ -442,6 +442,7 @@ object AISystemTest: FunSpec() {
         entity += Speed()
         entity += IndicatedAirSpeed()
         entity += AffectedByWind()
+        entity += Direction(Vector2.Y)
     }
 
     private fun initTakeoffClimbEntity() {

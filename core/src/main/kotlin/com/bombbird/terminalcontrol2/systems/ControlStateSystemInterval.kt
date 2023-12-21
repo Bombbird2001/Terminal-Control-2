@@ -108,7 +108,7 @@ class ControlStateSystemInterval: IntervalSystem(1f) {
                 val distReqPx = mToPx(
                     calculateAccelerationDistanceRequired(
                         pxpsToKt(gs.trackVectorPxps.len()), newGs,
-                    calculateMinAcceleration(acInfo.aircraftPerf, alt.altitudeFt, calculateTASFromIAS(alt.altitudeFt, nextMaxSpd.toFloat()), -500f, approach, takingOff = false, takeoffClimb = false)
+                    calculateMinAcceleration(acInfo.aircraftPerf, alt.altitudeFt, calculateTASFromIAS(alt.altitudeFt, nextMaxSpd.toFloat()), -500f, approach, takingOff = false, takeoffGoAround = false)
                     ) + 2000)
                 // Calculate distance remaining on route from the waypoint with speed restriction
                 val distToGoPx = calculateDistToGo(pos, nextLeg, nextRestr.first, actingClearance.route)

@@ -51,7 +51,7 @@ class PhysicsSystemInterval: IntervalSystem(1f) {
                 val acc = get(Acceleration.mapper) ?: return@apply
                 val aircraftInfo = get(AircraftInfo.mapper) ?: return@apply
                 val takingOff = has(TakeoffRoll.mapper) || has(LandingRoll.mapper) || has(WaitingTakeoff.mapper)
-                val takeoffClimb = has(TakeoffClimb.mapper)
+                val takeoffGoAround = has(TakeoffClimb.mapper) || has(RecentGoAround.mapper)
                 val approach = has(LocalizerCaptured.mapper) || has(GlideSlopeCaptured.mapper)
                         || has(VisualCaptured.mapper) || (get(CirclingApproach.mapper)?.phase ?: 0) >= 1
                 val expediting = has(CommandExpedite.mapper)
@@ -65,10 +65,10 @@ class PhysicsSystemInterval: IntervalSystem(1f) {
                     else if (cmd.targetAltFt < alt.altitudeFt - 100) -500f
                     else 0f
                 }
-                aircraftInfo.maxAcc = calculateMaxAcceleration(aircraftInfo.aircraftPerf, alt.altitudeFt, spd.speedKts, fixedVs, approach, takingOff, takeoffClimb)
-                aircraftInfo.minAcc = calculateMinAcceleration(aircraftInfo.aircraftPerf, alt.altitudeFt, spd.speedKts, fixedVs, approach || expediting, takingOff, takeoffClimb)
-                aircraftInfo.maxVs = calculateMaxVerticalSpd(aircraftInfo.aircraftPerf, alt.altitudeFt, spd.speedKts, acc.dSpeedMps2, approach, takingOff, takeoffClimb)
-                aircraftInfo.minVs = calculateMinVerticalSpd(aircraftInfo.aircraftPerf, alt.altitudeFt, spd.speedKts, acc.dSpeedMps2, approach || expediting, takingOff, takeoffClimb)
+                aircraftInfo.maxAcc = calculateMaxAcceleration(aircraftInfo.aircraftPerf, alt.altitudeFt, spd.speedKts, fixedVs, approach, takingOff, takeoffGoAround)
+                aircraftInfo.minAcc = calculateMinAcceleration(aircraftInfo.aircraftPerf, alt.altitudeFt, spd.speedKts, fixedVs, approach || expediting, takingOff, takeoffGoAround)
+                aircraftInfo.maxVs = calculateMaxVerticalSpd(aircraftInfo.aircraftPerf, alt.altitudeFt, spd.speedKts, acc.dSpeedMps2, approach, takingOff, takeoffGoAround)
+                aircraftInfo.minVs = calculateMinVerticalSpd(aircraftInfo.aircraftPerf, alt.altitudeFt, spd.speedKts, acc.dSpeedMps2, approach || expediting, takingOff, takeoffGoAround)
             }
         }
 

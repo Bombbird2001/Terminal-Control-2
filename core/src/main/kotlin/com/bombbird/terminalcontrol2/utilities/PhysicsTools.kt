@@ -123,14 +123,14 @@ fun calculateMaxPropThrust(propPowerWSLISA: Int, propArea: Float, tasKt: Float, 
  * @param aircraftPerfData the aircraft performance data of the aircraft
  * @param altitudeFt the altitude, in feet, the aircraft is flying at
  * @param tasKt the TAS, in knots, the aircraft is flying at
- * @param takeoffClimb whether the aircraft is still in the takeoff climb phase
+ * @param takeoffGoAround whether the aircraft is still in the takeoff climb or go around phase
  * @return the maximum achievable drag, in newtons, of the aircraft
  */
-fun calculateMaxDrag(aircraftPerfData: AircraftTypeData.AircraftPerfData, altitudeFt: Float, tasKt: Float, takingOff: Boolean, takeoffClimb: Boolean): Float {
+fun calculateMaxDrag(aircraftPerfData: AircraftTypeData.AircraftPerfData, altitudeFt: Float, tasKt: Float, takingOff: Boolean, takeoffGoAround: Boolean): Float {
     return calculateParasiticDrag(aircraftPerfData.maxCdTimesRefArea, calculateAirDensity(
         calculatePressureAtAlt(altitudeFt), calculateTempAtAlt(altitudeFt)
-    ), tasKt) + if (takingOff) 0f else calculateInducedDrag(aircraftPerfData.massKg, aircraftPerfData.vR, aircraftPerfData.maxIas,
-        calculateMaxThrust(aircraftPerfData, altitudeFt, tasKt), altitudeFt, tasKt, takeoffClimb)
+    ), tasKt) + if (takingOff) 0f else calculateInducedDrag(aircraftPerfData.massKg, aircraftPerfData.maxIas,
+        calculateMaxThrust(aircraftPerfData, altitudeFt, tasKt), altitudeFt, tasKt, takeoffGoAround)
 }
 
 /**
@@ -138,14 +138,14 @@ fun calculateMaxDrag(aircraftPerfData: AircraftTypeData.AircraftPerfData, altitu
  * @param aircraftPerfData the aircraft performance data of the aircraft
  * @param altitudeFt the altitude, in feet, the aircraft is flying at
  * @param tasKt the TAS, in knots, the aircraft is flying at
- * @param takeoffClimb whether the aircraft is still in the takeoff climb phase
+ * @param takeoffGoAround whether the aircraft is still in the takeoff climb phase
  * @return the minimum achievable drag, in newtons, of the aircraft
  */
-fun calculateMinDrag(aircraftPerfData: AircraftTypeData.AircraftPerfData, altitudeFt: Float, tasKt: Float, takingOff: Boolean, takeoffClimb: Boolean): Float {
+fun calculateMinDrag(aircraftPerfData: AircraftTypeData.AircraftPerfData, altitudeFt: Float, tasKt: Float, takingOff: Boolean, takeoffGoAround: Boolean): Float {
     return calculateParasiticDrag(aircraftPerfData.minCd0TimesRefArea, calculateAirDensity(
         calculatePressureAtAlt(altitudeFt), calculateTempAtAlt(altitudeFt)
-    ), tasKt) + if (takingOff) 0f else calculateInducedDrag(aircraftPerfData.massKg, aircraftPerfData.vR, aircraftPerfData.maxIas,
-        calculateMaxThrust(aircraftPerfData, altitudeFt, tasKt), altitudeFt, tasKt, takeoffClimb)
+    ), tasKt) + if (takingOff) 0f else calculateInducedDrag(aircraftPerfData.massKg, aircraftPerfData.maxIas,
+        calculateMaxThrust(aircraftPerfData, altitudeFt, tasKt), altitudeFt, tasKt, takeoffGoAround)
 }
 
 /**
@@ -165,26 +165,23 @@ fun calculateParasiticDrag(cdTimesRefArea: Float, densityKgpm3: Float, tasKt: Fl
  *
  * This calculation assumes the plane is not experiencing any net vertical force (i.e. constant vertical speed)
  * @param massKg the mass, in kilograms, of the aircraft
- * @param vRKt the aircraft's rotation IAS, in knots, which will be assumed to be the speed at which the aircraft will reach
- * an angle of attack of 9 degrees (it is assumed that at low speeds, pilots will utilise flaps and slats to help reduce
- * the angle of attack, hence it is capped at 9 degrees instead)
- * @param maxIasKt the aircraft's max IAS, in knots, which will be assumed to be the speed at which the aircraft will attain an angle
- * of attack of 2 degrees
+ * @param maxIasKt the aircraft's max IAS, in knots, which will be assumed to be the speed at which the aircraft will
+ * attain an angle of attack of 2 degrees
  * @param thrustN the thrust, in newtons, produced by the engine which will be taken into account for calculations of the
  * vertical component of forces acting on the aircraft
  * @param altitudeFt the altitude, in feet, of the aircraft
  * @param tasKt the true airspeed, in knots, of the aircraft
- * @param takeoffClimb whether the aircraft is on its initial takeoff climb; this is to prevent induced drag from becoming
- * too high due to the calculated angle of attack being higher than actuality due to low takeoff speed; this will cap the
- * AOA at a max of 7 degrees during this phase
- * @return the induced drag, in newtons, an aircraft of mass of [massKg] experiences flying at TAS of [tasKt] an altitude of [altitudeFt]
+ * @param takeoffGoAround whether the aircraft is on its initial takeoff climb or go around phase; this is to prevent
+ * induced drag from becoming too high due to the calculated angle of attack being higher than actuality due to low
+ * takeoff/approach speed; this will cap the AOA at a max of 7 degrees during this phase
+ * @return the induced drag, in newtons, an aircraft of mass of [massKg] experiences flying at TAS of [tasKt] an
+ * altitude of [altitudeFt]
  */
-fun calculateInducedDrag(massKg: Int, vRKt: Short, maxIasKt: Short, thrustN: Float, altitudeFt: Float, tasKt: Float, takeoffClimb: Boolean): Float {
+fun calculateInducedDrag(massKg: Int, maxIasKt: Short, thrustN: Float, altitudeFt: Float, tasKt: Float, takeoffGoAround: Boolean): Float {
     val iasKt = calculateIASFromTAS(altitudeFt, tasKt)
-    val minAoa = 2.0
-    val maxAoa = 9.0
-    val aoaDegUncorrected = MathUtils.clamp(minAoa + ((maxIasKt - iasKt) / (maxIasKt - vRKt)).pow(2) * (maxAoa - minAoa), minAoa, maxAoa)
-    val aoaDeg = if (takeoffClimb) min(7.0, aoaDegUncorrected) else aoaDegUncorrected
+    val minAoa = 2.0f
+    val maxAoa = if (takeoffGoAround) 6.0f else 9.0f
+    val aoaDeg = MathUtils.clamp(minAoa * (maxIasKt / iasKt).pow(2), minAoa, maxAoa).toDouble()
     return ((massKg * GRAVITY_ACCELERATION_MPS2 - thrustN * sin(Math.toRadians(aoaDeg))) * tan(Math.toRadians(aoaDeg))).toFloat()
 }
 
@@ -248,14 +245,14 @@ fun calculateIASFromMach(altitudeFt: Float, mach: Float): Float {
  * @param vertSpdFpm the minimum vertical speed, in feet per minute, the aircraft is required to maintain during climb
  * @param onApproach whether the aircraft is on approach or expediting
  * @param takingOff whether the aircraft is in takeoff or landing roll
- * @param takeoffClimb whether the aircraft is still in the takeoff climb phase
+ * @param takeoffGoAround whether the aircraft is still in the takeoff climb or go around phase
  * @return the maximum acceleration, in metres per second^2, that is achievable by the aircraft
  */
 fun calculateMaxAcceleration(aircraftPerfData: AircraftTypeData.AircraftPerfData, altitudeFt: Float, tasKt: Float, vertSpdFpm: Float,
-                             onApproach: Boolean, takingOff: Boolean, takeoffClimb: Boolean): Float {
+                             onApproach: Boolean, takingOff: Boolean, takeoffGoAround: Boolean): Float {
     val thrust = calculateMaxThrust(aircraftPerfData, altitudeFt, tasKt)
-    val drag = if (onApproach) calculateMaxDrag(aircraftPerfData, altitudeFt, tasKt, takingOff, takeoffClimb)
-    else calculateMinDrag(aircraftPerfData, altitudeFt, tasKt, takingOff, takeoffClimb)
+    val drag = if (onApproach) calculateMaxDrag(aircraftPerfData, altitudeFt, tasKt, takingOff, takeoffGoAround)
+    else calculateMinDrag(aircraftPerfData, altitudeFt, tasKt, takingOff, takeoffGoAround)
     return calculateAcceleration(thrust, drag, aircraftPerfData.massKg) + (if (takingOff) 0f else calculateAccelerationDueToVertSpd(vertSpdFpm, tasKt))
 }
 
@@ -268,14 +265,14 @@ fun calculateMaxAcceleration(aircraftPerfData: AircraftTypeData.AircraftPerfData
  * @param vertSpdFpm the maximum vertical speed, in feet per minute, the aircraft is required to maintain during descent
  * @param approachExpedite whether the aircraft is on approach or expediting
  * @param takingOff whether the aircraft is in takeoff or landing roll
- * @param takeoffClimb whether the aircraft is still in the takeoff climb phase
+ * @param takeoffGoAround whether the aircraft is still in the takeoff climb or go around phase
  * @return the minimum acceleration, in metres per second^2, that is achievable by the aircraft
  */
 fun calculateMinAcceleration(aircraftPerfData: AircraftTypeData.AircraftPerfData, altitudeFt: Float, tasKt: Float, vertSpdFpm: Float,
-                             approachExpedite: Boolean, takingOff: Boolean, takeoffClimb: Boolean): Float {
+                             approachExpedite: Boolean, takingOff: Boolean, takeoffGoAround: Boolean): Float {
     val thrust = calculateMaxThrust(aircraftPerfData, altitudeFt, tasKt) * 0.05f // Assume idle power/thrust is 5% of max thrust
-    val drag = if (approachExpedite) calculateMaxDrag(aircraftPerfData, altitudeFt, tasKt, takingOff, takeoffClimb)
-    else calculateMinDrag(aircraftPerfData, altitudeFt, tasKt, takingOff, takeoffClimb)
+    val drag = if (approachExpedite) calculateMaxDrag(aircraftPerfData, altitudeFt, tasKt, takingOff, takeoffGoAround)
+    else calculateMinDrag(aircraftPerfData, altitudeFt, tasKt, takingOff, takeoffGoAround)
     return calculateAcceleration(thrust, drag, aircraftPerfData.massKg) + (if (takingOff) 0f else calculateAccelerationDueToVertSpd(vertSpdFpm, tasKt))
 }
 
@@ -323,14 +320,16 @@ fun calculateRequiredAcceleration(initialSpdKt: Short, targetSpdKt: Short, dista
  * @param accMps2 the acceleration, in metres per second^2, the aircraft is experiencing
  * @param onApproach whether the aircraft is on approach
  * @param takingOff whether the aircraft is in takeoff or landing roll
+ * @param takeoffGoAround whether the aircraft is still in the takeoff climb or go around phase
  * @return the maximum vertical speed, in feet per minute, that is achievable by the aircraft
  */
-fun calculateMaxVerticalSpd(aircraftPerfData: AircraftTypeData.AircraftPerfData, altitudeFt: Float, tasKt: Float, accMps2: Float, onApproach: Boolean, takingOff: Boolean, takeoffClimb: Boolean): Float {
+fun calculateMaxVerticalSpd(aircraftPerfData: AircraftTypeData.AircraftPerfData, altitudeFt: Float, tasKt: Float,
+                            accMps2: Float, onApproach: Boolean, takingOff: Boolean, takeoffGoAround: Boolean): Float {
     val thrustN = calculateMaxThrust(aircraftPerfData, altitudeFt, tasKt)
-    val dragN = calculateMinDrag(aircraftPerfData, altitudeFt, tasKt, takingOff, takeoffClimb)
+    val dragN = calculateMinDrag(aircraftPerfData, altitudeFt, tasKt, takingOff, takeoffGoAround)
     val maxVertSpd = calculateVerticalSpd(thrustN - dragN, tasKt, accMps2, aircraftPerfData.massKg)
     // If aircraft is on approach, taking off or in takeoff climb, it should climb at 1000fpm minimum
-    if (onApproach || takingOff || takeoffClimb) return max(maxVertSpd, 1000f)
+    if (onApproach || takingOff || takeoffGoAround) return max(maxVertSpd, 1000f)
     return maxVertSpd
 }
 
@@ -343,12 +342,14 @@ fun calculateMaxVerticalSpd(aircraftPerfData: AircraftTypeData.AircraftPerfData,
  * @param accMps2 the acceleration, in metres per second^2, the aircraft is experiencing
  * @param approachExpedite whether the aircraft is on approach or expediting
  * @param takingOff whether the aircraft is in takeoff or landing roll
+ * @param takeoffGoAround whether the aircraft is still in the takeoff climb or go around phase
  * @return the minimum vertical speed, i.e. maximum descent vertical speed, in feet per minute, that is achievable by the aircraft
  */
-fun calculateMinVerticalSpd(aircraftPerfData: AircraftTypeData.AircraftPerfData, altitudeFt: Float, tasKt: Float, accMps2: Float, approachExpedite: Boolean, takingOff: Boolean, takeoffClimb: Boolean): Float {
+fun calculateMinVerticalSpd(aircraftPerfData: AircraftTypeData.AircraftPerfData, altitudeFt: Float, tasKt: Float,
+                            accMps2: Float, approachExpedite: Boolean, takingOff: Boolean, takeoffGoAround: Boolean): Float {
     val thrustN = calculateMaxThrust(aircraftPerfData, altitudeFt, tasKt) * 0.05f
-    val dragN = if (approachExpedite) calculateMaxDrag(aircraftPerfData, altitudeFt, tasKt, takingOff, takeoffClimb)
-    else calculateMinDrag(aircraftPerfData, altitudeFt, tasKt, takingOff, takeoffClimb)
+    val dragN = if (approachExpedite) calculateMaxDrag(aircraftPerfData, altitudeFt, tasKt, takingOff, takeoffGoAround)
+    else calculateMinDrag(aircraftPerfData, altitudeFt, tasKt, takingOff, takeoffGoAround)
     return calculateVerticalSpd(thrustN - dragN, tasKt, accMps2, aircraftPerfData.massKg)
 }
 
@@ -377,7 +378,7 @@ fun calculateMaxAlt(aircraftPerfData: AircraftTypeData.AircraftPerfData): Int {
         val alt = i * 1000f
         val iasToUse = if (alt > crossOverAlt) calculateIASFromMach(alt, aircraftPerfData.tripMach) else aircraftPerfData.tripIas.toFloat()
         if (calculateMaxVerticalSpd(aircraftPerfData, alt, calculateTASFromIAS(alt, iasToUse), 0f,
-                onApproach = false, takingOff = false, takeoffClimb = false) > minClimbRateAtCruiseAlt)
+                onApproach = false, takingOff = false, takeoffGoAround = false) > minClimbRateAtCruiseAlt)
             return alt.roundToInt()
     }
     return 8000
@@ -676,13 +677,13 @@ private fun calculateTopAltitudeAtDistanceFromAlt(startAlt: Float, distPx: Float
         val effectiveStepSize = min(stepSize, effectiveDistPxToAlt - currStepDist)
         // Estimate the altitude on top of each altitude step
         val estTas = calculateTASFromIAS(currStepAlt, aircraftPerf.tripIas.toFloat())
-        val estMinDrag = calculateMinDrag(aircraftPerf, currStepAlt, estTas, takingOff = false, takeoffClimb = false)
+        val estMinDrag = calculateMinDrag(aircraftPerf, currStepAlt, estTas, takingOff = false, takeoffGoAround = false)
         val estMinThrust = calculateMaxThrust(aircraftPerf, currStepAlt, estTas) * 0.05f
         val estGrad = calculateDescentGradient(estMinDrag - estMinThrust, aircraftPerf.massKg)
         val topOfStepAlt = estGrad * pxToFt(effectiveStepSize) + currStepAlt
         // Use the estimated top altitude step to calculate the gradient
         val actlTas = calculateTASFromIAS(topOfStepAlt, aircraftPerf.tripIas.toFloat())
-        val actlMinDrag = calculateMinDrag(aircraftPerf, topOfStepAlt, actlTas, takingOff = false, takeoffClimb = false)
+        val actlMinDrag = calculateMinDrag(aircraftPerf, topOfStepAlt, actlTas, takingOff = false, takeoffGoAround = false)
         val actlMinThrust = calculateMaxThrust(aircraftPerf, topOfStepAlt, actlTas) * 0.05f
         val actlGrad = calculateDescentGradient(actlMinDrag - actlMinThrust, aircraftPerf.massKg)
         currStepAlt += actlGrad * pxToFt(effectiveStepSize)
