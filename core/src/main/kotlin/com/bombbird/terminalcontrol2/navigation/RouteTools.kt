@@ -8,11 +8,14 @@ import com.bombbird.terminalcontrol2.entities.RouteZone
 import com.bombbird.terminalcontrol2.entities.Waypoint
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.Route.*
+import com.bombbird.terminalcontrol2.traffic.conflict.TrajectoryManager
 import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.get
 import ktx.collections.GdxArray
 import ktx.math.plus
 import ktx.math.times
+import kotlin.math.abs
+import kotlin.math.ceil
 import kotlin.math.max
 
 /** Helper file containing functions for dealing with aircraft route shenanigans */
@@ -603,6 +606,7 @@ fun getZonesForArrivalRoute(route: Route): GdxArray<RouteZone> {
             if (finalLeg1 is WaypointLeg && finalLeg2 is WaypointLeg) {
                 val wpt1Pos = GAME.gameServer?.waypoints?.get(finalLeg1.wptId)?.entity?.get(Position.mapper) ?: return@apply
                 val wpt2Pos = GAME.gameServer?.waypoints?.get(finalLeg2.wptId)?.entity?.get(Position.mapper) ?: return@apply
+
                 // Get the lower altitude restriction among leg2 and the current min alt; or if one is null, use altitude restriction
                 // of the other; if both null, use null
                 val finalMinAlt = currMinAlt
@@ -610,6 +614,7 @@ fun getZonesForArrivalRoute(route: Route): GdxArray<RouteZone> {
                 else if (finalMinAlt != null) max(finalMinAlt, finalLeg2.minAltFt)
                 else finalLeg2.minAltFt
                 currMinAlt = minAlt
+
                 routeZones.add(RouteZone(wpt1Pos.x, wpt1Pos.y, wpt2Pos.x, wpt2Pos.y, ROUTE_RNP_NM, minAlt))
             }
         }
@@ -635,6 +640,7 @@ fun getZonesForDepartureRoute(route: Route): GdxArray<RouteZone> {
             if (finalLeg1 is WaypointLeg && finalLeg2 is WaypointLeg) {
                 val wpt1Pos = GAME.gameServer?.waypoints?.get(finalLeg1.wptId)?.entity?.get(Position.mapper) ?: return@apply
                 val wpt2Pos = GAME.gameServer?.waypoints?.get(finalLeg2.wptId)?.entity?.get(Position.mapper) ?: return@apply
+
                 // Get the lower altitude restriction among leg1 and the current min alt; or if one is null, use altitude restriction
                 // of the other; if both null, use null
                 val finalMinAlt = currMinAlt
@@ -642,10 +648,46 @@ fun getZonesForDepartureRoute(route: Route): GdxArray<RouteZone> {
                 else if (finalMinAlt != null) max(finalMinAlt, finalLeg1.minAltFt)
                 else finalLeg1.minAltFt
                 currMinAlt = minAlt
+
                 routeZones.add(RouteZone(wpt1Pos.x, wpt1Pos.y, wpt2Pos.x, wpt2Pos.y, ROUTE_RNP_NM, minAlt))
             }
         }
     }
+    return routeZones
+}
+
+/**
+ * Gets the MVA exclusion zone for the flyover segment between [flyoverWpt] and [wptLeg2], given the [minAlt] of the
+ * segment if it exists for the [aircraft]
+ */
+fun getFlyoverMVAExclusionZones(aircraft: Entity, flyoverWpt: WaypointLeg, wptLeg2: WaypointLeg, minAlt: Int?): GdxArray<RouteZone> {
+    val routeZones = GdxArray<RouteZone>()
+    val wpt1Pos = GAME.gameServer?.waypoints?.get(flyoverWpt.wptId)?.entity?.get(Position.mapper) ?: return routeZones
+    val wpt2 = GAME.gameServer?.waypoints?.get(wptLeg2.wptId) ?: return routeZones
+    val wpt2Pos = GAME.gameServer?.waypoints?.get(wptLeg2.wptId)?.entity?.get(Position.mapper) ?: return routeZones
+
+    // Use the trajectory prediction algorithm to estimate exclusion zone
+    val targetTrackPxps = Vector2(wpt2Pos.x - wpt1Pos.x, wpt2Pos.y - wpt1Pos.y).nor()
+    val refAlt = aircraft[Altitude.mapper]?.altitudeFt ?: return routeZones
+    val refTas = aircraft[Speed.mapper]?.speedKts ?: return routeZones
+    val groundTrack = aircraft[GroundTrack.mapper]?.trackVectorPxps ?: return routeZones
+    val refGsPxps = groundTrack.len()
+    val refIas = aircraft[IndicatedAirSpeed.mapper]?.iasKt ?: return routeZones
+    val targetTrack = modulateHeading(convertWorldAndRenderDeg(targetTrackPxps.angleDeg()))
+    val prevTrack = convertWorldAndRenderDeg(groundTrack.angleDeg())
+    val absDeltaTrack = abs(findDeltaHeading(prevTrack, targetTrack, wptLeg2.turnDir))
+    val refTurnRate = if (refIas >= HALF_TURN_RATE_THRESHOLD_IAS) MAX_HIGH_SPD_ANGULAR_SPD else MAX_LOW_SPD_ANGULAR_SPD
+    val timeRequiredS = (ceil(absDeltaTrack / refTurnRate / 5) + 1) * 5
+    val points = TrajectoryManager.getTrajectoryPointList(prevTrack, targetTrackPxps, wptLeg2.turnDir,
+        refAlt, refTas, refGsPxps, wpt1Pos.x, wpt1Pos.y, wpt2, timeRequiredS)
+    var prevPos = wpt1Pos
+    for (j in 0 until points.size) {
+        val currPos = points[j]
+        routeZones.add(RouteZone(prevPos.x, prevPos.y, currPos.x, currPos.y, ROUTE_RNP_NM, minAlt))
+        prevPos = currPos
+    }
+    routeZones.add(RouteZone(prevPos.x, prevPos.y, wpt2Pos.x, wpt2Pos.y, ROUTE_RNP_NM, minAlt))
+
     return routeZones
 }
 
@@ -670,8 +712,8 @@ fun getZonesForInitialRunwayClimb(route: Route, rwy: Entity): GdxArray<RouteZone
         return zones
     } ?: (route[0] as? InitClimbLeg)?.apply {
         val rwyAlt = rwy[Altitude.mapper]?.altitudeFt ?: return@apply
-        // Assume 7% gradient climb
-        val distPxNeeded = ftToPx(minAltFt - rwyAlt) * 100 / 7
+        // Assume 6% gradient climb
+        val distPxNeeded = ftToPx(minAltFt - rwyAlt) * 100 / 6
         val trackVector = Vector2(Vector2.Y).rotateDeg(MAG_HDG_DEV - heading) * distPxNeeded
         val climbEndPos = startPos + trackVector
         zones.add(RouteZone(startPos.x, startPos.y, climbEndPos.x, climbEndPos.y, ROUTE_RNP_NM, null))

@@ -7,6 +7,7 @@ import com.badlogic.gdx.utils.ArrayMap
 import com.badlogic.gdx.utils.Pool
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.TrajectoryPoint
+import com.bombbird.terminalcontrol2.entities.Waypoint
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.traffic.getACCStartAltitude
 import com.bombbird.terminalcontrol2.traffic.getConflictStartAltitude
@@ -25,6 +26,87 @@ import kotlin.math.*
 
 /** Helper class for checking trajectory point conflicts */
 class TrajectoryManager {
+    companion object {
+        /**
+         * Gets the trajectory point positions, given the position [startX], [startY], [currTrack], [targetTrackPxps]
+         * vector and the required [turnDir], the aircraft [altitude], [tasKt] and [groundSpeedPxps], and the [directWpt]
+         * if any, up to [requiredTimeS] (in seconds)
+         */
+        fun getTrajectoryPointList(currTrack: Float, targetTrackPxps: Vector2, turnDir: Byte, altitude: Float, tasKt: Float,
+                                   groundSpeedPxps: Float, startX: Float, startY: Float, directWpt: Waypoint?, requiredTimeS: Float): GdxArray<Position> {
+            val pointList = GdxArray<Position>()
+            val targetTrack = modulateHeading(convertWorldAndRenderDeg(targetTrackPxps.angleDeg()))
+            val deltaHeading = findDeltaHeading(currTrack, targetTrack, turnDir)
+            if (abs(deltaHeading) > 5) {
+                // Calculate arc if aircraft is turning > 5 degrees
+                // Turn rate in degrees/second
+                var turnRate = if (calculateIASFromTAS(altitude, tasKt) > HALF_TURN_RATE_THRESHOLD_IAS) MAX_HIGH_SPD_ANGULAR_SPD else MAX_LOW_SPD_ANGULAR_SPD
+                // In px: r = v/w - turnRate must be converted to radians/second, GS is in px/second
+                val turnRadiusPx = groundSpeedPxps / Math.toRadians(turnRate.toDouble()).toFloat()
+                val centerOffsetAngle = convertWorldAndRenderDeg(currTrack + 90)
+                val deltaX = turnRadiusPx * cos(Math.toRadians(centerOffsetAngle.toDouble())).toFloat()
+                val deltaY = turnRadiusPx * sin(Math.toRadians(centerOffsetAngle.toDouble())).toFloat()
+                val turnCenter = Vector2()
+                val centerToCircum = Vector2()
+                if (deltaHeading > 0) {
+                    // Turning right
+                    turnCenter.x = startX + deltaX
+                    turnCenter.y = startY + deltaY
+                    centerToCircum.x = -deltaX
+                    centerToCircum.y = -deltaY
+                } else {
+                    // Turning left
+                    turnCenter.x = startX - deltaX
+                    turnCenter.y = startY - deltaY
+                    centerToCircum.x = deltaX
+                    centerToCircum.y = deltaY
+                    turnRate = -turnRate
+                }
+                var remainingAngle = deltaHeading
+                var prevPos = Vector2()
+                var prevTargetTrack = targetTrack
+                var i = TRAJECTORY_UPDATE_INTERVAL_S
+                while (i <= requiredTimeS) {
+                    if (remainingAngle / turnRate > TRAJECTORY_UPDATE_INTERVAL_S) {
+                        remainingAngle -= turnRate * TRAJECTORY_UPDATE_INTERVAL_S
+                        centerToCircum.rotateDeg(-turnRate * TRAJECTORY_UPDATE_INTERVAL_S)
+                        val newVector = Vector2(turnCenter)
+                        prevPos = newVector.add(centerToCircum)
+                        val directWptPos = directWpt?.entity?.get(Position.mapper)
+                        if (directWptPos != null) {
+                            // Do additional turn checking - this track is the absolute track between points and already includes wind
+                            val newTrack = modulateHeading(getRequiredTrack(prevPos.x, prevPos.y, directWptPos.x, directWptPos.y))
+                            remainingAngle += newTrack - prevTargetTrack // Add the difference in target track to remaining angle
+                            if (newTrack < 16 && newTrack > 0 && prevTargetTrack <= 360 && prevTargetTrack > 344) remainingAngle += 360f // In case new track rotates right past 360 hdg
+                            if (newTrack <= 360 && newTrack > 344 && prevTargetTrack < 16) remainingAngle -= 360f // In case new track rotates left past 360 hdg
+                            prevTargetTrack = newTrack
+                        }
+                    } else {
+                        val remainingTime = TRAJECTORY_UPDATE_INTERVAL_S - remainingAngle / turnRate
+                        centerToCircum.rotateDeg(-remainingAngle)
+                        val newVector = Vector2(turnCenter)
+                        if (abs(remainingAngle) > 0.1) prevPos = newVector.add(centerToCircum)
+                        remainingAngle = 0f
+                        val straightVector = Vector2(Vector2.Y).scl(groundSpeedPxps * remainingTime).rotateDeg(-prevTargetTrack)
+                        prevPos.add(straightVector)
+                    }
+                    pointList.add(Position(prevPos.x, prevPos.y))
+                    i += TRAJECTORY_UPDATE_INTERVAL_S
+                }
+            } else {
+                // Straight trajectory - just add ground track in px/s * time(s)
+                var i = TRAJECTORY_UPDATE_INTERVAL_S
+                while (i <= requiredTimeS) {
+                    val trackVectorPx = targetTrackPxps * i
+                    pointList.add(Position(startX + trackVectorPx.x, startY + trackVectorPx.y))
+                    i += TRAJECTORY_UPDATE_INTERVAL_S
+                }
+            }
+
+            return pointList
+        }
+    }
+
     /**
      * Represents a predicted conflict key using aircraft callsign
      */
@@ -354,10 +436,8 @@ class TrajectoryManager {
     /** Gets all trajectory points of an aircraft */
     fun calculateTrajectory(aircraft: Entity, customTargetAlt: Int = -1): GdxArray<TrajectoryPoint> {
         val trajPointList = GdxArray<TrajectoryPoint>()
-        val pointList = GdxArray<Position>()
 
         // Calculate simple linear trajectory, plus arc if aircraft is turning > 5 degrees
-        val requiredTime = MAX_TRAJECTORY_ADVANCE_TIME_S
         val cmdTarget = aircraft[CommandTarget.mapper] ?: return trajPointList
         val groundTrack = aircraft[GroundTrack.mapper] ?: return trajPointList
         val altitude = aircraft[Altitude.mapper]?.altitudeFt ?: return trajPointList
@@ -371,76 +451,9 @@ class TrajectoryManager {
         val targetTrueHeadingPxps = Vector2(Vector2.Y).rotateDeg(-(targetHeading - MAG_HDG_DEV)).scl(ktToPxps(speed.speedKts))
         // This is the track vector the aircraft is turning towards, including effects of wind
         val targetTrackPxps = targetTrueHeadingPxps + winds.windVectorPxps
-        var targetTrack = convertWorldAndRenderDeg(targetTrackPxps.angleDeg())
-        targetTrack = modulateHeading(targetTrack)
-        val deltaHeading = findDeltaHeading(currTrack, targetTrack, cmdTarget.turnDir)
-        if (abs(deltaHeading) > 5) {
-            // Calculate arc if aircraft is turning > 5 degrees
-            // Turn rate in degrees/second
-            var turnRate = if (calculateIASFromTAS(altitude, speed.speedKts) > HALF_TURN_RATE_THRESHOLD_IAS) MAX_HIGH_SPD_ANGULAR_SPD else MAX_LOW_SPD_ANGULAR_SPD
-            // In px: r = v/w - turnRate must be converted to radians/second, GS is in px/second
-            val turnRadiusPx = groundSpeedPxps / Math.toRadians(turnRate.toDouble()).toFloat()
-            val centerOffsetAngle = convertWorldAndRenderDeg(currTrack + 90)
-            val deltaX = turnRadiusPx * cos(Math.toRadians(centerOffsetAngle.toDouble())).toFloat()
-            val deltaY = turnRadiusPx * sin(Math.toRadians(centerOffsetAngle.toDouble())).toFloat()
-            val turnCenter = Vector2()
-            val centerToCircum = Vector2()
-            if (deltaHeading > 0) {
-                // Turning right
-                turnCenter.x = aircraftPos.x + deltaX
-                turnCenter.y = aircraftPos.y + deltaY
-                centerToCircum.x = -deltaX
-                centerToCircum.y = -deltaY
-            } else {
-                // Turning left
-                turnCenter.x = aircraftPos.x - deltaX
-                turnCenter.y = aircraftPos.y - deltaY
-                centerToCircum.x = deltaX
-                centerToCircum.y = deltaY
-                turnRate = -turnRate
-            }
-            var remainingAngle = deltaHeading
-            var prevPos = Vector2()
-            var prevTargetTrack = targetTrack
-            var i = TRAJECTORY_UPDATE_INTERVAL_S
-            while (i <= requiredTime) {
-                if (remainingAngle / turnRate > TRAJECTORY_UPDATE_INTERVAL_S) {
-                    remainingAngle -= turnRate * TRAJECTORY_UPDATE_INTERVAL_S
-                    centerToCircum.rotateDeg(-turnRate * TRAJECTORY_UPDATE_INTERVAL_S)
-                    val newVector = Vector2(turnCenter)
-                    prevPos = newVector.add(centerToCircum)
-                    val directWptPos = aircraft[CommandDirect.mapper]?.let {
-                        GAME.gameServer?.waypoints?.get(it.wptId)?.entity?.get(Position.mapper)
-                    }
-                    if (directWptPos != null) {
-                        // Do additional turn checking - this track is the absolute track between points and already includes wind
-                        val newTrack = modulateHeading(getRequiredTrack(prevPos.x, prevPos.y, directWptPos.x, directWptPos.y))
-                        remainingAngle += newTrack - prevTargetTrack // Add the difference in target track to remaining angle
-                        if (newTrack < 16 && newTrack > 0 && prevTargetTrack <= 360 && prevTargetTrack > 344) remainingAngle += 360f // In case new track rotates right past 360 hdg
-                        if (newTrack <= 360 && newTrack > 344 && prevTargetTrack < 16) remainingAngle -= 360f // In case new track rotates left past 360 hdg
-                        prevTargetTrack = newTrack
-                    }
-                } else {
-                    val remainingTime = TRAJECTORY_UPDATE_INTERVAL_S - remainingAngle / turnRate
-                    centerToCircum.rotateDeg(-remainingAngle)
-                    val newVector = Vector2(turnCenter)
-                    if (abs(remainingAngle) > 0.1) prevPos = newVector.add(centerToCircum)
-                    remainingAngle = 0f
-                    val straightVector = Vector2(Vector2.Y).scl(groundSpeedPxps * remainingTime).rotateDeg(-prevTargetTrack)
-                    prevPos.add(straightVector)
-                }
-                pointList.add(Position(prevPos.x, prevPos.y))
-                i += TRAJECTORY_UPDATE_INTERVAL_S
-            }
-        } else {
-            // Straight trajectory - just add ground track in px/s * time(s)
-            var i = TRAJECTORY_UPDATE_INTERVAL_S
-            while (i <= requiredTime) {
-                val trackVectorPx = targetTrackPxps * i
-                pointList.add(Position(aircraftPos.x + trackVectorPx.x, aircraftPos.y + trackVectorPx.y))
-                i += TRAJECTORY_UPDATE_INTERVAL_S
-            }
-        }
+        val wpt = GAME.gameServer?.waypoints?.get(aircraft[CommandDirect.mapper]?.wptId)
+        val pointList = getTrajectoryPointList(currTrack, targetTrackPxps, cmdTarget.turnDir, altitude, speed.speedKts,
+            groundSpeedPxps, aircraftPos.x, aircraftPos.y, wpt, MAX_TRAJECTORY_ADVANCE_TIME_S)
 
         // Calculate altitude at each point
         val gsCap = aircraft[GlideSlopeCaptured.mapper]?.gsApp

@@ -1073,15 +1073,24 @@ class AISystem: EntitySystem() {
      * @param entity the aircraft entity
      */
     private fun setToNextRouteLeg(entity: Entity) {
-        entity[ClearanceAct.mapper]?.actingClearance?.clearanceState?.route?.apply { if (size > 0) {
-            (get(0) as? Route.WaypointLeg)?.let { prevWpt -> entity[LastRestrictions.mapper]?.let { restr ->
-                prevWpt.maxSpdKt?.let { maxSpd -> restr.maxSpdKt = maxSpd }
-                prevWpt.minAltFt?.let { minAltFt -> restr.minAltFt = minAltFt }
-                prevWpt.maxAltFt?.let { maxAltFt -> restr.maxAltFt = maxAltFt }
-            }}
+        var lastWpt: Route.WaypointLeg? = null
+        val route = entity[ClearanceAct.mapper]?.actingClearance?.clearanceState?.route?.apply { if (size > 0) {
+           (get(0) as? Route.WaypointLeg)?.let { prevWpt ->
+                lastWpt = prevWpt
+                entity[LastRestrictions.mapper]?.let { restr ->
+                    prevWpt.maxSpdKt?.let { maxSpd -> restr.maxSpdKt = maxSpd }
+                    prevWpt.minAltFt?.let { minAltFt -> restr.minAltFt = minAltFt }
+                    prevWpt.maxAltFt?.let { maxAltFt -> restr.maxAltFt = maxAltFt }
+                }
+            }
             removeIndex(0)
         }}
         setToFirstRouteLeg(entity)
+
+        val finalLastWpt = lastWpt
+        if (finalLastWpt != null && route != null) {
+            addFlyoverExclusionZones(entity, finalLastWpt, route, entity[LastRestrictions.mapper]?.minAltFt)
+        }
     }
 
     /**
@@ -1384,5 +1393,18 @@ class AISystem: EntitySystem() {
         // Stay on runway for 5-10 mins if needed
         if (immobilizeOnLanding) entity += ImmobilizeOnLanding(MathUtils.random(300f, 600f))
         GAME.gameServer?.sendAircraftReadyForApproach(acInfo.icaoCallsign, immobilizeOnLanding)
+    }
+
+    /**
+     * Adds the MVA exclusion zones to an [aircraft]'s [route] for a flyover waypoint segment based on the [prevWpt]
+     * (the flyover point) and the required [minAlt] (if any)
+     */
+    private fun addFlyoverExclusionZones(aircraft: Entity, prevWpt: Route.WaypointLeg, route: Route, minAlt: Int?) {
+        if (route.size == 0) return
+        val nextWpt = route[0] as? Route.WaypointLeg ?: return
+        if (prevWpt.flyOver && nextWpt.legActive) {
+            val routeZone = aircraft[DepartureRouteZone.mapper]?.sidZone ?: aircraft[ArrivalRouteZone.mapper]?.starZone
+            routeZone?.addAll(getFlyoverMVAExclusionZones(aircraft, prevWpt, nextWpt, minAlt))
+        }
     }
 }
