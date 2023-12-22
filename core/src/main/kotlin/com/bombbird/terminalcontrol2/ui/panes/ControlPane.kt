@@ -138,7 +138,7 @@ class ControlPane {
                             updateApproachRoute(parentPane.userClearanceState.route, parentPane.userClearanceState.hiddenLegs,
                                 parentPane.aircraftArrivalArptId, appName, transName)
                             updateRouteTable(parentPane.userClearanceState.route)
-                            updateAltSelectBoxChoices(parentPane.aircraftMaxAlt, parentPane.userClearanceState)
+                            updateAltSelectBoxChoices(parentPane.aircraftMaxAlt, parentPane.userClearanceState, selected != NO_APP_SELECTION)
                             updateUndoTransmitButtonStates()
                         }
                         disallowDisabledClickThrough()
@@ -158,7 +158,7 @@ class ControlPane {
                             updateApproachRoute(parentPane.userClearanceState.route, parentPane.userClearanceState.hiddenLegs,
                                 parentPane.aircraftArrivalArptId, appName, transName)
                             updateRouteTable(parentPane.userClearanceState.route)
-                            updateAltSelectBoxChoices(parentPane.aircraftMaxAlt, parentPane.userClearanceState)
+                            updateAltSelectBoxChoices(parentPane.aircraftMaxAlt, parentPane.userClearanceState, false)
                             updateUndoTransmitButtonStates()
                         }
                         disallowDisabledClickThrough()
@@ -404,9 +404,10 @@ class ControlPane {
      * selection in the box in case of any changes made due to the updated list of possible selections
      * @param aircraftMaxAlt the maximum altitude the aircraft can fly at, or null if none provided in which it will be
      * @param userClearanceState the user selected clearance state
-     * ignored
+     * @param appNewlySelected whether the approach has just been selected, in which case the altitude choices will be
+     * set to the FAF altitude
      */
-    fun updateAltSelectBoxChoices(aircraftMaxAlt: Int?, userClearanceState: ClearanceState) {
+    fun updateAltSelectBoxChoices(aircraftMaxAlt: Int?, userClearanceState: ClearanceState, appNewlySelected: Boolean) {
         /**
          * Checks the input altitude according to transition altitude and transition level parsing it into the FLXXX format
          * if necessary, before adding it to the string array
@@ -430,9 +431,10 @@ class ControlPane {
         }
 
         val effectiveMinAlt: Int
-        val effectiveMaxAlt: Int
-        if (userClearanceState.clearedApp != null && userClearanceState.vectorHdg == null
-            && hasOnlyWaypointLegsTillMissed(directLeg, userClearanceState.route)) {
+        val nextHold = getNextHoldLeg(userClearanceState.route)
+        val clearedApproach = userClearanceState.clearedApp != null && userClearanceState.vectorHdg == null
+                && hasOnlyWaypointLegsTillMissed(directLeg, userClearanceState.route)
+        if (clearedApproach) {
             // Check if aircraft is cleared for the approach with no interruptions (i.e. no discontinuity, vector or hold legs)
             // and is not being vectored
             userClearanceState.route.apply {
@@ -442,15 +444,14 @@ class ControlPane {
                     userClearanceState.clearedAlt
                 }
                 effectiveMinAlt = faf
-                effectiveMaxAlt = faf
             }
         } else {
-            val nextHold = getNextHoldLeg(userClearanceState.route)
             val holdMinAlt = nextHold?.minAltFt
-            val holdMaxAlt = nextHold?.maxAltFt
             effectiveMinAlt = if (holdMinAlt == null || userClearanceState.vectorHdg != null) MIN_ALT else max(MIN_ALT, holdMinAlt)
-            effectiveMaxAlt = if (holdMaxAlt == null || userClearanceState.vectorHdg != null) MAX_ALT else min(MAX_ALT, holdMaxAlt)
         }
+        val holdMaxAlt = nextHold?.maxAltFt
+        val effectiveMaxAlt = if (holdMaxAlt == null || userClearanceState.vectorHdg != null) MAX_ALT else min(MAX_ALT, holdMaxAlt)
+
         val roundedMinAlt = if (effectiveMinAlt % 1000 > 0) (effectiveMinAlt / 1000 + 1) * 1000 else effectiveMinAlt
         val maxAltAircraft = if (aircraftMaxAlt != null) aircraftMaxAlt - aircraftMaxAlt % 1000 else null
         val roundedMaxAlt = if (maxAltAircraft != null) min(effectiveMaxAlt - effectiveMaxAlt % 1000, maxAltAircraft) else effectiveMaxAlt - effectiveMaxAlt % 1000
@@ -471,6 +472,10 @@ class ControlPane {
             if (effectiveMaxAlt % 1000 > 0 && effectiveMaxAlt > effectiveMinAlt) checkAltAndAddToArray(effectiveMaxAlt, this)
         }
         if (altSelectBox.selection.size() >= 1) altSelectBox.selected?.let {
+            if (appNewlySelected && clearedApproach) {
+                setToAltValue(effectiveMinAlt)
+                return@let
+            }
             val selAlt = if (it.contains("FL")) it.replace("FL", "").toInt() * 100
             else it.toInt()
             if (selAlt < effectiveMinAlt) setToAltValue(effectiveMinAlt)
@@ -538,7 +543,7 @@ class ControlPane {
         modificationInProgress = false
 
         clearAltSelectBoxChoices()
-        updateAltSelectBoxChoices(parentPane.aircraftMaxAlt, parentPane.userClearanceState)
+        updateAltSelectBoxChoices(parentPane.aircraftMaxAlt, parentPane.userClearanceState, false)
         updateApproachSelectBoxChoices(parentPane.aircraftArrivalArptId, appName)
 
         altSelectBox.selected = if (clearedAlt >= TRANS_LVL * 100) "FL${clearedAlt / 100}" else clearedAlt.toString()
@@ -593,13 +598,12 @@ class ControlPane {
                 holdSubpaneObj.isVisible = true
                 vectorSubpaneObj.isVisible = false
                 lateralContainer.actor = holdSubpaneObj.actor
-                // altSelectBox.selected = parentPane.userClearanceState.clearedAlt.let { if (it > TRANS_ALT) "FL${it / 100}" else it.toString() }
-                updateAltSelectBoxChoices(parentPane.aircraftMaxAlt, parentPane.userClearanceState)
+                updateAltSelectBoxChoices(parentPane.aircraftMaxAlt, parentPane.userClearanceState, false)
                 parentPane.userClearanceState.vectorHdg = null
                 selectedHoldLeg = getNextHoldLeg(parentPane.userClearanceState.route)
                 if (selectedHoldLeg == null) holdSubpaneObj.updateHoldClearanceState(parentPane.userClearanceState.route)
                 holdSubpaneObj.updateHoldTable(parentPane.userClearanceState.route, selectedHoldLeg)
-                updateAltSelectBoxChoices(parentPane.aircraftMaxAlt, parentPane.userClearanceState)
+                updateAltSelectBoxChoices(parentPane.aircraftMaxAlt, parentPane.userClearanceState, false)
                 updateUndoTransmitButtonStates()
             }
             UIPane.MODE_VECTOR -> {
@@ -618,7 +622,7 @@ class ControlPane {
                 else if (parentPane.userClearanceState.vectorHdg == null) parentPane.userClearanceState.vectorHdg = parentPane.clearanceState.vectorHdg
                 vectorSubpaneObj.setHdgElementsDisabled(parentPane.appTrackCaptured)
                 vectorSubpaneObj.updateVectorTable(parentPane.userClearanceState.route, parentPane.userClearanceState.vectorHdg, parentPane.userClearanceState.vectorTurnDir)
-                updateAltSelectBoxChoices(parentPane.aircraftMaxAlt, parentPane.userClearanceState)
+                updateAltSelectBoxChoices(parentPane.aircraftMaxAlt, parentPane.userClearanceState, false)
                 updateUndoTransmitButtonStates()
             }
             else -> FileLog.info("UIPane", "Unknown lateral mode $mode")

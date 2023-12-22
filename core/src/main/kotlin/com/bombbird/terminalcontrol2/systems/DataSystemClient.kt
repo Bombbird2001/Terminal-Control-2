@@ -6,9 +6,11 @@ import com.badlogic.ashley.core.Family
 import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.*
+import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.navigation.calculateAllDistToGo
 import com.bombbird.terminalcontrol2.ui.datatag.getNewDatatagLabelText
 import com.bombbird.terminalcontrol2.ui.datatag.updateDatatagText
+import com.bombbird.terminalcontrol2.ui.isMobile
 import com.bombbird.terminalcontrol2.utilities.InitializeCompanionObjectOnStart
 import com.bombbird.terminalcontrol2.utilities.pxToNm
 import com.bombbird.terminalcontrol2.utilities.pxpsToKt
@@ -46,8 +48,9 @@ class DataSystemClient: EntitySystem() {
                 radarDataUpdate[i]?.apply { updateAircraftRadarData(this) }
             }
 
-            // We also update the dist to go information here
+            // We also update the dist to go, waypoint restriction information here
             updateDistToGo()
+            updateWaypointRestr()
 
             radarDataTimer -= RADAR_REFRESH_INTERVAL_S
         }
@@ -129,5 +132,64 @@ fun updateDistToGo() {
             xOffset = -label.prefWidth / 2
         }
         shownWpts.add(dist.wpt.wptId)
+    }
+}
+
+/** Updates the waypoint to display altitude and speed restrictions for the selected aircraft */
+fun updateWaypointRestr() {
+    // Clear all waypoint restriction display
+    val allWpts = GAME.gameClientScreen?.waypoints ?: return
+    for (wpt in allWpts.values.toList()) {
+        wpt.entity[GenericLabels.mapper]?.labels?.let {
+            // Clears both alt restr labels, and also speed restr label
+            it[2].updateText("")
+            it[3].updateText("")
+            it[4].updateText("")
+        }
+    }
+
+    val selectedAircraft = GAME.gameClientScreen?.selectedAircraft?.entity ?: return
+    val route = selectedAircraft[ClearanceAct.mapper]?.actingClearance?.clearanceState?.route ?: return
+    if (route.size == 0) return
+
+    val shownWpts = GdxArray<Short>()
+    for (i in 0 until route.size) {
+        val leg = route[i]
+        if (leg !is Route.WaypointLeg) continue
+        if (shownWpts.contains(leg.wptId, false)) continue
+        shownWpts.add(leg.wptId)
+        if (!leg.legActive) continue
+        val topAlt = if (leg.altRestrActive) leg.maxAltFt else null
+        val bottomAlt = if (leg.altRestrActive) leg.minAltFt else null
+        val speed = if (leg.spdRestrActive) leg.maxSpdKt else null
+
+        val genericLabels = GAME.gameClientScreen?.waypoints?.get(leg.wptId)?.entity?.get(GenericLabels.mapper)?.labels ?: continue
+        var count = 1
+        if (topAlt != null) {
+            genericLabels[2].updateText(topAlt.toString())
+            genericLabels[2].yOffset = if (isMobile()) (-24f - 18f * count) else (-20f - 14f * count)
+            if (bottomAlt == topAlt)  genericLabels[2].updateStyle("WaypointBothAltRestr")
+            else genericLabels[2].updateStyle("WaypointTopAltRestr")
+            count++
+        } else {
+            genericLabels[2].updateText("")
+        }
+
+        if (bottomAlt != null && topAlt != bottomAlt) {
+            genericLabels[3].updateText(bottomAlt.toString())
+            genericLabels[3].yOffset = if (isMobile()) (-24f - 18f * count) else (-20f - 14f * count)
+            count++
+        }
+        else genericLabels[3].updateText("")
+
+        if (speed != null) {
+            genericLabels[4].updateText("${speed}K")
+            genericLabels[4].yOffset = if (isMobile()) (-24f - 18f * count) else (-20f - 14f * count)
+        }
+        else genericLabels[4].updateText("")
+
+        genericLabels[2].xOffset = -genericLabels[2].label.prefWidth / 2
+        genericLabels[3].xOffset = -genericLabels[3].label.prefWidth / 2
+        genericLabels[4].xOffset = -genericLabels[4].label.prefWidth / 2
     }
 }

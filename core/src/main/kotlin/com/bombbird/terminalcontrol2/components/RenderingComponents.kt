@@ -41,6 +41,7 @@ class GenericLabel(var xOffset: Float = 0f, var yOffset: Float = 0f): Component 
 
     fun updateText(newText: String) {
         label.setText(newText)
+        label.pack()
     }
 
     fun updateStyle(newStyle: String) {

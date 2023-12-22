@@ -31,7 +31,19 @@ class Waypoint(id: Short, name: String, posX: Short, posY: Short, onClient: Bool
                     updateStyle(if (isMobile()) "WaypointDistToGoMobile" else "WaypointDistToGo")
                     updateText("")
                 }
-                labels = arrayOf(wptNameLabel, distToGoLabel)
+                val altRestrLabel1 = GenericLabel(0f, 0f).apply {
+                    updateStyle(if (isMobile()) "WaypointTopAltRestrMobile" else "WaypointTopAltRestr")
+                    updateText("")
+                }
+                val altRestrLabel2 = GenericLabel(0f, 0f).apply {
+                    updateStyle(if (isMobile()) "WaypointBottomAltRestrMobile" else "WaypointBottomAltRestr")
+                    updateText("")
+                }
+                val speedRestrLabel = GenericLabel(0f, 0f).apply {
+                    updateStyle(if (isMobile()) "WaypointSpdRestrMobile" else "WaypointSpdRestr")
+                    updateText("")
+                }
+                labels = arrayOf(wptNameLabel, distToGoLabel, altRestrLabel1, altRestrLabel2, speedRestrLabel)
             }
             with<ConstantZoomSize>()
             with<SRConstantZoomSize>()

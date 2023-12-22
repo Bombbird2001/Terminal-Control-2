@@ -80,7 +80,7 @@ class UIPane(private val uiStage: Stage) {
             routeEditPane = routeEditObj.routeEditPane(this@UIPane, this, paneWidth) {
                 if (userClearanceState.routePrimaryName != clearanceState.routePrimaryName) controlObj.directLeg = userClearanceState.route[0]
                 controlObj.updateRouteTable(userClearanceState.route)
-                controlObj.updateAltSelectBoxChoices(aircraftMaxAlt, userClearanceState)
+                controlObj.updateAltSelectBoxChoices(aircraftMaxAlt, userClearanceState, false)
                 controlObj.updateUndoTransmitButtonStates()
                 setToControlPane()
             }
@@ -189,7 +189,7 @@ class UIPane(private val uiStage: Stage) {
         clearanceState.updateUIClearanceState(latestActing.clearanceState)
         controlObj.updateClearanceMode(userClearanceState.route, userClearanceState.vectorHdg,
             aircraft.entity.has(VisualCaptured.mapper) || aircraft.entity.has(LocalizerCaptured.mapper), false)
-        controlObj.updateAltSelectBoxChoices(aircraftMaxAlt, userClearanceState)
+        controlObj.updateAltSelectBoxChoices(aircraftMaxAlt, userClearanceState, false)
         controlObj.updateAltSpdAppClearances(userClearanceState.clearedAlt, userClearanceState.clearedIas,
             userClearanceState.minIas, userClearanceState.maxIas, userClearanceState.optimalIas,
             userClearanceState.clearedApp, userClearanceState.clearedTrans)
