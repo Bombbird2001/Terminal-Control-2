@@ -83,6 +83,7 @@ var SHOW_MVA_ALTITUDE = true
 var REALISTIC_ILS_DISPLAY = true
 var COLOURFUL_STYLE = true
 var SHOW_DIST_TO_GO = SHOW_DIST_TO_GO_ARRIVALS
+var SHOW_WPT_RESTRICTIONS = false
 
 /** Datatag settings */
 var DATATAG_STYLE_NAME = DatatagConfig.DEFAULT

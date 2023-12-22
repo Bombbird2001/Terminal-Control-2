@@ -50,6 +50,8 @@ fun loadTips() {
         tips.add("To measure distance on the radar screen, hold down the right mouse button and drag the mouse around to measure the distance"
                 + " between 2 points")
     }
+    tips.add("You can enable display of distance to go to a waypoint on an aircraft's route in the display settings")
+    tips.add("You can enable display of waypoint restrictions on an aircraft's route in the display settings")
 }
 
 fun getRandomTip(): String {

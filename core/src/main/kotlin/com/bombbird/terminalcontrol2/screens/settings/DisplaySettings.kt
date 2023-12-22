@@ -32,6 +32,7 @@ class DisplaySettings: BaseSettings() {
     private val ilsDisplaySelectBox: KSelectBox<String>
     private val colourStyleSelectBox: KSelectBox<String>
     private val distToGoSelectBox: KSelectBox<String>
+    private val wptRestrSelectBox: KSelectBox<String>
 
     init {
         stage.actors {
@@ -82,6 +83,10 @@ class DisplaySettings: BaseSettings() {
                             defaultSettingsLabel("Show distance to go:")
                             distToGoSelectBox = defaultSettingsSelectBox<String>().apply {
                                 setItems(OFF, ARRIVALS_ONLY, ALL_AIRCRAFT)
+                            }
+                            defaultSettingsLabel("Show waypoint restrictions:")
+                            wptRestrSelectBox = defaultSettingsSelectBox<String>().apply {
+                                setItems(OFF, ON)
                             }
                         }
                         setOverscroll(false, false)
@@ -135,6 +140,7 @@ class DisplaySettings: BaseSettings() {
                 ALL_AIRCRAFT
             }
         }
+        wptRestrSelectBox.selected = if (SHOW_WPT_RESTRICTIONS) ON else OFF
     }
 
     /**
@@ -173,6 +179,7 @@ class DisplaySettings: BaseSettings() {
                 SHOW_DIST_TO_GO_ALL
             }
         }
+        SHOW_WPT_RESTRICTIONS = wptRestrSelectBox.selected == ON
         savePlayerSettings()
         CLIENT_SCREEN?.apply {
             updateRangeRings()

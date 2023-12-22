@@ -30,6 +30,7 @@ data class PlayerSettingsJSON(
     val realisticIlsDisplay: Boolean,
     val colourfulStyle: Boolean,
     val showDistToGo: Byte,
+    val showWptRestrictions: Boolean?,
 
     // Datatag settings
     val datatagStyleName: String?,
@@ -86,6 +87,7 @@ private fun loadPlayerSettingsFromJson(playerSettingsJSON: PlayerSettingsJSON) {
         REALISTIC_ILS_DISPLAY = realisticIlsDisplay
         COLOURFUL_STYLE = colourfulStyle
         SHOW_DIST_TO_GO = showDistToGo
+        SHOW_WPT_RESTRICTIONS = showWptRestrictions ?: false
 
         // Datatag settings
         DATATAG_STYLE_NAME = datatagStyleName ?: DatatagConfig.DEFAULT
@@ -110,7 +112,7 @@ private fun loadPlayerSettingsFromJson(playerSettingsJSON: PlayerSettingsJSON) {
  */
 fun getJsonFromPlayerSettings(): PlayerSettingsJSON {
     return PlayerSettingsJSON(TRAJECTORY_DURATION_S, RADAR_REFRESH_INTERVAL_S, TRAIL_DURATION_S, SHOW_UNCONTROLLED_AIRCRAFT_TRAIL,
-        RANGE_RING_INTERVAL_NM, SHOW_MVA_ALTITUDE, REALISTIC_ILS_DISPLAY, COLOURFUL_STYLE, SHOW_DIST_TO_GO,
+        RANGE_RING_INTERVAL_NM, SHOW_MVA_ALTITUDE, REALISTIC_ILS_DISPLAY, COLOURFUL_STYLE, SHOW_DIST_TO_GO, SHOW_WPT_RESTRICTIONS,
         DATATAG_STYLE_NAME, DATATAG_BACKGROUND, DATATAG_BORDER, DATATAG_ROW_SPACING_PX, COMMUNICATIONS_SOUND, ALERT_SOUND_ON,
         CONTACT_OTHER_PILOT_READBACK, APW_DURATION_S, STCA_DURATION_S)
 }

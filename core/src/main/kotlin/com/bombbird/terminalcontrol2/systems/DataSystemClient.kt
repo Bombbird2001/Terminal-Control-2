@@ -148,6 +148,8 @@ fun updateWaypointRestr() {
         }
     }
 
+    if (!SHOW_WPT_RESTRICTIONS) return
+
     val selectedAircraft = GAME.gameClientScreen?.selectedAircraft?.entity ?: return
     val route = selectedAircraft[ClearanceAct.mapper]?.actingClearance?.clearanceState?.route ?: return
     if (route.size == 0) return
@@ -164,10 +166,11 @@ fun updateWaypointRestr() {
         val speed = if (leg.spdRestrActive) leg.maxSpdKt else null
 
         val genericLabels = GAME.gameClientScreen?.waypoints?.get(leg.wptId)?.entity?.get(GenericLabels.mapper)?.labels ?: continue
+        val topY = if (genericLabels[1].label.text.isEmpty) -10f else genericLabels[1].yOffset - 4
         var count = 1
         if (topAlt != null) {
             genericLabels[2].updateText(topAlt.toString())
-            genericLabels[2].yOffset = if (isMobile()) (-24f - 18f * count) else (-20f - 14f * count)
+            genericLabels[2].yOffset = if (isMobile()) (topY - 18f * count) else (topY - 14f * count)
             if (bottomAlt == topAlt)  genericLabels[2].updateStyle("WaypointBothAltRestr")
             else genericLabels[2].updateStyle("WaypointTopAltRestr")
             count++
@@ -177,14 +180,14 @@ fun updateWaypointRestr() {
 
         if (bottomAlt != null && topAlt != bottomAlt) {
             genericLabels[3].updateText(bottomAlt.toString())
-            genericLabels[3].yOffset = if (isMobile()) (-24f - 18f * count) else (-20f - 14f * count)
+            genericLabels[3].yOffset = if (isMobile()) (topY - 18f * count) else (topY - 14f * count)
             count++
         }
         else genericLabels[3].updateText("")
 
         if (speed != null) {
             genericLabels[4].updateText("${speed}K")
-            genericLabels[4].yOffset = if (isMobile()) (-24f - 18f * count) else (-20f - 14f * count)
+            genericLabels[4].yOffset = if (isMobile()) (topY - 18f * count) else (topY - 14f * count)
         }
         else genericLabels[4].updateText("")
 
