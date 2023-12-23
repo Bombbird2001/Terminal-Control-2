@@ -72,7 +72,7 @@ class RadarScreen private constructor(private val connectionHost: String, privat
     private val constZoomStage = safeStage(GAME.batch)
     private val uiStage = safeStage(GAME.batch)
     val uiPane = UIPane(uiStage)
-    private val shapeRenderer = ShapeRenderer(3000)
+    private val shapeRenderer = ShapeRendererBoundingBox(3000)
 
     private val gestureDetector = GestureDetector(40f, 0.2f, 1.1f, 0.15f, this)
     private val inputMultiplexer = InputMultiplexer()

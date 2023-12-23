@@ -35,7 +35,7 @@ import kotlin.math.sqrt
  *
  * Used only in RadarScreen
  */
-class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
+class RenderingSystemClient(private val shapeRenderer: ShapeRendererBoundingBox,
                             private val stage: Stage, private val constZoomStage: Stage, private val uiStage: Stage,
                             private val uiPane: UIPane
 ): EntitySystem() {
@@ -113,6 +113,12 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         val camX = stage.camera.position.x
         val camY = stage.camera.position.y
 
+        // Calculate bounding box for visible section of radar screen
+        val viewWidth = (UI_WIDTH - uiPane.paneWidth) * camZoom
+        val viewHeight = UI_HEIGHT * camZoom
+        val paneOffset = uiPane.paneWidth * camZoom / 2
+        shapeRenderer.setBoundingRect(camX + paneOffset - viewWidth / 2, camY - viewHeight / 2, viewWidth, viewHeight)
+
         shapeRenderer.begin(ShapeRenderer.ShapeType.Line)
         shapeRenderer.projectionMatrix = stage.camera.combined
         // Estimation circles
@@ -120,6 +126,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
         shapeRenderer.circle(0f, 0f, 1250f)
         shapeRenderer.circle(0f, 0f, 125f)
         shapeRenderer.circle(0f, 0f, 12.5f)
+        shapeRenderer.rect(camX + paneOffset - viewWidth / 2, camY - viewHeight / 2, viewWidth, viewHeight)
 
         // Render lineArrays
         val lineArrays = lineArrayFamilyEntities.getEntities()
@@ -143,7 +150,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
                 val poly = getOrLogMissing(GPolygon.mapper) ?: return@apply
                 val srColor = getOrLogMissing(SRColor.mapper) ?: return@apply
                 shapeRenderer.color = srColor.color
-                shapeRenderer.polygon(poly.vertices)
+                shapeRenderer.polygon(poly.polygonObj)
             }
         }
 
@@ -183,7 +190,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
                         val minAltSector = it.minAltSectors[minAltSectorIndex]?.entity
                         val polygon = minAltSector?.get(GPolygon.mapper)
                         val circle = minAltSector?.get(GCircle.mapper)
-                        if (polygon != null) shapeRenderer.polygon(polygon.vertices)
+                        if (polygon != null) shapeRenderer.polygon(polygon.polygonObj)
                         else if (circle != null) minAltSector[Position.mapper]?.let { pos ->
                             shapeRenderer.circle(pos.x, pos.y, circle.radius)
                         }
@@ -199,7 +206,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
                         val minAltSector = it.minAltSectors[minAltSectorIndex]?.entity
                         val polygon = minAltSector?.get(GPolygon.mapper)
                         val circle = minAltSector?.get(GCircle.mapper)
-                        if (polygon != null) shapeRenderer.polygon(polygon.vertices)
+                        if (polygon != null) shapeRenderer.polygon(polygon.polygonObj)
                         else if (circle != null) minAltSector[Position.mapper]?.let { pos ->
                             shapeRenderer.circle(pos.x, pos.y, circle.radius)
                         }
@@ -215,7 +222,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
                 val poly = getOrLogMissing(GPolygon.mapper) ?: return@apply
                 val srColor = getOrLogMissing(SRColor.mapper) ?: return@apply
                 shapeRenderer.color = srColor.color
-                shapeRenderer.polygon(poly.vertices)
+                shapeRenderer.polygon(poly.polygonObj)
             }
         }
 
@@ -380,6 +387,8 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
 //            }
 //        }
 
+        // Calculate bounding box for const zoom stage's visible section
+        shapeRenderer.setBoundingRect(-UI_WIDTH / 2 + uiPane.paneWidth, -UI_HEIGHT / 2, UI_WIDTH - uiPane.paneWidth, UI_HEIGHT)
 
         shapeRenderer.projectionMatrix = constZoomStage.camera.combined
         // Render datatag to aircraft icon line
