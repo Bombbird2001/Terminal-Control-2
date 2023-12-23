@@ -158,7 +158,7 @@ class ControlPane {
                             updateApproachRoute(parentPane.userClearanceState.route, parentPane.userClearanceState.hiddenLegs,
                                 parentPane.aircraftArrivalArptId, appName, transName)
                             updateRouteTable(parentPane.userClearanceState.route)
-                            updateAltSelectBoxChoices(parentPane.aircraftMaxAlt, parentPane.userClearanceState, false)
+                            updateAltSelectBoxChoices(parentPane.aircraftMaxAlt, parentPane.userClearanceState, appName != null)
                             updateUndoTransmitButtonStates()
                         }
                         disallowDisabledClickThrough()

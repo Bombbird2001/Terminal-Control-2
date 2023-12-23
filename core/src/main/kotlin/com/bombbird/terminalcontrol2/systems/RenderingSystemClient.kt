@@ -483,7 +483,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRenderer,
                         }
                         val fullDirVector = dirUnitVector.times(spacingFromCentre)
                         labelInfo.xOffset = fullDirVector.x - prefWidth / 2
-                        labelInfo.yOffset = fullDirVector.y
+                        labelInfo.yOffset = fullDirVector.y - prefHeight / 2
                     }
                 }
             }
