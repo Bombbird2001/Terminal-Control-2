@@ -8,6 +8,7 @@ import com.badlogic.gdx.graphics.OrthographicCamera
 import com.badlogic.gdx.graphics.g2d.TextureRegion
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import com.badlogic.gdx.math.Intersector
+import com.badlogic.gdx.math.Rectangle
 import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.scenes.scene2d.Stage
 import com.badlogic.gdx.scenes.scene2d.ui.Label
@@ -107,6 +108,9 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRendererBoundingBox,
 
     private val distMeasureLabel = Label("", Scene2DSkin.defaultSkin, "DistMeasure")
 
+    private val worldBoundingRect = Rectangle()
+    private val constZoomBoundingRect = Rectangle()
+
     /** Main update function */
     override fun update(deltaTime: Float) {
         val camZoom = (stage.camera as OrthographicCamera).zoom
@@ -118,6 +122,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRendererBoundingBox,
         val viewHeight = UI_HEIGHT * camZoom
         val paneOffset = uiPane.paneWidth * camZoom / 2
         shapeRenderer.setBoundingRect(camX + paneOffset - viewWidth / 2, camY - viewHeight / 2, viewWidth, viewHeight)
+        worldBoundingRect.set(camX + paneOffset - viewWidth / 2, camY - viewHeight / 2, viewWidth, viewHeight)
 
         shapeRenderer.begin(ShapeRenderer.ShapeType.Line)
         shapeRenderer.projectionMatrix = stage.camera.combined
@@ -389,6 +394,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRendererBoundingBox,
 
         // Calculate bounding box for const zoom stage's visible section
         shapeRenderer.setBoundingRect(-UI_WIDTH / 2 + uiPane.paneWidth, -UI_HEIGHT / 2, UI_WIDTH - uiPane.paneWidth, UI_HEIGHT)
+        constZoomBoundingRect.set(-UI_WIDTH / 2 + uiPane.paneWidth, -UI_HEIGHT / 2, UI_WIDTH - uiPane.paneWidth, UI_HEIGHT)
 
         shapeRenderer.projectionMatrix = constZoomStage.camera.combined
         // Render datatag to aircraft icon line
@@ -506,7 +512,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRendererBoundingBox,
                 val pos = getOrLogMissing(Position.mapper) ?: return@apply
                 labelInfo.label.apply {
                     setPosition(pos.x + labelInfo.xOffset, pos.y + labelInfo.yOffset)
-                    draw(GAME.batch, 1f)
+                    drawBounding(GAME.batch, 1f, worldBoundingRect)
                 }
             }
         }
@@ -522,7 +528,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRendererBoundingBox,
                     if (labelInfo.label.text.isEmpty) continue
                     labelInfo.label.apply {
                         setPosition(pos.x + labelInfo.xOffset, pos.y + labelInfo.yOffset)
-                        draw(GAME.batch, 1f)
+                        drawBounding(GAME.batch, 1f, worldBoundingRect)
                     }
                 }
             }
@@ -561,11 +567,13 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRendererBoundingBox,
                     var index = 0
                     for (pos in trailInfo.positions) {
                         if (index >= maxSize) break
-                        GAME.batch.draw(textureToDraw, pos.x - trailSize / 2, pos.y - trailSize / 2, trailSize, trailSize)
+                        GAME.batch.drawBounding(textureToDraw, pos.x - trailSize / 2, pos.y - trailSize / 2,
+                            trailSize, trailSize, worldBoundingRect)
                         index++
                     }
                 }
-                rsSprite.drawable.draw(GAME.batch, radarData.position.x - blipSize / 2, radarData.position.y - blipSize / 2, blipSize, blipSize)
+                rsSprite.drawable.drawBounding(GAME.batch, radarData.position.x - blipSize / 2,
+                    radarData.position.y - blipSize / 2, blipSize, blipSize, worldBoundingRect)
             }
         }
 
@@ -578,7 +586,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRendererBoundingBox,
                 val pos = getOrLogMissing(Position.mapper) ?: return@apply
                 labelInfo.label.apply {
                     setPosition((pos.x - camX) / camZoom + labelInfo.xOffset, (pos.y - camY) / camZoom + labelInfo.yOffset)
-                    draw(GAME.batch, 1f)
+                    drawBounding(GAME.batch, 1f, constZoomBoundingRect)
                 }
             }
         }
@@ -594,7 +602,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRendererBoundingBox,
                     if (labelInfo.label.text.isEmpty) continue
                     labelInfo.label.apply {
                         setPosition((pos.x - camX) / camZoom + labelInfo.xOffset, (pos.y - camY) / camZoom + labelInfo.yOffset)
-                        draw(GAME.batch, 1f)
+                        drawBounding(GAME.batch, 1f, constZoomBoundingRect)
                     }
                 }
             }
@@ -610,7 +618,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRendererBoundingBox,
                         labelInfo.apply {
                             val currStyle = label.style
                             updateStyle("MinAltSectorConflict")
-                            label.draw(GAME.batch, 1f)
+                            label.drawBounding(GAME.batch, 1f, constZoomBoundingRect)
                             label.style = currStyle
                         }
                     }
@@ -636,7 +644,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRendererBoundingBox,
                 datatag.initialPosSet = true
                 datatag.imgButton.apply {
                     setPosition(leftX, bottomY)
-                    draw(GAME.batch, 1f)
+                    drawBounding(GAME.batch, 1f, constZoomBoundingRect)
                 }
                 datatag.clickSpot.setPosition(leftX, bottomY)
                 var labelY = bottomY + LABEL_PADDING
@@ -644,7 +652,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRendererBoundingBox,
                     datatag.labelArray[j].let { label ->
                         if (label.text.isNullOrEmpty()) return@let
                         label.setPosition(leftX + LABEL_PADDING, labelY)
-                        label.draw(GAME.batch, 1f)
+                        label.drawBounding(GAME.batch, 1f, constZoomBoundingRect)
                         labelY += (label.height + DATATAG_ROW_SPACING_PX)
                     }
                 }
@@ -662,7 +670,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRendererBoundingBox,
             datatag.initialPosSet = true
             datatag.imgButton.apply {
                 setPosition(leftX, bottomY)
-                draw(GAME.batch, 1f)
+                drawBounding(GAME.batch, 1f, constZoomBoundingRect)
             }
             datatag.clickSpot.setPosition(leftX, bottomY)
             var labelY = bottomY + LABEL_PADDING
@@ -670,7 +678,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRendererBoundingBox,
                 datatag.labelArray[j].let { label ->
                     if (label.text.isNullOrEmpty()) return@let
                     label.setPosition(leftX + LABEL_PADDING, labelY)
-                    label.draw(GAME.batch, 1f)
+                    label.drawBounding(GAME.batch, 1f, constZoomBoundingRect)
                     labelY += (label.height + DATATAG_ROW_SPACING_PX)
                 }
             }
@@ -686,7 +694,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRendererBoundingBox,
                 val centerX = ((it.distMeasurePoint1.x + it.distMeasurePoint2.x) / 2 - camX) / camZoom
                 val centerY = ((it.distMeasurePoint1.y + it.distMeasurePoint2.y) / 2 - camY) / camZoom
                 distMeasureLabel.setPosition(centerX - distMeasureLabel.width / 2, centerY - distMeasureLabel.height / 2)
-                distMeasureLabel.draw(GAME.batch, 1f)
+                distMeasureLabel.drawBounding(GAME.batch, 1f, constZoomBoundingRect)
             }
         }
 
@@ -708,8 +716,8 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRendererBoundingBox,
                                 null
                             }
                         }
-                        if (textureToDraw != null) GAME.batch.draw(textureToDraw, it.x - DOT_RADIUS, it.y - DOT_RADIUS,
-                            2 * DOT_RADIUS, 2 * DOT_RADIUS)
+                        if (textureToDraw != null) GAME.batch.drawBounding(textureToDraw, it.x - DOT_RADIUS, it.y - DOT_RADIUS,
+                            2 * DOT_RADIUS, 2 * DOT_RADIUS, worldBoundingRect)
                     }
                 }
             }
@@ -724,11 +732,11 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRendererBoundingBox,
                             val radarX2 = (pos2.x - camX) / camZoom
                             val radarY2 = (pos2.y - camY) / camZoom
                             calculateContactDotPosition((radarX1 + radarX2) / 2, (radarY1 + radarY2) / 2)?.let { pos ->
-                                GAME.batch.draw(dotRed, pos.x - DOT_RADIUS, pos.y - DOT_RADIUS, 2 * DOT_RADIUS, 2 * DOT_RADIUS)
+                                GAME.batch.drawBounding(dotRed, pos.x - DOT_RADIUS, pos.y - DOT_RADIUS, 2 * DOT_RADIUS, 2 * DOT_RADIUS, constZoomBoundingRect)
                             }
                         } else {
                             calculateContactDotPosition(radarX1, radarY1)?.let { pos ->
-                                GAME.batch.draw(dotRed, pos.x - DOT_RADIUS, pos.y - DOT_RADIUS, 2 * DOT_RADIUS, 2 * DOT_RADIUS)
+                                GAME.batch.drawBounding(dotRed, pos.x - DOT_RADIUS, pos.y - DOT_RADIUS, 2 * DOT_RADIUS, 2 * DOT_RADIUS, constZoomBoundingRect)
                             }
                         }
                     }
@@ -738,7 +746,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRendererBoundingBox,
                         val radarX = (posX - camX) / camZoom
                         val radarY = (posY - camY) / camZoom
                         calculateContactDotPosition(radarX, radarY)?.let { pos ->
-                            GAME.batch.draw(dotMagenta, pos.x - DOT_RADIUS, pos.y - DOT_RADIUS, 2 * DOT_RADIUS, 2 * DOT_RADIUS)
+                            GAME.batch.drawBounding(dotMagenta, pos.x - DOT_RADIUS, pos.y - DOT_RADIUS, 2 * DOT_RADIUS, 2 * DOT_RADIUS, constZoomBoundingRect)
                         }
                     }
                 }

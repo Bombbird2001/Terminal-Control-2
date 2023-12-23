@@ -1,9 +1,14 @@
 package com.bombbird.terminalcontrol2.utilities
 
 import com.badlogic.gdx.graphics.Color
+import com.badlogic.gdx.graphics.g2d.Batch
+import com.badlogic.gdx.graphics.g2d.SpriteBatch
+import com.badlogic.gdx.graphics.g2d.TextureRegion
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import com.badlogic.gdx.math.Polygon
 import com.badlogic.gdx.math.Rectangle
+import com.badlogic.gdx.scenes.scene2d.Actor
+import com.badlogic.gdx.scenes.scene2d.utils.Drawable
 
 /**
  * Shape renderer that can be bounded to a rectangle, so that it will only render within the rectangle
@@ -51,4 +56,23 @@ class ShapeRendererBoundingBox(maxVertices: Int): ShapeRenderer(maxVertices) {
         return (leftX <= boundingRect.x + boundingRect.width && rightX >= boundingRect.x) &&
                 (bottomY <= boundingRect.y + boundingRect.height && topY >= boundingRect.y)
     }
+}
+
+fun SpriteBatch.drawBounding(textureRegion: TextureRegion?, x: Float, y: Float, width: Float, height: Float, boundingRect: Rectangle) {
+    if (textureRegion == null) return
+    if (!boundingRect.overlaps(Rectangle(x, y, width, height))) return
+
+    draw(textureRegion, x, y, width, height)
+}
+
+fun Drawable.drawBounding(batch: Batch, x: Float, y: Float, width: Float, height: Float, boundingRect: Rectangle) {
+    if (!boundingRect.overlaps(Rectangle(x, y, width, height))) return
+
+    draw(batch, x, y, width, height)
+}
+
+fun Actor.drawBounding(batch: Batch, parentAlpha: Float, boundingRect: Rectangle) {
+    if (!boundingRect.overlaps(Rectangle(x, y, width, height))) return
+
+    draw(batch, parentAlpha)
 }
