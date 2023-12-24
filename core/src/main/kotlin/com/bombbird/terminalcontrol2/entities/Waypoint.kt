@@ -27,7 +27,7 @@ class Waypoint(id: Short, name: String, posX: Short, posY: Short, onClient: Bool
                     updateText(name)
                     xOffset = -label.prefWidth / 2
                 }
-                val distToGoLabel = GenericLabel(0f, if (isMobile()) -24f else -20f).apply {
+                val distToGoLabel = GenericLabel(0f, if (isMobile()) -28f else -20f).apply {
                     updateStyle(if (isMobile()) "WaypointDistToGoMobile" else "WaypointDistToGo")
                     updateText("")
                 }

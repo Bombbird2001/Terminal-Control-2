@@ -72,8 +72,8 @@ object PhysicsToolsTest: FunSpec() {
             calculateParasiticDrag(1.28f, 1.225f, 240f) shouldBe 11951.374f.plusOrMinus(1f)
             calculateParasiticDrag(6.552f, 1.225f, 80f) shouldBe 6797.322f.plusOrMinus(0.1f)
             calculateParasiticDrag(6.552f, 0.36518f, 400f) shouldBe 50658.08f.plusOrMinus(1f)
-            calculateInducedDrag(351533, 160, 340, 300000f, 37000f, 488f, false) shouldBe 169407.3f.plusOrMinus(10f)
-            calculateInducedDrag(240000, 175, 340, 1000000f, 1000f, 178f, true) shouldBe 274022f.plusOrMinus(10f)
+            calculateInducedDrag(351533, 340, 300000f, 37000f, 488f, false) shouldBe 179097.4f.plusOrMinus(10f)
+            calculateInducedDrag(240000, 340, 1000000f, 1000f, 178f, true) shouldBe 236386.53f.plusOrMinus(10f)
         }
 
         test("Speed calculations") {
@@ -180,7 +180,7 @@ object PhysicsToolsTest: FunSpec() {
                 massKg = 23000
                 tripMach = 0.43f
                 tripIas = 190
-            }) shouldBe 22000
+            }) shouldBe 19000
         }
 
         test("Gradient calculations") {

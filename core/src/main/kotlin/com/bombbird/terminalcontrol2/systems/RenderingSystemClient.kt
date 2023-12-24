@@ -131,7 +131,6 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRendererBoundingBox,
         shapeRenderer.circle(0f, 0f, 1250f)
         shapeRenderer.circle(0f, 0f, 125f)
         shapeRenderer.circle(0f, 0f, 12.5f)
-        shapeRenderer.rect(camX + paneOffset - viewWidth / 2, camY - viewHeight / 2, viewWidth, viewHeight)
 
         // Render lineArrays
         val lineArrays = lineArrayFamilyEntities.getEntities()

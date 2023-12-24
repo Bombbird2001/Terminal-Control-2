@@ -170,9 +170,9 @@ fun updateWaypointRestr() {
         var count = 1
         if (topAlt != null) {
             genericLabels[2].updateText(topAlt.toString())
-            genericLabels[2].yOffset = if (isMobile()) (topY - 18f * count) else (topY - 14f * count)
-            if (bottomAlt == topAlt)  genericLabels[2].updateStyle("WaypointBothAltRestr")
-            else genericLabels[2].updateStyle("WaypointTopAltRestr")
+            genericLabels[2].yOffset = if (isMobile()) (topY - 22f * count) else (topY - 14f * count)
+            if (bottomAlt == topAlt)  genericLabels[2].updateStyle(if (isMobile()) "WaypointBothAltRestrMobile" else "WaypointBothAltRestr")
+            else genericLabels[2].updateStyle(if (isMobile()) "WaypointTopAltRestrMobile" else "WaypointTopAltRestr")
             count++
         } else {
             genericLabels[2].updateText("")
@@ -180,14 +180,14 @@ fun updateWaypointRestr() {
 
         if (bottomAlt != null && topAlt != bottomAlt) {
             genericLabels[3].updateText(bottomAlt.toString())
-            genericLabels[3].yOffset = if (isMobile()) (topY - 18f * count) else (topY - 14f * count)
+            genericLabels[3].yOffset = if (isMobile()) (topY - 22f * count) else (topY - 14f * count)
             count++
         }
         else genericLabels[3].updateText("")
 
         if (speed != null) {
             genericLabels[4].updateText("${speed}K")
-            genericLabels[4].yOffset = if (isMobile()) (topY - 18f * count) else (topY - 14f * count)
+            genericLabels[4].yOffset = if (isMobile()) (topY - 22f * count) else (topY - 14f * count)
         }
         else genericLabels[4].updateText("")
 
