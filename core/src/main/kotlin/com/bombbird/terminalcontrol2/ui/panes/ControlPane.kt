@@ -380,6 +380,11 @@ class ControlPane {
                         if (it == parentPane.userClearanceState.clearedTrans) transFound = true
                         array.add(it)
                     }
+                    if (selectedTrans != null) {
+                        val expectedTrans = "$TRANS_PREFIX$selectedTrans"
+                        if (!array.contains(expectedTrans, false))
+                            array.add(expectedTrans)
+                    }
                 }
                 if (selectedTrans == null) {
                     if (!selection.isEmpty && !transFound) parentPane.userClearanceState.clearedTrans = if (selected == "$TRANS_PREFIX$NO_TRANS_SELECTION") null
@@ -388,8 +393,15 @@ class ControlPane {
                 isDisabled = false
             } ?: run {
                 isDisabled = true
-                items = GdxArray<String>().apply { add("$TRANS_PREFIX$NO_TRANS_SELECTION") }
-                parentPane.userClearanceState.clearedTrans = null
+                items = GdxArray<String>().apply {
+                    add("$TRANS_PREFIX$NO_TRANS_SELECTION")
+                    if (selectedTrans != null) {
+                        val expectedTrans = "$TRANS_PREFIX$selectedTrans"
+                        if (!contains(expectedTrans, false))
+                            add(expectedTrans)
+                        parentPane.userClearanceState.clearedTrans = expectedTrans.replace(TRANS_PREFIX, "")
+                    } else parentPane.userClearanceState.clearedTrans = null
+                }
             }
         }
         val transName = parentPane.userClearanceState.clearedTrans

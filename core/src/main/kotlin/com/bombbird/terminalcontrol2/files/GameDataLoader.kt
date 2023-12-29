@@ -1,5 +1,6 @@
 package com.bombbird.terminalcontrol2.files
 
+import com.badlogic.ashley.core.Entity
 import com.badlogic.gdx.utils.Array
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.*
@@ -75,6 +76,7 @@ private const val APCH_MISSED = "MISSED"
 private const val DAY_NIGHT = "DAY_NIGHT"
 private const val DAY_ONLY = "DAY_ONLY"
 private const val NIGHT_ONLY = "NIGHT_ONLY"
+private const val DEPRECATED_ENTITY = "DEPRECATED"
 
 const val INIT_CLIMB_LEG = "INITCLIMB"
 const val HDNG_LEG = "HDNG"
@@ -204,6 +206,7 @@ fun loadWorldData(mainName: String, gameServer: GameServer) {
                 "$AIRPORT_APP_NOZ_GROUP/" -> if (currAirport != null) currAppNOZGroup = addApproachNOZGroup(currAirport)
                 "/$AIRPORT_APP_NOZ_GROUP" -> currAppNOZGroup = null
                 AIRPORT_APP_NOZ -> parseApproachNOZ(lineData, currAppNOZGroup ?: continue)
+                DEPRECATED_ENTITY -> addDeprecated(currApp?.entity ?: currAirport?.entity ?: continue)
                 "/$currSectorCount" -> currSectorCount = 0
                 "/$parseMode" -> {
                     if (parseMode == AIRPORT_TFC && currAirport != null) generateTrafficDistribution(currAirport)
@@ -1148,6 +1151,11 @@ private fun parseTraffic(data: List<String>, airport: Airport) {
  */
 private fun generateTrafficDistribution(airport: Airport) {
     airport.entity[RandomAirlineData.mapper]?.airlineDistribution?.generateNormalized()
+}
+
+/** Marks an entity as deprecated */
+private fun addDeprecated(entity: Entity) {
+    entity += DeprecatedEntity()
 }
 
 /**

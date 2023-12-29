@@ -716,7 +716,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRendererBoundingBox,
                             }
                         }
                         if (textureToDraw != null) GAME.batch.drawBounding(textureToDraw, it.x - DOT_RADIUS, it.y - DOT_RADIUS,
-                            2 * DOT_RADIUS, 2 * DOT_RADIUS, worldBoundingRect)
+                            2 * DOT_RADIUS, 2 * DOT_RADIUS, constZoomBoundingRect)
                     }
                 }
             }

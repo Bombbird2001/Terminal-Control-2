@@ -77,7 +77,7 @@ class Approach(name: String, arptId: Byte, runwayId: Byte, posX: Float, posY: Fl
         val stepDown = entity[StepDown.mapper]
         return SerialisedApproach(
             appInfo.approachName, appInfo.airportId, appInfo.rwyId, pos.x, pos.y,
-            timeRestriction,
+            timeRestriction, entity.has(DeprecatedEntity.mapper),
             transitions.entries().map { SerialisedTransition(it.key, it.value.getSerialisedObject()) }.toTypedArray(),
             routeLegs.getSerialisedObject(),
             missedLegs.getSerialisedObject(),
@@ -99,6 +99,8 @@ class Approach(name: String, arptId: Byte, runwayId: Byte, posX: Float, posY: Fl
                 0, 0,
                 timeRestriction = serialisedApproach.timeRestriction
             ).apply {
+                if (serialisedApproach.deprecatedApp) entity += DeprecatedEntity()
+                else entity.remove<DeprecatedEntity>()
                 setLegsFromSerialisedObject(serialisedApproach)
                 val rwyConfigs = entity[RunwayConfigurationList.mapper] ?: run {
                     val rwyConfigs = RunwayConfigurationList()
@@ -128,7 +130,7 @@ class Approach(name: String, arptId: Byte, runwayId: Byte, posX: Float, posY: Fl
      * This class is abstract and is extended by SerialisedIlsGS and SerialisedIlsLOCOffset
      */
     class SerialisedApproach(val name: String = "", val arptId: Byte = 0, val rwyId: Byte = 0, val posX: Float = 0f, val posy: Float = 0f,
-                             val timeRestriction: Byte = 0,
+                             val timeRestriction: Byte = 0, val deprecatedApp: Boolean = false,
                              val transitions: Array<SerialisedTransition> = arrayOf(),
                              val routeLegs: Route.SerialisedRoute = Route.SerialisedRoute(),
                              val missedLegs: Route.SerialisedRoute = Route.SerialisedRoute(),

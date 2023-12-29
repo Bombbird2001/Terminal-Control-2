@@ -179,3 +179,15 @@ data class ApproachNOZChildren(val nozGroups: GdxArray<ApproachNOZGroup> = GdxAr
         fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
+
+/**
+ * Component to mark an object or procedure as deprecated, and should not be
+ * used in new clearances and maintained only for backwards compatibility
+ */
+class DeprecatedEntity: Component {
+    companion object {
+        val mapper = object: Mapper<DeprecatedEntity>() {}.mapper
+
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
+    }
+}

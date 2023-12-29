@@ -58,7 +58,7 @@ class MinAltSector(minAlt: Int?, polygonBoundary: ShortArray?, circleX: Short = 
                 updateStyle(if (restr) "MinAltSectorRestr" else "MinAltSector")
                 updateText(if (minAlt == null) "UNL" else (minAlt / 100f).roundToInt().toString())
                 xOffset = -label.prefWidth / 2
-                yOffset = 0f
+                yOffset = -label.prefHeight / 2
             }
             with<ConstantZoomSize>()
             if (!SHOW_MVA_ALTITUDE) with<DoNotRenderLabel>()

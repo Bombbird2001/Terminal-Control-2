@@ -488,6 +488,7 @@ fun getAvailableApproaches(airport: Entity, currSelectedApp: String?): GdxArray<
             val allowedConfigs = app.entity[RunwayConfigurationList.mapper]?.rwyConfigs ?: return@forEach
             if (!allowedConfigs.contains(activeRwyConfig.configId, false)) return@forEach
             app.entity[ApproachInfo.mapper]?.also {
+                if (app.entity.has(DeprecatedEntity.mapper)) return@forEach
                 // Add to list of eligible approaches if its runway is active for landings, time restriction checks passes
                 // and the runway configuration in use is one of the allowed configs
                 if (rwys[it.rwyId]?.entity?.get(ActiveLanding.mapper) == null) return@forEach

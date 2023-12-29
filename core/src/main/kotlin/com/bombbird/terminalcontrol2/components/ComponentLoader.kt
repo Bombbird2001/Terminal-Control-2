@@ -56,6 +56,7 @@ fun loadAllComponents() {
     DepartureRouteZone.initialise()
     DependentOppositeRunway.initialise()
     DependentParallelRunway.initialise()
+    DeprecatedEntity.initialise()
     Direction.initialise()
     DivergentDepartureAllowed.initialise()
     DoNotRenderLabel.initialise()
