@@ -684,10 +684,7 @@ fun checkOppRunwayTraffic(rwy: Entity, airport: Airport): Boolean {
  */
 fun checkDependentParallelRunwayTraffic(rwy: Entity, airport: Airport): Boolean {
     val nextDeparture = airport.entity[AirportNextDeparture.mapper]?.aircraft?.get(AircraftInfo.mapper)?.aircraftPerf ?: return false
-    val nextArrival = rwy[RunwayNextArrival.mapper]
     val prevDeparture = rwy[RunwayPreviousDeparture.mapper]
-    // Check time from touchdown - minimum 60s
-    if (nextArrival != null && calculateTimeToThreshold(nextArrival.aircraft, rwy) < 60) return false
     // Check time since departure - minimum 60s
     if (prevDeparture != null && prevDeparture.timeSinceDepartureS < 60) return false
     // Check turboprop separation
