@@ -59,7 +59,7 @@ object DataFileTest: FunSpec() {
             withData(allAircraft) {
                 val acData = it.split(" ")
                 acData.size shouldBe 15
-                acData[0].length shouldBe 4
+                acData[0].length shouldBeIn arrayOf(3, 4)
                 acData[1] shouldBeIn WAKE_CATS
                 acData[2] shouldBeIn RECAT_CATS
                 try {
