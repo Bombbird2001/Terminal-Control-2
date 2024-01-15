@@ -20,15 +20,14 @@ class MenuNotificationManager(private val stage: Stage) {
                     " issues. Please report them by emailing bombbirddev@gmail.com, or by clicking the \"Report Bug\"" +
                     " button in the Pause screen or info menu. Please include as much information as possible," +
                     " including the build version (in info menu), expected behaviour and steps to reproduce the bug." +
-                    " Screenshots and video recordings are very helpful too.\n\nCurrently, there are 4 default airports" +
+                    " Screenshots and video recordings are very helpful too.\n\nCurrently, there are 6 default airports" +
                     " for testing, and more will be added as testing goes on. We hope you will enjoy the new" +
                     " multiplayer functionality, have fun!", 800, 1800)
         )
         add(
-            MenuNotification("tchh-added", "New airport available!", "TCHH has been added to the" +
-                    " game. Aircraft can now go around due to wake turbulence on approach, and a few bugs have been fixed." +
-                    " As always, please report bugs encountered by clicking the \"Report Bug\" button in the Pause screen," +
-                    " or from the info menu. Enjoy the new map!", 600, 1400)
+            MenuNotification("tcpg-added", "New airport available!", "TCPG has been added to the" +
+                    " game. A number of bugs have also been fixed. As before, please report bugs encountered by clicking" +
+                    " the \"Report Bug\" button in the Pause screen, or from the info menu. Have fun!", 600, 1400)
         )
     }
 
