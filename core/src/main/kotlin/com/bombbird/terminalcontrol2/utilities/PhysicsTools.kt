@@ -27,6 +27,7 @@ const val AIR_GAS_CONSTANT_JPKGPK = 287.05f // Gas constant of air, unit is joul
 const val LAPSE_RATE_KPM_ISA = -0.0065f // Rate at which temperature decreases as altitude increases in ISA conditions, unit is Kelvin per metre
 const val TEMPERATURE_K_SL_ISA = 288.15f // Temperature at sea level in ISA conditions, unit is Kelvin
 const val GRAVITY_ACCELERATION_MPS2 = 9.80665f // Gravitational acceleration, unit is metres per second^2
+const val PROPELLER_MAX_EFFICIENCY = 0.85f // Maximum efficiency of propeller engines
 
 /**
  * Calculates the temperature at an altitude above sea level at ISA conditions
@@ -115,7 +116,7 @@ fun calculateMaxPropThrust(propPowerWSLISA: Int, propArea: Float, tasKt: Float, 
     // Minimum 10 knots TAS to simulate air movement due to pressure difference even when aircraft's TAS is 0
     val tasMps = ktToMps(max(tasKt, 10f))
     // return sqrt(2 * propArea * density * tasMps * (2 * propArea * density * tasMps * tasMps * tasMps + propPowerWSLISA)) - 2 * propArea * density * tasMps * tasMps
-    return propPowerWSLISA / 2 / tasMps
+    return propPowerWSLISA / tasMps * PROPELLER_MAX_EFFICIENCY
 }
 
 /**

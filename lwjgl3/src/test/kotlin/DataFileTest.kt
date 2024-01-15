@@ -1,13 +1,12 @@
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Files
 import com.badlogic.gdx.math.Polygon
+import com.bombbird.terminalcontrol2.components.FlightType
 import com.bombbird.terminalcontrol2.files.*
 import com.bombbird.terminalcontrol2.global.AVAIL_AIRPORTS
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.navigation.findMissedApproachAlt
-import com.bombbird.terminalcontrol2.utilities.ABOVE_ALT_REGEX
-import com.bombbird.terminalcontrol2.utilities.BELOW_ALT_REGEX
-import com.bombbird.terminalcontrol2.utilities.toLines
+import com.bombbird.terminalcontrol2.utilities.*
 import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.core.spec.style.scopes.ContainerScope
@@ -23,12 +22,15 @@ import io.kotest.matchers.comparables.shouldBeGreaterThan
 import io.kotest.matchers.comparables.shouldBeGreaterThanOrEqualTo
 import io.kotest.matchers.comparables.shouldBeLessThan
 import io.kotest.matchers.floats.shouldBeBetween
+import io.kotest.matchers.floats.shouldBeGreaterThan
 import io.kotest.matchers.ints.*
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.short.shouldBeBetween
 import io.kotest.matchers.shouldBe
 import ktx.assets.toInternalFile
+import ktx.collections.GdxArray
+import ktx.collections.contains
 import java.lang.NumberFormatException
 import java.lang.RuntimeException
 
@@ -63,18 +65,36 @@ object DataFileTest: FunSpec() {
                 acData[1] shouldBeIn WAKE_CATS
                 acData[2] shouldBeIn RECAT_CATS
                 try {
-                    acData[3].toInt()
-                    acData[4].toInt()
+                    val thrustN = acData[3].toInt()
+                    val propPowerKw = acData[4].toInt()
                     acData[5].toFloat()
-                    acData[6].toFloat()
-                    acData[7].toFloat()
-                    acData[8].toShort() shouldBeLessThan 390
-                    acData[9].toFloat() shouldBeLessThan 1f
-                    acData[10].toInt() shouldBeInRange 10000..60000
-                    acData[11].toShort() shouldBeLessThan 200
-                    acData[12].toShort() shouldBeLessThan 200
-                    acData[13].toInt()
-                    acData[14].toInt()
+                    val dragCd0 = acData[6].toFloat()
+                    val dragMaxCd = acData[7].toFloat()
+                    val vmo = acData[8].toShort()
+                    vmo shouldBeLessThan 390
+                    val mmo = acData[9].toFloat()
+                    mmo shouldBeLessThan 1f
+                    val ceiling = acData[10].toInt()
+                    ceiling shouldBeInRange 10000..60000
+                    val vapp = acData[11].toShort()
+                    vapp shouldBeLessThan 200
+                    val v2 = acData[12].toShort()
+                    v2 shouldBeLessThan 200
+                    val oew = acData[13].toInt()
+                    val mtow = acData[14].toInt()
+
+                    // Test aircraft initial climb performance
+                    val aircraftPerf = AircraftTypeData.AircraftPerfData(acData[1][0], acData[2][0], thrustN,
+                        propPowerKw, 1f, dragCd0, dragMaxCd, vmo, mmo, ceiling, vapp, v2, oew, mtow,
+                        FlightType.DEPARTURE).apply {
+                            massKg = mtow
+                    }
+                    val alt = 2500f
+                    val tasKt = calculateTASFromIAS(alt, v2.toFloat())
+                    // We exclude the A340-200 and A340-300 because they're not the best at climbing at MTOW
+                    if (!GdxArray<String>(arrayOf("A342", "A343")).contains(acData[0]))
+                        calculateMaxVerticalSpd(aircraftPerf, alt, tasKt, 0f,  onApproach = false,
+                            takingOff = false, takeoffGoAround = false) shouldBeGreaterThan 1000f
                 } catch (e: NumberFormatException) {
                     e.stackTraceToString().shouldBeNull()
                 }

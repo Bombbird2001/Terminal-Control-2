@@ -60,10 +60,10 @@ object PhysicsToolsTest: FunSpec() {
             calculateMaxJetThrust(17000, 30130.09f, 229.444f) shouldBe 5610f.plusOrMinus(100f)
 
             // Delta set at 5th significant figure
-            calculateMaxPropThrust(7562000, 26.40509f, 50f, 101325f, 288.15f) shouldBe 146993.52f.plusOrMinus(1f)
-            calculateMaxPropThrust(7562000, 26.40509f, 240f, 101325f, 288.15f) shouldBe 30623.65f.plusOrMinus(1f)
-            calculateMaxPropThrust(7562000, 26.40509f, 50f, 46563f, 248.526f) shouldBe 146993.52f.plusOrMinus(1f)
-            calculateMaxPropThrust(7562000, 26.40509f, 240f, 46563f, 248.526f) shouldBe 30623.65f.plusOrMinus(1f)
+            calculateMaxPropThrust(7562000, 26.40509f, 50f, 101325f, 288.15f) shouldBe 249888.98f.plusOrMinus(1f)
+            calculateMaxPropThrust(7562000, 26.40509f, 240f, 101325f, 288.15f) shouldBe 52060.21f.plusOrMinus(1f)
+            calculateMaxPropThrust(7562000, 26.40509f, 50f, 46563f, 248.526f) shouldBe 249888.98f.plusOrMinus(1f)
+            calculateMaxPropThrust(7562000, 26.40509f, 240f, 46563f, 248.526f) shouldBe 52060.21f.plusOrMinus(1f)
         }
 
         test("Drag calculations") {
@@ -180,7 +180,7 @@ object PhysicsToolsTest: FunSpec() {
                 massKg = 23000
                 tripMach = 0.43f
                 tripIas = 190
-            }) shouldBe 19000
+            }) shouldBe 25000
         }
 
         test("Gradient calculations") {
