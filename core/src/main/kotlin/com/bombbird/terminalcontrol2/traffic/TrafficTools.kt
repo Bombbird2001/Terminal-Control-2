@@ -324,6 +324,8 @@ fun clearForTakeoff(aircraft: Entity, rwy: Entity) {
             it.x = spawnPos.x
             it.y = spawnPos.y
         } ?: return
+        // Set to runway elevation
+        get(Altitude.mapper)?.altitudeFt = rwyAlt
         // Set to runway track
         get(Direction.mapper)?.trackUnitVector?.rotateDeg(rwyDir.trackUnitVector.angleDeg() - 90) // Runway heading
         // Calculate headwind component for takeoff
