@@ -47,7 +47,9 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advD
         if (!onClient) {
             with<RandomMetarInfo>()
             with<RandomAirlineData>()
-            with<DepartureInfo>()
+            with<DepartureInfo> {
+                backlog = (advDep * 0.25f).toInt() * -1
+            }
             with<MaxAdvancedDepartures> {
                 maxAdvanceDepartures = advDep
             }

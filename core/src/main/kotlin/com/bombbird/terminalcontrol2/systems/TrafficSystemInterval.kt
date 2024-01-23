@@ -178,7 +178,8 @@ class TrafficSystemInterval: IntervalSystem(1f) {
                 if (depInfo.backlog <= -maxAdvDep.maxAdvanceDepartures) return@apply
 
                 // If insufficient time has passed since last departure, do not depart
-                if (timeSinceLastDep.time < calculateAdditionalTimeToNextDeparture(depInfo.backlog, maxAdvDep.maxAdvanceDepartures)) return@apply
+                val minimumTime = 60 + calculateAdditionalTimeToNextDeparture(depInfo.backlog, maxAdvDep.maxAdvanceDepartures)
+                if (timeSinceLastDep.time < minimumTime) return@apply
 
                 // Check for go-around - minimum 80s as stated in RecentGoAround component
                 if (airport.entity.has(RecentGoAround.mapper)) return@apply
