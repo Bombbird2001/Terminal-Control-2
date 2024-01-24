@@ -43,9 +43,11 @@ class CustomWeatherSettings: BaseGameSettings() {
                                     label("${arptInfo.icaoCode}:", "SettingsOption").cell(height = BUTTON_HEIGHT_BIG / 1.5f, padRight = 20f)
                                     val hdgBox1 = defaultSettingsSelectBoxSmall<Byte>().apply {
                                         setItems(0, 1, 2, 3)
+                                        addChangeListener { _, _ -> modulateWindHdgChoices(arptInfo.arptId) }
                                     }
                                     val hdgBox2 = defaultSettingsSelectBoxSmall<Byte>().apply {
                                         setItems(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
+                                        addChangeListener { _, _ -> modulateWindHdgChoices(arptInfo.arptId) }
                                     }
                                     val hdgBox3 = defaultSettingsSelectBoxSmall<Byte>().apply {
                                         setItems(0, 5)
@@ -164,6 +166,10 @@ class CustomWeatherSettings: BaseGameSettings() {
             if (get(0).selected == 3.byte) {
                 get(1).setItems(0, 1, 2, 3, 4, 5, 6)
                 if (get(1).selected == 6.byte) get(2).setItems(0)
+                else get(2).setItems(0, 5)
+            } else {
+                get(1).setItems(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
+                get(2).setItems(0, 5)
             }
         }
     }

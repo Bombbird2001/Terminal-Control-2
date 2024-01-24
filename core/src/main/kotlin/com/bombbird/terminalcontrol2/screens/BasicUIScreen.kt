@@ -3,6 +3,7 @@ package com.bombbird.terminalcontrol2.screens
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.Texture
+import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.scenes.scene2d.Actor
 import com.badlogic.gdx.scenes.scene2d.ui.Dialog
 import com.bombbird.terminalcontrol2.global.*
@@ -10,6 +11,7 @@ import com.bombbird.terminalcontrol2.graphics.ScreenSize
 import com.bombbird.terminalcontrol2.ui.safeStage
 import ktx.app.KtxScreen
 import ktx.assets.disposeSafely
+import ktx.graphics.moveTo
 import ktx.scene2d.*
 import kotlin.math.max
 
@@ -65,11 +67,16 @@ abstract class BasicUIScreen: KtxScreen, ShowsDialog {
      */
     override fun resize(width: Int, height: Int) {
         ScreenSize.updateScreenSizeParameters(width, height)
+        stage.viewport.setWorldSize(UI_WIDTH, UI_HEIGHT)
         stage.viewport.update(width, height)
         stage.batch.projectionMatrix = stage.camera.combined
+        stage.camera.apply {
+            moveTo(Vector2(UI_WIDTH / 2, UI_HEIGHT / 2))
+            update()
+        }
         container.apply {
             setSize(UI_WIDTH, UI_HEIGHT)
-            setPosition(WORLD_WIDTH / 2 - UI_WIDTH / 2, WORLD_HEIGHT / 2 - UI_HEIGHT / 2)
+            setPosition(0f, 0f)
         }
     }
 }
