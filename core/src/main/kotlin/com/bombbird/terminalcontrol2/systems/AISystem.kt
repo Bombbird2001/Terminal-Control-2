@@ -1125,6 +1125,9 @@ class AISystem: EntitySystem() {
             }
         }
 
+        // If aircraft is on go around route, use the subsequent lowest max alt instead
+        if (entity.has(OnGoAroundRoute.mapper) && flightType.type == FlightType.ARRIVAL) maxAlt = lowestMaxAlt
+
         if (minAlt != null && maxAlt != null && minAlt > maxAlt) {
             FileLog.info("AISystem", "minAlt ($minAlt) should not > maxAlt ($maxAlt)")
             maxAlt = minAlt
