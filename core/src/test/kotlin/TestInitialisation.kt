@@ -1,6 +1,7 @@
 import com.bombbird.terminalcontrol2.TerminalControl2
 import com.bombbird.terminalcontrol2.files.StubExternalFileHandler
 import com.bombbird.terminalcontrol2.global.*
+import com.bombbird.terminalcontrol2.integrations.StubDiscordHandler
 import com.bombbird.terminalcontrol2.networking.ConnectionMeta
 import com.bombbird.terminalcontrol2.networking.GameServer
 import com.bombbird.terminalcontrol2.networking.NetworkServer
@@ -14,7 +15,7 @@ import kotlin.collections.AbstractList
 internal fun testInitialiseGameAndServer() {
     // Suppress entity created on wrong thread log message
     Thread.currentThread().name = GAME_SERVER_THREAD_NAME
-    if (!isGameInitialised) GAME = TerminalControl2(StubExternalFileHandler, StubTextToSpeech)
+    if (!isGameInitialised) GAME = TerminalControl2(StubExternalFileHandler, StubTextToSpeech, StubDiscordHandler)
     if (GAME.gameServer == null) {
         val newGameServer = GameServer.testGameServer()
         newGameServer.networkServer = object : NetworkServer(newGameServer, { _, _ -> }, { _ -> }, { _ -> }) {

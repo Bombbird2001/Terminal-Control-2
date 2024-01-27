@@ -58,8 +58,10 @@ class DesktopTTSHandler: TextToSpeechHandler() {
         }
 
         if (voiceArray.isEmpty) {
-            FileLog.warn("Desktop TTS", "No English voices found; all voices available: ${speechEngine?.availableVoices?.joinToString { it.name }}")
+            FileLog.warn("DesktopTTSHandler", "No English voices found; all voices available: ${speechEngine?.availableVoices?.joinToString { it.name }}")
             onVoiceDataMissing?.invoke()
+        } else {
+            FileLog.info("DesktopTTSHandler", "TTS initialized")
         }
 
         speechEngine?.setRate(20)

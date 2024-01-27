@@ -92,6 +92,10 @@ class RadarScreen private constructor(private val connectionHost: String, privat
     @Volatile
     private var initialDataReceived = false
 
+    // Game meta-data
+    var mainName = ""
+    var maxPlayers = 0
+
     // Airport map for access during TCP updates; see GameServer for more details
     val airports = GdxArrayMap<Byte, Airport>(AIRPORT_SIZE)
 
@@ -478,6 +482,7 @@ class RadarScreen private constructor(private val connectionHost: String, privat
         clientEngine.removeAllSystemsOnMainThread(true)
 
         GAME.gameServer?.stopServer()
+        GAME.discordHandler.updateInMenu()
 
         KtxAsync.launch(Dispatchers.IO) {
             try {
@@ -801,7 +806,7 @@ class RadarScreen private constructor(private val connectionHost: String, privat
     }
 
     /** Returns true if client is in public multiplayer game, else false */
-    private fun isPublicMultiplayer(): Boolean {
+    fun isPublicMultiplayer(): Boolean {
         return roomId != null
     }
 

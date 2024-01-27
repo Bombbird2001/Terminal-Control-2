@@ -12,4 +12,5 @@ object Secrets {
     const val RELAY_ENDPOINT_AUTH_PW = ""
     const val RELAY_ENDPOINT_CREATE_PW = ""
     const val DISCORD_INVITE_LINK = ""
+    const val DISCORD_GAME_SDK_APP_ID = 0L
 }

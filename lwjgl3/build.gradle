@@ -4,7 +4,15 @@ apply plugin: 'application'
 targetCompatibility = JavaVersion.VERSION_1_8
 sourceCompatibility = JavaVersion.VERSION_1_8
 
-sourceSets.main.resources.srcDirs = [ "../assetsDesktop" ]
+sourceSets {
+	main {
+		resources {
+			srcDirs = ["../assetsDesktop" ]
+			exclude "Libs"
+		}
+	}
+}
+
 mainClassName = 'com.bombbird.terminalcontrol2.lwjgl3.Lwjgl3Launcher'
 eclipse.project.name = appName + '-lwjgl3'
 
@@ -17,6 +25,7 @@ dependencies {
 	implementation "org.lwjgl:lwjgl-nfd:$lwjgl3Version:natives-linux"
 	implementation "org.lwjgl:lwjgl-nfd:$lwjgl3Version:natives-macos"
 	implementation "org.lwjgl:lwjgl-nfd:$lwjgl3Version:natives-macos-arm64"
+	implementation "com.github.JnCrMx:discord-game-sdk4j:$discordSdkVersion"
 	implementation files('../extJars/jAdapterForNativeTTS-0.12.0.jar')
 	implementation project(':core')
 

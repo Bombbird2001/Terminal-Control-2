@@ -9,6 +9,7 @@ import com.badlogic.gdx.math.MathUtils
 import com.bombbird.terminalcontrol2.components.loadAllComponents
 import com.bombbird.terminalcontrol2.files.*
 import com.bombbird.terminalcontrol2.global.*
+import com.bombbird.terminalcontrol2.integrations.DiscordHandler
 import com.bombbird.terminalcontrol2.networking.*
 import com.bombbird.terminalcontrol2.networking.playerclient.LANClient
 import com.bombbird.terminalcontrol2.networking.playerclient.LANClientDiscoveryHandler
@@ -39,7 +40,8 @@ import ktx.scene2d.*
  *
  * [clearScreen] is set to false as it will be handled by the individual screens
  */
-class TerminalControl2(val externalFileHandler: ExternalFileHandler, ttsHandler: TextToSpeechHandler) : KtxGame<KtxScreen>(clearScreen = false) {
+class TerminalControl2(val externalFileHandler: ExternalFileHandler, ttsHandler: TextToSpeechHandler,
+                       val discordHandler: DiscordHandler) : KtxGame<KtxScreen>(clearScreen = false) {
     lateinit var batch: SpriteBatch
     lateinit var engine: Engine
     lateinit var soundManager: SoundManager
@@ -162,7 +164,7 @@ class TerminalControl2(val externalFileHandler: ExternalFileHandler, ttsHandler:
             loadAllFamilies()
 
             ttsManager.init()
-            FileLog.info("TerminalControl2", "TTS initialized")
+            discordHandler.initialize()
         }
 
         BG_INDEX = MathUtils.random(1, 8)
@@ -178,5 +180,6 @@ class TerminalControl2(val externalFileHandler: ExternalFileHandler, ttsHandler:
         publicClient.dispose()
         FileLog.close()
         ttsManager.disposeSafely()
+        discordHandler.quit()
     }
 }

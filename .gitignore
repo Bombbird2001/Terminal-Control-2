@@ -75,3 +75,5 @@ nb-configuration.xml
 *~
 *.*#
 *#*#
+
+/lwjgl3/libs/

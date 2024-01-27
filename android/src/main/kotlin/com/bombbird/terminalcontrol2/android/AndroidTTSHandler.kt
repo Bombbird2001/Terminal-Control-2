@@ -96,6 +96,7 @@ class AndroidTTSHandler(private val app: AndroidApplication): TextToSpeechHandle
         if (resultCode == TextToSpeech.Engine.CHECK_VOICE_DATA_PASS) {
             // Data exists, so we instantiate the TTS engine
             tts = TextToSpeech(app, this)
+            FileLog.info("AndroidTTSHandler", "TTS initialized")
         } else {
             // Data is missing, so we start the TTS installation process
             val installIntent = Intent()

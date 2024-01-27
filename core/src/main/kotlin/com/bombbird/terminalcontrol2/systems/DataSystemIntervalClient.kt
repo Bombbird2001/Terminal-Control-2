@@ -2,8 +2,12 @@ package com.bombbird.terminalcontrol2.systems
 
 import com.badlogic.ashley.core.Family
 import com.badlogic.ashley.systems.IntervalSystem
+import com.badlogic.gdx.utils.ArrayMap
+import com.bombbird.terminalcontrol2.components.Controllable
 import com.bombbird.terminalcontrol2.components.PendingRunwayConfig
 import com.bombbird.terminalcontrol2.global.CLIENT_SCREEN
+import com.bombbird.terminalcontrol2.global.DISCORD_UPDATE_INTERVAL_S
+import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.utilities.InitializeCompanionObjectOnStart
 import ktx.ashley.allOf
 import ktx.ashley.get
@@ -21,6 +25,8 @@ class DataSystemIntervalClient: IntervalSystem(1f) {
     }
 
     private val pendingRunwayChangeFamilyEntities = FamilyWithListener.newClientFamilyWithListener(pendingRunwayChangeFamily)
+
+    private var discordTimer = DISCORD_UPDATE_INTERVAL_S - 1
 
     /**
      * Secondary update system, for operations that can be updated at a lower frequency and do not rely on deltaTime
@@ -43,6 +49,20 @@ class DataSystemIntervalClient: IntervalSystem(1f) {
         // Refresh the status pane when selected, once per second
         CLIENT_SCREEN?.uiPane?.mainInfoObj?.also {
             if (it.isStatusPaneSelected()) it.statusPaneObj.refreshStatusMessages()
+        }
+
+        discordTimer += interval
+        if (discordTimer >= DISCORD_UPDATE_INTERVAL_S) {
+            discordTimer -= DISCORD_UPDATE_INTERVAL_S
+
+            CLIENT_SCREEN?.let {
+                val acInControl = ArrayMap.Entries(it.aircraft).filter { entry ->
+                    entry.value.entity[Controllable.mapper]?.sectorId == it.playerSector
+                }.size
+                GAME.discordHandler.updateInGame(it.mainName, acInControl, it.sectors.size, it.maxPlayers,
+                    it.isPublicMultiplayer())
+                println("Updated Discord rich presence")
+            }
         }
     }
 }
