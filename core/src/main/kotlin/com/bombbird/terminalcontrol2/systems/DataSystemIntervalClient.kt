@@ -61,7 +61,6 @@ class DataSystemIntervalClient: IntervalSystem(1f) {
                 }.size
                 GAME.discordHandler.updateInGame(it.mainName, acInControl, it.sectors.size, it.maxPlayers,
                     it.isPublicMultiplayer())
-                println("Updated Discord rich presence")
             }
         }
     }
