@@ -58,10 +58,10 @@ class DesktopDiscordHandler: DiscordHandler {
                 Core.init(nativeLibrary, "tc2-java-discord-game-sdk")
                 FileLog.info("DesktopDiscordHandler", "Discord Game SDK initialized")
             } catch (e: UnsatisfiedLinkError) {
-                FileLog.warn("DesktopDiscordHandler", "Failed to load Discord Game SDK native library:\n$e")
+                FileLog.warn("DesktopDiscordHandler", "Failed to load Discord Game SDK native library:\n${e.stackTraceToString()}")
                 return@Thread
             } catch (e: Exception) {
-                FileLog.warn("DesktopDiscordHandler", "Failed to initialize Discord Game SDK:\n$e")
+                FileLog.warn("DesktopDiscordHandler", "Failed to initialize Discord Game SDK:\n${e.stackTraceToString()}")
                 return@Thread
             }
 
