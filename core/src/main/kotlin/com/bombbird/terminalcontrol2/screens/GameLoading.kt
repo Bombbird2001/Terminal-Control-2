@@ -23,7 +23,7 @@ class GameLoading private constructor(): BasicUIScreen() {
          */
         fun newSinglePlayerGameLoading(airportToHost: String): GameLoading {
             val gameLoading = GameLoading()
-            GAME.gameServer = GameServer.newSinglePlayerGameServer(airportToHost).apply {
+            GameServer.newSinglePlayerGameServer(airportToHost).apply {
                 serverStartedCallback = gameLoading::gameServerLoaded
             }
             val rs = RadarScreen.newSinglePlayerRadarScreen().apply {
@@ -43,7 +43,7 @@ class GameLoading private constructor(): BasicUIScreen() {
          */
         fun newLANMultiplayerGameLoading(airportToHost: String, maxPlayers: Byte): GameLoading {
             val gameLoading = GameLoading()
-            GAME.gameServer = GameServer.newLANMultiplayerGameServer(airportToHost, maxPlayers).apply {
+            GameServer.newLANMultiplayerGameServer(airportToHost, maxPlayers).apply {
                 serverStartedCallback = gameLoading::gameServerLoaded
             }
             val rs = RadarScreen.newLANMultiplayerRadarScreen(LOCALHOST).apply {
@@ -63,7 +63,7 @@ class GameLoading private constructor(): BasicUIScreen() {
          */
         fun newPublicMultiplayerGameLoading(airportToHost: String, maxPlayers: Byte): GameLoading {
             val gameLoading = GameLoading()
-            GAME.gameServer = GameServer.newPublicMultiplayerGameServer(airportToHost, maxPlayers).apply {
+            GameServer.newPublicMultiplayerGameServer(airportToHost, maxPlayers).apply {
                 serverStartedCallback = gameLoading::gameServerLoaded
             }
             val rs = RadarScreen.newPublicMultiplayerRadarScreen().apply {
@@ -83,7 +83,7 @@ class GameLoading private constructor(): BasicUIScreen() {
          */
         fun loadSinglePlayerGameLoading(airportToHost: String, saveId: Int): GameLoading {
             val gameLoading = GameLoading()
-            GAME.gameServer = GameServer.loadSinglePlayerGameServer(airportToHost, saveId).apply {
+            GameServer.loadSinglePlayerGameServer(airportToHost, saveId).apply {
                 serverStartedCallback = gameLoading::gameServerLoaded
             }
             val rs = RadarScreen.newSinglePlayerRadarScreen().apply {
@@ -104,7 +104,7 @@ class GameLoading private constructor(): BasicUIScreen() {
          */
         fun loadLANMultiplayerGameLoading(airportToHost: String, saveId: Int, maxPlayers: Byte): GameLoading {
             val gameLoading = GameLoading()
-            GAME.gameServer = GameServer.loadLANMultiplayerGameServer(airportToHost, saveId, maxPlayers).apply {
+            GameServer.loadLANMultiplayerGameServer(airportToHost, saveId, maxPlayers).apply {
                 serverStartedCallback = gameLoading::gameServerLoaded
             }
             val rs = RadarScreen.newLANMultiplayerRadarScreen(LOCALHOST).apply {
@@ -125,7 +125,7 @@ class GameLoading private constructor(): BasicUIScreen() {
          */
         fun loadPublicMultiplayerGameLoading(airportToHost: String, saveId: Int, maxPlayers: Byte): GameLoading {
             val gameLoading = GameLoading()
-            GAME.gameServer = GameServer.loadPublicMultiplayerGameServer(airportToHost, saveId, maxPlayers).apply {
+            GameServer.loadPublicMultiplayerGameServer(airportToHost, saveId, maxPlayers).apply {
                 serverStartedCallback = gameLoading::gameServerLoaded
             }
             val rs = RadarScreen.newPublicMultiplayerRadarScreen().apply {

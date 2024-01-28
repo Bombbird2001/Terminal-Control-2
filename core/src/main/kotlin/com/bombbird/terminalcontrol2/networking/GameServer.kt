@@ -311,6 +311,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
      * @param saveId the ID of the save file to load, or null if nothing to load
      */
     private fun initiateServer(mainName: String, saveId: Int?) {
+        GAME.gameServer = this
         thread(name = GAME_SERVER_THREAD_NAME) {
             try {
                 FileLog.info("GameServer", "Starting game server")
@@ -1015,12 +1016,13 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
      * @return ID of room
      */
     fun getRoomId(): Short? {
+        if (!::networkServer.isInitialized) return null
         return networkServer.getRoomId()
     }
 
     /** Returns true if server is hosting a public multiplayer game, else false */
     private fun isPublicMultiplayer(): Boolean {
-        return getRoomId() != null
+        return publicServer
     }
 
     /** Returns the type of multiplayer game being hosted */

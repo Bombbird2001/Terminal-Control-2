@@ -26,6 +26,7 @@ import com.squareup.moshi.adapter
 import ktx.ashley.get
 import ktx.ashley.getSystem
 import ktx.collections.set
+import java.io.EOFException
 
 /** Base data class save for game server */
 @JsonClass(generateAdapter = true)
@@ -178,7 +179,7 @@ private fun loadSave(gs: GameServer, saveId: Int, useBackup: Boolean) {
         }
         runDelayedEntityRetrieval()
     } catch (e: Exception) {
-        if (e is JsonDataException || e is JsonEncodingException) {
+        if (e is JsonDataException || e is JsonEncodingException || e is EOFException) {
             if (!useBackup) {
                 FileLog.warn("GameSaverLoader", "Encountered JSON parsing error when loading ${saveId}.json, attempting to use backup, deleting corrupted save")
                 deleteMainSave(saveId)

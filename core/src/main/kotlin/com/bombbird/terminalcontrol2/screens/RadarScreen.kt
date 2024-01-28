@@ -139,9 +139,10 @@ class RadarScreen private constructor(private val connectionHost: String, privat
     // Selected aircraft
     var selectedAircraft: Aircraft? = null
 
-    // Networking client
+    // Networking client, and flag for stopping connection attempts if game quits before connection is established
     val networkClient: NetworkClient
         get() = if (!isPublicMultiplayer()) GAME.lanClient else GAME.publicClient
+    private var attemptConnection = true
 
     // Blocking queue to store runnables to be run in the main thread after engine update
     private val pendingRunnablesQueue = ConcurrentLinkedQueue<Runnable>()
@@ -479,6 +480,7 @@ class RadarScreen private constructor(private val connectionHost: String, privat
 
         GAME.gameServer?.stopServer()
 
+        attemptConnection = false
         KtxAsync.launch(Dispatchers.IO) {
             try {
                 networkClient.stop()
@@ -670,6 +672,7 @@ class RadarScreen private constructor(private val connectionHost: String, privat
             }
             try {
                 // Check if game server is public server, if it is, set to its room ID
+                if (!attemptConnection) return false
                 if (gs != null && gs.publicServer && gs.getRoomId() != null) roomId = gs.getRoomId()
                 Thread.sleep(1000)
                 networkClient.beforeConnect(roomId)

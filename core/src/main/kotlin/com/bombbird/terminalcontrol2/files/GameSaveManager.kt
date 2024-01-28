@@ -3,11 +3,13 @@ package com.bombbird.terminalcontrol2.files
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.json.getMoshiWithAllAdapters
 import com.bombbird.terminalcontrol2.networking.GameServer
+import com.bombbird.terminalcontrol2.utilities.FileLog
 import com.squareup.moshi.JsonDataException
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.adapter
 import ktx.collections.GdxArray
 import ktx.collections.GdxArrayMap
+import java.io.IOException
 import java.lang.NumberFormatException
 
 /**
@@ -126,11 +128,16 @@ fun getAvailableSaveGames(): GdxArrayMap<Int, GameSaveMeta> {
                 return@forEach
             }
             @OptIn(ExperimentalStdlibApi::class)
-            val metaInfo = Moshi.Builder().build().adapter<GameSaveMeta>().fromJson(it.readString()) ?: return@forEach
-            if (!isBackup)
-                gamesFound.put(id, metaInfo)
-            else
-                backupsFound.add(Pair(id, metaInfo))
+            try {
+                val metaInfo = Moshi.Builder().build().adapter<GameSaveMeta>().fromJson(it.readString()) ?: return@forEach
+                if (!isBackup)
+                    gamesFound.put(id, metaInfo)
+                else
+                    backupsFound.add(Pair(id, metaInfo))
+            } catch (e: IOException) {
+                FileLog.warn("GameSaveManager", "Error reading save meta file: $e")
+                return@forEach
+            }
         }
         for (i in 0 until backupsFound.size) {
             val backupEntry = backupsFound[i]
