@@ -25,7 +25,7 @@ dependencies {
 	implementation "org.lwjgl:lwjgl-nfd:$lwjgl3Version:natives-linux"
 	implementation "org.lwjgl:lwjgl-nfd:$lwjgl3Version:natives-macos"
 	implementation "org.lwjgl:lwjgl-nfd:$lwjgl3Version:natives-macos-arm64"
-	implementation "com.github.JnCrMx:discord-game-sdk4j:$discordSdkVersion"
+	implementation files('../extJars/discord-game-sdk4j-0.5.5.jar')
 	implementation files('../extJars/jAdapterForNativeTTS-0.12.0.jar')
 	implementation project(':core')
 

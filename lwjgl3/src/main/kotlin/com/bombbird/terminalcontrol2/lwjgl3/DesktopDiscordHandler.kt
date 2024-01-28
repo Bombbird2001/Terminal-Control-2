@@ -5,6 +5,7 @@ import com.bombbird.terminalcontrol2.integrations.DiscordHandler
 import com.bombbird.terminalcontrol2.utilities.FileLog
 import de.jcm.discordgamesdk.Core
 import de.jcm.discordgamesdk.CreateParams
+import de.jcm.discordgamesdk.GameSDKException
 import de.jcm.discordgamesdk.activity.Activity
 import ktx.assets.toInternalFile
 import java.io.File
@@ -54,18 +55,26 @@ class DesktopDiscordHandler: DiscordHandler {
             }
 
             try {
-                Core.init(nativeLibrary)
+                Core.init(nativeLibrary, "tc2-java-discord-game-sdk")
                 FileLog.info("DesktopDiscordHandler", "Discord Game SDK initialized")
             } catch (e: UnsatisfiedLinkError) {
+                FileLog.warn("DesktopDiscordHandler", "Failed to load Discord Game SDK native library:\n$e")
+                return@Thread
+            } catch (e: Exception) {
                 FileLog.warn("DesktopDiscordHandler", "Failed to initialize Discord Game SDK:\n$e")
                 return@Thread
             }
 
             val params = CreateParams().apply {
                 clientID = Secrets.DISCORD_GAME_SDK_APP_ID
-                flags = CreateParams.getDefaultFlags()
+                setFlags(CreateParams.Flags.NO_REQUIRE_DISCORD)
             }
-            core = Core(params)
+            try {
+                core = Core(params)
+            } catch (e: GameSDKException) {
+                FileLog.warn("DesktopDiscordHandler", "Discord is not installed and open, Game SDK will not work")
+                return@Thread
+            }
             menuActivity = Activity().apply {
                 assets().largeImage = "icon"
                 details = "Chilling in menu"
