@@ -120,6 +120,7 @@ def baseDir = "C:\\My Apps\\Terminal Control 2"
 def macConfigFile = "mac.json"
 def win32ConfigFile = "windows32.json"
 def win64ConfigFile = "windows64.json"
+def linux64ConfigFile = "linux64.json"
 def latestVersionFile = "latest.txt"
 def packrFile = "packr.jar"
 def sevenZipLocation = "C:\\Programs\\7-Zip\\7z.exe"
@@ -143,6 +144,7 @@ tasks.register('updateFileVersion') {
 				include macConfigFile
 				include win32ConfigFile
 				include win64ConfigFile
+				include linux64ConfigFile
 			}
 			into("${baseDir}\\old")
 		}
@@ -203,9 +205,28 @@ tasks.register('updateFileVersion') {
 				"output": "${baseDir}\\Desktop\\${version}\\Terminal-Control-2-${version}-windows-64"
 		]
 
+		def linux64Config = [
+				"platform": "linux64",
+				"jdk": "C:\\Programs\\OpenJDK\\Temurin\\jdk8u402-b06_linux64",
+				"executable": "Terminal Control 2",
+				"classpath": [
+						"${baseDir}\\Desktop\\Terminal Control 2-${version}.jar"
+				],
+				"removelibs": [
+						"${baseDir}\\Desktop\\Terminal Control 2-${version}.jar"
+				],
+				"mainclass": "com.bombbird.terminalcontrol2.lwjgl3.Lwjgl3Launcher",
+				"vmargs": [
+						"-Xms256M"
+				],
+				"minimizejre": "soft",
+				"output": "${baseDir}\\Desktop\\${version}\\Terminal-Control-2-${version}-linux-64"
+		]
+
 		new File("${baseDir}\\${macConfigFile}").text = JsonOutput.prettyPrint(JsonOutput.toJson(macConfig))
 		new File("${baseDir}\\${win32ConfigFile}").text = JsonOutput.prettyPrint(JsonOutput.toJson(win32Config))
 		new File("${baseDir}\\${win64ConfigFile}").text = JsonOutput.prettyPrint(JsonOutput.toJson(win64Config))
+		new File("${baseDir}\\${linux64ConfigFile}").text = JsonOutput.prettyPrint(JsonOutput.toJson(linux64Config))
 		println "JSON files successfully updated"
 
 		new File("${baseDir}\\${latestVersionFile}").text = version.toString()
@@ -232,6 +253,11 @@ tasks.register('packrJar') {
 			workingDir baseDir
 			commandLine 'java', '-jar', packrFile, win64ConfigFile
 		}
+		exec {
+			println "\nPacking Linux-64 version..."
+			workingDir baseDir
+			commandLine 'java', '-jar', packrFile, linux64ConfigFile
+		}
 		println("JARs successfully packr-ed")
 	}
 }
@@ -256,6 +282,11 @@ tasks.register('compressFolder') {
 			println "Compressing Windows-64 folder"
 			workingDir "${baseDir}\\Desktop\\${version}"
 			commandLine sevenZipLocation, 'a', "Windows-64-${version}.zip", "Terminal-Control-2-${version}-windows-64"
+		}
+		exec {
+			println "Compressing Linux-64 folder"
+			workingDir "${baseDir}\\Desktop\\${version}"
+			commandLine sevenZipLocation, 'a', "Linux-64-${version}.zip", "Terminal-Control-2-${version}-linux-64"
 		}
 		println("Folders successfully compressed")
 	}
