@@ -16,6 +16,7 @@ import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.Aircraft
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.Route
+import com.bombbird.terminalcontrol2.traffic.WakeMatrix
 import com.bombbird.terminalcontrol2.ui.datatag.LABEL_PADDING
 import com.bombbird.terminalcontrol2.ui.panes.UIPane
 import com.bombbird.terminalcontrol2.ui.datatag.updateDatatagLabelSize
@@ -75,12 +76,14 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRendererBoundingBox,
         private val contactDotFamily: Family = allOf(ContactNotification::class, RadarData::class, FlightType::class).get()
         private val waypointFamily: Family = allOf(WaypointInfo::class).get()
         private val routeFamily: Family = oneOf(PendingClearances::class, ClearanceAct::class).get()
+        private val wakeRenderFamily = allOf(ApproachWakeSequence::class).get()
 
         private val dotBlue: TextureRegion = Scene2DSkin.defaultSkin["DotBlue", TextureRegion::class.java]
         private val dotGreen: TextureRegion = Scene2DSkin.defaultSkin["DotGreen", TextureRegion::class.java]
         private val dotRed: TextureRegion = Scene2DSkin.defaultSkin["DotRed", TextureRegion::class.java]
         private val dotMagenta: TextureRegion = Scene2DSkin.defaultSkin["DotMagenta", TextureRegion::class.java]
         private const val DOT_RADIUS = 7f
+        private val WAKE_INDICATOR_COLOUR = Color(0xffbc42ff.toInt())
 
         fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
@@ -105,6 +108,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRendererBoundingBox,
     private val contactDotFamilyEntities = FamilyWithListener.newClientFamilyWithListener(contactDotFamily)
     private val waypointFamilyEntities = FamilyWithListener.newClientFamilyWithListener(waypointFamily)
     private val routeFamilyEntities = FamilyWithListener.newClientFamilyWithListener(routeFamily)
+    private val wakeRenderFamilyEntities = FamilyWithListener.newClientFamilyWithListener(wakeRenderFamily)
 
     private val distMeasureLabel = Label("", Scene2DSkin.defaultSkin, "DistMeasure")
 
@@ -310,6 +314,33 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRendererBoundingBox,
                 }
                 renderRouteSegments(aircraftPos.x, aircraftPos.y, uiPane.userClearanceRouteSegments, skipAircraftToFirstWaypoint = !noVector,
                     forceRenderChangedAircraftToFirstWaypoint = !vectorUnchanged && noVector)
+            }
+        }
+
+        // Render wake separation lines
+        val wakeRenderEntities = wakeRenderFamilyEntities.getEntities()
+        val reusedSideVector = Vector2()
+        for (i in 0 until wakeRenderEntities.size()) {
+            wakeRenderEntities[i]?.apply {
+                val position = getOrLogMissing(Position.mapper) ?: return@apply
+                val appOppDirUnitVector = getOrLogMissing(Direction.mapper)?.trackUnitVector ?: return@apply
+                val acDistances = getOrLogMissing(ApproachWakeSequence.mapper)?.aircraftDist ?: return@apply
+                for (j in 0 until acDistances.size - 1) {
+                    val ac1 = acDistances[j].first
+                    val ac2 = acDistances[j + 1].first
+                    val ac1Perf = ac1[AircraftInfo.mapper]?.aircraftPerf ?: continue
+                    val ac2Perf = ac2[AircraftInfo.mapper]?.aircraftPerf ?: continue
+                    val wakeDistNmRequired = WakeMatrix.getDistanceRequired(ac1Perf.wakeCategory, ac1Perf.recat, ac2Perf.wakeCategory, ac2Perf.recat)
+                    if (wakeDistNmRequired <= 2.5f) continue
+                    val ac1DistPx = acDistances[j].second
+                    val distPxRequired = ac1DistPx + nmToPx(wakeDistNmRequired.toInt())
+                    val centerX = position.x + appOppDirUnitVector.x * distPxRequired
+                    val centerY = position.y + appOppDirUnitVector.y * distPxRequired
+                    val isSelected = ac1 == CLIENT_SCREEN?.selectedAircraft?.entity
+                    reusedSideVector.set(appOppDirUnitVector).rotate90(0).setLength(nmToPx(if (isSelected) 1.5f else 0.9f))
+                    shapeRenderer.color = if (isSelected) Color.YELLOW else WAKE_INDICATOR_COLOUR
+                    shapeRenderer.line(centerX - reusedSideVector.x, centerY - reusedSideVector.y, centerX + reusedSideVector.x, centerY + reusedSideVector.y)
+                }
             }
         }
 

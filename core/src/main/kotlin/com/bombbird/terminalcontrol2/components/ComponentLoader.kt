@@ -20,6 +20,7 @@ fun loadAllComponents() {
     ApproachList.initialise()
     ApproachNOZChildren.initialise()
     ApproachNOZGroup.initialise()
+    ApproachWakeSequence.initialise()
     ArrivalAirport.initialise()
     ArrivalClosed.initialise()
     ArrivalRouteZone.initialise()

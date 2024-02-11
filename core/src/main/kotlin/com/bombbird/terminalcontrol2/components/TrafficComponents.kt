@@ -205,6 +205,19 @@ data class RunwayNextArrival(var aircraft: Entity = Entity(), var distFromThrPx:
 }
 
 /**
+ * Component for tagging the approach sequence to a runway for showing wake separation indicators
+ *
+ * Wake sequence is calculated independently on each client, and is not synced across clients
+ */
+data class ApproachWakeSequence(var aircraftDist: GdxArray<Pair<Entity, Float>> = GdxArray()): Component {
+    companion object {
+        val mapper = object: Mapper<ApproachWakeSequence>() {}.mapper
+
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
+    }
+}
+
+/**
  * Component for tagging a conflict-able entity, and the conflict sector (based on its altitude) that it belongs to; this
  * is updated once every second and used to reduce the number of comparisons required during the conflict check
  */

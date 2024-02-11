@@ -50,6 +50,9 @@ class Approach(name: String, arptId: Byte, runwayId: Byte, posX: Float, posY: Fl
             rvrM = rvr
         }
         with<RunwayConfigurationList>()
+        if (onClient) {
+            with<ApproachWakeSequence>()
+        }
     }
 
     /** Default approach for loading of saves */
