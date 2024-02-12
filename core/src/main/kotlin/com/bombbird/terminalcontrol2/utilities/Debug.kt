@@ -193,6 +193,7 @@ fun renderAllSectors(shapeRenderer: ShapeRenderer) {
     val colors = arrayOf(Color.WHITE, Color.BLUE, Color.YELLOW, Color.PURPLE, Color.CYAN, Color.MAGENTA)
     GAME.gameServer?.sectors?.let {
         for (j in it.size downTo 1) {
+            if (((System.currentTimeMillis() % 4000) / 1000).toInt() != (j - 1)) continue
             shapeRenderer.color = colors[j - 1]
             val sectors = it[j.toByte()]
             for (i in 0 until sectors.size) {

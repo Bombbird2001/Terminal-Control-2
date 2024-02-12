@@ -402,8 +402,8 @@ object DataFileTest: FunSpec() {
                 holdArray[0] shouldBeIn wpts.keys
                 holdArray[1].toInt().shouldBeBetween(1, 360)
                 holdArray[2].toByte().shouldBeBetween(3, 12)
-                holdArray[3].toShort().toInt().shouldNotBeBetween(0, 149)
-                holdArray[4].toShort().toInt().shouldNotBeBetween(0, 179)
+                holdArray[3].toShort().shouldBeBetween(150, 300)
+                holdArray[4].toShort().shouldBeBetween(180, 320)
                 holdArray[5] shouldBeIn DIRECTION
                 if (holdArray.size == 7) (ABOVE_ALT_REGEX.find(holdArray[6]) ?: BELOW_ALT_REGEX.find(holdArray[6])).shouldNotBeNull()
             }
