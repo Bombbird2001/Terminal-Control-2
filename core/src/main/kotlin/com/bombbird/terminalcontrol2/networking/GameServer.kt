@@ -370,7 +370,8 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
 
                 networkServer.sendTCPToConnection(
                     uuid,
-                    InitialAirspaceData(MAG_HDG_DEV, MIN_ALT, MAX_ALT, MIN_SEP, TRANS_ALT, TRANS_LVL, INTERMEDIATE_ALTS.map { it }.toIntArray())
+                    InitialAirspaceData(MAG_HDG_DEV, MIN_ALT, MAX_ALT, MIN_SEP, TRANS_ALT, TRANS_LVL,
+                        INTERMEDIATE_ALTS.map { it }.toIntArray(), mainName, maxPlayersAllowed)
                 )
                 FileLog.debug("GameServer", "Sent InitialAirspaceData")
 

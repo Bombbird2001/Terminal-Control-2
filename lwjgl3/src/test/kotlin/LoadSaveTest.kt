@@ -5,6 +5,7 @@ import com.bombbird.terminalcontrol2.files.*
 import com.bombbird.terminalcontrol2.global.APP_TYPE
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.GAME_SERVER_THREAD_NAME
+import com.bombbird.terminalcontrol2.integrations.StubDiscordHandler
 import com.bombbird.terminalcontrol2.networking.GameServer
 import com.bombbird.terminalcontrol2.sounds.StubTextToSpeech
 import com.squareup.moshi.Moshi
@@ -25,7 +26,7 @@ object LoadSaveTest: FunSpec() {
     init {
         Gdx.app = Lwjgl3StubApplication
 
-        GAME = TerminalControl2(StubExternalFileHandler, StubTextToSpeech)
+        GAME = TerminalControl2(StubExternalFileHandler, StubTextToSpeech, StubDiscordHandler)
         APP_TYPE = Gdx.app.type
 
         val gs = GameServer.testGameServer().apply {

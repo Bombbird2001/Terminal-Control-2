@@ -138,7 +138,7 @@ val DIFFIE_HELLMAN_GENERATOR: BigInteger = BigInteger.valueOf(2)
 
 /** Server target refresh rates (in Hz) */
 const val SERVER_UPDATE_RATE = 60 // Server game loop
-const val SERVER_TO_CLIENT_UPDATE_RATE_FAST = 10 // Frequently updated data such as aircraft position, navigation, etc.
+const val SERVER_TO_CLIENT_UPDATE_RATE_FAST = 5 // Frequently updated data such as aircraft position, navigation, etc.
 const val SERVER_TO_CLIENT_UPDATE_RATE_SLOW = 0.1f // Not so frequently updated data such as thunderstorm cells
 const val SERVER_METAR_UPDATE_INTERVAL_MINS = 5 // Check for METAR update every 5 minutes
 
@@ -189,3 +189,6 @@ const val MULTIPLAYER_LAN = "LAN multiplayer"
 const val MULTIPLAYER_PUBLIC = "Public multiplayer"
 const val MULTIPLAYER_SINGLEPLAYER_LAN_CLIENT = "LAN multiplayer/Singleplayer (client)"
 const val MULTIPLAYER_PUBLIC_CLIENT = "Public multiplayer (client)"
+
+/** Discord Game SDK activity update interval */
+const val DISCORD_UPDATE_INTERVAL_S = 10f
