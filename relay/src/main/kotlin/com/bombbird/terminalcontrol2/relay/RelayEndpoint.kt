@@ -18,9 +18,6 @@ import kotlin.Exception
 
 object RelayEndpoint {
     /** Moshi with RoomJSON adapter for JSON serialization */
-    private val roomListType = Types.newParameterizedType(List::class.java, Room::class.java)
-    private val moshi = Moshi.Builder().add(RoomJSONAdapter).build()
-    private val moshiGamesAdapter = moshi.adapter<List<Room>>(roomListType)
     @OptIn(ExperimentalStdlibApi::class)
     private val moshiAuthRequestAdapter = moshi.adapter<HttpRequest.AuthorizationRequest>()
     @OptIn(ExperimentalStdlibApi::class)

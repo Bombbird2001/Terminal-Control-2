@@ -88,6 +88,7 @@ object RelayServer: RelayServer, RelayAuthorization {
                         hostConnectionToRoomMap.remove(connection)
                         hostUUIDs.remove(connectionToRoomUUID[connection]?.second)
                         FileLog.info("RelayServer", "Room $hostRoom closed")
+                        BotUpdater.updateServers(moshiGamesAdapter.toJson(getAvailableGames()))
                     } else  {
                         // Connection is from non-host player
                         val uuidRoom = connectionToRoomUUID[connection] ?: return
@@ -195,6 +196,7 @@ object RelayServer: RelayServer, RelayAuthorization {
         connectionToRoomUUID[clientConnection] = Pair(roomId, newUUID)
         uuidToRoom[newUUID] = roomId
         RequestAuthenticator.connAddedToRoom(clientConnection)
+        if (room.getConnectedPlayerCount().toInt() == 1) BotUpdater.updateServers(moshiGamesAdapter.toJson(getAvailableGames()))
         return 0
     }
 
