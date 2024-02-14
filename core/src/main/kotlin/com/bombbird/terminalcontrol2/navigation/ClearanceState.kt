@@ -242,6 +242,14 @@ data class ClearanceState(var routePrimaryName: String = "", val route: Route = 
     }
 
     /**
+     * Copies the current clearance state except assign the new input [altitude]
+     */
+    fun copyWithNewAltitude(altitude: Int): ClearanceState {
+        return copy(clearedAlt = altitude, route = Route().apply { setToRouteCopy(route) },
+            hiddenLegs = Route().apply { setToRouteCopy(hiddenLegs) })
+    }
+
+    /**
      * Clearance class that also contains a [timeLeft] value that keeps track of the time remaining before the [clearanceState]
      * should be executed
      */
