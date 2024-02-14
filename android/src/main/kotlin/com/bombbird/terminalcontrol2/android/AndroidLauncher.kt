@@ -8,6 +8,7 @@ import android.support.multidex.MultiDex
 import com.badlogic.gdx.backends.android.AndroidApplication
 import com.badlogic.gdx.backends.android.AndroidApplicationConfiguration
 import com.bombbird.terminalcontrol2.TerminalControl2
+import com.bombbird.terminalcontrol2.integrations.StubDiscordHandler
 import com.bombbird.terminalcontrol2.utilities.FileLog
 
 /** Launches the Android application. */
@@ -25,7 +26,7 @@ class AndroidLauncher : AndroidApplication() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        terminalControl2 = TerminalControl2(fileHandler, ttsHandler)
+        terminalControl2 = TerminalControl2(fileHandler, ttsHandler, StubDiscordHandler)
         initialize(terminalControl2, AndroidApplicationConfiguration().apply {
             // Configure your application here.
             numSamples = 0
