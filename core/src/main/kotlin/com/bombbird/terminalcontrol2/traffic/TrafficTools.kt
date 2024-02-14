@@ -90,7 +90,10 @@ fun createArrival(callsign: String, icaoType: String, airport: Entity, gs: GameS
         val aircraftPerf = entity[AircraftInfo.mapper]?.aircraftPerf ?: AircraftTypeData.AircraftPerfData()
         val ias = calculateArrivalSpawnIAS(origStarRoute, starRoute, alt, aircraftPerf)
         val tas = calculateTASFromIAS(alt, ias.toFloat())
-        val clearedAlt = min(getACCStartAltitude(), (alt / 1000).toInt() * 1000)
+        val nextWpt = (if (starRoute.size > 0) starRoute[0] else null) as? Route.WaypointLeg
+        val nextMinStarAlt = (ceil((getHighestMinAlt(starRoute) ?: Int.MIN_VALUE) / 1000f) * 1000).roundToInt()
+        val nextMaxStarAlt = (floor((nextWpt?.maxAltFt ?: Int.MAX_VALUE) / 1000f) * 1000).roundToInt()
+        val clearedAlt = MathUtils.clamp(min(getACCStartAltitude(), (alt / 1000).toInt() * 1000), nextMinStarAlt, nextMaxStarAlt)
         val speed = (entity[Speed.mapper] ?: Speed()).apply {
             speedKts = tas
             // Set to vertical speed required to reach cleared altitude in 10 seconds, capped by the minimum vertical speed
