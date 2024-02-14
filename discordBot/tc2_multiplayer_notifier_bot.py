@@ -27,10 +27,13 @@ async def servers_update(servers: List[Server]):
 	embeds = [discord.Embed(title=f"{server.airportName} - {max(server.players, 1)}/{server.maxPlayers} player{'' if server.maxPlayers == 1 else 's'}") for server in servers]
 	for guild in client.guilds:
 		for channel in guild.channels:
-			if str(channel.type) == 'text':
-				permissions = channel.permissions_for(guild.me)
-				if permissions.read_messages and permissions.send_messages:
-					await channel.send(f"{len(embeds)} public multiplayer game{'' if len(embeds) == 1 else 's'} available", embeds=embeds)
+			if str(channel.type) != 'text':
+				continue
+			if channel.name != "tc2-multiplayer-bot":
+				continue
+			permissions = channel.permissions_for(guild.me)
+			if permissions.read_messages and permissions.send_messages:
+				await channel.send(f"{len(embeds)} public multiplayer game{'' if len(embeds) == 1 else 's'} available", embeds=embeds)
 	
 
 @client.event
