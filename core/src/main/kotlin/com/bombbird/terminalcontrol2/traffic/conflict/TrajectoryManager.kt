@@ -9,6 +9,7 @@ import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.TrajectoryPoint
 import com.bombbird.terminalcontrol2.entities.Waypoint
 import com.bombbird.terminalcontrol2.global.*
+import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.traffic.getACCStartAltitude
 import com.bombbird.terminalcontrol2.traffic.getConflictStartAltitude
 import com.bombbird.terminalcontrol2.traffic.getSectorIndexForAlt
@@ -330,11 +331,15 @@ class TrajectoryManager {
             // Set the new cleared altitudes only if the current cleared altitude is different, and the aircraft is
             // under ACC control
             if (ac1ClearedAlt != newAlts.first && conflict.aircraft1[Controllable.mapper]?.sectorId == SectorInfo.CENTRE) {
-                val ac1NewClearance = ac1LatestClearance.copy(clearedAlt = newAlts.first)
+                val routeCopy = Route().apply { setToRouteCopy(ac1LatestClearance.route) }
+                val hiddenLegsCopy = Route().apply { setToRouteCopy(ac1LatestClearance.hiddenLegs) }
+                val ac1NewClearance = ac1LatestClearance.copy(clearedAlt = newAlts.first, route = routeCopy, hiddenLegs = hiddenLegsCopy)
                 addNewClearanceToPendingClearances(conflict.aircraft1, ac1NewClearance, 0)
             }
             if (ac2ClearedAlt != newAlts.second && conflict.aircraft2[Controllable.mapper]?.sectorId == SectorInfo.CENTRE) {
-                val ac2NewClearance = ac2LatestClearance.copy(clearedAlt = newAlts.second)
+                val routeCopy = Route().apply { setToRouteCopy(ac2LatestClearance.route) }
+                val hiddenLegsCopy = Route().apply { setToRouteCopy(ac2LatestClearance.hiddenLegs) }
+                val ac2NewClearance = ac2LatestClearance.copy(clearedAlt = newAlts.second, route = routeCopy, hiddenLegs = hiddenLegsCopy)
                 addNewClearanceToPendingClearances(conflict.aircraft2, ac2NewClearance, 0)
             }
         }
@@ -381,7 +386,9 @@ class TrajectoryManager {
             }
 
             // Clear aircraft to new altitude
-            val newClearance = currClearance.copy(clearedAlt = currClearance.clearedAlt + (from * 1000 * (if (finalAlt > currClearedAlt) 1 else -1)))
+            val routeCopy = Route().apply { setToRouteCopy(currClearance.route) }
+            val hiddenLegsCopy = Route().apply { setToRouteCopy(currClearance.hiddenLegs) }
+            val newClearance = currClearance.copy(clearedAlt = currClearance.clearedAlt + (from * 1000 * (if (finalAlt > currClearedAlt) 1 else -1)), route = routeCopy, hiddenLegs = hiddenLegsCopy)
             addNewClearanceToPendingClearances(aircraft, newClearance, 0)
         }
     }
