@@ -3,10 +3,7 @@ package com.bombbird.terminalcontrol2.entities
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
-import com.bombbird.terminalcontrol2.global.MAG_HDG_DEV
-import com.bombbird.terminalcontrol2.global.WAKE_LENGTH_EXTENSION_NM
-import com.bombbird.terminalcontrol2.global.WAKE_WIDTH_NM
-import com.bombbird.terminalcontrol2.global.getEngine
+import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.utilities.convertWorldAndRenderDeg
 import com.bombbird.terminalcontrol2.utilities.nmToPx
 import com.bombbird.terminalcontrol2.utilities.FileLog
@@ -326,6 +323,32 @@ class WakeZone(prevPosX: Float, prevPosY: Float, currPosX: Float, currPosY: Floa
      * @param y the y coordinate
      * @return true if ([x], [y]) is inside the zone polygon, else false
      */
+    override fun contains(x: Float, y: Float): Boolean {
+        return entity[GPolygon.mapper]?.polygonObj?.contains(x, y) == true
+    }
+}
+
+/**
+ * Class for storing takeoff protection zones; no aircraft should be predicted to fly into this zone between 60-90s
+ * before allowing departure (unless NOZ is present)
+ *
+ * This class should be initialized only on the server as it is not required on the client
+ */
+class TakeoffProtectionZone(posX1: Float, posY1: Float, posX2: Float, posY2: Float, maxAlt: Int): Zone {
+    val entity = getEngine(false).entityOnMainThread(false) {
+        with<GPolygon> {
+            val halfWidth = Vector2(posX2 - posX1, posY2 - posY1).apply { scl(nmToPx(TAKEOFF_PROTECTION_HALF_WIDTH_NM) / len()) }.rotate90(-1)
+            val halfWidthOppTrack = Vector2(halfWidth).rotate90(-1)
+            vertices = floatArrayOf(posX1 + halfWidth.x + halfWidthOppTrack.x, posY1 + halfWidth.y + halfWidthOppTrack.y,
+                posX1 - halfWidth.x + halfWidthOppTrack.x, posY1 - halfWidth.y + halfWidthOppTrack.y,
+                posX2 - halfWidth.x - halfWidthOppTrack.x, posY2 - halfWidth.y - halfWidthOppTrack.y,
+                posX2 + halfWidth.x - halfWidthOppTrack.x, posY2 + halfWidth.y - halfWidthOppTrack.y)
+        }
+        with<Altitude> {
+            altitudeFt = maxAlt.toFloat()
+        }
+    }
+
     override fun contains(x: Float, y: Float): Boolean {
         return entity[GPolygon.mapper]?.polygonObj?.contains(x, y) == true
     }

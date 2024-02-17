@@ -9,11 +9,13 @@ import com.badlogic.gdx.utils.Queue
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.Aircraft
 import com.bombbird.terminalcontrol2.entities.Airport
+import com.bombbird.terminalcontrol2.entities.TakeoffProtectionZone
 import com.bombbird.terminalcontrol2.entities.WakeZone
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.*
 import com.bombbird.terminalcontrol2.networking.GameServer
 import com.bombbird.terminalcontrol2.systems.TrafficSystemInterval
+import com.bombbird.terminalcontrol2.systems.TrajectorySystemInterval
 import com.bombbird.terminalcontrol2.utilities.*
 import com.bombbird.terminalcontrol2.utilities.FileLog
 import ktx.ashley.*
@@ -305,11 +307,55 @@ fun createRandomDeparture(airport: Entity, gs: GameServer) {
 }
 
 /**
+ * Checks if the takeoff protection zone for departing from [rwy] climbing to [takeoffAlt] is clear of other aircraft
+ * (excluding same airport arrivals & departures)
+ */
+fun isTakeoffProtectionZoneClear(rwy: Entity, takeoffAlt: Int): Boolean {
+    val rwyPos = rwy[Position.mapper] ?: return false
+    val rwyInfo = rwy[RunwayInfo.mapper] ?: return false
+    val depArpt = rwyInfo.airport.entity[AirportInfo.mapper]?.arptId ?: return false
+    val rwyLengthHalf = rwyInfo.lengthM / 2f
+    val rwyDir = rwy[Direction.mapper]?.trackUnitVector ?: return false
+    val startPos = Vector2(rwyPos.x, rwyPos.y) + rwyDir * (mToPx(rwyLengthHalf))
+    val rwyEndPos = Vector2(rwyPos.x, rwyPos.y) + rwyDir * (mToPx(rwyLengthHalf) * 2)
+    val takeoffProtZone = TakeoffProtectionZone(startPos.x, startPos.y, rwyEndPos.x, rwyEndPos.y, takeoffAlt)
+
+    val trajectorySystem = getEngine(false).getSystem<TrajectorySystemInterval>()
+    val allTrajectoryPoints = trajectorySystem.trajectoryTimeStates
+    var pointsInitialized = false
+    // Check points within 60 to 90s and at or below the takeoff altitude in the protection zone
+    for (timeIndex in (60 / TRAJECTORY_UPDATE_INTERVAL_S - 1).roundToInt() until allTrajectoryPoints.size) {
+        for (altitudeLevel in allTrajectoryPoints[timeIndex]) {
+            for (i in 0 until min(
+                getSectorIndexForAlt(takeoffAlt.toFloat(), trajectorySystem.startingAltitude) + 1,
+                altitudeLevel.size
+            )) {
+                pointsInitialized = true
+                val point = altitudeLevel[i]
+                // Ignore aircraft from the same airport - they're "supposed" to be managed by that same airport
+                // Also simplifies the calculation, not having to deal with NOZs and NTZs
+                val pointAircraft = point.entity[TrajectoryPointInfo.mapper]?.aircraft ?: continue
+                val arpt2 = pointAircraft[DepartureAirport.mapper]?.arptId ?: pointAircraft[ArrivalAirport.mapper]?.arptId
+                if (depArpt == arpt2) continue
+
+                val pos = point.entity[Position.mapper] ?: continue
+                if (takeoffProtZone.contains(pos.x, pos.y)) return false
+            }
+        }
+    }
+
+    // Only return true when there is at least one point in the trajectory prediction system - we may have just started
+    // the game and no points have been generated yet
+    return pointsInitialized
+}
+
+/**
  * Clears an aircraft for takeoff from a runway, setting its takeoff parameters
  * @param aircraft the aircraft to clear for takeoff
  * @param rwy the runway the aircraft is cleared to takeoff from
+ * @param sid the SID to use for the aircraft
  */
-fun clearForTakeoff(aircraft: Entity, rwy: Entity) {
+fun clearForTakeoff(aircraft: Entity, rwy: Entity, sid: SidStar.SID) {
     val rwyPos = rwy[Position.mapper] ?: return
     val rwyDir = rwy[Direction.mapper] ?: return
 
@@ -342,19 +388,18 @@ fun clearForTakeoff(aircraft: Entity, rwy: Entity) {
         this += TakeoffRoll(max(1.5f,
             calculateRequiredAcceleration(0, calculateTASFromIAS(rwyAlt, acPerf.vR + tailwind).toInt().toShort(),
                 ((rwy[RunwayInfo.mapper]?.lengthM ?: 3800) - 1000) * MathUtils.random(0.75f, 1f))), rwy)
-        // Get random SID, add route zones
-        val sid = randomSid(rwy)
+        // Add route zones for SID
         val rwyName = rwy[RunwayInfo.mapper]?.rwyName ?: ""
-        val initClimb = sid?.rwyInitialClimbs?.get(rwyName) ?: 3000
-        val sidRoute = sid?.getRandomSIDRouteForRunway(rwyName) ?: Route()
+        val initClimb = sid.rwyInitialClimbs.get(rwyName) ?: 3000
+        val sidRoute = sid.getRandomSIDRouteForRunway(rwyName)
         get(DepartureRouteZone.mapper)?.sidZone?.also {
             it.clear()
             it.addAll(getZonesForInitialRunwayClimb(sidRoute, rwy))
             it.addAll(getZonesForDepartureRoute(sidRoute))
         }
         // Set initial clearance state
-        this += ClearanceAct(ClearanceState(sid?.name ?: "", sidRoute, Route(),
-                null, null, initClimb, false, acPerf.climbOutSpeed).ActingClearance())
+        this += ClearanceAct(ClearanceState(sid.name, sidRoute, Route(), null, null, initClimb,
+            false, acPerf.climbOutSpeed).ActingClearance())
         get(CommandTarget.mapper)?.let {
             it.targetAltFt = initClimb
             it.targetIasKt = acPerf.climbOutSpeed
@@ -394,7 +439,7 @@ fun clearForTakeoff(aircraft: Entity, rwy: Entity) {
  * @param rwy the runway to use
  * @return the [SidStar.SID] chosen
  */
-private fun randomSid(rwy: Entity): SidStar.SID? {
+fun randomSid(rwy: Entity): SidStar.SID? {
     val availableSids = GdxArray<SidStar.SID>()
     val availableSidsIgnoreTime = GdxArray<SidStar.SID>()
     val rwyName = rwy[RunwayInfo.mapper]?.rwyName

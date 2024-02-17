@@ -31,7 +31,7 @@ class TrajectorySystemInterval: IntervalSystem(TRAJECTORY_UPDATE_INTERVAL_S) {
     private val aircraftTrajectoryEntities = FamilyWithListener.newServerFamilyWithListener(aircraftTrajectoryFamily)
     private val temporaryAltitudeEntities = FamilyWithListener.newServerFamilyWithListener(temporaryAltitudeFamily)
 
-    private val startingAltitude = getConflictStartAltitude()
+    val startingAltitude = getConflictStartAltitude()
     /** This stores the trajectory position divided in their respective conflict altitude levels, per time interval */
     var trajectoryTimeStates = Array<Array<GdxArray<TrajectoryPoint>>>(0) {
         Array(0) {

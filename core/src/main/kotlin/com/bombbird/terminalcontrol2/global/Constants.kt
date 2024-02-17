@@ -66,6 +66,9 @@ const val ARRIVAL_SPAWN_EXTEND_DIST_NM = 0.5f
 /** Route zone deviation tolerances */
 const val ROUTE_RNP_NM = 1.5f
 
+/** Takeoff protection zone dimensions */
+const val TAKEOFF_PROTECTION_HALF_WIDTH_NM = 3.15f
+
 /** Wake turbulence constants */
 const val WAKE_WIDTH_NM = 0.25f
 const val WAKE_LENGTH_EXTENSION_NM = 0.15f

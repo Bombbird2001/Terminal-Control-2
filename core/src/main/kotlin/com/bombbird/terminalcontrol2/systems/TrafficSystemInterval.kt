@@ -206,9 +206,15 @@ class TrafficSystemInterval: IntervalSystem(1f) {
                         if (!checkDepartureDependencyTraffic(it.dependencies[j])) return@apply
                 }
 
-                // All related checks passed - clear next departure for takeoff
+                // Runway checks passed
                 val nextDep = airport.entity[AirportNextDeparture.mapper] ?: return@apply
-                clearForTakeoff(nextDep.aircraft, this)
+
+                // Get random SID, check takeoff protection zone for it
+                val sid = randomSid(this) ?: return@apply
+                val initAlt = sid.rwyInitialClimbs.get(get(RunwayInfo.mapper)?.rwyName) ?: 3000
+                if (!isTakeoffProtectionZoneClear(this, initAlt)) return@apply
+
+                clearForTakeoff(nextDep.aircraft, this, sid)
             }
         }
 
