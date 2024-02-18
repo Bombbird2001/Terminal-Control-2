@@ -95,12 +95,13 @@ fun createArrival(callsign: String, icaoType: String, airport: Entity, gs: GameS
         val nextWpt = (if (starRoute.size > 0) starRoute[0] else null) as? Route.WaypointLeg
         val nextMinStarAlt = (ceil((getHighestMinAlt(starRoute) ?: Int.MIN_VALUE) / 1000f) * 1000).roundToInt()
         val nextMaxStarAlt = (floor((nextWpt?.maxAltFt ?: Int.MAX_VALUE) / 1000f) * 1000).roundToInt()
-        val clearedAlt = MathUtils.clamp(min(getACCStartAltitude(), (alt / 1000).toInt() * 1000), nextMinStarAlt, nextMaxStarAlt)
+        val clearedAlt = min(min(getACCStartAltitude(), (alt / 1000).toInt() * 1000), nextMaxStarAlt)
+        val cmdTargetAlt = max(clearedAlt, nextMinStarAlt)
         val speed = (entity[Speed.mapper] ?: Speed()).apply {
             speedKts = tas
             // Set to vertical speed required to reach cleared altitude in 10 seconds, capped by the minimum vertical speed
             val minVertSpd = calculateMinVerticalSpd(aircraftPerf, alt, tas, 0f, approachExpedite = false, takingOff = false, takeoffGoAround = false)
-            vertSpdFpm = max(minVertSpd, (clearedAlt - alt) * 6)
+            vertSpdFpm = max(minVertSpd, (cmdTargetAlt - alt) * 6)
         }
         val affectedByWind = (entity[AffectedByWind.mapper] ?: AffectedByWind()).apply { getClosestAirportWindVector(spawnPos.first, spawnPos.second) }
         entity[GroundTrack.mapper]?.apply {
@@ -112,7 +113,7 @@ fun createArrival(callsign: String, icaoType: String, airport: Entity, gs: GameS
                 clearedAlt, false, ias).ActingClearance())
         entity += clearanceAct
         entity[CommandTarget.mapper]?.apply {
-            targetAltFt = clearedAlt
+            targetAltFt = cmdTargetAlt
             targetIasKt = ias
             targetHdgDeg = modulateHeading(spawnPos.third + 180)
         }

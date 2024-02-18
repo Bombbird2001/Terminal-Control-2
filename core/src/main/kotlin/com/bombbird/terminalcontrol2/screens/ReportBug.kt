@@ -5,6 +5,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.CheckBox
 import com.badlogic.gdx.scenes.scene2d.ui.Label
 import com.badlogic.gdx.scenes.scene2d.ui.TextArea
 import com.badlogic.gdx.utils.Align
+import com.badlogic.gdx.utils.GdxRuntimeException
 import com.bombbird.terminalcontrol2.files.getExtDir
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.networking.HttpRequest
@@ -56,7 +57,11 @@ class ReportBug: BasicUIScreen() {
                                     isDisabled = true
                                     backButton.isDisabled = true
                                     setText("Sending report...")
-                                    val logs = getExtDir("Logs/BUILD $BUILD_VERSION.log")?.readString() ?: "Logs not found"
+                                    val logs = try {
+                                        getExtDir("Logs/BUILD $BUILD_VERSION.log")?.readString() ?: "Logs not found"
+                                    } catch (e: GdxRuntimeException) {
+                                        "Logs not found"
+                                    }
                                     val multiplayerType = GAME.gameServer?.getMultiplayerType()
                                         ?: GAME.gameClientScreen?.getMultiplayerType() ?: MULTIPLAYER_UNKNOWN
                                     HttpRequest.sendBugReport(textInput.text, logs, saveString, multiplayerType, {
