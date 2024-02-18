@@ -271,8 +271,38 @@ tasks.register('packrJar') {
 	}
 }
 
-tasks.register('compressFolder') {
+tasks.register('copyDiscordLibs') {
 	dependsOn('packrJar')
+
+	doLast {
+		copy {
+			println "Copying windows-32 Discord libraries...\""
+			from("..\\assetsDesktop\\libs\\windows_x86")
+			into("${baseDir}\\Desktop\\${version}\\Terminal-Control-2-${version}-windows-32\\libs\\windows_x86")
+		}
+		copy {
+			println "Copying windows-64 Discord libraries..."
+			from("..\\assetsDesktop\\libs\\windows_amd64")
+			into("${baseDir}\\Desktop\\${version}\\Terminal-Control-2-${version}-windows-64\\libs\\windows_amd64")
+		}
+		copy {
+			println "Copying linux-64 Discord libraries..."
+			from("..\\assetsDesktop\\libs\\linux") {
+			}
+			into("${baseDir}\\Desktop\\${version}\\Terminal-Control-2-${version}-linux-64\\libs\\linux")
+		}
+		copy {
+			println "Copying mac Discord libraries..."
+			from("..\\assetsDesktop\\libs\\macos") {
+			}
+			into("${baseDir}\\Desktop\\${version}\\Terminal-Control-2-${version}-mac\\Contents\\Resources\\libs\\macos")
+		}
+		println("Discord libraries successfully copied")
+	}
+}
+
+tasks.register('compressFolder') {
+	dependsOn('copyDiscordLibs')
 
 	doLast {
 		file("${baseDir}\\Desktop\\${version}\\Terminal-Control-2-${version}-mac").renameTo(file("${baseDir}\\Desktop\\${version}\\Terminal Control 2.app"))
