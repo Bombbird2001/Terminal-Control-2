@@ -95,6 +95,7 @@ class DesktopDiscordHandler: DiscordHandler {
 
     override fun updateInGame(mapIcao: String, planesInControl: Int, playersInGame: Int, maxPlayers: Int,
                               publicMultiplayer: Boolean) {
+        if (!::gameActivity.isInitialized) return
         gameActivity.details = "$mapIcao - $planesInControl aircraft in control"
         if (maxPlayers > 1) {
             gameActivity.state = if (publicMultiplayer) "Public multiplayer" else "LAN multiplayer"
@@ -113,6 +114,7 @@ class DesktopDiscordHandler: DiscordHandler {
     }
 
     override fun updateInMenu() {
+        if (!::menuActivity.isInitialized) return
         core.activityManager().updateActivity(menuActivity)
         gameTimeSet = false
     }
