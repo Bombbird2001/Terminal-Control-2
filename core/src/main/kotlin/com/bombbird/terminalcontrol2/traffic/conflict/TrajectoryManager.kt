@@ -9,7 +9,6 @@ import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.TrajectoryPoint
 import com.bombbird.terminalcontrol2.entities.Waypoint
 import com.bombbird.terminalcontrol2.global.*
-import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.traffic.getACCStartAltitude
 import com.bombbird.terminalcontrol2.traffic.getConflictStartAltitude
 import com.bombbird.terminalcontrol2.traffic.getSectorIndexForAlt
@@ -452,7 +451,7 @@ class TrajectoryManager {
         val targetTrueHeadingPxps = Vector2(Vector2.Y).rotateDeg(-(targetHeading - MAG_HDG_DEV)).scl(ktToPxps(speed.speedKts))
         // This is the track vector the aircraft is turning towards, including effects of wind
         val targetTrackPxps = targetTrueHeadingPxps + winds.windVectorPxps
-        val wpt = GAME.gameServer?.waypoints?.get(aircraft[CommandDirect.mapper]?.wptId)
+        val wpt = getServerOrClientWaypointMap()?.get(aircraft[CommandDirect.mapper]?.wptId)
         val pointList = getTrajectoryPointList(currTrack, targetTrackPxps, cmdTarget.turnDir, altitude, speed.speedKts,
             groundSpeedPxps, aircraftPos.x, aircraftPos.y, wpt, MAX_TRAJECTORY_ADVANCE_TIME_S)
 

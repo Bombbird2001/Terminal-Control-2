@@ -99,7 +99,7 @@ class ControlStateSystemInterval: IntervalSystem(1f) {
                 if (actingClearance.clearedIas <= nextMaxSpd) return@apply // Not required if next max speed is not lower than current cleared IAS
                 // Physics - check distance needed to slow down from current speed to speed restriction
                 val targetWptId = (actingClearance.route[0] as? Route.WaypointLeg)?.wptId ?: return@apply // Skip if next leg is not waypoint
-                val targetPos = GAME.gameServer?.waypoints?.get(targetWptId)?.entity?.get(Position.mapper) ?: return@apply // Skip if waypoint not found or position not present
+                val targetPos = getServerWaypointMap()?.get(targetWptId)?.entity?.get(Position.mapper) ?: return@apply // Skip if waypoint not found or position not present
                 val newGs = getPointTargetTrackAndGS(pos.x, pos.y, targetPos.x, targetPos.y, nextMaxSpd.toFloat(), dir, get(
                     AffectedByWind.mapper)).second
                 val approach = has(LocalizerCaptured.mapper) || has(GlideSlopeCaptured.mapper) || has(VisualCaptured.mapper) || (get(
@@ -298,7 +298,7 @@ class ControlStateSystemInterval: IntervalSystem(1f) {
         // Calculate heading from current aircraft position to last waypoint on route
         val pos = aircraft[Position.mapper] ?: return perfData.maxAlt
         val lastWptId = (route[route.size - 1] as? Route.WaypointLeg)?.wptId ?: return perfData.maxAlt
-        val lastWptPos = GAME.gameServer?.waypoints?.get(lastWptId)?.entity?.get(Position.mapper) ?: return perfData.maxAlt
+        val lastWptPos = getServerWaypointMap()?.get(lastWptId)?.entity?.get(Position.mapper) ?: return perfData.maxAlt
         val requiredHdg = getRequiredTrack(pos.x, pos.y, lastWptPos.x, lastWptPos.y) + MAG_HDG_DEV
         return getCruiseAltForHeading(requiredHdg, perfData.maxAlt)
     }

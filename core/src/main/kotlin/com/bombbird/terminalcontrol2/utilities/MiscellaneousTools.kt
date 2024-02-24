@@ -1,5 +1,8 @@
 package com.bombbird.terminalcontrol2.utilities
 
+import com.bombbird.terminalcontrol2.entities.Waypoint
+import com.bombbird.terminalcontrol2.global.GAME
+
 val AT_ALT_REGEX = "(-?\\d+)".toRegex() // Altitude values of at least 1 digit
 val ABOVE_ALT_REGEX = "A(-?\\d+)".toRegex() // Altitude values of at least 1 digit, with "A" as a prefix
 val BELOW_ALT_REGEX = "B(-?\\d+)".toRegex() // Altitude values of at least 1 digit, with "B" as a prefix
@@ -37,4 +40,14 @@ fun removeExtraCharacters(msg: String): String {
  */
 fun String.toLines(limit: Int = 0): List<String> {
     return split("\\r?\\n".toRegex(), limit)
+}
+
+/** Gets the waypoint map on server/host only */
+fun getServerWaypointMap(): HashMap<Short, Waypoint>? {
+    return GAME.gameServer?.waypoints
+}
+
+/** Gets the waypoint map on server/host or client */
+fun getServerOrClientWaypointMap(): HashMap<Short, Waypoint>? {
+    return getServerWaypointMap() ?: GAME.gameClientScreen?.waypoints
 }

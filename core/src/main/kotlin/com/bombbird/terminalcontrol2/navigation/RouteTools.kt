@@ -122,7 +122,7 @@ fun checkRestrChanged(route: Route, leg: WaypointLeg): Triple<Boolean, Boolean, 
 fun createCustomHoldWaypoint(posX: Float, posY: Float): Short {
     // Search for an available ID below -1
     var wptId: Short? = null
-    for (i in -2 downTo Short.MIN_VALUE) if (GAME.gameServer?.waypoints?.containsKey(i.toShort()) == false) {
+    for (i in -2 downTo Short.MIN_VALUE) if (getServerWaypointMap()?.containsKey(i.toShort()) == false) {
         wptId = i.toShort()
         break
     }
@@ -165,7 +165,7 @@ fun removeCustomHoldWaypoint(wptId: Short) {
 fun getFirstWaypointLegInSector(sector: Polygon, route: Route): Int? {
     for (i in 0 until route.size) {
         (route[i] as? WaypointLeg)?.apply {
-            val pos = GAME.gameServer?.waypoints?.get(wptId)?.entity?.get(Position.mapper) ?: return@apply
+            val pos = getServerOrClientWaypointMap()?.get(wptId)?.entity?.get(Position.mapper) ?: return@apply
             if (sector.contains(pos.x, pos.y)) return i
         }
     }
@@ -180,11 +180,12 @@ fun getFirstWaypointLegInSector(sector: Polygon, route: Route): Int? {
 fun findNextWptLegTrackAndDirection(route: Route): Pair<Float, Byte>? {
     if (route.size == 0) return null
     (route[0] as? WaypointLeg)?.let { wpt1 ->
+        val waypointMap = getServerOrClientWaypointMap() ?: return null
         for (i in 1 until route.size) {
             (route[i] as? WaypointLeg)?.also { wpt2 ->
                 if (!wpt2.legActive) return@also
-                val w1 = GAME.gameServer?.waypoints?.get(wpt1.wptId)?.entity?.get(Position.mapper) ?: return null
-                val w2 = GAME.gameServer?.waypoints?.get(wpt2.wptId)?.entity?.get(Position.mapper) ?: return null
+                val w1 = waypointMap[wpt1.wptId]?.entity?.get(Position.mapper) ?: return null
+                val w2 = waypointMap[wpt2.wptId]?.entity?.get(Position.mapper) ?: return null
                 return Pair(getRequiredTrack(w1.x, w1.y, w2.x, w2.y), wpt2.turnDir)
             }
         }
@@ -216,7 +217,7 @@ fun getAfterWptHdgLeg(wpt: WaypointLeg, route: Route): VectorLeg? {
  */
 fun getAfterWptHdgLeg(wptName: String, route: Route): Pair<VectorLeg, WaypointLeg>? {
     for (i in 0 until route.size) (route[i] as? WaypointLeg)?.apply {
-        if (CLIENT_SCREEN?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName == wptName) {
+        if (getServerOrClientWaypointMap()?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName == wptName) {
             if (route.size > i + 1) (route[i + 1] as? VectorLeg)?.let { return Pair(it, this) } ?: return null // If subsequent leg exists and is vector, return it
         }
     }
@@ -450,7 +451,7 @@ fun calculateAllDistToGo(aircraftPos: Position?, startLeg: Leg, endLeg: Leg, rou
         }
         if (foundStart) (leg as? WaypointLeg)?.apply {
             if (!legActive) return@apply
-            val wptPos = GAME.gameServer?.waypoints?.get(wptId)?.entity?.get(Position.mapper) ?: return@apply
+            val wptPos = getServerOrClientWaypointMap()?.get(wptId)?.entity?.get(Position.mapper) ?: return@apply
             val finalX = prevX
             val finalY = prevY
             if (finalX != null && finalY != null) {
@@ -599,13 +600,14 @@ fun getZonesForArrivalRoute(route: Route): GdxArray<RouteZone> {
     calculateRouteSegments(route, segmentArray, route[0])
     val routeZones = GdxArray<RouteZone>()
     var currMinAlt: Int? = null
+    val waypointMap = getServerOrClientWaypointMap() ?: return routeZones
     for (i in segmentArray.size - 1 downTo  0) {
         segmentArray[i]?.apply {
             val finalLeg1 = leg1
             val finalLeg2 = leg2
             if (finalLeg1 is WaypointLeg && finalLeg2 is WaypointLeg) {
-                val wpt1Pos = GAME.gameServer?.waypoints?.get(finalLeg1.wptId)?.entity?.get(Position.mapper) ?: return@apply
-                val wpt2Pos = GAME.gameServer?.waypoints?.get(finalLeg2.wptId)?.entity?.get(Position.mapper) ?: return@apply
+                val wpt1Pos = waypointMap[finalLeg1.wptId]?.entity?.get(Position.mapper) ?: return@apply
+                val wpt2Pos = waypointMap[finalLeg2.wptId]?.entity?.get(Position.mapper) ?: return@apply
 
                 // Get the lower altitude restriction among leg2 and the current min alt; or if one is null, use altitude restriction
                 // of the other; if both null, use null
@@ -633,13 +635,14 @@ fun getZonesForDepartureRoute(route: Route): GdxArray<RouteZone> {
     calculateRouteSegments(route, segmentArray, route[0])
     val routeZones = GdxArray<RouteZone>()
     var currMinAlt: Int? = null
+    val waypointMap = getServerOrClientWaypointMap() ?: return routeZones
     for (i in 0 until segmentArray.size) {
         segmentArray[i]?.apply {
             val finalLeg1 = leg1
             val finalLeg2 = leg2
             if (finalLeg1 is WaypointLeg && finalLeg2 is WaypointLeg) {
-                val wpt1Pos = GAME.gameServer?.waypoints?.get(finalLeg1.wptId)?.entity?.get(Position.mapper) ?: return@apply
-                val wpt2Pos = GAME.gameServer?.waypoints?.get(finalLeg2.wptId)?.entity?.get(Position.mapper) ?: return@apply
+                val wpt1Pos = waypointMap[finalLeg1.wptId]?.entity?.get(Position.mapper) ?: return@apply
+                val wpt2Pos = waypointMap[finalLeg2.wptId]?.entity?.get(Position.mapper) ?: return@apply
 
                 // Get the lower altitude restriction among leg1 and the current min alt; or if one is null, use altitude restriction
                 // of the other; if both null, use null
@@ -662,9 +665,10 @@ fun getZonesForDepartureRoute(route: Route): GdxArray<RouteZone> {
  */
 fun getFlyoverMVAExclusionZones(aircraft: Entity, flyoverWpt: WaypointLeg, wptLeg2: WaypointLeg, minAlt: Int?): GdxArray<RouteZone> {
     val routeZones = GdxArray<RouteZone>()
-    val wpt1Pos = GAME.gameServer?.waypoints?.get(flyoverWpt.wptId)?.entity?.get(Position.mapper) ?: return routeZones
-    val wpt2 = GAME.gameServer?.waypoints?.get(wptLeg2.wptId) ?: return routeZones
-    val wpt2Pos = GAME.gameServer?.waypoints?.get(wptLeg2.wptId)?.entity?.get(Position.mapper) ?: return routeZones
+    val waypointMap = getServerOrClientWaypointMap() ?: return routeZones
+    val wpt1Pos = waypointMap[flyoverWpt.wptId]?.entity?.get(Position.mapper) ?: return routeZones
+    val wpt2 = waypointMap[wptLeg2.wptId] ?: return routeZones
+    val wpt2Pos = waypointMap[wptLeg2.wptId]?.entity?.get(Position.mapper) ?: return routeZones
 
     // Use the trajectory prediction algorithm to estimate exclusion zone
     val targetTrackPxps = Vector2(wpt2Pos.x - wpt1Pos.x, wpt2Pos.y - wpt1Pos.y).nor()
@@ -700,6 +704,7 @@ fun getFlyoverMVAExclusionZones(aircraft: Entity, flyoverWpt: WaypointLeg, wptLe
 fun getZonesForInitialRunwayClimb(route: Route, rwy: Entity): GdxArray<RouteZone> {
     val zones = GdxArray<RouteZone>()
     if (route.size == 0) return zones
+    val waypointMap = getServerOrClientWaypointMap() ?: return zones
     val rwyPos = rwy[Position.mapper] ?: return zones
     val rwyLengthHalf = (rwy[RunwayInfo.mapper]?.lengthM ?: return zones) / 2f
     val rwyDir = rwy[Direction.mapper]?.trackUnitVector ?: return zones
@@ -707,7 +712,7 @@ fun getZonesForInitialRunwayClimb(route: Route, rwy: Entity): GdxArray<RouteZone
     // Also add a buffer zone around the runway
     zones.add(RouteZone(rwyPos.x, rwyPos.y, startPos.x, startPos.y, 3f, null))
     (route[0] as? WaypointLeg)?.apply {
-        val wptPos = GAME.gameServer?.waypoints?.get(wptId)?.entity?.get(Position.mapper) ?: return@apply
+        val wptPos = waypointMap[wptId]?.entity?.get(Position.mapper) ?: return@apply
         zones.add(RouteZone(startPos.x, startPos.y, wptPos.x, wptPos.y, ROUTE_RNP_NM, null))
         return zones
     } ?: (route[0] as? InitClimbLeg)?.apply {
@@ -719,7 +724,7 @@ fun getZonesForInitialRunwayClimb(route: Route, rwy: Entity): GdxArray<RouteZone
         zones.add(RouteZone(startPos.x, startPos.y, climbEndPos.x, climbEndPos.y, ROUTE_RNP_NM, null))
         if (route.size < 2) return@apply
         (route[1] as? WaypointLeg)?.also { wpt ->
-            val wptPos = GAME.gameServer?.waypoints?.get(wpt.wptId)?.entity?.get(Position.mapper) ?: return@apply
+            val wptPos = waypointMap[wpt.wptId]?.entity?.get(Position.mapper) ?: return@apply
             zones.add(RouteZone(climbEndPos.x, climbEndPos.y, wptPos.x, wptPos.y, ROUTE_RNP_NM, null))
         }
     }

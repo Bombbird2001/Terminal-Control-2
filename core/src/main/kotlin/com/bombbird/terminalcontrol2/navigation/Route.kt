@@ -4,6 +4,7 @@ import com.bombbird.terminalcontrol2.components.CommandTarget
 import com.bombbird.terminalcontrol2.components.WaypointInfo
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.json.BaseLegJSONInterface
+import com.bombbird.terminalcontrol2.utilities.getServerOrClientWaypointMap
 import com.squareup.moshi.JsonClass
 import ktx.ashley.get
 import ktx.collections.GdxArray
@@ -212,7 +213,7 @@ class Route() {
 
         /** Debug string representation */
         override fun toString(): String {
-            val wptName = GAME.gameServer?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName
+            val wptName = getServerOrClientWaypointMap()?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName
             return "$wptId $wptName ${if (maxAltFt != null) "B$maxAltFt" else ""} ${if (minAltFt != null) "A$minAltFt" else ""} ${if (maxSpdKt != null) "S$maxSpdKt" else ""} ${if (flyOver) "FLYOVER" else ""}"
         }
     }
@@ -319,7 +320,7 @@ class Route() {
 
         /** Debug string representation */
         override fun toString(): String {
-            val wptName = GAME.gameServer?.waypoints?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName
+            val wptName = getServerOrClientWaypointMap()?.get(wptId)?.entity?.get(WaypointInfo.mapper)?.wptName
             return "$wptId $wptName HDG $inboundHdg LEG $legDist ${if (maxAltFt != null) "B$maxAltFt" else ""} ${if (minAltFt != null) "A$minAltFt" else ""} ${if (maxSpdKtLower != null) "S$maxSpdKtLower" else ""} ${if (maxSpdKtHigher != null) "S$maxSpdKtHigher" else ""}"
         }
     }

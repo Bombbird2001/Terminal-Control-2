@@ -481,7 +481,7 @@ fun calculateArrivalSpawnPoint(route: Route, primarySector: Polygon): Triple<Flo
     val firstWptLeg = firstWptLegIndex?.let { route[it] as? Route.WaypointLeg }
     if (firstWptLeg != null) {
         // Waypoint inside sector found
-        val pos = GAME.gameServer?.waypoints?.get(firstWptLeg.wptId)?.entity?.get(Position.mapper) ?: Position()
+        val pos = getServerOrClientWaypointMap()?.get(firstWptLeg.wptId)?.entity?.get(Position.mapper) ?: Position()
         originX = pos.x
         originY = pos.y
         if (firstWptLegIndex == 0) {
@@ -496,7 +496,9 @@ fun calculateArrivalSpawnPoint(route: Route, primarySector: Polygon): Triple<Flo
             }
             if (nextWptLeg != null) {
                 // If this is the first leg, but subsequent leg is waypoint leg, use the same track as that from first to second leg
-                val destPos = (route[1] as? Route.WaypointLeg)?.let { GAME.gameServer?.waypoints?.get(it.wptId)?.entity?.get(Position.mapper) } ?: Position()
+                val destPos = (route[1] as? Route.WaypointLeg)?.let {
+                    getServerOrClientWaypointMap()?.get(it.wptId)?.entity?.get(Position.mapper)
+                } ?: Position()
                 oppSpawnTrack = getRequiredTrack(originX, originY, destPos.x, destPos.y)
                 val trackToUse = Math.toRadians(convertWorldAndRenderDeg(oppSpawnTrack).toDouble())
                 endX = (nmToPx(75) * cos(trackToUse)).toFloat() + pos.x
@@ -532,7 +534,7 @@ fun calculateArrivalSpawnPoint(route: Route, primarySector: Polygon): Triple<Flo
             val finalPrevVectorLeg = prevVectorLeg
             if (finalPrevWptLeg != null) {
                 // If a previous waypoint exists
-                val prevWptPos = GAME.gameServer?.waypoints?.get(finalPrevWptLeg.wptId)?.entity?.get(Position.mapper) ?: Position()
+                val prevWptPos = getServerOrClientWaypointMap()?.get(finalPrevWptLeg.wptId)?.entity?.get(Position.mapper) ?: Position()
                 endX = prevWptPos.x
                 endY = prevWptPos.y
                 oppSpawnTrack = getRequiredTrack(originX, originY, endX, endY)
@@ -601,7 +603,7 @@ fun calculateArrivalSpawnAltitude(aircraft: Entity, airport: Entity, origRoute: 
             var starMinAltFound = false
             var firstStarMinAlt: Int? = null
             for (i in 0 until legs.size) { (legs[i] as? Route.WaypointLeg)?.apply {
-                val thisWptPos = GAME.gameServer?.waypoints?.get(wptId)?.entity?.get(Position.mapper) ?: Position()
+                val thisWptPos = getServerOrClientWaypointMap()?.get(wptId)?.entity?.get(Position.mapper) ?: Position()
                 cumulativeDistPx += calculateDistanceBetweenPoints(prevPos.x, prevPos.y, thisWptPos.x, thisWptPos.y)
                 if (maxAltFt != null && !starMaxAltFound) {
                     firstStarMaxAlt = maxAltFt.toFloat()

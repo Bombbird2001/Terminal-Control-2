@@ -345,7 +345,7 @@ class AISystem: EntitySystem() {
                 val cmdDir = get(CommandDirect.mapper) ?: return@apply
                 val clearanceAct = get(ClearanceAct.mapper)?.actingClearance?.clearanceState ?: return@apply
                 val pos = get(Position.mapper) ?: return@apply
-                val wpt = GAME.gameServer?.waypoints?.get(cmdDir.wptId)?.entity?.get(Position.mapper) ?: run {
+                val wpt = getServerWaypointMap()?.get(cmdDir.wptId)?.entity?.get(Position.mapper) ?: run {
                     FileLog.info("AISystem", "Unknown command direct waypoint with ID ${cmdDir.wptId}")
                     return@apply
                 }
@@ -391,7 +391,7 @@ class AISystem: EntitySystem() {
                 val pos = get(Position.mapper) ?: return@apply
                 val spd = get(Speed.mapper) ?: return@apply
                 val dir = get(Direction.mapper) ?: return@apply
-                val holdWpt = GAME.gameServer?.waypoints?.get(cmdHold.wptId)?.entity?.get(Position.mapper) ?: return@apply
+                val holdWpt = getServerWaypointMap()?.get(cmdHold.wptId)?.entity?.get(Position.mapper) ?: return@apply
                 val deltaX = holdWpt.x - pos.x
                 val deltaY = holdWpt.y - pos.y
                 val distPxFromWpt2 = deltaX * deltaX + deltaY * deltaY
