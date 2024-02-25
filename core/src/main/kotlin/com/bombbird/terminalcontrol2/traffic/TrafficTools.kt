@@ -600,8 +600,7 @@ object WakeMatrix {
      * @return index of the RECAT/wake category to access the matrix
      */
     private fun getWakeRecatIndex(wake: Char, recat: Char): Int {
-        val gs = GAME.gameServer ?: return 0
-        return if (gs.useRecat) recat - 'A'
+        return if (getServerOrClientUseRecat()) recat - 'A'
         else when (wake) {
             'J' -> 0
             'H' -> 1
@@ -622,10 +621,9 @@ object WakeMatrix {
      * @param followerRecat the RECAT category of the aircraft behind
      */
     fun getDistanceRequired(leaderWake: Char, leaderRecat: Char, followerWake: Char, followerRecat: Char): Byte {
-        val gs = GAME.gameServer ?: return 0
         val leaderIndex = getWakeRecatIndex(leaderWake, leaderRecat)
         val followerIndex = getWakeRecatIndex(followerWake, followerRecat)
-        return if (gs.useRecat) RECAT_DIST[leaderIndex][followerIndex] else WAKE_DIST[leaderIndex][followerIndex]
+        return if (getServerOrClientUseRecat()) RECAT_DIST[leaderIndex][followerIndex] else WAKE_DIST[leaderIndex][followerIndex]
     }
 
     /**
@@ -637,11 +635,10 @@ object WakeMatrix {
      * @param followerRecat the RECAT category of the aircraft departing behind
      */
     fun getTimeRequired(leaderWake: Char, leaderRecat: Char, followerWake: Char, followerRecat: Char): Int {
-        val gs = GAME.gameServer ?: return 0
         val leaderIndex = getWakeRecatIndex(leaderWake, leaderRecat)
         val followerIndex = getWakeRecatIndex(followerWake, followerRecat)
         // Minimum 90s separation between successive takeoffs regardless of wake/RECAT
-        return max(90, if (gs.useRecat) RECAT_DEP_TIME[leaderIndex][followerIndex] else WAKE_DEP_TIME[leaderIndex][followerIndex])
+        return max(90, if (getServerOrClientUseRecat()) RECAT_DEP_TIME[leaderIndex][followerIndex] else WAKE_DEP_TIME[leaderIndex][followerIndex])
     }
 }
 

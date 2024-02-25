@@ -51,3 +51,8 @@ fun getServerWaypointMap(): HashMap<Short, Waypoint>? {
 fun getServerOrClientWaypointMap(): HashMap<Short, Waypoint>? {
     return getServerWaypointMap() ?: GAME.gameClientScreen?.waypoints
 }
+
+/** Gets the use RECAT setting on server/host or client */
+fun getServerOrClientUseRecat(): Boolean {
+    return GAME.gameServer?.useRecat ?: GAME.gameClientScreen?.useRecat ?: true
+}

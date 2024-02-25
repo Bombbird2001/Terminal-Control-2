@@ -92,7 +92,7 @@ class InitialAirspaceData(private val magHdgDev: Float = 0f, private val minAlt:
                           private val maxAlt: Int = 20000, private val minSep: Float = 3f,
                           private val transAlt: Int = 18000, private val transLvl: Int = 180,
                           private val intermediateAlts: IntArray = intArrayOf(), private val mainName: String = "",
-                          private val maxPlayers: Byte = 4
+                          private val maxPlayers: Byte = 4, private val useRecat: Boolean = true
 ):
     ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
@@ -107,6 +107,7 @@ class InitialAirspaceData(private val magHdgDev: Float = 0f, private val minAlt:
         intermediateAlts.forEach { INTERMEDIATE_ALTS.add(it) }
         rs.mainName = mainName
         rs.maxPlayers = maxPlayers.toInt()
+        rs.useRecat = useRecat
     }
 }
 
