@@ -67,14 +67,25 @@ class AESGCMEncryptor(private val serializeObj: (Any) -> ByteArray?): Encryptor 
     }
 
     override fun encryptWithIV(iv: ByteArray, dataToEncrypt: NeedsEncryption): EncryptedData? {
+        return encryptWithIV(iv, dataToEncrypt, 0)
+    }
+
+    private fun encryptWithIV(iv: ByteArray, dataToEncrypt: NeedsEncryption, retry: Int): EncryptedData? {
+        if (retry > 3) {
+            FileLog.warn("AESGCMEncryptor", "Failed to encrypt after 3 retries")
+            return null
+        }
+
         try {
             val gcmPara = GCMParameterSpec(8 * iv.size, iv)
             cipher.init(Cipher.ENCRYPT_MODE, secretKey, gcmPara)
             ivCounter = BigInteger(iv) + BigInteger.ONE
             return EncryptedData(iv, cipher.doFinal(serializeObj(dataToEncrypt) ?: return null))
+        } catch (e: IllegalStateException) {
+            FileLog.warn("AESGCMEncryptor", "IV ${BigInteger(iv)} repeated, incrementing and trying again\n${e.stackTraceToString()}")
+            return encryptWithIV(ivCounter.toByteArray(), dataToEncrypt, retry + 1)
         } catch (e: Exception) {
-            FileLog.info("AESGCMEncryptor", "Failed to encrypt due to\n${e.stackTraceToString()}")
-            e.printStackTrace()
+            FileLog.warn("AESGCMEncryptor", "Failed to encrypt due to\n${e.stackTraceToString()}")
         }
 
         return null
