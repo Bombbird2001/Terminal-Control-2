@@ -89,9 +89,9 @@ class DataSystemClient: EntitySystem() {
                     val dist = calculateDistanceBetweenPoints(acPos.x, acPos.y, refPos.x, refPos.y)
                     val maxDistNm = refApp[Localizer.mapper]?.maxDistNm ?: 15
                     val appDir = refApp[Direction.mapper]?.trackUnitVector ?: return@apply
-                    // Not in 15 degree of localizer centerline
+                    // Not within 25 degrees of localizer centerline
                     if (!checkInArc(refPos.x, refPos.y, convertWorldAndRenderDeg(appDir.angleDeg()), nmToPx(maxDistNm.toInt()),
-                            15f, acPos.x, acPos.y)
+                            25f, acPos.x, acPos.y)
                     ) return@apply
                     refApp[ApproachWakeSequence.mapper]?.aircraftDist?.add(Pair(this, dist))
                 }

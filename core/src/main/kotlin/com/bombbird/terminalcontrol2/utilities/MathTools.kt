@@ -288,7 +288,8 @@ fun findClosestIntersectionBetweenSegmentAndPolygon(originX: Float, originY: Flo
     // Extend the intersection point by amount specified
     return intersectionVector?.apply {
         // Get the vector between the intersection and origin
-        val diff = this - Vector2(originX, originY)
+        val diff = Vector2(endX - originX, endY - originY)
+        if (diff.isZero) return this
         // Calculate length in pixels
         val currLen = diff.len()
         // Add the diff vector scaled by extendLength/length
