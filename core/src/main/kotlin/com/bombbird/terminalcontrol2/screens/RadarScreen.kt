@@ -4,7 +4,6 @@ import com.badlogic.ashley.core.Entity
 import com.badlogic.gdx.*
 import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.OrthographicCamera
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import com.badlogic.gdx.input.GestureDetector
 import com.badlogic.gdx.input.GestureDetector.GestureListener
 import com.badlogic.gdx.math.MathUtils
@@ -40,7 +39,6 @@ import kotlinx.coroutines.launch
 import ktx.app.KtxScreen
 import ktx.ashley.allOf
 import ktx.ashley.get
-import ktx.ashley.getSystem
 import ktx.assets.disposeSafely
 import ktx.async.KtxAsync
 import ktx.collections.GdxArray
@@ -277,7 +275,6 @@ class RadarScreen private constructor(private val connectionHost: String, privat
                 val flightType = get(FlightType.mapper) ?: return@apply
                 updateDatatagStyle(datatag, flightType.type, true)
             }
-            clientEngine.getSystem<RenderingSystemClient>().updateWaypointDisplay(aircraft)
             updateDistToGo()
             updateWaypointRestr()
         }
@@ -293,7 +290,6 @@ class RadarScreen private constructor(private val connectionHost: String, privat
                 updateDatatagStyle(datatag, flightType.type, false)
             }
             selectedAircraft = null
-            clientEngine.getSystem<RenderingSystemClient>().updateWaypointDisplay(null)
             updateDistToGo()
             updateWaypointRestr()
         }

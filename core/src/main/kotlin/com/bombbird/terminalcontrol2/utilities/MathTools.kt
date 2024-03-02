@@ -4,7 +4,6 @@ import com.badlogic.gdx.math.Intersector
 import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.CommandTarget
-import ktx.math.minus
 import ktx.math.plusAssign
 import ktx.math.times
 import kotlin.math.*

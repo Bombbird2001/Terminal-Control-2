@@ -9,8 +9,10 @@ import com.bombbird.terminalcontrol2.entities.Aircraft
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.navigation.Route
+import com.bombbird.terminalcontrol2.systems.RenderingSystemClient
 import com.bombbird.terminalcontrol2.ui.addChangeListener
 import ktx.ashley.get
+import ktx.ashley.getSystem
 import ktx.ashley.has
 import ktx.ashley.hasNot
 import ktx.collections.GdxArray
@@ -138,6 +140,7 @@ class UIPane(private val uiStage: Stage) {
     fun setSelectedAircraft(aircraft: Aircraft) {
         deselectAircraft()
         selAircraft = aircraft
+        updateWaypointDisplay()
         aircraft.entity.apply {
             val controllable = get(Controllable.mapper) ?: return
             if (controllable.sectorId != CLIENT_SCREEN?.playerSector) {
@@ -177,6 +180,7 @@ class UIPane(private val uiStage: Stage) {
      * @param aircraft the [Aircraft] whose clearance information will be displayed in the pane
      */
     fun updateSelectedAircraft(aircraft: Aircraft) {
+        updateWaypointDisplay()
         aircraft.entity.apply {
             val controllable = get(Controllable.mapper) ?: return
             if (controllable.sectorId != CLIENT_SCREEN?.playerSector) return
@@ -214,6 +218,7 @@ class UIPane(private val uiStage: Stage) {
         aircraftMaxAlt = null
         aircraftArrivalArptId = null
         isEmergencyNotReadyForApproach = false
+        updateWaypointDisplay()
     }
 
     /** Helper function to set the UI pane to show [routeEditPane] from [controlPane] */
@@ -238,5 +243,10 @@ class UIPane(private val uiStage: Stage) {
         val callsign = aircraft[AircraftInfo.mapper]?.icaoCallsign ?: return
         if (callsign != selAircraft?.entity?.get(AircraftInfo.mapper)?.icaoCallsign) return
         controlObj.updateHandoverAcknowledgeButton(aircraft.has(CanBeHandedOver.mapper), aircraft.has(ContactNotification.mapper))
+    }
+
+    /** Updates the rendered waypoints for currently selected aircraft */
+    fun updateWaypointDisplay() {
+        getEngine(true).getSystem<RenderingSystemClient>().updateWaypointDisplay(selAircraft)
     }
 }

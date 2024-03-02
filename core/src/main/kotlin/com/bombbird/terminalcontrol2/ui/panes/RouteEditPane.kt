@@ -74,6 +74,7 @@ class RouteEditPane {
                             updateEditRouteTable(parentPane.userClearanceState.route)
                             updateRouteLegSegments(parentPane.userClearanceState.route)
                             updateUndoTransmitButtonStates()
+                            parentPane.updateWaypointDisplay()
                         }
                     }.cell(grow = true, preferredWidth = 0.4f * paneWidth)
                 }.cell(growX = true, height = 0.1f * UI_HEIGHT)
@@ -95,7 +96,9 @@ class RouteEditPane {
                             parentPane.userClearanceState.hiddenLegs.setToRouteCopy(parentPane.clearanceState.hiddenLegs)
                             changeStarBox.selected = "Change STAR"
                             updateEditRouteTable(parentPane.userClearanceState.route)
+                            updateRouteLegSegments(parentPane.userClearanceState.route)
                             setUndoConfirmButtonsUnchanged()
+                            parentPane.updateWaypointDisplay()
                         }
                     }
                     confirmButton = textButton("Confirm", "ControlPaneButton").cell(grow = true, preferredWidth = 0.5f * paneWidth).apply {

@@ -140,6 +140,7 @@ class ControlPane {
                             updateRouteTable(parentPane.userClearanceState.route)
                             updateAltSelectBoxChoices(parentPane.aircraftMaxAlt, parentPane.userClearanceState, selected != NO_APP_SELECTION)
                             updateUndoTransmitButtonStates()
+                            parentPane.updateWaypointDisplay()
                         }
                         disallowDisabledClickThrough()
                     }.cell(grow = true, preferredWidth = paneWidth / 2)
@@ -160,6 +161,7 @@ class ControlPane {
                             updateRouteTable(parentPane.userClearanceState.route)
                             updateAltSelectBoxChoices(parentPane.aircraftMaxAlt, parentPane.userClearanceState, appName != null)
                             updateUndoTransmitButtonStates()
+                            parentPane.updateWaypointDisplay()
                         }
                         disallowDisabledClickThrough()
                     }.cell(grow = true, preferredWidth = paneWidth / 2)
