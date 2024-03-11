@@ -16,7 +16,7 @@ class MenuNotificationManager(private val stage: Stage) {
     private val notifications = GdxArray<MenuNotification>().apply {
         add(
             MenuNotification("beta-welcome-msg-shown", "Welcome to the beta!", "Thank you for" +
-                    " joining the beta! This is a very early version of the game, so there are likely to be bugs and" +
+                    " joining the beta! This is an early version of the game, so there are likely to be bugs and" +
                     " issues. Please report them by emailing bombbirddev@gmail.com, or by clicking the \"Report Bug\"" +
                     " button in the Pause screen or info menu. Please include as much information as possible," +
                     " including the build version (in info menu), expected behaviour and steps to reproduce the bug." +
@@ -25,9 +25,9 @@ class MenuNotificationManager(private val stage: Stage) {
                     " multiplayer functionality, have fun!", 800, 1800)
         )
         add(
-            MenuNotification("tcpg-added", "New airport available!", "TCPG has been added to the" +
-                    " game. A number of bugs have also been fixed. As before, please report bugs encountered by clicking" +
-                    " the \"Report Bug\" button in the Pause screen, or from the info menu. Have fun!", 600, 1400)
+            MenuNotification("tcmd-added", "New airport available!", "TCMD has been added to the" +
+                    " game. Some bugs have also been fixed. As usual, please report bugs encountered by clicking" +
+                    " the \"Report Bug\" button in the Pause screen in-game, or from the info menu. Have fun!", 600, 1400)
         )
     }
 
