@@ -26,7 +26,7 @@ import javax.crypto.SecretKey
  */
 class Room(val id: Short, val maxPlayers: Byte, private val hostConnection: Connection?, val mapName: String,
            private val roomKey: SecretKey, private val encryptor: AESGCMEncryptor,
-           private val hostDecrypter: AESGCMDecrypter) {
+           private val hostDecrypter: AESGCMDecrypter, private var closing: Boolean = false) {
     private val pendingUUIDToDecrypter = ConcurrentHashMap<UUID, AESGCMDecrypter>(maxPlayers.toInt())
     private val connectionToDecrypter = ConcurrentHashMap<Connection, AESGCMDecrypter>(maxPlayers.toInt())
     private val connectedPlayers = ConcurrentHashMap<UUID, Connection>(maxPlayers.toInt())
@@ -56,6 +56,7 @@ class Room(val id: Short, val maxPlayers: Byte, private val hostConnection: Conn
      * @param hostConn connection belonging to the disconnecting host
      */
     fun disconnectAllPlayers(hostConn: Connection) {
+        closing = true
         for (conn in connectedPlayers) {
             if (conn.value != hostConn) conn.value.close()
         }
@@ -67,6 +68,14 @@ class Room(val id: Short, val maxPlayers: Byte, private val hostConnection: Conn
      */
     fun isFull(): Boolean {
         return connectedPlayers.size >= maxPlayers
+    }
+
+    /**
+     * Checks if the room is in the process of closing
+     * @return true if closing, else false
+     */
+    fun isClosing(): Boolean {
+        return closing
     }
 
     /**

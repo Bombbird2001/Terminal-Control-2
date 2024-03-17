@@ -23,7 +23,9 @@ object BotUpdater {
                 FileLog.info("BotUpdater", "Update servers request failed")
             }
 
-            override fun onResponse(call: Call, response: Response) {}
+            override fun onResponse(call: Call, response: Response) {
+                response.close()
+            }
         })
     }
 }
