@@ -275,6 +275,7 @@ data class RecentGoAround(var timeLeft: Float = 80f, var reason: Byte? = null): 
         const val RWY_CLOSED: Byte = 7
         const val WINDSHEAR: Byte = 8
         const val WAKE_TURBULENCE: Byte = 9
+        const val STRONG_CROSSWIND: Byte = 10
 
         fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }

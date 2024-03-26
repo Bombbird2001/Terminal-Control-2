@@ -833,7 +833,8 @@ class AISystem: EntitySystem() {
                 // Check wind
                 // For all approaches, runway tailwind should be maximum 15 knots, crosswind should be maximum 25 knots
                 rwyObj[RunwayWindComponents.mapper]?.let {
-                    if (it.tailwindKt > 15 || it.crosswindKt > 25) return@apply initiateGoAround(this, RecentGoAround.STRONG_TAILWIND)
+                    if (it.tailwindKt > 15) return@apply initiateGoAround(this, RecentGoAround.STRONG_TAILWIND)
+                    if (it.crosswindKt > 25) return@apply initiateGoAround(this, RecentGoAround.STRONG_CROSSWIND)
                 }
 
                 // Check runway occupancy or runway closed
