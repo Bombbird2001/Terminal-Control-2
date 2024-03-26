@@ -666,6 +666,8 @@ fun calculateArrivalSpawnAltitude(aircraft: Entity, airport: Entity, origRoute: 
     // Spawn alt is the lower of the two, must be lower than any previous max alt restrictions, and must be at least the min star alt if any
     var spawnAlt = min(directNoRestrictionPathAlt, maxAltRestrictionPathAlt)
     if (finalPrevMaxStarAlt != null) spawnAlt = min(spawnAlt, finalPrevMaxStarAlt.toFloat())
+    // Cap spawn altitude at maximum of 6000 ft above MAX_ALT, with a random variation of -1500 to 1500 ft
+    spawnAlt = min(spawnAlt, MAX_ALT + 6000f + MathUtils.random(-1500, 1500))
     if (minStarAlt != null) spawnAlt = max(spawnAlt, minStarAlt.toFloat())
     return if (spawnAlt > TRANS_ALT && spawnAlt < TRANS_LVL * 100) TRANS_ALT.toFloat() else spawnAlt
 }
