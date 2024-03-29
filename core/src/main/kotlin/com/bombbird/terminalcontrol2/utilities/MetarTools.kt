@@ -213,7 +213,7 @@ fun setAirportStaticWeather(arpt: Entity, windHdg: Short, windSpd: Short, visibi
         windGustKt = 0
         visibilityM = visibility
         ceilingHundredFtAGL = ceilingHundredFt
-        windshear = ""
+        windshear = generateRandomWsForAllRwy(arpt)
         val temp = (worldTemp + MathUtils.random(-2, 2)).toByte()
         val dewPoint = (temp + worldDewDelta).toByte()
         val qnh = (worldQnh + (if (MathUtils.randomBoolean()) 0 else -1)).toShort()
