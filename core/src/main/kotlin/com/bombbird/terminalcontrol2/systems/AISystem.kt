@@ -917,6 +917,7 @@ class AISystem: EntitySystem() {
                 val arptElevation = GAME.gameServer?.airports?.get(departureAirport.arptId)?.entity?.get(Altitude.mapper)?.altitudeFt ?: 0f
                 get(FlightType.mapper)?.type = FlightType.ARRIVAL
                 this += ArrivalAirport(departureAirport.arptId)
+                this += ArrivalRouteZone()
                 remove<DepartureAirport>()
                 remove<ContactToCentre>()
                 setCurrentAndPendingClearanceToAltitude(this,

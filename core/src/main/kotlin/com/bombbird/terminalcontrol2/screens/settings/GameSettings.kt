@@ -79,11 +79,10 @@ class GameSettings: BaseGameSettings() {
                                 isDisabled = true
                                 setItems(OFF, LOW, MEDIUM, HIGH, NIGHTMARE)
                             }
-                            if (GAME.gameServer?.playersInGame == 1.toByte()) {
+                            if (GAME.gameServer?.maxPlayersAllowed == 1.toByte()) {
                                 defaultSettingsLabel("Game speed:")
                                 gameSpeedSelectBox = defaultSettingsSelectBox<String>().apply {
-                                    isDisabled = true
-                                    setItems("1x", "2x", "4x", "8x")
+                                    setItems("1x", "2x", "4x")
                                 }
                             }
                             newSettingsRow()

@@ -663,7 +663,8 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
         // println(1 / delta)
 
         // Prevent lag spikes from causing huge deviations in simulation
-        val cappedDelta = min(delta, 1f / 30)
+        val simulationSpeed = if (maxPlayersAllowed == 1.toByte()) gameSpeed else 1
+        val cappedDelta = min(delta * simulationSpeed, 1f / 10)
 
         engine.update(cappedDelta)
 

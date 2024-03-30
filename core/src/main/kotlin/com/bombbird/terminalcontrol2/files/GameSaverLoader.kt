@@ -43,7 +43,6 @@ data class GameServerSave(
     val weatherMode: Byte,
     val emergencyRate: Byte,
     val stormsDensity: Byte,
-    val gameSpeed: Int,
     val nightModeStart: Int,
     val nightModeEnd: Int,
     val useRecat: Boolean,
@@ -67,7 +66,7 @@ fun getSaveJSONString(gs: GameServer): String {
     // Main game information
     val saveObject = GameServerSave(gs.mainName, gs.arrivalSpawnTimerS, gs.previousArrivalOffsetS, gs.trafficValue,
         gs.trafficMode, gs.score, gs.highScore, gs.landed, gs.departed, gs.weatherMode, gs.emergencyRate, gs.stormsDensity,
-        gs.gameSpeed, gs.nightModeStart, gs.nightModeEnd, gs.useRecat, gs.trailDotTimer,
+        gs.nightModeStart, gs.nightModeEnd, gs.useRecat, gs.trailDotTimer,
         Entries(gs.aircraft).map { it.value },
         Entries(gs.airports).map { it.value },
         gs.waypoints.values.toList())
@@ -214,7 +213,7 @@ private fun setGameServerFields(gs: GameServer, save: GameServerSave) {
     gs.weatherMode = save.weatherMode
     gs.emergencyRate = save.emergencyRate
     gs.stormsDensity = save.stormsDensity
-    gs.gameSpeed = save.gameSpeed
+    gs.gameSpeed = 1
     gs.nightModeStart = save.nightModeStart
     gs.nightModeEnd = save.nightModeEnd
     gs.useRecat = save.useRecat

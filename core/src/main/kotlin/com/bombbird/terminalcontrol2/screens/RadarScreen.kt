@@ -442,8 +442,10 @@ class RadarScreen private constructor(private val connectionHost: String, privat
             Gdx.gl.glClearColor(0f, 0f, 0f, 1f)
             Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT or GL20.GL_DEPTH_BUFFER_BIT or if (Gdx.graphics.bufferFormat.coverageSampling) GL20.GL_COVERAGE_BUFFER_BIT_NV else 0)
 
+            // Default to simulation rate of 1 if player is not host
+            val gameSpeed = GAME.gameServer?.gameSpeed ?: 1
             // Prevent lag spikes from causing huge deviations in simulation
-            val cappedDelta = min(delta, 1f / 30)
+            val cappedDelta = min(delta * gameSpeed, 1f / 10)
 
             if (running) {
                 runCameraAnimations(cappedDelta)
