@@ -207,3 +207,15 @@ data class TrailInfo(val positions: Queue<Position> = Queue(MAX_TRAIL_DOTS)): Co
         fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
+
+/** Component for tagging if an aircraft will go around due to windshear */
+@JsonClass(generateAdapter = true)
+data class WindshearGoAround(var goAround: Boolean = false): Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.WINDSHEAR_GO_AROUND
+
+    companion object {
+        val mapper = object: Mapper<WindshearGoAround>() {}.mapper
+
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
+    }
+}

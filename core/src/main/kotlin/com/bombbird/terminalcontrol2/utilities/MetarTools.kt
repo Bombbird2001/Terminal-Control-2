@@ -254,6 +254,7 @@ private fun generateRandomWsForAllRwy(airport: Entity): String {
     val prob = (1 / (1 + exp(-b0 - b1 * speed.toDouble()))).toFloat()
 
     var landingRwyCount = 0
+    var landingWsRwyCount = 0
     val stringBuilder = StringBuilder()
     val rwyEntries = Entries(airport[RunwayChildren.mapper]?.rwyMap ?: return "")
     rwyEntries.mapNotNull { it.value.entity }.forEach { rwy ->
@@ -263,9 +264,26 @@ private fun generateRandomWsForAllRwy(airport: Entity): String {
             stringBuilder.append("R")
             stringBuilder.append(rwy[RunwayInfo.mapper]?.rwyName)
             stringBuilder.append(" ")
+            landingWsRwyCount++
         }
     }
-    return if (stringBuilder.length > 3 && stringBuilder.length == landingRwyCount * 3)"ALL RWY" else stringBuilder.toString()
+    return if (landingWsRwyCount == landingRwyCount) "ALL RWY" else stringBuilder.toString()
+}
+
+/**
+ * Randomly generates whether an aircraft will go around for the input [rwy] due to the presence of windshear,
+ * using the airport's [metar] information
+ *
+ * Returns true if the aircraft will go around, false otherwise
+ */
+fun generateRandomWindshearGoAround(rwy: Entity, metar: MetarInfo): Boolean {
+    val rwyName = "R${rwy[RunwayInfo.mapper]?.rwyName ?: return false}"
+    val ws = metar.windshear
+    if (ws != "ALL RWY" && !ws.contains(rwyName)) return false
+    var baseChance = 0.2f
+    val gusts = metar.windGustKt
+    if (gusts > 0) baseChance += (1 - baseChance) * MathUtils.clamp(1.2f * (gusts - 15) / 100, 0f, 1f)
+    return MathUtils.randomBoolean(baseChance)
 }
 
 /**

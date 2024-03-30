@@ -323,7 +323,8 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRendererBoundingBox,
         for (i in 0 until wakeRenderEntities.size()) {
             wakeRenderEntities[i]?.apply {
                 val position = getOrLogMissing(Position.mapper) ?: return@apply
-                val appOppDirUnitVector = getOrLogMissing(Direction.mapper)?.trackUnitVector ?: return@apply
+                val appOppDirUnitVector = get(Direction.mapper)?.trackUnitVector
+                    ?: get(ApproachInfo.mapper)?.rwyObj?.entity?.getOrLogMissing(Direction.mapper)?.let { -it.trackUnitVector } ?: return@apply
                 val acDistances = getOrLogMissing(ApproachWakeSequence.mapper)?.aircraftDist ?: return@apply
                 for (j in 0 until acDistances.size - 1) {
                     val ac1 = acDistances[j].first

@@ -837,6 +837,14 @@ class AISystem: EntitySystem() {
                     if (it.crosswindKt > 25) return@apply initiateGoAround(this, RecentGoAround.STRONG_CROSSWIND)
                 }
 
+                // Check windshear go around
+                if (hasNot(WindshearGoAround.mapper)) {
+                    this += WindshearGoAround(generateRandomWindshearGoAround(rwyObj, arptMetar))
+                }
+                if (get(WindshearGoAround.mapper)?.goAround == true) {
+                    return@apply initiateGoAround(this, RecentGoAround.WINDSHEAR)
+                }
+
                 // Check runway occupancy or runway closed
                 // For all approaches, go around if runway is still occupied or closed by the time aircraft reaches 150 feet AGL
                 val rwyAlt = rwyObj[Altitude.mapper]?.altitudeFt

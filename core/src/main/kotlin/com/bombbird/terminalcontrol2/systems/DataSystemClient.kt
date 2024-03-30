@@ -15,6 +15,7 @@ import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.allOf
 import ktx.ashley.get
 import ktx.collections.GdxArray
+import ktx.math.unaryMinus
 import kotlin.math.roundToInt
 
 /**
@@ -72,25 +73,27 @@ class DataSystemClient: EntitySystem() {
                     val locCap = get(LocalizerCaptured.mapper)
                     val arrAirport = get(ArrivalAirport.mapper)
                     val clearance = get(ClearanceAct.mapper)
-                    val refApp = (if (arrAirport != null && clearance != null) {
+                    val refAppAndDir = (if (arrAirport != null && clearance != null) {
                         val approaches = GAME.gameClientScreen?.airports?.get(arrAirport.arptId)?.entity?.get(ApproachChildren.mapper)?.approachMap
                         val reqApp = approaches?.get(clearance.actingClearance.clearanceState.clearedApp)?.entity
                         // We will also check if the aircraft is heading towards the approach (i.e. within 90 degrees of the approach heading)
                         val acDir = radar.direction
-                        val appDir = reqApp?.get(Direction.mapper)
+                        val appDirUnitVector = reqApp?.get(Direction.mapper)?.trackUnitVector
+                            ?: reqApp?.get(ApproachInfo.mapper)?.rwyObj?.entity?.getOrLogMissing(Direction.mapper)?.let { -it.trackUnitVector }
                         // Since the app's direction is the opposite of the track, we need to check if the dot product is <= 0 before adding
-                        if (locCap == null && (appDir == null || acDir.trackUnitVector.dot(appDir.trackUnitVector) > 0)) null
-                        else reqApp
+                        if (locCap == null && (appDirUnitVector == null || acDir.trackUnitVector.dot(appDirUnitVector) > 0)) null
+                        else Pair(reqApp, appDirUnitVector)
                     } else null) ?: return@apply
+                    val refApp = refAppAndDir.first ?: return@apply
+                    val refAppDir = refAppAndDir.second ?: return@apply
                     val alt = get(Altitude.mapper)?.altitudeFt ?: return@apply
                     val rwyAlt = refApp[ApproachInfo.mapper]?.rwyObj?.entity?.get(Altitude.mapper)?.altitudeFt ?: return@apply
                     if (alt < rwyAlt + 10) return@apply // Aircraft has touched down
                     val refPos = refApp[Position.mapper] ?: return@apply
                     val dist = calculateDistanceBetweenPoints(acPos.x, acPos.y, refPos.x, refPos.y)
                     val maxDistNm = refApp[Localizer.mapper]?.maxDistNm ?: 15
-                    val appDir = refApp[Direction.mapper]?.trackUnitVector ?: return@apply
                     // Not within 25 degrees of localizer centerline
-                    if (!checkInArc(refPos.x, refPos.y, convertWorldAndRenderDeg(appDir.angleDeg()), nmToPx(maxDistNm.toInt()),
+                    if (!checkInArc(refPos.x, refPos.y, convertWorldAndRenderDeg(refAppDir.angleDeg()), nmToPx(maxDistNm.toInt()),
                             25f, acPos.x, acPos.y)
                     ) return@apply
                     refApp[ApproachWakeSequence.mapper]?.aircraftDist?.add(Pair(this, dist))

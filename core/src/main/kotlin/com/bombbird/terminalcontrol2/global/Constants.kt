@@ -58,7 +58,7 @@ const val TRANS_PREFIX = "Via "
 const val NO_TRANS_SELECTION = "..."
 
 /** Control state constants */
-const val TRACK_EXTRAPOLATE_TIME_S = 30f
+const val TRACK_EXTRAPOLATE_TIME_S = 60f
 
 /** Aircraft initial spawn */
 const val ARRIVAL_SPAWN_EXTEND_DIST_NM = 0.5f

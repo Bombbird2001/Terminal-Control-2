@@ -218,6 +218,7 @@ fun removeAllApproachComponents(aircraft: Entity) {
         remove<AppDecelerateTo190kts>()
         remove<DecelerateToAppSpd>()
         remove<ContactToTower>()
+        remove<WindshearGoAround>()
     }
 }
 

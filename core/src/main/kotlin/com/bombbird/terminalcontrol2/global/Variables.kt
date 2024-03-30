@@ -47,6 +47,7 @@ val AVAIL_AIRPORTS = GdxArrayMap<String, String?>().apply {
     put("TCBD", null)
     put("TCMD", null)
     put("TCPG", null)
+    put("TCSF", null)
 }
 
 /**
