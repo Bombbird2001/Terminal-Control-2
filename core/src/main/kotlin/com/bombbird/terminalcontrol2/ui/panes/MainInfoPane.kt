@@ -14,6 +14,7 @@ import com.bombbird.terminalcontrol2.global.AIRPORT_SIZE
 import com.bombbird.terminalcontrol2.global.CLIENT_SCREEN
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.UI_HEIGHT
+import com.bombbird.terminalcontrol2.traffic.RunwayConfiguration
 import com.bombbird.terminalcontrol2.ui.addChangeListener
 import com.bombbird.terminalcontrol2.ui.removeMouseScrollListeners
 import com.bombbird.terminalcontrol2.utilities.UsabilityFilter
@@ -336,8 +337,9 @@ class MainInfoPane {
                             val configIdToUse = if (name != null) name.toByte() else return@addChangeListener
                             GAME.gameServer?.also { server ->
                                 server.airports[arptId]?.let { arpt ->
-                                    if ((arpt.entity[RunwayConfigurationChildren.mapper]?.rwyConfigs?.get(configIdToUse)?.rwyAvailabilityScore ?: return@addChangeListener) == 0)
-                                        return@addChangeListener
+                                    val rwyConfigs = arpt.entity[RunwayConfigurationChildren.mapper]?.rwyConfigs ?: return@addChangeListener
+                                    val rwyScore = rwyConfigs.get(configIdToUse)?.rwyAvailabilityScore ?: return@addChangeListener
+                                    if (rwyScore == 0 && doesBestRunwayConfigHaveRunwaysAvailable(rwyConfigs)) return@addChangeListener
                                     arpt.activateRunwayConfig(configIdToUse)
                                     server.sendActiveRunwayUpdateToAll(arptId, configIdToUse)
                                     server.sendPendingRunwayUpdateToAll(arptId, null)
@@ -431,7 +433,8 @@ class MainInfoPane {
             if (isChecked) selectedId = name.toByte()
         }}
 
-        val selectedConfig = airport[RunwayConfigurationChildren.mapper]?.rwyConfigs?.get(selectedId)
+        val runwayConfigs = airport[RunwayConfigurationChildren.mapper]?.rwyConfigs ?: return
+        val selectedConfig = runwayConfigs.get(selectedId)
         // Only show this button if selected ID is different from active ID
         cfmButton.isVisible = selectedId != activeId && selectedConfig != null
         // Only show this button if selected ID is different from active ID, and the selected ID is not equal to the ID of any pending runway changes
@@ -443,7 +446,7 @@ class MainInfoPane {
             cfmButton.setText(when {
                 selectedConfig.timeRestriction == UsabilityFilter.DAY_ONLY && isNight -> "Only allowed\nin day"
                 selectedConfig.timeRestriction == UsabilityFilter.NIGHT_ONLY && !isNight -> "Only allowed\nat night"
-                selectedConfig.rwyAvailabilityScore == 0 -> "Not allowed\ndue to winds"
+                selectedConfig.rwyAvailabilityScore == 0 && doesBestRunwayConfigHaveRunwaysAvailable(runwayConfigs) -> "Not allowed\ndue to winds"
                 GAME.gameServer == null -> "Only host\ncan change\nrunway"
                 else -> {
                     cfmButton.name = selectedId?.toString()
@@ -460,4 +463,13 @@ class MainInfoPane {
      * @return true if status pane button selected, else false
      */
     fun isStatusPaneSelected(): Boolean { return statusButton.isChecked }
+
+    /**
+     * Checks whether the best runway configuration available at the airport has runways available for use according to
+     * the current wind conditions
+     */
+    private fun doesBestRunwayConfigHaveRunwaysAvailable(rwyConfigs: GdxArrayMap<Byte, RunwayConfiguration>): Boolean {
+        val idealConfig = rwyConfigs.entries().mapNotNull { it.value }.toTypedArray().sortedArray().last()
+        return idealConfig.rwyAvailabilityScore > 0
+    }
 }

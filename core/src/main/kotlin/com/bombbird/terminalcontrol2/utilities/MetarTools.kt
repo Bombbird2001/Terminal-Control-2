@@ -398,7 +398,13 @@ fun checkRunwayConfigSelection(airport: Entity) {
     val pendingConfig: RunwayConfiguration? = configs[airport[PendingRunwayConfig.mapper]?.pendingId]
     val rwyConfigEntries = Entries(airport[RunwayConfigurationChildren.mapper]?.rwyConfigs ?: return)
     val idealConfig = rwyConfigEntries.mapNotNull { it.value }.toTypedArray().sortedArray().last()
-    if ((activeConfig == null || activeConfig.rwyAvailabilityScore == 0) && idealConfig.id != activeConfig?.id) {
+    val betterConfigExists = idealConfig.rwyAvailabilityScore > 0
+    // We change the configuration if and only if:
+    // 1. There is no active configuration
+    // 2. The current configuration is not available for day/night operations
+    // 3. The current configuration has a score of 0, but a better configuration (with score > 0) exists
+    val currentConfigNeedChange = activeConfig == null || !activeConfig.dayNightAvailability || (activeConfig.rwyAvailabilityScore == 0 && betterConfigExists)
+    if (currentConfigNeedChange && idealConfig.id != activeConfig?.id) {
         if (activeConfig == null) {
             // If no active current config, set the most ideal choice directly
             GAME.gameServer?.airports?.get(arptId)?.activateRunwayConfig(idealConfig.id)
@@ -411,7 +417,7 @@ fun checkRunwayConfigSelection(airport: Entity) {
             airport += PendingRunwayConfig(idealConfig.id, 300f)
             GAME.gameServer?.sendPendingRunwayUpdateToAll(arptId, idealConfig.id)
         }
-    } else if ((activeConfig.rwyAvailabilityScore > 0) && pendingConfig != null) {
+    } else if (!currentConfigNeedChange && pendingConfig != null) {
         // Active config is ok for current configuration, but there is a pending runway change - cancel it
         airport.remove<PendingRunwayConfig>()
         GAME.gameServer?.sendPendingRunwayUpdateToAll(arptId, null)

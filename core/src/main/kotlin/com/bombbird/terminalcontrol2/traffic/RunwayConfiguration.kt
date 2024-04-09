@@ -24,6 +24,7 @@ class RunwayConfiguration(val id: Byte, var name: String, override val timeRestr
     val ntzs: GdxArray<NoTransgressionZone> = GdxArray(5)
 
     var rwyAvailabilityScore = 0
+    var dayNightAvailability = false
     private var windScore = 0f
 
     /**
@@ -51,7 +52,8 @@ class RunwayConfiguration(val id: Byte, var name: String, override val timeRestr
             windScore -= winds.tailwindKt
         }}
 
-        rwyAvailabilityScore = if (isUsableForDayNight()) depAvailable * arrAvailable else 0
+        dayNightAvailability = isUsableForDayNight()
+        rwyAvailabilityScore = depAvailable * arrAvailable
     }
 
     /**
@@ -87,11 +89,13 @@ class RunwayConfiguration(val id: Byte, var name: String, override val timeRestr
     /**
      * Compares this runway configuration to another configuration
      *
-     * [rwyAvailabilityScore] will take priority before [windScore]
+     * [dayNightAvailability] will take priority, followed by [rwyAvailabilityScore] then [windScore]
      * @return a negative number if it's less than [other], or a positive number
      * if it's greater than [other]
      */
     override fun compareTo(other: RunwayConfiguration): Int {
+        if (dayNightAvailability && !other.dayNightAvailability) return 1
+        if (!dayNightAvailability && other.dayNightAvailability) return -1
         if (rwyAvailabilityScore < other.rwyAvailabilityScore) return -1
         if (rwyAvailabilityScore > other.rwyAvailabilityScore) return 1
         return if (windScore <= other.windScore) -1 else 1
