@@ -47,6 +47,7 @@ object DataFileTest: FunSpec() {
     private val WARNING_SHOULD_BE_EMPTY: (String, String) -> Unit = { type: String, warning: String -> "[$type] $warning" shouldBe "" }
 
     private val aircraftSet = HashSet<String>()
+    private val callsignSet = HashSet<String>()
 
     init {
         Gdx.files = Lwjgl3Files()
@@ -99,6 +100,20 @@ object DataFileTest: FunSpec() {
                     e.stackTraceToString().shouldBeNull()
                 }
                 aircraftSet.add(acData[0])
+            }
+        }
+
+        context("Callsign file check") {
+            val handle = "Data/icao.callsign".toInternalFile()
+            handle.exists().shouldBeTrue()
+            val icaoList = handle.readString().toLines()
+            withData(icaoList) {
+                val data = it.split(" ", limit = 2)
+                data.size shouldBe 2
+                data[0].length shouldBe 3
+                if (callsignSet.isNotEmpty()) data[0] shouldNotBeIn callsignSet // Duplicate ICAO code if this fails
+                data[1].length shouldBeGreaterThan 0
+                callsignSet.add(data[0])
             }
         }
 
@@ -654,9 +669,12 @@ object DataFileTest: FunSpec() {
                     }
 
                     val routeLines = getAllTextAfterHeaderMultiple("ROUTE", sidLines[1])
-                    routeLines.size shouldBe 1
-                    val routeLine = routeLines[0].split(" ")
-                    testParseLegs(routeLine, allWpts, Route.Leg.NORMAL, WARNING_SHOULD_BE_EMPTY)
+                    routeLines.size shouldBeLessThanOrEqual 1
+                    var routeLine: List<String> = emptyList()
+                    if (routeLines.size == 1) {
+                        routeLine = routeLines[0].split(" ")
+                        testParseLegs(routeLine, allWpts, Route.Leg.NORMAL, WARNING_SHOULD_BE_EMPTY)
+                    }
 
                     val outbounds = getAllTextAfterHeaderMultiple("OUTBOUND", sidLines[1])
                     for (outbound in outbounds) {
@@ -907,6 +925,7 @@ object DataFileTest: FunSpec() {
                             for (acType in tfcData.subList(2, tfcData.size)) {
                                 acType shouldBeIn aircraftSet
                             }
+                            tfcData[0] shouldBeIn callsignSet
                         }
                     }
                 }
