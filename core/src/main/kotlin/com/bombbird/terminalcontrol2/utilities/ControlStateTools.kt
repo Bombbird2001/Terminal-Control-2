@@ -153,14 +153,20 @@ fun getMinMaxOptimalIAS(entity: Entity): Triple<Short, Short, Short> {
         if (!holding) holdMaxSpd = lastRestriction?.maxSpdKt.let { lastMaxSpd ->
             when {
                 lastMaxSpd != null && nextRouteMaxSpd != null -> max(lastMaxSpd.toInt(), nextRouteMaxSpd.toInt()).toShort()
-                lastMaxSpd != null -> when (flightType.type) {
-                    FlightType.DEPARTURE -> null// No further max speeds, but aircraft is a departure so allow acceleration beyond previous max speed
-                    FlightType.ARRIVAL -> lastMaxSpd// No further max speeds, use the last max speed
+                lastMaxSpd != null -> when {
+                    // No further max speeds, but aircraft is a departure, or an arrival on the go around, so allow acceleration beyond previous max speed
+                    flightType.type == FlightType.DEPARTURE ||
+                            ((entity.has(OnGoAroundRoute.mapper) && flightType.type == FlightType.ARRIVAL)) -> null
+                    // No further max speeds, use the last max speed
+                    flightType.type == FlightType.ARRIVAL -> lastMaxSpd
                     else -> null
                 }
-                nextRouteMaxSpd != null -> when (flightType.type) {
-                    FlightType.DEPARTURE -> nextRouteMaxSpd// No max speeds before, but aircraft is a departure so must follow all subsequent max speeds
-                    FlightType.ARRIVAL -> null// No max speeds before
+                nextRouteMaxSpd != null -> when {
+                    // No max speeds before, but aircraft is a departure, or an arrival on the go around, so must follow all subsequent max speeds
+                    flightType.type == FlightType.DEPARTURE ||
+                            ((entity.has(OnGoAroundRoute.mapper) && flightType.type == FlightType.ARRIVAL)) -> nextRouteMaxSpd
+                    // No max speeds before
+                    flightType.type == FlightType.ARRIVAL -> null
                     else -> null
                 }
                 else -> null

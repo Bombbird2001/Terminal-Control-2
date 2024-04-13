@@ -1319,12 +1319,11 @@ class AISystem: EntitySystem() {
 
                 setAllMissedLegsToNormal(it.route)
                 // Clear any preceding altitude and speed restrictions since approach route is no longer being used
-                // Set min, max altitude to null, and max speed to 0 if a speed restriction exists in the missed
-                // approach procedure to simulate departure acceleration behaviour
+                // Departure behaviour is simulated by setting the OnGoAroundRoute component
                 (get(LastRestrictions.mapper) ?: LastRestrictions().also { restr -> entity += restr }).let { restr ->
                     restr.minAltFt = null
                     restr.maxAltFt = null
-                    restr.maxSpdKt = if (getNextMaxSpd(it.route) == null) null else 0
+                    restr.maxSpdKt = null
                 }
             }
 
