@@ -50,7 +50,7 @@ class AISystem: EntitySystem() {
             .oneOf(LocalizerCaptured::class, VisualCaptured::class).get()
         private val visAppGlideFamily: Family = allOf(CommandTarget::class, Position::class, GroundTrack::class, VisualCaptured::class).get()
         private val checkGoAroundFamily: Family = allOf(Position::class, Altitude::class, IndicatedAirSpeed::class, AircraftInfo::class)
-            .oneOf(GlideSlopeCaptured::class, LocalizerCaptured::class, VisualCaptured::class).exclude(CirclingApproach::class).get()
+            .oneOf(GlideSlopeCaptured::class, LocalizerCaptured::class, VisualCaptured::class, CirclingApproach::class).get()
         private val visArmedFamily: Family = allOf(Position::class, ClearanceAct::class, VisualArmed::class).get()
         private val locArmedFamily: Family = allOf(Position::class, Direction::class, IndicatedAirSpeed::class, GroundTrack::class, LocalizerArmed::class).get()
         private val gsArmedFamily: Family = allOf(Position::class, Altitude::class, GlideSlopeArmed::class, LocalizerCaptured::class).get()

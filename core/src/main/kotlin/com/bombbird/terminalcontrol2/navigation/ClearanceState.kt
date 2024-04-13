@@ -182,20 +182,22 @@ data class ClearanceState(var routePrimaryName: String = "", val route: Route = 
                                 currFirstLeg.phase == Route.Leg.APP_TRANS)) return clearCurrentRouteRestrictions(entity)
                     return
                 }
-                if (app.has(Localizer.mapper)) entity += LocalizerArmed(app)
-                else app[ApproachInfo.mapper]?.rwyObj?.entity?.get(VisualApproach.mapper)?.let { visApp ->
-                    entity += VisualArmed(visApp.visual, app)
+                if (appChanged) {
+                    if (app.has(Localizer.mapper)) entity += LocalizerArmed(app)
+                    else app[ApproachInfo.mapper]?.rwyObj?.entity?.get(VisualApproach.mapper)?.let { visApp ->
+                        entity += VisualArmed(visApp.visual, app)
+                    }
+                    if (app.has(GlideSlope.mapper)) entity += GlideSlopeArmed(app)
+                    else if (app.has(StepDown.mapper)) entity += StepDownApproach(app)
+                    app[Circling.mapper]?.let { circling ->
+                        entity += CirclingApproach(app, MathUtils.random(circling.minBreakoutAlt, circling.maxBreakoutAlt))
+                    }
+                    // Visual approach can only be cleared by other approaches
+                    entity += AppDecelerateTo190kts()
+                    entity += DecelerateToAppSpd()
+                    val alt = GAME.gameServer?.airports?.get(entity[ArrivalAirport.mapper]?.arptId)?.entity?.get(Altitude.mapper)?.altitudeFt ?: 0f
+                    entity += ContactToTower(min((alt + MathUtils.random(1100, 1500)).toInt(), MIN_ALT - 50))
                 }
-                if (app.has(GlideSlope.mapper)) entity += GlideSlopeArmed(app)
-                else if (app.has(StepDown.mapper)) entity += StepDownApproach(app)
-                app[Circling.mapper]?.let { circling ->
-                    entity += CirclingApproach(app, MathUtils.random(circling.minBreakoutAlt, circling.maxBreakoutAlt))
-                }
-                // Visual approach can only be cleared by other approaches
-                entity += AppDecelerateTo190kts()
-                entity += DecelerateToAppSpd()
-                val alt = GAME.gameServer?.airports?.get(entity[ArrivalAirport.mapper]?.arptId)?.entity?.get(Altitude.mapper)?.altitudeFt ?: 0f
-                entity += ContactToTower(min((alt + MathUtils.random(1100, 1500)).toInt(), MIN_ALT - 50))
             }
             clearedTrans = newClearance.clearedTrans
 
