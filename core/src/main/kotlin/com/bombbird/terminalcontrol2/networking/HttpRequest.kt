@@ -366,6 +366,7 @@ object HttpRequest {
         client.newCall(request).enqueue(object: Callback {
             override fun onFailure(call: Call, e: IOException) {
                 FileLog.info("HttpRequest", "Bug report request failed")
+                onFailure()
             }
 
             override fun onResponse(call: Call, response: Response) {
