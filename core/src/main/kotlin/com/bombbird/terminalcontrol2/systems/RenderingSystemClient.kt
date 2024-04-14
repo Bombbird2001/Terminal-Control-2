@@ -52,6 +52,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRendererBoundingBox,
             .exclude(SRConstantZoomSize::class, DoNotRenderShape::class).get()
         private val runwayFamily: Family = allOf(RunwayInfo::class).exclude(DoNotRenderShape::class).get()
         private val locFamily: Family = allOf(Position::class, Localizer::class, Direction::class, ApproachInfo::class).get()
+        private val visualAppFamily: Family = allOf(VisualApproach::class).get()
         private val gsCircleFamily: Family = allOf(GlideSlopeCircle::class, ApproachInfo::class).get()
         private val trajectoryFamily: Family = allOf(RadarData::class, Controllable::class, SRColor::class)
             .exclude(WaitingTakeoff::class).get()
@@ -94,6 +95,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRendererBoundingBox,
     private val circleFamilyEntities = FamilyWithListener.newClientFamilyWithListener(circleFamily)
     private val runwayFamilyEntities = FamilyWithListener.newClientFamilyWithListener(runwayFamily)
     private val locFamilyEntities = FamilyWithListener.newClientFamilyWithListener(locFamily)
+    private val visualAppFamilyEntities = FamilyWithListener.newClientFamilyWithListener(visualAppFamily)
     private val gsCircleFamilyEntities = FamilyWithListener.newClientFamilyWithListener(gsCircleFamily)
     private val trajectoryFamilyEntities = FamilyWithListener.newClientFamilyWithListener(trajectoryFamily)
     private val datatagLineFamilyEntities = FamilyWithListener.newClientFamilyWithListener(datatagLineFamily)
@@ -110,6 +112,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRendererBoundingBox,
     private val routeFamilyEntities = FamilyWithListener.newClientFamilyWithListener(routeFamily)
     private val wakeRenderFamilyEntities = FamilyWithListener.newClientFamilyWithListener(wakeRenderFamily)
 
+    private val renderedRunwayCenterlineIds = GdxArray<Byte>()
     private val distMeasureLabel = Label("", Scene2DSkin.defaultSkin, "DistMeasure")
 
     private val worldBoundingRect = Rectangle()
@@ -249,6 +252,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRendererBoundingBox,
             }
         }
 
+        renderedRunwayCenterlineIds.clear()
         // Render localizers
         val localizer = locFamilyEntities.getEntities()
         for (i in 0 until localizer.size()) {
@@ -272,6 +276,38 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRendererBoundingBox,
                 dir.setLength(1f)
                 val perpendicularVector = Vector2(dir).rotate90(-1).scl(nmToPx(0.4f))
                 for (j in 1..loc.maxDistNm step 2) {
+                    if (j % 5 == 0) shapeRenderer.line(startPos - perpendicularVector, startPos + perpendicularVector)
+                    dir.setLength(nmToPx(1))
+                    val endPos = startPos + dir
+                    shapeRenderer.line(startPos, endPos)
+                    if ((j + 1) % 5 == 0) shapeRenderer.line(endPos - perpendicularVector, endPos + perpendicularVector)
+                    dir.setLength(nmToPx(2))
+                    startPos.plusAssign(dir)
+                }
+                dir.setLength(1f)
+                renderedRunwayCenterlineIds.add(appInfo.rwyObj.entity[RunwayInfo.mapper]?.rwyId)
+            }
+        }
+
+        // Render extended centerline for visual approach if necessary (RNP approach, etc.)
+        val visualApp = visualAppFamilyEntities.getEntities()
+        for (i in 0 until visualApp.size()) {
+            visualApp[i]?.apply {
+                val visualAppEntity = getOrLogMissing(VisualApproach.mapper)?.visual ?: return@apply
+                val pos = visualAppEntity.getOrLogMissing(Position.mapper) ?: return@apply
+                val dir = visualAppEntity.getOrLogMissing(Direction.mapper)?.trackUnitVector ?: return@apply
+                val appInfo = visualAppEntity.getOrLogMissing(ApproachInfo.mapper) ?: return@apply
+                if (appInfo.rwyObj.entity.hasNot(ActiveLanding.mapper)) return@apply
+                if (appInfo.rwyObj.entity.has(RunwayClosed.mapper)) return@apply
+                // If this runway already has a localizer rendered, don't render extended centerline
+                if (renderedRunwayCenterlineIds.contains(appInfo.rwyObj.entity[RunwayInfo.mapper]?.rwyId)) return@apply
+                shapeRenderer.color = Color.CYAN
+                dir.setLength((nmToPx(1)))
+                val startPos = Vector2(pos.x, pos.y)
+                startPos.plusAssign(dir)
+                dir.setLength(1f)
+                val perpendicularVector = Vector2(dir).rotate90(-1).scl(nmToPx(0.4f))
+                for (j in 1..15 step 2) {
                     if (j % 5 == 0) shapeRenderer.line(startPos - perpendicularVector, startPos + perpendicularVector)
                     dir.setLength(nmToPx(1))
                     val endPos = startPos + dir
