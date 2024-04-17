@@ -745,7 +745,9 @@ class AISystem: EntitySystem() {
                 val perf = get(AircraftInfo.mapper)?.aircraftPerf ?: return@apply
 
                 val distFromRwyPx = calculateDistanceBetweenPoints(pos.x, pos.y, rwyPos.x, rwyPos.y)
-                val arptMetar = GAME.gameServer?.airports?.get(appLat[ApproachInfo.mapper]?.airportId)?.entity?.get(MetarInfo.mapper) ?: return@apply
+                val airportEntity = GAME.gameServer?.airports?.get(appLat[ApproachInfo.mapper]?.airportId)?.entity ?: return@apply
+                val arptAltFt = airportEntity[Altitude.mapper]?.altitudeFt ?: return@apply
+                val arptMetar = airportEntity[MetarInfo.mapper] ?: return@apply
 
                 // Check RVR requirement - 100m leeway
                 val rvrRequired = ((visParentApp ?: appLat)[Minimums.mapper]?.rvrM ?: 100) - 100
@@ -755,7 +757,7 @@ class AISystem: EntitySystem() {
 
                 // Check decision altitude/height requirement
                 val decisionAlt = (visParentApp ?: appVert)[Minimums.mapper]?.baroAltFt ?: 0
-                if (alt.altitudeFt < decisionAlt && (arptMetar.ceilingHundredFtAGL ?: Short.MAX_VALUE) * 100 < decisionAlt)
+                if (alt.altitudeFt < decisionAlt && arptAltFt + (arptMetar.ceilingHundredFtAGL ?: Short.MAX_VALUE) * 100 < decisionAlt)
                     return@apply initiateGoAround(this, RecentGoAround.RWY_NOT_IN_SIGHT)
 
                 // Check opposite runway aircraft departure
