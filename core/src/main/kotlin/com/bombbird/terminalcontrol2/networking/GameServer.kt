@@ -427,7 +427,26 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
                     PublishedHoldData(publishedHoldArray))
                 FileLog.debug("GameServer", "Sent PublishedHoldData with ${publishedHoldArray.size} published holds")
 
-                val minAltSectorArray = minAltSectors.toArray().map { it.getSerialisableObject() }.toTypedArray()
+                val tmpMinAltSectors = GdxArray<MinAltSector>()
+                var sizeUsed = 0
+                for (minAltSector in 0 until minAltSectors.size) {
+                    val minAltSectorObj = minAltSectors[minAltSector].entity
+                    val sizeNeeded = (minAltSectorObj[GPolygon.mapper]?.vertices?.size ?: continue) * 2 + 20
+                    if (sizeUsed + sizeNeeded > SERVER_WRITE_BUFFER_SIZE) {
+                        // Send existing data and restart
+                        val minAltSectorArray = tmpMinAltSectors.toArray().map { it.getSerialisableObject() }.toTypedArray()
+                        networkServer.sendTCPToConnection(
+                            uuid,
+                            MinAltData(minAltSectorArray)
+                        )
+                        FileLog.debug("GameServer", "Sent MinAltData with ${minAltSectorArray.size} sectors")
+                        tmpMinAltSectors.clear()
+                        sizeUsed = 0
+                    }
+                    tmpMinAltSectors.add(minAltSectors[minAltSector])
+                    sizeUsed += sizeNeeded
+                }
+                val minAltSectorArray = tmpMinAltSectors.toArray().map { it.getSerialisableObject() }.toTypedArray()
                 networkServer.sendTCPToConnection(
                     uuid,
                     MinAltData(minAltSectorArray)
