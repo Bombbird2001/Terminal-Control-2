@@ -112,7 +112,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRendererBoundingBox,
     private val routeFamilyEntities = FamilyWithListener.newClientFamilyWithListener(routeFamily)
     private val wakeRenderFamilyEntities = FamilyWithListener.newClientFamilyWithListener(wakeRenderFamily)
 
-    private val renderedRunwayCenterlineIds = GdxArray<Byte>()
+    private val renderedRunwayCenterlineIds = GdxArray<Pair<Byte, Byte>>()
     private val distMeasureLabel = Label("", Scene2DSkin.defaultSkin, "DistMeasure")
 
     private val worldBoundingRect = Rectangle()
@@ -285,7 +285,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRendererBoundingBox,
                     startPos.plusAssign(dir)
                 }
                 dir.setLength(1f)
-                renderedRunwayCenterlineIds.add(appInfo.rwyObj.entity[RunwayInfo.mapper]?.rwyId)
+                renderedRunwayCenterlineIds.add(Pair(appInfo.airportId, appInfo.rwyObj.entity[RunwayInfo.mapper]?.rwyId ?: return@apply))
             }
         }
 
@@ -300,7 +300,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRendererBoundingBox,
                 if (appInfo.rwyObj.entity.hasNot(ActiveLanding.mapper)) return@apply
                 if (appInfo.rwyObj.entity.has(RunwayClosed.mapper)) return@apply
                 // If this runway already has a localizer rendered, don't render extended centerline
-                if (renderedRunwayCenterlineIds.contains(appInfo.rwyObj.entity[RunwayInfo.mapper]?.rwyId)) return@apply
+                if (renderedRunwayCenterlineIds.contains(Pair(appInfo.airportId, appInfo.rwyObj.entity[RunwayInfo.mapper]?.rwyId))) return@apply
                 shapeRenderer.color = Color.CYAN
                 dir.setLength((nmToPx(1)))
                 val startPos = Vector2(pos.x, pos.y)
