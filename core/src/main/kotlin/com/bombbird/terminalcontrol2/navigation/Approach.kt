@@ -85,7 +85,7 @@ class Approach(name: String, arptId: Byte, runwayId: Byte, posX: Float, posY: Fl
             routeLegs.getSerialisedObject(),
             missedLegs.getSerialisedObject(),
             ArrayIterator(runwayConfigs.rwyConfigs).toList().toByteArray(),
-            if (loc != null && dir != null) (convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()) + 180 + MAG_HDG_DEV).roundToInt().toShort() else null, loc?.maxDistNm,
+            if (loc != null && dir != null) (convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()) + 180 + MAG_HDG_DEV) else null, loc?.maxDistNm,
             gs?.glideAngle, gs?.offsetNm, gs?.maxInterceptAlt,
             stepDown?.altAtDist?.map { SerialisedStep(it.dist, it.alt) }?.toTypedArray()
         )
@@ -138,7 +138,7 @@ class Approach(name: String, arptId: Byte, runwayId: Byte, posX: Float, posY: Fl
                              val routeLegs: Route.SerialisedRoute = Route.SerialisedRoute(),
                              val missedLegs: Route.SerialisedRoute = Route.SerialisedRoute(),
                              val allowedConfigs: ByteArray = byteArrayOf(),
-                             val locHdg: Short? = null, val locDistNm: Byte? = null,
+                             val locHdg: Float? = null, val locDistNm: Byte? = null,
                              val gsAngleDeg: Float? = null, val gsOffsetNm: Float? = null, val maxGsAlt: Short? = null,
                              val steps: Array<SerialisedStep>? = null)
 
@@ -166,7 +166,7 @@ class Approach(name: String, arptId: Byte, runwayId: Byte, posX: Float, posY: Fl
      * @param heading the track of the localizer
      * @param locDistNm the maximum localizer distance
      */
-    fun addLocalizer(heading: Short, locDistNm: Byte) {
+    fun addLocalizer(heading: Float, locDistNm: Byte) {
         entity += Direction(Vector2(Vector2.Y).rotateDeg(180 - (heading - MAG_HDG_DEV)))
         entity += Localizer(locDistNm)
     }

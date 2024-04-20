@@ -546,7 +546,7 @@ private fun parseApproachNOZ(data: List<String>, approachNOZGroup: ApproachNOZGr
     val pos = data[1].split(",")
     val posX = nmToPx(pos[0].toFloat())
     val posY = nmToPx(pos[1].toFloat())
-    val hdg = data[2].toShort()
+    val hdg = data[2].toFloat()
     val width = data[3].toFloat()
     val length = data[4].toFloat()
     val appNames = data.subList(5, data.size).map { it.replace("-", " ") }.toTypedArray()
@@ -623,7 +623,7 @@ private fun parseRwyConfigNTZ(data: List<String>, currRwyConfig: RunwayConfigura
     val pos = data[1].split(",")
     val posX = nmToPx(pos[0].toFloat())
     val posY = nmToPx(pos[1].toFloat())
-    val hdg = data[2].toShort()
+    val hdg = data[2].toFloat()
     val width = data[3].toFloat()
     val length = data[4].toFloat()
     currRwyConfig.ntzs.add(NoTransgressionZone(posX, posY, hdg, width, length, false))
@@ -669,7 +669,7 @@ private fun parseApproach(data: List<String>, airport: Airport): Approach? {
  */
 private fun parseAppLocalizer(data: List<String>, approach: Approach) {
     if (data.size != 3) FileLog.info("GameLoader", "Localizer data has ${data.size} elements instead of 3")
-    val heading = data[1].toShort()
+    val heading = data[1].toFloat()
     val locDistNm = data[2].toByte()
     approach.addLocalizer(heading, locDistNm)
 }

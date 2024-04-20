@@ -23,7 +23,7 @@ interface Zone {
 }
 
 /** Class for storing an approach NOZ information */
-class ApproachNormalOperatingZone(posX: Float, posY: Float, appHdg: Short, private val widthNm: Float, private val lengthNm: Float,
+class ApproachNormalOperatingZone(posX: Float, posY: Float, appHdg: Float, private val widthNm: Float, private val lengthNm: Float,
                                   appNames: Array<String>, onClient: Boolean = true): Zone, SerialisableEntity<ApproachNormalOperatingZone.SerialisedApproachNOZ> {
     val entity = getEngine(onClient).entityOnMainThread(onClient) {
         with<Position> {
@@ -68,8 +68,7 @@ class ApproachNormalOperatingZone(posX: Float, posY: Float, appHdg: Short, priva
             val dir = get(Direction.mapper) ?: return emptySerialisableObject("Direction")
             val appNames = get(ApproachList.mapper) ?: return emptySerialisableObject("ApproachList")
             val appHdg = convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()) + 180 + MAG_HDG_DEV
-            return SerialisedApproachNOZ(pos.x, pos.y, appHdg.roundToInt().toShort(), widthNm, lengthNm,
-                appNames.approachList)
+            return SerialisedApproachNOZ(pos.x, pos.y, appHdg, widthNm, lengthNm, appNames.approachList)
         }
     }
 
@@ -97,7 +96,7 @@ class ApproachNormalOperatingZone(posX: Float, posY: Float, appHdg: Short, priva
     }
 
     /** Object that contains [ApproachNormalOperatingZone] data to be serialised by Kryo */
-    class SerialisedApproachNOZ(val posX: Float = 0f, val posY: Float = 0f, val appHdg: Short = 0,
+    class SerialisedApproachNOZ(val posX: Float = 0f, val posY: Float = 0f, val appHdg: Float = 0f,
                                 val widthNm: Float = 0f, val lengthNm: Float = 0f,
                                 val appNames: Array<String> = arrayOf())
 }
@@ -180,7 +179,7 @@ class DepartureNormalOperatingZone(posX: Float, posY: Float, appHdg: Short, priv
  *
  * Note that NTZs are mainly for aesthetic purposes, and will be used for positional checking to detect NTZ transgressions
  */
-class NoTransgressionZone(posX: Float, posY: Float, appHdg: Short, private val widthNm: Float, private val lengthNm: Float,
+class NoTransgressionZone(posX: Float, posY: Float, appHdg: Float, private val widthNm: Float, private val lengthNm: Float,
                           onClient: Boolean = true): Zone, SerialisableEntity<NoTransgressionZone.SerialisedNTZ> {
     val entity = getEngine(onClient).entityOnMainThread(onClient) {
         with<Position> {
@@ -221,7 +220,7 @@ class NoTransgressionZone(posX: Float, posY: Float, appHdg: Short, private val w
             val pos = get(Position.mapper) ?: return SerialisedNTZ()
             val dir = get(Direction.mapper) ?: return SerialisedNTZ()
             val appHdg = convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()) + MAG_HDG_DEV
-            return SerialisedNTZ(pos.x, pos.y, appHdg.roundToInt().toShort(), widthNm, lengthNm)
+            return SerialisedNTZ(pos.x, pos.y, appHdg, widthNm, lengthNm)
         }
     }
 
@@ -248,7 +247,7 @@ class NoTransgressionZone(posX: Float, posY: Float, appHdg: Short, private val w
     }
 
     /** Object that contains [NoTransgressionZone] data to be serialised by Kryo */
-    class SerialisedNTZ(val posX: Float = 0f, val posY: Float = 0f, val appHdg: Short = 0,
+    class SerialisedNTZ(val posX: Float = 0f, val posY: Float = 0f, val appHdg: Float = 0f,
                                  val widthNm: Float = 0f, val lengthNm: Float = 0f)
 }
 

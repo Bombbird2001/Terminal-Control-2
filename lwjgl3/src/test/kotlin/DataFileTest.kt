@@ -270,11 +270,15 @@ object DataFileTest: FunSpec() {
      * Tests that the input string follows the format [Float],[Float]
      * @param coords the string to test for coordinate format
      */
-    private fun testCoordsString(coords: String) {
+    private fun testCoordsString(coords: String, maxLimit: Float? = null) {
         coords.split(",").let {
             it.size shouldBe 2
-            it[0].toFloat()
-            it[1].toFloat()
+            val x = it[0].toFloat()
+            val y = it[1].toFloat()
+            if (maxLimit != null) {
+                x.shouldBeBetween(-maxLimit, maxLimit, 0.001f)
+                y.shouldBeBetween(-maxLimit, maxLimit, 0.001f)
+            }
         }
     }
 
@@ -550,7 +554,7 @@ object DataFileTest: FunSpec() {
                     val zoneData = zone.split(" ")
                     zoneData.size shouldBeGreaterThanOrEqual 5
                     testCoordsString(zoneData[0])
-                    zoneData[1].toShort().shouldBeBetween(1, 360)
+                    zoneData[1].toFloat().shouldBeBetween(0.01f, 360f, 0.0001f)
                     zoneData[2].toFloat()
                     zoneData[3].toFloat()
                     for (i in 4 until zoneData.size) {
@@ -624,7 +628,7 @@ object DataFileTest: FunSpec() {
                         val ntzData = ntz.split(" ")
                         ntzData.size shouldBe 5
                         testCoordsString(ntzData[1])
-                        ntzData[2].toShort().shouldBeBetween(1, 360)
+                        ntzData[2].toFloat().shouldBeBetween(0.01f, 360f, 0.0001f)
                         ntzData[3].toFloat()
                         ntzData[4].toFloat()
                     }
@@ -806,7 +810,7 @@ object DataFileTest: FunSpec() {
                     if (locLines.size == 1) {
                         val locData = locLines[0].split(" ")
                         locData.size shouldBe 2
-                        locData[0].toShort()
+                        locData[0].toFloat()
                         locData[1].toByte()
                     }
 
