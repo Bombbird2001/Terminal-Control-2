@@ -2,6 +2,7 @@ import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Files
 import com.badlogic.gdx.math.Polygon
 import com.bombbird.terminalcontrol2.components.FlightType
+import com.bombbird.terminalcontrol2.components.Position
 import com.bombbird.terminalcontrol2.files.*
 import com.bombbird.terminalcontrol2.global.AVAIL_AIRPORTS
 import com.bombbird.terminalcontrol2.navigation.Route
@@ -270,7 +271,8 @@ object DataFileTest: FunSpec() {
      * Tests that the input string follows the format [Float],[Float]
      * @param coords the string to test for coordinate format
      */
-    private fun testCoordsString(coords: String, maxLimit: Float? = null) {
+    private fun testCoordsString(coords: String, maxLimit: Float? = null): Position {
+        val position: Position
         coords.split(",").let {
             it.size shouldBe 2
             val x = it[0].toFloat()
@@ -279,7 +281,9 @@ object DataFileTest: FunSpec() {
                 x.shouldBeBetween(-maxLimit, maxLimit, 0.001f)
                 y.shouldBeBetween(-maxLimit, maxLimit, 0.001f)
             }
+            position = Position(x, y)
         }
+        return position
     }
 
     /**
@@ -291,6 +295,7 @@ object DataFileTest: FunSpec() {
     private suspend fun ContainerScope.testWaypoints(data: String): HashMap<String, Short> {
         val wptNames = HashMap<String, Short>()
         val wptIds = HashSet<Short>()
+        val wptPos = GdxArray<Position>()
         withData(arrayListOf("Waypoints")) { withData(getLinesBetweenTags("WAYPOINTS", data)) { line ->
             val wptData = line.split(" ")
             val id = wptData[0].toShort()
@@ -301,7 +306,13 @@ object DataFileTest: FunSpec() {
                 if (wptNames.isNotEmpty()) wptName shouldNotBeIn wptNames.keys
             }
             wptNames[wptName] = id
-            testCoordsString(wptData[2])
+            val newPos = testCoordsString(wptData[2])
+            // Check if waypoint is within 0.01 nm of another waypoint - O(n^2) yikes!
+            for (pos in wptPos) {
+                val dist = calculateDistanceBetweenPoints(pos.x, pos.y, newPos.x, newPos.y)
+                dist.shouldBeGreaterThan(0.01f)
+            }
+            wptPos.add(newPos)
         }}
 
         return wptNames

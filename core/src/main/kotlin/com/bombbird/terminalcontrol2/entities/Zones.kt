@@ -259,7 +259,10 @@ class NoTransgressionZone(posX: Float, posY: Float, appHdg: Float, private val w
 class RouteZone(posX1: Float, posY1: Float, posX2: Float, posY2: Float, rnpNm: Float, minAlt: Int?): Zone {
     val entity = getEngine(false).entityOnMainThread(false) {
         with<GPolygon> {
-            val halfWidth = Vector2(posX2 - posX1, posY2 - posY1).apply { scl(nmToPx(rnpNm) / len()) }.rotate90(-1)
+            val halfWidth = Vector2(posX2 - posX1, posY2 - posY1).apply {
+                val length = len()
+                if (length > 0) scl(nmToPx(rnpNm) / length)
+            }.rotate90(-1)
             val halfWidthOppTrack = Vector2(halfWidth).rotate90(-1)
             vertices = floatArrayOf(posX1 + halfWidth.x + halfWidthOppTrack.x, posY1 + halfWidth.y + halfWidthOppTrack.y,
                 posX1 - halfWidth.x + halfWidthOppTrack.x, posY1 - halfWidth.y + halfWidthOppTrack.y,
@@ -293,8 +296,12 @@ class RouteZone(posX1: Float, posY1: Float, posX2: Float, posY2: Float, rnpNm: F
 class WakeZone(prevPosX: Float, prevPosY: Float, currPosX: Float, currPosY: Float, wakeAlt: Float, callsign: String, leadingWakeCat: Char, leadingRecatCat: Char): Zone {
     val entity = getEngine(false).entityOnMainThread(false) {
         with<GPolygon> {
-            val halfWidth = Vector2(currPosX - prevPosX, currPosY - prevPosY).apply { scl(nmToPx(WAKE_WIDTH_NM / 2) / len()) }.rotate90(-1)
-            val halfWidthOppTrack = Vector2(halfWidth).apply { scl(nmToPx(WAKE_LENGTH_EXTENSION_NM / 2) / len()) }.rotate90(-1)
+            val halfWidth = Vector2(currPosX - prevPosX, currPosY - prevPosY).apply {
+                val length = len()
+                if (length > 0) scl(nmToPx(WAKE_WIDTH_NM / 2) / length) }.rotate90(-1)
+            val halfWidthOppTrack = Vector2(halfWidth).apply {
+                val length = len()
+                if (length > 0) scl(nmToPx(WAKE_LENGTH_EXTENSION_NM / 2) / length) }.rotate90(-1)
             vertices = floatArrayOf(prevPosX + halfWidth.x, prevPosY + halfWidth.y, prevPosX - halfWidth.x, prevPosY - halfWidth.y,
                 currPosX - halfWidth.x - halfWidthOppTrack.x, currPosY - halfWidth.y - halfWidthOppTrack.y,
                 currPosX + halfWidth.x - halfWidthOppTrack.x, currPosY + halfWidth.y - halfWidthOppTrack.y)
@@ -336,7 +343,9 @@ class WakeZone(prevPosX: Float, prevPosY: Float, currPosX: Float, currPosY: Floa
 class TakeoffProtectionZone(posX1: Float, posY1: Float, posX2: Float, posY2: Float, maxAlt: Int): Zone {
     val entity = getEngine(false).entityOnMainThread(false) {
         with<GPolygon> {
-            val halfWidth = Vector2(posX2 - posX1, posY2 - posY1).apply { scl(nmToPx(TAKEOFF_PROTECTION_HALF_WIDTH_NM) / len()) }.rotate90(-1)
+            val halfWidth = Vector2(posX2 - posX1, posY2 - posY1).apply {
+                val length = len()
+                if (length > 0) scl(nmToPx(TAKEOFF_PROTECTION_HALF_WIDTH_NM) / length) }.rotate90(-1)
             val halfWidthOppTrack = Vector2(halfWidth).rotate90(-1)
             vertices = floatArrayOf(posX1 + halfWidth.x + halfWidthOppTrack.x, posY1 + halfWidth.y + halfWidthOppTrack.y,
                 posX1 - halfWidth.x + halfWidthOppTrack.x, posY1 - halfWidth.y + halfWidthOppTrack.y,
