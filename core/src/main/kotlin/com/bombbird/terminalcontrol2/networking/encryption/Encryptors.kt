@@ -3,6 +3,7 @@ package com.bombbird.terminalcontrol2.networking.encryption
 import com.bombbird.terminalcontrol2.utilities.FileLog
 import java.lang.Exception
 import java.math.BigInteger
+import java.security.InvalidAlgorithmParameterException
 import javax.crypto.Cipher
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
@@ -60,10 +61,7 @@ class AESGCMEncryptor(private val serializeObj: (Any) -> ByteArray?): Encryptor 
     private var ivCounter = BigInteger.ZERO
 
     override fun encrypt(dataToEncrypt: NeedsEncryption): EncryptedData? {
-        val iv = ByteArray(GCM_TAG_LENGTH_BYTES)
-        val bigIntArray = ivCounter.toByteArray()
-        bigIntArray.copyInto(iv, destinationOffset = iv.size - bigIntArray.size)
-        return encryptWithIV(iv, dataToEncrypt)
+        return encryptWithIV(ivCounter.toByteArray(GCM_TAG_LENGTH_BYTES), dataToEncrypt)
     }
 
     override fun encryptWithIV(iv: ByteArray, dataToEncrypt: NeedsEncryption): EncryptedData? {
@@ -78,17 +76,27 @@ class AESGCMEncryptor(private val serializeObj: (Any) -> ByteArray?): Encryptor 
 
         try {
             val gcmPara = GCMParameterSpec(8 * iv.size, iv)
-            cipher.init(Cipher.ENCRYPT_MODE, secretKey, gcmPara)
             ivCounter = BigInteger(iv) + BigInteger.ONE
+            cipher.init(Cipher.ENCRYPT_MODE, secretKey, gcmPara)
             return EncryptedData(iv, cipher.doFinal(serializeObj(dataToEncrypt) ?: return null))
         } catch (e: IllegalStateException) {
             FileLog.warn("AESGCMEncryptor", "IV ${BigInteger(iv)} repeated, incrementing and trying again\n${e.stackTraceToString()}")
-            return encryptWithIV(ivCounter.toByteArray(), dataToEncrypt, retry + 1)
+            return encryptWithIV(ivCounter.toByteArray(GCM_TAG_LENGTH_BYTES), dataToEncrypt, retry + 1)
+        } catch(e: InvalidAlgorithmParameterException) {
+            FileLog.warn("AESGCMEncryptor", "IV ${BigInteger(iv)} repeated, incrementing and trying again\n${e.stackTraceToString()}")
+            return encryptWithIV(ivCounter.toByteArray(GCM_TAG_LENGTH_BYTES), dataToEncrypt, retry + 1)
         } catch (e: Exception) {
             FileLog.warn("AESGCMEncryptor", "Failed to encrypt due to\n${e.stackTraceToString()}")
         }
 
         return null
+    }
+
+    private fun BigInteger.toByteArray(arrayLength: Int): ByteArray {
+        val byteArray = ByteArray(arrayLength)
+        val bigIntBytes = toByteArray()
+        bigIntBytes.copyInto(byteArray, destinationOffset = byteArray.size - bigIntBytes.size)
+        return byteArray
     }
 
     override fun setKey(key: SecretKey) {
