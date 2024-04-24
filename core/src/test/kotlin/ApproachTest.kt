@@ -22,14 +22,14 @@ object ApproachTest: FunSpec() {
         }
 
         test("Localizer addition") {
-            approach?.addLocalizer(360, 25)
+            approach?.addLocalizer(360f, 25)
             approach?.entity?.get(Localizer.mapper)?.maxDistNm shouldBe 25
             approach?.entity?.get(Direction.mapper)?.trackUnitVector?.apply {
                 x shouldBe 0f.plusOrMinus(0.0001f)
                 y shouldBe (-1f).plusOrMinus(0.0001f)
             }.shouldNotBeNull()
 
-            approach?.addLocalizer(90, 20)
+            approach?.addLocalizer(90f, 20)
             approach?.entity?.get(Localizer.mapper)?.maxDistNm shouldBe 20
             approach?.entity?.get(Direction.mapper)?.trackUnitVector?.apply {
                 x shouldBe (-1f).plusOrMinus(0.0001f)
@@ -37,14 +37,14 @@ object ApproachTest: FunSpec() {
             }.shouldNotBeNull()
 
             MAG_HDG_DEV = 3f
-            approach?.addLocalizer(180, 15)
+            approach?.addLocalizer(180f, 15)
             approach?.entity?.get(Localizer.mapper)?.maxDistNm shouldBe 15
             approach?.entity?.get(Direction.mapper)?.trackUnitVector?.apply {
                 x shouldBe (-0.052336f).plusOrMinus(0.000001f)
                 y shouldBe 0.99863f.plusOrMinus(0.00001f)
             }.shouldNotBeNull()
 
-            approach?.addLocalizer(270, 10)
+            approach?.addLocalizer(270f, 10)
             approach?.entity?.get(Localizer.mapper)?.maxDistNm shouldBe 10
             approach?.entity?.get(Direction.mapper)?.trackUnitVector?.apply {
                 x shouldBe 0.99863f.plusOrMinus(0.0001f)

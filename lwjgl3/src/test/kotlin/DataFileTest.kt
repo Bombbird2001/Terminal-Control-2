@@ -7,6 +7,7 @@ import com.bombbird.terminalcontrol2.files.*
 import com.bombbird.terminalcontrol2.global.AVAIL_AIRPORTS
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.navigation.findMissedApproachAlt
+import com.bombbird.terminalcontrol2.navigation.getLastWaypointLeg
 import com.bombbird.terminalcontrol2.utilities.*
 import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.FunSpec
@@ -174,9 +175,11 @@ object DataFileTest: FunSpec() {
 
                     // 2. Check waypoints
                     val wpts = testWaypoints(data)
+                    val wptId = wpts.first
+                    val wptPos = wpts.second
 
                     // 3. Check sectors, including that all sub-sectors are within the primary sector
-                    testSectors(data)
+                    val primarySector = testSectors(data)
 
                     // 4. Check min alt sectors
                     testMinAltSectors(data)
@@ -185,10 +188,10 @@ object DataFileTest: FunSpec() {
                     testShoreline(data)
 
                     // 6. Check hold waypoints
-                    testHolds(data, wpts)
+                    testHolds(data, wptId)
 
                     // 7. Check airports
-                    testAirports(data, wpts, minAlt)
+                    testAirports(data, wptId, wptPos, minAlt, primarySector)
                 } catch (e: RuntimeException) {
                     e.stackTraceToString().shouldBeNull()
                 }
@@ -292,10 +295,10 @@ object DataFileTest: FunSpec() {
      * @param data the string text to parse
      * @return a HashSet of all the waypoint IDs
      */
-    private suspend fun ContainerScope.testWaypoints(data: String): HashMap<String, Short> {
+    private suspend fun ContainerScope.testWaypoints(data: String): Pair<HashMap<String, Short>, HashMap<Short, Position>> {
         val wptNames = HashMap<String, Short>()
+        val wptPos = HashMap<Short, Position>()
         val wptIds = HashSet<Short>()
-        val wptPos = GdxArray<Position>()
         withData(arrayListOf("Waypoints")) { withData(getLinesBetweenTags("WAYPOINTS", data)) { line ->
             val wptData = line.split(" ")
             val id = wptData[0].toShort()
@@ -308,25 +311,25 @@ object DataFileTest: FunSpec() {
             wptNames[wptName] = id
             val newPos = testCoordsString(wptData[2])
             // Check if waypoint is within 0.01 nm of another waypoint - O(n^2) yikes!
-            for (pos in wptPos) {
+            for (pos in wptPos.values) {
                 val dist = calculateDistanceBetweenPoints(pos.x, pos.y, newPos.x, newPos.y)
                 dist.shouldBeGreaterThan(0.01f)
             }
-            wptPos.add(newPos)
+            wptPos[id] = newPos
         }}
 
-        return wptNames
+        return Pair(wptNames, wptPos)
     }
 
     /**
      * Tests the sector data validity for the input data, with the calling ContainerScope as the scope for the tests
      * @param data the string text to parse
      */
-    private suspend fun ContainerScope.testSectors(data: String) {
+    private suspend fun ContainerScope.testSectors(data: String): Polygon {
+        val primarySector = Polygon()
         withData(arrayListOf("Sectors")) {
             val sectorData = getStringBetweenTags("SECTORS", data)
             sectorData.isBlank().shouldBeFalse()
-            val primarySector = Polygon()
             var sectorIndex = 1
             while (true) {
                 val sectorArrangements = getLinesBetweenTags(sectorIndex.toString(), sectorData)
@@ -364,6 +367,7 @@ object DataFileTest: FunSpec() {
                 sectorIndex++
             }
         }
+        return primarySector
     }
 
     /**
@@ -444,9 +448,12 @@ object DataFileTest: FunSpec() {
      * Tests the airport data validity for all airports, with the calling ContainerScope as the scope for the tests
      * @param data the string text to parse
      * @param wpts the map of waypoint names available to their IDs, and the hold waypoint name should be in this set
+     * @param wptPos the map of waypoint IDs to their positions
      * @param minAlt the minimum altitude of the game world
+     * @param primarySector the primary sector of the map
      */
-    private suspend fun ContainerScope.testAirports(data: String, wpts: HashMap<String, Short>, minAlt: Int) {
+    private suspend fun ContainerScope.testAirports(data: String, wpts: HashMap<String, Short>,
+                                                    wptPos: HashMap<Short, Position>, minAlt: Int, primarySector: Polygon) {
         val arptIds = HashSet<Byte>()
         getBlocksBetweenTags("AIRPORT", data).forEach { airport ->
             val arptLines = airport.toLines(2)
@@ -463,7 +470,7 @@ object DataFileTest: FunSpec() {
                 testCoordsString(header[5])
                 header[6].toShort()
                 withClue("Real life weather ICAO code format invalid: ${header[7]}") { "^[A-Z]{4}\$".toRegex().find(header[7]).shouldNotBeNull() }
-                testAirport(arptLines[1], wpts, minAlt)
+                testAirport(arptLines[1], wpts, wptPos, minAlt, primarySector)
             }
         }
     }
@@ -474,8 +481,10 @@ object DataFileTest: FunSpec() {
      * @param arptData the airport text to parse
      * @param wpts the map of waypoint names available to their IDs, and the hold waypoint name should be in this set
      * @param minAlt the minimum altitude of the game world
+     * @param primarySector the primary sector of the map
      */
-    private suspend fun ContainerScope.testAirport(arptData: String, wpts: HashMap<String, Short>, minAlt: Int) {
+    private suspend fun ContainerScope.testAirport(arptData: String, wpts: HashMap<String, Short>,
+                                                   wptPos: HashMap<Short, Position>, minAlt: Int, primarySector: Polygon) {
         withData(arrayListOf("Wind Direction")) {
             getAllTextAfterHeader("WINDDIR", arptData).split(" ").map { it.toFloat() }.size shouldBe 37
         }
@@ -497,9 +506,9 @@ object DataFileTest: FunSpec() {
         testDependentRunways("Crossing Runways", "CROSSING", arptData, allRwys)
         testDepNOZ(arptData, allRwys)
         val configRwys = testRunwayConfigs(arptData, allRwys)
-        testSid(arptData, allRwys, wpts, configRwys.first, minAlt)
-        testStar(arptData, allRwys, wpts, configRwys.second)
-        val allApproaches = testApp(arptData, allRwys, wpts, configRwys.second)
+        testSid(arptData, allRwys, wpts, wptPos, configRwys.first, minAlt, primarySector)
+        testStar(arptData, allRwys, wpts, wptPos, configRwys.second, primarySector)
+        val allApproaches = testApp(arptData, allRwys, wpts, wptPos, configRwys.second, primarySector)
         testAppNOZ(arptData, allApproaches)
         testTraffic(arptData)
     }
@@ -651,18 +660,31 @@ object DataFileTest: FunSpec() {
     }
 
     /**
+     * Tests the [leg] for whether it is a waypoint leg, and if so checks whether it is contained or not, depending on
+     * [shouldBeInPolygon], within the input [polygon] given position data for all waypoints in [wptPos]
+     */
+    private fun testWaypointLegInPolygon(leg: Route.Leg?, wptPos: HashMap<Short, Position>, polygon: Polygon, shouldBeInPolygon: Boolean) {
+        val wptId = (leg as? Route.WaypointLeg)?.wptId.shouldNotBeNull()
+        val pos = wptPos[wptId].shouldNotBeNull()
+        (polygon.contains(pos.x, pos.y) == shouldBeInPolygon).shouldBeTrue()
+    }
+
+    /**
      * Tests the SIDs for the input airport data block, with the calling ContainerScope as the scope for the
      * tests
      * @param data the string text to parse
      * @param allRwys all runways in this airport mapped to their elevation
      * @param allWpts all waypoints in this game world
+     * @param wptPos all waypoint IDs mapped to their respective positions
      * @param allConfigDepRwys a HashMap mapping the runway config ID to their respective departure runways
      * @param minAlt the game world's minimum altitude
+     * @param primarySector the primary sector of the map
      * @return a HashSet of all runway names for this airport
      */
     private suspend fun ContainerScope.testSid(data: String, allRwys: HashMap<String, Short>,
-                                               allWpts: HashMap<String, Short>,
-                                               allConfigDepRwys: HashMap<Byte, HashSet<String>>, minAlt: Int) {
+                                               allWpts: HashMap<String, Short>, wptPos: HashMap<Short, Position>,
+                                               allConfigDepRwys: HashMap<Byte, HashSet<String>>, minAlt: Int,
+                                               primarySector: Polygon) {
         withData(arrayListOf("SIDs")) {
             getBlocksBetweenTags("SID", data).forEach {
                 val sidLines = it.toLines(2)
@@ -684,25 +706,30 @@ object DataFileTest: FunSpec() {
                     }
 
                     val routeLines = getAllTextAfterHeaderMultiple("ROUTE", sidLines[1])
+                    val outbounds = getAllTextAfterHeaderMultiple("OUTBOUND", sidLines[1])
+
                     routeLines.size shouldBeLessThanOrEqual 1
                     var routeLine: List<String> = emptyList()
                     if (routeLines.size == 1) {
                         routeLine = routeLines[0].split(" ")
-                        testParseLegs(routeLine, allWpts, Route.Leg.NORMAL, WARNING_SHOULD_BE_EMPTY)
+                        val route = testParseLegs(routeLine, allWpts, Route.Leg.NORMAL, WARNING_SHOULD_BE_EMPTY)
+                        if (outbounds.isEmpty()) testWaypointLegInPolygon(getLastWaypointLeg(route), wptPos, primarySector, false)
                     }
 
-                    val outbounds = getAllTextAfterHeaderMultiple("OUTBOUND", sidLines[1])
                     for (outbound in outbounds) {
                         val outboundLine = outbound.split(" ")
-                        testParseLegs(outboundLine, allWpts, Route.Leg.NORMAL, WARNING_SHOULD_BE_EMPTY)
-                        testWaypointLegStartEnd(outboundLine, false)
+                        val outboundRoute = testParseLegs(outboundLine, allWpts, Route.Leg.NORMAL, WARNING_SHOULD_BE_EMPTY)
+                        withClue(outbound) {
+                            testWaypointLegStartEnd(outboundLine, false)
+                            testWaypointLegInPolygon(getLastWaypointLeg(outboundRoute), wptPos, primarySector, false)
+                        }
                     }
                     if (outbounds.isEmpty()) testWaypointLegStartEnd(routeLine, false)
 
                     val allowedConfigs = getAllTextAfterHeader("ALLOWED_CONFIGS", sidLines[1])
                     val configArray = allowedConfigs.split(" ")
                     configArray.size shouldBeGreaterThan 0
-                    withData(configArray) {configId ->
+                    withData(configArray) { configId ->
                         val id = configId.toByte()
                         val depRwys = allConfigDepRwys[id].shouldNotBeNull()
                         (sidRwys intersect depRwys).size shouldBeGreaterThan 0
@@ -718,12 +745,14 @@ object DataFileTest: FunSpec() {
      * @param data the string text to parse
      * @param allRwys all runways in this airport mapped to their elevation
      * @param allWpts all waypoints in this game world
+     * @param wptPos all waypoint IDs mapped to their respective positions
      * @param allConfigArrRwys a HashMap mapping the runway config ID to their respective arrival runways
+     * @param primarySector the primary sector of the map
      * @return a HashSet of all runway names for this airport
      */
     private suspend fun ContainerScope.testStar(data: String, allRwys: HashMap<String, Short>,
-                                                allWpts: HashMap<String, Short>,
-                                                allConfigArrRwys: HashMap<Byte, HashSet<String>>) {
+                                                allWpts: HashMap<String, Short>, wptPos: HashMap<Short, Position>,
+                                                allConfigArrRwys: HashMap<Byte, HashSet<String>>, primarySector: Polygon) {
         withData(arrayListOf("STARs")) {
             getBlocksBetweenTags("STAR", data).forEach {
                 val starLines = it.toLines(2)
@@ -742,7 +771,8 @@ object DataFileTest: FunSpec() {
                     val routeLines = getAllTextAfterHeaderMultiple("ROUTE", starLines[1])
                     routeLines.size shouldBe 1
                     val routeLine = routeLines[0].split(" ")
-                    testParseLegs(routeLine, allWpts, Route.Leg.NORMAL, WARNING_SHOULD_BE_EMPTY)
+                    val route = testParseLegs(routeLine, allWpts, Route.Leg.NORMAL, WARNING_SHOULD_BE_EMPTY)
+                    testWaypointLegInPolygon(getLastWaypointLeg(route), wptPos, primarySector, true)
                     if (inbounds.isEmpty()) testWaypointLegStartEnd(routeLine, true)
 
                     val starRwys = ArrayList<String>()
@@ -795,11 +825,14 @@ object DataFileTest: FunSpec() {
      * @param data the string text to parse
      * @param allRwys all runways in this airport mapped to their elevation
      * @param allWpts all waypoints in this game world
+     * @param wptPos all waypoint IDs mapped to their respective positions
      * @param allConfigArrRwys a HashMap mapping the runway config ID to their respective arrival runways
+     * @param primarySector the primary sector of the map
      * @return a HashSet of all approach names for this airport
      */
     private suspend fun ContainerScope.testApp(data: String, allRwys: HashMap<String, Short>,
-                                               allWpts: HashMap<String, Short>, allConfigArrRwys: HashMap<Byte, HashSet<String>>): HashSet<String> {
+                                               allWpts: HashMap<String, Short>, wptPos: HashMap<Short, Position>,
+                                               allConfigArrRwys: HashMap<Byte, HashSet<String>>, primarySector: Polygon): HashSet<String> {
         val appNames = HashSet<String>()
         withData(arrayListOf("Approaches")) {
             getBlocksBetweenTags("APCH", data).forEach {
@@ -881,7 +914,8 @@ object DataFileTest: FunSpec() {
                             inboundLine[2] shouldBe inboundLine[0]
                         }
                         else vectorTransPresent = true
-                        testParseLegs(inboundLine.subList(1, inboundLine.size), allWpts, Route.Leg.NORMAL, WARNING_SHOULD_BE_EMPTY)
+                        val transitionRoute = testParseLegs(inboundLine.subList(1, inboundLine.size), allWpts, Route.Leg.NORMAL, WARNING_SHOULD_BE_EMPTY)
+                        if (transitionRoute.size > 0) testWaypointLegInPolygon(transitionRoute[0], wptPos, primarySector, true)
                     }
                     vectorTransPresent.shouldBeTrue()
 
@@ -889,7 +923,8 @@ object DataFileTest: FunSpec() {
                     routeLines.size shouldBeLessThanOrEqual 1
                     if (routeLines.size == 1) {
                         val routeLine = routeLines[0].split(" ")
-                        testParseLegs(routeLine, allWpts, Route.Leg.NORMAL, WARNING_SHOULD_BE_EMPTY)
+                        val route = testParseLegs(routeLine, allWpts, Route.Leg.NORMAL, WARNING_SHOULD_BE_EMPTY)
+                        testWaypointLegInPolygon(route[0], wptPos, primarySector, true)
                     }
 
                     val missedLines = getAllTextAfterHeaderMultiple("MISSED", apchLines[1])

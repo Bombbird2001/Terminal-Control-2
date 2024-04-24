@@ -180,6 +180,15 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRendererBoundingBox,
         // Debug: Render all trajectory prediction points
         // renderAllTrajectoryPoints(shapeRenderer)
 
+        // Debug: Render all STARs
+        // renderAllStars(shapeRenderer)
+
+        // Debug: Render all SIDs
+        // renderAllSids(shapeRenderer)
+
+        // Debug: Render all approaches
+        // renderAllApproaches(shapeRenderer)
+
         // Render circles
         val circles = circleFamilyEntities.getEntities()
         for (i in 0 until circles.size()) {

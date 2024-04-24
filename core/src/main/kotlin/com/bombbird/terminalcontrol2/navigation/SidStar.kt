@@ -28,7 +28,7 @@ abstract class SidStar(val name: String,
     val routeLegs = Route()
     val routeZones = GdxArray<RouteZone>()
     val rwyLegs = GdxArrayMap<String, Route>(6)
-    protected val inOutboundLegs = GdxArray<Route>(10)
+    val inOutboundLegs = GdxArray<Route>(10)
     val rwyConfigsAllowed = GdxSet<Byte>()
 
     /** Adds the supplied array of legs into [inOutboundLegs] */

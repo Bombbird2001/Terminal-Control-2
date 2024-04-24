@@ -363,6 +363,18 @@ fun getFafAltitude(route: Route): Int? {
 }
 
 /**
+ * Gets the last waypoint leg in [route]
+ *
+ * @return the last waypoint leg in the route, or null if no waypoint legs are found
+ */
+fun getLastWaypointLeg(route: Route): WaypointLeg? {
+    for (i in route.size - 1 downTo 0) {
+        (route[i] as? WaypointLeg)?.let { return it }
+    }
+    return null
+}
+
+/**
  * Checks whether this route contains only waypoint legs (i.e. no discontinuity, vector or hold legs) until the start
  * of missed approach procedure
  * @param startLeg the leg to start checking from, or null to start checking from the first leg of the route

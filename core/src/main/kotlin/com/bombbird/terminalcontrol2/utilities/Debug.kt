@@ -9,16 +9,22 @@ import com.badlogic.gdx.scenes.scene2d.ui.Label
 import com.badlogic.gdx.utils.Queue
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.*
+import com.bombbird.terminalcontrol2.navigation.Route
+import com.bombbird.terminalcontrol2.navigation.calculateRouteSegments
 import com.bombbird.terminalcontrol2.systems.TrafficSystemInterval
 import com.bombbird.terminalcontrol2.systems.TrajectorySystemInterval
 import com.esotericsoftware.minlog.Log
 import ktx.ashley.*
+import ktx.collections.GdxArray
 import ktx.collections.toGdxArray
+import ktx.math.plus
+import ktx.math.times
 import ktx.scene2d.Scene2DSkin
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
 import kotlin.math.roundToInt
+import kotlin.math.sqrt
 
 val alreadyPrintedErrors = HashSet<String>()
 
@@ -234,6 +240,174 @@ fun renderAllTrajectoryPoints(shapeRenderer: ShapeRenderer) {
             }
         }
     }
+}
+
+private val starSegments: GdxArray<GdxArray<Route.LegSegment>> = GdxArray()
+/**
+ * Renders all STAR route legs
+ * @param shapeRenderer the [ShapeRenderer] to use to render the legs
+ */
+fun renderAllStars(shapeRenderer: ShapeRenderer) {
+    if (!starSegments.isEmpty) {
+        for (i in 0 until starSegments.size) {
+            val segments = starSegments[i]
+            renderRouteSegments(shapeRenderer, segments, Color.MAGENTA)
+        }
+        return
+    }
+    GAME.gameServer?.airports?.values()?.toArray()?.forEach { airport ->
+        val stars = airport.entity[STARChildren.mapper]?.starMap ?: return@forEach
+        for (i in 0 until stars.size) {
+            val star = stars.getValueAt(i)
+            for (j in 0 until star.inOutboundLegs.size) {
+                val newRoute = Route().apply {
+                    setToRouteCopy(star.inOutboundLegs[j])
+                    if (star.routeLegs.size > 0) add(star.routeLegs[0].copyLeg())
+                }
+                val segmentArray = GdxArray<Route.LegSegment>()
+                calculateRouteSegments(newRoute, segmentArray, null)
+                starSegments.add(segmentArray)
+            }
+            val routeSegment = GdxArray<Route.LegSegment>()
+            calculateRouteSegments(star.routeLegs, routeSegment, null)
+            starSegments.add(routeSegment)
+        }
+    }
+}
+
+private val sidSegments: GdxArray<GdxArray<Route.LegSegment>> = GdxArray()
+/**
+ * Renders all SID route legs
+ * @param shapeRenderer the [ShapeRenderer] to use to render the legs
+ */
+fun renderAllSids(shapeRenderer: ShapeRenderer) {
+    if (!sidSegments.isEmpty) {
+        for (i in 0 until sidSegments.size) {
+            val segments = sidSegments[i]
+            renderRouteSegments(shapeRenderer, segments, Color.CORAL)
+        }
+        return
+    }
+    GAME.gameServer?.airports?.values()?.toArray()?.forEach { airport ->
+        val sids = airport.entity[SIDChildren.mapper]?.sidMap ?: return@forEach
+        for (i in 0 until sids.size) {
+            val sid = sids.getValueAt(i)
+            for (j in 0 until sid.inOutboundLegs.size) {
+                val newRoute = Route().apply {
+                    if (sid.routeLegs.size > 0) add(sid.routeLegs[sid.routeLegs.size - 1].copyLeg())
+                    extendRouteCopy(sid.inOutboundLegs[j])
+                }
+                val segmentArray = GdxArray<Route.LegSegment>()
+                calculateRouteSegments(newRoute, segmentArray, null)
+                sidSegments.add(segmentArray)
+            }
+            val routeSegment = GdxArray<Route.LegSegment>()
+            calculateRouteSegments(sid.routeLegs, routeSegment, null)
+            sidSegments.add(routeSegment)
+            for (k in 0 until sid.rwyLegs.size) {
+                val rwyLegs = sid.rwyLegs.getValueAt(k)
+                val rwyRoute = Route().apply {
+                    setToRouteCopy(rwyLegs)
+                    if (sid.routeLegs.size > 0) add(sid.routeLegs[0].copyLeg())
+                }
+                val rwySegmentArray = GdxArray<Route.LegSegment>()
+                calculateRouteSegments(rwyRoute, rwySegmentArray, null)
+                sidSegments.add(rwySegmentArray)
+            }
+        }
+    }
+}
+
+private val appSegments: GdxArray<GdxArray<Route.LegSegment>> = GdxArray()
+/**
+ * Renders all approach route legs
+ * @param shapeRenderer the [ShapeRenderer] to use to render the legs
+ */
+fun renderAllApproaches(shapeRenderer: ShapeRenderer) {
+    if (!appSegments.isEmpty) {
+        for (i in 0 until appSegments.size) {
+            val segments = appSegments[i]
+            renderRouteSegments(shapeRenderer, segments, Color.GREEN)
+        }
+        return
+    }
+    GAME.gameServer?.airports?.values()?.toArray()?.forEach { airport ->
+        val approaches = airport.entity[ApproachChildren.mapper]?.approachMap ?: return@forEach
+        for (i in 0 until approaches.size) {
+            val approach = approaches.getValueAt(i)
+            for (j in 0 until approach.transitions.size) {
+                val newRoute = Route().apply {
+                    setToRouteCopy(approach.transitions.getValueAt(j))
+                    if (approach.routeLegs.size > 0) add(approach.routeLegs[0].copyLeg())
+                }
+                val segmentArray = GdxArray<Route.LegSegment>()
+                calculateRouteSegments(newRoute, segmentArray, null)
+                appSegments.add(segmentArray)
+            }
+            val routeSegment = GdxArray<Route.LegSegment>()
+            calculateRouteSegments(approach.routeLegs, routeSegment, null)
+            appSegments.add(routeSegment)
+        }
+    }
+}
+
+/**
+ * Renders the input route segment for the user to see, color depending on whether the segment being rendered has
+ * changed
+ * @param shapeRenderer the [ShapeRenderer] to use to render the route
+ * @param segments the route segments to render
+ */
+private fun renderRouteSegments(shapeRenderer: ShapeRenderer, segments: GdxArray<Route.LegSegment>, color: Color) {
+    for (i in 0 until segments.size) { segments[i]?.also { seg ->
+        shapeRenderer.color = color
+        val leg1 = seg.leg1
+        val leg2 = seg.leg2
+        // Do not render any segments containing a missed approach leg
+        if ((leg1?.phase == Route.Leg.MISSED_APP || leg2?.phase == Route.Leg.MISSED_APP)) return
+        when {
+            (leg1 is Route.WaypointLeg && leg2 is Route.WaypointLeg) -> {
+                // Waypoint to waypoint segment
+                val pos1 = CLIENT_SCREEN?.waypoints?.get(leg1.wptId)?.entity?.getOrLogMissing(Position.mapper) ?: return@also
+                val pos2 = CLIENT_SCREEN?.waypoints?.get(leg2.wptId)?.entity?.getOrLogMissing(Position.mapper) ?: return@also
+                shapeRenderer.line(pos1.x, pos1.y, pos2.x, pos2.y)
+            }
+            (leg1 == null && leg2 is Route.HoldLeg) -> {
+                // Hold segment
+                val wptPos = if (leg2.wptId.toInt() == -1) Position()
+                else CLIENT_SCREEN?.waypoints?.get(leg2.wptId)?.entity?.getOrLogMissing(Position.mapper) ?: return@also
+                val wptVec = Vector2(wptPos.x, wptPos.y)
+                // Render a default 230 knot IAS @ 10000ft, 3 deg/s turn
+                val tasPxps = ktToPxps(266)
+                val turnRadPx = (tasPxps / Math.toRadians(3.0)).toFloat()
+                val legDistPx = nmToPx(leg2.legDist.toFloat())
+                val inboundLegDistPxps = sqrt(legDistPx * legDistPx - turnRadPx * turnRadPx)
+                val oppInboundLegVec = Vector2(Vector2.Y).rotateDeg(180f - (leg2.inboundHdg - MAG_HDG_DEV))
+                    .scl(if (inboundLegDistPxps.isNaN()) 0f else inboundLegDistPxps)
+                val halfAbeamVec = Vector2(oppInboundLegVec).rotate90(leg2.turnDir.toInt()).scl(turnRadPx / inboundLegDistPxps)
+                shapeRenderer.line(wptVec, wptVec + oppInboundLegVec)
+                shapeRenderer.line(wptVec + halfAbeamVec * 2, wptVec + halfAbeamVec * 2 + oppInboundLegVec)
+
+                // Draw the top arc
+                val topArcCentreVec = wptVec + halfAbeamVec
+                val arcRotateVec = halfAbeamVec * leg2.turnDir.toInt() // This vector will always be facing right
+                var pVec = topArcCentreVec + arcRotateVec
+                for (j in 0 until 10) {
+                    val nextVec = topArcCentreVec + arcRotateVec.rotateDeg(18f)
+                    shapeRenderer.line(pVec, nextVec)
+                    pVec = nextVec
+                }
+
+                // Draw the bottom arc
+                val bottomArcCentreVec = wptVec + oppInboundLegVec + halfAbeamVec
+                pVec = bottomArcCentreVec + arcRotateVec
+                for (j in 0 until 10) {
+                    val nextVec = bottomArcCentreVec + arcRotateVec.rotateDeg(18f)
+                    shapeRenderer.line(pVec, nextVec)
+                    pVec = nextVec
+                }
+            }
+        }
+    }}
 }
 
 /**
