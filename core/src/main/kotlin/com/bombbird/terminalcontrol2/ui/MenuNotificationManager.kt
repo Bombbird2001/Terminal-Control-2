@@ -20,14 +20,15 @@ class MenuNotificationManager(private val stage: Stage) {
                     " issues. Please report them by emailing bombbirddev@gmail.com, or by clicking the \"Report Bug\"" +
                     " button in the Pause screen or info menu. Please include as much information as possible," +
                     " including the build version (in info menu), expected behaviour and steps to reproduce the bug." +
-                    " Screenshots and video recordings are very helpful too.\n\nCurrently, there are 6 default airports" +
+                    " Screenshots and video recordings are very helpful too.\n\nCurrently, there are 9 default airports" +
                     " for testing, and more will be added as testing goes on. We hope you will enjoy the new" +
                     " multiplayer functionality, have fun!", 800, 1800)
         )
         add(
-            MenuNotification("tcmd-added", "New airport available!", "TCMD has been added to the" +
-                    " game. Some bugs have also been fixed. As usual, please report bugs encountered by clicking" +
-                    " the \"Report Bug\" button in the Pause screen in-game, or from the info menu. Have fun!", 600, 1400)
+            MenuNotification("tcsf-added", "New airport available!", "TCSF has been added to the" +
+                    " game. A few bugs have also been fixed. As always, please report bugs encountered by clicking" +
+                    " the \"Report Bug\" button in the Pause screen in-game, or from the info menu. Enjoy the new" +
+                    " challenging map!", 600, 1400)
         )
     }
 
