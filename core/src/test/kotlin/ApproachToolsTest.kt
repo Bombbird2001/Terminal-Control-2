@@ -39,21 +39,21 @@ object ApproachToolsTest: FunSpec() {
                 "TESTAPP1", 0, 0, 10f, 10f, 200, 500,
                 false, UsabilityFilter.DAY_AND_NIGHT
             ).apply {
-                addLocalizer(180, 25)
+                addLocalizer(180f, 25)
                 addGlideslope(3f, -1.9f, 4000)
             }
             locGsApp2 = Approach(
                 "TESTAPP2", 0, 0, 10f, 10f, 200, 500,
                 false, UsabilityFilter.DAY_AND_NIGHT
             ).apply {
-                addLocalizer(270, 25)
+                addLocalizer(270f, 25)
                 addGlideslope(4.5f, -1.2f, 6000)
             }
             locStepApp = Approach(
                 "TESTAPP3", 0, 0, 10f, 10f, 200, 500,
                 false, UsabilityFilter.DAY_AND_NIGHT
             ).apply {
-                addLocalizer(270, 25)
+                addLocalizer(270f, 25)
                 addStepDown(arrayOf(StepDown.Step(3f, 900), StepDown.Step(5f, 1500), StepDown.Step(10f, 3000)))
                 addLineUpDist(0.4f)
             }

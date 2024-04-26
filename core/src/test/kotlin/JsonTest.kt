@@ -94,7 +94,7 @@ object JsonTest: FunSpec() {
             }
 
             app1 = Approach("ILS05L", 0, 0, 9f, 11f, 220, 800, false, UsabilityFilter.DAY_AND_NIGHT).apply {
-                addLocalizer(45, 20)
+                addLocalizer(45f, 20)
                 addGlideslope(3f, -2f, 4000)
                 routeLegs.setToRoute(Route().apply {
                     add(Route.WaypointLeg(3, null, 2000, 230, legActive = true, altRestrActive = true, spdRestrActive = true, phase = Route.Leg.APP))
@@ -114,7 +114,7 @@ object JsonTest: FunSpec() {
                 transitionRouteZones["TESTT"] = getZonesForArrivalRoute(transitions["TESTT"])
             }.shouldNotBeNull()
             app2 = Approach("LDA05R", 0, 1, 7f, 11f, 625, 2700, false, UsabilityFilter.DAY_AND_NIGHT).apply {
-                addLocalizer(30, 20)
+                addLocalizer(30f, 20)
                 addStepDown(arrayOf(StepDown.Step(4f, 1200), StepDown.Step(8f, 2000), StepDown.Step(15f, 4000)))
                 addLineUpDist(1f)
                 routeLegs.setToRoute(Route().apply {
@@ -130,7 +130,7 @@ object JsonTest: FunSpec() {
                 missedRouteZones.addAll(getZonesForDepartureRoute(missedLegs))
             }.shouldNotBeNull()
             app3 = Approach("CIRCLE05L", 0, 0, -1f, 1f, 1220, 4000, false, UsabilityFilter.DAY_AND_NIGHT).apply {
-                addLocalizer(225, 20)
+                addLocalizer(225f, 20)
                 addGlideslope(3f, -2f, 4000)
                 addCircling(1000, 1400, CommandTarget.TURN_RIGHT)
             }.shouldNotBeNull()
