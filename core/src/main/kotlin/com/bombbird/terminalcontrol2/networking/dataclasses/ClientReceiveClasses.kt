@@ -326,9 +326,10 @@ data class AircraftSectorUpdateData(private val callsign: String = "", private v
                 updateDatatagText(it, getNewDatatagLabelText(aircraft.entity, it.minimised))
                 CLIENT_SCREEN?.sendAircraftDatatagPositionUpdateIfControlled(aircraft.entity, it.xOffset, it.yOffset, it.minimised, it.shouldFlashOrange)
             }
-            if (newSector != rs.playerSector && controllable.controllerUUID.toString() == myUuid.toString() && newUUID != myUuid.toString()) {
+            if (newSector != rs.playerSector && controllable.controllerUUID.toString() == myUuid.toString() && newUUID != myUuid.toString() && needsInitialContact) {
                 // Send contact other sector message only if aircraft is not in player's sector, old UUID is this
                 // player's UUID, and new UUID is not this player's UUID
+                // Will only add contact other message if needed (e.g. not during sector swap)
                 rs.uiPane.commsPane.contactOther(aircraft.entity, newSector)
             }
             if (newSector == rs.playerSector && controllable.controllerUUID.toString() != newUUID && newUUID == myUuid.toString()) {
