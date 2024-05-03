@@ -319,16 +319,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
             else remove<VisualCaptured>()
             if (data.contactToCentre) this += ContactToCentre()
             else remove<ContactToCentre>()
-            if (data.recentGoAroundReason != null) {
-                if (!has(RecentGoAround.mapper)) {
-                    this += RecentGoAround(reason = data.recentGoAroundReason)
-                    val sectorId = get(Controllable.mapper)?.sectorId
-                    if (sectorId != null && sectorId == GAME.gameClientScreen?.playerSector) {
-                        // Missed approach message if the aircraft is in the player's sector
-                        GAME.gameClientScreen?.uiPane?.commsPane?.missedApproach(this)
-                    }
-                }
-            }
+            if (data.recentGoAroundReason != null) this += RecentGoAround(reason = data.recentGoAroundReason)
             else remove<RecentGoAround>()
         }
     }

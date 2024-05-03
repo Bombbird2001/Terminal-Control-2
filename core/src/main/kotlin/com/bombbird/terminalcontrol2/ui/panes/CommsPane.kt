@@ -170,33 +170,45 @@ class CommsPane {
         sentence.addTokens(LiteralToken(yourCallsign), LiteralToken(randomGreeting)).addComma()
             .addTokens(CallsignToken(acInfo.icaoCallsign, aircraftWake, isEmergency)).addComma().addTokens(*altitudeAction)
 
-        // Get current SID/STAR name
-        val depArrToken = LiteralToken(if (flightType.type == FlightType.DEPARTURE) "departure" else "arrival")
-        val sidStarName = clearanceState.routePrimaryName
-        val sidStarObj = CLIENT_SCREEN?.airports?.get(arrivalAirport?.arptId)?.entity?.get(STARChildren.mapper)?.starMap?.get(sidStarName) ?:
-        CLIENT_SCREEN?.airports?.get(departureAirport?.arptId)?.entity?.get(SIDChildren.mapper)?.sidMap?.get(sidStarName)
-        val sidStarToken = if (sidStarObj == null) LiteralToken("") else PronounceableToken(sidStarName, sidStarObj)
-        if (clearedHdg == null) when (MathUtils.random(3)) {
-            0 -> sentence.addTokens(LiteralToken("on the"), sidStarToken, depArrToken)
-            1 -> sentence.addComma().addToken(sidStarToken)
-            2 -> sentence.addComma().addTokens(sidStarToken, depArrToken)
+        // Try to get cleared approach if there is one
+        val appName = clearanceState.clearedApp
+        val appObj = CLIENT_SCREEN?.airports?.get(arrivalAirport?.arptId)?.entity?.get(ApproachChildren.mapper)?.approachMap?.get(appName)
+        if (appName != null && appObj != null) {
+            if (MathUtils.randomBoolean(0.75f)) {
+                val appToken = PronounceableToken(appName, appObj)
+                sentence.addComma().addToken(appToken)
+            }
+        } else {
+            // Only say the SID/STAR and ATIS if there is no approach clearance
+
+            // Get current SID/STAR name
+            val depArrToken = LiteralToken(if (flightType.type == FlightType.DEPARTURE) "departure" else "arrival")
+            val sidStarName = clearanceState.routePrimaryName
+            val sidStarObj = CLIENT_SCREEN?.airports?.get(arrivalAirport?.arptId)?.entity?.get(STARChildren.mapper)?.starMap?.get(sidStarName) ?:
+            CLIENT_SCREEN?.airports?.get(departureAirport?.arptId)?.entity?.get(SIDChildren.mapper)?.sidMap?.get(sidStarName)
+            val sidStarToken = if (sidStarObj == null) LiteralToken("") else PronounceableToken(sidStarName, sidStarObj)
+            if (clearedHdg == null) when (MathUtils.random(3)) {
+                0 -> sentence.addTokens(LiteralToken("on the"), sidStarToken, depArrToken)
+                1 -> sentence.addComma().addToken(sidStarToken)
+                2 -> sentence.addComma().addTokens(sidStarToken, depArrToken)
+            }
+
+            // Get current airport ATIS letter
+            val informationToken = LiteralToken("information")
+            val weHaveToken = LiteralToken("we have")
+            val atisLetter = CLIENT_SCREEN?.airports?.get(arrivalAirport?.arptId)?.entity?.get(MetarInfo.mapper)?.letterCode
+            if (atisLetter != null && MathUtils.randomBoolean(0.7f)) {
+                val atisToken = AtisToken(atisLetter)
+                when (MathUtils.random(3)) {
+                    0 -> sentence.addComma().addTokens(informationToken, atisToken)
+                    1 -> sentence.addComma().addTokens(weHaveToken, atisToken)
+                    2 -> sentence.addComma().addTokens(weHaveToken, informationToken, atisToken)
+                    else -> sentence.addTokens(LiteralToken("with"), atisToken)
+                }
+            }
         }
 
         sentence.addTokens(*inboundTokens)
-
-        // Get current airport ATIS letter
-        val informationToken = LiteralToken("information")
-        val weHaveToken = LiteralToken("we have")
-        val atisLetter = CLIENT_SCREEN?.airports?.get(arrivalAirport?.arptId)?.entity?.get(MetarInfo.mapper)?.letterCode
-        if (atisLetter != null && MathUtils.randomBoolean(0.7f)) {
-            val atisToken = AtisToken(atisLetter)
-            when (MathUtils.random(3)) {
-                0 -> sentence.addComma().addTokens(informationToken, atisToken)
-                1 -> sentence.addComma().addTokens(weHaveToken, atisToken)
-                2 -> sentence.addComma().addTokens(weHaveToken, informationToken, atisToken)
-                else -> sentence.addTokens(LiteralToken("with"), atisToken)
-            }
-        }
 
         addMessage(sentence.toTextSentence(), if (isEmergency) WARNING else getMessageTypeForAircraftType(flightType.type))
         saySentenceInTTS(aircraft, sentence)
@@ -267,12 +279,11 @@ class CommsPane {
      * Adds a message for contact after a missed approach by an aircraft - used if aircraft goes around while still in
      * contact with the player
      * @param aircraft the aircraft entity contacting the player
+     * @param reason the reason for the missed approach
      */
-    fun missedApproach(aircraft: Entity) {
+    fun missedApproach(aircraft: Entity, reason: Byte) {
         val acInfo = aircraft[AircraftInfo.mapper] ?: return
-        val clearanceState = aircraft[ClearanceAct.mapper]?.actingClearance?.clearanceState ?: return
-        val alt = aircraft[Altitude.mapper] ?: return
-        val goAroundReasonStr = getGoAroundReason(aircraft[RecentGoAround.mapper]?.reason)
+        val goAroundReasonStr = getGoAroundReason(reason)
 
         // Check emergency
         val isEmergency = aircraft[EmergencyPending.mapper]?.active == true
@@ -280,15 +291,8 @@ class CommsPane {
         // Get the wake category of the aircraft
         val aircraftWake = getWakePhraseology(acInfo.aircraftPerf.wakeCategory)
 
-        // Get the current altitude, cleared altitude and the respective actions
-        val altitudeAction = getAltitudePhraseology(alt.altitudeFt, clearanceState.clearedAlt)
-
-        // If aircraft is vectored, say heading, else say missed approach procedure
-        val lateralClearance = clearanceState.vectorHdg?.let { hdg -> arrayOf(LiteralToken("heading"), HeadingToken(hdg)) } ?: arrayOf()
-
         val sentence = TokenSentence().addTokens(CallsignToken(acInfo.icaoCallsign, aircraftWake, isEmergency))
-            .addComma().addToken(LiteralToken("missed approach$goAroundReasonStr")).addComma().addTokens(*altitudeAction)
-            .addComma().addTokens(*lateralClearance)
+            .addComma().addToken(LiteralToken("missed approach$goAroundReasonStr"))
 
         addMessage(sentence.toTextSentence(), ARRIVAL)
         saySentenceInTTS(aircraft, sentence)
@@ -342,7 +346,7 @@ class CommsPane {
                     if (it.sectors.isEmpty) {
                         Timer.schedule(object: Task() {
                             override fun run() {
-                                goAround(aircraft)
+                                contactOther(aircraft, newSectorId)
                             }
                         }, 0.5f)
                         return

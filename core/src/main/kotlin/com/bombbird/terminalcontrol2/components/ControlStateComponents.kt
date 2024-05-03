@@ -281,6 +281,18 @@ data class RecentGoAround(var timeLeft: Float = 80f, var reason: Byte? = null): 
     }
 }
 
+/** Component for tagging aircraft that needs to inform a player of a go around */
+@JsonClass(generateAdapter = true)
+class NeedsToInformOfGoAround: Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.NEEDS_TO_INFORM_OF_GO_AROUND
+
+    companion object {
+        val mapper = object: Mapper<NeedsToInformOfGoAround>() {}.mapper
+
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
+    }
+}
+
 /**
  * Component for tagging aircraft that are on the go-around portion of their route
  *

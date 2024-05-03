@@ -123,11 +123,11 @@ object CommsToolTest: FunSpec() {
         }
 
         test("Split character to NATO phonetic") {
-            splitCharacterToNatoPhonetic("Shiba") shouldBe "Sierra Hotel India Bravo Alpha"
-            splitCharacterToNatoPhonetic("FLE119") shouldBe "Foxtrot Lima Echo One One Niner"
-            splitCharacterToNatoPhonetic("A1") shouldBe "Alpha One"
-            splitCharacterToNatoPhonetic("R7") shouldBe "Romeo Seven"
-            splitCharacterToNatoPhonetic("E3") shouldBe "Echo Tree"
+            splitCharactersToNatoPhonetic("Shiba") shouldBe "Sierra Hotel India Bravo Alpha"
+            splitCharactersToNatoPhonetic("FLE119") shouldBe "Foxtrot Lima Echo One One Niner"
+            splitCharactersToNatoPhonetic("A1") shouldBe "Alpha One"
+            splitCharactersToNatoPhonetic("R7") shouldBe "Romeo Seven"
+            splitCharactersToNatoPhonetic("E3") shouldBe "Echo Tree"
         }
 
         test("Replace digits only to NATO phonetic") {

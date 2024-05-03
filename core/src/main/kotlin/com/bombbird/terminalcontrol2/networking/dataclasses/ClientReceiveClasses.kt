@@ -311,6 +311,7 @@ class InitialDataSendComplete: ClientReceive, NeedsEncryption {
 /** Class representing data sent during aircraft sector update */
 data class AircraftSectorUpdateData(private val callsign: String = "", private val newSector: Byte = 0,
                                     private val newUUID: String? = null, private val needsInitialContact: Boolean = false,
+                                    private val sayMissedApproach: Boolean = false,
                                     private val tagFlashing: Boolean = false, private val tagMinimised: Boolean = false):
     ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
@@ -334,7 +335,7 @@ data class AircraftSectorUpdateData(private val callsign: String = "", private v
                 // Send message only if aircraft is in player's sector, old UUID is not the player's UUID and the new UUID is the player's UUID
                 // Will only perform contact if needed
                 if (needsInitialContact) rs.uiPane.commsPane.also { commsPane ->
-                    if (aircraft.entity.has(RecentGoAround.mapper)) commsPane.goAround(aircraft.entity)
+                    if (sayMissedApproach) commsPane.goAround(aircraft.entity)
                     else commsPane.initialContact(aircraft.entity)
                 }
                 if (needsInitialContact || tagFlashing) {
@@ -618,6 +619,21 @@ data class RunwayClosedState(val airportId: Byte = 0, val runwayId: Byte = 0, va
                 rs.uiPane.commsPane.addMessage("Runways ${entity[RunwayInfo.mapper]?.rwyName}, " +
                         "${oppRwy[RunwayInfo.mapper]?.rwyName} at ${airport[AirportInfo.mapper]?.icaoCode} have reopened",
                     CommsPane.OTHERS)
+            }
+        }
+    }
+}
+
+/**
+ * Class representing data sent from server to client to notify a player (who is in control of the aircraft) that the
+ * aircraft has performed a go around or missed approach
+ */
+data class MissedApproachMessage(val callsign: String = "", val reason: Byte = -1): ClientReceive, NeedsEncryption {
+    override fun handleClientReceive(rs: RadarScreen) {
+        rs.aircraft[callsign]?.let { aircraft ->
+            if (aircraft.entity[Controllable.mapper]?.sectorId != rs.playerSector) return
+            rs.uiPane.commsPane.also { commsPane ->
+                commsPane.missedApproach(aircraft.entity, reason)
             }
         }
     }

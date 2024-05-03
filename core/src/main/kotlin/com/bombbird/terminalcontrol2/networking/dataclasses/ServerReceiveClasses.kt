@@ -8,6 +8,7 @@ import com.bombbird.terminalcontrol2.networking.GameServer
 import com.bombbird.terminalcontrol2.networking.encryption.NeedsEncryption
 import com.bombbird.terminalcontrol2.utilities.getSectorForExtrapolatedPosition
 import ktx.ashley.get
+import ktx.ashley.has
 import ktx.ashley.hasNot
 import ktx.ashley.plusAssign
 
@@ -54,7 +55,7 @@ data class HandoverRequest(private val callsign: String = "", private val newSec
         // Request validated - update controllable ID and send update to clients
         controllable.sectorId = newSector
         val uuid = gs.sectorUUIDMap[newSector]?.toString()
-        gs.sendAircraftSectorUpdateTCPToAll(callsign, newSector, uuid, true)
+        gs.sendAircraftSectorUpdateTCPToAll(callsign, newSector, uuid, true, aircraft.has(NeedsToInformOfGoAround.mapper))
     }
 }
 

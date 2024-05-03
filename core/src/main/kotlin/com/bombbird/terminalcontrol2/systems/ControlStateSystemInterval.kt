@@ -141,8 +141,9 @@ class ControlStateSystemInterval: IntervalSystem(1f) {
                     controllable.sectorId = getSectorForExtrapolatedPosition(pos.x, pos.y, track.trackVectorPxps, TRACK_EXTRAPOLATE_TIME_S, true) ?: return@apply
                     get(AircraftInfo.mapper)?.icaoCallsign?.let { callsign -> GAME.gameServer?.also { server ->
                         server.sendAircraftSectorUpdateTCPToAll(callsign, controllable.sectorId,
-                            GAME.gameServer?.sectorUUIDMap?.get(controllable.sectorId)?.toString(), true)
+                            server.sectorUUIDMap.get(controllable.sectorId)?.toString(), true, has(NeedsToInformOfGoAround.mapper))
                     }}
+                    remove<NeedsToInformOfGoAround>()
                     remove<ContactFromTower>()
                 }
             }
@@ -158,7 +159,8 @@ class ControlStateSystemInterval: IntervalSystem(1f) {
                 if (alt.altitudeFt < contact.altitudeFt) {
                     controllable.sectorId = SectorInfo.TOWER
                     get(AircraftInfo.mapper)?.icaoCallsign?.let { callsign -> GAME.gameServer?.also { server ->
-                        server.sendAircraftSectorUpdateTCPToAll(callsign, controllable.sectorId, null, false)
+                        server.sendAircraftSectorUpdateTCPToAll(callsign, controllable.sectorId, null,
+                             needsContact = false, needsSayMissedApproach = false)
                     }}
                     remove<ContactToTower>()
                 }
@@ -178,7 +180,8 @@ class ControlStateSystemInterval: IntervalSystem(1f) {
                     controllable.sectorId = getSectorForExtrapolatedPosition(pos.x, pos.y, track.trackVectorPxps, TRACK_EXTRAPOLATE_TIME_S, true) ?: return@apply
                     get(AircraftInfo.mapper)?.icaoCallsign?.let { callsign -> GAME.gameServer?.also { server ->
                         server.sendAircraftSectorUpdateTCPToAll(callsign, controllable.sectorId,
-                            GAME.gameServer?.sectorUUIDMap?.get(controllable.sectorId)?.toString(), true)
+                            server.sectorUUIDMap.get(controllable.sectorId)?.toString(),
+                            needsContact = true, needsSayMissedApproach = false)
                     }}
                     remove<ContactFromCentre>()
                 }
@@ -197,7 +200,8 @@ class ControlStateSystemInterval: IntervalSystem(1f) {
                     controllable.sectorId = SectorInfo.CENTRE
                     GAME.gameServer?.also { server ->
                         get(AircraftInfo.mapper)?.icaoCallsign?.let { callsign ->
-                            server.sendAircraftSectorUpdateTCPToAll(callsign, controllable.sectorId, null, false)
+                            server.sendAircraftSectorUpdateTCPToAll(callsign, controllable.sectorId, null,
+                                 needsContact = false, needsSayMissedApproach = false)
                         }
                         server.incrementScoreBy(1, FlightType.DEPARTURE)
                         this += PendingCruiseAltitude(MathUtils.random(6f, 12f))
@@ -227,14 +231,14 @@ class ControlStateSystemInterval: IntervalSystem(1f) {
                         val extrapolatedController = GAME.gameServer?.sectorUUIDMap?.get(extrapolatedSector)
                         controllable.controllerUUID = extrapolatedController
                         get(AircraftInfo.mapper)?.icaoCallsign?.let { callsign -> GAME.gameServer?.also { server ->
-                            server.sendAircraftSectorUpdateTCPToAll(callsign, controllable.sectorId, controllable.controllerUUID?.toString(), !sectorWasSwapped)
+                            server.sendAircraftSectorUpdateTCPToAll(callsign, controllable.sectorId, controllable.controllerUUID?.toString(), !sectorWasSwapped, false)
                         }}
                     }
                 } else if (expectedSector != null && expectedController != controllable.controllerUUID) {
                     // If sector has not changed, but the controller has changed (i.e. during connections/disconnections)
                     controllable.controllerUUID = expectedController
                     get(AircraftInfo.mapper)?.icaoCallsign?.let { callsign -> GAME.gameServer?.also { server ->
-                        server.sendAircraftSectorUpdateTCPToAll(callsign, controllable.sectorId, controllable.controllerUUID?.toString(), !sectorWasSwapped)
+                        server.sendAircraftSectorUpdateTCPToAll(callsign, controllable.sectorId, controllable.controllerUUID?.toString(), !sectorWasSwapped, false)
                     }}
                 }
             }

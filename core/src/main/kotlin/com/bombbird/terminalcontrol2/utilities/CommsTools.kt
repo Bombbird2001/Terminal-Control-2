@@ -138,14 +138,14 @@ class CallsignToken(private val callsign: String, private val wakeString: String
             val flightNo = callsign.substring(3)
             val phoneticCallsign = CALLSIGN_TO_TTS[airlineCallsign]
             if (phoneticCallsign != null) {
-                return "$phoneticCallsign ${splitCharacterToNatoPhonetic(flightNo)}${if (emergency) " mayday" else ""}"
+                return "$phoneticCallsign ${splitCharactersToNatoPhonetic(flightNo)}${if (emergency) " mayday" else ""}"
             } else {
                 FileLog.info("CommsTools", "No phonetic callsign for $airlineCallsign")
             }
         }
 
         // Variation 2: Any other format - split into individual characters to convert to NATO phonetic
-        return "${splitCharacterToNatoPhonetic(callsign)} $wakeString${if (emergency) " mayday" else ""}"
+        return "${splitCharactersToNatoPhonetic(callsign)} $wakeString${if (emergency) " mayday" else ""}"
     }
 }
 
@@ -168,7 +168,7 @@ class WaypointToken(private val waypointName: String): CommsToken() {
 
     override fun toTTSString(): String {
         // Convert to individual NATO alphabets for waypoints with 3 or fewer letters
-        if (waypointName.length <= 3) return splitCharacterToNatoPhonetic(waypointName)
+        if (waypointName.length <= 3) return splitCharactersToNatoPhonetic(waypointName)
         return waypointName
     }
 }
@@ -184,7 +184,7 @@ class HeadingToken(private val heading: Short): CommsToken() {
     }
 
     override fun toTTSString(): String {
-        return splitCharacterToNatoPhonetic(toString())
+        return splitCharactersToNatoPhonetic(toString())
     }
 }
 
@@ -195,7 +195,7 @@ class FrequencyToken(private val frequency: String): CommsToken() {
     }
 
     override fun toTTSString(): String {
-        return splitCharacterToNatoPhonetic(frequency)
+        return splitCharactersToNatoPhonetic(frequency)
     }
 }
 
@@ -240,7 +240,7 @@ class NumberToken(private val number: Int): CommsToken() {
  * Splits the input [text] to follow NATO phonetic standards for both alphabets and digits
  * @param text the string to split and transform into individual NATO phonetic tokens
  */
-fun splitCharacterToNatoPhonetic(text: String): String {
+fun splitCharactersToNatoPhonetic(text: String): String {
     return text.toCharArray().joinToString(" ") { NATO_ALPHABET_PHONETIC[it.uppercaseChar()] ?: it.toString() }
 }
 

@@ -6,6 +6,7 @@ import com.bombbird.terminalcontrol2.global.GAME
 val AT_ALT_REGEX = "(-?\\d+)".toRegex() // Altitude values of at least 1 digit
 val ABOVE_ALT_REGEX = "A(-?\\d+)".toRegex() // Altitude values of at least 1 digit, with "A" as a prefix
 val BELOW_ALT_REGEX = "B(-?\\d+)".toRegex() // Altitude values of at least 1 digit, with "B" as a prefix
+val RUNWAY_REGEX = "^\\d?\\d[LCR]?$".toRegex() // Runway values of 1 or 2 digits, with optional LCR suffix
 
 /**
  * Removes additional spaces, commas, trailing and leading commas and whitespace from the input string and returns the corrected string

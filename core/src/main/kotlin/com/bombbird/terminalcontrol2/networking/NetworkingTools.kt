@@ -190,6 +190,7 @@ fun registerClassesToKryo(kryo: Kryo?) {
         register(Array<ApproachNormalOperatingZone.SerialisedApproachNOZ>::class.java)
         register(Array<Array<ApproachNormalOperatingZone.SerialisedApproachNOZ>>::class.java)
         register(Array<String>::class.java)
+        register(MissedApproachMessage::class.java)
 
     } ?: FileLog.info("NetworkingTools", "Null kryo passed, unable to register classes")
 }

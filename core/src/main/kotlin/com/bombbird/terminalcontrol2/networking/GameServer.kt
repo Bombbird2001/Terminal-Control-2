@@ -767,11 +767,14 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
      * @param newSector the new sector that the aircraft is under control of
      * @param newUUID the UUID of the new player the aircraft is under control of, or null if tower/ACC
      * @param needsContact whether the aircraft needs to be contacted by the new controller
+     * @param needsSayMissedApproach whether the aircraft needs to say that they did a missed approach
      */
-    fun sendAircraftSectorUpdateTCPToAll(callsign: String, newSector: Byte, newUUID: String?, needsContact: Boolean) {
+    fun sendAircraftSectorUpdateTCPToAll(callsign: String, newSector: Byte, newUUID: String?, needsContact: Boolean,
+                                         needsSayMissedApproach: Boolean) {
         val tagFlashing = (aircraft[callsign]?.entity?.get(InitialClientDatatagPosition.mapper)?.flashing == true) || needsContact
         val tagMinimised = aircraft[callsign]?.entity?.get(InitialClientDatatagPosition.mapper)?.minimised == true && !needsContact
-        networkServer.sendToAllTCP(AircraftSectorUpdateData(callsign, newSector, newUUID, needsContact, tagFlashing, tagMinimised))
+        networkServer.sendToAllTCP(AircraftSectorUpdateData(callsign, newSector, newUUID, needsContact,
+            needsSayMissedApproach, tagFlashing, tagMinimised))
     }
 
     /**
@@ -1009,6 +1012,14 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
      */
     fun sendRunwayClosedState(airportId: Byte, runwayId: Byte, closed: Boolean) {
         networkServer.sendToAllTCP(RunwayClosedState(airportId, runwayId, closed))
+    }
+
+    /**
+     * Sends a message to the connection with the [controllingUUID] to inform them of the aircraft with [callsign]
+     * going around due to [goAroundReason]
+     */
+    fun sendAircraftMissedApproach(callsign: String, goAroundReason: Byte, controllingUUID: UUID) {
+        networkServer.sendTCPToConnection(controllingUUID, MissedApproachMessage(callsign, goAroundReason))
     }
 
     /**

@@ -1340,6 +1340,14 @@ class AISystem: EntitySystem() {
 
             // Add the go around flag with reason
             entity += RecentGoAround(reason = reason)
+            // Add NeedsToInformOfGoAround flag if currently with tower
+            if (get(Controllable.mapper)?.sectorId == SectorInfo.TOWER) entity += NeedsToInformOfGoAround()
+            else {
+                // Otherwise we just send a message to the current controlling player
+                val callsign = get(AircraftInfo.mapper)?.icaoCallsign ?: return
+                val controllingUUID = get(Controllable.mapper)?.controllerUUID ?: return
+                GAME.gameServer?.sendAircraftMissedApproach(callsign, reason, controllingUUID)
+            }
             // Mark the aircraft as being on the go around route
             // This component will be removed the next time the aircraft heads towards the first waypoint
             // of the approach/transition route, or once the aircraft captures the approach track

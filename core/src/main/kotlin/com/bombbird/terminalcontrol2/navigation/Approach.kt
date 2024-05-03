@@ -32,8 +32,44 @@ import kotlin.math.tan
  */
 class Approach(name: String, arptId: Byte, runwayId: Byte, posX: Float, posY: Float, decisionAlt: Short, rvr: Short,
                onClient: Boolean = true, override val timeRestriction: Byte): UsabilityFilter, Pronounceable {
+    private val namePronunciation = name.split(" ").map {
+        if (RUNWAY_REGEX.matches(it)) {
+            var spokenString = it
+            if (charArrayOf('L', 'C', 'R').contains(it.last())) {
+                spokenString = it.substring(0, it.length - 1) + " " + when (it.last()) {
+                    'L' -> "Left"
+                    'C' -> "Center"
+                    'R' -> "Right"
+                    else -> it.last().lowercase().replaceFirstChar { firstChar -> firstChar.uppercaseChar() }
+                }
+            }
+
+            return@map replaceDigitsOnlyToNatoPhonetic(spokenString)
+        }
+
+        if (it.length == 1) {
+            // Most likely a single letter to distinguish multiple procedures to the same runway
+            return@map splitCharactersToNatoPhonetic(it)
+        }
+
+        when (it) {
+            "ILS" -> "I L S"
+            "LOC" -> "Localizer"
+            "PRM" -> "P R M"
+            "DME" -> "D M E"
+            "NDB" -> "N D B"
+            "VOR" -> "V O R"
+            "RNAV" -> "R Nav"
+            "GPS" -> "G P S"
+            "LDA" -> "L D A"
+            "RNP" -> "R N P"
+            "CIR" -> "Circling"
+            else -> it.lowercase().replaceFirstChar { firstChar -> firstChar.uppercaseChar() }
+        }
+    }.joinToString(" ")
+
     override val pronunciation: String
-        get() = "" // TODO implement pronunciation based on approach name (or I might change it to a user specified pronunciation)
+        get() = namePronunciation
 
     val entity = getEngine(onClient).entityOnMainThread(onClient) {
         with<ApproachInfo> {
