@@ -674,10 +674,12 @@ class AISystem: EntitySystem() {
                         (has(LocalizerCaptured.mapper) || has(GlideSlopeCaptured.mapper) || has(StepDownApproach.mapper))) {
                         // Check for minimums at breakout altitude
                         val mins = circleApp.circlingApp[Minimums.mapper]
-                        val arptMetar = GAME.gameServer?.airports?.get(appInfo.airportId)?.entity?.get(MetarInfo.mapper)
+                        val airportEntity = GAME.gameServer?.airports?.get(appInfo.airportId)?.entity ?: return@apply
+                        val arptMetar = airportEntity[MetarInfo.mapper]
+                        val arptAltFt = airportEntity[Altitude.mapper]?.altitudeFt ?: return@apply
                         if (arptMetar != null && mins != null &&
                             ((arptMetar.visibilityM < mins.rvrM) ||
-                            (arptMetar.ceilingHundredFtAGL ?: Short.MAX_VALUE) * 100 < mins.baroAltFt))
+                            arptAltFt + (arptMetar.ceilingHundredFtAGL ?: Short.MAX_VALUE) * 100 < mins.baroAltFt))
                             return@apply initiateGoAround(this, RecentGoAround.RWY_NOT_IN_SIGHT)
                         circleApp.phase = 1
                     }

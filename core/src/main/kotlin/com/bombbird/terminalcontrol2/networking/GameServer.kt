@@ -431,7 +431,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
                 var sizeUsed = 0
                 for (minAltSector in 0 until minAltSectors.size) {
                     val minAltSectorObj = minAltSectors[minAltSector].entity
-                    val sizeNeeded = (minAltSectorObj[GPolygon.mapper]?.vertices?.size ?: continue) * 2 + 20
+                    val sizeNeeded = (minAltSectorObj[GPolygon.mapper]?.vertices?.size ?: 0) * 2 + 20
                     if (sizeUsed + sizeNeeded > SERVER_WRITE_BUFFER_SIZE) {
                         // Send existing data and restart
                         val minAltSectorArray = tmpMinAltSectors.toArray().map { it.getSerialisableObject() }.toTypedArray()
