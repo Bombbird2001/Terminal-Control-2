@@ -160,7 +160,7 @@ class ControlStateSystemInterval: IntervalSystem(1f) {
                     controllable.sectorId = SectorInfo.TOWER
                     get(AircraftInfo.mapper)?.icaoCallsign?.let { callsign -> GAME.gameServer?.also { server ->
                         server.sendAircraftSectorUpdateTCPToAll(callsign, controllable.sectorId, null,
-                             needsContact = false, needsSayMissedApproach = false)
+                             needsContact = true, needsSayMissedApproach = false)
                     }}
                     remove<ContactToTower>()
                 }
@@ -201,7 +201,7 @@ class ControlStateSystemInterval: IntervalSystem(1f) {
                     GAME.gameServer?.also { server ->
                         get(AircraftInfo.mapper)?.icaoCallsign?.let { callsign ->
                             server.sendAircraftSectorUpdateTCPToAll(callsign, controllable.sectorId, null,
-                                 needsContact = false, needsSayMissedApproach = false)
+                                 needsContact = true, needsSayMissedApproach = false)
                         }
                         server.incrementScoreBy(1, FlightType.DEPARTURE)
                         this += PendingCruiseAltitude(MathUtils.random(6f, 12f))

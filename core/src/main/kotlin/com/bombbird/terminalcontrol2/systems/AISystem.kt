@@ -677,10 +677,12 @@ class AISystem: EntitySystem() {
                         val airportEntity = GAME.gameServer?.airports?.get(appInfo.airportId)?.entity ?: return@apply
                         val arptMetar = airportEntity[MetarInfo.mapper]
                         val arptAltFt = airportEntity[Altitude.mapper]?.altitudeFt ?: return@apply
-                        if (arptMetar != null && mins != null &&
-                            ((arptMetar.visibilityM < mins.rvrM) ||
-                            arptAltFt + (arptMetar.ceilingHundredFtAGL ?: Short.MAX_VALUE) * 100 < mins.baroAltFt))
-                            return@apply initiateGoAround(this, RecentGoAround.RWY_NOT_IN_SIGHT)
+                        if (arptMetar != null && mins != null) {
+                            val cloudCeilingAboveSeaLevel = arptAltFt + (arptMetar.ceilingHundredFtAGL ?: Short.MAX_VALUE) * 100
+                            if (((arptMetar.visibilityM < mins.rvrM) || // If visibility is below RVR
+                                        (cloudCeilingAboveSeaLevel < mins.baroAltFt) && cloudCeilingAboveSeaLevel < alt.altitudeFt)) // If cloud ceiling is below DA, and aircraft altitude is still above ceiling
+                                return@apply initiateGoAround(this, RecentGoAround.RWY_NOT_IN_SIGHT)
+                        }
                         circleApp.phase = 1
                     }
                     1 -> {
@@ -759,7 +761,8 @@ class AISystem: EntitySystem() {
 
                 // Check decision altitude/height requirement
                 val decisionAlt = (visParentApp ?: appVert)[Minimums.mapper]?.baroAltFt ?: 0
-                if (alt.altitudeFt < decisionAlt && arptAltFt + (arptMetar.ceilingHundredFtAGL ?: Short.MAX_VALUE) * 100 < decisionAlt)
+                val cloudCeilingAboveSeaLevel = arptAltFt + (arptMetar.ceilingHundredFtAGL ?: Short.MAX_VALUE) * 100
+                if (alt.altitudeFt < decisionAlt && cloudCeilingAboveSeaLevel < decisionAlt && cloudCeilingAboveSeaLevel < alt.altitudeFt)
                     return@apply initiateGoAround(this, RecentGoAround.RWY_NOT_IN_SIGHT)
 
                 // Check opposite runway aircraft departure

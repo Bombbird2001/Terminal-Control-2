@@ -249,7 +249,7 @@ data class WakeTrail(val wakeZones: Queue<Pair<Position, WakeZone?>> = Queue(), 
  */
 @JsonClass(generateAdapter = true)
 data class WakeInfo(var aircraftCallsign: String = "", var leadingWake: Char = 'M', var leadingRecat: Char = 'D',
-                    var distFromAircraft: Float = 0f): Component, BaseComponentJSONInterface {
+                    var distFromAircraft: Float = 0f, var approachAirportId: Byte? = null, var approachName: String? = null): Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.WAKE_INFO
 
     companion object {

@@ -73,6 +73,7 @@ private const val APCH_LINEUP = "LINEUP"
 private const val APCH_CIRCLING = "CIRCLING"
 private const val APCH_TRANS = "TRANSITION"
 private const val APCH_MISSED = "MISSED"
+private const val APCH_WAKE_INHIBIT = "WAKE_INHIBIT"
 private const val DAY_NIGHT = "DAY_NIGHT"
 private const val DAY_ONLY = "DAY_ONLY"
 private const val NIGHT_ONLY = "NIGHT_ONLY"
@@ -203,6 +204,7 @@ fun loadWorldData(mainName: String, gameServer: GameServer) {
                 APCH_CIRCLING -> if (currApp != null) parseCircling(lineData, currApp)
                 APCH_TRANS -> if (currApp != null) parseApproachTransition(lineData, currApp)
                 APCH_MISSED -> if (currApp != null) parseApproachMissed(lineData, currApp)
+                APCH_WAKE_INHIBIT -> if (currApp != null) parseWakeInhibit(lineData, currApp)
                 "$AIRPORT_APP_NOZ_GROUP/" -> if (currAirport != null) currAppNOZGroup = addApproachNOZGroup(currAirport)
                 "/$AIRPORT_APP_NOZ_GROUP" -> currAppNOZGroup = null
                 AIRPORT_APP_NOZ -> parseApproachNOZ(lineData, currAppNOZGroup ?: continue)
@@ -710,6 +712,11 @@ private fun parseAppStepDown(data: List<String>, approach: Approach) {
 private fun parseAppLineUp(data: List<String>, approach: Approach) {
     if (data.size != 2) FileLog.info("GameLoader", "Lineup data has ${data.size} elements instead of 2")
     approach.addLineUpDist(data[1].toFloat())
+}
+
+private fun parseWakeInhibit(data: List<String>, approach: Approach) {
+    if (data.size < 2) FileLog.info("GameLoader", "Wake inhibit data has ${data.size} elements, needs at least 2")
+    approach.addWakeInhibit(data.subList(1, data.size).map { it.replace("-", " ") }.toTypedArray())
 }
 
 /**

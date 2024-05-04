@@ -908,7 +908,12 @@ fun updateWakeTrailState(aircraft: Entity, system: TrafficSystemInterval) {
     val newWakeZone = if (wake.wakeZones.isEmpty) null
     else {
         val prevPos = wake.wakeZones.first().first
-        WakeZone(prevPos.x, prevPos.y, pos.x, pos.y, alt.altitudeFt, acInfo.icaoCallsign, acInfo.aircraftPerf.wakeCategory, acInfo.aircraftPerf.recat)
+        val approachName = (aircraft[LocalizerCaptured.mapper]?.locApp ?: aircraft[GlideSlopeCaptured.mapper]?.gsApp
+        ?: aircraft[VisualCaptured.mapper]?.parentApp ?: aircraft[CirclingApproach.mapper]?.let { app ->
+            if (app.phase >= 1) app.circlingApp else null
+        })?.get(ApproachInfo.mapper)?.approachName
+        WakeZone(prevPos.x, prevPos.y, pos.x, pos.y, alt.altitudeFt, acInfo.icaoCallsign, acInfo.aircraftPerf.wakeCategory,
+            acInfo.aircraftPerf.recat, aircraft[ArrivalAirport.mapper]?.arptId, approachName)
     }
     wake.wakeZones.addFirst(Pair(pos.copy(), newWakeZone))
     if (newWakeZone != null) system.addWakeZone(newWakeZone)

@@ -35,7 +35,7 @@ interface BaseComponentJSONInterface {
         TAKEOFF_ROLL, TAKEOFF_CLIMB, LANDING_ROLL, COMMAND_TARGET, COMMAND_VECTOR, COMMAND_INIT_CLIMB, COMMAND_DIRECT,
         COMMAND_HOLD, COMMAND_EXPEDITE, COMMAND_CDA, COMMAND_TARGET_VERT_SPD, LAST_RESTRICTIONS, VISUAL_ARMED, VISUAL_CAPTURED,
         LOCALIZER_ARMED, LOCALIZER_CAPTURED, GLIDE_SLOPE_ARMED, GLIDE_SLOPE_CAPTURED, STEP_DOWN_APPROACH, CIRCLING_APPROACH,
-        APPROACH_INFO, LOCALIZER, LINE_UP_DIST, GLIDE_SLOPE, STEP_DOWN, CIRCLING, MINIMUMS, VISUAL, AIRPORT_INFO, RUNWAY_INFO,
+        APPROACH_INFO, LOCALIZER, LINE_UP_DIST, WAKE_INHIBIT, GLIDE_SLOPE, STEP_DOWN, CIRCLING, MINIMUMS, VISUAL, AIRPORT_INFO, RUNWAY_INFO,
         METAR_INFO, RANDOM_METAR_INFO, WAYPOINT_INFO, AIRCRAFT_INFO, ARRIVAL_AIRPORT, DEPARTURE_AIRPORT, CONTROLLABLE, FLIGHT_TYPE,
         WAITING_TAKEOFF, CONTACT_FROM_TOWER, CONTACT_TO_TOWER, CONTACT_FROM_CENTRE, CONTACT_TO_CENTRE, ACCELERATE_TO_ABOVE_250KTS,
         DECELERATE_TO_240KTS, APP_DECELERATE_TO_190KTS, DECELERATE_TO_APP_SPD, PENDING_CLEARANCES, CLEARANCE_ACT, LATEST_CLEARANCE_CHANGED,
@@ -79,6 +79,7 @@ private fun getPolymorphicComponentAdapter(): PolymorphicJsonAdapterFactory<Base
         .withSubtype(ApproachInfo::class.java, BaseComponentJSONInterface.ComponentType.APPROACH_INFO.name)
         .withSubtype(Localizer::class.java, BaseComponentJSONInterface.ComponentType.LOCALIZER.name)
         .withSubtype(LineUpDist::class.java, BaseComponentJSONInterface.ComponentType.LINE_UP_DIST.name)
+        .withSubtype(WakeInhibit::class.java, BaseComponentJSONInterface.ComponentType.WAKE_INHIBIT.name)
         .withSubtype(GlideSlope::class.java, BaseComponentJSONInterface.ComponentType.GLIDE_SLOPE.name)
         .withSubtype(StepDown::class.java, BaseComponentJSONInterface.ComponentType.STEP_DOWN.name)
         .withSubtype(Circling::class.java, BaseComponentJSONInterface.ComponentType.CIRCLING.name)

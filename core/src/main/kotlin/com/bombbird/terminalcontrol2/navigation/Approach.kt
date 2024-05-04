@@ -235,6 +235,14 @@ class Approach(name: String, arptId: Byte, runwayId: Byte, posX: Float, posY: Fl
     }
 
     /**
+     * Adds a wake inhibit component for the approach, containing the [approachNames] of which wake zones should be
+     * ignored
+     */
+    fun addWakeInhibit(approachNames: Array<String>) {
+        entity += WakeInhibit(approachNames)
+    }
+
+    /**
      * Adds a circling approach component for the approach
      * @param minBreakoutAlt the minimum altitude for the breakout to be initiated
      * @param maxBreakoutAlt the maximum altitude for the breakout to be initiated

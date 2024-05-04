@@ -310,7 +310,7 @@ class InitialDataSendComplete: ClientReceive, NeedsEncryption {
 
 /** Class representing data sent during aircraft sector update */
 data class AircraftSectorUpdateData(private val callsign: String = "", private val newSector: Byte = 0,
-                                    private val newUUID: String? = null, private val needsInitialContact: Boolean = false,
+                                    private val newUUID: String? = null, private val needsSendMessage: Boolean = false,
                                     private val sayMissedApproach: Boolean = false,
                                     private val tagFlashing: Boolean = false, private val tagMinimised: Boolean = false):
     ClientReceive, NeedsEncryption {
@@ -326,7 +326,7 @@ data class AircraftSectorUpdateData(private val callsign: String = "", private v
                 updateDatatagText(it, getNewDatatagLabelText(aircraft.entity, it.minimised))
                 CLIENT_SCREEN?.sendAircraftDatatagPositionUpdateIfControlled(aircraft.entity, it.xOffset, it.yOffset, it.minimised, it.shouldFlashOrange)
             }
-            if (newSector != rs.playerSector && controllable.controllerUUID.toString() == myUuid.toString() && newUUID != myUuid.toString() && needsInitialContact) {
+            if (newSector != rs.playerSector && controllable.controllerUUID.toString() == myUuid.toString() && newUUID != myUuid.toString() && needsSendMessage) {
                 // Send contact other sector message only if aircraft is not in player's sector, old UUID is this
                 // player's UUID, and new UUID is not this player's UUID
                 // Will only add contact other message if needed (e.g. not during sector swap)
@@ -335,11 +335,11 @@ data class AircraftSectorUpdateData(private val callsign: String = "", private v
             if (newSector == rs.playerSector && controllable.controllerUUID.toString() != newUUID && newUUID == myUuid.toString()) {
                 // Send message only if aircraft is in player's sector, old UUID is not the player's UUID and the new UUID is the player's UUID
                 // Will only perform contact if needed
-                if (needsInitialContact) rs.uiPane.commsPane.also { commsPane ->
+                if (needsSendMessage) rs.uiPane.commsPane.also { commsPane ->
                     if (sayMissedApproach) commsPane.goAround(aircraft.entity)
                     else commsPane.initialContact(aircraft.entity)
                 }
-                if (needsInitialContact || tagFlashing) {
+                if (needsSendMessage || tagFlashing) {
                     aircraft.entity += ContactNotification()
                     aircraft.entity[Datatag.mapper]?.let {
                         startDatatagNotificationFlash(it, aircraft)

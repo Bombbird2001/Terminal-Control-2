@@ -293,7 +293,8 @@ class RouteZone(posX1: Float, posY1: Float, posX2: Float, posY2: Float, rnpNm: F
  *
  * This class should be initialized only on the server as it is not required on the client
  */
-class WakeZone(prevPosX: Float, prevPosY: Float, currPosX: Float, currPosY: Float, wakeAlt: Float, callsign: String, leadingWakeCat: Char, leadingRecatCat: Char): Zone {
+class WakeZone(prevPosX: Float, prevPosY: Float, currPosX: Float, currPosY: Float, wakeAlt: Float, callsign: String,
+               leadingWakeCat: Char, leadingRecatCat: Char, leadingApproachAirportId: Byte?, leadingApproachName: String?): Zone {
     val entity = getEngine(false).entityOnMainThread(false) {
         with<GPolygon> {
             val halfWidth = Vector2(currPosX - prevPosX, currPosY - prevPosY).apply {
@@ -313,6 +314,8 @@ class WakeZone(prevPosX: Float, prevPosY: Float, currPosX: Float, currPosY: Floa
             aircraftCallsign = callsign
             leadingWake = leadingWakeCat
             leadingRecat = leadingRecatCat
+            approachAirportId = leadingApproachAirportId
+            approachName = leadingApproachName
         }
         with<Position> {
             x = currPosX
@@ -321,7 +324,7 @@ class WakeZone(prevPosX: Float, prevPosY: Float, currPosX: Float, currPosY: Floa
     }
 
     /** Empty wake zone constructor for loading of saves */
-    constructor(): this(0f, 0f, 0f, 0f, 0f, "", 'H', 'B')
+    constructor(): this(0f, 0f, 0f, 0f, 0f, "", 'H', 'B', null, null)
 
     /**
      * Checks whether the polygon of this wake zone contains the input coordinates

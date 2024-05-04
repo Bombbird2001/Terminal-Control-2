@@ -53,6 +53,18 @@ data class LineUpDist(var lineUpDistNm: Float = 0f): Component, BaseComponentJSO
     }
 }
 
+/** Component for tagging the [approachNames] of which wake turbulence originating from should be inhibited to this approach */
+@JsonClass(generateAdapter = true)
+class WakeInhibit(var approachNames: Array<String> = arrayOf()): Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.WAKE_INHIBIT
+
+    companion object {
+        val mapper = object: Mapper<WakeInhibit>() {}.mapper
+
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
+    }
+}
+
 /** Component for tagging glide slope information */
 @JsonClass(generateAdapter = true)
 data class GlideSlope(var glideAngle: Float = 0f, var offsetNm: Float = 0f, var maxInterceptAlt: Short = 0): Component, BaseComponentJSONInterface {
