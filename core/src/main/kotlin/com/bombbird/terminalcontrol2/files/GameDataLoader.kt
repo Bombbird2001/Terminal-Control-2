@@ -74,6 +74,7 @@ private const val APCH_CIRCLING = "CIRCLING"
 private const val APCH_TRANS = "TRANSITION"
 private const val APCH_MISSED = "MISSED"
 private const val APCH_WAKE_INHIBIT = "WAKE_INHIBIT"
+private const val APCH_VISUAL_AFTER_FAF = "VIS_AFTER_FAF"
 private const val DAY_NIGHT = "DAY_NIGHT"
 private const val DAY_ONLY = "DAY_ONLY"
 private const val NIGHT_ONLY = "NIGHT_ONLY"
@@ -205,6 +206,7 @@ fun loadWorldData(mainName: String, gameServer: GameServer) {
                 APCH_TRANS -> if (currApp != null) parseApproachTransition(lineData, currApp)
                 APCH_MISSED -> if (currApp != null) parseApproachMissed(lineData, currApp)
                 APCH_WAKE_INHIBIT -> if (currApp != null) parseWakeInhibit(lineData, currApp)
+                APCH_VISUAL_AFTER_FAF -> if (currApp != null) parseVisualAfterFaf(currApp)
                 "$AIRPORT_APP_NOZ_GROUP/" -> if (currAirport != null) currAppNOZGroup = addApproachNOZGroup(currAirport)
                 "/$AIRPORT_APP_NOZ_GROUP" -> currAppNOZGroup = null
                 AIRPORT_APP_NOZ -> parseApproachNOZ(lineData, currAppNOZGroup ?: continue)
@@ -714,9 +716,15 @@ private fun parseAppLineUp(data: List<String>, approach: Approach) {
     approach.addLineUpDist(data[1].toFloat())
 }
 
+/** Parse the given [data] into wake inhibit data, and adds it as a component to the supplied [approach] */
 private fun parseWakeInhibit(data: List<String>, approach: Approach) {
     if (data.size < 2) FileLog.info("GameLoader", "Wake inhibit data has ${data.size} elements, needs at least 2")
     approach.addWakeInhibit(data.subList(1, data.size).map { it.replace("-", " ") }.toTypedArray())
+}
+
+/** Adds a visual after FAF component to the supplied [approach] */
+private fun parseVisualAfterFaf(approach: Approach) {
+    approach.addVisualAfterFaf()
 }
 
 /**

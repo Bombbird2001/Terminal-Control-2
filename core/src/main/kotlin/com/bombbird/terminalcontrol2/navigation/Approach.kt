@@ -242,6 +242,11 @@ class Approach(name: String, arptId: Byte, runwayId: Byte, posX: Float, posY: Fl
         entity += WakeInhibit(approachNames)
     }
 
+    /** Adds visual after FAF component for the approach */
+    fun addVisualAfterFaf() {
+        entity += VisualAfterFaf()
+    }
+
     /**
      * Adds a circling approach component for the approach
      * @param minBreakoutAlt the minimum altitude for the breakout to be initiated

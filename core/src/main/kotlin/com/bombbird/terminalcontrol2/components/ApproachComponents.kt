@@ -158,3 +158,21 @@ class Visual: Component, BaseComponentJSONInterface {
         return componentType.hashCode()
     }
 }
+
+/**
+ * Component for tagging approaches that should only capture the visual approach after the FAF; i.e. the aircraft has
+ * passed the FAF waypoint
+ *
+ * This will prevent visual mode from being captured if the aircraft has not been cleared to and followed the approach
+ * route, such as when assigned vectors while the approach has been cleared
+ */
+@JsonClass(generateAdapter = true)
+class VisualAfterFaf: Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.VISUAL_AFTER_FAF
+
+    companion object {
+        val mapper = object: Mapper<VisualAfterFaf>() {}.mapper
+
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
+    }
+}

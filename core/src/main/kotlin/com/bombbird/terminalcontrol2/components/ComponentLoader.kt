@@ -137,6 +137,7 @@ fun loadAllComponents() {
     TrajectoryPointInfo.initialise()
     TTSVoice.initialise()
     Visual.initialise()
+    VisualAfterFaf.initialise()
     VisualApproach.initialise()
     VisualArmed.initialise()
     VisualCaptured.initialise()

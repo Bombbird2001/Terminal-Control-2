@@ -542,6 +542,9 @@ class AISystem: EntitySystem() {
                 val route = state.route
                 if (state.vectorHdg == null && route.size > 0 && route[0].phase != Route.Leg.MISSED_APP) return@apply
 
+                // Return if visual approach should only be captured after FAF but aircraft has not passed FAF
+                if (vis.parentApp.has(VisualAfterFaf.mapper) && !hasOnlyMissedLegs(route)) return@apply
+
                 // Check aircraft position is less than visual approach range
                 if (calculateDistanceBetweenPoints(pos.x, pos.y, appPos.x, appPos.y) > nmToPx(VIS_MAX_DIST_NM.toFloat())) return@apply
 

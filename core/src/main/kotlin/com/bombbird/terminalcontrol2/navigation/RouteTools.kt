@@ -393,6 +393,17 @@ fun hasOnlyWaypointLegsTillMissed(startLeg: Leg?, route: Route): Boolean {
 }
 
 /**
+ * Checks whether the [route] contains only missed approach legs
+ * @return whether the route only contains missed approach legs
+ */
+fun hasOnlyMissedLegs(route: Route): Boolean {
+    for (i in 0 until route.size) {
+        if (route[i].phase != Leg.MISSED_APP) return false
+    }
+    return true
+}
+
+/**
  * Removes all the legs until the first missed approach leg (excluding the discontinuity leg) is reached
  * @param route the route to remove the legs from
  */
