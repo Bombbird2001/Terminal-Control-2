@@ -91,7 +91,7 @@ class DataSystemClient: EntitySystem() {
                     if (alt < rwyAlt + 10) return@apply // Aircraft has touched down
                     val refPos = refApp[Position.mapper] ?: return@apply
                     val dist = calculateDistanceBetweenPoints(acPos.x, acPos.y, refPos.x, refPos.y)
-                    val maxDistNm = refApp[Localizer.mapper]?.maxDistNm ?: 15
+                    val maxDistNm = refApp[Localizer.mapper]?.maxDistNm ?: 20
                     // Not within 25 degrees of localizer centerline
                     if (!checkInArc(refPos.x, refPos.y, convertWorldAndRenderDeg(refAppDir.angleDeg()), nmToPx(maxDistNm.toInt()),
                             25f, acPos.x, acPos.y)

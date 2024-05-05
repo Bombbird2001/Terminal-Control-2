@@ -364,12 +364,18 @@ class AISystem: EntitySystem() {
                 // Calculate distance between aircraft and waypoint and check if aircraft should move to next leg
                 val deltaX = wpt.x - pos.x
                 val deltaY = wpt.y - pos.y
-                val nextWptLegTrack = findNextWptLegTrackAndDirection(clearanceAct.route) ?: run {
-                    // If aircraft is departure, and the next leg is a vector leg and the last leg in the route, turn early as well
-                    if (get(FlightType.mapper)?.type == FlightType.DEPARTURE && clearanceAct.route.size == 2)
-                            (clearanceAct.route[1] as? Route.VectorLeg)?.let { Pair(it.heading.toFloat(), it.turnDir) }
+                val nextWptLegTrack = if (get(FlightType.mapper)?.type == FlightType.ARRIVAL && clearanceAct.route.size >= 2
+                    && clearanceAct.route[1] is Route.DiscontinuityLeg && clearanceAct.route[1].phase == Route.Leg.MISSED_APP) {
+                    // If aircraft is arrival, and the next leg is the missed approach discontinuity leg, use the runway
+                    // position to calculate the next leg track
+                    val thisWpt = getServerOrClientWaypointMap()?.get((clearanceAct.route[0] as? Route.WaypointLeg)?.wptId)
+                    val thisWptPos = thisWpt?.entity?.get(Position.mapper)
+                    val arrArpt = GAME.gameServer?.airports?.get(get(ArrivalAirport.mapper)?.arptId)?.entity
+                    val approachEntity = arrArpt?.get(ApproachChildren.mapper)?.approachMap?.get(clearanceAct.clearedApp)?.entity
+                    val rwyPos = approachEntity?.get(ApproachInfo.mapper)?.rwyObj?.entity?.get(Position.mapper)
+                    if (thisWptPos != null && rwyPos != null) Pair(getRequiredTrack(thisWptPos.x, thisWptPos.y, rwyPos.x, rwyPos.y), CommandTarget.TURN_DEFAULT)
                     else null
-                }
+                } else findNextWptLegTrackAndDirection(clearanceAct.route)
                 val requiredDist = if (cmdDir.flyOver || nextWptLegTrack == null) 3f
                 else findTurnDistance(findDeltaHeading(targetTrack, nextWptLegTrack.first, nextWptLegTrack.second),
                     if (ias.iasKt > HALF_TURN_RATE_THRESHOLD_IAS) MAX_HIGH_SPD_ANGULAR_SPD else MAX_LOW_SPD_ANGULAR_SPD, ktToPxps(groundSpeed))
