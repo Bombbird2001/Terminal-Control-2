@@ -831,8 +831,8 @@ object JsonTest: FunSpec() {
         test("WakeTrail serialization") {
             val wakeTrailAdapter = testMoshi.adapter<WakeTrail>()
             val wakeTrail1 = WakeTrail(Queue<Pair<Position, WakeZone?>>().apply {
-                addLast(Pair(Position(1f, 1f), WakeZone(1f, 2f, 1f, 0f, 7000f, "SHIBA1", 'H', 'B')))
-                addLast(Pair(Position(10f, 10f), WakeZone(10f, 11f, 10f, 9f, 6500f, "SHIBA1", 'H', 'B')))
+                addLast(Pair(Position(1f, 1f), WakeZone(1f, 2f, 1f, 0f, 7000f, "SHIBA1", 'H', 'B', null, null)))
+                addLast(Pair(Position(10f, 10f), WakeZone(10f, 11f, 10f, 9f, 6500f, "SHIBA1", 'H', 'B', 0, "ILS-05L")))
                 addLast(Pair(Position(20f, 20f), null))
             }, 1.65f)
             val wakeTrail2 = WakeTrail(distNmCounter = 0.2f)
