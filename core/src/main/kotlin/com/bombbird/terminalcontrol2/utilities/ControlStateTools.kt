@@ -125,6 +125,7 @@ fun getMinMaxOptimalIAS(entity: Entity): Triple<Short, Short, Short> {
     val aboveCrossover = altitude.altitudeFt >= crossOverAlt
     val minSpd: Short = when {
         onApproach -> perf.appSpd
+        below10000ft && flightType.type == FlightType.ARRIVAL -> (((perf.appSpd + 15) / 10f).roundToInt() * 10).toShort()
         takingOff || below10000ft -> perf.climbOutSpeed
         between10000ftAndCrossover || aboveCrossover -> (((altitude.altitudeFt - 10000) / (perf.maxAlt - 10000)) * (perf.climbOutSpeed * 2f / 9) + perf.climbOutSpeed * 10f / 9).roundToInt().toShort()
         else -> 160
