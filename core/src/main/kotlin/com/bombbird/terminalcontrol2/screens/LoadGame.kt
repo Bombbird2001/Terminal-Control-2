@@ -224,7 +224,9 @@ class LoadGame: BasicUIScreen() {
             clear()
             for (i in 0 until sortedGameList.size) { sortedGameList[i]?.let { game ->
                 val meta = game.second
-                val saveButton = textButton("${meta.mainName} - Score: ${meta.score}   High score: ${meta.highScore}\nLanded: ${meta.landed}   Departed: ${meta.departed}", "NewLoadGameAirport").cell(growX = true)
+                val defaultDetails = "${meta.mainName} - Score: ${meta.score}   High score: ${meta.highScore}\nLanded: ${meta.landed}   Departed: ${meta.departed}"
+                val configDetails = meta.configNames ?: ""
+                val saveButton = textButton(defaultDetails, "NewLoadGameAirport").cell(growX = true)
                 saveButton.name = game.first.toString()
                 saveButton.addChangeListener { _, _ ->
                     if (currSelectedSaveButton == saveButton) {
@@ -233,6 +235,7 @@ class LoadGame: BasicUIScreen() {
                         startButton.isVisible = false
                         exportButton.isVisible = false
                         deleteButton.isVisible = false
+                        saveButton.setText(defaultDetails)
                     } else {
                         currSelectedSaveButton?.isChecked = false
                         currSelectedSaveButton = saveButton
@@ -240,6 +243,7 @@ class LoadGame: BasicUIScreen() {
                         startButton.isVisible = true
                         exportButton.isVisible = true
                         deleteButton.isVisible = true
+                        saveButton.setText("$defaultDetails$configDetails")
                     }
                 }
                 row()

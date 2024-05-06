@@ -57,7 +57,7 @@ data class GameServerSave(
  * be loaded
  */
 @JsonClass(generateAdapter = true)
-data class GameSaveMeta(val mainName: String, val score: Int, val highScore: Int, val landed: Int, val departed: Int)
+data class GameSaveMeta(val mainName: String, val score: Int, val highScore: Int, val landed: Int, val departed: Int, val configNames: String?)
 
 @OptIn(ExperimentalStdlibApi::class)
 fun getSaveJSONString(gs: GameServer): String {
@@ -107,7 +107,7 @@ fun saveGame(gs: GameServer) {
         saveHandle.writeString(saveString, false)
 
         // Save meta information
-        val metaObject = GameSaveMeta(gs.mainName, gs.score, gs.highScore, gs.landed, gs.departed)
+        val metaObject = GameSaveMeta(gs.mainName, gs.score, gs.highScore, gs.landed, gs.departed, gs.getSaveMetaRunwayConfigString())
         val metaHandle = saveFolderHandle.child("${saveIndex}.meta")
         metaHandle.writeString(moshi.adapter<GameSaveMeta>().toJson(metaObject), false)
     } catch (e: GdxRuntimeException) {

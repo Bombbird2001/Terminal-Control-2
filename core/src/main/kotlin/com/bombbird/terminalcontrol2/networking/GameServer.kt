@@ -1022,6 +1022,17 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
         networkServer.sendTCPToConnection(controllingUUID, MissedApproachMessage(callsign, goAroundReason))
     }
 
+    /** Gets the runway configuration string displaying config names at all airports */
+    fun getSaveMetaRunwayConfigString(): String {
+        return Entries(airports).map {
+            val arpt = it.value.entity
+            val configId = arpt[ActiveRunwayConfig.mapper]?.configId ?: -1
+            val arptIcao = arpt[AirportInfo.mapper]?.icaoCode
+            val configName = arpt[RunwayConfigurationChildren.mapper]?.rwyConfigs?.get(configId)?.name
+            return@map if (arptIcao != null && configName != null) "\n$arptIcao: $configName" else ""
+        }.joinToString("")
+    }
+
     /**
      * Adds a runnable to be run on the main server thread after the next game pause occurs
      * @param runnable the runnable to add

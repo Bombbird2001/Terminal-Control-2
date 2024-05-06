@@ -71,9 +71,10 @@ fun importSave(onSuccess: (String) -> Unit, onFailure: (String) -> Unit) {
             GAME.gameServer = GameServer.testGameServer()
             loadAircraftData()
             val saveObject = moshi.adapter<GameServerSave>().fromJson(it) ?: return@selectAndReadFromFile onFailure("Error parsing file")
+            val configDetails = GAME.gameServer?.getSaveMetaRunwayConfigString()
             GAME.gameServer = null
             // Save meta information
-            val metaObject = GameSaveMeta(saveObject.mainName, saveObject.score, saveObject.highScore, saveObject.landed, saveObject.departed)
+            val metaObject = GameSaveMeta(saveObject.mainName, saveObject.score, saveObject.highScore, saveObject.landed, saveObject.departed, configDetails)
             val saveFolderHandle = getExtDir("Saves") ?: return@selectAndReadFromFile onFailure("Error opening game save folder")
             val saveId = getNextAvailableSaveID()
             val saveHandle = saveFolderHandle.child("${saveId}.json")
