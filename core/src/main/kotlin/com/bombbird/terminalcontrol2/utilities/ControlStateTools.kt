@@ -220,6 +220,7 @@ fun removeAllApproachComponents(aircraft: Entity) {
         remove<LocalizerArmed>()
         remove<LocalizerCaptured>()
         remove<StepDownApproach>()
+        remove<VisualArmed>()
         remove<VisualCaptured>()
         remove<CirclingApproach>()
         remove<AppDecelerateTo190kts>()
