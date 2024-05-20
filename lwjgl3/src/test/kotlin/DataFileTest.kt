@@ -764,8 +764,9 @@ object DataFileTest: FunSpec() {
                     val inbounds = getAllTextAfterHeaderMultiple("INBOUND", starLines[1])
                     for (inbound in inbounds) {
                         val inboundLine = inbound.split(" ")
-                        testParseLegs(inboundLine, allWpts, Route.Leg.NORMAL, WARNING_SHOULD_BE_EMPTY)
+                        val inboundRoute = testParseLegs(inboundLine, allWpts, Route.Leg.NORMAL, WARNING_SHOULD_BE_EMPTY)
                         testWaypointLegStartEnd(inboundLine, true)
+                        testWaypointLegInPolygon(inboundRoute[0], wptPos, primarySector, false)
                     }
 
                     val routeLines = getAllTextAfterHeaderMultiple("ROUTE", starLines[1])
@@ -773,7 +774,10 @@ object DataFileTest: FunSpec() {
                     val routeLine = routeLines[0].split(" ")
                     val route = testParseLegs(routeLine, allWpts, Route.Leg.NORMAL, WARNING_SHOULD_BE_EMPTY)
                     testWaypointLegInPolygon(getLastWaypointLeg(route), wptPos, primarySector, true)
-                    if (inbounds.isEmpty()) testWaypointLegStartEnd(routeLine, true)
+                    if (inbounds.isEmpty()) {
+                        testWaypointLegStartEnd(routeLine, true)
+                        testWaypointLegInPolygon(route[0], wptPos, primarySector, false)
+                    }
 
                     val starRwys = ArrayList<String>()
                     val rwyLines = getAllTextAfterHeaderMultiple("RWY", starLines[1])

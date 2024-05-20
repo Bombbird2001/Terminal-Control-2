@@ -42,7 +42,7 @@ object LoadSaveTest: FunSpec() {
 
         val metaBufferedReader = File("..\\lwjgl3\\src\\test\\kotlin\\loadSaveTestSampleMeta.txt").bufferedReader()
         val testMetaString = metaBufferedReader.use { it.readText() }
-        testMetaString.length shouldBe 70
+        testMetaString.length shouldBe 87
 
         val saveModifiedBufferedReader = File("..\\lwjgl3\\src\\test\\kotlin\\loadSaveTestSampleSaveModified.txt").bufferedReader()
         val testSaveModifiedString = saveModifiedBufferedReader.use { it.readText() }
@@ -51,7 +51,7 @@ object LoadSaveTest: FunSpec() {
 
         val metaModifiedBufferedReader = File("..\\lwjgl3\\src\\test\\kotlin\\loadSaveTestSampleMetaModified.txt").bufferedReader()
         val testMetaModifiedString = metaModifiedBufferedReader.use { it.readText() }
-        testMetaModifiedString.length shouldBe 71
+        testMetaModifiedString.length shouldBe 88
 
         @OptIn(ExperimentalStdlibApi::class)
         val gameSaveMetaMoshi = Moshi.Builder().build().adapter<GameSaveMeta>()
