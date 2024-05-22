@@ -8,11 +8,14 @@ import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.ui.CustomDialog
 import com.bombbird.terminalcontrol2.ui.addChangeListener
 import com.bombbird.terminalcontrol2.utilities.FileLog
+import com.bombbird.terminalcontrol2.utilities.getDatetimeDifferenceString
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import ktx.async.KtxAsync
 import ktx.collections.*
 import ktx.scene2d.*
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 
 /** Screen for searching game saves in the user app data */
 class LoadGame: BasicUIScreen() {
@@ -212,7 +215,18 @@ class LoadGame: BasicUIScreen() {
             val meta = gamesFound.getValueAt(i)
             sortedGameList.add(Pair(id, meta))
         }
-        sortedGameList.sort { o1, o2 -> o1.first - o2.first }
+        sortedGameList.sort { o1, o2 ->
+            val o1Date = o1.second.lastPlayedDatetime
+            val o2Date = o2.second.lastPlayedDatetime
+            // Both has no date info, sort by ID (descending)
+            if (o1Date == null && o2Date == null) return@sort o2.first - o1.first
+            // Place save with no date info lower (bigger)
+            if (o1Date == null) return@sort 1
+            if (o2Date == null) return@sort -1
+
+            // Sort by date (descending)
+            o2Date.compareTo(o1Date)
+        }
         Gdx.app.postRunnable { showFoundGames(sortedGameList) }
     }
 
@@ -226,6 +240,11 @@ class LoadGame: BasicUIScreen() {
                 val meta = game.second
                 val defaultDetails = "${meta.mainName} - Score: ${meta.score}   High score: ${meta.highScore}\nLanded: ${meta.landed}   Departed: ${meta.departed}"
                 val configDetails = meta.configNames ?: ""
+                val lastPlayedString = meta.lastPlayedDatetime?.let {
+                    val playedTemporal = ZonedDateTime.parse(it, DateTimeFormatter.ISO_ZONED_DATE_TIME)
+                    getDatetimeDifferenceString(playedTemporal, ZonedDateTime.now())
+                }
+                val lastPlayed = if (lastPlayedString != null) "\nLast played: $lastPlayedString" else ""
                 val saveButton = textButton(defaultDetails, "NewLoadGameAirport").cell(growX = true)
                 saveButton.name = game.first.toString()
                 saveButton.addChangeListener { _, _ ->
@@ -243,7 +262,7 @@ class LoadGame: BasicUIScreen() {
                         startButton.isVisible = true
                         exportButton.isVisible = true
                         deleteButton.isVisible = true
-                        saveButton.setText("$defaultDetails$configDetails")
+                        saveButton.setText("$defaultDetails$configDetails$lastPlayed")
                     }
                 }
                 row()

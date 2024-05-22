@@ -27,6 +27,8 @@ import ktx.ashley.get
 import ktx.ashley.getSystem
 import ktx.collections.set
 import java.io.EOFException
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 
 /** Base data class save for game server */
 @JsonClass(generateAdapter = true)
@@ -57,7 +59,8 @@ data class GameServerSave(
  * be loaded
  */
 @JsonClass(generateAdapter = true)
-data class GameSaveMeta(val mainName: String, val score: Int, val highScore: Int, val landed: Int, val departed: Int, val configNames: String?)
+data class GameSaveMeta(val mainName: String, val score: Int, val highScore: Int, val landed: Int, val departed: Int,
+                        val configNames: String?, val lastPlayedDatetime: String?)
 
 @OptIn(ExperimentalStdlibApi::class)
 fun getSaveJSONString(gs: GameServer): String {
@@ -107,7 +110,8 @@ fun saveGame(gs: GameServer) {
         saveHandle.writeString(saveString, false)
 
         // Save meta information
-        val metaObject = GameSaveMeta(gs.mainName, gs.score, gs.highScore, gs.landed, gs.departed, gs.getSaveMetaRunwayConfigString())
+        val metaObject = GameSaveMeta(gs.mainName, gs.score, gs.highScore, gs.landed, gs.departed,
+            gs.getSaveMetaRunwayConfigString(), ZonedDateTime.now().format(DateTimeFormatter.ISO_ZONED_DATE_TIME))
         val metaHandle = saveFolderHandle.child("${saveIndex}.meta")
         metaHandle.writeString(moshi.adapter<GameSaveMeta>().toJson(metaObject), false)
     } catch (e: GdxRuntimeException) {

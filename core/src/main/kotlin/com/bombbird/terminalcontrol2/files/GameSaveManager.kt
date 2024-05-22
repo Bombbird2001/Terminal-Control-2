@@ -11,6 +11,8 @@ import ktx.collections.GdxArray
 import ktx.collections.GdxArrayMap
 import java.io.IOException
 import java.lang.NumberFormatException
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 
 /**
  * Deletes the main save file with the input ID (does not delete the backup)
@@ -74,7 +76,8 @@ fun importSave(onSuccess: (String) -> Unit, onFailure: (String) -> Unit) {
             val configDetails = GAME.gameServer?.getSaveMetaRunwayConfigString()
             GAME.gameServer = null
             // Save meta information
-            val metaObject = GameSaveMeta(saveObject.mainName, saveObject.score, saveObject.highScore, saveObject.landed, saveObject.departed, configDetails)
+            val metaObject = GameSaveMeta(saveObject.mainName, saveObject.score, saveObject.highScore, saveObject.landed,
+                saveObject.departed, configDetails, ZonedDateTime.now().format(DateTimeFormatter.ISO_ZONED_DATE_TIME))
             val saveFolderHandle = getExtDir("Saves") ?: return@selectAndReadFromFile onFailure("Error opening game save folder")
             val saveId = getNextAvailableSaveID()
             val saveHandle = saveFolderHandle.child("${saveId}.json")
