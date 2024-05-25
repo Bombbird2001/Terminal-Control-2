@@ -2,6 +2,7 @@ import asyncio
 import discord
 import fastapi
 import os
+from discord.utils import get
 from pydantic import BaseModel
 from typing import List
 
@@ -26,6 +27,7 @@ async def servers_update(servers: List[Server]):
 		return
 	embeds = [discord.Embed(title=f"{server.airportName} - {max(server.players, 1)}/{server.maxPlayers} player{'' if server.maxPlayers == 1 else 's'}") for server in servers]
 	for guild in client.guilds:
+		notify_role = get(guild.roles, name="Notify Multiplayer")
 		for channel in guild.channels:
 			if str(channel.type) != 'text':
 				continue
@@ -33,7 +35,9 @@ async def servers_update(servers: List[Server]):
 				continue
 			permissions = channel.permissions_for(guild.me)
 			if permissions.read_messages and permissions.send_messages:
-				await channel.send(f"{len(embeds)} public multiplayer game{'' if len(embeds) == 1 else 's'} available", embeds=embeds)
+				await channel.send(f"{notify_role.mention if notify_role is not None and len(embeds) > 0 else ''}\n"
+								   f"{len(embeds)} public multiplayer game{'' if len(embeds) == 1 else 's'} available",
+								   embeds=embeds)
 	
 
 @client.event
