@@ -6,8 +6,6 @@ import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.scenes.scene2d.Actor
 import com.badlogic.gdx.scenes.scene2d.ui.Label
 import com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle
-import com.badlogic.gdx.utils.Timer
-import com.badlogic.gdx.utils.Timer.Task
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.Airport
 import com.bombbird.terminalcontrol2.entities.SectorContactable
@@ -117,8 +115,9 @@ class CommsPane {
     /**
      * Adds a message for initial contact by an aircraft
      * @param aircraft the aircraft entity contacting the player
+     * @param retries number of times this function has attempted to be called without success
      */
-    fun initialContact(aircraft: Entity) {
+    fun initialContact(aircraft: Entity, retries: Int = 0) {
         val flightType = aircraft[FlightType.mapper] ?: return
         val acInfo = aircraft[AircraftInfo.mapper] ?: return
         val clearanceState = aircraft[ClearanceAct.mapper]?.actingClearance?.clearanceState ?: return
@@ -132,11 +131,10 @@ class CommsPane {
         val thisSector = CLIENT_SCREEN?.let {
             // If the player has not received the initial sector data, schedule the contact for 0.5s later
             if (it.sectors.isEmpty) {
-                Timer.schedule(object: Task() {
-                    override fun run() {
-                        initialContact(aircraft)
-                    }
-                }, 0.5f)
+                // Max of 2 retries
+                if (retries < 2) scheduleAction(0.5f) {
+                    initialContact(aircraft, retries + 1)
+                }
                 return
             }
             it.sectors[it.playerSector.toInt()]
@@ -231,23 +229,31 @@ class CommsPane {
     /**
      * Adds a message for contact after a go around by an aircraft
      * @param aircraft the aircraft entity contacting the player
+     * @param retries number of times this function has attempted to be called without success
      */
-    fun goAround(aircraft: Entity) {
+    fun goAround(aircraft: Entity, retries: Int = 0) {
         val flightType = aircraft[FlightType.mapper] ?: return
         val acInfo = aircraft[AircraftInfo.mapper] ?: return
         val clearanceState = aircraft[ClearanceAct.mapper]?.actingClearance?.clearanceState ?: return
-        val goAroundReasonStr = getGoAroundReason(aircraft[RecentGoAround.mapper]?.reason)
+        val goAroundReason = aircraft[RecentGoAround.mapper]?.reason
+        if (goAroundReason == null && retries < 2) {
+            // If the go-around reason is not present, schedule the contact for 0.5s later
+            scheduleAction(0.5f) {
+                goAround(aircraft, retries + 1)
+            }
+            return
+        }
+        val goAroundReasonStr = getGoAroundReason(goAroundReason)
         val alt = aircraft[Altitude.mapper] ?: return
 
         // Get the callsign of the player
         val thisSectorInfo = CLIENT_SCREEN?.let {
             // If the player has not received the initial sector data, schedule the contact for 0.5s later
             if (it.sectors.isEmpty) {
-                Timer.schedule(object: Task() {
-                    override fun run() {
-                        goAround(aircraft)
-                    }
-                }, 0.5f)
+                // Max of 2 retries
+                if (retries < 2) scheduleAction(0.5f) {
+                    goAround(aircraft, retries + 1)
+                }
                 return
             }
             it.sectors[it.playerSector.toInt()]
@@ -303,8 +309,9 @@ class CommsPane {
      * aircraft
      * @param aircraft the aircraft to instruct to contact another sector
      * @param newSectorId the new sector to contact
+     * @param retries number of times this function has attempted to be called without success
      */
-    fun contactOther(aircraft: Entity, newSectorId: Byte) {
+    fun contactOther(aircraft: Entity, newSectorId: Byte, retries: Int = 0) {
         val flightType = aircraft[FlightType.mapper] ?: return
         val acInfo = aircraft[AircraftInfo.mapper] ?: return
         val pos = aircraft[Position.mapper] ?: return
@@ -344,11 +351,10 @@ class CommsPane {
                 CLIENT_SCREEN?.let {
                     // If the player has not received the initial sector data, schedule the contact for 0.5s later
                     if (it.sectors.isEmpty) {
-                        Timer.schedule(object: Task() {
-                            override fun run() {
-                                contactOther(aircraft, newSectorId)
-                            }
-                        }, 0.5f)
+                        // Max of 2 retries
+                        if (retries < 2) scheduleAction(0.5f) {
+                            contactOther(aircraft, newSectorId, retries + 1)
+                        }
                         return
                     }
                     it.sectors[newSectorId.toInt()]?.getControllerCallsignFrequency(flightType.type) ?: return

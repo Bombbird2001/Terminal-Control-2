@@ -1,5 +1,7 @@
 package com.bombbird.terminalcontrol2.utilities
 
+import com.badlogic.gdx.utils.Timer
+import com.badlogic.gdx.utils.Timer.Task
 import com.bombbird.terminalcontrol2.entities.Waypoint
 import com.bombbird.terminalcontrol2.global.GAME
 
@@ -56,4 +58,13 @@ fun getServerOrClientWaypointMap(): HashMap<Short, Waypoint>? {
 /** Gets the use RECAT setting on server/host or client */
 fun getServerOrClientUseRecat(): Boolean {
     return GAME.gameServer?.useRecat ?: GAME.gameClientScreen?.useRecat ?: true
+}
+
+/** Schedules an [action] to be performed after [delay] seconds */
+fun scheduleAction(delayS: Float, action: () -> Unit) {
+    Timer.schedule(object: Task() {
+        override fun run() {
+            action()
+        }
+    }, delayS)
 }

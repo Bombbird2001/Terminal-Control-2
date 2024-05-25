@@ -192,7 +192,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                         if (visApp != null) this += VisualCaptured(visApp)
                     }
                     if (serialisedAircraft.contactToCentre) this += ContactToCentre()
-                    if (serialisedAircraft.recentGoAroundReason != null) this += RecentGoAround(reason =  serialisedAircraft.recentGoAroundReason)
+                    if (serialisedAircraft.recentGoAroundReason != null) this += RecentGoAround(reason = serialisedAircraft.recentGoAroundReason)
 
                     val datatag = get(Datatag.mapper)
                     if (serialisedAircraft.waitingTakeoff) this += WaitingTakeoff()

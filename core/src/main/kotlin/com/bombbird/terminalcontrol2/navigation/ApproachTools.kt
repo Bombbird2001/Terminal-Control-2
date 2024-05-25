@@ -124,7 +124,7 @@ fun isInsideLocArc(locApp: Entity, posX: Float, posY: Float, angleDeg: Float, di
  */
 fun establishedOnFinalApproachTrack(app: Entity, posX: Float, posY: Float): Boolean {
     val rwy = app[ApproachInfo.mapper]?.rwyObj ?: return false
-    val pos = rwy.entity[Position.mapper] ?: return false
+    val pos = app[Position.mapper] ?: return false
     val dir = app[Direction.mapper] ?: rwy.entity[VisualApproach.mapper]?.visual?.get(Direction.mapper) ?: return false
 
     // Use an arc extending along approach track for 25nm, and a max deviation of 2.5 degrees on each side
