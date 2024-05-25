@@ -174,6 +174,8 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                         serialisedAircraft.vectorHdg, serialisedAircraft.vectorTurnDir,
                         serialisedAircraft.commandAlt, serialisedAircraft.expedite, serialisedAircraft.clearedIas,
                         serialisedAircraft.minIas, serialisedAircraft.maxIas, serialisedAircraft.optimalIas,
+                        serialisedAircraft.clearedApp, serialisedAircraft.clearedTrans,
+                        serialisedAircraft.cancelLastMaxSpdRestr
                     ).ActingClearance())
                     val arrAirportId = serialisedAircraft.arrivalArptId?.also { arrId -> this += ArrivalAirport(arrId) }
                     serialisedAircraft.departureArptId?.let { depId -> this += DepartureAirport(depId, 0) }
@@ -339,10 +341,13 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                              val flightType: Byte = 0,
                              val activeEmergencyReason: Byte? = null, val isEmergencyDumpingFuel: Boolean = false,
                              val isEmergencyReadyForApproach: Boolean = false,
-                             val routePrimaryName: String = "", val commandRoute: Route.SerialisedRoute = Route.SerialisedRoute(), val commandHiddenLegs: Route.SerialisedRoute = Route.SerialisedRoute(),
+                             val routePrimaryName: String = "", val commandRoute: Route.SerialisedRoute = Route.SerialisedRoute(),
+                             val commandHiddenLegs: Route.SerialisedRoute = Route.SerialisedRoute(),
                              val vectorHdg: Short? = null, val vectorTurnDir: Byte? = null, // Vector HDG will be null if aircraft is flying route
                              val commandAlt: Int = 0, val expedite: Boolean = false, val clearedIas: Short = 0,
                              val minIas: Short = 0, val maxIas: Short = 0, val optimalIas: Short = 0,
+                             val clearedApp: String? = null, val clearedTrans: String? = null,
+                             val cancelLastMaxSpdRestr: Boolean = false,
                              val arrivalArptId: Byte? = null, val departureArptId: Byte? = null,
                              val controlSectorId: Byte = 0, val controllerUUID: String? = null,
                              val gsCap: Boolean = false, val locCap: Boolean = false, val visCapRwy: Byte? = null,
@@ -399,6 +404,8 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                 clearance.routePrimaryName, clearance.route.getSerialisedObject(), clearance.hiddenLegs.getSerialisedObject(),
                 clearance.vectorHdg, clearance.vectorTurnDir, clearance.clearedAlt, has(CommandExpedite.mapper), clearance.clearedIas,
                 clearance.minIas, clearance.maxIas, clearance.optimalIas,
+                clearance.clearedApp, clearance.clearedTrans,
+                clearance.cancelLastMaxSpd,
                 arrArptId, depArptId,
                 controllable.sectorId, controllable.controllerUUID?.toString(),
                 has(GlideSlopeCaptured.mapper), has(LocalizerCaptured.mapper),

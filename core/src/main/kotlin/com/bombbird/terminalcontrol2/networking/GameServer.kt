@@ -543,7 +543,8 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
                             networkServer.sendTCPToConnection(uuid, AircraftControlStateUpdateData(
                                 aircraftInfo.icaoCallsign, routePrimaryName, route.getSerialisedObject(),
                                 hiddenLegs.getSerialisedObject(), vectorHdg, vectorTurnDir, clearedAlt, expedite,
-                                clearedIas, minIas, maxIas, optimalIas, clearedApp, clearedTrans
+                                clearedIas, minIas, maxIas, optimalIas, clearedApp, clearedTrans,
+                                entity[LastRestrictions.mapper]?.maxSpdKt, cancelLastMaxSpd
                             ))
                             count++
                         }
@@ -824,29 +825,24 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
      * @param minIas the updated minimum IAS that can be cleared
      * @param maxIas the updated maximum IAS that can be cleared
      * @param optimalIas the updated optimal IAS that aircraft will target
+     * @param lastMaxSpdKt the previous maximum speed restriction in knots
+     * @param cancelLastMaxSpd whether the last maximum speed restriction should be cancelled
      */
     fun sendAircraftClearanceStateUpdateToAll(
         callsign: String, primaryName: String = "", route: Route, hiddenLegs: Route,
         vectorHdg: Short?, vectorTurnDir: Byte?, clearedAlt: Int, expedite: Boolean,
         clearedIas: Short, minIas: Short, maxIas: Short, optimalIas: Short,
-        clearedApp: String?, clearedTrans: String?
+        clearedApp: String?, clearedTrans: String?, lastMaxSpdKt: Short?, cancelLastMaxSpd: Boolean
     ) {
         networkServer.sendToAllTCP(
             AircraftControlStateUpdateData(
-                callsign,
-                primaryName,
-                route.getSerialisedObject(),
-                hiddenLegs.getSerialisedObject(),
-                vectorHdg,
-                vectorTurnDir,
-                clearedAlt,
-                expedite,
-                clearedIas,
-                minIas,
-                maxIas,
-                optimalIas,
-                clearedApp,
-                clearedTrans
+                callsign, primaryName,
+                route.getSerialisedObject(), hiddenLegs.getSerialisedObject(),
+                vectorHdg, vectorTurnDir,
+                clearedAlt, expedite,
+                clearedIas, minIas, maxIas, optimalIas,
+                clearedApp, clearedTrans,
+                lastMaxSpdKt, cancelLastMaxSpd
             )
         )
     }

@@ -56,6 +56,7 @@ class RouteEditPane {
                     textButton("Cancel all\nSpd restr.", "ControlPaneButton").cell(grow = true, preferredWidth = 0.3f * paneWidth).addChangeListener { _, _ ->
                         val route = parentPane.userClearanceState.route
                         for (i in 0 until route.size) (route[i] as? Route.WaypointLeg)?.apply { if (maxSpdKt != null) spdRestrActive = false }
+                        parentPane.userClearanceState.cancelLastMaxSpd = true
                         updateEditRouteTable(route)
                         updateRouteLegSegments(parentPane.userClearanceState.route)
                         updateUndoTransmitButtonStates()
@@ -94,6 +95,7 @@ class RouteEditPane {
                             // Reset the user clearance route to that of the default clearance
                             parentPane.userClearanceState.route.setToRouteCopy(parentPane.clearanceState.route)
                             parentPane.userClearanceState.hiddenLegs.setToRouteCopy(parentPane.clearanceState.hiddenLegs)
+                            parentPane.userClearanceState.cancelLastMaxSpd = parentPane.clearanceState.cancelLastMaxSpd
                             changeStarBox.selected = "Change STAR"
                             updateEditRouteTable(parentPane.userClearanceState.route)
                             updateRouteLegSegments(parentPane.userClearanceState.route)
@@ -125,6 +127,23 @@ class RouteEditPane {
             for (i in route.size - 1 downTo 0) if (route[i] is Route.WaypointLeg) {
                 lastWptLegIndex = i
                 break
+            }
+            val lastMaxSpdRestr = parentPane.lastMaxSpdKt
+            lastMaxSpdRestr?.let {
+                val changed = parentPane.clearanceState.cancelLastMaxSpd != parentPane.userClearanceState.cancelLastMaxSpd
+                label("Current", "ControlPaneRoute${if (changed) "Changed" else ""}").apply {
+                    setAlignment(Align.center)
+                }.cell(growX = true, height = 0.125f * UI_HEIGHT, padLeft = 10f, padRight = 10f)
+                textButton("", "ControlPaneRestr").cell(growX = true, preferredWidth = 0.25f * parentPane.paneWidth, height = 0.125f * UI_HEIGHT)
+                textButton("${it}kts", "ControlPaneRestr${if (changed) "Changed" else ""}").cell(growX = true, preferredWidth = 0.25f * parentPane.paneWidth, height = 0.125f * UI_HEIGHT).apply {
+                    isChecked = parentPane.clearanceState.cancelLastMaxSpd
+                    addChangeListener { _, _ ->
+                        parentPane.userClearanceState.cancelLastMaxSpd = isChecked
+                        style = toggleTextColor(style)
+                        updateUndoTransmitButtonStates()
+                    }
+                }
+                row()
             }
             for (i in 0 until route.size) {
                 route[i].let { leg ->
@@ -296,7 +315,9 @@ class RouteEditPane {
      * state of [Route] in the UI pane's clearance states
      */
     fun updateUndoTransmitButtonStates() {
-        if (checkRouteEqualityStrict(parentPane.clearanceState.route, parentPane.userClearanceState.route)) setUndoConfirmButtonsUnchanged()
+        if (checkRouteEqualityStrict(parentPane.clearanceState.route, parentPane.userClearanceState.route)
+            && parentPane.userClearanceState.cancelLastMaxSpd == parentPane.clearanceState.cancelLastMaxSpd)
+            setUndoConfirmButtonsUnchanged()
         else setUndoConfirmButtonsChanged()
     }
 

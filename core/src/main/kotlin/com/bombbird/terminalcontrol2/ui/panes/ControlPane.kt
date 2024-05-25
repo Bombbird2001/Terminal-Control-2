@@ -247,7 +247,9 @@ class ControlPane {
                                     index++
                                 }}
                             }
-                            if (checkClearanceEquality(parentPane.userClearanceState, parentPane.clearanceState, !parentPane.appTrackCaptured) && !directChanged) return@addChangeListener // No need to update anything if no change to clearance
+                            if (checkClearanceEquality(parentPane.userClearanceState, parentPane.clearanceState,
+                                    !parentPane.appTrackCaptured) && !directChanged)
+                                return@addChangeListener // No need to update anything if no change to clearance
                             radarScreen.sendAircraftControlStateClearance(aircraft.entity[AircraftInfo.mapper]?.icaoCallsign ?: return@addChangeListener, parentPane.userClearanceState)
                             // After sending the request, remove any non-active waypoint legs before the direct leg
                             leg2?.also {
@@ -539,7 +541,8 @@ class ControlPane {
      * @param appName the cleared approach, or null if no approach is cleared
      * @param transName the cleared approach transition, or null if no approach has been cleared
      */
-    fun updateAltSpdAppClearances(clearedAlt: Int, clearedSpd: Short, minSpd: Short, maxSpd: Short, optimalSpd: Short, appName: String?, transName: String?) {
+    fun updateAltSpdAppClearances(clearedAlt: Int, clearedSpd: Short, minSpd: Short, maxSpd: Short, optimalSpd: Short,
+                                  appName: String?, transName: String?) {
         val minSpdRounded = if (minSpd % 10 > 0) ((minSpd / 10 + 1) * 10).toShort() else minSpd
         val maxSpdRounded = if (maxSpd % 10 > 0) ((maxSpd / 10) * 10).toShort() else maxSpd
         modificationInProgress = true
@@ -693,7 +696,8 @@ class ControlPane {
         val directChanged = if ((leg1 == null && leg2 == null) || leg2 is Route.DiscontinuityLeg ||
             (leg1 is Route.HoldLeg && leg2 is Route.HoldLeg && leg1.wptId < 0 && leg2.wptId < 0)) false
         else if (leg1 == null || leg2 == null) true else !compareLegEquality(leg1, leg2)
-        if (checkClearanceEquality(parentPane.clearanceState, parentPane.userClearanceState, !parentPane.appTrackCaptured) && !directChanged) setUndoTransmitButtonsUnchanged()
+        if (checkClearanceEquality(parentPane.clearanceState, parentPane.userClearanceState, !parentPane.appTrackCaptured)
+            && !directChanged) setUndoTransmitButtonsUnchanged()
         else setUndoTransmitButtonsChanged()
     }
 

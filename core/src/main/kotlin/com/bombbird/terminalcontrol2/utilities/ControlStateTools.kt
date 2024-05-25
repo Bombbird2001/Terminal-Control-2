@@ -49,7 +49,7 @@ fun addNewClearanceToPendingClearances(aircraft: Entity, clearance: AircraftCont
     val newClearance = ClearanceState(clearance.primaryName, Route.fromSerialisedObject(clearance.route), Route.fromSerialisedObject(clearance.hiddenLegs),
         clearance.vectorHdg, clearance.vectorTurnDir, clearance.clearedAlt, clearance.expedite,
         clearance.clearedIas, clearance.minIas, clearance.maxIas, clearance.optimalIas,
-        clearance.clearedApp, clearance.clearedTrans)
+        clearance.clearedApp, clearance.clearedTrans, clearance.cancelLastMaxSpd)
     addNewClearanceToPendingClearances(aircraft, newClearance, returnTripTime)
 }
 
@@ -97,7 +97,8 @@ fun checkClearanceEquality(clearanceState1: ClearanceState, clearanceState2: Cle
             clearanceState1.expedite == clearanceState2.expedite &&
             clearanceState1.clearedIas == clearanceState2.clearedIas &&
             clearanceState1.clearedApp == clearanceState2.clearedApp &&
-            clearanceState1.clearedTrans == clearanceState2.clearedTrans
+            clearanceState1.clearedTrans == clearanceState2.clearedTrans &&
+            clearanceState1.cancelLastMaxSpd == clearanceState2.cancelLastMaxSpd
 }
 
 /**
@@ -151,7 +152,8 @@ fun getMinMaxOptimalIAS(entity: Entity): Triple<Short, Short, Short> {
             }
         }
         // If aircraft is not holding, get restrictions for the SID/STAR
-        if (!holding) holdMaxSpd = lastRestriction?.maxSpdKt.let { lastMaxSpd ->
+        if (!holding) holdMaxSpd = if (actingClearance.cancelLastMaxSpd && flightType.type == FlightType.ARRIVAL) null
+        else lastRestriction?.maxSpdKt.let { lastMaxSpd ->
             when {
                 lastMaxSpd != null && nextRouteMaxSpd != null -> max(lastMaxSpd.toInt(), nextRouteMaxSpd.toInt()).toShort()
                 lastMaxSpd != null -> when {

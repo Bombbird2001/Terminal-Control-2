@@ -27,6 +27,7 @@ data class AircraftControlStateUpdateData(val callsign: String = "", val primary
                                           val clearedIas: Short = 0, val minIas: Short = 0,
                                           val maxIas: Short = 0, val optimalIas: Short = 0,
                                           val clearedApp: String? = null, val clearedTrans: String? = null,
+                                          val lastMaxSpdKt: Short? = null, val cancelLastMaxSpd: Boolean = false,
                                           val sendingSector: Byte = SECTOR_GAMESERVER): ServerReceive, ClientReceive, NeedsEncryption {
     companion object {
         const val SECTOR_GAMESERVER: Byte = -5
@@ -48,7 +49,8 @@ data class AircraftControlStateUpdateData(val callsign: String = "", val primary
             aircraft.entity += ClearanceAct(
                 ClearanceState(primaryName, route, Route.fromSerialisedObject(hiddenLegs),
                     vectorHdg, vectorTurnDir, clearedAlt, expedite,
-                    clearedIas, minIas, maxIas, optimalIas, clearedApp, clearedTrans).ActingClearance())
+                    clearedIas, minIas, maxIas, optimalIas, clearedApp, clearedTrans, cancelLastMaxSpd).ActingClearance())
+            aircraft.entity += LastRestrictions(maxSpdKt = lastMaxSpdKt)
             aircraft.entity[Datatag.mapper]?.let { updateDatatagText(it, getNewDatatagLabelText(aircraft.entity, it.minimised)) }
             if (rs.selectedAircraft == aircraft) rs.uiPane.updateSelectedAircraft(aircraft)
             getEngine(true).getSystem<RenderingSystemClient>().updateWaypointDisplay(rs.selectedAircraft)

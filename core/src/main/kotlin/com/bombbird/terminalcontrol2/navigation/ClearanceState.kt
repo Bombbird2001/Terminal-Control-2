@@ -31,14 +31,31 @@ import kotlin.math.min
  * [clearedIas] is from the CommandTarget component; the targetIas value can be used directly as it is not possible to
  * "Accelerate/Decelerate via SID/STAR"
  *
+ * [minIas] is the minimum IAS the aircraft can fly
+ *
+ * [maxIas] is the maximum IAS the aircraft can fly
+ *
+ * [optimalIas] is the optimal IAS the aircraft will try to fly
+ *
+ * [clearedApp] is the approach cleared for the aircraft
+ *
+ * [clearedTrans] is the transition cleared for the aircraft
+ *
+ * [cancelLastMaxSpd] is a boolean that indicates whether the last maximum speed clearance should be cancelled
+ *
  * Also contains utility functions for updating the actual aircraft command state
  */
 @JsonClass(generateAdapter = true)
 data class ClearanceState(var routePrimaryName: String = "", val route: Route = Route(), val hiddenLegs: Route = Route(),
-                     var vectorHdg: Short? = null, var vectorTurnDir: Byte? = null,
-                     var clearedAlt: Int = 0, var expedite: Boolean = false, var clearedIas: Short = 0,
-                     var minIas: Short = 0, var maxIas: Short = 0, var optimalIas: Short = 0,
-                     var clearedApp: String? = null, var clearedTrans: String? = null) {
+                          var vectorHdg: Short? = null, var vectorTurnDir: Byte? = null,
+                          var clearedAlt: Int = 0, var expedite: Boolean = false, var clearedIas: Short = 0,
+                          var minIas: Short = 0, var maxIas: Short = 0, var optimalIas: Short = 0,
+                          var clearedApp: String? = null, var clearedTrans: String? = null,
+                          var cancelLastMaxSpd: Boolean = false) {
+
+    // Default constructor for JSON parsing
+    @Suppress("unused")
+    private constructor(): this(cancelLastMaxSpd = false)
 
     /**
      * Inner class used solely to denote and store the currently active clearance the aircraft is following
@@ -179,8 +196,8 @@ data class ClearanceState(var routePrimaryName: String = "", val route: Route = 
                 val app = GAME.gameServer?.airports?.get(entity[ArrivalAirport.mapper]?.arptId)?.entity?.get(ApproachChildren.mapper)?.approachMap?.get(it)?.entity
                 if (app == null) {
                     if (appChanged && (currFirstLeg == null || currFirstLeg.phase == Route.Leg.APP ||
-                                currFirstLeg.phase == Route.Leg.APP_TRANS)) return clearCurrentRouteRestrictions(entity)
-                    return
+                                currFirstLeg.phase == Route.Leg.APP_TRANS)) return@let clearCurrentRouteRestrictions(entity)
+                    return@let
                 }
                 if (appChanged) {
                     if (app.has(Localizer.mapper)) entity += LocalizerArmed(app)
@@ -200,6 +217,10 @@ data class ClearanceState(var routePrimaryName: String = "", val route: Route = 
                 }
             }
             clearedTrans = newClearance.clearedTrans
+            if (cancelLastMaxSpd != newClearance.cancelLastMaxSpd) {
+                cancelLastMaxSpd = newClearance.cancelLastMaxSpd
+                entity += LatestClearanceChanged()
+            }
 
             // Remove on go around route state if STAR changed
             if (starChanged) entity.remove<OnGoAroundRoute>()
@@ -309,6 +330,8 @@ data class ClearanceState(var routePrimaryName: String = "", val route: Route = 
                 (clearedIas == optimalIas && optimalIas != latestClearance.optimalIas && latestClearance.clearedIas == latestClearance.optimalIas)) clearedIas = latestClearance.clearedIas
             if (clearedApp == uiClearance.clearedApp) clearedApp = latestClearance.clearedApp
             if (clearedTrans == uiClearance.clearedTrans) clearedTrans = latestClearance.clearedTrans
+            if (cancelLastMaxSpd == uiClearance.cancelLastMaxSpd)
+                cancelLastMaxSpd = latestClearance.cancelLastMaxSpd
         } ?: run {
             // No default clearance to compare against, copy the properties directly
             routePrimaryName = latestClearance.routePrimaryName
@@ -321,6 +344,7 @@ data class ClearanceState(var routePrimaryName: String = "", val route: Route = 
             clearedIas = latestClearance.clearedIas
             clearedApp = latestClearance.clearedApp
             clearedTrans = latestClearance.clearedTrans
+            cancelLastMaxSpd = latestClearance.cancelLastMaxSpd
         }
         minIas = latestClearance.minIas
         maxIas = latestClearance.maxIas

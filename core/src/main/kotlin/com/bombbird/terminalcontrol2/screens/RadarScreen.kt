@@ -741,8 +741,8 @@ class RadarScreen private constructor(private val connectionHost: String, privat
             newClearanceState.route.getSerialisedObject(), newClearanceState.hiddenLegs.getSerialisedObject(),
             newClearanceState.vectorHdg, newClearanceState.vectorTurnDir, newClearanceState.clearedAlt, newClearanceState.expedite, newClearanceState.clearedIas,
             newClearanceState.minIas, newClearanceState.maxIas, newClearanceState.optimalIas,
-            newClearanceState.clearedApp, newClearanceState.clearedTrans,
-            playerSector)
+            newClearanceState.clearedApp, newClearanceState.clearedTrans, null,
+            newClearanceState.cancelLastMaxSpd, playerSector)
         )
     }
 

@@ -94,7 +94,7 @@ class ControlStateSystemInterval: IntervalSystem(1f) {
                 // Get the first upcoming waypoint with a speed restriction; if no waypoints with speed restriction, this check is not needed
                 val nextRestr = getNextWaypointWithSpdRestr(actingClearance.route, alt.altitudeFt) ?: return@apply
                 val nextMaxSpd = nextRestr.second
-                val currMaxSpd = lastRestriction.maxSpdKt
+                val currMaxSpd = if (actingClearance.cancelLastMaxSpd) null else lastRestriction.maxSpdKt
                 if (currMaxSpd != null && currMaxSpd <= nextMaxSpd) return@apply // Not required if next max speed is not lower than current max speed
                 if (actingClearance.clearedIas <= nextMaxSpd) return@apply // Not required if next max speed is not lower than current cleared IAS
                 // Physics - check distance needed to slow down from current speed to speed restriction
@@ -271,7 +271,7 @@ class ControlStateSystemInterval: IntervalSystem(1f) {
                         Route.fromSerialisedObject(currClearance.hiddenLegs.getSerialisedObject()),
                         currClearance.vectorHdg, currClearance.vectorTurnDir, calculateFinalCruiseAlt(this), false,
                         acInfo.aircraftPerf.tripIas, currClearance.minIas, currClearance.maxIas, currClearance.optimalIas,
-                        currClearance.clearedApp, currClearance.clearedTrans)
+                        currClearance.clearedApp, currClearance.clearedTrans, currClearance.cancelLastMaxSpd)
                     addNewClearanceToPendingClearances(this, newClearance, 0)
                     remove<PendingCruiseAltitude>()
                 }

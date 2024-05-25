@@ -53,8 +53,8 @@ class UIPane(private val uiStage: Stage) {
     private val routeEditPane: KContainer<Actor>
 
     // Clearance state of the UI pane
-    val clearanceState: ClearanceState = ClearanceState() // Aircraft's current state (without user changes)
-    val userClearanceState: ClearanceState = ClearanceState() // User's chosen state
+    val clearanceState = ClearanceState() // Aircraft's current state (without user changes)
+    val userClearanceState = ClearanceState() // User's chosen state
     val userClearanceRouteSegments: GdxArray<Route.LegSegment> = GdxArray() // The calculated route segments of user's chosen route state
 
     // Selected aircraft
@@ -64,6 +64,7 @@ class UIPane(private val uiStage: Stage) {
     var aircraftArrivalArptId: Byte? = null
     var appTrackCaptured = false
     var isEmergencyNotReadyForApproach = false
+    var lastMaxSpdKt: Short? = null
 
     init {
         uiStage.actors {
@@ -155,6 +156,8 @@ class UIPane(private val uiStage: Stage) {
         val latestActing = aircraft.entity[ClearanceAct.mapper]?.actingClearance ?: return
         userClearanceState.updateUIClearanceState(latestActing.clearanceState)
         clearanceState.updateUIClearanceState(latestActing.clearanceState)
+        val flightType = aircraft.entity[FlightType.mapper]?.type ?: return
+        lastMaxSpdKt = if (flightType == FlightType.ARRIVAL) aircraft.entity[LastRestrictions.mapper]?.maxSpdKt else null
         controlObj.resetDirectButton()
         controlObj.updateAltSpdAppClearances(userClearanceState.clearedAlt, userClearanceState.clearedIas,
             userClearanceState.minIas, userClearanceState.maxIas, userClearanceState.optimalIas,
@@ -187,10 +190,11 @@ class UIPane(private val uiStage: Stage) {
         }
         aircraftArrivalArptId = aircraft.entity[ArrivalAirport.mapper]?.arptId
         appTrackCaptured = aircraft.entity.has(VisualCaptured.mapper) || aircraft.entity.has(LocalizerCaptured.mapper)
-        // glidePathCaptured = aircraft.entity.has(VisualCaptured.mapper) || aircraft.entity.has(GlideSlopeCaptured.mapper)
         val latestActing = aircraft.entity[ClearanceAct.mapper]?.actingClearance ?: return
         userClearanceState.updateUIClearanceState(latestActing.clearanceState, clearanceState)
         clearanceState.updateUIClearanceState(latestActing.clearanceState)
+        val flightType = aircraft.entity[FlightType.mapper]?.type ?: return
+        lastMaxSpdKt = if (flightType == FlightType.ARRIVAL) aircraft.entity[LastRestrictions.mapper]?.maxSpdKt else null
         controlObj.updateClearanceMode(userClearanceState.route, userClearanceState.vectorHdg,
             aircraft.entity.has(VisualCaptured.mapper) || aircraft.entity.has(LocalizerCaptured.mapper), false)
         controlObj.updateAltSelectBoxChoices(aircraftMaxAlt, userClearanceState, false)

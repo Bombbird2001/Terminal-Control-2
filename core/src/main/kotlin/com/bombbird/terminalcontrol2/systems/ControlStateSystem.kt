@@ -38,8 +38,9 @@ class ControlStateSystem: EntitySystem() {
                         entity[ClearanceAct.mapper]?.actingClearance?.clearanceState ?: return@also
                     }
                     clearanceToUse.apply {
-                        GAME.gameServer?.sendAircraftClearanceStateUpdateToAll(aircraftInfo.icaoCallsign, routePrimaryName, route, hiddenLegs,
-                            vectorHdg, vectorTurnDir, clearedAlt, expedite, clearedIas, minIas, maxIas, optimalIas, clearedApp, clearedTrans)
+                        GAME.gameServer?.sendAircraftClearanceStateUpdateToAll(aircraftInfo.icaoCallsign, routePrimaryName,
+                            route, hiddenLegs, vectorHdg, vectorTurnDir, clearedAlt, expedite, clearedIas, minIas, maxIas,
+                            optimalIas, clearedApp, clearedTrans, entity[LastRestrictions.mapper]?.maxSpdKt, cancelLastMaxSpd)
                     }
                 }
                 entity.remove<LatestClearanceChanged>()
