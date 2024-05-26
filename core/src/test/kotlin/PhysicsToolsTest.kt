@@ -186,5 +186,19 @@ object PhysicsToolsTest: FunSpec() {
         test("Gradient calculations") {
             calculateDescentGradient(112973f, 190000) shouldBe 0.060632f.plusOrMinus(0.000001f)
         }
+
+        test("Target VS limit calculation") {
+            calculateTargetVerticalSpeedLimit(1500f, false) shouldBe Pair(3500f, -4000f)
+            calculateTargetVerticalSpeedLimit(7000f, true) shouldBe Pair(6000f, -6000f)
+            calculateTargetVerticalSpeedLimit(15000f, false) shouldBe Pair(2500f, -3000f)
+            calculateTargetVerticalSpeedLimit(25000f, false) shouldBe Pair(1500f, -2000f)
+            calculateTargetVerticalSpeedLimit(35000f, false) shouldBe Pair(1000f, -2000f)
+        }
+
+        test("Target VS limit gradient calculation") {
+            calculateMaxDescentGradientDueToTargetVerticalSpeed(7000f, 270f) shouldBe 0.14629f.plusOrMinus(0.00001f)
+            calculateMaxDescentGradientDueToTargetVerticalSpeed(15000f, 310f) shouldBe 0.095562f.plusOrMinus(0.000001f)
+            calculateMaxDescentGradientDueToTargetVerticalSpeed(25000f, 380f) shouldBe 0.051972f.plusOrMinus(0.000001f)
+        }
     }
 }

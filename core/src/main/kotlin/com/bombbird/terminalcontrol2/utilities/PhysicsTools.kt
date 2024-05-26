@@ -465,6 +465,15 @@ fun calculateDescentGradient(netForceN: Float, massKg: Int): Float {
 }
 
 /**
+ * Calculates the maximum descent gradient achievable as imposed by the target vertical speed limits at
+ * [altitudeAboveSeaLevelFt] and [tasKt]
+ */
+fun calculateMaxDescentGradientDueToTargetVerticalSpeed(altitudeAboveSeaLevelFt: Float, tasKt: Float): Float {
+    val maxDescentRate = calculateTargetVerticalSpeedLimit(altitudeAboveSeaLevelFt, false).second
+    return -maxDescentRate / ktToFpm(tasKt)
+}
+
+/**
  * Calculates the spawn coordinates, track for an arrival aircraft route, just outside the primary sector's borders
  * @param route the route of the arrival aircraft
  * @param primarySector the polygon encompassing primary sector
@@ -684,13 +693,15 @@ private fun calculateTopAltitudeAtDistanceFromAlt(startAlt: Float, distPx: Float
         val estTas = calculateTASFromIAS(currStepAlt, aircraftPerf.tripIas.toFloat())
         val estMinDrag = calculateMinDrag(aircraftPerf, currStepAlt, estTas, takingOff = false, takeoffGoAround = false)
         val estMinThrust = calculateMaxThrust(aircraftPerf, currStepAlt, estTas) * 0.05f
-        val estGrad = calculateDescentGradient(estMinDrag - estMinThrust, aircraftPerf.massKg)
+        val estGrad = min(calculateDescentGradient(estMinDrag - estMinThrust, aircraftPerf.massKg),
+            calculateMaxDescentGradientDueToTargetVerticalSpeed(currStepAlt, estTas))
         val topOfStepAlt = estGrad * pxToFt(effectiveStepSize) + currStepAlt
         // Use the estimated top altitude step to calculate the gradient
         val actlTas = calculateTASFromIAS(topOfStepAlt, aircraftPerf.tripIas.toFloat())
         val actlMinDrag = calculateMinDrag(aircraftPerf, topOfStepAlt, actlTas, takingOff = false, takeoffGoAround = false)
         val actlMinThrust = calculateMaxThrust(aircraftPerf, topOfStepAlt, actlTas) * 0.05f
-        val actlGrad = calculateDescentGradient(actlMinDrag - actlMinThrust, aircraftPerf.massKg)
+        val actlGrad = min(calculateDescentGradient(actlMinDrag - actlMinThrust, aircraftPerf.massKg),
+            calculateMaxDescentGradientDueToTargetVerticalSpeed(currStepAlt, actlTas))
         currStepAlt += actlGrad * pxToFt(effectiveStepSize)
         currStepDist += effectiveStepSize
     }
@@ -702,4 +713,29 @@ private fun calculateTopAltitudeAtDistanceFromAlt(startAlt: Float, distPx: Float
     else aircraftPerf.tripIas.toFloat()))
     currStepAlt -= mToFt(tasMpsAtTop * tasMpsAtTop / 2 / GRAVITY_ACCELERATION_MPS2)
     return min(currStepAlt, aircraftPerf.maxAlt.toFloat())
+}
+
+/**
+ * Obtains the absolute target VS limits for an aircraft at [altitudeAboveSeaLevelFt], and also considers if it is
+ * [expedite]-ing
+ *
+ * Note that this target may be higher than the aircraft's performance limit, the more restrictive of which should be
+ * adhered to in calculations
+ *
+ * Returns a pair, first being the maximum climb VS, second being the maximum descent VS
+ */
+fun calculateTargetVerticalSpeedLimit(altitudeAboveSeaLevelFt: Float, expedite: Boolean): Pair<Float, Float> {
+    if (expedite) return Pair(6000f, -6000f)
+    val maxClimbVs = when {
+        altitudeAboveSeaLevelFt < 10000 -> 3500f
+        altitudeAboveSeaLevelFt < 20000 -> 2500f
+        altitudeAboveSeaLevelFt < 30000 -> 1500f
+        else -> 1000f
+    }
+    val maxDescentVs = when {
+        altitudeAboveSeaLevelFt < 10000 -> -4000f
+        altitudeAboveSeaLevelFt < 20000 -> -3000f
+        else -> -2000f
+    }
+    return Pair(maxClimbVs, maxDescentVs)
 }
