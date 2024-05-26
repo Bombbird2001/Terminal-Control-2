@@ -74,7 +74,11 @@ class CommsPane {
      * @param msgType the type of the message to add; will determine the display style of the message
      */
     fun addMessage(msg: String, msgType: Byte) {
-        if (convoLabels.size >= CONVO_SIZE) convoLabels.removeFirst().remove()
+        if (convoLabels.size >= CONVO_SIZE) {
+            val toRemove = convoLabels.removeFirst()
+            labelTable.getCell(toRemove).pad(0f, 15f, 0f, 15f)
+            toRemove.remove()
+        }
         val msgStyle = "CommsPane" + when (msgType) {
             ARRIVAL -> "Arrival"
             DEPARTURE -> "Departure"
