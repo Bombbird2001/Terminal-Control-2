@@ -25,10 +25,10 @@ class MenuNotificationManager(private val stage: Stage) {
                     " multiplayer functionality, have fun!", 800, 1800)
         )
         add(
-            MenuNotification("tcsf-added", "New airport available!", "TCSF has been added to the" +
-                    " game. A few bugs have also been fixed. As always, please report bugs encountered by clicking" +
-                    " the \"Report Bug\" button in the Pause screen in-game, or from the info menu. Enjoy the new" +
-                    " challenging map!", 600, 1400)
+            MenuNotification("tcws-updated", "TCWS update", "The TCWS map has been revamped in" +
+                    " accordance with new real life procedures, and a new secondary airport has been added. Saves will" +
+                    " start to keep track of the last played time, and will be shown at the top of the list if played" +
+                    " recently. A few bugs have also been fixed.", 600, 1400)
         )
     }
 
