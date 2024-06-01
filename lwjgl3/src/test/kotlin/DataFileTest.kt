@@ -277,7 +277,9 @@ object DataFileTest: FunSpec() {
     private fun testCoordsString(coords: String, maxLimit: Float? = null): Position {
         val position: Position
         coords.split(",").let {
-            it.size shouldBe 2
+            withClue(it) {
+                it.size shouldBe 2
+            }
             val x = it[0].toFloat()
             val y = it[1].toFloat()
             if (maxLimit != null) {

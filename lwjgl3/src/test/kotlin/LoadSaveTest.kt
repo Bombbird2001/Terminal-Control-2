@@ -42,7 +42,7 @@ object LoadSaveTest: FunSpec() {
 
         val metaBufferedReader = File("..\\lwjgl3\\src\\test\\kotlin\\loadSaveTestSampleMeta.txt").bufferedReader()
         val testMetaString = metaBufferedReader.use { it.readText() }
-        testMetaString.length shouldBe 87
+        testMetaString.length shouldBe 111
 
         val saveModifiedBufferedReader = File("..\\lwjgl3\\src\\test\\kotlin\\loadSaveTestSampleSaveModified.txt").bufferedReader()
         val testSaveModifiedString = saveModifiedBufferedReader.use { it.readText() }
@@ -51,7 +51,7 @@ object LoadSaveTest: FunSpec() {
 
         val metaModifiedBufferedReader = File("..\\lwjgl3\\src\\test\\kotlin\\loadSaveTestSampleMetaModified.txt").bufferedReader()
         val testMetaModifiedString = metaModifiedBufferedReader.use { it.readText() }
-        testMetaModifiedString.length shouldBe 88
+        testMetaModifiedString.length shouldBe 112
 
         @OptIn(ExperimentalStdlibApi::class)
         val gameSaveMetaMoshi = Moshi.Builder().build().adapter<GameSaveMeta>()
@@ -113,7 +113,7 @@ object LoadSaveTest: FunSpec() {
             saveHandle.readString().length shouldBeGreaterThan 0
 
             saveMetaHandle.exists().shouldBeTrue()
-            saveMetaHandle.readString() shouldBe testMetaModifiedString
+            saveMetaHandle.readString().removeLastPlayedDatetime() shouldBe testMetaModifiedString
 
             backupHandle.exists().shouldBeTrue()
             backupHandle.readString() shouldBe testSaveString
@@ -140,7 +140,7 @@ object LoadSaveTest: FunSpec() {
             saveHandle.readString().length shouldBeGreaterThan 0
 
             saveMetaHandle.exists().shouldBeTrue()
-            saveMetaHandle.readString() shouldBe testMetaModifiedString
+            saveMetaHandle.readString().removeLastPlayedDatetime() shouldBe testMetaModifiedString
 
             backupHandle.exists().shouldBeTrue()
             backupHandle.readString() shouldBe testSaveString
@@ -166,7 +166,7 @@ object LoadSaveTest: FunSpec() {
             saveHandle.readString().length shouldBeGreaterThan 0
 
             saveMetaHandle.exists().shouldBeTrue()
-            saveMetaHandle.readString() shouldBe testMetaString
+            saveMetaHandle.readString().removeLastPlayedDatetime() shouldBe testMetaString
 
             backupHandle.exists().shouldBeTrue()
             backupHandle.readString() shouldBe testSaveModifiedString
@@ -193,7 +193,7 @@ object LoadSaveTest: FunSpec() {
             saveHandle.readString().length shouldBeGreaterThan 0
 
             saveMetaHandle.exists().shouldBeTrue()
-            saveMetaHandle.readString() shouldBe testMetaString
+            saveMetaHandle.readString().removeLastPlayedDatetime() shouldBe testMetaString
 
             backupHandle.exists().shouldBeTrue()
             backupHandle.readString() shouldBe testSaveModifiedString
@@ -220,7 +220,7 @@ object LoadSaveTest: FunSpec() {
             saveHandle.readString().length shouldBeGreaterThan 0
 
             saveMetaHandle.exists().shouldBeTrue()
-            saveMetaHandle.readString() shouldBe testMetaModifiedString
+            saveMetaHandle.readString().removeLastPlayedDatetime() shouldBe testMetaModifiedString
 
             backupHandle.exists().shouldBeTrue()
             backupHandle.readString() shouldBe testSaveString
@@ -250,5 +250,9 @@ object LoadSaveTest: FunSpec() {
             val gamesFound = getAvailableSaveGames()
             gamesFound[TEST_SAVE_ID].shouldNotBeNull() shouldBe testMetaModified
         }
+    }
+
+    private fun String.removeLastPlayedDatetime(): String {
+        return replace("\"lastPlayedDatetime\":\".*?\"".toRegex(), "\"lastPlayedDatetime\":\"\"")
     }
 }
