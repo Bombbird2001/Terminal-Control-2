@@ -117,7 +117,7 @@ class TerminalControl2(val externalFileHandler: ExternalFileHandler, ttsHandler:
             assetStorage.apply {
                 // Loading assets, the coroutine will suspend until each asset is loaded
                 Scene2DSkin.defaultSkin = load("Skin/skin.json")
-                for (i in 1..8) load<Texture>("Images/$i.png")
+                for (i in 1..9) load<Texture>("Images/$i.png")
                 load<Texture>("Images/MainMenuIcon.png")
 
                 // Loading audio files
@@ -167,7 +167,7 @@ class TerminalControl2(val externalFileHandler: ExternalFileHandler, ttsHandler:
             discordHandler.initialize()
         }
 
-        BG_INDEX = MathUtils.random(1, 8)
+        BG_INDEX = MathUtils.random(1, 9)
     }
 
     /** Overrides [KtxGame.dispose] to also dispose of [batch], [assetStorage] and [soundManager] */
