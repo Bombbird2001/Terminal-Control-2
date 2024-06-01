@@ -1092,6 +1092,11 @@ class AISystem: EntitySystem() {
                 return@apply
             }
         }
+
+        val spds = getMinMaxOptimalIAS(entity)
+        actingClearance.minIas = spds.first
+        actingClearance.maxIas = spds.second
+        actingClearance.optimalIas = spds.third
     }
 
     /**

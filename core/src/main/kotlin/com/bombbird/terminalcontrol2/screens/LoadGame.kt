@@ -16,6 +16,7 @@ import ktx.collections.*
 import ktx.scene2d.*
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
 
 /** Screen for searching game saves in the user app data */
 class LoadGame: BasicUIScreen() {
@@ -241,8 +242,12 @@ class LoadGame: BasicUIScreen() {
                 val defaultDetails = "${meta.mainName} - Score: ${meta.score}   High score: ${meta.highScore}\nLanded: ${meta.landed}   Departed: ${meta.departed}"
                 val configDetails = meta.configNames ?: ""
                 val lastPlayedString = meta.lastPlayedDatetime?.let {
-                    val playedTemporal = ZonedDateTime.parse(it, DateTimeFormatter.ISO_ZONED_DATE_TIME)
-                    getDatetimeDifferenceString(playedTemporal, ZonedDateTime.now())
+                    try {
+                        val playedTemporal = ZonedDateTime.parse(it, DateTimeFormatter.ISO_ZONED_DATE_TIME)
+                        getDatetimeDifferenceString(playedTemporal, ZonedDateTime.now())
+                    } catch (e: DateTimeParseException) {
+                        null
+                    }
                 }
                 val lastPlayed = if (lastPlayedString != null) "\nLast played: $lastPlayedString" else ""
                 val saveButton = textButton(defaultDetails, "NewLoadGameAirport").cell(growX = true)
