@@ -895,6 +895,11 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
         networkServer.sendToAllTCP(ScoreData(score, highScore))
     }
 
+    /** Sends a message to clients to inform them of arrival that has landed at [airportIcao] */
+    fun sendArrivalLanded(airportIcao: String) {
+        networkServer.sendToAllTCP(ArrivalLanded(airportIcao))
+    }
+
     /**
      * Sends a message to clients to update them on the ongoing conflicts
      * @param conflicts the list of ongoing conflicts

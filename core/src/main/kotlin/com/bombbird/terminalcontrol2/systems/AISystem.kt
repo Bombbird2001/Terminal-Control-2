@@ -191,8 +191,11 @@ class AISystem: EntitySystem() {
                         }
                         it.incrementScoreBy(1, FlightType.ARRIVAL)
                         get(ArrivalAirport.mapper)?.arptId?.also { landingArptId ->
-                            val depInfo = GAME.gameServer?.airports?.get(landingArptId)?.entity?.get(DepartureInfo.mapper) ?: return@also
+                            val arptEntity = it.airports[landingArptId]?.entity ?: return@also
+                            val depInfo = arptEntity[DepartureInfo.mapper] ?: return@also
                             depInfo.backlog++
+                            val airportIcao = arptEntity[AirportInfo.mapper]?.icaoCode ?: return@also
+                            it.sendArrivalLanded(airportIcao)
                         }
                     }
 

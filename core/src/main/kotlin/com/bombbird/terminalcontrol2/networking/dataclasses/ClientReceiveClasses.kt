@@ -298,6 +298,15 @@ data class ScoreData(private val score: Int = 0, private val highScore: Int = 0)
     }
 }
 
+/** Class for notifying clients of an arrival that has landed and de-spawned */
+data class ArrivalLanded(private val airportIcao: String = ""): ClientReceive, NeedsEncryption {
+    override fun handleClientReceive(rs: RadarScreen) {
+        FileLog.info("ClientReceiveClasses", "Received ArrivalLanded")
+        GAME.achievementManager.incrementArrival(airportIcao)
+        if (rs.sectors.size > 1) GAME.achievementManager.incrementMultiplayerArrival()
+    }
+}
+
 /** Class notifying client that all initial required data has been sent, they can now accept other transmission data */
 class InitialDataSendComplete: ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {

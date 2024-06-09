@@ -18,15 +18,17 @@ class AndroidLauncher : AndroidApplication() {
         const val CREATE_SAVE_FILE = 45511
         const val ACT_CHECK_TTS_DATA = 45512
         const val ACT_INSTALL_TTS_DATA = 45513
+        const val PLAY_SHOW_ACHIEVEMENTS = 45514
     }
 
     private lateinit var terminalControl2: TerminalControl2
     private val fileHandler = AndroidFileHandler(this)
     private val ttsHandler = AndroidTTSHandler(this)
+    private val playServicesManager = PlayServicesManager(this)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        terminalControl2 = TerminalControl2(fileHandler, ttsHandler, StubDiscordHandler)
+        terminalControl2 = TerminalControl2(fileHandler, ttsHandler, StubDiscordHandler, playServicesManager)
         initialize(terminalControl2, AndroidApplicationConfiguration().apply {
             // Configure your application here.
             numSamples = 0
@@ -34,6 +36,7 @@ class AndroidLauncher : AndroidApplication() {
             useCompass = false
             useImmersiveMode = false
         })
+        playServicesManager.initialize()
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {

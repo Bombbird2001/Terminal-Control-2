@@ -10,6 +10,7 @@ import com.bombbird.terminalcontrol2.components.loadAllComponents
 import com.bombbird.terminalcontrol2.files.*
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.integrations.DiscordHandler
+import com.bombbird.terminalcontrol2.integrations.PlayServicesInterface
 import com.bombbird.terminalcontrol2.networking.*
 import com.bombbird.terminalcontrol2.networking.playerclient.LANClient
 import com.bombbird.terminalcontrol2.networking.playerclient.LANClientDiscoveryHandler
@@ -24,6 +25,7 @@ import com.bombbird.terminalcontrol2.sounds.TextToSpeechHandler
 import com.bombbird.terminalcontrol2.sounds.TextToSpeechManager
 import com.bombbird.terminalcontrol2.systems.loadAllFamilies
 import com.bombbird.terminalcontrol2.ui.CustomDialog
+import com.bombbird.terminalcontrol2.utilities.AchievementManager
 import com.bombbird.terminalcontrol2.utilities.AndroidLifeCycleHandler
 import com.bombbird.terminalcontrol2.utilities.FileLog
 import com.bombbird.terminalcontrol2.utilities.loadCallsigns
@@ -41,7 +43,7 @@ import ktx.scene2d.*
  * [clearScreen] is set to false as it will be handled by the individual screens
  */
 class TerminalControl2(val externalFileHandler: ExternalFileHandler, ttsHandler: TextToSpeechHandler,
-                       val discordHandler: DiscordHandler) : KtxGame<KtxScreen>(clearScreen = false) {
+                       val discordHandler: DiscordHandler, playServicesInterface: PlayServicesInterface): KtxGame<KtxScreen>(clearScreen = false) {
     lateinit var batch: SpriteBatch
     lateinit var engine: Engine
     lateinit var soundManager: SoundManager
@@ -53,6 +55,7 @@ class TerminalControl2(val externalFileHandler: ExternalFileHandler, ttsHandler:
     val publicClient = PublicClient()
     val ttsManager = TextToSpeechManager(ttsHandler)
     val androidLifeCycleHandler = AndroidLifeCycleHandler()
+    val achievementManager = AchievementManager(playServicesInterface)
 
     init {
         GAME = this
@@ -165,6 +168,7 @@ class TerminalControl2(val externalFileHandler: ExternalFileHandler, ttsHandler:
 
             ttsManager.init()
             discordHandler.initialize()
+            // if (APP_TYPE == Application.ApplicationType.Android) achievementManager.setInitialArrivalAchievements()
         }
 
         BG_INDEX = MathUtils.random(1, 9)

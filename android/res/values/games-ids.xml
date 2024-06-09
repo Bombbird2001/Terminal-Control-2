@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--Google Play game services IDs. Save this file as res/values/games-ids.xml in your project.-->
+<resources>
+    <!--app_id-->
+    <string name="game_services_project_id" translatable="false">462091496593</string>
+    <!--package_name-->
+    <string name="package_name" translatable="false">com.bombbird.terminalcontrol2</string>
+    <!--achievement First Touchdown-->
+    <string name="achievement_first_touchdown" translatable="false">CgkIkdmytrkNEAIQBg</string>
+    <!--achievement Runway Rookie-->
+    <string name="achievement_runway_rookie" translatable="false">CgkIkdmytrkNEAIQBw</string>
+    <!--achievement Sequencing Specialist-->
+    <string name="achievement_sequencing_specialist" translatable="false">CgkIkdmytrkNEAIQCA</string>
+    <!--achievement Radar Regular-->
+    <string name="achievement_radar_regular" translatable="false">CgkIkdmytrkNEAIQCQ</string>
+    <!--achievement Airspace Ace-->
+    <string name="achievement_airspace_ace" translatable="false">CgkIkdmytrkNEAIQCw</string>
+    <!--achievement TRACON Topdog-->
+    <string name="achievement_tracon_topdog" translatable="false">CgkIkdmytrkNEAIQDA</string>
+    <!--achievement Air Traffic Controller-->
+    <string name="achievement_air_traffic_controller" translatable="false">CgkIkdmytrkNEAIQDQ</string>
+    <!--achievement I Am God-->
+    <string name="achievement_i_am_god" translatable="false">CgkIkdmytrkNEAIQDg</string>
+    <!--achievement Vector Victor-->
+    <string name="achievement_vector_victor" translatable="false">CgkIkdmytrkNEAIQCg</string>
+    <!--achievement Wafers and Chips-->
+    <string name="achievement_wafers_and_chips" translatable="false">CgkIkdmytrkNEAIQAA</string>
+    <!--achievement Legislative Pig Guts-->
+    <string name="achievement_legislative_pig_guts" translatable="false">CgkIkdmytrkNEAIQAQ</string>
+    <!--achievement Lion Fish-->
+    <string name="achievement_lion_fish" translatable="false">CgkIkdmytrkNEAIQAg</string>
+    <!--achievement No ILS for you!-->
+    <string name="achievement_no_ils_for_you" translatable="false">CgkIkdmytrkNEAIQAw</string>
+    <!--achievement Weekend Getaway-->
+    <string name="achievement_weekend_getaway" translatable="false">CgkIkdmytrkNEAIQFg</string>
+    <!--achievement Loyal Doggo-->
+    <string name="achievement_loyal_doggo" translatable="false">CgkIkdmytrkNEAIQBA</string>
+    <!--achievement Crooked Taxiway-->
+    <string name="achievement_crooked_taxiway" translatable="false">CgkIkdmytrkNEAIQBQ</string>
+    <!--achievement Sunk Cost-->
+    <string name="achievement_sunk_cost" translatable="false">CgkIkdmytrkNEAIQDw</string>
+    <!--achievement Deer Chase-->
+    <string name="achievement_deer_chase" translatable="false">CgkIkdmytrkNEAIQEA</string>
+    <!--achievement Fatty Beef-->
+    <string name="achievement_fatty_beef" translatable="false">CgkIkdmytrkNEAIQEQ</string>
+    <!--achievement Up the stairs, down the elevator-->
+    <string name="achievement_up_the_stairs_down_the_elevator" translatable="false">CgkIkdmytrkNEAIQEg</string>
+    <!--achievement Poker Face-->
+    <string name="achievement_poker_face" translatable="false">CgkIkdmytrkNEAIQEw</string>
+    <!--achievement Decade-old Rice-->
+    <string name="achievement_decadeold_rice" translatable="false">CgkIkdmytrkNEAIQFA</string>
+    <!--achievement Sour & Spicy, Sweet & Fragrant-->
+    <string name="achievement_sour__spicy_sweet__fragrant" translatable="false">CgkIkdmytrkNEAIQFQ</string>
+    <!--achievement Windmill Fight-->
+    <string name="achievement_windmill_fight" translatable="false">CgkIkdmytrkNEAIQFw</string>
+    <!--achievement She is more famous than I am-->
+    <string name="achievement_she_is_more_famous_than_i_am" translatable="false">CgkIkdmytrkNEAIQGA</string>
+    <!--achievement Strike!-->
+    <string name="achievement_strike" translatable="false">CgkIkdmytrkNEAIQGQ</string>
+    <!--achievement The Top 1%-->
+    <string name="achievement_the_top_1" translatable="false">CgkIkdmytrkNEAIQGg</string>
+    <!--achievement Shaky Ground-->
+    <string name="achievement_shaky_ground" translatable="false">CgkIkdmytrkNEAIQHQ</string>
+    <!--achievement Essef, but not really-->
+    <string name="achievement_essef_but_not_really" translatable="false">CgkIkdmytrkNEAIQHA</string>
+    <!--achievement High-Tech-->
+    <string name="achievement_hightech" translatable="false">CgkIkdmytrkNEAIQGw</string>
+    <!--achievement Full House-->
+    <string name="achievement_full_house" translatable="false">CgkIkdmytrkNEAIQIQ</string>
+    <!--achievement Knock Knock-->
+    <string name="achievement_knock_knock" translatable="false">CgkIkdmytrkNEAIQJA</string>
+    <!--achievement Coordination Champion-->
+    <string name="achievement_coordination_champion" translatable="false">CgkIkdmytrkNEAIQIg</string>
+    <!--achievement Dream Team-->
+    <string name="achievement_dream_team" translatable="false">CgkIkdmytrkNEAIQIw</string>
+</resources>
