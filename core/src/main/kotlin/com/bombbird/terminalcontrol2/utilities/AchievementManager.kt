@@ -3,9 +3,9 @@ package com.bombbird.terminalcontrol2.utilities
 import com.badlogic.gdx.Gdx
 import com.bombbird.terminalcontrol2.files.getAvailableSaveGames
 import com.bombbird.terminalcontrol2.global.PREFS_FILE_NAME
-import com.bombbird.terminalcontrol2.integrations.PlayServicesInterface
+import com.bombbird.terminalcontrol2.integrations.PlayServicesHandler
 
-class AchievementManager(private val playServicesInterface: PlayServicesInterface) {
+class AchievementManager(private val playServicesHandler: PlayServicesHandler) {
     private val firstTouchdownAchievement = "CgkIkdmytrkNEAIQBg"
     private val arrivalAchievements = arrayOf(
         "CgkIkdmytrkNEAIQBw",
@@ -42,6 +42,11 @@ class AchievementManager(private val playServicesInterface: PlayServicesInterfac
         Pair("TCOA", "CgkIkdmytrkNEAIQHA"),
         Pair("TCSJ", "CgkIkdmytrkNEAIQGw")
     )
+    private val knockKnockAchievement = "CgkIkdmytrkNEAIQJA"
+    private val iAmGodAchievement = "CgkIkdmytrkNEAIQDg"
+    private var iAmGodCounter = 0
+    private val vectorVictorAchievement = "CgkIkdmytrkNEAIQCg"
+    private var vectorVictorMinuteCounter = 0
 
     /**
      * Sets initial arrival achievements for the player, should be called only once when the game is first launched
@@ -52,9 +57,9 @@ class AchievementManager(private val playServicesInterface: PlayServicesInterfac
         if (prefs.getBoolean("initialArrivalAchievementsSet", false)) return
 
         val arrivalSum = getAvailableSaveGames().values().toArray().sumOf { it.landed }
-        if (arrivalSum > 0) playServicesInterface.unlockAchievement(firstTouchdownAchievement)
+        if (arrivalSum > 0) playServicesHandler.unlockAchievement(firstTouchdownAchievement)
         arrivalAchievements.forEach {
-            playServicesInterface.setAchievementSteps(it, arrivalSum)
+            playServicesHandler.setAchievementSteps(it, arrivalSum)
         }
 
         prefs.putBoolean("initialArrivalAchievementsSet", true)
@@ -62,20 +67,49 @@ class AchievementManager(private val playServicesInterface: PlayServicesInterfac
 
     /** Increments achievement arrival count at [airportIcao] */
     fun incrementArrival(airportIcao: String) {
-        playServicesInterface.unlockAchievement(firstTouchdownAchievement)
+        playServicesHandler.unlockAchievement(firstTouchdownAchievement)
         arrivalAchievements.forEach {
-            playServicesInterface.incrementAchievementSteps(it, 1)
+            playServicesHandler.incrementAchievementSteps(it, 1)
         }
 
         airportArrivalAchievements[airportIcao]?.let {
-            playServicesInterface.incrementAchievementSteps(it, 1)
+            playServicesHandler.incrementAchievementSteps(it, 1)
         }
     }
 
     /** Increments multiplayer achievement arrival count */
     fun incrementMultiplayerArrival() {
         multiplayerArrivalAchievements.forEach {
-            playServicesInterface.incrementAchievementSteps(it, 1)
+            playServicesHandler.incrementAchievementSteps(it, 1)
+        }
+    }
+
+    fun unlockKnockKnock() {
+        playServicesHandler.unlockAchievement(knockKnockAchievement)
+    }
+
+    fun resetGodCounter() {
+        iAmGodCounter = 0
+    }
+
+    /** Increments the "I Am God" achievement counter by [seconds], and unlocks it once 30 minutes is up */
+    fun incrementGodCounter(seconds: Int) {
+        iAmGodCounter += seconds
+        if (iAmGodCounter >= 1800) {
+            playServicesHandler.unlockAchievement(iAmGodAchievement)
+            iAmGodCounter = Int.MIN_VALUE
+        }
+    }
+
+    /**
+     * Increments the "Vector Victor" achievement counter by [seconds], and increments the achievement step every
+     * minute
+     */
+    fun incrementVectorVictorCounter(seconds: Int) {
+        vectorVictorMinuteCounter += seconds
+        if (vectorVictorMinuteCounter >= 60) {
+            playServicesHandler.incrementAchievementSteps(vectorVictorAchievement, vectorVictorMinuteCounter / 60)
+            vectorVictorMinuteCounter %= 60
         }
     }
 }

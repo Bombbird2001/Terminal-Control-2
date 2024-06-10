@@ -81,6 +81,10 @@ class TrafficSystemInterval: IntervalSystem(1f) {
                 createRandomArrival(Entries(airports).map { it.value }, this)
             }
 
+            // I Am God achievement counter; engine update rate already takes into account game speed up
+            if (trafficMode == TrafficMode.FLOW_RATE && trafficValue >= 119.9f && playersInGame == 1.toByte())
+                GAME.achievementManager.incrementGodCounter(interval.toInt())
+
             // Check runway configurations when night mode changes
             val currIsNight = UsabilityFilter.isNight()
             if (lastIsNight != currIsNight) {

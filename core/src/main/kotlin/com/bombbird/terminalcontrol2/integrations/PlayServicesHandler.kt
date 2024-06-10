@@ -1,6 +1,6 @@
 package com.bombbird.terminalcontrol2.integrations
 
-interface PlayServicesInterface {
+interface PlayServicesHandler {
     fun showAchievements()
 
     fun unlockAchievement(id: String)
@@ -15,7 +15,7 @@ interface PlayServicesInterface {
 }
 
 /** Stub Play Services interface object for testing, not implemented or not required */
-object StubPlayServicesInterface: PlayServicesInterface {
+object StubPlayServicesHandler: PlayServicesHandler {
     override fun showAchievements() {}
 
     override fun unlockAchievement(id: String) {}

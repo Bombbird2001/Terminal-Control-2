@@ -326,6 +326,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
                 startTime = -1L
                 FileLog.info("GameServer", "Game server started")
                 serverStartedCallback?.invoke()
+                GAME.achievementManager.resetGodCounter()
                 // Pause the game initially (until at least 1 player connects)
                 updateGameRunningStatus(false)
                 loopRunning.set(true)

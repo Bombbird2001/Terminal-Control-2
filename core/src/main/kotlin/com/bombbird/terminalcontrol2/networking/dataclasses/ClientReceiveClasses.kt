@@ -133,6 +133,7 @@ class IndividualSectorData(private val assignedSectorId: Byte = 0, private val s
         rs.incomingSwapRequests.clear()
         rs.uiPane.sectorPane.updateSectorDisplay(rs.sectors)
         rs.uiPane.commsPane.addMessage("You are now controlling sector ${assignedSectorId + 1}", CommsPane.ALERT)
+        if (sectors.size > 1) GAME.achievementManager.unlockKnockKnock()
     }
 }
 

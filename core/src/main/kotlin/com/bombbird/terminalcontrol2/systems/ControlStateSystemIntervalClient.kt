@@ -18,11 +18,13 @@ import ktx.ashley.*
 class ControlStateSystemIntervalClient: IntervalSystem(1f) {
     companion object {
         private val handoverUpdateFamily: Family = allOf(Controllable::class, GroundTrack::class, Position::class, Altitude::class).get()
+        private val vectorFamily = allOf(ClearanceAct::class, Controllable::class).get()
 
         fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 
     private val handoverUpdateFamilyEntities = FamilyWithListener.newClientFamilyWithListener(handoverUpdateFamily)
+    private val vectorFamilyEntities = FamilyWithListener.newClientFamilyWithListener(vectorFamily)
 
     /** Main update function */
     override fun updateInterval() {
@@ -63,6 +65,19 @@ class ControlStateSystemIntervalClient: IntervalSystem(1f) {
                 } ?: return@apply
             }
         }
+
+
+
+        // Update timer for checking vector achievement
+        // Host singleplayer speed up allowed; engine update rate already takes into account game speed up
+        GAME.achievementManager.incrementVectorVictorCounter(
+            (vectorFamilyEntities.getEntities().filter {
+                val controllable = it[Controllable.mapper] ?: return@filter false
+                it[ClearanceAct.mapper]?.actingClearance?.clearanceState?.vectorHdg != null
+                        && controllable.sectorId == CLIENT_SCREEN?.playerSector
+                        && controllable.controllerUUID == myUuid
+            }.size * interval).toInt()
+        )
     }
 
     /**

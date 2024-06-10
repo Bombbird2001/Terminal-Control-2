@@ -5,11 +5,11 @@ package com.bombbird.terminalcontrol2.lwjgl3
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration
 import com.bombbird.terminalcontrol2.TerminalControl2
-import com.bombbird.terminalcontrol2.integrations.StubPlayServicesInterface
+import com.bombbird.terminalcontrol2.integrations.StubPlayServicesHandler
 
 /** Launches the desktop (LWJGL3) application. */
 fun main() {
-    Lwjgl3Application(TerminalControl2(DesktopFileHandler(), DesktopTTSHandler(), DesktopDiscordHandler(), StubPlayServicesInterface),
+    Lwjgl3Application(TerminalControl2(DesktopFileHandler(), DesktopTTSHandler(), DesktopDiscordHandler(), StubPlayServicesHandler),
         Lwjgl3ApplicationConfiguration().apply {
         setTitle("Terminal Control 2")
         setWindowedMode(1920, 1440)
