@@ -1,6 +1,7 @@
 package com.bombbird.terminalcontrol2
 
 import com.badlogic.ashley.core.Engine
+import com.badlogic.gdx.Application
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.audio.Sound
 import com.badlogic.gdx.graphics.Texture
@@ -168,7 +169,7 @@ class TerminalControl2(val externalFileHandler: ExternalFileHandler, ttsHandler:
 
             ttsManager.init()
             discordHandler.initialize()
-            // if (APP_TYPE == Application.ApplicationType.Android) achievementManager.setInitialArrivalAchievements()
+            if (APP_TYPE == Application.ApplicationType.Android) achievementManager.setInitialArrivalAchievements()
         }
 
         BG_INDEX = MathUtils.random(1, 9)

@@ -66,8 +66,6 @@ class ControlStateSystemIntervalClient: IntervalSystem(1f) {
             }
         }
 
-
-
         // Update timer for checking vector achievement
         // Host singleplayer speed up allowed; engine update rate already takes into account game speed up
         GAME.achievementManager.incrementVectorVictorCounter(
