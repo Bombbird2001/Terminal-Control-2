@@ -222,3 +222,26 @@ object DepartureRouteZoneAdapter {
         }
     }
 }
+
+/** Data class for storing all custom approach separation belonging to an airport */
+@JsonClass(generateAdapter = true)
+data class CustomApproachSeparationChildrenJSON(val customAppSeps: List<CustomApproachSeparation>)
+
+/** Adapter object for serialization between [CustomApproachSeparationChildren] and [CustomApproachSeparationChildrenJSON] */
+object CustomApproachSeparationAdapter {
+    @ToJson
+    fun toJson(customAppSep: CustomApproachSeparationChildren): CustomApproachSeparationChildrenJSON {
+        val array = ArrayList<CustomApproachSeparation>()
+        for (i in 0 until customAppSep.customAppGroups.size) customAppSep.customAppGroups[i]?.let { array.add(it) }
+        return CustomApproachSeparationChildrenJSON(array)
+    }
+
+    @FromJson
+    fun fromJson(customAppSepJSON: CustomApproachSeparationChildrenJSON): CustomApproachSeparationChildren {
+        return CustomApproachSeparationChildren().apply {
+            customAppSepJSON.customAppSeps.forEach {
+                customAppGroups.add(it)
+            }
+        }
+    }
+}

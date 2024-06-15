@@ -191,3 +191,14 @@ class DeprecatedEntity: Component {
         fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
+
+/** Component to store an airport's custom approach separation groups */
+class CustomApproachSeparationChildren(val customAppGroups: GdxArray<CustomApproachSeparation> = GdxArray()): Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.CUSTOM_APPROACH_SEPARATION_CHILDREN
+
+    companion object {
+        val mapper = object: Mapper<CustomApproachSeparationChildren>() {}.mapper
+
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
+    }
+}

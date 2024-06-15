@@ -52,6 +52,7 @@ private const val AIRPORT_CROSSING = "CROSSING"
 private const val AIRPORT_DEPT_DEP = "DEPARTURE_DEPEND"
 private const val AIRPORT_APP_NOZ_GROUP = "APP_NOZ"
 private const val AIRPORT_APP_NOZ = "ZONE"
+private const val AIRPORT_CUSTOM_APP_SEPARATION = "CUSTOM_APP_SEP"
 private const val AIRPORT_DEP_NOZ = "DEP_NOZ"
 private const val AIRPORT_RWY_CONFIG_OBJ = "CONFIG"
 private const val RWY_CONFIG_NAME = "NAME"
@@ -210,6 +211,7 @@ fun loadWorldData(mainName: String, gameServer: GameServer) {
                 "$AIRPORT_APP_NOZ_GROUP/" -> if (currAirport != null) currAppNOZGroup = addApproachNOZGroup(currAirport)
                 "/$AIRPORT_APP_NOZ_GROUP" -> currAppNOZGroup = null
                 AIRPORT_APP_NOZ -> parseApproachNOZ(lineData, currAppNOZGroup ?: continue)
+                AIRPORT_CUSTOM_APP_SEPARATION -> parseCustomAppSeparation(lineData, currAirport ?: continue)
                 DEPRECATED_ENTITY -> addDeprecated(currApp?.entity ?: currAirport?.entity ?: continue)
                 "/$currSectorCount" -> currSectorCount = 0
                 "/$parseMode" -> {
@@ -801,6 +803,15 @@ private fun addApproachNOZGroup(currAirport: Airport): ApproachNOZGroup {
     val appNozGroup = ApproachNOZGroup()
     currAirport.entity[ApproachNOZChildren.mapper]?.nozGroups?.add(appNozGroup)
     return appNozGroup
+}
+
+/** Adds a new custom approach separation group to the [currAirport] */
+private fun parseCustomAppSeparation(data: List<String>, currAirport: Airport) {
+    if (data.size != 4) FileLog.info("GameLoader", "Custom approach separation data has ${data.size} elements instead of 4")
+    val appGroup1 = data[1].split(",").map { it.replace("-", " ") }.toTypedArray()
+    val appGroup2 = data[2].split(",").map { it.replace("-", " ") }.toTypedArray()
+    val sepNm = data[3].toFloat()
+    currAirport.entity[CustomApproachSeparationChildren.mapper]?.customAppGroups?.add(CustomApproachSeparation(appGroup1, appGroup2, sepNm))
 }
 
 /**

@@ -285,3 +285,14 @@ data class TrajectoryPointInfo(var aircraft: Entity = Entity(), var advanceTimin
         fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
+
+/** Component representing custom approach separation groups */
+@JsonClass(generateAdapter = true)
+class CustomApproachSeparation(var appGroup1: Array<String> = arrayOf(), var appGroup2: Array<String> = arrayOf(),
+                               var sepNm: Float = 2f): Component {
+    companion object {
+        val mapper = object: Mapper<CustomApproachSeparation>() {}.mapper
+
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
+    }
+}

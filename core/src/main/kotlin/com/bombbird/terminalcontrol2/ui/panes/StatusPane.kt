@@ -104,7 +104,7 @@ class StatusPane {
                     val message = "$name1${if (name2 != null) ", $name2" else ""}: ${when (reason) {
                         Conflict.NORMAL_CONFLICT -> "${MIN_SEP}nm, ${VERT_SEP}ft infringement"
                         Conflict.SAME_APP_LESS_THAN_10NM ->"2.5nm, ${VERT_SEP}ft infringement - both aircraft less than 10nm final on same approach"
-                        Conflict.PARALLEL_DEP_APP -> "2nm, ${VERT_SEP}ft infringement - aircraft on dependent parallel approach"
+                        Conflict.PARALLEL_DEP_APP -> "${latSepRequiredNm}nm, ${VERT_SEP}ft infringement - aircraft on dependent parallel approach"
                         Conflict.PARALLEL_INDEP_APP_NTZ -> "Simultaneous approach NTZ infringement"
                         Conflict.MVA -> "MVA sector infringement"
                         Conflict.SID_STAR_MVA -> "MVA sector infringement - aircraft deviates from route or is below minimum route altitude restriction"

@@ -46,6 +46,8 @@ fun loadAllComponents() {
     ContactToTower.initialise()
     Controllable.initialise()
     CrossingRunway.initialise()
+    CustomApproachSeparation.initialise()
+    CustomApproachSeparationChildren.initialise()
     CustomPosition.initialise()
     Datatag.initialise()
     DecelerateTo240kts.initialise()
