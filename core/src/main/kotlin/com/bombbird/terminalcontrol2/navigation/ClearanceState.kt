@@ -318,6 +318,7 @@ data class ClearanceState(var routePrimaryName: String = "", val route: Route = 
                             }
                         }
                         i++
+                        if (leg is Route.DiscontinuityLeg) i = route.size // If a discontinuity leg is found, we can keep all legs after
                     }}
                 }
                 if (checkRouteEqualityStrict(hiddenLegs, uiClearance.hiddenLegs)) hiddenLegs.setToRouteCopy(latestClearance.hiddenLegs)
