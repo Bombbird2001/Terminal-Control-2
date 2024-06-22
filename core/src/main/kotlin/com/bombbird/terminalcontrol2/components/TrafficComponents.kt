@@ -205,11 +205,27 @@ data class RunwayNextArrival(var aircraft: Entity = Entity(), var distFromThrPx:
 }
 
 /**
+ * Component for each individual [aircraft] position in the approach wake sequence, with the [distFromThrNm] of each
+ *
+ * [isFromOtherApproach] is true if the aircraft is from another approach sequence, and is not part of the approach
+ * path in question; this can be true if the aircraft is on a closely spaced parallel approach which affects aircraft
+ * on this approach
+ */
+data class ApproachWakeSequencePosition(var aircraft: Entity = Entity(), var distFromThrNm: Float = 0f,
+                                        var isFromOtherApproach: Boolean = false): Component {
+    companion object {
+        val mapper = object: Mapper<ApproachWakeSequencePosition>() {}.mapper
+
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
+    }
+}
+
+/**
  * Component for tagging the approach sequence to a runway for showing wake separation indicators
  *
  * Wake sequence is calculated independently on each client, and is not synced across clients
  */
-data class ApproachWakeSequence(var aircraftDist: GdxArray<Pair<Entity, Float>> = GdxArray()): Component {
+data class ApproachWakeSequence(var aircraftDist: GdxArray<ApproachWakeSequencePosition> = GdxArray()): Component {
     companion object {
         val mapper = object: Mapper<ApproachWakeSequence>() {}.mapper
 

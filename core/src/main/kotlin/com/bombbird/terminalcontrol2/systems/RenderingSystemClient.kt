@@ -371,21 +371,47 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRendererBoundingBox,
                 val appOppDirUnitVector = get(Direction.mapper)?.trackUnitVector
                     ?: get(ApproachInfo.mapper)?.rwyObj?.entity?.getOrLogMissing(Direction.mapper)?.let { -it.trackUnitVector } ?: return@apply
                 val acDistances = getOrLogMissing(ApproachWakeSequence.mapper)?.aircraftDist ?: return@apply
-                for (j in 0 until acDistances.size - 1) {
-                    val ac1 = acDistances[j].first
-                    val ac2 = acDistances[j + 1].first
-                    val ac1Perf = ac1[AircraftInfo.mapper]?.aircraftPerf ?: continue
-                    val ac2Perf = ac2[AircraftInfo.mapper]?.aircraftPerf ?: continue
-                    val wakeDistNmRequired = WakeMatrix.getDistanceRequired(ac1Perf.wakeCategory, ac1Perf.recat, ac2Perf.wakeCategory, ac2Perf.recat)
-                    if (wakeDistNmRequired <= 2.5f) continue
-                    val ac1DistPx = acDistances[j].second
-                    val distPxRequired = ac1DistPx + nmToPx(wakeDistNmRequired.toInt())
-                    val centerX = position.x + appOppDirUnitVector.x * distPxRequired
-                    val centerY = position.y + appOppDirUnitVector.y * distPxRequired
-                    val isSelected = ac1 == CLIENT_SCREEN?.selectedAircraft?.entity
-                    reusedSideVector.set(appOppDirUnitVector).rotate90(0).setLength(nmToPx(if (isSelected) 1.5f else 0.9f))
-                    shapeRenderer.color = if (isSelected) Color.YELLOW else WAKE_INDICATOR_COLOUR
-                    shapeRenderer.line(centerX - reusedSideVector.x, centerY - reusedSideVector.y, centerX + reusedSideVector.x, centerY + reusedSideVector.y)
+                val prevWakes = GdxArray<Pair<Entity, Float>>()
+                for (j in 0 until acDistances.size) {
+                    val followerAc = acDistances[j]
+                    // If aircraft is from other approach, they will not be affected by wake from this approach
+                    // But add to prevWakes to be included in calculation for aircraft behind
+                    if (followerAc.isFromOtherApproach) {
+                        prevWakes.add(Pair(followerAc.aircraft, followerAc.distFromThrNm))
+                        continue
+                    }
+                    val followerAcPerf = followerAc.aircraft[AircraftInfo.mapper]?.aircraftPerf ?: continue
+
+                    // Get all previous aircraft, find the one that imposes the maximum distance from runway on
+                    // follower aircraft
+                    var maxRequiredDistFromRwyNm = -1f
+                    var maxDistPrevAc: Entity? = null
+                    for (k in 0 until prevWakes.size) {
+                        val prevWake = prevWakes[k]
+                        val prevAc = prevWake.first
+                        val prevAcPerf = prevAc[AircraftInfo.mapper]?.aircraftPerf ?: continue
+                        val wakeDistNmRequired = WakeMatrix.getDistanceRequired(prevAcPerf.wakeCategory,
+                            prevAcPerf.recat, followerAcPerf.wakeCategory, followerAcPerf.recat)
+                        if (wakeDistNmRequired <= 2.5f) continue
+                        if (prevWake.second + wakeDistNmRequired > maxRequiredDistFromRwyNm) {
+                            maxRequiredDistFromRwyNm = prevWake.second + wakeDistNmRequired
+                            maxDistPrevAc = prevAc
+                        }
+                    }
+                    if (maxRequiredDistFromRwyNm > 0 && maxDistPrevAc != null) {
+                        val distPxRequired = nmToPx(maxRequiredDistFromRwyNm)
+                        val centerX = position.x + appOppDirUnitVector.x * distPxRequired
+                        val centerY = position.y + appOppDirUnitVector.y * distPxRequired
+                        val isSelected = maxDistPrevAc == CLIENT_SCREEN?.selectedAircraft?.entity
+                        reusedSideVector.set(appOppDirUnitVector).rotate90(0).setLength(nmToPx(if (isSelected) 1.5f else 0.9f))
+                        shapeRenderer.color = if (isSelected) Color.YELLOW else WAKE_INDICATOR_COLOUR
+                        shapeRenderer.line(centerX - reusedSideVector.x, centerY - reusedSideVector.y,
+                            centerX + reusedSideVector.x, centerY + reusedSideVector.y)
+                    }
+
+                    // Clear wake queue, add self to the queue
+                    prevWakes.clear()
+                    prevWakes.add(Pair(followerAc.aircraft, followerAc.distFromThrNm))
                 }
             }
         }

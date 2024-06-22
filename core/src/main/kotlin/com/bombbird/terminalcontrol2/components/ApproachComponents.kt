@@ -65,6 +65,21 @@ class WakeInhibit(var approachNames: Array<String> = arrayOf()): Component, Base
     }
 }
 
+/**
+ * Component for tagging the [approachName] who is also affected by this approach's wake turbulence and should render
+ * wake separation lines taking this approach into account
+ */
+@JsonClass(generateAdapter = true)
+class ParallelWakeAffects(var approachName: String = "", var offsetNm: Float = 0f): Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.PARALLEL_WAKE_AFFECTS
+
+    companion object {
+        val mapper = object: Mapper<ParallelWakeAffects>() {}.mapper
+
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
+    }
+}
+
 /** Component for tagging glide slope information */
 @JsonClass(generateAdapter = true)
 data class GlideSlope(var glideAngle: Float = 0f, var offsetNm: Float = 0f, var maxInterceptAlt: Short = 0): Component, BaseComponentJSONInterface {

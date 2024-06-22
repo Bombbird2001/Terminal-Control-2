@@ -90,13 +90,18 @@ class DataSystemClient: EntitySystem() {
                     val rwyAlt = refApp[ApproachInfo.mapper]?.rwyObj?.entity?.get(Altitude.mapper)?.altitudeFt ?: return@apply
                     if (alt < rwyAlt + 10) return@apply // Aircraft has touched down
                     val refPos = refApp[Position.mapper] ?: return@apply
-                    val dist = calculateDistanceBetweenPoints(acPos.x, acPos.y, refPos.x, refPos.y)
+                    val distNm = pxToNm(calculateDistanceBetweenPoints(acPos.x, acPos.y, refPos.x, refPos.y))
                     val maxDistNm = refApp[Localizer.mapper]?.maxDistNm ?: 20
                     // Not within 25 degrees of localizer centerline
                     if (!checkInArc(refPos.x, refPos.y, convertWorldAndRenderDeg(refAppDir.angleDeg()), nmToPx(maxDistNm.toInt()),
                             25f, acPos.x, acPos.y)
                     ) return@apply
-                    refApp[ApproachWakeSequence.mapper]?.aircraftDist?.add(Pair(this, dist))
+                    refApp[ApproachWakeSequence.mapper]?.aircraftDist?.add(ApproachWakeSequencePosition(this, distNm, false))
+                    refApp[ParallelWakeAffects.mapper]?.let {
+                        val parApp = GAME.gameClientScreen?.airports?.get(arrAirport?.arptId)?.entity?.get(ApproachChildren.mapper)?.approachMap?.get(it.approachName)?.entity
+                        parApp?.get(ApproachWakeSequence.mapper)?.aircraftDist
+                            ?.add(ApproachWakeSequencePosition(this, distNm + it.offsetNm, true))
+                    }
                 }
             }
 
@@ -105,8 +110,8 @@ class DataSystemClient: EntitySystem() {
                 approachWakeSequence[i]?.apply {
                     val distances = get(ApproachWakeSequence.mapper) ?: return@apply
                     distances.aircraftDist.sort { o1, o2 ->
-                        if (o1.second > o2.second) 1
-                        else if (o1.second < o2.second) -1
+                        if (o1.distFromThrNm > o2.distFromThrNm) 1
+                        else if (o1.distFromThrNm < o2.distFromThrNm) -1
                         else 0
                     }
                 }

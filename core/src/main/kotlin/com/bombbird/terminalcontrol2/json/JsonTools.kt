@@ -48,7 +48,7 @@ interface BaseComponentJSONInterface {
         RUNWAY_PREVIOUS_DEPARTURE, RUNWAY_OCCUPIED, WAKE_TRAIL, WAKE_INFO, INITIAL_CLIENT_DATATAG_POSITION, TRAIL_INFO,
         TTS_VOICE, EMERGENCY_PENDING, RUNNING_CHECKLISTS, REQUIRES_FUEL_DUMP, IMMOBILIZE_ON_LANDING, RUNWAY_CLOSED,
         ON_GO_AROUND_ROUTE, WAKE_TOLERANCE, ACC_TEMP_ALTITUDE, WINDSHEAR_GO_AROUND, NEEDS_TO_INFORM_OF_GO_AROUND,
-        CUSTOM_APPROACH_SEPARATION_CHILDREN
+        CUSTOM_APPROACH_SEPARATION_CHILDREN, PARALLEL_WAKE_AFFECTS
     }
 
     val componentType: ComponentType
@@ -162,6 +162,7 @@ private fun getPolymorphicComponentAdapter(): PolymorphicJsonAdapterFactory<Base
         .withSubtype(WindshearGoAround::class.java, BaseComponentJSONInterface.ComponentType.WINDSHEAR_GO_AROUND.name)
         .withSubtype(NeedsToInformOfGoAround::class.java, BaseComponentJSONInterface.ComponentType.NEEDS_TO_INFORM_OF_GO_AROUND.name)
         .withSubtype(CustomApproachSeparationChildren::class.java, BaseComponentJSONInterface.ComponentType.CUSTOM_APPROACH_SEPARATION_CHILDREN.name)
+        .withSubtype(ParallelWakeAffects::class.java, BaseComponentJSONInterface.ComponentType.PARALLEL_WAKE_AFFECTS.name)
 }
 
 /** Interface for implementing JSON serialization for subclasses of Leg */
