@@ -1,12 +1,12 @@
 package com.bombbird.terminalcontrol2.android
 
-import com.bombbird.terminalcontrol2.integrations.PlayServicesHandler
+import com.bombbird.terminalcontrol2.integrations.AchievementHandler
 import com.esotericsoftware.minlog.Log
 import com.google.android.gms.games.PlayGames
 import com.google.android.gms.games.PlayGamesSdk
 
 
-class PlayServicesManager(private val activity: AndroidLauncher): PlayServicesHandler {
+class PlayServicesManager(private val activity: AndroidLauncher): AchievementHandler {
     private val gamesSignInClient = PlayGames.getGamesSignInClient(activity)
     private val achievementsClient = PlayGames.getAchievementsClient(activity)
 

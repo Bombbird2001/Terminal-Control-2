@@ -3,9 +3,9 @@ package com.bombbird.terminalcontrol2.utilities
 import com.badlogic.gdx.Gdx
 import com.bombbird.terminalcontrol2.files.getAvailableSaveGames
 import com.bombbird.terminalcontrol2.global.PREFS_FILE_NAME
-import com.bombbird.terminalcontrol2.integrations.PlayServicesHandler
+import com.bombbird.terminalcontrol2.integrations.AchievementHandler
 
-class AchievementManager(private val playServicesHandler: PlayServicesHandler) {
+class AchievementManager(private val achievementHandler: AchievementHandler) {
     private val firstTouchdownAchievement = "CgkIkdmytrkNEAIQBg"
     private val arrivalAchievements = arrayOf(
         "CgkIkdmytrkNEAIQBw",
@@ -48,6 +48,11 @@ class AchievementManager(private val playServicesHandler: PlayServicesHandler) {
     private val vectorVictorAchievement = "CgkIkdmytrkNEAIQCg"
     private var vectorVictorMinuteCounter = 0
 
+    /** Show achievements UI */
+    fun showAchievements() {
+        achievementHandler.showAchievements()
+    }
+
     /**
      * Sets initial arrival achievements for the player, should be called only once when the game is first launched
      * after achievements are added
@@ -57,9 +62,9 @@ class AchievementManager(private val playServicesHandler: PlayServicesHandler) {
         if (prefs.getBoolean("initialArrivalAchievementsSet", false)) return
 
         val arrivalSum = getAvailableSaveGames().values().toArray().sumOf { it.landed }
-        if (arrivalSum > 0) playServicesHandler.unlockAchievement(firstTouchdownAchievement)
+        if (arrivalSum > 0) achievementHandler.unlockAchievement(firstTouchdownAchievement)
         arrivalAchievements.forEach {
-            playServicesHandler.setAchievementSteps(it, arrivalSum)
+            achievementHandler.setAchievementSteps(it, arrivalSum)
         }
 
         prefs.putBoolean("initialArrivalAchievementsSet", true)
@@ -67,25 +72,25 @@ class AchievementManager(private val playServicesHandler: PlayServicesHandler) {
 
     /** Increments achievement arrival count at [airportIcao] */
     fun incrementArrival(airportIcao: String) {
-        playServicesHandler.unlockAchievement(firstTouchdownAchievement)
+        achievementHandler.unlockAchievement(firstTouchdownAchievement)
         arrivalAchievements.forEach {
-            playServicesHandler.incrementAchievementSteps(it, 1)
+            achievementHandler.incrementAchievementSteps(it, 1)
         }
 
         airportArrivalAchievements[airportIcao]?.let {
-            playServicesHandler.incrementAchievementSteps(it, 1)
+            achievementHandler.incrementAchievementSteps(it, 1)
         }
     }
 
     /** Increments multiplayer achievement arrival count */
     fun incrementMultiplayerArrival() {
         multiplayerArrivalAchievements.forEach {
-            playServicesHandler.incrementAchievementSteps(it, 1)
+            achievementHandler.incrementAchievementSteps(it, 1)
         }
     }
 
     fun unlockKnockKnock() {
-        playServicesHandler.unlockAchievement(knockKnockAchievement)
+        achievementHandler.unlockAchievement(knockKnockAchievement)
     }
 
     fun resetGodCounter() {
@@ -96,7 +101,7 @@ class AchievementManager(private val playServicesHandler: PlayServicesHandler) {
     fun incrementGodCounter(seconds: Int) {
         iAmGodCounter += seconds
         if (iAmGodCounter >= 1800) {
-            playServicesHandler.unlockAchievement(iAmGodAchievement)
+            achievementHandler.unlockAchievement(iAmGodAchievement)
             iAmGodCounter = Int.MIN_VALUE
         }
     }
@@ -108,7 +113,7 @@ class AchievementManager(private val playServicesHandler: PlayServicesHandler) {
     fun incrementVectorVictorCounter(seconds: Int) {
         vectorVictorMinuteCounter += seconds
         if (vectorVictorMinuteCounter >= 60) {
-            playServicesHandler.incrementAchievementSteps(vectorVictorAchievement, vectorVictorMinuteCounter / 60)
+            achievementHandler.incrementAchievementSteps(vectorVictorAchievement, vectorVictorMinuteCounter / 60)
             vectorVictorMinuteCounter %= 60
         }
     }

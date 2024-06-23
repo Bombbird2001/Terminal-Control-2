@@ -89,9 +89,14 @@ class MainMenu: BasicUIScreen() {
                                 GAME.setScreen<AboutGame>()
                             }
                         }
-                        row().padTop(15f)
-                        table {
-
+                        if (APP_TYPE == Application.ApplicationType.Android) {
+                            row().padTop(15f)
+                            table {
+                                imageButton("PlayAchievements").cell(width = BUTTON_WIDTH_SMALL, height = BUTTON_HEIGHT_MAIN,
+                                    padLeft = BUTTON_WIDTH_MAIN + BUTTON_WIDTH_SMALL + 40).addChangeListener { _, _ ->
+                                        GAME.achievementManager.showAchievements()
+                                    }
+                            }
                         }
                         row()
                         table {  }.cell(growY = true, uniformY = true)
