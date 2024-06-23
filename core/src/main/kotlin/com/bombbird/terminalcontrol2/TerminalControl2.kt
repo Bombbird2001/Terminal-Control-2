@@ -120,6 +120,7 @@ class TerminalControl2(val externalFileHandler: ExternalFileHandler, ttsHandler:
                 for (i in 1..9) load<Texture>("Images/$i.png")
                 load<Texture>("Images/RadarBg.png")
                 load<Texture>("Images/TextFg.png")
+                load<Texture>("Images/Blip.png")
 
                 // Loading audio files
                 load<Sound>("Audio/alert.wav")

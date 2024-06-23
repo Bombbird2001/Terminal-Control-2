@@ -3,19 +3,33 @@ package com.bombbird.terminalcontrol2.screens
 import com.badlogic.gdx.Application
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.Texture
+import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.scenes.scene2d.ui.Image
 import com.badlogic.gdx.utils.Align
+import com.bombbird.terminalcontrol2.components.CommandTarget
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.global.Secrets.DISCORD_INVITE_LINK
 import com.bombbird.terminalcontrol2.screens.settings.MainSettings
 import com.bombbird.terminalcontrol2.ui.MenuNotificationManager
 import com.bombbird.terminalcontrol2.ui.addChangeListener
+import com.bombbird.terminalcontrol2.utilities.convertWorldAndRenderDeg
+import com.bombbird.terminalcontrol2.utilities.findDeltaHeading
+import ktx.actors.alpha
 import ktx.scene2d.*
+import kotlin.math.max
 
 /** The main menu screen which extends [BasicUIScreen] */
 class MainMenu: BasicUIScreen() {
     private val menuNotificationManager: MenuNotificationManager
     private val radarBgImage: Image
+    private var sweepAngle = 40.97f
+    private val blipPositions = arrayOf(
+        floatArrayOf(35.63f, 0.730f),
+        floatArrayOf(333.43f, 0.512f),
+        floatArrayOf(225.57f, 0.707f),
+        floatArrayOf(164.76f, 0.852f)
+    )
+    private val blipImages: Array<Image>
 
     init {
         stage.actors {
@@ -36,6 +50,15 @@ class MainMenu: BasicUIScreen() {
                         radarBgImage.setOrigin(iconSize / 2, iconSize / 2)
                         row()
                         image(textFgTexture).cell(width = iconSize, height = iconSize, expandY = true, padTop = -iconSize)
+                        val blipSize = 14f
+                        val blipTexture = GAME.assetStorage.get<Texture>("Images/Blip.png")
+                        blipImages = blipPositions.map { blip ->
+                            row()
+                            val blipImage = image(blipTexture)
+                            val offsetX = MathUtils.cosDeg(convertWorldAndRenderDeg(blip[0])) * blip[1] * iconSize
+                            val offsetY = -iconSize - blipSize / 2 - MathUtils.sinDeg(convertWorldAndRenderDeg(blip[0])) * blip[1] * iconSize
+                            blipImage.cell(width = blipSize, height = blipSize, expandY = true, padTop = offsetY, padLeft = offsetX)
+                        }.toTypedArray()
                         row().padTop(100f)
                         textButton("Join Our\nDiscord!", "Menu").cell(width = BUTTON_WIDTH_MEDIUM,
                             height = BUTTON_HEIGHT_MAIN, align = Align.center, expandX = true).addChangeListener { _, _ ->
@@ -92,6 +115,11 @@ class MainMenu: BasicUIScreen() {
 
     override fun render(delta: Float) {
         radarBgImage.rotateBy(-delta * 90)
+        sweepAngle += delta * 90
+        for (i in blipPositions.indices) {
+            val deltaHdg = findDeltaHeading(sweepAngle, blipPositions[i][0], CommandTarget.TURN_LEFT)
+            blipImages[i].alpha = max(1 + deltaHdg / 300, 0f)
+        }
         super.render(delta)
     }
 }
