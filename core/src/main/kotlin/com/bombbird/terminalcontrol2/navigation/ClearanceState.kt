@@ -184,6 +184,11 @@ data class ClearanceState(var routePrimaryName: String = "", val route: Route = 
             newClearance.maxIas = spds.second
             newClearance.optimalIas = spds.third
             newClearance.clearedIas = MathUtils.clamp(newClearance.clearedIas, newClearance.minIas, newClearance.maxIas)
+            if (clearedIas != newClearance.clearedIas && clearedApp != null) {
+                // Add the DecelerateToAppSpd component to handle case when player clears a new speed after it
+                // is already decelerating to final approach speed
+                entity += DecelerateToAppSpd()
+            }
             clearedIas = newClearance.clearedIas
             minIas = newClearance.minIas
             maxIas = newClearance.maxIas
@@ -313,6 +318,7 @@ data class ClearanceState(var routePrimaryName: String = "", val route: Route = 
                             }
                         }
                         i++
+                        if (leg is Route.DiscontinuityLeg) i = route.size // If a discontinuity leg is found, we can keep all legs after
                     }}
                 }
                 if (checkRouteEqualityStrict(hiddenLegs, uiClearance.hiddenLegs)) hiddenLegs.setToRouteCopy(latestClearance.hiddenLegs)

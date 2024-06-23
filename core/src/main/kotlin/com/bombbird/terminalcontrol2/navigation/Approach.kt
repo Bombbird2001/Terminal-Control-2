@@ -114,6 +114,7 @@ class Approach(name: String, arptId: Byte, runwayId: Byte, posX: Float, posY: Fl
         val loc = entity[Localizer.mapper]
         val gs = entity[GlideSlope.mapper]
         val stepDown = entity[StepDown.mapper]
+        val parallelWakeAffects = entity[ParallelWakeAffects.mapper]
         return SerialisedApproach(
             appInfo.approachName, appInfo.airportId, appInfo.rwyId, pos.x, pos.y,
             timeRestriction, entity.has(DeprecatedEntity.mapper),
@@ -123,7 +124,8 @@ class Approach(name: String, arptId: Byte, runwayId: Byte, posX: Float, posY: Fl
             ArrayIterator(runwayConfigs.rwyConfigs).toList().toByteArray(),
             if (loc != null && dir != null) (convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()) + 180 + MAG_HDG_DEV) else null, loc?.maxDistNm,
             gs?.glideAngle, gs?.offsetNm, gs?.maxInterceptAlt,
-            stepDown?.altAtDist?.map { SerialisedStep(it.dist, it.alt) }?.toTypedArray()
+            stepDown?.altAtDist?.map { SerialisedStep(it.dist, it.alt) }?.toTypedArray(),
+            parallelWakeAffects?.approachName, parallelWakeAffects?.offsetNm
         )
     }
 
@@ -159,6 +161,8 @@ class Approach(name: String, arptId: Byte, runwayId: Byte, posX: Float, posY: Fl
                 val steps = serialisedApproach.steps
                 if (gsAngleDeg != null && gsOffsetNm != null && gsMaxAlt != null) entity += GlideSlope(gsAngleDeg, gsOffsetNm, gsMaxAlt)
                 else if (steps != null) entity += StepDown(steps.map { StepDown.Step(it.dist, it.alt) }.toTypedArray())
+                if (serialisedApproach.parallelWakeAffects != null)
+                    entity += ParallelWakeAffects(serialisedApproach.parallelWakeAffects, serialisedApproach.parallelWakeAffectOffsetNm ?: 0f)
             }
         }
     }
@@ -176,7 +180,8 @@ class Approach(name: String, arptId: Byte, runwayId: Byte, posX: Float, posY: Fl
                              val allowedConfigs: ByteArray = byteArrayOf(),
                              val locHdg: Float? = null, val locDistNm: Byte? = null,
                              val gsAngleDeg: Float? = null, val gsOffsetNm: Float? = null, val maxGsAlt: Short? = null,
-                             val steps: Array<SerialisedStep>? = null)
+                             val steps: Array<SerialisedStep>? = null,
+                             val parallelWakeAffects: String? = null, val parallelWakeAffectOffsetNm: Float? = null)
 
     /** Object that contains [transitions] data to be serialised by Kryo */
     class SerialisedTransition(val name: String = "", val route: Route.SerialisedRoute = Route.SerialisedRoute())
@@ -240,6 +245,15 @@ class Approach(name: String, arptId: Byte, runwayId: Byte, posX: Float, posY: Fl
      */
     fun addWakeInhibit(approachNames: Array<String>) {
         entity += WakeInhibit(approachNames)
+    }
+
+    /**
+     * Adds a parallel wake affects component for the approach, containing the [approachName] that is affected and the
+     * [offsetNm] that should be added to the effective distance of aircraft on this approach when calculating wake
+     * distance of the affected approach
+     */
+    fun addParallelWakeAffects(approachName: String, offsetNm: Float) {
+        entity += ParallelWakeAffects(approachName, offsetNm)
     }
 
     /** Adds visual after FAF component for the approach */

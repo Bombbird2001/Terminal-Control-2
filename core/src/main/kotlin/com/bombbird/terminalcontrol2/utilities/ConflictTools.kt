@@ -17,6 +17,7 @@ import com.bombbird.terminalcontrol2.traffic.conflict.MVAConflictInfo
 import ktx.ashley.get
 import ktx.ashley.has
 import ktx.collections.GdxArray
+import kotlin.math.min
 
 /**
  * Checks and returns true if the provided [aircraft1] and [aircraft2] fulfil conditions for inhibition of conflicts
@@ -143,6 +144,8 @@ fun getMinimaRequired(aircraft1: Entity, aircraft2: Entity): ConflictMinima {
     var altMinima = VERT_SEP
     var conflictReason = Conflict.NORMAL_CONFLICT
 
+    val appName1 = app1?.entity?.get(ApproachInfo.mapper)?.approachName
+    val appName2 = app2?.entity?.get(ApproachInfo.mapper)?.approachName
     val appRwy1 = app1?.entity?.get(ApproachInfo.mapper)?.rwyObj
     val appRwy2 = app2?.entity?.get(ApproachInfo.mapper)?.rwyObj
     val appRwy1Pos = appRwy1?.entity?.get(Position.mapper)
@@ -157,7 +160,22 @@ fun getMinimaRequired(aircraft1: Entity, aircraft2: Entity): ConflictMinima {
     if (appRwy1 !== appRwy2 && app1 != null && establishedOnFinalApproachTrack(app1.entity, pos1.x, pos1.y) &&
         app2 != null && establishedOnFinalApproachTrack(app2.entity, pos2.x, pos2.y)
     ) {
-        latMinima = 2f
+        latMinima = Float.MAX_VALUE
+        // Check if both aircraft are on approaches that are in different groups in custom approach separation of
+        // same airport
+        if (arrival1 == arrival2 && arrival1 != null) {
+            arrival1[CustomApproachSeparationChildren.mapper]?.customAppGroups?.let {
+                for (i in 0 until it.size) {
+                    val group = it[i]
+                    if ((group.appGroup1.contains(appName1) && group.appGroup2.contains(appName2))
+                        || (group.appGroup1.contains(appName2) && group.appGroup2.contains(appName1))) {
+                        latMinima = min(latMinima, group.sepNm)
+                    }
+                }
+            }
+        }
+
+        if (latMinima == Float.MAX_VALUE) latMinima = 2f
         conflictReason = Conflict.PARALLEL_DEP_APP
     }
 

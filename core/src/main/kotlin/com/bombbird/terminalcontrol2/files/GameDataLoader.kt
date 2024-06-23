@@ -52,6 +52,7 @@ private const val AIRPORT_CROSSING = "CROSSING"
 private const val AIRPORT_DEPT_DEP = "DEPARTURE_DEPEND"
 private const val AIRPORT_APP_NOZ_GROUP = "APP_NOZ"
 private const val AIRPORT_APP_NOZ = "ZONE"
+private const val AIRPORT_CUSTOM_APP_SEPARATION = "CUSTOM_APP_SEP"
 private const val AIRPORT_DEP_NOZ = "DEP_NOZ"
 private const val AIRPORT_RWY_CONFIG_OBJ = "CONFIG"
 private const val RWY_CONFIG_NAME = "NAME"
@@ -74,6 +75,7 @@ private const val APCH_CIRCLING = "CIRCLING"
 private const val APCH_TRANS = "TRANSITION"
 private const val APCH_MISSED = "MISSED"
 private const val APCH_WAKE_INHIBIT = "WAKE_INHIBIT"
+private const val APCH_PARALLEL_WAKE = "PARALLEL_WAKE_AFFECTS"
 private const val APCH_VISUAL_AFTER_FAF = "VIS_AFTER_FAF"
 private const val DAY_NIGHT = "DAY_NIGHT"
 private const val DAY_ONLY = "DAY_ONLY"
@@ -206,10 +208,12 @@ fun loadWorldData(mainName: String, gameServer: GameServer) {
                 APCH_TRANS -> if (currApp != null) parseApproachTransition(lineData, currApp)
                 APCH_MISSED -> if (currApp != null) parseApproachMissed(lineData, currApp)
                 APCH_WAKE_INHIBIT -> if (currApp != null) parseWakeInhibit(lineData, currApp)
+                APCH_PARALLEL_WAKE -> if (currApp != null) parseParallelWakeAffects(lineData, currApp)
                 APCH_VISUAL_AFTER_FAF -> if (currApp != null) parseVisualAfterFaf(currApp)
                 "$AIRPORT_APP_NOZ_GROUP/" -> if (currAirport != null) currAppNOZGroup = addApproachNOZGroup(currAirport)
                 "/$AIRPORT_APP_NOZ_GROUP" -> currAppNOZGroup = null
                 AIRPORT_APP_NOZ -> parseApproachNOZ(lineData, currAppNOZGroup ?: continue)
+                AIRPORT_CUSTOM_APP_SEPARATION -> parseCustomAppSeparation(lineData, currAirport ?: continue)
                 DEPRECATED_ENTITY -> addDeprecated(currApp?.entity ?: currAirport?.entity ?: continue)
                 "/$currSectorCount" -> currSectorCount = 0
                 "/$parseMode" -> {
@@ -722,6 +726,12 @@ private fun parseWakeInhibit(data: List<String>, approach: Approach) {
     approach.addWakeInhibit(data.subList(1, data.size).map { it.replace("-", " ") }.toTypedArray())
 }
 
+/** Parse the given [data] into parallel wake affects data, and adds it to the supplied [approach] */
+private fun parseParallelWakeAffects(data: List<String>, approach: Approach) {
+    if (data.size != 3) FileLog.info("GameLoader", "Parallel wake affects data has ${data.size} elements instead of 3")
+    approach.addParallelWakeAffects(data[1].replace("-", " "), data[2].toFloat())
+}
+
 /** Adds a visual after FAF component to the supplied [approach] */
 private fun parseVisualAfterFaf(approach: Approach) {
     approach.addVisualAfterFaf()
@@ -801,6 +811,15 @@ private fun addApproachNOZGroup(currAirport: Airport): ApproachNOZGroup {
     val appNozGroup = ApproachNOZGroup()
     currAirport.entity[ApproachNOZChildren.mapper]?.nozGroups?.add(appNozGroup)
     return appNozGroup
+}
+
+/** Adds a new custom approach separation group to the [currAirport] */
+private fun parseCustomAppSeparation(data: List<String>, currAirport: Airport) {
+    if (data.size != 4) FileLog.info("GameLoader", "Custom approach separation data has ${data.size} elements instead of 4")
+    val appGroup1 = data[1].split(",").map { it.replace("-", " ") }.toTypedArray()
+    val appGroup2 = data[2].split(",").map { it.replace("-", " ") }.toTypedArray()
+    val sepNm = data[3].toFloat()
+    currAirport.entity[CustomApproachSeparationChildren.mapper]?.customAppGroups?.add(CustomApproachSeparation(appGroup1, appGroup2, sepNm))
 }
 
 /**
