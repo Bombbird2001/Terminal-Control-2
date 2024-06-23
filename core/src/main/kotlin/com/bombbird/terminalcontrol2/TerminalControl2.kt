@@ -118,7 +118,8 @@ class TerminalControl2(val externalFileHandler: ExternalFileHandler, ttsHandler:
                 // Loading assets, the coroutine will suspend until each asset is loaded
                 Scene2DSkin.defaultSkin = load("Skin/skin.json")
                 for (i in 1..9) load<Texture>("Images/$i.png")
-                load<Texture>("Images/MainMenuIcon.png")
+                load<Texture>("Images/RadarBg.png")
+                load<Texture>("Images/TextFg.png")
 
                 // Loading audio files
                 load<Sound>("Audio/alert.wav")

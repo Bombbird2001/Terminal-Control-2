@@ -1,7 +1,9 @@
 package com.bombbird.terminalcontrol2.screens
 
+import com.badlogic.gdx.Application
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.Texture
+import com.badlogic.gdx.scenes.scene2d.ui.Image
 import com.badlogic.gdx.utils.Align
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.global.Secrets.DISCORD_INVITE_LINK
@@ -13,6 +15,7 @@ import ktx.scene2d.*
 /** The main menu screen which extends [BasicUIScreen] */
 class MainMenu: BasicUIScreen() {
     private val menuNotificationManager: MenuNotificationManager
+    private val radarBgImage: Image
 
     init {
         stage.actors {
@@ -23,16 +26,25 @@ class MainMenu: BasicUIScreen() {
                 table {
                     // debugAll()
                     table {
+                        val radarBgTexture = GAME.assetStorage.get<Texture>("Images/RadarBg.png")
+                        val textFgTexture = GAME.assetStorage.get<Texture>("Images/TextFg.png")
+                        radarBgTexture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear)
+                        textFgTexture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear)
+                        val iconSize = 400f
+                        radarBgImage = image(radarBgTexture)
+                        radarBgImage.cell(width = iconSize, height = iconSize, expandY = true)
+                        radarBgImage.setOrigin(iconSize / 2, iconSize / 2)
+                        row()
+                        image(textFgTexture).cell(width = iconSize, height = iconSize, expandY = true, padTop = -iconSize)
+                        row().padTop(100f)
                         textButton("Join Our\nDiscord!", "Menu").cell(width = BUTTON_WIDTH_MEDIUM,
-                            height = BUTTON_HEIGHT_MAIN * 1.2f, align = Align.left, expandX = true).addChangeListener { _, _ ->
+                            height = BUTTON_HEIGHT_MAIN, align = Align.center, expandX = true).addChangeListener { _, _ ->
                             Gdx.net.openURI(DISCORD_INVITE_LINK)
                         }
-                    }.cell(growX = true, uniformX = true)
+                    }.cell(padRight = 200f, padLeft = 200f)
                     table {
-                        val iconTexture = GAME.assetStorage.get<Texture>("Images/MainMenuIcon.png")
-                        iconTexture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear)
-                        image(iconTexture).cell(width = 405f, height = 134f, expandY = true, padTop = 75f)
-                        row().padTop(100f)
+                        table {  }.cell(growY = true, uniformY = true)
+                        row()
                         table {
                             textButton("New Game", "Menu").cell(width = BUTTON_WIDTH_MAIN, height = BUTTON_HEIGHT_MAIN).addChangeListener { _, _ ->
                                 GAME.setScreen<NewGame>()
@@ -54,18 +66,32 @@ class MainMenu: BasicUIScreen() {
                                 GAME.setScreen<AboutGame>()
                             }
                         }
-                        row().padTop(150f)
-                        textButton("Quit", "Menu").cell(width = BUTTON_WIDTH_BIG, height = BUTTON_HEIGHT_BIG, padBottom = BOTTOM_BUTTON_MARGIN).addChangeListener { _, _ ->
-                            GAME.dispose()
-                            Gdx.app.exit()
+                        row().padTop(15f)
+                        table {
+
                         }
-                    }
-                    table {  }.cell(growX = true, uniformX = true)
+                        row()
+                        table {  }.cell(growY = true, uniformY = true)
+                        if (APP_TYPE == Application.ApplicationType.Desktop) {
+                            row()
+                            textButton("Quit", "Menu").cell(width = BUTTON_WIDTH_BIG, height = BUTTON_HEIGHT_BIG,
+                                padBottom = BOTTOM_BUTTON_MARGIN).addChangeListener { _, _ ->
+                                    GAME.dispose()
+                                    Gdx.app.exit()
+                                }
+                        }
+                    }.cell(growY = true)
+                    table {  }.cell(growX = true)
                 }
             }
         }
 
         menuNotificationManager = MenuNotificationManager(stage)
         menuNotificationManager.showMessages()
+    }
+
+    override fun render(delta: Float) {
+        radarBgImage.rotateBy(-delta * 90)
+        super.render(delta)
     }
 }
