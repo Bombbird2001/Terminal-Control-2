@@ -15,7 +15,7 @@ interface AchievementHandler {
 }
 
 /** Stub Play Services interface object for testing, not implemented or not required */
-object StubPlayServicesHandler: AchievementHandler {
+object StubAchievementHandler: AchievementHandler {
     override fun showAchievements() {}
 
     override fun unlockAchievement(id: String) {}
