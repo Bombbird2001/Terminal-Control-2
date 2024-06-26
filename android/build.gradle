@@ -65,6 +65,7 @@ dependencies {
 	implementation "com.google.android.gms:play-services-auth:$playServicesAuthVersion"
 	implementation "com.google.api-client:google-api-client-android:$googleApiClientVersion"
 	implementation "com.google.apis:google-api-services-drive:$googleApiServicesDriveVersion"
+	implementation("androidx.datastore:datastore-preferences:$androidxDatastoreVersion")
 	implementation project(':core')
 
 	natives "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-arm64-v8a"
