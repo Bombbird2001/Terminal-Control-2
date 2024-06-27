@@ -41,7 +41,7 @@ class LoadGame: BasicUIScreen() {
                 table {
                     table {
                         table {
-                            textButton("Import save", "LoadGameDeleteExportImport").cell(width = 300f, height = 550f / 3).addChangeListener { event, _ ->
+                            textButton("Import save", "LoadGameDeleteExportImport").cell(width = 300f, growY = true, uniformY = true).addChangeListener { event, _ ->
                                 importSave({
                                     showDialog(CustomDialog("Import success", "Imported save $it successfully", "", "Ok"))
                                     refreshSaveList()
@@ -51,7 +51,7 @@ class LoadGame: BasicUIScreen() {
                                 event?.handle()
                             }
                             row()
-                            exportButton = textButton("Export save", "LoadGameDeleteExportImport").cell(width = 300f, height = 550f / 3).apply {
+                            exportButton = textButton("Export save", "LoadGameDeleteExportImport").cell(width = 300f, growY = true, uniformY = true).apply {
                                 isVisible = false
                             }
                             exportButton.addChangeListener { event, _ ->
@@ -67,7 +67,7 @@ class LoadGame: BasicUIScreen() {
                                 event?.handle()
                             }
                             row()
-                            deleteButton = textButton("Delete save", "LoadGameDeleteExportImport").cell(width = 300f, height = 550f / 3).apply {
+                            deleteButton = textButton("Delete save", "LoadGameDeleteExportImport").cell(width = 300f, growY = true, uniformY = true).apply {
                                 isVisible = false
                             }
                             deleteButton.addChangeListener { event, _ ->
@@ -87,13 +87,13 @@ class LoadGame: BasicUIScreen() {
                                 event?.handle()
                             }
                             row()
-                        }.cell(padTop = 100f, expandY = true)
+                        }.cell(padTop = 50f, growY = true)
                         scrollPane("LoadGame") {
                             savedGamesTable = table { }
                             setOverscroll(false, false)
-                        }.cell(width = 800f, padTop = 100f, expandY = true)
+                        }.cell(width = 800f, padTop = 50f, growY = true)
                         table {
-                            currSelectedMode = textButton("Singleplayer", "NewLoadGameAirport").cell(width = 300f, height = 550f / 3).apply {
+                            currSelectedMode = textButton("Singleplayer", "NewLoadGameAirport").cell(width = 300f, growY = true, uniformY = true).apply {
                                 name = NewGame.SINGLE_PLAYER
                                 addChangeListener { event, _ ->
                                     modeButtonClicked(this)
@@ -102,7 +102,7 @@ class LoadGame: BasicUIScreen() {
                                 isChecked = true
                             }
                             row()
-                            textButton("Multiplayer\n(LAN)", "NewLoadGameAirport").cell(width = 300f, height = 550f / 3).apply {
+                            textButton("Multiplayer\n(LAN)", "NewLoadGameAirport").cell(width = 300f, growY = true, uniformY = true).apply {
                                 name = NewGame.LAN_MULTIPLAYER
                                 addChangeListener { event, _ ->
                                     modeButtonClicked(this)
@@ -110,7 +110,7 @@ class LoadGame: BasicUIScreen() {
                                 }
                             }
                             row()
-                            textButton("Multiplayer\n(Public)", "NewLoadGameAirport").cell(width = 300f, height = 550f / 3).apply {
+                            textButton("Multiplayer\n(Public)", "NewLoadGameAirport").cell(width = 300f, growY = true, uniformY = true).apply {
                                 name = NewGame.PUBLIC_MULTIPLAYER
                                 addChangeListener { event, _ ->
                                     modeButtonClicked(this)
@@ -118,8 +118,8 @@ class LoadGame: BasicUIScreen() {
                                 }
                             }
                             row()
-                        }.cell(padTop = 100f, expandY = true)
-                    }
+                        }.cell(padTop = 50f, growY = true)
+                    }.cell(growY = true)
                     row().padTop(25f)
                     startButton = textButton("Start", "NewLoadGameStart").cell(width = 400f, height = 100f).apply {
                         isVisible = false
@@ -155,7 +155,7 @@ class LoadGame: BasicUIScreen() {
                         }
                     }
                     row().padTop(50f)
-                    textButton("Back", "Menu").cell(width = BUTTON_WIDTH_BIG, height = BUTTON_HEIGHT_BIG, padBottom = BOTTOM_BUTTON_MARGIN, expandY = true, align = Align.bottom).addChangeListener { _, _ ->
+                    textButton("Back", "Menu").cell(width = BUTTON_WIDTH_BIG, height = BUTTON_HEIGHT_BIG, padBottom = BOTTOM_BUTTON_MARGIN, align = Align.bottom).addChangeListener { _, _ ->
                         GAME.setScreen<MainMenu>()
                     }
                 }

@@ -30,7 +30,7 @@ class NewGame: BasicUIScreen() {
                 setSize(UI_WIDTH, UI_HEIGHT)
                 table {
                     //debugAll()
-                    label("Choose airport:", "MenuHeader").cell(align = Align.center, padTop = 65f).setAlignment(Align.center)
+                    label("Choose airport:", "MenuHeader").cell(align = Align.center, padTop = 50f).setAlignment(Align.center)
                     row()
                     table {
                         scrollPane("NewGame") {
@@ -57,7 +57,7 @@ class NewGame: BasicUIScreen() {
                                 }
                             }
                             setOverscroll(false, false)
-                        }.cell(align = Align.top, width = 300f)
+                        }.cell(align = Align.top, width = 300f, growY = true)
                         table {
                             // debugAll()
                             scrollPane = scrollPane("NewGameDescription") {
@@ -65,9 +65,9 @@ class NewGame: BasicUIScreen() {
                                     descriptionLabel = label("", "NewGameAirportInfo").apply {
                                         setAlignment(Align.topLeft)
                                         wrap = true
-                                    }.cell(growX = true)
+                                    }.cell(growX = true, growY = true)
                                 }
-                            }.cell(width = 800f, expandY = true, preferredHeight = 550f)
+                            }.cell(width = 800f, growY = true)
                             row().padTop(10f)
                             start = textButton("Start", "NewLoadGameStart").cell(width = 400f, height = 100f).apply {
                                 isVisible = false
@@ -99,9 +99,9 @@ class NewGame: BasicUIScreen() {
                                     event?.handle()
                                 }
                             }
-                        }.cell(expandY = true).align(Align.top)
+                        }.cell(growY = true).align(Align.top)
                         table {
-                            currSelectedMode = textButton("Singleplayer", "NewLoadGameAirport").cell(width = 300f, height = 550f / 3).apply {
+                            currSelectedMode = textButton("Singleplayer", "NewLoadGameAirport").cell(width = 300f, growY = true, uniformY = true).apply {
                                 name = SINGLE_PLAYER
                                 addChangeListener { event, _ ->
                                     currSelectedMode?.isChecked = false
@@ -111,7 +111,7 @@ class NewGame: BasicUIScreen() {
                                 isChecked = true
                             }
                             row()
-                            textButton("Multiplayer\n(LAN)", "NewLoadGameAirport").cell(width = 300f, height = 550f / 3).apply {
+                            textButton("Multiplayer\n(LAN)", "NewLoadGameAirport").cell(width = 300f, growY = true, uniformY = true).apply {
                                 name = LAN_MULTIPLAYER
                                 addChangeListener { event, _ ->
                                     currSelectedMode?.isChecked = false
@@ -120,7 +120,7 @@ class NewGame: BasicUIScreen() {
                                 }
                             }
                             row()
-                            textButton("Multiplayer\n(Public)", "NewLoadGameAirport").cell(width = 300f, height = 550f / 3).apply {
+                            textButton("Multiplayer\n(Public)", "NewLoadGameAirport").cell(width = 300f, growY = true, uniformY = true).apply {
                                 name = PUBLIC_MULTIPLAYER
                                 addChangeListener { event, _ ->
                                     currSelectedMode?.isChecked = false
@@ -129,10 +129,10 @@ class NewGame: BasicUIScreen() {
                                 }
                             }
                             row()
-                        }
-                    }.cell(expandY = true, padTop = 65f)
-                    row().padTop(100f)
-                    textButton("Back", "Menu").cell(width = BUTTON_WIDTH_BIG, height = BUTTON_HEIGHT_BIG, padBottom = BOTTOM_BUTTON_MARGIN, expandY = true, align = Align.bottom).addChangeListener { _, _ ->
+                        }.cell(growY = true)
+                    }.cell(growY = true, padTop = 50f)
+                    row().padTop(50f)
+                    textButton("Back", "Menu").cell(width = BUTTON_WIDTH_BIG, height = BUTTON_HEIGHT_BIG, padBottom = BOTTOM_BUTTON_MARGIN, align = Align.bottom).addChangeListener { _, _ ->
                         GAME.setScreen<MainMenu>()
                     }
                 }

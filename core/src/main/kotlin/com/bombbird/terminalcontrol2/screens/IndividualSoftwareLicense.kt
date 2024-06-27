@@ -30,7 +30,7 @@ class IndividualSoftwareLicense: BasicUIScreen() {
                     }.cell(growX = true, expandY = true, padTop = 50f)
                     row().padTop(50f)
                     textButton("Back", "Menu").cell(width = BUTTON_WIDTH_BIG, height = BUTTON_HEIGHT_BIG,
-                        padBottom = BOTTOM_BUTTON_MARGIN, expandY = true, expandX = true, align = Align.bottom).addChangeListener { _, _ ->
+                        padBottom = BOTTOM_BUTTON_MARGIN, expandX = true, align = Align.bottom).addChangeListener { _, _ ->
                         GAME.setScreen<SoftwareLicenses>()
                     }
                 }
