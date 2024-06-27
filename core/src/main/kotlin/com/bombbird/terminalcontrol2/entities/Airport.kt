@@ -445,18 +445,12 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advD
                     }
 
                     val arrRwyNames = Array(config.arrRwys.size) {""}
-                    val allAppNOZ = GdxArray<ApproachNormalOperatingZone>()
                     for (i in 0 until config.arrRwys.size) {
                         rwyMap[config.arrRwys[i]?.entity?.get(RunwayInfo.mapper)?.rwyId]?.entity?.let { rwy ->
                             rwy += ActiveLanding()
                             rwy.remove<DoNotRenderLabel>()
                             rwy[OppositeRunway.mapper]?.oppRwy?.add(DoNotRenderShape())
                             arrRwyNames[i] = rwy[RunwayInfo.mapper]?.rwyName ?: ""
-                        }
-                    }
-                    if (allAppNOZ.size > 1) {
-                        for (i in 0 until allAppNOZ.size) {
-                            allAppNOZ[i].entity.remove<DoNotRenderShape>()
                         }
                     }
 
@@ -490,7 +484,7 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advD
         CLIENT_SCREEN?.uiPane?.mainInfoObj?.setAirportRunwayConfigPaneState(entity)
 
         // Find NOZ group to render
-        val availableApproaches = getAvailableApproaches(entity, null)
+        val availableApproaches = getAvailableApproaches(entity, null, includeClosedRunway = true)
         availableApproaches.removeIndex(0)
         val appNOZGroups = entity[ApproachNOZChildren.mapper]?.nozGroups
         if (appNOZGroups != null) {

@@ -18,7 +18,7 @@ import kotlinx.coroutines.launch
 
 
 private val PREFS_PLAY_GAMES_SIGN_IN_FAILED = booleanPreferencesKey("play_games_sign_in_failed")
-private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "main_Store")
+private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "main_store")
 
 class PlayServicesManager(private val activity: AndroidLauncher): AchievementHandler {
     private val gamesSignInClient = PlayGames.getGamesSignInClient(activity)
