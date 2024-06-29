@@ -8,6 +8,7 @@ import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.navigation.calculateAllDistToGo
+import com.bombbird.terminalcontrol2.navigation.getRouteActiveDisplayLegs
 import com.bombbird.terminalcontrol2.ui.datatag.getNewDatatagLabelText
 import com.bombbird.terminalcontrol2.ui.datatag.updateDatatagText
 import com.bombbird.terminalcontrol2.ui.isMobile
@@ -183,10 +184,14 @@ fun updateDistToGo() {
     if (SHOW_DIST_TO_GO == SHOW_DIST_TO_GO_ARRIVALS && flightType != FlightType.ARRIVAL) return
 
     val radarData = selectedAircraft[RadarData.mapper] ?: return
-    val route = selectedAircraft[ClearanceAct.mapper]?.actingClearance?.clearanceState?.route ?: return
-    if (route.size == 0) return
+    val activeDisplayRoute = getRouteActiveDisplayLegs(
+        selectedAircraft[ClearanceAct.mapper]?.actingClearance?.clearanceState?.route ?: return
+    )
+    if (activeDisplayRoute.size == 0) return
 
-    val distances = calculateAllDistToGo(radarData.position, route[0], route[route.size - 1], route)
+    val distances = calculateAllDistToGo(
+        radarData.position, activeDisplayRoute[0], activeDisplayRoute[activeDisplayRoute.size - 1], activeDisplayRoute
+    )
     val shownWpts = GdxArray<Short>()
     for (i in 0 until distances.size) {
         val dist = distances[i]
@@ -216,12 +221,14 @@ fun updateWaypointRestr() {
     if (!SHOW_WPT_RESTRICTIONS) return
 
     val selectedAircraft = GAME.gameClientScreen?.selectedAircraft?.entity ?: return
-    val route = selectedAircraft[ClearanceAct.mapper]?.actingClearance?.clearanceState?.route ?: return
-    if (route.size == 0) return
+    val activeDisplayRoute = getRouteActiveDisplayLegs(
+        selectedAircraft[ClearanceAct.mapper]?.actingClearance?.clearanceState?.route ?: return
+    )
+    if (activeDisplayRoute.size == 0) return
 
     val shownWpts = GdxArray<Short>()
-    for (i in 0 until route.size) {
-        val leg = route[i]
+    for (i in 0 until activeDisplayRoute.size) {
+        val leg = activeDisplayRoute[i]
         if (leg !is Route.WaypointLeg) continue
         if (shownWpts.contains(leg.wptId, false)) continue
         shownWpts.add(leg.wptId)

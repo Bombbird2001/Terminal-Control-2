@@ -753,3 +753,23 @@ fun getZonesForInitialRunwayClimb(route: Route, rwy: Entity): GdxArray<RouteZone
     }
     return zones
 }
+
+/**
+ * Gets a sub-route of the input [route] that contains legs that should be displayed when the aircraft is selected
+ *
+ * For aircraft already on the missed approach, this will include all legs in the route
+ * For aircraft not on the missed approach, this will include all legs up to the missed approach leg
+ */
+fun getRouteActiveDisplayLegs(route: Route): Route {
+    if (route.size == 0) return Route()
+    val isGoAroundPhase = (route[0] !is DiscontinuityLeg && route[0].phase == Leg.MISSED_APP)
+    if (isGoAroundPhase) return Route().apply { setToRouteCopy(route) }
+    val subRoute = Route()
+    for (i in 0 until route.size) {
+        val leg = route[i]
+        // If is not go around phase and a missed approach leg is reached, break
+        if (leg.phase == Leg.MISSED_APP) return subRoute
+        subRoute.add(leg)
+    }
+    return subRoute
+}
