@@ -68,6 +68,7 @@ class AchievementManager(private val achievementHandler: AchievementHandler) {
         }
 
         prefs.putBoolean("initialArrivalAchievementsSet", true)
+        prefs.flush()
     }
 
     /** Increments achievement arrival count at [airportIcao] */
