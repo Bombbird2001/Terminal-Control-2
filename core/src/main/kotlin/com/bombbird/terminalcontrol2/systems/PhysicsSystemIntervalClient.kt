@@ -5,7 +5,7 @@ import com.badlogic.ashley.systems.IntervalSystem
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.utilities.InitializeCompanionObjectOnStart
 import com.bombbird.terminalcontrol2.utilities.calculateIASFromTAS
-import com.bombbird.terminalcontrol2.utilities.getClosestAirportWindVector
+import com.bombbird.terminalcontrol2.utilities.getInterpolatedWindVector
 import ktx.ashley.allOf
 import ktx.ashley.exclude
 import ktx.ashley.get
@@ -51,7 +51,7 @@ class PhysicsSystemIntervalClient: IntervalSystem(1f) {
             affectedByWind[i]?.apply {
                 val pos = get(Position.mapper) ?: return@apply
                 val wind = get(AffectedByWind.mapper) ?: return@apply
-                wind.windVectorPxps = getClosestAirportWindVector(pos.x, pos.y)
+                wind.windVectorPxps = getInterpolatedWindVector(pos.x, pos.y)
             }
         }
     }

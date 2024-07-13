@@ -78,7 +78,7 @@ class PhysicsSystemInterval: IntervalSystem(1f) {
             affectedByWind[i]?.apply {
                 val pos = get(Position.mapper) ?: return@apply
                 val wind = get(AffectedByWind.mapper) ?: return@apply
-                wind.windVectorPxps = getClosestAirportWindVector(pos.x, pos.y)
+                wind.windVectorPxps = getInterpolatedWindVector(pos.x, pos.y)
             }
         }
     }

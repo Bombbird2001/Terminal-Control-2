@@ -103,7 +103,7 @@ fun createArrival(callsign: String, icaoType: String, airport: Entity, gs: GameS
             val minVertSpd = calculateMinVerticalSpd(aircraftPerf, alt, tas, 0f, approachExpedite = false, takingOff = false, takeoffGoAround = false)
             vertSpdFpm = max(minVertSpd, (cmdTargetAlt - alt) * 6)
         }
-        val affectedByWind = (entity[AffectedByWind.mapper] ?: AffectedByWind()).apply { getClosestAirportWindVector(spawnPos.first, spawnPos.second) }
+        val affectedByWind = (entity[AffectedByWind.mapper] ?: AffectedByWind()).apply { getInterpolatedWindVector(spawnPos.first, spawnPos.second) }
         entity[GroundTrack.mapper]?.apply {
             val tasVector = dir.trackUnitVector * ktToPxps(speed.speedKts.toInt())
             trackVectorPxps = tasVector + affectedByWind.windVectorPxps
@@ -380,7 +380,7 @@ fun clearForTakeoff(aircraft: Entity, rwy: Entity, sid: SidStar.SID) {
         get(Direction.mapper)?.trackUnitVector?.rotateDeg(rwyDir.trackUnitVector.angleDeg() - 90) // Runway heading
         // Calculate headwind component for takeoff
         val tailwind = rwyDir.let { dir ->
-            val wind = getClosestAirportWindVector(pos.x, pos.y)
+            val wind = getInterpolatedWindVector(pos.x, pos.y)
             calculateIASFromTAS(rwyAlt, pxpsToKt(wind.dot(dir.trackUnitVector)))
         }
         get(Speed.mapper)?.speedKts = 5f

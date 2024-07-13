@@ -424,27 +424,34 @@ fun checkRunwayConfigSelection(airport: Entity) {
     }
 }
 
-/** Given the position ([x], [y]), find the closest airport and returns the wind vector of it (each dimension in px) */
-fun getClosestAirportWindVector(x: Float, y: Float): Vector2 {
-    var closest = -1f
-    var vectorToUse = Vector2()
-    GAME.gameServer?.airports?.values()?.toArray()?.apply {
-        for (airport in this) {
-            airport.entity.let {
-                val pos = it[Position.mapper] ?: return@let
-                val metar = it[MetarInfo.mapper] ?: return@let
-                val deltaX = pos.x - x
-                val deltaY = pos.y - y
-                val radiusSq = deltaX * deltaX + deltaY * deltaY
-                if (closest < 0 || radiusSq < closest) {
-                    vectorToUse = metar.windVectorPx
-                    closest = radiusSq
-                }
-            }
-        }
+/**
+ * Given the position ([x], [y]), interpolate the wind speed and direction based on wind information and position of
+ * all airports in the game - uses inverse-distance-weighted-interpolation method
+ */
+fun getInterpolatedWindVector(x: Float, y: Float): Vector2 {
+    val allAirports = GAME.gameServer?.airports?.values()?.toArray() ?: return Vector2()
+    val windData = allAirports.map {
+        val pos = it.entity[Position.mapper] ?: return@map null
+        val metar = it.entity[MetarInfo.mapper] ?: return@map null
+        val deltaX = pos.x - x
+        val deltaY = pos.y - y
+        val radiusSq = deltaX * deltaX + deltaY * deltaY
+        // If the point is within 1px of airport of the airport, use the airport's wind data directly
+        if (radiusSq < 1) return metar.windVectorPx
+        val weight = 1 / radiusSq
+        Pair(metar.windVectorPx.cpy().scl(weight), weight)
+    }.filterNotNull()
+
+    // Sum all vectors and divide by sum of weights
+    val vectorSum = Vector2()
+    var weightSum = 0f
+    for (data in windData) {
+        vectorSum.add(data.first)
+        weightSum += data.second
     }
 
-    return vectorToUse
+    val res = if (weightSum == 0f) Vector2() else vectorSum.scl(1 / weightSum)
+    return res
 }
 
 /** Notifies the gameServer that initial weather has been loaded */
