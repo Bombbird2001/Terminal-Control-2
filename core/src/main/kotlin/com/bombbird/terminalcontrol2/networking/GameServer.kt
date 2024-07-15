@@ -622,6 +622,10 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
             } else {
                 // Update client with seconds passed since last frame
                 // println("Time diff: ${currMs - prevMs}")
+                // Since System.currentTimeMillis() is not guaranteed to be monotonic, we need to ensure that deltaTime
+                // is always positive: https://stackoverflow.com/questions/2978598/will-system-currenttimemillis-always-return-a-value-previous-calls
+                // Otherwise some strange bugs may appear
+                prevMs = min(currMs - 1, prevMs)
                 update((currMs - prevMs) / 1000f)
 
                 val currFastSlot = (currMs - startTime) / (SERVER_TO_CLIENT_UPDATE_INTERVAL_FAST).toLong()
