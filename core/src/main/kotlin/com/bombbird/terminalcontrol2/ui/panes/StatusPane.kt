@@ -6,6 +6,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.Label
 import com.badlogic.gdx.utils.ArrayMap.Entries
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.*
+import com.bombbird.terminalcontrol2.screens.settings.TrafficSettings
 import com.bombbird.terminalcontrol2.traffic.TrafficMode
 import com.bombbird.terminalcontrol2.traffic.conflict.Conflict
 import com.bombbird.terminalcontrol2.ui.removeMouseScrollListeners
@@ -215,24 +216,33 @@ class StatusPane {
     private fun addTrafficInfoMessages() {
         CLIENT_SCREEN?.apply {
             val trafficMode = when (serverTrafficMode) {
-                TrafficMode.NORMAL -> "Normal"
-                TrafficMode.ARRIVALS_TO_CONTROL -> "Arrivals to control - $serverTrafficValue"
-                TrafficMode.FLOW_RATE -> "Arrival flow rate - ${serverTrafficValue}/hr"
+                TrafficMode.NORMAL -> TrafficSettings.NORMAL
+                TrafficMode.ARRIVALS_TO_CONTROL -> TrafficSettings.ARRIVALS_TO_CONTROL
+                TrafficMode.FLOW_RATE -> TrafficSettings.ARRIVAL_FLOW_RATE
                 else -> {
                     FileLog.info("StatusPane", "Unknown server traffic mode $serverTrafficMode")
                     "Unknown"
                 }
             }
             addMessage("Traffic mode: $trafficMode", INFO)
-
             Entries(airports).forEach {
                 val arpt = it.value
                 val icao = arpt.entity[AirportInfo.mapper]?.icaoCode ?: return@forEach
                 val arrClosed = arpt.entity.has(ArrivalClosed.mapper)
                 val depClosed = arpt.entity[DepartureInfo.mapper]?.closed == true
-                if (arrClosed || depClosed) addMessage("$icao: Closed${if (arrClosed && depClosed) ""
-                else if (arrClosed) " for arrivals" else " for departures"}", INFO
-                )
+                if (arrClosed || depClosed) {
+                    addMessage(
+                        "$icao: Closed${if (arrClosed && depClosed) "" else if (arrClosed) " for arrivals" else " for departures"}",
+                        INFO
+                    )
+                }
+                if (!arrClosed && serverTrafficMode != TrafficMode.NORMAL) {
+                    val arrivalStats = arpt.entity[AirportArrivalStats.mapper] ?: return@forEach
+                    addMessage("$icao: ${arrivalStats.targetTrafficValue}${
+                        if (serverTrafficMode == TrafficMode.FLOW_RATE) "/hr"
+                        else " arrivals to control"
+                    }", INFO)
+                }
             }
         }
     }

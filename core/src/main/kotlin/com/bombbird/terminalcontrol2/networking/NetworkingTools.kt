@@ -192,6 +192,8 @@ fun registerClassesToKryo(kryo: Kryo?) {
         register(Array<String>::class.java)
         register(MissedApproachMessage::class.java)
         register(ArrivalLanded::class.java)
+        register(TrafficSettingsData.AirportTrafficValue::class.java)
+        register(Array<TrafficSettingsData.AirportTrafficValue>::class.java)
 
     } ?: FileLog.info("NetworkingTools", "Null kryo passed, unable to register classes")
 }

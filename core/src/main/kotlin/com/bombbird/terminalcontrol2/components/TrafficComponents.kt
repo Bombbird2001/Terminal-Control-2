@@ -312,3 +312,16 @@ class CustomApproachSeparation(var appGroup1: Array<String> = arrayOf(), var app
         fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
+
+/** Component storing airport-level arrival spawn data */
+@JsonClass(generateAdapter = true)
+class AirportArrivalStats(var targetTrafficValue: Int = 6, var arrivalSpawnTimer: Float = 60f,
+                          var previousArrivalSpawnOffsetS: Float = 0f): Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.AIRPORT_ARRIVAL_STATS
+
+    companion object {
+        val mapper = object: Mapper<AirportArrivalStats>() {}.mapper
+
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
+    }
+}

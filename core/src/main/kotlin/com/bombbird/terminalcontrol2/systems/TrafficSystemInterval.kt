@@ -33,6 +33,7 @@ class TrafficSystemInterval: IntervalSystem(1f) {
         private val despawnFamily = allOf(Position::class, AircraftInfo::class, Controllable::class)
             .exclude(WaitingTakeoff::class, TakeoffRoll::class, LandingRoll::class).get()
         private val timeSinceDepFamily = allOf(TimeSinceLastDeparture::class).get()
+        private val arrivalStatsFamily = allOf(AirportArrivalStats::class).get()
 
         fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
@@ -44,6 +45,7 @@ class TrafficSystemInterval: IntervalSystem(1f) {
     private val conflictAbleFamilyEntities = FamilyWithListener.newServerFamilyWithListener(conflictAbleFamily)
     private val despawnFamilyEntities = FamilyWithListener.newServerFamilyWithListener(despawnFamily)
     private val timeSinceDepFamilyEntities = FamilyWithListener.newServerFamilyWithListener(timeSinceDepFamily)
+    private val arrivalStatsFamilyEntities = FamilyWithListener.newServerFamilyWithListener(arrivalStatsFamily)
 
     private val startingAltitude = getConflictStartAltitude()
     private var conflictLevels = Array<GdxArray<Entity>>(0) {
@@ -58,27 +60,55 @@ class TrafficSystemInterval: IntervalSystem(1f) {
      */
     override fun updateInterval() {
         GAME.gameServer?.apply {
-            // Arrival spawning timer
-            arrivalSpawnTimerS -= interval
-            if (arrivalSpawnTimerS < 0) {
-                when (trafficMode) {
-                    TrafficMode.NORMAL, TrafficMode.ARRIVALS_TO_CONTROL -> {
+            val airportArrivalStats = arrivalStatsFamilyEntities.getEntities()
+            when (trafficMode) {
+                TrafficMode.NORMAL -> {
+                    // Arrival spawning timer - normal traffic mode only
+                    arrivalSpawnTimerS -= interval
+                    if (arrivalSpawnTimerS < 0) {
                         val arrivalCount = arrivalFamilyEntities.getEntities().filter { it[FlightType.mapper]?.type == FlightType.ARRIVAL }.size
                         // Min 50sec for >= 4 planes diff, max 80sec for <= 1 plane diff
                         arrivalSpawnTimerS = 90f - 10 * (trafficValue - arrivalCount)
                         arrivalSpawnTimerS = MathUtils.clamp(arrivalSpawnTimerS, 50f, 80f)
-                        if (arrivalCount >= trafficValue.toInt()) return
+                        if (arrivalCount < trafficValue.toInt()) createRandomArrival(Entries(airports).map { it.value }, this)
                     }
-                    TrafficMode.FLOW_RATE -> {
-                        arrivalSpawnTimerS = -previousArrivalOffsetS // Subtract the additional (or less) time before spawning previous aircraft
-                        val defaultRate = 3600f / trafficValue
-                        arrivalSpawnTimerS += defaultRate // Add the constant rate timing
-                        previousArrivalOffsetS = defaultRate * MathUtils.random(-0.1f, 0.1f)
-                        arrivalSpawnTimerS += previousArrivalOffsetS
-                    }
-                    else -> FileLog.info("TrafficSystem", "Invalid traffic mode $trafficMode")
                 }
-                createRandomArrival(Entries(airports).map { it.value }, this)
+                TrafficMode.ARRIVALS_TO_CONTROL -> {
+                    for (i in 0 until airportArrivalStats.size()) {
+                        val arptEntity = airportArrivalStats[i]
+                        val arptArrStats = arptEntity[AirportArrivalStats.mapper] ?: continue
+                        arptArrStats.arrivalSpawnTimer -= interval
+                        if (arptArrStats.arrivalSpawnTimer > 0) continue
+
+                        val arptId = arptEntity[AirportInfo.mapper]?.arptId ?: continue
+                        val arrivalCount = arrivalFamilyEntities.getEntities().filter {
+                            it[FlightType.mapper]?.type == FlightType.ARRIVAL && it[ArrivalAirport.mapper]?.arptId == arptId
+                        }.size
+                        // Min 50sec for >= 4 planes diff, max 80sec for <= 1 plane diff
+                        arptArrStats.arrivalSpawnTimer = 90f - 10 * (arptArrStats.targetTrafficValue - arrivalCount)
+                        arptArrStats.arrivalSpawnTimer = MathUtils.clamp(arptArrStats.arrivalSpawnTimer, 50f, 80f)
+                        if (arrivalCount >= arptArrStats.targetTrafficValue) continue
+                        createRandomArrivalForAirport(arptEntity, this)
+                        FileLog.info("TrafficSystem", "${arptEntity[AirportInfo.mapper]?.icaoCode} arrivals: ${arrivalCount + 1}")
+                    }
+                }
+                TrafficMode.FLOW_RATE -> {
+                    for (i in 0 until airportArrivalStats.size()) {
+                        val arptEntity = airportArrivalStats[i]
+                        val arptArrStats = arptEntity[AirportArrivalStats.mapper] ?: continue
+                        arptArrStats.arrivalSpawnTimer -= interval
+                        if (arptArrStats.arrivalSpawnTimer > 0) continue
+
+                        arptArrStats.arrivalSpawnTimer = -arptArrStats.previousArrivalSpawnOffsetS // Subtract the additional (or less) time before spawning previous aircraft
+                        val defaultRate = 3600f / arptArrStats.targetTrafficValue // 3600sec = 1hr
+                        arptArrStats.arrivalSpawnTimer += defaultRate // Add the constant rate timing
+                        arptArrStats.previousArrivalSpawnOffsetS = defaultRate * MathUtils.random(-0.1f, 0.1f)
+                        arptArrStats.arrivalSpawnTimer += arptArrStats.previousArrivalSpawnOffsetS
+                        createRandomArrivalForAirport(arptEntity, this)
+                        FileLog.info("TrafficSystem", "Spawned arrival for airport ${arptEntity[AirportInfo.mapper]?.icaoCode}")
+                    }
+                }
+                else -> FileLog.warn("TrafficSystem", "Invalid traffic mode $trafficMode")
             }
 
             // I Am God achievement counter; engine update rate already takes into account game speed up

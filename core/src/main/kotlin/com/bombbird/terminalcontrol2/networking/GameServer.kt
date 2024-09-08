@@ -493,7 +493,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
                     uuid,
                     TrafficSettingsData(
                         trafficMode, trafficValue,
-                        getArrivalClosedAirports(), getDepartureClosedAirports()
+                        getArrivalClosedAirports(), getDepartureClosedAirports(), getAirportArrivalValues()
                     )
                 )
                 FileLog.debug("GameServer", "Sent TrafficSettingsData")
@@ -935,7 +935,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
         networkServer.sendToAllTCP(
             TrafficSettingsData(
                 trafficMode, trafficValue,
-                getArrivalClosedAirports(), getDepartureClosedAirports()
+                getArrivalClosedAirports(), getDepartureClosedAirports(), getAirportArrivalValues()
             )
         )
     }

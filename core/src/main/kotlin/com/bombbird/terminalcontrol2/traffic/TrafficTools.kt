@@ -14,6 +14,7 @@ import com.bombbird.terminalcontrol2.entities.WakeZone
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.*
 import com.bombbird.terminalcontrol2.networking.GameServer
+import com.bombbird.terminalcontrol2.networking.dataclasses.TrafficSettingsData
 import com.bombbird.terminalcontrol2.systems.TrafficSystemInterval
 import com.bombbird.terminalcontrol2.systems.TrajectorySystemInterval
 import com.bombbird.terminalcontrol2.utilities.*
@@ -55,14 +56,21 @@ fun createRandomArrival(airports: List<Airport>, gs: GameServer) {
     }}
     airportDist.generateNormalized()
     val arpt = if (airportDist.size() == 0) return else airportDist.value()
-    val spawnData = generateRandomTrafficForAirport(arpt) ?: return
+    createRandomArrivalForAirport(arpt, gs)
+}
+
+/**
+ * Creates an arrival to the [airport] with a randomly selected STAR
+ */
+fun createRandomArrivalForAirport(airport: Entity, gs: GameServer) {
+    val spawnData = generateRandomTrafficForAirport(airport) ?: return
     val callsign = generateRandomCallsign(spawnData.first, spawnData.second, gs) ?: return
     // Choose random aircraft type from the array of possible aircraft
     val icaoType = spawnData.third.random() ?: run {
-        FileLog.info("TrafficTools", "No aircraft available for ${spawnData.first} in ${arpt[AirportInfo.mapper]?.icaoCode}")
+        FileLog.info("TrafficTools", "No aircraft available for ${spawnData.first} in ${airport[AirportInfo.mapper]?.icaoCode}")
         "B77W"
     }
-    createArrival(callsign, icaoType, arpt, gs)
+    createArrival(callsign, icaoType, airport, gs)
 }
 
 /**
@@ -885,6 +893,25 @@ fun getDepartureClosedAirports(): ByteArray {
         }
     }
     return airports.toArray().map { it }.toByteArray()
+}
+
+/**
+ * Gets the arrival traffic values for all airports
+ *
+ * @return an array of [TrafficSettingsData.AirportTrafficValue] containing the ID and arrival traffic values for all
+ * airports
+ */
+fun getAirportArrivalValues(): Array<TrafficSettingsData.AirportTrafficValue> {
+    val airports = GdxArray<TrafficSettingsData.AirportTrafficValue>(AIRPORT_SIZE)
+    GAME.gameServer?.airports?.let { arpts ->
+        Entries(arpts).forEach {
+            val arpt = it.value
+            val id = arpt.entity[AirportInfo.mapper]?.arptId ?: return@forEach
+            val value = arpt.entity[AirportArrivalStats.mapper]?.targetTrafficValue ?: return@forEach
+            airports.add(TrafficSettingsData.AirportTrafficValue(id, value))
+        }
+    }
+    return airports.toArray().map { it }.toTypedArray()
 }
 
 /**

@@ -255,8 +255,12 @@ class MetarData(private val metars: Array<Airport.SerialisedMetar> = arrayOf()):
 
 /** Class representing data sent for traffic settings on the server */
 class TrafficSettingsData(private val trafficMode: Byte = TrafficMode.NORMAL, private val trafficValue: Float = 0f,
-                          private val arrivalClosed: ByteArray = byteArrayOf(), private val departureClosed: ByteArray = byteArrayOf()):
+                          private val arrivalClosed: ByteArray = byteArrayOf(), private val departureClosed: ByteArray = byteArrayOf(),
+                          private val airportTrafficValues: Array<AirportTrafficValue> = arrayOf()
+):
     ClientReceive, NeedsEncryption {
+    class AirportTrafficValue(val airportByte: Byte = 0, val trafficValue: Int = 0)
+
     override fun handleClientReceive(rs: RadarScreen) {
         FileLog.debug("ClientReceiveClasses", "Received TrafficSettingsData")
         rs.serverTrafficMode = trafficMode
@@ -269,6 +273,9 @@ class TrafficSettingsData(private val trafficMode: Byte = TrafficMode.NORMAL, pr
         }
         arrivalClosed.forEach { id -> rs.airports[id]?.entity?.plusAssign(ArrivalClosed()) }
         departureClosed.forEach { id -> rs.airports[id]?.entity?.plusAssign(DepartureInfo(closed = true)) }
+        airportTrafficValues.forEach { value ->
+            rs.airports[value.airportByte]?.entity?.get(AirportArrivalStats.mapper)?.targetTrafficValue = value.trafficValue
+        }
     }
 }
 

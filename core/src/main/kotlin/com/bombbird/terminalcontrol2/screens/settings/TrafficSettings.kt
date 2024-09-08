@@ -6,6 +6,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.Label
 import com.badlogic.gdx.scenes.scene2d.ui.Slider
 import com.badlogic.gdx.utils.Align
 import com.badlogic.gdx.utils.ArrayMap.Entries
+import com.bombbird.terminalcontrol2.components.AirportArrivalStats
 import com.bombbird.terminalcontrol2.components.AirportInfo
 import com.bombbird.terminalcontrol2.components.ArrivalClosed
 import com.bombbird.terminalcontrol2.components.DepartureInfo
@@ -20,7 +21,6 @@ import ktx.ashley.remove
 import ktx.collections.GdxArrayMap
 import ktx.collections.set
 import ktx.scene2d.*
-import kotlin.math.round
 import kotlin.math.roundToInt
 
 /** Settings screen for custom traffic settings */
@@ -32,10 +32,9 @@ class TrafficSettings: BaseGameSettings() {
     }
 
     private val trafficModeSelectBox: KSelectBox<String>
-    private val trafficValueLabel: Label
-    private val sliderValueLabel: Label
-    private val trafficValueSlider: Slider
     private val airportClosedSelections = GdxArrayMap<Byte, Pair<CheckBox, CheckBox>>(AIRPORT_SIZE)
+    private val airportTrafficSliders = GdxArrayMap<Byte, Slider>(AIRPORT_SIZE)
+    private val airportTrafficLabels = GdxArrayMap<Byte, Label>(AIRPORT_SIZE)
 
     init {
         stage.actors {
@@ -49,11 +48,6 @@ class TrafficSettings: BaseGameSettings() {
                         setItems(NORMAL, ARRIVALS_TO_CONTROL, ARRIVAL_FLOW_RATE)
                         addChangeListener { _, _ -> updateTrafficValueElements() }
                     }
-                    trafficValueLabel = defaultSettingsLabel("Arrival count:")
-                    sliderValueLabel = label("?", "SettingsOption").cell(padLeft = 30f, width = 70f, height = BUTTON_HEIGHT_BIG / 1.5f)
-                    trafficValueSlider = slider(4f, 40f, 1f, style = "DatatagSpacing") {
-                        addChangeListener { _, _ -> updateSliderLabelText() }
-                    }.cell(width = BUTTON_WIDTH_BIG / 2 - 75, height = BUTTON_HEIGHT_BIG / 1.5f, padLeft = 20f)
                     row()
                     scrollPane("SettingsPane") {
                         table {
@@ -62,9 +56,20 @@ class TrafficSettings: BaseGameSettings() {
                                 val airport = airportEntry.value
                                 val arptInfo = airport.entity[AirportInfo.mapper] ?: continue
                                 defaultSettingsLabel("${arptInfo.icaoCode}:").cell(width = 100f, padRight = 60f)
-                                val arrBox = checkBox("   Arrivals", "TrafficCheckbox").cell(height = BUTTON_HEIGHT_BIG / 1.5f, padRight = 80f, fillY = true)
-                                val depBox = checkBox("   Departures", "TrafficCheckbox").cell(height = BUTTON_HEIGHT_BIG / 1.5f, fillY = true)
+                                val arrBox = checkBox("   Arrivals", "TrafficCheckbox").cell(height = BUTTON_HEIGHT_BIG / 1.25f, padRight = 80f, fillY = true)
+                                val depBox = checkBox("   Departures", "TrafficCheckbox").cell(height = BUTTON_HEIGHT_BIG / 1.25f, fillY = true)
                                 airportClosedSelections[arptInfo.arptId] = Pair(arrBox, depBox)
+                                val slider = slider(4f, 40f, 1f, style = "DatatagSpacing") {
+                                    addChangeListener { _, _ ->
+                                        airportTrafficLabels[arptInfo.arptId]?.let { label ->
+                                            setTrafficLabelValue(label, value.roundToInt(), trafficModeSelectBox.selected)
+                                        }
+                                    }
+                                }.cell(width = BUTTON_WIDTH_BIG / 2 - 75, height = BUTTON_HEIGHT_BIG / 1.25f, padLeft = 70f)
+                                airportTrafficSliders[arptInfo.arptId] = slider
+                                val label = label("?", "SettingsOption").cell(padLeft = 30f, width = 100f, height = BUTTON_HEIGHT_BIG / 1.25f)
+                                label.isVisible = false
+                                airportTrafficLabels[arptInfo.arptId] = label
                                 row().padTop(30f)
                             }
                             align(Align.top)
@@ -99,7 +104,6 @@ class TrafficSettings: BaseGameSettings() {
                 }
             }
 
-            trafficValueSlider.value = round(trafficValue)
             updateTrafficValueElements()
             for (airportEntry in Entries(airports)) {
                 val airport = airportEntry.value
@@ -110,6 +114,8 @@ class TrafficSettings: BaseGameSettings() {
                 val checkboxes = airportClosedSelections[arptInfo.arptId] ?: continue
                 checkboxes.first.isChecked = !arrClosed
                 checkboxes.second.isChecked = !depClosed
+                val arrivalStats = airport.entity[AirportArrivalStats.mapper] ?: continue
+                airportTrafficSliders[arptInfo.arptId]?.value = arrivalStats.targetTrafficValue.toFloat()
             }
         }
     }
@@ -127,8 +133,9 @@ class TrafficSettings: BaseGameSettings() {
                     TrafficMode.NORMAL
                 }
             }
-            if (trafficMode != TrafficMode.NORMAL) trafficValue = trafficValueSlider.value
-            else {
+            if (trafficMode != TrafficMode.NORMAL) {
+                trafficValue = 6f
+            } else {
                 if (prevTrafficMode == TrafficMode.FLOW_RATE) trafficValue = 6f
                 trafficValue = MathUtils.clamp(trafficValue, 4f, MAX_ARRIVALS.toFloat())
             }
@@ -139,14 +146,12 @@ class TrafficSettings: BaseGameSettings() {
                 if (checkboxes.first.isChecked) airport.entity.remove<ArrivalClosed>()
                 else airport.entity += ArrivalClosed()
                 airport.entity[DepartureInfo.mapper]?.closed = !checkboxes.second.isChecked
+                airportTrafficSliders[arptInfo.arptId]?.value?.toInt()?.let {
+                    airport.entity[AirportArrivalStats.mapper]?.targetTrafficValue = it
+                }
             }
             sendTrafficSettings()
         }
-    }
-
-    /** Updates the traffic slider label to the latest slider value */
-    private fun updateSliderLabelText() {
-        sliderValueLabel.setText("${trafficValueSlider.value.roundToInt()}${if (trafficModeSelectBox.selected == ARRIVAL_FLOW_RATE) "/hr" else ""}")
     }
 
     /**
@@ -155,20 +160,34 @@ class TrafficSettings: BaseGameSettings() {
      */
     private fun updateTrafficValueElements() {
         val selectedMode = trafficModeSelectBox.selected
-        trafficValueLabel.setText(when (selectedMode) {
-            ARRIVALS_TO_CONTROL -> "Arrival count:"
-            ARRIVAL_FLOW_RATE -> "Arrival flow rate:"
-            else -> ""
-        })
-        val currPercent = trafficValueSlider.percent
-        val stepSize = if (selectedMode == ARRIVAL_FLOW_RATE) 5f else 1f
-        trafficValueSlider.setRange(if (selectedMode == ARRIVAL_FLOW_RATE) 10f else 4f, if (selectedMode == ARRIVAL_FLOW_RATE) 120f else 40f)
-        trafficValueSlider.stepSize = stepSize
-        val rawValue = (trafficValueSlider.maxValue - trafficValueSlider.minValue) * currPercent + trafficValueSlider.minValue
-        trafficValueSlider.value = (rawValue / stepSize).roundToInt() * stepSize
-        updateSliderLabelText()
-        trafficValueLabel.isVisible = selectedMode != NORMAL
-        sliderValueLabel.isVisible = selectedMode != NORMAL
-        trafficValueSlider.isVisible = selectedMode != NORMAL
+        val airports = GAME.gameServer?.airports ?: return
+        val maxTrafficRatio = airports.values().maxOf { it.entity[AirportInfo.mapper]?.tfcRatio ?: 0 }
+        airportTrafficSliders.forEach {
+            val trafficValueSlider = it.value
+            trafficValueSlider.isVisible = selectedMode != NORMAL
+            if (selectedMode == NORMAL) return@forEach
+            val currPercent = trafficValueSlider.percent
+            val stepSize = if (selectedMode == ARRIVAL_FLOW_RATE) 5f else 1f
+            val tfcRatio = airports[it.key]?.entity?.get(AirportInfo.mapper)?.tfcRatio ?: return@forEach
+            val trafficFlowMin = if (tfcRatio <= maxTrafficRatio / 2) 5f else 10f
+            val trafficFlowMax = if (tfcRatio <= maxTrafficRatio / 2) 40f else 80f
+            val arrControlMin = if (tfcRatio <= maxTrafficRatio / 2) 1f else 4f
+            val arrControlMax = if (tfcRatio <= maxTrafficRatio / 2) 20f else 40f
+            trafficValueSlider.setRange(
+                if (selectedMode == ARRIVAL_FLOW_RATE) trafficFlowMin else arrControlMin,
+                if (selectedMode == ARRIVAL_FLOW_RATE) trafficFlowMax else arrControlMax)
+            trafficValueSlider.stepSize = stepSize
+            val rawValue = (trafficValueSlider.maxValue - trafficValueSlider.minValue) * currPercent + trafficValueSlider.minValue
+            trafficValueSlider.value = (rawValue / stepSize).roundToInt() * stepSize
+        }
+        airportTrafficLabels.forEach {
+            val label = it.value
+            label.isVisible = selectedMode != NORMAL
+            setTrafficLabelValue(label, airportTrafficSliders[it.key].value.roundToInt(), selectedMode)
+        }
+    }
+
+    private fun setTrafficLabelValue(label: Label, value: Int, selectedMode: String) {
+        label.setText("$value${if (selectedMode == ARRIVAL_FLOW_RATE) "/hr" else ""}")
     }
 }

@@ -44,6 +44,7 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advD
         }
         with<MetarInfo>()
         with<ApproachNOZChildren>()
+        with<AirportArrivalStats>()
         if (!onClient) {
             with<RandomMetarInfo>()
             with<RandomAirlineData>()
