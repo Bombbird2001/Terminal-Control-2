@@ -122,7 +122,7 @@ class DecelerateTo240kts: Component, BaseComponentJSONInterface {
     override val componentType = BaseComponentJSONInterface.ComponentType.DECELERATE_TO_240KTS
 
     companion object {
-        val mapper = object: Mapper<AccelerateToAbove250kts>() {}.mapper
+        val mapper = object: Mapper<DecelerateTo240kts>() {}.mapper
 
         fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
