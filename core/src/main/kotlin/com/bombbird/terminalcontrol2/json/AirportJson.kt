@@ -21,19 +21,9 @@ object AirportAdapter {
 
     @FromJson
     fun fromJson(airportJSON: AirportJSON): Airport {
-        return Airport().apply {
+        return Airport.newEmptyAirport().apply {
             airportJSON.entity.components.forEach { if (it is Component) entity += it }
         }
-    }
-
-    /**
-     * Gets a default empty [Airport] due to a missing component
-     * @param missingComponent the name of the missing component
-     * @return the empty default Airport
-     */
-    private fun emptyAirport(missingComponent: String): Airport {
-        FileLog.info("AirportJSON", "Empty airport returned due to missing $missingComponent")
-        return Airport()
     }
 }
 
@@ -53,15 +43,5 @@ object RunwayAdapter {
         return Airport.Runway().apply {
             rwyJSON.entity.components.forEach { if (it is Component) entity += it }
         }
-    }
-
-    /**
-     * Gets a default empty [Airport.Runway] due to a missing component
-     * @param missingComponent the name of the missing component
-     * @return the empty default Runway
-     */
-    private fun emptyRunway(missingComponent: String): Airport.Runway {
-        FileLog.info("AirportJSON", "Empty runway returned due to missing $missingComponent")
-        return Airport.Runway()
     }
 }

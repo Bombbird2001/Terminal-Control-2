@@ -60,9 +60,17 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advD
     }
 
     /** Empty airport constructor for loading of saves */
-    constructor(): this(-1, "XXXX", "Empty", 1, 0, 0f, 0f, 0, "XXXX", false)
+    private constructor(): this(-1, "XXXX", "Empty", 1, 0, 0f, 0f, 0, "XXXX", false)
 
     companion object {
+        /** Empty airport constructor to help with loading of runways in saves */
+        val EMPTY_AIRPORT = Airport()
+
+        /** Empty airport constructor to help with loading of airports in saves */
+        fun newEmptyAirport(): Airport {
+            return Airport()
+        }
+
         /** De-serialises a [SerialisedAirport] and creates a new [Airport] object from it */
         fun fromSerialisedObject(serialisedAirport: SerialisedAirport): Airport {
             return Airport(
@@ -274,7 +282,7 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advD
         }
 
         /** Empty runway constructor for loading of saves */
-        constructor(): this(Airport(), 0, "EMPTY", 0f, 0f,
+        constructor(): this(EMPTY_AIRPORT, 0, "EMPTY", 0f, 0f,
             0f, 4000, 0, 0, 0, RunwayLabel.BEFORE, "", "", false)
 
         companion object {

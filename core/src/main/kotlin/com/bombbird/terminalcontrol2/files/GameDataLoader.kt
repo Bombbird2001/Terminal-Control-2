@@ -424,7 +424,7 @@ private fun parseAirport(data: List<String>, gameServer: GameServer): Airport {
             // BaseComponentJSONInterface, or it is supposed to overwrite the save value
             if (comp !is BaseComponentJSONInterface ||
                 comp !is DoNotOverwriteSavedJSON ||
-                it.entity.getComponent(comp::class.java) == null) it.entity += arpt.entity.components[i]
+                it.entity.getComponent(comp::class.java) == null) it.entity += comp
         }
         it
     }

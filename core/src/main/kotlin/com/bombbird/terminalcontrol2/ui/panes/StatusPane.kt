@@ -240,7 +240,7 @@ class StatusPane {
                     val arrivalStats = arpt.entity[AirportArrivalStats.mapper] ?: return@forEach
                     addMessage("$icao: ${arrivalStats.targetTrafficValue}${
                         if (serverTrafficMode == TrafficMode.FLOW_RATE) "/hr"
-                        else " arrivals to control"
+                        else " arrival${if (arrivalStats.targetTrafficValue != 1) "s" else ""}"
                     }", INFO)
                 }
             }

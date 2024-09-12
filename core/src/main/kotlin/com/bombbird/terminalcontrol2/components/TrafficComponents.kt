@@ -316,7 +316,7 @@ class CustomApproachSeparation(var appGroup1: Array<String> = arrayOf(), var app
 /** Component storing airport-level arrival spawn data */
 @JsonClass(generateAdapter = true)
 class AirportArrivalStats(var targetTrafficValue: Int = 6, var arrivalSpawnTimer: Float = 60f,
-                          var previousArrivalSpawnOffsetS: Float = 0f): Component, BaseComponentJSONInterface {
+                          var previousArrivalSpawnOffsetS: Float = 0f): Component, BaseComponentJSONInterface, DoNotOverwriteSavedJSON {
     override val componentType = BaseComponentJSONInterface.ComponentType.AIRPORT_ARRIVAL_STATS
 
     companion object {
