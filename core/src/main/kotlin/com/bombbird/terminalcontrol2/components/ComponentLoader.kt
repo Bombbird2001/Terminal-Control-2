@@ -11,6 +11,7 @@ fun loadAllComponents() {
     ActiveTakeoff.initialise()
     AffectedByWind.initialise()
     AircraftInfo.initialise()
+    AirportArrivalStats.initialise()
     AirportInfo.initialise()
     AirportNextDeparture.initialise()
     Altitude.initialise()
