@@ -202,3 +202,14 @@ class CustomApproachSeparationChildren(val customAppGroups: GdxArray<CustomAppro
         fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
+
+/** Component to store an aircraft's requests */
+class AircraftRequestChildren(val requests: GdxArray<AircraftRequest> = GdxArray()): Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.AIRCRAFT_REQUEST_CHILDREN
+
+    companion object {
+        val mapper = object: Mapper<AircraftRequestChildren>() {}.mapper
+
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
+    }
+}

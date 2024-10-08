@@ -219,3 +219,35 @@ data class WindshearGoAround(var goAround: Boolean = false): Component, BaseComp
         fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
+
+/**
+ * Component for tagging aircraft requests
+ *
+ * [minRecurrentTimeS] denotes the minimum number of seconds between subsequent
+ * activations of the same request; -1 denotes the request should not be repeated
+ *
+ * [requestType] denotes the type of request; this will determine the activation
+ * conditions for the request
+ */
+data class AircraftRequest(var minRecurrentTimeS: Int = -1, var requestType: Type = Type.NONE): Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.AIRCRAFT_REQUEST
+
+    enum class Type {
+        HIGH_SPEED_CLIMB,
+        DIRECT,
+        FURTHER_CLIMB,
+        WEATHER_AVOIDANCE,
+        CANCEL_APPROACH_WEATHER,
+        CANCEL_APPROACH_MECHANICAL,
+        NONE
+    }
+
+    companion object {
+        val mapper = object: Mapper<AircraftRequest>() {}.mapper
+
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
+    }
+
+    var checkForRequest = true
+    var nextRequestTimer = 0
+}
