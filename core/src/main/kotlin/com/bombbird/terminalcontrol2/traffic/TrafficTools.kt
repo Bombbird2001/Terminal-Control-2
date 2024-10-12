@@ -438,6 +438,9 @@ fun clearForTakeoff(aircraft: Entity, rwy: Entity, sid: SidStar.SID) {
         getOrLogMissing(AircraftInfo.mapper)?.icaoCallsign?.let {
             GAME.gameServer?.sendAircraftClearedForTakeoff(it, arptId, spawnPos.x, spawnPos.y, rwyAlt)
         }
+
+        // Initialise aircraft requests if necessary
+        initialiseAircraftRequests(aircraft)
     }
 }
 

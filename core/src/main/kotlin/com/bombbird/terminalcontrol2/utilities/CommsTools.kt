@@ -138,7 +138,7 @@ class CallsignToken(private val callsign: String, private val wakeString: String
             val flightNo = callsign.substring(3)
             val phoneticCallsign = CALLSIGN_TO_TTS[airlineCallsign]
             if (phoneticCallsign != null) {
-                return "$phoneticCallsign ${splitCharactersToNatoPhonetic(flightNo)}${if (emergency) " mayday" else ""}"
+                return "$phoneticCallsign ${splitCharactersToNatoPhonetic(flightNo)} $wakeString${if (emergency) " mayday" else ""}"
             } else {
                 FileLog.info("CommsTools", "No phonetic callsign for $airlineCallsign")
             }
@@ -169,7 +169,7 @@ class WaypointToken(private val waypointName: String): CommsToken() {
     override fun toTTSString(): String {
         // Convert to individual NATO alphabets for waypoints with 3 or fewer letters
         if (waypointName.length <= 3) return splitCharactersToNatoPhonetic(waypointName)
-        return waypointName
+        return waypointName.lowercase()
     }
 }
 

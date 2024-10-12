@@ -15,6 +15,7 @@ import com.bombbird.terminalcontrol2.ui.datatag.getNewDatatagLabelText
 import com.bombbird.terminalcontrol2.ui.removeMouseScrollListeners
 import com.bombbird.terminalcontrol2.ui.datatag.updateDatatagText
 import com.bombbird.terminalcontrol2.utilities.*
+import com.bombbird.terminalcontrol2.utilities.AircraftRequest.RequestType
 import ktx.ashley.get
 import ktx.scene2d.*
 import java.time.LocalTime
@@ -556,6 +557,55 @@ class CommsPane {
         ))
 
         addMessage(sentence.toTextSentence(), WARNING)
+        saySentenceInTTS(aircraft, sentence)
+    }
+
+    /**
+     * Adds a message sent by the aircraft when it has a request
+     *
+     * [aircraft] the aircraft entity requesting
+     * [requestType] the type of request
+     * [params] the string parameters for the request
+     */
+    fun aircraftRequest(aircraft: Entity, requestType: RequestType, params: Array<String>) {
+        val flightType = aircraft[FlightType.mapper] ?: return
+        val acInfo = aircraft[AircraftInfo.mapper] ?: return
+
+        // Get the wake category of the aircraft
+        val aircraftWake = getWakePhraseology(acInfo.aircraftPerf.wakeCategory)
+
+        // Check emergency
+        val isEmergency = aircraft[EmergencyPending.mapper]?.active == true
+
+        val sentence = TokenSentence().addToken(CallsignToken(acInfo.icaoCallsign, aircraftWake, isEmergency)).addComma()
+
+        when (requestType) {
+            RequestType.HIGH_SPEED_CLIMB -> sentence.addToken(LiteralToken("request high speed climb"))
+            RequestType.DIRECT -> {
+                sentence.addToken(LiteralToken("request direct"))
+                if (params.isNotEmpty()) sentence.addToken(WaypointToken(params[0]))
+            }
+            RequestType.FURTHER_CLIMB -> {
+                sentence.addToken(LiteralToken(
+                    if (MathUtils.randomBoolean()) "request further climb"
+                    else "request higher"
+                ))
+            }
+            RequestType.WEATHER_AVOIDANCE -> sentence.addTokens(
+                LiteralToken("request heading"),
+                HeadingToken(params[0].toShort()),
+                LiteralToken(if (MathUtils.randomBoolean()) "due weather" else "to avoid weather")
+            )
+            RequestType.CANCEL_APPROACH_WEATHER -> sentence.addToken(
+                LiteralToken("request to cancel approach due to weather")
+            )
+            RequestType.CANCEL_APPROACH_MECHANICAL -> sentence.addToken(
+                LiteralToken("request to cancel approach due to mechanical issues")
+            )
+            else -> {}
+        }
+
+        addMessage(sentence.toTextSentence(), getMessageTypeForAircraftType(flightType.type))
         saySentenceInTTS(aircraft, sentence)
     }
 

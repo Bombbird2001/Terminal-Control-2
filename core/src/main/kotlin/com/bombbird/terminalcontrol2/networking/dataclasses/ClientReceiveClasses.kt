@@ -656,3 +656,20 @@ data class MissedApproachMessage(val callsign: String = "", val reason: Byte = -
         }
     }
 }
+
+/** Class representing data sent from server to client to notify the player of an aircraft request */
+class AircraftRequestMessage(val callsign: String = "", val requestType: AircraftRequest.RequestType = AircraftRequest.RequestType.NONE,
+                             val params: Array<String> = arrayOf()): ClientReceive, NeedsEncryption {
+    override fun handleClientReceive(rs: RadarScreen) {
+        rs.aircraft[callsign]?.let { aircraft ->
+            if (aircraft.entity[Controllable.mapper]?.sectorId != rs.playerSector) return
+            aircraft.entity += ContactNotification()
+            aircraft.entity[Datatag.mapper]?.let {
+                startDatatagNotificationFlash(it, aircraft)
+            }
+            rs.uiPane.commsPane.also { commsPane ->
+                commsPane.aircraftRequest(aircraft.entity, requestType, params)
+            }
+        }
+    }
+}

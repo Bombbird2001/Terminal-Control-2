@@ -9,6 +9,7 @@ import com.bombbird.terminalcontrol2.json.DoNotOverwriteSavedJSON
 import com.bombbird.terminalcontrol2.navigation.Approach
 import com.bombbird.terminalcontrol2.navigation.SidStar
 import com.bombbird.terminalcontrol2.traffic.RunwayConfiguration
+import com.bombbird.terminalcontrol2.utilities.AircraftRequest
 import com.bombbird.terminalcontrol2.utilities.InitializeCompanionObjectOnStart
 import ktx.ashley.Mapper
 import ktx.collections.GdxArray

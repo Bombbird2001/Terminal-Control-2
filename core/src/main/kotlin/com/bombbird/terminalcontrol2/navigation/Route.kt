@@ -340,7 +340,9 @@ class Route() {
     class LegSegment {
 
         var leg1: Leg? = null
+        private set
         var leg2: Leg? = null
+        private set
         var changed = false
 
         /**

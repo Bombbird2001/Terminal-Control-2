@@ -60,7 +60,7 @@ fun getServerOrClientUseRecat(): Boolean {
     return GAME.gameServer?.useRecat ?: GAME.gameClientScreen?.useRecat ?: true
 }
 
-/** Schedules an [action] to be performed after [delay] seconds */
+/** Schedules an [action] to be performed after [delayS] seconds */
 fun scheduleAction(delayS: Float, action: () -> Unit) {
     Timer.schedule(object: Task() {
         override fun run() {

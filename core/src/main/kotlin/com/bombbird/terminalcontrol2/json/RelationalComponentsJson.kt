@@ -6,6 +6,7 @@ import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.Airport
 import com.bombbird.terminalcontrol2.entities.RouteZone
 import com.bombbird.terminalcontrol2.navigation.Approach
+import com.bombbird.terminalcontrol2.utilities.AircraftRequest
 import com.squareup.moshi.FromJson
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.ToJson
@@ -241,6 +242,29 @@ object CustomApproachSeparationAdapter {
         return CustomApproachSeparationChildren().apply {
             customAppSepJSON.customAppSeps.forEach {
                 customAppGroups.add(it)
+            }
+        }
+    }
+}
+
+/** Data class for storing all requests belonging to an aircraft */
+@JsonClass(generateAdapter = true)
+data class AircraftRequestChildrenJSON(val requests: List<AircraftRequest>)
+
+/** Adapter object for serialization between [AircraftRequestChildren] and [AircraftRequestChildrenJSON] */
+object AircraftRequestChildrenAdapter {
+    @ToJson
+    fun toJson(requests: AircraftRequestChildren): AircraftRequestChildrenJSON {
+        val array = ArrayList<AircraftRequest>()
+        for (i in 0 until requests.requests.size) requests.requests[i]?.let { array.add(it) }
+        return AircraftRequestChildrenJSON(array)
+    }
+
+    @FromJson
+    fun fromJson(requestsJSON: AircraftRequestChildrenJSON): AircraftRequestChildren {
+        return AircraftRequestChildren().apply {
+            requestsJSON.requests.forEach {
+                requests.add(it)
             }
         }
     }

@@ -259,6 +259,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
         engine.addSystem(PhysicsSystem())
         engine.addSystem(PhysicsSystemInterval())
         engine.addSystem(AISystem())
+        engine.addSystem(AISystemInterval())
         engine.addSystem(ControlStateSystem())
         engine.addSystem(ControlStateSystemInterval())
         engine.addSystem(TrafficSystemInterval())
@@ -279,6 +280,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
         engine.addSystem(PhysicsSystem())
         engine.addSystem(PhysicsSystemInterval())
         engine.addSystem(AISystem())
+        engine.addSystem(AISystemInterval())
         engine.addSystem(ControlStateSystem())
         engine.addSystem(ControlStateSystemInterval())
         val trafficSystemInterval = TrafficSystemInterval()
@@ -1026,6 +1028,17 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
      */
     fun sendAircraftMissedApproach(callsign: String, goAroundReason: Byte, controllingUUID: UUID) {
         networkServer.sendTCPToConnection(controllingUUID, MissedApproachMessage(callsign, goAroundReason))
+    }
+
+    /**
+     * Sends a message to clients to inform them of an aircraft's request
+     *
+     * [callsign] the callsign of the aircraft
+     * [requestType] the type of request
+     * [params] the parameters of the request
+     */
+    fun sendAircraftRequest(callsign: String, requestType: AircraftRequest.RequestType, params: Array<String>) {
+        networkServer.sendToAllTCP(AircraftRequestMessage(callsign, requestType, params))
     }
 
     /** Gets the runway configuration string displaying config names at all airports */

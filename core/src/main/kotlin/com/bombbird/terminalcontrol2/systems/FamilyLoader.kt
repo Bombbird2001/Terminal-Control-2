@@ -6,6 +6,7 @@ import com.bombbird.terminalcontrol2.ui.panes.StatusPane
 
 fun loadAllFamilies() {
     AISystem.initialise()
+    AISystemInterval.initialise()
     ControlStateSystem.initialise()
     ControlStateSystemInterval.initialise()
     ControlStateSystemIntervalClient.initialise()

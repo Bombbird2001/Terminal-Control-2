@@ -2,6 +2,9 @@ package com.bombbird.terminalcontrol2.json
 
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.navigation.Route
+import com.bombbird.terminalcontrol2.utilities.AircraftRequest
+import com.bombbird.terminalcontrol2.utilities.HighSpeedClimbRequest
+import com.bombbird.terminalcontrol2.utilities.NoRequest
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.adapters.PolymorphicJsonAdapterFactory
 
@@ -20,7 +23,8 @@ fun getMoshiWithAllAdapters(): Moshi {
         .add(CrossingRunwayAdapter).add(DepartureDependencyAdapter).add(RandomAirlineDataAdapter).add(AirportNextDepartureAdapter)
         .add(WakeTrailAdapter).add(RouteAdapter).add(WaypointAdapter).add(ArrivalRouteZoneAdapter)
         .add(DepartureRouteZoneAdapter).add(RouteZoneAdapter).add(WakeZoneAdapter).add(TrailInfoAdapter)
-        .add(CustomApproachSeparationAdapter).add(getPolymorphicComponentAdapter()).add(getPolymorphicLegAdapter()).build()
+        .add(CustomApproachSeparationAdapter).add(AircraftRequestChildrenAdapter).add(getPolymorphicComponentAdapter())
+        .add(getPolymorphicLegAdapter()).add(getPolymorphicAircraftRequestAdapter()).build()
 }
 
 /**
@@ -48,7 +52,7 @@ interface BaseComponentJSONInterface {
         RUNWAY_PREVIOUS_DEPARTURE, RUNWAY_OCCUPIED, WAKE_TRAIL, WAKE_INFO, INITIAL_CLIENT_DATATAG_POSITION, TRAIL_INFO,
         TTS_VOICE, EMERGENCY_PENDING, RUNNING_CHECKLISTS, REQUIRES_FUEL_DUMP, IMMOBILIZE_ON_LANDING, RUNWAY_CLOSED,
         ON_GO_AROUND_ROUTE, WAKE_TOLERANCE, ACC_TEMP_ALTITUDE, WINDSHEAR_GO_AROUND, NEEDS_TO_INFORM_OF_GO_AROUND,
-        CUSTOM_APPROACH_SEPARATION_CHILDREN, PARALLEL_WAKE_AFFECTS, AIRPORT_ARRIVAL_STATS, AIRCRAFT_REQUEST, AIRCRAFT_REQUEST_CHILDREN
+        CUSTOM_APPROACH_SEPARATION_CHILDREN, PARALLEL_WAKE_AFFECTS, AIRPORT_ARRIVAL_STATS, AIRCRAFT_REQUEST_CHILDREN
     }
 
     val componentType: ComponentType
@@ -164,6 +168,7 @@ private fun getPolymorphicComponentAdapter(): PolymorphicJsonAdapterFactory<Base
         .withSubtype(CustomApproachSeparationChildren::class.java, BaseComponentJSONInterface.ComponentType.CUSTOM_APPROACH_SEPARATION_CHILDREN.name)
         .withSubtype(ParallelWakeAffects::class.java, BaseComponentJSONInterface.ComponentType.PARALLEL_WAKE_AFFECTS.name)
         .withSubtype(AirportArrivalStats::class.java, BaseComponentJSONInterface.ComponentType.AIRPORT_ARRIVAL_STATS.name)
+        .withSubtype(AircraftRequestChildren::class.java, BaseComponentJSONInterface.ComponentType.AIRCRAFT_REQUEST_CHILDREN.name)
 }
 
 /** Interface for implementing JSON serialization for subclasses of Leg */
@@ -187,4 +192,16 @@ private fun getPolymorphicLegAdapter(): PolymorphicJsonAdapterFactory<BaseLegJSO
         .withSubtype(Route.InitClimbLeg::class.java, BaseLegJSONInterface.LegType.INIT_CLIMB_LEG.name)
         .withSubtype(Route.DiscontinuityLeg::class.java, BaseLegJSONInterface.LegType.DISCONTINUITY_LEG.name)
         .withSubtype(Route.HoldLeg::class.java, BaseLegJSONInterface.LegType.HOLD_LEG.name)
+}
+
+/** Gets a [PolymorphicJsonAdapterFactory] for serializable [AircraftRequest] subclasses */
+private fun getPolymorphicAircraftRequestAdapter(): PolymorphicJsonAdapterFactory<AircraftRequest> {
+    return PolymorphicJsonAdapterFactory.of(AircraftRequest::class.java, "requestType")
+        .withSubtype(NoRequest::class.java, AircraftRequest.RequestType.NONE.name)
+        .withSubtype(HighSpeedClimbRequest::class.java, AircraftRequest.RequestType.HIGH_SPEED_CLIMB.name)
+//        .withSubtype(DirectRequest::class.java, AircraftRequest.RequestType.DIRECT.name)
+//        .withSubtype(FurtherClimbRequest::class.java, AircraftRequest.RequestType.FURTHER_CLIMB.name)
+//        .withSubtype(WeatherAvoidanceRequest::class.java, AircraftRequest.RequestType.WEATHER_AVOIDANCE.name)
+//        .withSubtype(CancelApproachWeatherRequest::class.java, AircraftRequest.RequestType.CANCEL_APPROACH_WEATHER.name)
+//        .withSubtype(CancelApproachMechanicalRequest::class.java, AircraftRequest.RequestType.CANCEL_APPROACH_MECHANICAL.name)
 }
