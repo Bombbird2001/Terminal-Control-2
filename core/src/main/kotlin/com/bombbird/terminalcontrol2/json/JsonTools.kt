@@ -2,9 +2,7 @@ package com.bombbird.terminalcontrol2.json
 
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.navigation.Route
-import com.bombbird.terminalcontrol2.utilities.AircraftRequest
-import com.bombbird.terminalcontrol2.utilities.HighSpeedClimbRequest
-import com.bombbird.terminalcontrol2.utilities.NoRequest
+import com.bombbird.terminalcontrol2.utilities.*
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.adapters.PolymorphicJsonAdapterFactory
 
@@ -199,8 +197,8 @@ private fun getPolymorphicAircraftRequestAdapter(): PolymorphicJsonAdapterFactor
     return PolymorphicJsonAdapterFactory.of(AircraftRequest::class.java, "requestType")
         .withSubtype(NoRequest::class.java, AircraftRequest.RequestType.NONE.name)
         .withSubtype(HighSpeedClimbRequest::class.java, AircraftRequest.RequestType.HIGH_SPEED_CLIMB.name)
-//        .withSubtype(DirectRequest::class.java, AircraftRequest.RequestType.DIRECT.name)
-//        .withSubtype(FurtherClimbRequest::class.java, AircraftRequest.RequestType.FURTHER_CLIMB.name)
+        .withSubtype(DirectRequest::class.java, AircraftRequest.RequestType.DIRECT.name)
+        .withSubtype(FurtherClimbRequest::class.java, AircraftRequest.RequestType.FURTHER_CLIMB.name)
 //        .withSubtype(WeatherAvoidanceRequest::class.java, AircraftRequest.RequestType.WEATHER_AVOIDANCE.name)
 //        .withSubtype(CancelApproachWeatherRequest::class.java, AircraftRequest.RequestType.CANCEL_APPROACH_WEATHER.name)
 //        .withSubtype(CancelApproachMechanicalRequest::class.java, AircraftRequest.RequestType.CANCEL_APPROACH_MECHANICAL.name)

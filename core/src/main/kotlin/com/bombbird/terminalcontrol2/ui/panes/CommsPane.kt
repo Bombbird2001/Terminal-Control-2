@@ -581,10 +581,7 @@ class CommsPane {
 
         when (requestType) {
             RequestType.HIGH_SPEED_CLIMB -> sentence.addToken(LiteralToken("request high speed climb"))
-            RequestType.DIRECT -> {
-                sentence.addToken(LiteralToken("request direct"))
-                if (params.isNotEmpty()) sentence.addToken(WaypointToken(params[0]))
-            }
+            RequestType.DIRECT -> sentence.addTokens(LiteralToken("request direct"), WaypointToken(params[0]))
             RequestType.FURTHER_CLIMB -> {
                 sentence.addToken(LiteralToken(
                     if (MathUtils.randomBoolean()) "request further climb"

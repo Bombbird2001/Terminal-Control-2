@@ -3,17 +3,30 @@ package com.bombbird.terminalcontrol2.utilities
 import com.badlogic.ashley.core.Entity
 import com.badlogic.gdx.math.MathUtils
 import com.bombbird.terminalcontrol2.components.*
+import com.bombbird.terminalcontrol2.global.MAG_HDG_DEV
+import com.bombbird.terminalcontrol2.navigation.Route
 import com.squareup.moshi.JsonClass
 import ktx.ashley.get
 import java.util.Optional
+import kotlin.math.abs
 
 /** Function to initialise aircraft requests for an aircraft [entity] */
 fun initialiseAircraftRequests(entity: Entity) {
     val requests = entity.addAndReturn(AircraftRequestChildren())
-    if (HighSpeedClimbRequest.shouldCreateRequest(1f, entity)) {
+    if (HighSpeedClimbRequest.shouldCreateRequest(0f, entity)) {
         val highSpeedRequest = HighSpeedClimbRequest()
         highSpeedRequest.initialise(entity)
         requests.requests.add(highSpeedRequest)
+    }
+    if (DirectRequest.shouldCreateRequest(0f, entity)) {
+        val directRequest = DirectRequest()
+        directRequest.initialise(entity)
+        requests.requests.add(directRequest)
+    }
+    if (FurtherClimbRequest.shouldCreateRequest(1f, entity)) {
+        val furtherClimbRequest = FurtherClimbRequest()
+        furtherClimbRequest.initialise(entity)
+        requests.requests.add(furtherClimbRequest)
     }
 }
 
@@ -142,6 +155,81 @@ class HighSpeedClimbRequest: AircraftRequest() {
         // Check aircraft is not already cleared to climb at high speed
         val clearedIas = entity[ClearanceAct.mapper]?.actingClearance?.clearanceState?.clearedIas ?: return Optional.empty()
         if (clearedIas > 250) return Optional.empty()
+
+        return Optional.of(arrayOf())
+    }
+}
+
+/** Aircraft request for direct to waypoint */
+@JsonClass(generateAdapter = true)
+class DirectRequest: AircraftRequest(activationTimeS = 5) {
+    override val requestType = RequestType.DIRECT
+
+    companion object: AircraftRequestCreationCheck {
+        override fun shouldCreateRequest(probability: Float, entity: Entity): Boolean {
+            // Only departures should be considered for directs
+            val flightType = entity[FlightType.mapper] ?: return false
+            if (flightType.type != FlightType.DEPARTURE) return false
+
+            return MathUtils.randomBoolean(probability)
+        }
+    }
+
+    var minimumActivationAltFt = 0f
+
+    override fun initialise(entity: Entity): AircraftRequest {
+        minimumActivationAltFt = (entity[Altitude.mapper]?.altitudeFt ?: 0f) + MathUtils.random(4000f, 7000f)
+        return this
+    }
+
+    override fun shouldActivateWithParameters(entity: Entity): Optional<Array<String>> {
+        // Check altitude higher than minimum activation
+        val altitude = entity[Altitude.mapper]?.altitudeFt ?: return Optional.empty()
+        if (altitude < minimumActivationAltFt) return Optional.empty()
+
+        // Request direct to first waypoint that is not the current waypoint, is at least 20nm away, and is
+        // at least 20 degrees off the current target heading
+        val pos = entity[Position.mapper] ?: return Optional.empty()
+        val route = entity[ClearanceAct.mapper]?.actingClearance?.clearanceState?.route ?: return Optional.empty()
+        for (i in 1 until route.size) {
+            val waypoint = getServerWaypointMap()?.get((route[i] as? Route.WaypointLeg)?.wptId)?.entity ?: continue
+            val wptPos = waypoint[Position.mapper] ?: continue
+            if (calculateDistanceBetweenPoints(pos.x, pos.y, wptPos.x, wptPos.y) < nmToPx(20)) continue
+            val reqTrack = getRequiredTrack(pos.x, pos.y, wptPos.x, wptPos.y)
+            val currentTargetTrack = (entity[CommandTarget.mapper]?.targetHdgDeg ?: continue) - MAG_HDG_DEV
+            if (abs(findDeltaHeading(currentTargetTrack, reqTrack, CommandTarget.TURN_DEFAULT)) < 20) continue
+
+            return Optional.of(arrayOf(waypoint[WaypointInfo.mapper]?.wptName ?: "waypoint"))
+        }
+
+        return Optional.empty()
+    }
+}
+
+/** Aircraft request for further climb after reaching cleared altitude */
+@JsonClass(generateAdapter = true)
+class FurtherClimbRequest: AircraftRequest(minRecurrentTimeS = 120, activationTimeS = 120) {
+    override val requestType = RequestType.FURTHER_CLIMB
+
+    companion object: AircraftRequestCreationCheck {
+        override fun shouldCreateRequest(probability: Float, entity: Entity): Boolean {
+            // Only departures should be considered for further climb
+            val flightType = entity[FlightType.mapper] ?: return false
+            if (flightType.type != FlightType.DEPARTURE) return false
+
+            return MathUtils.randomBoolean(probability)
+        }
+    }
+
+    override fun initialise(entity: Entity): AircraftRequest {
+        return this
+    }
+
+    override fun shouldActivateWithParameters(entity: Entity): Optional<Array<String>> {
+        // Check if within 25ft of cleared altitude (not target since there may be SID restrictions)
+        val currentAlt = entity[Altitude.mapper]?.altitudeFt ?: return Optional.empty()
+        val clearedAlt = entity[ClearanceAct.mapper]?.actingClearance?.clearanceState?.clearedAlt ?: return Optional.empty()
+        if (!withinRange(currentAlt, clearedAlt - 25f, clearedAlt + 25f)) return Optional.empty()
 
         return Optional.of(arrayOf())
     }
