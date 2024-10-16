@@ -7,18 +7,19 @@ import com.bombbird.terminalcontrol2.global.MAG_HDG_DEV
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.squareup.moshi.JsonClass
 import ktx.ashley.get
+import ktx.ashley.plusAssign
 import java.util.Optional
 import kotlin.math.abs
 
 /** Function to initialise aircraft requests for an aircraft [entity] */
 fun initialiseAircraftRequests(entity: Entity) {
     val requests = entity.addAndReturn(AircraftRequestChildren())
-    if (HighSpeedClimbRequest.shouldCreateRequest(0f, entity)) {
+    if (HighSpeedClimbRequest.shouldCreateRequest(1f, entity)) {
         val highSpeedRequest = HighSpeedClimbRequest()
         highSpeedRequest.initialise(entity)
         requests.requests.add(highSpeedRequest)
     }
-    if (DirectRequest.shouldCreateRequest(0f, entity)) {
+    if (DirectRequest.shouldCreateRequest(0.1f, entity)) {
         val directRequest = DirectRequest()
         directRequest.initialise(entity)
         requests.requests.add(directRequest)
@@ -76,6 +77,9 @@ sealed class AircraftRequest(val minRecurrentTimeS: Int = -1, val activationTime
      */
     abstract fun shouldActivateWithParameters(entity: Entity): Optional<Array<String>>
 
+    /** Function to be called when the request is activated, which allows actions to be performed on the [entity] */
+    abstract fun onActivation(entity: Entity)
+
     /**
      * Function to update the request status and check if it should be activated given the [entity] state, and updates
      * internal states accordingly with [deltaS] seconds since last update
@@ -100,6 +104,7 @@ sealed class AircraftRequest(val minRecurrentTimeS: Int = -1, val activationTime
         isActive = true
         nextRequestTimer = 0
         if (minRecurrentTimeS == -1) isDone = true
+        if (!wasActive) onActivation(entity)
 
         return if (wasActive) Optional.empty() else res
     }
@@ -117,6 +122,8 @@ class NoRequest: AircraftRequest() {
     override fun shouldActivateWithParameters(entity: Entity): Optional<Array<String>> {
         return Optional.empty()
     }
+
+    override fun onActivation(entity: Entity) {}
 }
 
 /** Aircraft request for high speed climb (>250 knots below 10000 feet) */
@@ -125,7 +132,7 @@ class HighSpeedClimbRequest: AircraftRequest() {
     override val requestType = RequestType.HIGH_SPEED_CLIMB
 
     companion object: AircraftRequestCreationCheck {
-        private const val MAX_ACTIVATION_ALTITUDE = 9000f
+        private const val MAX_ACTIVATION_ALTITUDE = 8000f
 
         override fun shouldCreateRequest(probability: Float, entity: Entity): Boolean {
             // Only departures should be considered for high speed climb
@@ -143,7 +150,7 @@ class HighSpeedClimbRequest: AircraftRequest() {
     var activationAltFt = 0f
 
     override fun initialise(entity: Entity): AircraftRequest {
-        activationAltFt = MathUtils.random((entity[Altitude.mapper]?.altitudeFt ?: 0f) + 4000, 9000f)
+        activationAltFt = MathUtils.random((entity[Altitude.mapper]?.altitudeFt ?: 0f) + 4000, MAX_ACTIVATION_ALTITUDE)
         return this
     }
 
@@ -157,6 +164,17 @@ class HighSpeedClimbRequest: AircraftRequest() {
         if (clearedIas > 250) return Optional.empty()
 
         return Optional.of(arrayOf())
+    }
+
+    override fun onActivation(entity: Entity) {
+        entity += HighSpeedRequested()
+        val spds = getMinMaxOptimalIAS(entity)
+        entity[ClearanceAct.mapper]?.actingClearance?.clearanceState?.let {
+            it.optimalIas = spds.third
+            it.maxIas = spds.second
+            it.minIas = spds.first
+        }
+        entity += LatestClearanceChanged()
     }
 }
 
@@ -204,6 +222,8 @@ class DirectRequest: AircraftRequest(activationTimeS = 5) {
 
         return Optional.empty()
     }
+
+    override fun onActivation(entity: Entity) {}
 }
 
 /** Aircraft request for further climb after reaching cleared altitude */
@@ -233,4 +253,6 @@ class FurtherClimbRequest: AircraftRequest(minRecurrentTimeS = 120, activationTi
 
         return Optional.of(arrayOf())
     }
+
+    override fun onActivation(entity: Entity) {}
 }

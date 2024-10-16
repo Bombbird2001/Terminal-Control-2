@@ -131,9 +131,13 @@ fun getMinMaxOptimalIAS(entity: Entity): Triple<Short, Short, Short> {
         between10000ftAndCrossover || aboveCrossover -> (((altitude.altitudeFt - 10000) / (perf.maxAlt - 10000)) * (perf.climbOutSpeed * 2f / 9) + perf.climbOutSpeed * 10f / 9).roundToInt().toShort()
         else -> 160
     }
-    // Aircraft enforced speeds - max 250 knots below 10000 ft, max IAS between 10000 ft and crossover, max mach above crossover
+    // Aircraft enforced speeds - max 250 knots below 10000 ft (unless high speed climb requested),
+    // max IAS between 10000 ft and crossover, max mach above crossover
     val maxAircraftSpd: Short = when {
-        below10000ft -> min(250, perf.maxIas.toInt()).toShort()
+        below10000ft -> {
+            if (entity.has(HighSpeedRequested.mapper)) perf.maxIas
+            else min(250, perf.maxIas.toInt()).toShort()
+        }
         between10000ftAndCrossover -> perf.maxIas
         aboveCrossover -> calculateIASFromMach(altitude.altitudeFt, perf.maxMach).roundToInt().toShort()
         else -> min(250, perf.maxIas.toInt()).toShort()
@@ -179,7 +183,10 @@ fun getMinMaxOptimalIAS(entity: Entity): Triple<Short, Short, Short> {
     }
     val optimalSpd: Short = MathUtils.clamp(when {
         takingOff -> perf.climbOutSpeed
-        below10000ft -> min(250, perf.tripIas.toInt()).toShort()
+        below10000ft -> {
+            if (entity.has(HighSpeedRequested.mapper)) perf.tripIas
+            else min(250, perf.tripIas.toInt()).toShort()
+        }
         between10000ftAndCrossover -> perf.tripIas
         aboveCrossover -> calculateIASFromMach(altitude.altitudeFt, perf.tripMach).roundToInt().toShort()
         else -> 240

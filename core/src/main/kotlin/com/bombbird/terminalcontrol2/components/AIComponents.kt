@@ -411,3 +411,15 @@ class ReadyForApproachClient: Component {
         fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
+
+/** Component for tagging an aircraft that have requested for high speed climb */
+@JsonClass(generateAdapter = true)
+class HighSpeedRequested: Component, BaseComponentJSONInterface {
+    override val componentType: BaseComponentJSONInterface.ComponentType = BaseComponentJSONInterface.ComponentType.HIGH_SPEED_REQUESTED
+
+    companion object {
+        val mapper = object: Mapper<HighSpeedRequested>() {}.mapper
+
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
+    }
+}

@@ -599,7 +599,9 @@ class CommsPane {
             RequestType.CANCEL_APPROACH_MECHANICAL -> sentence.addToken(
                 LiteralToken("request to cancel approach due to mechanical issues")
             )
-            else -> {}
+            RequestType.NONE -> {
+                return
+            }
         }
 
         addMessage(sentence.toTextSentence(), getMessageTypeForAircraftType(flightType.type))
