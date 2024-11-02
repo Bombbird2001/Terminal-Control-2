@@ -14,7 +14,7 @@ import kotlin.math.abs
 /** Function to initialise aircraft requests for an aircraft [entity] */
 fun initialiseAircraftRequests(entity: Entity) {
     val requests = entity.addAndReturn(AircraftRequestChildren())
-    if (HighSpeedClimbRequest.shouldCreateRequest(1f, entity)) {
+    if (HighSpeedClimbRequest.shouldCreateRequest(0.1f, entity)) {
         val highSpeedRequest = HighSpeedClimbRequest()
         highSpeedRequest.initialise(entity)
         requests.requests.add(highSpeedRequest)

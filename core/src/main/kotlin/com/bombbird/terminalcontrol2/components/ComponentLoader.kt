@@ -12,6 +12,7 @@ fun loadAllComponents() {
     AffectedByWind.initialise()
     AircraftInfo.initialise()
     AircraftRequestChildren.initialise()
+    AircraftRequestNotification.initialise()
     AirportArrivalStats.initialise()
     AirportInfo.initialise()
     AirportNextDeparture.initialise()

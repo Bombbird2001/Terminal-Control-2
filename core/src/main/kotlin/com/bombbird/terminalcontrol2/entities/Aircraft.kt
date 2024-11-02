@@ -85,6 +85,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                 voice = getServerElseRandomVoice(callsign)
                 setVoiceOnServerIfHost(callsign, voice)
             }
+            with<AircraftRequestNotification>()
         } else {
             with<ConflictAble>()
             with<WakeTrail>()

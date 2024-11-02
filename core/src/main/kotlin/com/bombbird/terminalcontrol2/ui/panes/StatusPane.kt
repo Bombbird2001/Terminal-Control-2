@@ -1,6 +1,5 @@
 package com.bombbird.terminalcontrol2.ui.panes
 
-import com.badlogic.ashley.core.Family
 import com.badlogic.gdx.scenes.scene2d.Actor
 import com.badlogic.gdx.scenes.scene2d.ui.Label
 import com.badlogic.gdx.utils.ArrayMap.Entries
@@ -10,6 +9,7 @@ import com.bombbird.terminalcontrol2.screens.settings.TrafficSettings
 import com.bombbird.terminalcontrol2.traffic.TrafficMode
 import com.bombbird.terminalcontrol2.traffic.conflict.Conflict
 import com.bombbird.terminalcontrol2.ui.removeMouseScrollListeners
+import com.bombbird.terminalcontrol2.utilities.AircraftRequest
 import com.bombbird.terminalcontrol2.utilities.FileLog
 import com.bombbird.terminalcontrol2.utilities.InitializeCompanionObjectOnStart
 import ktx.ashley.allOf
@@ -17,6 +17,7 @@ import ktx.ashley.exclude
 import ktx.ashley.get
 import ktx.ashley.has
 import ktx.scene2d.*
+import java.util.*
 import kotlin.math.ceil
 
 /** Status pane class to display ongoing events, notifications and other information */
@@ -29,9 +30,10 @@ class StatusPane {
         const val NOTIFICATION_DEPARTURE: Byte = 3
         const val INFO: Byte = 4
 
-        private val goAroundContactFamily: Family = allOf(RecentGoAround::class, ContactNotification::class).get()
-        private val initialContactFamily: Family = allOf(ContactNotification::class).exclude(RecentGoAround::class).get()
-        private val emergencyStartedFamily: Family = allOf(EmergencyPending::class, Speed::class).get()
+        private val goAroundContactFamily = allOf(RecentGoAround::class, ContactNotification::class).get()
+        private val initialContactFamily = allOf(ContactNotification::class).exclude(RecentGoAround::class).get()
+        private val emergencyStartedFamily = allOf(EmergencyPending::class, Speed::class).get()
+        private val aircraftRequestFamily = allOf(AircraftRequestNotification::class).get()
 
         fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
@@ -195,7 +197,7 @@ class StatusPane {
             initialContacts[i]?.apply {
                 val callsign = get(AircraftInfo.mapper)?.icaoCallsign ?: return@apply
                 val flightType = get(FlightType.mapper)?.type ?: return@apply
-                addMessage("${callsign}: Initial contact", when (flightType) {
+                addMessage("$callsign: Initial contact", when (flightType) {
                     FlightType.ARRIVAL, FlightType.EN_ROUTE -> NOTIFICATION_ARRIVAL
                     FlightType.DEPARTURE -> NOTIFICATION_DEPARTURE
                     else -> {
@@ -209,7 +211,35 @@ class StatusPane {
 
     /** Gets aircraft requests and adds them as messages to the status pane */
     private fun addAircraftRequestMessages() {
-        // TODO To be added after implementing aircraft requests
+        val aircraftRequests = getEngine(true).getEntitiesFor(aircraftRequestFamily)
+        for (i in 0 until aircraftRequests.size()) {
+            aircraftRequests[i]?.apply {
+                val callsign = get(AircraftInfo.mapper)?.icaoCallsign ?: return@apply
+                val flightType = get(FlightType.mapper)?.type ?: return@apply
+                val requestTypes = get(AircraftRequestNotification.mapper)?.requestTypes ?: return@apply
+                if (requestTypes.isEmpty) return@apply
+                val requestString = requestTypes.joinToString(", ") {
+                    if (it == null) return@joinToString ""
+                    "request " + when (it) {
+                        AircraftRequest.RequestType.NONE -> "your sanity"
+                        AircraftRequest.RequestType.DIRECT -> "direct"
+                        AircraftRequest.RequestType.FURTHER_CLIMB -> "further climb"
+                        AircraftRequest.RequestType.HIGH_SPEED_CLIMB -> "high speed climb"
+                        AircraftRequest.RequestType.WEATHER_AVOIDANCE -> "weather avoidance"
+                        AircraftRequest.RequestType.CANCEL_APPROACH_WEATHER -> "to cancel approach due to weather"
+                        AircraftRequest.RequestType.CANCEL_APPROACH_MECHANICAL -> "to cancel approach due to mechanical issues"
+                    }
+                }.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ENGLISH) else it.toString() }
+                addMessage("$callsign: $requestString", when (flightType) {
+                    FlightType.ARRIVAL, FlightType.EN_ROUTE -> NOTIFICATION_ARRIVAL
+                    FlightType.DEPARTURE -> NOTIFICATION_DEPARTURE
+                    else -> {
+                        FileLog.info("StatusPane", "Unknown flight type $flightType")
+                        NOTIFICATION_ARRIVAL
+                    }
+                })
+            }
+        }
     }
 
     /** Gets traffic info for the game world and airports and adds them as messages to the status pane */

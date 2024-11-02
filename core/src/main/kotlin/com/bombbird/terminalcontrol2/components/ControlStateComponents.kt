@@ -4,9 +4,12 @@ import com.badlogic.ashley.core.Component
 import com.badlogic.gdx.utils.Queue
 import com.bombbird.terminalcontrol2.json.BaseComponentJSONInterface
 import com.bombbird.terminalcontrol2.navigation.ClearanceState
+import com.bombbird.terminalcontrol2.utilities.AircraftRequest
 import com.bombbird.terminalcontrol2.utilities.InitializeCompanionObjectOnStart
 import com.squareup.moshi.JsonClass
 import ktx.ashley.Mapper
+import ktx.collections.GdxSet
+import ktx.collections.gdxSetOf
 import java.util.UUID
 
 /** Component for tagging sector control information */
@@ -237,6 +240,18 @@ class InitialArrivalSpawn: Component, BaseComponentJSONInterface {
 class ContactNotification: Component {
     companion object {
         val mapper = object: Mapper<ContactNotification>() {}.mapper
+
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
+    }
+}
+
+/**
+ * Component for tagging aircraft with non-acknowledged aircraft requests, which will be shown in the status pane,
+ * and will enable the acknowledge button; this will be used only on client
+ */
+class AircraftRequestNotification(val requestTypes: GdxSet<AircraftRequest.RequestType> = gdxSetOf()): Component {
+    companion object {
+        val mapper = object: Mapper<AircraftRequestNotification>() {}.mapper
 
         fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }

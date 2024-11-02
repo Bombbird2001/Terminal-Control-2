@@ -167,7 +167,7 @@ class UIPane(private val uiStage: Stage) {
         controlObj.updateClearanceMode(userClearanceState.route, userClearanceState.vectorHdg,
             aircraft.entity.has(VisualCaptured.mapper) || aircraft.entity.has(LocalizerCaptured.mapper), true)
         controlObj.setUndoTransmitButtonsUnchanged()
-        controlObj.updateHandoverAcknowledgeButton(aircraft.entity.has(CanBeHandedOver.mapper), aircraft.entity.has(ContactNotification.mapper))
+        controlObj.updateHandoverAcknowledgeButton(aircraft.entity.has(CanBeHandedOver.mapper), shouldShowAcknowledgeButton(aircraft.entity))
         routeEditObj.setChangeStarDisabled(aircraftArrivalArptId == null)
         controlPane.isVisible = true
         routeEditPane.isVisible = false
@@ -204,7 +204,7 @@ class UIPane(private val uiStage: Stage) {
         controlObj.updateExpediteClearance(userClearanceState.expedite)
         controlObj.updateChangedStates(userClearanceState, clearanceState)
         controlObj.updateUndoTransmitButtonStates()
-        controlObj.updateHandoverAcknowledgeButton(aircraft.entity.has(CanBeHandedOver.mapper), aircraft.entity.has(ContactNotification.mapper))
+        controlObj.updateHandoverAcknowledgeButton(aircraft.entity.has(CanBeHandedOver.mapper), shouldShowAcknowledgeButton(aircraft.entity))
         routeEditObj.setChangeStarDisabled(aircraftArrivalArptId == null)
     }
 
@@ -246,11 +246,17 @@ class UIPane(private val uiStage: Stage) {
     fun updateHandoverAckButtonState(aircraft: Entity) {
         val callsign = aircraft[AircraftInfo.mapper]?.icaoCallsign ?: return
         if (callsign != selAircraft?.entity?.get(AircraftInfo.mapper)?.icaoCallsign) return
-        controlObj.updateHandoverAcknowledgeButton(aircraft.has(CanBeHandedOver.mapper), aircraft.has(ContactNotification.mapper))
+        controlObj.updateHandoverAcknowledgeButton(aircraft.has(CanBeHandedOver.mapper), shouldShowAcknowledgeButton(aircraft))
     }
 
     /** Updates the rendered waypoints for currently selected aircraft */
     fun updateWaypointDisplay() {
         getEngine(true).getSystem<RenderingSystemClient>().updateWaypointDisplay(selAircraft)
+    }
+
+    /** Returns whether the acknowledge button should be shown for the input aircraft */
+    private fun shouldShowAcknowledgeButton(aircraft: Entity): Boolean {
+        return aircraft.has(ContactNotification.mapper)
+                || aircraft[AircraftRequestNotification.mapper]?.requestTypes?.notEmpty() == true
     }
 }

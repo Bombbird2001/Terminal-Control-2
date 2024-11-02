@@ -213,6 +213,7 @@ class ControlPane {
                             Gdx.app.postRunnable {
                                 parentPane.selAircraft?.let {
                                     it.entity.remove<ContactNotification>()
+                                    it.entity[AircraftRequestNotification.mapper]?.requestTypes?.clear()
                                     it.entity[Datatag.mapper]?.let { datatag ->
                                         stopDatatagContactFlash(datatag, it)
                                     }
@@ -270,6 +271,7 @@ class ControlPane {
                                 parentPane.updateSelectedAircraft(aircraft)
                                 parentPane.selAircraft?.let {
                                     it.entity.remove<ContactNotification>()
+                                    it.entity[AircraftRequestNotification.mapper]?.requestTypes?.clear()
                                     it.entity[Datatag.mapper]?.let { datatag ->
                                         stopDatatagContactFlash(datatag, it)
                                     }

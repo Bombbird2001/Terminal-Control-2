@@ -364,6 +364,7 @@ data class AircraftSectorUpdateData(private val callsign: String = "", private v
                 }
             } else if (newSector != rs.playerSector || newUUID != myUuid.toString()) {
                 aircraft.entity.remove<ContactNotification>()
+                aircraft.entity[AircraftRequestNotification.mapper]?.requestTypes?.clear()
                 aircraft.entity[Datatag.mapper]?.let { stopDatatagContactFlash(it, aircraft) }
             }
             controllable.controllerUUID = newUUID?.let { UUID.fromString(it) }
@@ -663,10 +664,10 @@ class AircraftRequestMessage(val callsign: String = "", val requestType: Aircraf
     override fun handleClientReceive(rs: RadarScreen) {
         rs.aircraft[callsign]?.let { aircraft ->
             if (aircraft.entity[Controllable.mapper]?.sectorId != rs.playerSector) return
-            aircraft.entity += ContactNotification()
             aircraft.entity[Datatag.mapper]?.let {
                 startDatatagNotificationFlash(it, aircraft)
             }
+            aircraft.entity[AircraftRequestNotification.mapper]?.requestTypes?.add(requestType)
             rs.uiPane.commsPane.also { commsPane ->
                 commsPane.aircraftRequest(aircraft.entity, requestType, params)
             }
