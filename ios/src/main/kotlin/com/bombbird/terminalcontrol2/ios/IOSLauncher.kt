@@ -8,13 +8,17 @@ import org.robovm.apple.uikit.UIApplication
 import com.badlogic.gdx.backends.iosrobovm.IOSApplication
 import com.badlogic.gdx.backends.iosrobovm.IOSApplicationConfiguration
 import com.bombbird.terminalcontrol2.TerminalControl2
+import com.bombbird.terminalcontrol2.integrations.StubAchievementHandler
+import com.bombbird.terminalcontrol2.integrations.StubDiscordHandler
 
 /** Launches the iOS (RoboVM) application. */
 class IOSLauncher : IOSApplication.Delegate() {
 	override fun createApplication(): IOSApplication {
-		return IOSApplication(TerminalControl2(IOSFileHandler(), IOSTTSHandler()), IOSApplicationConfiguration().apply {
-            // Configure your application here.
-        })
+		return IOSApplication(TerminalControl2(IOSFileHandler(), IOSTTSHandler(), StubDiscordHandler, StubAchievementHandler),
+            IOSApplicationConfiguration().apply {
+                // Configure your application here.
+            }
+        )
 	}
 
     companion object {

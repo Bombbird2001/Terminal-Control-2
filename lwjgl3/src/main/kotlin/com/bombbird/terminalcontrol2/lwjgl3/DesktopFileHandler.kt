@@ -4,27 +4,34 @@ import com.bombbird.terminalcontrol2.files.ExternalFileHandler
 import com.bombbird.terminalcontrol2.files.SAVE_EXTENSION
 import com.bombbird.terminalcontrol2.utilities.FileLog
 import ktx.assets.toAbsoluteFile
+import org.lwjgl.PointerBuffer
 import org.lwjgl.system.MemoryUtil.memAllocPointer
+import org.lwjgl.util.nfd.NFDFilterItem
 import org.lwjgl.util.nfd.NativeFileDialog
 
 /** File handler for Desktop platform */
 class DesktopFileHandler: ExternalFileHandler {
     override fun selectAndReadFromFile(onComplete: (String?) -> Unit, onFailure: (String) -> Unit) {
         val outputPath = memAllocPointer(1)
+        val noFilter = NFDFilterItem.create(0)
 
-        val path = when (NativeFileDialog.NFD_OpenDialog(SAVE_EXTENSION, "", outputPath)) {
-            NativeFileDialog.NFD_CANCEL -> return
+        val path = when (NativeFileDialog.NFD_OpenDialog(outputPath, noFilter, SAVE_EXTENSION)) {
+            NativeFileDialog.NFD_CANCEL -> {
+                freeResources(outputPath, noFilter)
+                return
+            }
             NativeFileDialog.NFD_ERROR -> {
+                freeResources(outputPath, noFilter)
                 FileLog.info("DesktopFileHandler", "NFD error occurred")
                 return onFailure("Error opening selected file")
             }
             NativeFileDialog.NFD_OKAY -> {
                 val res = outputPath.stringUTF8
-                NativeFileDialog.nNFD_Free(outputPath.get(0))
+                freeResources(outputPath, noFilter)
                 res
             }
             else -> return
-        } ?: return onFailure("Invalid file path")
+        }
 
         val importHandle = path.toAbsoluteFile()
         onComplete(importHandle.readString())
@@ -32,23 +39,33 @@ class DesktopFileHandler: ExternalFileHandler {
 
     override fun selectAndSaveToFile(data: String, onSuccess: () -> Unit, onFailure: (String) -> Unit) {
         val outputPath = memAllocPointer(1)
+        val noFilter = NFDFilterItem.create(0)
 
-        val path = when (NativeFileDialog.NFD_SaveDialog(SAVE_EXTENSION, "", outputPath)) {
-            NativeFileDialog.NFD_CANCEL -> return
+        val path = when (NativeFileDialog.NFD_SaveDialog(outputPath, noFilter, SAVE_EXTENSION, "")) {
+            NativeFileDialog.NFD_CANCEL -> {
+                freeResources(outputPath, noFilter)
+                return
+            }
             NativeFileDialog.NFD_ERROR -> {
+                freeResources(outputPath, noFilter)
                 FileLog.info("DesktopFileHandler", "NFD error occurred")
                 return onFailure("Error opening selected file")
             }
             NativeFileDialog.NFD_OKAY -> {
                 val res = outputPath.stringUTF8
-                NativeFileDialog.nNFD_Free(outputPath.get(0))
+                freeResources(outputPath, noFilter)
                 res
             }
             else -> return
-        } ?: return onFailure("Invalid file path")
+        }
 
         val exportHandle = path.toAbsoluteFile()
         exportHandle.writeString(data, false)
         onSuccess()
+    }
+
+    private fun freeResources(outputPath: PointerBuffer, filter: NFDFilterItem.Buffer) {
+        NativeFileDialog.nNFD_FreePath(outputPath.get(0))
+        filter.free()
     }
 }

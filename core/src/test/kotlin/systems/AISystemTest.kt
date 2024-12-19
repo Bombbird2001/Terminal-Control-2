@@ -161,7 +161,7 @@ object AISystemTest: FunSpec() {
 
         test("Landing acceleration < 35 knots, not immobilized") {
             val gs = GAME.gameServer.shouldNotBeNull()
-            val arpt = Airport()
+            val arpt = Airport.newEmptyAirport()
             gs.airports[0] = arpt
             initLandingAccEntity()
             entity[GroundTrack.mapper]?.trackVectorPxps = Vector2(Vector2.Y).scl(ktToPxps(34.5f))
@@ -183,7 +183,7 @@ object AISystemTest: FunSpec() {
 
         test("Landing acceleration < 35 knots, immobilized") {
             val gs = GAME.gameServer.shouldNotBeNull()
-            val arpt = Airport()
+            val arpt = Airport.newEmptyAirport()
             gs.airports[0] = arpt
             initLandingAccEntity()
             entity[GroundTrack.mapper]?.trackVectorPxps = Vector2(Vector2.Y).scl(ktToPxps(0.5f))
@@ -480,7 +480,7 @@ object AISystemTest: FunSpec() {
     }
 
     private fun initBelow190Entity() {
-        val airport = Airport()
+        val airport = Airport.newEmptyAirport()
         GAME.gameServer.shouldNotBeNull().airports[0] = airport
         val rwy = Airport.Runway()
         airport.entity[RunwayChildren.mapper].shouldNotBeNull().rwyMap[0] = rwy
@@ -493,7 +493,7 @@ object AISystemTest: FunSpec() {
     }
 
     private fun initMinAppSpdEntity() {
-        val airport = Airport()
+        val airport = Airport.newEmptyAirport()
         GAME.gameServer.shouldNotBeNull().airports[0] = airport
         val rwy = Airport.Runway()
         airport.entity[RunwayChildren.mapper].shouldNotBeNull().rwyMap[0] = rwy
