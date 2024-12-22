@@ -164,6 +164,7 @@ const val RUNWAY_SIZE = 6
 
 /** Zoom threshold to switch between small and large datatag fonts */
 const val DATATAG_ZOOM_THRESHOLD = 1f
+const val DATATAG_MAX_DRAG_DELTA = 100f
 
 /** Trail dot update rate */
 const val TRAIL_DOT_UPDATE_INTERVAL_S = 10

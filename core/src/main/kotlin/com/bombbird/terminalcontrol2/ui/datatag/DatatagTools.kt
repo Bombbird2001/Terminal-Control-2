@@ -173,16 +173,20 @@ fun addDatatagInputListeners(datatag: Datatag, aircraft: Aircraft) {
                 if (aircraft.entity.has(WaitingTakeoff.mapper)) return
                 val deltaX = x - this@apply.width / 2
                 val deltaY = y - this@apply.height / 2
-                // Stop dragging once x coordinate is more than limit, and player is trying to drag it even further out
-                // Same for y
-                if ((abs(datatag.xOffset) > (UI_WIDTH - (CLIENT_SCREEN?.uiPane?.paneWidth ?: 0f)) * 0.75f && deltaX / datatag.xOffset > 0) ||
-                    (abs(datatag.yOffset) > UI_HEIGHT * 0.75f && deltaY / datatag.yOffset > 0)) {
-                    cancel()
-                    datatag.dragging = false
-                } else {
-                    datatag.xOffset += deltaX
-                    datatag.yOffset += deltaY
-                    datatag.dragging = true
+                if (abs(deltaX) <= DATATAG_MAX_DRAG_DELTA && abs(deltaY) <= DATATAG_MAX_DRAG_DELTA) {
+                    // Ignore possible erroneous drag events where deltaX and/or deltaY is too large
+
+                    // Stop dragging once x coordinate is more than limit, and player is trying to drag it even further out
+                    // Same for y
+                    if ((abs(datatag.xOffset) > (UI_WIDTH - (CLIENT_SCREEN?.uiPane?.paneWidth ?: 0f)) * 0.75f && deltaX / datatag.xOffset > 0) ||
+                        (abs(datatag.yOffset) > UI_HEIGHT * 0.75f && deltaY / datatag.yOffset > 0)) {
+                        cancel()
+                        datatag.dragging = false
+                    } else {
+                        datatag.xOffset += deltaX
+                        datatag.yOffset += deltaY
+                        datatag.dragging = true
+                    }
                 }
                 event?.handle()
             }
