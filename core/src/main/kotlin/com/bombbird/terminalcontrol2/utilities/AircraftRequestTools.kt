@@ -45,8 +45,11 @@ interface AircraftRequestCreationCheck {
  *
  * [activationTimeS] denotes the time the condition for the request must be fulfilled
  * consecutively before the request is activated
+ *
+ * [disableForEmergency] denotes whether the request should be disabled if the aircraft
+ * declares an emergency
  */
-sealed class AircraftRequest(val minRecurrentTimeS: Int = -1, val activationTimeS: Int = 0) {
+sealed class AircraftRequest(val minRecurrentTimeS: Int = -1, val activationTimeS: Int = 0, val disableForEmergency: Boolean = true) {
     enum class RequestType {
         NONE,
         HIGH_SPEED_CLIMB,
@@ -87,10 +90,13 @@ sealed class AircraftRequest(val minRecurrentTimeS: Int = -1, val activationTime
      * @return Optional parameters if the request should be activated, empty if not
      */
     fun updateShouldSendRequest(deltaS: Int, entity: Entity): Optional<Array<String>> {
+        if (isDone) return Optional.empty()
+
         val wasActive = isActive
         isActive = false
         nextRequestTimer += deltaS
         if (nextRequestTimer < minRecurrentTimeS) return Optional.empty()
+        if (disableForEmergency && entity[EmergencyPending.mapper]?.active == true) return Optional.empty()
 
         val res = shouldActivateWithParameters(entity)
         if (!res.isPresent) {
