@@ -64,7 +64,7 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advD
 
     companion object {
         /** Empty airport constructor to help with loading of runways in saves */
-        val EMPTY_AIRPORT = Airport()
+        val EMPTY_AIRPORT by lazy { Airport() }
 
         /** Empty airport constructor to help with loading of airports in saves */
         fun newEmptyAirport(): Airport {
