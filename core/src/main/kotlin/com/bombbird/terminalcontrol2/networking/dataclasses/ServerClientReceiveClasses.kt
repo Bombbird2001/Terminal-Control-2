@@ -28,6 +28,7 @@ data class AircraftControlStateUpdateData(val callsign: String = "", val primary
                                           val maxIas: Short = 0, val optimalIas: Short = 0,
                                           val clearedApp: String? = null, val clearedTrans: String? = null,
                                           val lastMaxSpdKt: Short? = null, val cancelLastMaxSpd: Boolean = false,
+                                          val initiateGoAround: Boolean = false,
                                           val sendingSector: Byte = SECTOR_GAMESERVER): ServerReceive, ClientReceive, NeedsEncryption {
     companion object {
         const val SECTOR_GAMESERVER: Byte = -5

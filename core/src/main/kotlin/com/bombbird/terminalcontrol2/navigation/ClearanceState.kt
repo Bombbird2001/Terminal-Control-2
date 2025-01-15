@@ -51,11 +51,11 @@ data class ClearanceState(var routePrimaryName: String = "", val route: Route = 
                           var clearedAlt: Int = 0, var expedite: Boolean = false, var clearedIas: Short = 0,
                           var minIas: Short = 0, var maxIas: Short = 0, var optimalIas: Short = 0,
                           var clearedApp: String? = null, var clearedTrans: String? = null,
-                          var cancelLastMaxSpd: Boolean = false) {
+                          var cancelLastMaxSpd: Boolean = false, var initiateGoAround: Boolean = false) {
 
     // Default constructor for JSON parsing
     @Suppress("unused")
-    private constructor(): this(cancelLastMaxSpd = false)
+    private constructor(): this(cancelLastMaxSpd = false, initiateGoAround = false)
 
     /**
      * Inner class used solely to denote and store the currently active clearance the aircraft is following

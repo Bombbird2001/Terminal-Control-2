@@ -98,7 +98,8 @@ fun checkClearanceEquality(clearanceState1: ClearanceState, clearanceState2: Cle
             clearanceState1.clearedIas == clearanceState2.clearedIas &&
             clearanceState1.clearedApp == clearanceState2.clearedApp &&
             clearanceState1.clearedTrans == clearanceState2.clearedTrans &&
-            clearanceState1.cancelLastMaxSpd == clearanceState2.cancelLastMaxSpd
+            clearanceState1.cancelLastMaxSpd == clearanceState2.cancelLastMaxSpd &&
+            clearanceState1.initiateGoAround == clearanceState2.initiateGoAround
 }
 
 /**

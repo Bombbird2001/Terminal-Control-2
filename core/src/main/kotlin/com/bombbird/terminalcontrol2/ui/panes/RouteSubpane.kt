@@ -66,7 +66,9 @@ class RouteSubpane {
             table {
                 textButton("Edit\nroute", "ControlPaneButton").cell(growX = true, height = UI_HEIGHT * 0.15f).addChangeListener { _, _ -> setToEditRoutePane() }
                 row()
-                // textButton("CDA", "ControlPaneSelected").cell(growX = true, height = UI_HEIGHT * 0.15f)
+                textButton("Go\nAround", "ControlPaneSelected").cell(growX = true, height = UI_HEIGHT * 0.15f).addChangeListener { _, _ ->
+                    parentPane.userClearanceState.initiateGoAround = true
+                }
             }.cell(preferredWidth = 0.19f * paneWidth, padTop = 20f, align = Align.top)
             isVisible = false
         }
@@ -134,8 +136,10 @@ class RouteSubpane {
                         addChangeListener { _, _ ->
                             if (modificationInProgress) return@addChangeListener
                             modificationInProgress = true
-                            // Only allow player to clear direct to this if it is a waypoint leg; otherwise undo the change
-                            if (leg !is Route.WaypointLeg) {
+                            // Only allow player to clear direct to this if it is a waypoint leg,
+                            // and it does not go from non MISSED_APP to MISSED_APP phase
+                            // otherwise undo the change
+                            if ((leg !is Route.WaypointLeg || (route[0].phase != Route.Leg.MISSED_APP && leg.phase == Route.Leg.MISSED_APP))) {
                                 isChecked = !isChecked
                                 modificationInProgress = false
                                 return@addChangeListener
