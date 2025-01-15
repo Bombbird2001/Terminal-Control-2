@@ -49,7 +49,9 @@ class TerminalControl2(val externalFileHandler: ExternalFileHandler, ttsHandler:
     lateinit var engine: Engine
     lateinit var soundManager: SoundManager
     val assetStorage = AssetStorage()
+    @Volatile
     var gameServer: GameServer? = null
+    @Volatile
     var gameClientScreen: RadarScreen? = null
     val lanClientDiscoveryHandler = LANClientDiscoveryHandler()
     val lanClient = LANClient(lanClientDiscoveryHandler)
