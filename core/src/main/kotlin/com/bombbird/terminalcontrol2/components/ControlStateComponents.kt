@@ -291,6 +291,7 @@ data class RecentGoAround(var timeLeft: Float = 80f, var reason: Byte? = null): 
         const val WINDSHEAR: Byte = 8
         const val WAKE_TURBULENCE: Byte = 9
         const val STRONG_CROSSWIND: Byte = 10
+        const val PLAYER_INITIATED: Byte = 11
 
         fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
@@ -366,6 +367,17 @@ data class ACCTempAltitude(var finalAltFt: Int = 0): Component, BaseComponentJSO
 
     companion object {
         val mapper = object: Mapper<ACCTempAltitude>() {}.mapper
+
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
+    }
+}
+
+/**
+ * Component for tagging aircraft that can be instructed to go around; this will enable the go around button
+ */
+class CanGoAround: Component {
+    companion object {
+        val mapper = object: Mapper<CanGoAround>() {}.mapper
 
         fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }

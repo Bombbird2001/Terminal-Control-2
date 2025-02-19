@@ -49,7 +49,7 @@ fun addNewClearanceToPendingClearances(aircraft: Entity, clearance: AircraftCont
     val newClearance = ClearanceState(clearance.primaryName, Route.fromSerialisedObject(clearance.route), Route.fromSerialisedObject(clearance.hiddenLegs),
         clearance.vectorHdg, clearance.vectorTurnDir, clearance.clearedAlt, clearance.expedite,
         clearance.clearedIas, clearance.minIas, clearance.maxIas, clearance.optimalIas,
-        clearance.clearedApp, clearance.clearedTrans, clearance.cancelLastMaxSpd)
+        clearance.clearedApp, clearance.clearedTrans, clearance.cancelLastMaxSpd, clearance.initiateGoAround)
     addNewClearanceToPendingClearances(aircraft, newClearance, returnTripTime)
 }
 
@@ -237,6 +237,7 @@ fun removeAllApproachComponents(aircraft: Entity) {
         remove<DecelerateToAppSpd>()
         remove<ContactToTower>()
         remove<WindshearGoAround>()
+        remove<ShouldInitiateGoAround>()
     }
 }
 

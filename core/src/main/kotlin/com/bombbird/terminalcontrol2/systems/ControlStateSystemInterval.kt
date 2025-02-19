@@ -8,10 +8,7 @@ import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.MAG_HDG_DEV
 import com.bombbird.terminalcontrol2.global.TRACK_EXTRAPOLATE_TIME_S
-import com.bombbird.terminalcontrol2.navigation.ClearanceState
-import com.bombbird.terminalcontrol2.navigation.Route
-import com.bombbird.terminalcontrol2.navigation.calculateDistToGo
-import com.bombbird.terminalcontrol2.navigation.getNextWaypointWithSpdRestr
+import com.bombbird.terminalcontrol2.navigation.*
 import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.*
 
@@ -102,13 +99,16 @@ class ControlStateSystemInterval: IntervalSystem(1f) {
                 val targetPos = getServerWaypointMap()?.get(targetWptId)?.entity?.get(Position.mapper) ?: return@apply // Skip if waypoint not found or position not present
                 val newGs = getPointTargetTrackAndGS(pos.x, pos.y, targetPos.x, targetPos.y, nextMaxSpd.toFloat(), dir, get(
                     AffectedByWind.mapper)).second
-                val approach = has(LocalizerCaptured.mapper) || has(GlideSlopeCaptured.mapper) || has(VisualCaptured.mapper) || (get(
-                    CirclingApproach.mapper)?.phase ?: 0) >= 1
                 // Calculate distance needed to decelerate to the speed restriction, plus a 2km leeway
                 val distReqPx = mToPx(
                     calculateAccelerationDistanceRequired(
                         pxpsToKt(gs.trackVectorPxps.len()), newGs,
-                    calculateMinAcceleration(acInfo.aircraftPerf, alt.altitudeFt, calculateTASFromIAS(alt.altitudeFt, nextMaxSpd.toFloat()), -500f, approach, takingOff = false, takeoffGoAround = false)
+                        calculateMinAcceleration(
+                            acInfo.aircraftPerf,
+                            alt.altitudeFt,
+                            calculateTASFromIAS(alt.altitudeFt, nextMaxSpd.toFloat()),
+                            -500f, isApproachCaptured(this),
+                            takingOff = false, takeoffGoAround = false)
                     ) + 2000)
                 // Calculate distance remaining on route from the waypoint with speed restriction
                 val distToGoPx = calculateDistToGo(pos, nextLeg, nextRestr.first, actingClearance.route)

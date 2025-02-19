@@ -267,6 +267,7 @@ class ControlPane {
                                 }}
                             }
                             Gdx.app.postRunnable {
+                                parentPane.userClearanceState.initiateGoAround = false
                                 aircraft.entity[ClearanceAct.mapper]?.actingClearance?.clearanceState?.updateUIClearanceState(parentPane.userClearanceState)
                                 parentPane.updateSelectedAircraft(aircraft)
                                 parentPane.selAircraft?.let {
@@ -607,6 +608,7 @@ class ControlPane {
                 updateApproachSelectBoxChoices(parentPane.aircraftArrivalArptId, parentPane.userClearanceState.clearedApp)
                 parentPane.userClearanceState.vectorHdg = null
                 routeSubpaneObj.updateRouteTable(parentPane.userClearanceState.route)
+                routeSubpaneObj.updateChangedStates(parentPane.userClearanceState, parentPane.clearanceState)
                 updateUndoTransmitButtonStates()
             }
             UIPane.MODE_HOLD -> {
@@ -708,12 +710,14 @@ class ControlPane {
      * @param handover whether the button should display handover and perform handover functionality when clicked
      * @param acknowledge whether the button should display acknowledge and perform acknowledge functionality when
      * clicked; will be overridden by [handover] if it is true
+     * @param goAround whether the button should display go around and perform go around when clicked;
      */
-    fun updateHandoverAcknowledgeButton(handover: Boolean, acknowledge: Boolean) {
+    fun updateHandoverAcknowledgeGoAroundButton(handover: Boolean, acknowledge: Boolean, goAround: Boolean) {
         handoverAckButton.isVisible = true
         if (handover) handoverAckButton.setText(HANDOVER)
         else if (acknowledge) handoverAckButton.setText(ACKNOWLEDGE)
         else handoverAckButton.isVisible = false
+        routeSubpaneObj.setGoAroundButtonState(goAround)
     }
 
     /** Resets [directLeg] back to null, called when a new aircraft is being set in [parentPane] */

@@ -8,6 +8,7 @@ import com.bombbird.terminalcontrol2.global.VIS_MAX_DIST_NM
 import com.bombbird.terminalcontrol2.utilities.*
 import com.bombbird.terminalcontrol2.utilities.FileLog
 import ktx.ashley.get
+import ktx.ashley.has
 import ktx.ashley.hasNot
 import ktx.math.plus
 import ktx.math.times
@@ -129,4 +130,12 @@ fun establishedOnFinalApproachTrack(app: Entity, posX: Float, posY: Float): Bool
 
     // Use an arc extending along approach track for 25nm, and a max deviation of 2.5 degrees on each side
     return checkInArc(pos.x, pos.y, convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()), nmToPx(25), 2.5f, posX, posY)
+}
+
+/** Checks whether the [aircraft] has captured the approach */
+fun isApproachCaptured(aircraft: Entity): Boolean {
+    return aircraft.has(LocalizerCaptured.mapper)
+            || aircraft.has(GlideSlopeCaptured.mapper)
+            || aircraft.has(VisualCaptured.mapper)
+            || (aircraft[CirclingApproach.mapper]?.phase ?: 0) >= 1
 }

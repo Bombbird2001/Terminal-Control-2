@@ -5,6 +5,7 @@ import com.badlogic.ashley.core.Family
 import com.badlogic.ashley.systems.IntervalSystem
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.*
+import com.bombbird.terminalcontrol2.navigation.isApproachCaptured
 import com.bombbird.terminalcontrol2.utilities.InitializeCompanionObjectOnStart
 import com.bombbird.terminalcontrol2.utilities.getSectorForExtrapolatedPosition
 import ktx.ashley.*
@@ -37,12 +38,14 @@ class ControlStateSystemIntervalClient: IntervalSystem(1f) {
                 val controllable = get(Controllable.mapper) ?: return@apply
                 CLIENT_SCREEN?.let {
                     if (controllable.sectorId == it.playerSector && controllable.controllerUUID == myUuid) {
-                        if (has(LocalizerCaptured.mapper) || has(GlideSlopeCaptured.mapper) || has(VisualCaptured.mapper)) {
+                        if (isApproachCaptured(this)) {
                             // Aircraft has captured localizer/glide slope/visual approach path, allow handover to tower
                             this += CanBeHandedOver(SectorInfo.TOWER)
+                            this += CanGoAround()
                             updateUIPaneHandover(this)
                             return@apply
                         }
+                        remove<CanGoAround>()
                         if (has(ContactToCentre.mapper) && alt.altitudeFt >= MAX_ALT - 1900) {
                             // Aircraft is expected to contact ACC, and is less than 1900 feet below the max TMA altitude,
                             // allow handover to ACC

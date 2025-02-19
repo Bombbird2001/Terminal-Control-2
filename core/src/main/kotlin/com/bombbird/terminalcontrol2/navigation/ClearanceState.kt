@@ -230,6 +230,11 @@ data class ClearanceState(var routePrimaryName: String = "", val route: Route = 
             // Remove on go around route state if STAR changed
             if (starChanged) entity.remove<OnGoAroundRoute>()
 
+            // Check player initiated go-around
+            if (newClearance.initiateGoAround && isApproachCaptured(entity)) {
+                entity += ShouldInitiateGoAround()
+            }
+
             // Update route polygons
             entity[ArrivalRouteZone.mapper]?.also {
                 val airport = GAME.gameServer?.airports?.get(entity[ArrivalAirport.mapper]?.arptId)?.entity ?: return@also
@@ -351,6 +356,7 @@ data class ClearanceState(var routePrimaryName: String = "", val route: Route = 
             clearedApp = latestClearance.clearedApp
             clearedTrans = latestClearance.clearedTrans
             cancelLastMaxSpd = latestClearance.cancelLastMaxSpd
+            initiateGoAround = false
         }
         minIas = latestClearance.minIas
         maxIas = latestClearance.maxIas

@@ -64,6 +64,7 @@ class AISystem: EntitySystem() {
         private val runningChecklistFamily: Family = allOf(RunningChecklists::class, AircraftInfo::class).get()
         private val dumpingFuelFamily: Family = allOf(RequiresFuelDump::class, AircraftInfo::class).get()
         private val stayOnRunwayFamily: Family = allOf(ImmobilizeOnLanding::class, LandingRoll::class).get()
+        private val initiateGoAroundFamily = allOf(ShouldInitiateGoAround::class).exclude(OnGoAroundRoute::class).get()
 
         fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
@@ -96,6 +97,7 @@ class AISystem: EntitySystem() {
     private val runningChecklistFamilyEntities = FamilyWithListener.newServerFamilyWithListener(runningChecklistFamily)
     private val dumpingFuelFamilyEntities = FamilyWithListener.newServerFamilyWithListener(dumpingFuelFamily)
     private val stayOnRunwayFamilyEntities = FamilyWithListener.newServerFamilyWithListener(stayOnRunwayFamily)
+    private val initiateGoAroundFamilyEntities = FamilyWithListener.newServerFamilyWithListener(initiateGoAroundFamily)
 
     /** Main update function */
     override fun update(deltaTime: Float) {
@@ -870,6 +872,14 @@ class AISystem: EntitySystem() {
                 if (rwyAlt != null && (rwyObj.has(RunwayOccupied.mapper) || rwyObj.has(RunwayClosed.mapper)) && alt.altitudeFt < rwyAlt + 150) {
                     return@apply initiateGoAround(this, RecentGoAround.RWY_NOT_CLEAR)
                 }
+            }
+        }
+
+        // Initiate go around if player instructed
+        val initiateGoAround = initiateGoAroundFamilyEntities.getEntities()
+        for (i in 0 until initiateGoAround.size()) {
+            initiateGoAround[i]?.apply {
+                if (isApproachCaptured(this)) initiateGoAround(this, RecentGoAround.PLAYER_INITIATED)
             }
         }
 

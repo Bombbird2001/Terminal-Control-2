@@ -167,7 +167,12 @@ class UIPane(private val uiStage: Stage) {
         controlObj.updateClearanceMode(userClearanceState.route, userClearanceState.vectorHdg,
             aircraft.entity.has(VisualCaptured.mapper) || aircraft.entity.has(LocalizerCaptured.mapper), true)
         controlObj.setUndoTransmitButtonsUnchanged()
-        controlObj.updateHandoverAcknowledgeButton(aircraft.entity.has(CanBeHandedOver.mapper), shouldShowAcknowledgeButton(aircraft.entity))
+        controlObj.updateHandoverAcknowledgeGoAroundButton(
+            aircraft.entity.has(CanBeHandedOver.mapper),
+            shouldShowAcknowledgeButton(aircraft.entity),
+            aircraft.entity.has(CanGoAround.mapper)
+        )
+
         routeEditObj.setChangeStarDisabled(aircraftArrivalArptId == null)
         controlPane.isVisible = true
         routeEditPane.isVisible = false
@@ -204,7 +209,11 @@ class UIPane(private val uiStage: Stage) {
         controlObj.updateExpediteClearance(userClearanceState.expedite)
         controlObj.updateChangedStates(userClearanceState, clearanceState)
         controlObj.updateUndoTransmitButtonStates()
-        controlObj.updateHandoverAcknowledgeButton(aircraft.entity.has(CanBeHandedOver.mapper), shouldShowAcknowledgeButton(aircraft.entity))
+        controlObj.updateHandoverAcknowledgeGoAroundButton(
+            aircraft.entity.has(CanBeHandedOver.mapper),
+            shouldShowAcknowledgeButton(aircraft.entity),
+            aircraft.entity.has(CanGoAround.mapper)
+        )
         routeEditObj.setChangeStarDisabled(aircraftArrivalArptId == null)
     }
 
@@ -238,7 +247,7 @@ class UIPane(private val uiStage: Stage) {
     }
 
     /**
-     * Updates the state of the handover/acknowledge button state depending on aircraft components
+     * Updates the state of the handover/acknowledge/go around button state depending on aircraft components
      *
      * If the input aircraft does not match the selected aircraft, the function will return
      * @param aircraft the aircraft to check
@@ -246,7 +255,11 @@ class UIPane(private val uiStage: Stage) {
     fun updateHandoverAckButtonState(aircraft: Entity) {
         val callsign = aircraft[AircraftInfo.mapper]?.icaoCallsign ?: return
         if (callsign != selAircraft?.entity?.get(AircraftInfo.mapper)?.icaoCallsign) return
-        controlObj.updateHandoverAcknowledgeButton(aircraft.has(CanBeHandedOver.mapper), shouldShowAcknowledgeButton(aircraft))
+        controlObj.updateHandoverAcknowledgeGoAroundButton(
+            aircraft.has(CanBeHandedOver.mapper),
+            shouldShowAcknowledgeButton(aircraft),
+            aircraft.has(CanGoAround.mapper)
+        )
     }
 
     /** Updates the rendered waypoints for currently selected aircraft */

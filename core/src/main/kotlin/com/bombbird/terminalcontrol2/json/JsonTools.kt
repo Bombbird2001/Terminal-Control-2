@@ -51,7 +51,7 @@ interface BaseComponentJSONInterface {
         TTS_VOICE, EMERGENCY_PENDING, RUNNING_CHECKLISTS, REQUIRES_FUEL_DUMP, IMMOBILIZE_ON_LANDING, RUNWAY_CLOSED,
         ON_GO_AROUND_ROUTE, WAKE_TOLERANCE, ACC_TEMP_ALTITUDE, WINDSHEAR_GO_AROUND, NEEDS_TO_INFORM_OF_GO_AROUND,
         CUSTOM_APPROACH_SEPARATION_CHILDREN, PARALLEL_WAKE_AFFECTS, AIRPORT_ARRIVAL_STATS, AIRCRAFT_REQUEST_CHILDREN,
-        HIGH_SPEED_REQUESTED
+        HIGH_SPEED_REQUESTED, SHOULD_INITIATE_GO_AROUND
     }
 
     val componentType: ComponentType
@@ -169,6 +169,7 @@ private fun getPolymorphicComponentAdapter(): PolymorphicJsonAdapterFactory<Base
         .withSubtype(AirportArrivalStats::class.java, BaseComponentJSONInterface.ComponentType.AIRPORT_ARRIVAL_STATS.name)
         .withSubtype(AircraftRequestChildren::class.java, BaseComponentJSONInterface.ComponentType.AIRCRAFT_REQUEST_CHILDREN.name)
         .withSubtype(HighSpeedRequested::class.java, BaseComponentJSONInterface.ComponentType.HIGH_SPEED_REQUESTED.name)
+        .withSubtype(ShouldInitiateGoAround::class.java, BaseComponentJSONInterface.ComponentType.SHOULD_INITIATE_GO_AROUND.name)
 }
 
 /** Interface for implementing JSON serialization for subclasses of Leg */

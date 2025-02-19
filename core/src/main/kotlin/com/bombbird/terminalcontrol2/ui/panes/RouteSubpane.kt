@@ -1,15 +1,13 @@
 package com.bombbird.terminalcontrol2.ui.panes
 
 import com.badlogic.gdx.scenes.scene2d.Actor
+import com.badlogic.gdx.scenes.scene2d.ui.TextButton.TextButtonStyle
 import com.badlogic.gdx.utils.Align
 import com.bombbird.terminalcontrol2.components.CommandTarget
 import com.bombbird.terminalcontrol2.components.WaypointInfo
 import com.bombbird.terminalcontrol2.global.CLIENT_SCREEN
 import com.bombbird.terminalcontrol2.global.UI_HEIGHT
-import com.bombbird.terminalcontrol2.navigation.Route
-import com.bombbird.terminalcontrol2.navigation.checkLegChanged
-import com.bombbird.terminalcontrol2.navigation.checkRestrChanged
-import com.bombbird.terminalcontrol2.navigation.compareLegEquality
+import com.bombbird.terminalcontrol2.navigation.*
 import com.bombbird.terminalcontrol2.ui.addChangeListener
 import com.bombbird.terminalcontrol2.ui.removeMouseScrollListeners
 import ktx.ashley.get
@@ -34,6 +32,7 @@ class RouteSubpane {
     private lateinit var routeTable: KTableWidget
     private lateinit var routeLegsTable: KTableWidget
     private val directButtonArray = GdxArray<KTextButton>(10)
+    private lateinit var goAroundButton: KTextButton
 
     var isVisible: Boolean
         get() = routeTable.isVisible
@@ -66,8 +65,14 @@ class RouteSubpane {
             table {
                 textButton("Edit\nroute", "ControlPaneButton").cell(growX = true, height = UI_HEIGHT * 0.15f).addChangeListener { _, _ -> setToEditRoutePane() }
                 row()
-                textButton("Go\nAround", "ControlPaneSelected").cell(growX = true, height = UI_HEIGHT * 0.15f).addChangeListener { _, _ ->
-                    parentPane.userClearanceState.initiateGoAround = true
+                goAroundButton = textButton("Go\nAround", "ControlPaneSelectedSameTextColour").cell(growX = true, height = UI_HEIGHT * 0.15f).apply {
+                    addChangeListener { _, _ ->
+                        parentPane.userClearanceState.initiateGoAround = isChecked
+                        style = Scene2DSkin.defaultSkin[
+                            if (parentPane.userClearanceState.initiateGoAround == parentPane.clearanceState.initiateGoAround) "ControlPaneSelectedSameTextColour"
+                            else "ControlPaneSelectedChanged", TextButtonStyle::class.java]
+                        parentControlPane.updateUndoTransmitButtonStates()
+                    }
                 }
             }.cell(preferredWidth = 0.19f * paneWidth, padTop = 20f, align = Align.top)
             isVisible = false
@@ -192,5 +197,23 @@ class RouteSubpane {
             directButtonArray[0].isChecked = true
             modificationInProgress = false
         }
+    }
+
+    /**
+     * Updates all elements to reflect any differences between the user clearance state and the cleared clearance state
+     * @param userClearanceState the user selected clearance state
+     * @param clearanceState the currently cleared clearance state
+     */
+    fun updateChangedStates(userClearanceState: ClearanceState, clearanceState: ClearanceState) {
+        goAroundButton.isChecked = userClearanceState.initiateGoAround
+        goAroundButton.style = Scene2DSkin.defaultSkin[
+            if (userClearanceState.initiateGoAround == clearanceState.initiateGoAround) "ControlPaneSelectedSameTextColour"
+            else "ControlPaneSelectedChanged", TextButtonStyle::class.java]
+    }
+
+    /** Sets the go around button to visible if [goAround] is true, else hides it */
+    fun setGoAroundButtonState(goAround: Boolean) {
+        goAroundButton.isVisible = goAround
+        if (!goAround) goAroundButton.isChecked = false
     }
 }

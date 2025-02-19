@@ -700,6 +700,7 @@ class CommsPane {
             RecentGoAround.WINDSHEAR -> " due to windshear"
             RecentGoAround.WAKE_TURBULENCE -> " due to wake turbulence"
             RecentGoAround.STRONG_CROSSWIND -> " due to strong crosswind"
+            RecentGoAround.PLAYER_INITIATED -> ""
             else -> {
                 FileLog.warn("CommsPane", "Unknown go-around reason $reason")
                 ""

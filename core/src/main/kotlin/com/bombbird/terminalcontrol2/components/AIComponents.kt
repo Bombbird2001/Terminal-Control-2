@@ -423,3 +423,15 @@ class HighSpeedRequested: Component, BaseComponentJSONInterface {
         fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
+
+/** Component for tagging an aircraft that should perform a go-around as instructed by the player */
+@JsonClass(generateAdapter = true)
+class ShouldInitiateGoAround: Component, BaseComponentJSONInterface {
+    override val componentType: BaseComponentJSONInterface.ComponentType = BaseComponentJSONInterface.ComponentType.SHOULD_INITIATE_GO_AROUND
+
+    companion object {
+        val mapper = object: Mapper<ShouldInitiateGoAround>() {}.mapper
+
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
+    }
+}
