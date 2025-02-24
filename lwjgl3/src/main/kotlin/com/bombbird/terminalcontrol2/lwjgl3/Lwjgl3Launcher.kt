@@ -11,11 +11,22 @@ import com.bombbird.terminalcontrol2.integrations.StubAchievementHandler
 fun main() {
     Lwjgl3Application(TerminalControl2(DesktopFileHandler(), DesktopTTSHandler(), DesktopDiscordHandler(), StubAchievementHandler),
         Lwjgl3ApplicationConfiguration().apply {
-        setTitle("Terminal Control 2")
-        setWindowedMode(1920, 1440)
-        setMaximized(true)
-        setForegroundFPS(60)
-        setBackBufferConfig(8, 8, 8, 8, 16, 0, 0)
-        setWindowIcon("WindowIcon/Icon16.png", "WindowIcon/Icon32.png", "WindowIcon/Icon48.png", "WindowIcon/Icon64.png")
+            setTitle("Terminal Control 2")
+            if (!isLinuxWayland()) {
+                setWindowedMode(1920, 1440)
+                setMaximized(true)
+                setWindowIcon(
+                    "WindowIcon/Icon16.png",
+                    "WindowIcon/Icon32.png",
+                    "WindowIcon/Icon48.png",
+                    "WindowIcon/Icon64.png"
+                )
+            }
+            setForegroundFPS(60)
+            setBackBufferConfig(8, 8, 8, 8, 16, 0, 0)
     })
+}
+
+fun isLinuxWayland(): Boolean {
+    return System.getProperty("os.name").lowercase().contains("linux") && System.getenv("XDG_SESSION_TYPE") == "wayland"
 }

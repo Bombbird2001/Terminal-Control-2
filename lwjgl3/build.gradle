@@ -164,9 +164,6 @@ tasks.register('updateFileVersion') {
 			"classpath": [
 					"${baseDir}\\Desktop\\Terminal Control 2-${version}.jar"
 			],
-			"removelibs": [
-					"${baseDir}\\Desktop\\Terminal Control 2-${version}.jar"
-			],
 			"mainclass": "com.bombbird.terminalcontrol2.lwjgl3.Lwjgl3Launcher",
 			"vmargs": [
 					"-XstartOnFirstThread",
@@ -184,9 +181,6 @@ tasks.register('updateFileVersion') {
 //				"classpath": [
 //						"${baseDir}\\Desktop\\Terminal Control 2-${version}.jar"
 //				],
-//				"removelibs": [
-//						"${baseDir}\\Desktop\\Terminal Control 2-${version}.jar"
-//				],
 //				"mainclass": "com.bombbird.terminalcontrol2.lwjgl3.Lwjgl3Launcher",
 //				"vmargs": [
 //						"-Xms256M"
@@ -202,9 +196,6 @@ tasks.register('updateFileVersion') {
 				"classpath": [
 						"${baseDir}\\Desktop\\Terminal Control 2-${version}.jar"
 				],
-				"removelibs": [
-						"${baseDir}\\Desktop\\Terminal Control 2-${version}.jar"
-				],
 				"mainclass": "com.bombbird.terminalcontrol2.lwjgl3.Lwjgl3Launcher",
 				"vmargs": [
 						"-Xms256M"
@@ -218,9 +209,6 @@ tasks.register('updateFileVersion') {
 				"jdk": "C:\\Programs\\OpenJDK\\Temurin\\jdk8u432-b06_linux64",
 				"executable": "Terminal Control 2",
 				"classpath": [
-						"${baseDir}\\Desktop\\Terminal Control 2-${version}.jar"
-				],
-				"removelibs": [
 						"${baseDir}\\Desktop\\Terminal Control 2-${version}.jar"
 				],
 				"mainclass": "com.bombbird.terminalcontrol2.lwjgl3.Lwjgl3Launcher",
