@@ -151,7 +151,6 @@ tasks.register('updateFileVersion') {
 		copy {
 			from(baseDir) {
 				include macConfigFile
-				include win32ConfigFile
 				include win64ConfigFile
 				include linux64ConfigFile
 			}

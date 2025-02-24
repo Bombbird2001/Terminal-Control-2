@@ -405,7 +405,8 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
                     }
                     networkServer.sendTCPToConnection(
                         uuid,
-                        AirportData(airportArray))
+                        AirportData(airportArray)
+                    )
                     FileLog.debug("GameServer", "Sent AirportData with ${airportArray.size} airports")
                 }
 
