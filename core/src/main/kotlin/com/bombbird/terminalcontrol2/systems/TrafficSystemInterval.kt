@@ -95,6 +95,7 @@ class TrafficSystemInterval: IntervalSystem(1f) {
                 TrafficMode.FLOW_RATE -> {
                     for (i in 0 until airportArrivalStats.size()) {
                         val arptEntity = airportArrivalStats[i]
+                        if (arptEntity.has(ArrivalClosed.mapper)) continue
                         val arptArrStats = arptEntity[AirportArrivalStats.mapper] ?: continue
                         arptArrStats.arrivalSpawnTimer -= interval
                         if (arptArrStats.arrivalSpawnTimer > 0) continue
