@@ -192,6 +192,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                             ?.rwyMap?.get(serialisedAircraft.visCapRwy)?.entity?.get(VisualApproach.mapper)?.visual
                         if (visApp != null) this += VisualCaptured(visApp)
                     }
+                    if (serialisedAircraft.rnpCap) this += RNPCaptured()
                     if (serialisedAircraft.contactToCentre) this += ContactToCentre()
                     if (serialisedAircraft.recentGoAroundReason != null) this += RecentGoAround(reason = serialisedAircraft.recentGoAroundReason)
 
@@ -241,6 +242,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                                 val trackX: Float = 0f, val trackY: Float = 0f,
                                 val targetHdgDeg: Short = 0, val targetAltFt: Short = 0, val targetIasKt: Short = 0,
                                 val gsCap: Boolean = false, val locCap: Boolean = false, val visCapRwy: Byte? = null,
+                                val rnpCap: Boolean = false,
                                 val contactToCentre: Boolean = false,
                                 val recentGoAroundReason: Byte? = null
     )
@@ -276,6 +278,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                     if (app.phase >= 1) app.circlingApp[ApproachInfo.mapper]?.rwyId
                     else null
                 }),
+                has(RNPCaptured.mapper),
                 has(ContactToCentre.mapper),
                 get(RecentGoAround.mapper)?.reason
             )
@@ -320,6 +323,8 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                 if (visApp != null) this += VisualCaptured(visApp)
             }
             else remove<VisualCaptured>()
+            if (data.rnpCap) this += RNPCaptured()
+            else remove<RNPCaptured>()
             if (data.contactToCentre) this += ContactToCentre()
             else remove<ContactToCentre>()
             if (data.recentGoAroundReason != null) this += RecentGoAround(reason = data.recentGoAroundReason)
@@ -352,6 +357,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                              val arrivalArptId: Byte? = null, val departureArptId: Byte? = null,
                              val controlSectorId: Byte = 0, val controllerUUID: String? = null,
                              val gsCap: Boolean = false, val locCap: Boolean = false, val visCapRwy: Byte? = null,
+                             val rnpCap: Boolean = false,
                              val waitingTakeoff: Boolean = false,
                              val contactToCentre: Boolean = false,
                              val recentGoAroundReason: Byte? = null,
@@ -414,6 +420,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                     if (app.phase >= 1) app.circlingApp[ApproachInfo.mapper]?.rwyId
                     else null
                 }),
+                has(RNPCaptured.mapper),
                 has(WaitingTakeoff.mapper),
                 has(ContactToCentre.mapper),
                 get(RecentGoAround.mapper)?.reason,

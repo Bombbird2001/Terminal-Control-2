@@ -3,13 +3,13 @@ package com.bombbird.terminalcontrol2.networking.dataclasses
 import com.badlogic.gdx.math.MathUtils
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.*
+import com.bombbird.terminalcontrol2.navigation.isApproachCaptured
 import com.bombbird.terminalcontrol2.networking.ConnectionMeta
 import com.bombbird.terminalcontrol2.networking.GameServer
 import com.bombbird.terminalcontrol2.networking.encryption.NeedsEncryption
 import com.bombbird.terminalcontrol2.utilities.getSectorForExtrapolatedPosition
 import ktx.ashley.get
 import ktx.ashley.has
-import ktx.ashley.hasNot
 import ktx.ashley.plusAssign
 
 /** Class representing data sent on a client request to pause/run the game */
@@ -37,9 +37,7 @@ data class HandoverRequest(private val callsign: String = "", private val newSec
         // Validate new sector
         if (newSector == SectorInfo.TOWER) {
             // Validate approach status
-            if (aircraft.hasNot(LocalizerCaptured.mapper) && aircraft.hasNot(GlideSlopeCaptured.mapper)
-                && aircraft.hasNot(VisualCaptured.mapper) && (aircraft[CirclingApproach.mapper]?.phase ?: 0) < 1)
-                return
+            if (!isApproachCaptured(aircraft)) return
         } else if (newSector == SectorInfo.CENTRE) {
             // Validate aircraft altitude
             val alt = aircraft[Altitude.mapper]?.altitudeFt ?: return

@@ -117,6 +117,7 @@ fun loadAllComponents() {
     RecentGoAround.initialise()
     RequiresFuelDump.initialise()
     RenderLast.initialise()
+    RNPCaptured.initialise()
     RouteSegment.initialise()
     RunningChecklists.initialise()
     RunwayChildren.initialise()

@@ -548,6 +548,11 @@ class AISystem: EntitySystem() {
                 val vis = get(VisualArmed.mapper) ?: return@apply
                 val appPos = vis.visApp[Position.mapper] ?: return@apply
 
+                // Update RNP approach "captured"
+                if (hasNot(RNPCaptured.mapper) && establishedOnFinalApproachTrack(vis.visApp, pos.x, pos.y)) {
+                    this += RNPCaptured()
+                }
+
                 // Return if current clearance state is not vector and route's first leg is not a missed approach leg
                 val state = clearanceState.actingClearance.clearanceState
                 val route = state.route

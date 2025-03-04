@@ -339,6 +339,20 @@ data class CirclingApproach(var circlingApp: Entity = Entity(), var breakoutAlt:
     }
 }
 
+/**
+ * Component for tagging aircraft that has "captured" the RNP approach, defined by the aircraft having visual approach armed,
+ * and within the approach arc as defined by ApproachTools.establishedOnFinalApproachTrack
+ */
+@JsonClass(generateAdapter = true)
+class RNPCaptured: Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.RNP_CAPTURED
+
+    companion object {
+        val mapper = object: Mapper<RNPCaptured>() {}.mapper
+
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
+    }
+}
 
 /** Component for tagging a pending emergency (unlucky plane lol) */
 @JsonClass(generateAdapter = true)

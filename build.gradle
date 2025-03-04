@@ -60,7 +60,7 @@ configure(subprojects - project(':android')) {
 subprojects {
 	version = '2.3.0-beta'
 	ext.appName = 'Terminal Control 2'
-	ext.buildVersion = 36
+	ext.buildVersion = 37
 	repositories {
 		mavenCentral()
 		maven { url 'https://s01.oss.sonatype.org' }

@@ -3,6 +3,7 @@ package com.bombbird.terminalcontrol2.systems
 import com.badlogic.ashley.core.Family
 import com.badlogic.ashley.systems.IntervalSystem
 import com.bombbird.terminalcontrol2.components.*
+import com.bombbird.terminalcontrol2.navigation.isApproachCaptured
 import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.allOf
 import ktx.ashley.exclude
@@ -52,8 +53,7 @@ class PhysicsSystemInterval: IntervalSystem(1f) {
                 val aircraftInfo = get(AircraftInfo.mapper) ?: return@apply
                 val takingOff = has(TakeoffRoll.mapper) || has(LandingRoll.mapper) || has(WaitingTakeoff.mapper)
                 val takeoffGoAround = has(TakeoffClimb.mapper) || has(RecentGoAround.mapper)
-                val approach = has(LocalizerCaptured.mapper) || has(GlideSlopeCaptured.mapper)
-                        || has(VisualCaptured.mapper) || (get(CirclingApproach.mapper)?.phase ?: 0) >= 1
+                val approach = isApproachCaptured(this)
                 val expediting = has(CommandExpedite.mapper)
 
                 val fixedVs = if (has(GlideSlopeCaptured.mapper)) spd.vertSpdFpm

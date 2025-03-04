@@ -138,4 +138,5 @@ fun isApproachCaptured(aircraft: Entity): Boolean {
             || aircraft.has(GlideSlopeCaptured.mapper)
             || aircraft.has(VisualCaptured.mapper)
             || (aircraft[CirclingApproach.mapper]?.phase ?: 0) >= 1
+            || aircraft.has(RNPCaptured.mapper)
 }
