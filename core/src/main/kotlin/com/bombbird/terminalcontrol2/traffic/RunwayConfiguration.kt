@@ -22,6 +22,7 @@ class RunwayConfiguration(val id: Byte, var name: String, override val timeRestr
     val depRwys: GdxArray<Airport.Runway> = GdxArray(5)
     val arrRwys: GdxArray<Airport.Runway> = GdxArray(5)
     val ntzs: GdxArray<NoTransgressionZone> = GdxArray(5)
+    val depParRwyPairs: GdxArray<Pair<Airport.Runway, Airport.Runway>> = GdxArray(4)
 
     var rwyAvailabilityScore = 0
     var dayNightAvailability = false

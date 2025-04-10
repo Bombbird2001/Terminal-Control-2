@@ -5,6 +5,8 @@ import com.badlogic.gdx.utils.ArrayMap.Entries
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.Airport.Runway.SerialisedRunway
 import com.bombbird.terminalcontrol2.global.*
+import com.bombbird.terminalcontrol2.json.BaseComponentJSONInterface
+import com.bombbird.terminalcontrol2.json.DoNotOverwriteSavedJSON
 import com.bombbird.terminalcontrol2.navigation.Approach
 import com.bombbird.terminalcontrol2.navigation.SidStar
 import com.bombbird.terminalcontrol2.traffic.RunwayConfiguration
@@ -278,6 +280,8 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advD
                     updateText(name)
                 }
                 with<ConstantZoomSize>()
+            } else {
+                with<DependentParallelDepartureRunway>()
             }
         }
 
@@ -351,7 +355,6 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advD
 
         /** Clears all relational components for runway dependencies */
         fun clearRunwayDependencies() {
-            entity.remove<DependentParallelRunway>()
             entity.remove<DependentOppositeRunway>()
             entity.remove<CrossingRunway>()
             entity.remove<DepartureDependency>()
@@ -366,7 +369,12 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advD
             elevation, labelPos, towerName, towerFreq, false).also { rwy ->
             // Check if a runway with the same ID already exists; if it does, overwrite the base runway components
             val loadedRwy = entity[RunwayChildren.mapper]?.rwyMap?.get(id)?.let {
-                for (i in 0 until rwy.entity.components.size()) it.entity += rwy.entity.components[i]
+                for (i in 0 until rwy.entity.components.size()) {
+                    val comp = rwy.entity.components[i]
+                    if (comp !is BaseComponentJSONInterface ||
+                        comp !is DoNotOverwriteSavedJSON ||
+                        it.entity.getComponent(comp::class.java) == null) it.entity += comp
+                }
                 it.clearRunwayDependencies()
                 it
             }
@@ -450,6 +458,7 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advD
                             rwy[DepartureNOZ.mapper]?.depNoz?.entity?.plusAssign(DoNotRenderShape())
                             rwy += DoNotRenderLabel()
                             rwy.remove<DoNotRenderShape>()
+                            rwy[DependentParallelDepartureRunway.mapper]?.depParRwys?.clear()
                         }
                     }
 
@@ -478,6 +487,13 @@ class Airport(id: Byte, icao: String, arptName: String, trafficRatio: Byte, advD
                         for (i in 0 until allDepNoz.size) {
                             allDepNoz[i].entity.remove<DoNotRenderShape>()
                         }
+                    }
+
+                    for (i in 0 until config.depParRwyPairs.size) {
+                        val rwy1 = config.depParRwyPairs[i].first.entity
+                        val rwy2 = config.depParRwyPairs[i].second.entity
+                        rwy1[DependentParallelDepartureRunway.mapper]?.depParRwys?.add(rwy2)
+                        rwy2[DependentParallelDepartureRunway.mapper]?.depParRwys?.add(rwy1)
                     }
 
                     config.setNTZVisibility(true)

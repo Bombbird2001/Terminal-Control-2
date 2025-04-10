@@ -114,12 +114,15 @@ data class DependentOppositeRunway(val depOppRwys: GdxArray<Entity> = GdxArray(4
     }
 }
 
-/** Component to keep track of the list of non-opposite runways that a runway is dependent on */
-data class DependentParallelRunway(val depParRwys: GdxArray<Entity> = GdxArray(4)): Component, BaseComponentJSONInterface {
+/**
+ * Component to keep track of the list of non-opposite runways that a runway's
+ * departure separation is dependent on
+ */
+data class DependentParallelDepartureRunway(val depParRwys: GdxArray<Entity> = GdxArray(4)): Component, BaseComponentJSONInterface, DoNotOverwriteSavedJSON {
     override val componentType = BaseComponentJSONInterface.ComponentType.DEPENDENT_PARALLEL_RUNWAY
 
     companion object {
-        val mapper = object: Mapper<DependentParallelRunway>() {}.mapper
+        val mapper = object: Mapper<DependentParallelDepartureRunway>() {}.mapper
 
         fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }

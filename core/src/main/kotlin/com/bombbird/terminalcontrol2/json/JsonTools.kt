@@ -133,7 +133,7 @@ private fun getPolymorphicComponentAdapter(): PolymorphicJsonAdapterFactory<Base
         .withSubtype(ApproachChildren::class.java, BaseComponentJSONInterface.ComponentType.APPROACH_CHILDREN.name)
         .withSubtype(VisualApproach::class.java, BaseComponentJSONInterface.ComponentType.VISUAL_APPROACH.name)
         .withSubtype(DependentOppositeRunway::class.java, BaseComponentJSONInterface.ComponentType.DEPENDENT_OPPOSITE_RUNWAY.name)
-        .withSubtype(DependentParallelRunway::class.java, BaseComponentJSONInterface.ComponentType.DEPENDENT_PARALLEL_RUNWAY.name)
+        .withSubtype(DependentParallelDepartureRunway::class.java, BaseComponentJSONInterface.ComponentType.DEPENDENT_PARALLEL_RUNWAY.name)
         .withSubtype(CrossingRunway::class.java, BaseComponentJSONInterface.ComponentType.CROSSING_RUNWAY.name)
         .withSubtype(DepartureDependency::class.java, BaseComponentJSONInterface.ComponentType.DEPARTURE_DEPENDENCY.name)
         .withSubtype(ArrivalRouteZone::class.java, BaseComponentJSONInterface.ComponentType.ARRIVAL_ROUTE_ZONE.name)

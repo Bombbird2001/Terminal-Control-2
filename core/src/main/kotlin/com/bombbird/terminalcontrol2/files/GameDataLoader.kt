@@ -46,7 +46,7 @@ private const val AIRPORT_VIS = "VISIBILITY"
 private const val AIRPORT_CEIL = "CEILING"
 private const val AIRPORT_WS = "WINDSHEAR"
 private const val AIRPORT_TFC = "TRAFFIC"
-private const val AIRPORT_DEP_PARALLEL = "DEPENDENT_PARALLEL"
+private const val AIRPORT_DEP_PARALLEL = "DEPENDENT_PARALLEL_DEP"
 private const val AIRPORT_DEP_OPP = "DEPENDENT_OPPOSITE"
 private const val AIRPORT_CROSSING = "CROSSING"
 private const val AIRPORT_DEPT_DEP = "DEPARTURE_DEPEND"
@@ -181,6 +181,7 @@ fun loadWorldData(mainName: String, gameServer: GameServer) {
                 RWY_CONFIG_DEP -> if (currAirport != null && currRwyConfig != null) parseRwyConfigRunways(lineData, currAirport, currRwyConfig, true)
                 RWY_CONFIG_ARR -> if (currAirport != null && currRwyConfig != null) parseRwyConfigRunways(lineData, currAirport, currRwyConfig, false)
                 RWY_CONFIG_NTZ -> if (currRwyConfig != null) parseRwyConfigNTZ(lineData, currRwyConfig)
+                AIRPORT_DEP_PARALLEL -> if (currAirport != null && currRwyConfig != null) parseDependentParallelRunways(lineData, currAirport, currRwyConfig)
                 "$SID_OBJ/" -> currSid = parseSID(lineData, currAirport ?: continue)
                 "/$SID_OBJ" -> currSid = null
                 "$STAR_OBJ/" -> currStar = parseSTAR(lineData, currAirport ?: continue)
@@ -229,7 +230,6 @@ fun loadWorldData(mainName: String, gameServer: GameServer) {
                         WORLD_SHORELINE -> parseShoreline(lineData, gameServer)
                         AIRPORT_RWYS -> parseRunway(lineData, currAirport ?: continue)
                         AIRPORT_TFC -> parseTraffic(lineData, currAirport ?: continue)
-                        AIRPORT_DEP_PARALLEL -> parseDependentParallelRunways(lineData, currAirport ?: continue)
                         AIRPORT_DEP_OPP -> parseDependentOppositeRunways(lineData, currAirport ?: continue)
                         AIRPORT_CROSSING -> parseCrossingRunways(lineData, currAirport ?: continue)
                         AIRPORT_DEPT_DEP -> parseDepartureDependency(lineData, currAirport ?: continue)
@@ -256,7 +256,7 @@ fun loadWorldData(mainName: String, gameServer: GameServer) {
                             else -> {
                                 if (lineData[0] in arrayOf(
                                         WORLD_WAYPOINTS, WORLD_HOLDS, WORLD_MIN_ALT_SECTORS, WORLD_SHORELINE, AIRPORT_RWYS,
-                                        WORLD_SECTORS, ACC_SECTORS, AIRPORT_TFC, AIRPORT_DEP_PARALLEL, AIRPORT_DEP_OPP,
+                                        WORLD_SECTORS, ACC_SECTORS, AIRPORT_TFC, AIRPORT_DEP_OPP,
                                         AIRPORT_CROSSING, AIRPORT_DEPT_DEP, AIRPORT_APP_NOZ, AIRPORT_DEP_NOZ).map { "$it/" })
                                     parseMode = lineData[0].substringBefore("/")
                                 else if (lineData[0] != "") FileLog.info("GameLoader", "Unknown parse mode ${lineData[0]} in line ${index + 1}")
@@ -464,20 +464,6 @@ private fun parseRunway(data: List<String>, airport: Airport) {
 }
 
 /**
- * Parse the given data into dependent parallel runway data, and adds the dependent runways to the runway entity's
- * [DependentParallelRunway] component
- * @param data the line array of dependent parallel runway data
- * @param airport the airport to apply this to
- */
-private fun parseDependentParallelRunways(data: List<String>, airport: Airport) {
-    if (data.size != 2) FileLog.info("GameLoader", "Dependent parallel runway data has ${data.size} elements instead of 2")
-    val rwy1 = airport.getRunway(data[0])?.entity ?: return logMissingRunway(data[0])
-    val rwy2 = airport.getRunway(data[1])?.entity ?: return logMissingRunway(data[1])
-    (rwy1[DependentParallelRunway.mapper] ?: DependentParallelRunway().apply { rwy1 += this }).depParRwys.add(rwy2)
-    (rwy2[DependentParallelRunway.mapper] ?: DependentParallelRunway().apply { rwy2 += this }).depParRwys.add(rwy1)
-}
-
-/**
  * Parse the given data into dependent opposite runway data, and adds the dependent runways to the runway entity's
  * [DependentOppositeRunway] component
  * @param data the line array of dependent opposite runway data
@@ -635,6 +621,14 @@ private fun parseRwyConfigNTZ(data: List<String>, currRwyConfig: RunwayConfigura
     val width = data[3].toFloat()
     val length = data[4].toFloat()
     currRwyConfig.ntzs.add(NoTransgressionZone(posX, posY, hdg, width, length, false))
+}
+
+/** Parse the given [data] into dependent parallel runway data, and adds the dependent runway pairs to the [airport]'s [rwyConfig] */
+private fun parseDependentParallelRunways(data: List<String>, airport: Airport, rwyConfig: RunwayConfiguration) {
+    if (data.size != 3) FileLog.info("GameLoader", "Dependent parallel runway data has ${data.size} elements instead of 3")
+    val rwy1 = airport.getRunway(data[1]) ?: return logMissingRunway(data[1])
+    val rwy2 = airport.getRunway(data[2]) ?: return logMissingRunway(data[2])
+    rwyConfig.depParRwyPairs.add(Pair(rwy1, rwy2))
 }
 
 /**

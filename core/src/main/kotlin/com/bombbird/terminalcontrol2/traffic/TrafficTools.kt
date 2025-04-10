@@ -737,12 +737,12 @@ fun checkOppRunwayTraffic(rwy: Entity, airport: Airport): Boolean {
 }
 
 /**
- * Checks the traffic for a dependent parallel runway
+ * Checks the departure traffic for a dependent parallel runway
  * @param rwy the dependent parallel runway
  * @param airport the airport the runway is in
  * @return whether the dependent parallel runway is clear for departure from original runway
  */
-fun checkDependentParallelRunwayTraffic(rwy: Entity, airport: Airport): Boolean {
+fun checkDependentParallelRunwayDepartureTraffic(rwy: Entity, airport: Airport): Boolean {
     val nextDeparture = airport.entity[AirportNextDeparture.mapper]?.aircraft?.get(AircraftInfo.mapper)?.aircraftPerf ?: return false
     val prevDeparture = rwy[RunwayPreviousDeparture.mapper]
     // Check time since departure - minimum 60s

@@ -65,8 +65,8 @@ object JsonTest: FunSpec() {
             rwy2 = arpt?.getRunway("05R")
             rwy1?.entity?.plusAssign(DependentOppositeRunway().apply { rwy1?.entity?.let { depOppRwys.add(it) }})
             rwy2?.entity?.plusAssign(DependentOppositeRunway())
-            rwy1?.entity?.plusAssign(DependentParallelRunway().apply { rwy2?.entity?.let { depParRwys.add(it) }})
-            rwy2?.entity?.plusAssign(DependentParallelRunway().apply { rwy1?.entity?.let { depParRwys.add(it) }})
+            rwy1?.entity?.plusAssign(DependentParallelDepartureRunway().apply { rwy2?.entity?.let { depParRwys.add(it) }})
+            rwy2?.entity?.plusAssign(DependentParallelDepartureRunway().apply { rwy1?.entity?.let { depParRwys.add(it) }})
             rwy1?.entity?.plusAssign(CrossingRunway().apply { rwy2?.entity?.let { crossRwys.add(it) }})
             rwy2?.entity?.plusAssign(CrossingRunway().apply { rwy1?.entity?.let { crossRwys.add(it) }})
             arpt?.assignOppositeRunways()
@@ -706,9 +706,9 @@ object JsonTest: FunSpec() {
         }
 
         test("DependentParallelRunway serialization") {
-            val depParRwyAdapter = testMoshi.adapter<DependentParallelRunway>()
-            val depParRwy1 = rwy1?.entity?.get(DependentParallelRunway.mapper).shouldNotBeNull()
-            val depParRwy2 = rwy2?.entity?.get(DependentParallelRunway.mapper).shouldNotBeNull()
+            val depParRwyAdapter = testMoshi.adapter<DependentParallelDepartureRunway>()
+            val depParRwy1 = rwy1?.entity?.get(DependentParallelDepartureRunway.mapper).shouldNotBeNull()
+            val depParRwy2 = rwy2?.entity?.get(DependentParallelDepartureRunway.mapper).shouldNotBeNull()
             val depParRwy1FromJson = depParRwyAdapter.fromJson(depParRwyAdapter.toJson(depParRwy1)).shouldNotBeNull()
             val depParRwy2FromJson = depParRwyAdapter.fromJson(depParRwyAdapter.toJson(depParRwy2)).shouldNotBeNull()
             runDelayedEntityRetrieval()

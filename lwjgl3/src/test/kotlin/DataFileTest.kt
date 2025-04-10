@@ -23,6 +23,7 @@ import io.kotest.matchers.collections.shouldNotContain
 import io.kotest.matchers.comparables.shouldBeGreaterThan
 import io.kotest.matchers.comparables.shouldBeGreaterThanOrEqualTo
 import io.kotest.matchers.comparables.shouldBeLessThan
+import io.kotest.matchers.comparables.shouldNotBeEqualComparingTo
 import io.kotest.matchers.floats.shouldBeBetween
 import io.kotest.matchers.floats.shouldBeGreaterThan
 import io.kotest.matchers.ints.*
@@ -313,9 +314,12 @@ object DataFileTest: FunSpec() {
             wptNames[wptName] = id
             val newPos = testCoordsString(wptData[2])
             // Check if waypoint is within 0.01 nm of another waypoint - O(n^2) yikes!
-            for (pos in wptPos.values) {
+            for (oldWpt in wptPos.entries) {
+                val pos = oldWpt.value
                 val dist = calculateDistanceBetweenPoints(pos.x, pos.y, newPos.x, newPos.y)
-                dist.shouldBeGreaterThan(0.01f)
+                withClue("Identical waypoint position ID ${oldWpt.key}") {
+                    dist.shouldBeGreaterThan(0.01f)
+                }
             }
             wptPos[id] = newPos
         }}
@@ -551,7 +555,6 @@ object DataFileTest: FunSpec() {
      * Tests the dependent runways for the input airport data block, with the calling ContainerScope as the scope for
      * the tests
      * @param data the string text to parse
-     * @return a HashMap of all runway names for this airport mapped to their elevation
      */
     private suspend fun ContainerScope.testDependentRunways(testName: String, tag: String, data: String, allRwys: HashMap<String, Short>) {
         withData(arrayListOf(testName)) {
@@ -646,13 +649,20 @@ object DataFileTest: FunSpec() {
                     }
                     depRwys[configId] = configDepRwys
                     arrRwys[configId] = configArrRwys
-                    withData(getAllTextAfterHeaderMultiple("NTZ", config).map { "NTZ $it" }) {ntz ->
+                    withData(getAllTextAfterHeaderMultiple("NTZ", config).map { "NTZ $it" }) { ntz ->
                         val ntzData = ntz.split(" ")
                         ntzData.size shouldBe 5
                         testCoordsString(ntzData[1])
                         ntzData[2].toFloat().shouldBeBetween(0.01f, 360f, 0.0001f)
                         ntzData[3].toFloat()
                         ntzData[4].toFloat()
+                    }
+                    withData(getAllTextAfterHeaderMultiple("DEPENDENT_PARALLEL_DEP", config).map { "DEPENDENT_PARALLEL_DEP $it" }) { deps ->
+                        val parallelData = deps.split(" ")
+                        parallelData.size shouldBe 3
+                        configDepRwys shouldContain parallelData[1]
+                        configDepRwys shouldContain parallelData[2]
+                        parallelData[1] shouldNotBeEqualComparingTo parallelData[2]
                     }
                 }
             }

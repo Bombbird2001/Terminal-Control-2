@@ -108,18 +108,18 @@ object DependentOppositeRunwayAdapter {
 @JsonClass(generateAdapter = true)
 data class DependentParallelRunwayJSON(val depParallelRwys: List<RunwayRefJSON>)
 
-/** Adapter object for serialization between [DependentParallelRunway] and [DependentParallelRunwayJSON] */
+/** Adapter object for serialization between [DependentParallelDepartureRunway] and [DependentParallelRunwayJSON] */
 object DependentParallelRunwayAdapter {
     @ToJson
-    fun toJson(depParallelRwy: DependentParallelRunway): DependentParallelRunwayJSON {
+    fun toJson(depParallelRwy: DependentParallelDepartureRunway): DependentParallelRunwayJSON {
         val array = ArrayList<RunwayRefJSON>()
         for (i in 0 until depParallelRwy.depParRwys.size) depParallelRwy.depParRwys[i]?.let { array.add(toRunwayRefJSON(it)) }
         return DependentParallelRunwayJSON(array)
     }
 
     @FromJson
-    fun fromJson(depParallelRwysJSON: DependentParallelRunwayJSON): DependentParallelRunway {
-        return DependentParallelRunway().apply {
+    fun fromJson(depParallelRwysJSON: DependentParallelRunwayJSON): DependentParallelDepartureRunway {
+        return DependentParallelDepartureRunway().apply {
             depParallelRwysJSON.depParallelRwys.forEach {
                 delayedEntityRetrieval.add { depParRwys.add(it.getRunwayEntity()) }
             }

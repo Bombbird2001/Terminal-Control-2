@@ -224,9 +224,9 @@ class TrafficSystemInterval: IntervalSystem(1f) {
                 if (hasNot(ActiveTakeoff.mapper)) return@apply // Not active for departures
                 if (!checkSameRunwayTraffic(this, airport)) return@apply
                 get(OppositeRunway.mapper)?.let { if (!checkOppRunwayTraffic(it.oppRwy, airport)) return@apply }
-                get(DependentParallelRunway.mapper)?.let {
+                get(DependentParallelDepartureRunway.mapper)?.let {
                     for (j in 0 until it.depParRwys.size)
-                        if (!checkDependentParallelRunwayTraffic(it.depParRwys[j], airport)) return@apply
+                        if (!checkDependentParallelRunwayDepartureTraffic(it.depParRwys[j], airport)) return@apply
                 }
                 get(DependentOppositeRunway.mapper)?.let {
                     for (j in 0 until it.depOppRwys.size)
