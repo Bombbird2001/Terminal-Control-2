@@ -8,6 +8,8 @@ import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.squareup.moshi.FromJson
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.ToJson
+import java.util.*
+import kotlin.collections.ArrayList
 
 /**
  * Data class for storing controllable information for JSON serialization
@@ -15,20 +17,28 @@ import com.squareup.moshi.ToJson
  * The only sector IDs that can be stored are -1 (Tower), -2 (ACC) and 0 (player controlled), since when the game server
  * launches it starts with 1 player by default, and subsequent player connections will result in the aircraft automatically
  * being reassigned to the relevant controller
+ *
+ * Last controller UUID will be stored
  */
 @JsonClass(generateAdapter = true)
-data class ControllableJSON(val sector: Byte)
+data class ControllableJSON(val sector: Byte, val controllerUuid: String?)
 
 /** Adapter object for serialization between [Controllable] and [ControllableJSON] */
 object ControllableAdapter {
     @ToJson
     fun toJson(controllable: Controllable): ControllableJSON {
-        return ControllableJSON(if (controllable.sectorId >= 0) 0 else controllable.sectorId)
+        return ControllableJSON(
+            if (controllable.sectorId >= 0) 0 else controllable.sectorId,
+            controllable.controllerUUID?.toString()
+        )
     }
 
     @FromJson
     fun fromJson(controllableJSON: ControllableJSON): Controllable {
-        return Controllable(controllableJSON.sector)
+        return Controllable(
+            controllableJSON.sector,
+            controllableJSON.controllerUuid?.let { UUID.fromString(it) }
+        )
     }
 }
 
