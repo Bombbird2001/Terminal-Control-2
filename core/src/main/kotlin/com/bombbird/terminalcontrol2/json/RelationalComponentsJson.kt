@@ -5,6 +5,7 @@ import com.badlogic.gdx.utils.ArrayMap.Entries
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.Airport
 import com.bombbird.terminalcontrol2.entities.RouteZone
+import com.bombbird.terminalcontrol2.entities.ThunderCell
 import com.bombbird.terminalcontrol2.navigation.Approach
 import com.bombbird.terminalcontrol2.utilities.AircraftRequest
 import com.squareup.moshi.FromJson
@@ -266,6 +267,61 @@ object AircraftRequestChildrenAdapter {
             requestsJSON.requests.forEach {
                 requests.add(it)
             }
+        }
+    }
+}
+
+/** Data class for storing information of a single thunder cell's */
+@JsonClass(generateAdapter = true)
+data class ThunderCellJSON(val thunderCellInfo: ThunderCellInfo)
+
+/** Data class for storing the relative coordinates of a thunderstorm's border cells */
+@JsonClass(generateAdapter = true)
+data class ThunderStormBorderJSON(val offsetIndexX: Int, val offsetIndexY: Int)
+
+/** Data class for storing a thunderstorm's children cells */
+@JsonClass(generateAdapter = true)
+data class ThunderStormCellChildrenJSON(
+    val cells: List<ThunderCellJSON>,
+    val borderCells: List<ThunderStormBorderJSON>
+)
+
+object ThunderStormCellChildrenAdapter {
+    @ToJson
+    fun toJson(cells: ThunderStormCellChildren): ThunderStormCellChildrenJSON {
+        val cellArray = ArrayList<ThunderCellJSON>()
+        for (i in cells.cells.minimumIndex..cells.cells.maximumIndex) {
+            val innerCells = cells.cells[i] ?: continue
+            for (j in innerCells.minimumIndex..innerCells.maximumIndex) {
+                cellArray.add(ThunderCellJSON(
+                    innerCells[j]?.get(ThunderCellInfo.mapper) ?: continue
+                ))
+            }
+        }
+        val borderArray = ArrayList<ThunderStormBorderJSON>()
+        for (i in 0 until cells.stormBorderCells.size) {
+            val borderCell = cells.stormBorderCells.elementAt(i) ?: continue
+            borderArray.add(ThunderStormBorderJSON(borderCell.first, borderCell.second))
+        }
+        return ThunderStormCellChildrenJSON(cellArray, borderArray)
+    }
+
+    @FromJson
+    fun fromJson(cellsJSON: ThunderStormCellChildrenJSON): ThunderStormCellChildren {
+        return ThunderStormCellChildren().apply {
+            delayedEntityRetrieval.add {
+                cellsJSON.cells.forEach {
+                    val cell = ThunderCell(
+                        it.thunderCellInfo.offsetXIndex,
+                        it.thunderCellInfo.offsetYIndex
+                    )
+                    cells[it.thunderCellInfo.offsetXIndex]?.set(it.thunderCellInfo.offsetYIndex, cell.entity)
+                }
+            }
+            cellsJSON.borderCells.forEach {
+                stormBorderCells.add(it.offsetIndexX to it.offsetIndexY)
+            }
+            activeCells = cellsJSON.cells.size
         }
     }
 }

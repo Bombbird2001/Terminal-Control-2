@@ -2,8 +2,10 @@ package com.bombbird.terminalcontrol2.components
 
 import com.badlogic.ashley.core.Component
 import com.badlogic.ashley.core.Entity
+import com.badlogic.gdx.utils.OrderedSet
 import com.bombbird.terminalcontrol2.entities.Airport
 import com.bombbird.terminalcontrol2.entities.RouteZone
+import com.bombbird.terminalcontrol2.global.THUNDERSTORM_CELL_MAX_WIDTH_UNITS
 import com.bombbird.terminalcontrol2.json.BaseComponentJSONInterface
 import com.bombbird.terminalcontrol2.json.DoNotOverwriteSavedJSON
 import com.bombbird.terminalcontrol2.navigation.Approach
@@ -11,9 +13,11 @@ import com.bombbird.terminalcontrol2.navigation.SidStar
 import com.bombbird.terminalcontrol2.traffic.RunwayConfiguration
 import com.bombbird.terminalcontrol2.utilities.AircraftRequest
 import com.bombbird.terminalcontrol2.utilities.InitializeCompanionObjectOnStart
+import com.bombbird.terminalcontrol2.utilities.OffsetArray
 import ktx.ashley.Mapper
 import ktx.collections.GdxArray
 import ktx.collections.GdxArrayMap
+import ktx.collections.GdxSet
 
 /** Component to keep track of an airport's runways as well as the mapping runway names to the most updated ID (for backwards compatibility) */
 data class RunwayChildren(val rwyMap: GdxArrayMap<Byte, Airport.Runway> = GdxArrayMap(),
@@ -213,6 +217,28 @@ class AircraftRequestChildren(val requests: GdxArray<AircraftRequest> = GdxArray
 
     companion object {
         val mapper = object: Mapper<AircraftRequestChildren>() {}.mapper
+
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
+    }
+}
+
+/** Component to store the individual cells of a thunderstorm */
+class ThunderStormCellChildren(
+    val cells: OffsetArray<OffsetArray<Entity>> = OffsetArray.createWith(
+        -THUNDERSTORM_CELL_MAX_WIDTH_UNITS,
+        THUNDERSTORM_CELL_MAX_WIDTH_UNITS) {
+            OffsetArray(
+                -THUNDERSTORM_CELL_MAX_WIDTH_UNITS,
+                THUNDERSTORM_CELL_MAX_WIDTH_UNITS
+            )
+        },
+    var activeCells: Int = 0,
+    val stormBorderCells: GdxSet<Pair<Int, Int>> = OrderedSet()
+): Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.THUNDERSTORM_CELL_CHILDREN
+
+    companion object {
+        val mapper = object: Mapper<ThunderStormCellChildren>() {}.mapper
 
         fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }

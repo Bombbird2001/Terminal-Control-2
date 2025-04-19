@@ -202,3 +202,15 @@ data class RouteSegment(val segments: GdxArray<Route.LegSegment> = GdxArray()): 
         fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
+
+/**
+ * Component for storing the bounding box of an entity, which can be used for
+ * improving collision detection and/or rendering
+ */
+data class BoundingBox(var minX: Float = 0f, var minY: Float = 0f, var maxX: Float = 0f, var maxY: Float = 0f): Component {
+    companion object {
+        val mapper = object: Mapper<BoundingBox>() {}.mapper
+
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
+    }
+}

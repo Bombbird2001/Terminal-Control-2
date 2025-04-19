@@ -5,6 +5,7 @@ import com.badlogic.gdx.Application.ApplicationType
 import com.bombbird.terminalcontrol2.TerminalControl2
 import com.bombbird.terminalcontrol2.screens.RadarScreen
 import com.bombbird.terminalcontrol2.utilities.GRAVITY_ACCELERATION_MPS2
+import com.bombbird.terminalcontrol2.utilities.NM_TO_PX
 import java.math.BigInteger
 
 /** Global constants for use, cannot/should not be modified */
@@ -180,6 +181,17 @@ const val HALF_TURN_RATE_THRESHOLD_IAS = 251
 const val TRAJECTORY_UPDATE_INTERVAL_S = 5f
 const val MAX_TRAJECTORY_ADVANCE_TIME_S = 90f
 const val TRAJECTORY_MAX_ALT = 45000
+
+/** Thunderstorm constants */
+const val THUNDERSTORM_CELL_MAX_WIDTH_UNITS = 20
+const val THUNDERSTORM_CELL_SIZE_PX = 1f / 3 * NM_TO_PX
+const val THUNDERSTORM_MAX_ALTITUDE_FT = 43000f
+const val THUNDERSTORM_MAX_ALTITUDE_GROWTH_FT_PER_S = 23f
+const val THUNDERSTORM_MIN_ALTITUDE_GROWTH_FT_PER_S = 16f
+const val THUNDERSTORM_TIME_TO_MATURE_MAX_S = 40 * 60f
+const val THUNDERSTORM_TIME_TO_MATURE_MIN_S = 25 * 60f
+const val THUNDERSTORM_TIME_TO_DISSIPATE_MAX_S = 60 * 60f
+const val THUNDERSTORM_TIME_TO_DISSIPATE_MIN_S = 20 * 60f
 
 /** LibGDX preference file name */
 const val PREFS_FILE_NAME = "com.bombbird.terminalcontrol2.prefs"

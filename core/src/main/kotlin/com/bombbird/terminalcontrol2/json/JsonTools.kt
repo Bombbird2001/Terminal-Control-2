@@ -21,8 +21,8 @@ fun getMoshiWithAllAdapters(): Moshi {
         .add(CrossingRunwayAdapter).add(DepartureDependencyAdapter).add(RandomAirlineDataAdapter).add(AirportNextDepartureAdapter)
         .add(WakeTrailAdapter).add(RouteAdapter).add(WaypointAdapter).add(ArrivalRouteZoneAdapter)
         .add(DepartureRouteZoneAdapter).add(RouteZoneAdapter).add(WakeZoneAdapter).add(TrailInfoAdapter)
-        .add(CustomApproachSeparationAdapter).add(AircraftRequestChildrenAdapter).add(getPolymorphicComponentAdapter())
-        .add(getPolymorphicLegAdapter()).add(getPolymorphicAircraftRequestAdapter()).build()
+        .add(CustomApproachSeparationAdapter).add(AircraftRequestChildrenAdapter).add(ThunderStormCellChildrenAdapter)
+        .add(getPolymorphicComponentAdapter()).add(getPolymorphicLegAdapter()).add(getPolymorphicAircraftRequestAdapter()).build()
 }
 
 /**
@@ -51,7 +51,8 @@ interface BaseComponentJSONInterface {
         TTS_VOICE, EMERGENCY_PENDING, RUNNING_CHECKLISTS, REQUIRES_FUEL_DUMP, IMMOBILIZE_ON_LANDING, RUNWAY_CLOSED,
         ON_GO_AROUND_ROUTE, WAKE_TOLERANCE, ACC_TEMP_ALTITUDE, WINDSHEAR_GO_AROUND, NEEDS_TO_INFORM_OF_GO_AROUND,
         CUSTOM_APPROACH_SEPARATION_CHILDREN, PARALLEL_WAKE_AFFECTS, AIRPORT_ARRIVAL_STATS, AIRCRAFT_REQUEST_CHILDREN,
-        HIGH_SPEED_REQUESTED, SHOULD_INITIATE_GO_AROUND, RNP_CAPTURED
+        HIGH_SPEED_REQUESTED, SHOULD_INITIATE_GO_AROUND, RNP_CAPTURED, THUNDERSTORM_CELL_CHILDREN, THUNDER_CELL_INFO,
+        THUNDERSTORM_INFO
     }
 
     val componentType: ComponentType
@@ -171,6 +172,9 @@ private fun getPolymorphicComponentAdapter(): PolymorphicJsonAdapterFactory<Base
         .withSubtype(HighSpeedRequested::class.java, BaseComponentJSONInterface.ComponentType.HIGH_SPEED_REQUESTED.name)
         .withSubtype(ShouldInitiateGoAround::class.java, BaseComponentJSONInterface.ComponentType.SHOULD_INITIATE_GO_AROUND.name)
         .withSubtype(RNPCaptured::class.java, BaseComponentJSONInterface.ComponentType.RNP_CAPTURED.name)
+        .withSubtype(ThunderStormCellChildren::class.java, BaseComponentJSONInterface.ComponentType.THUNDERSTORM_CELL_CHILDREN.name)
+        .withSubtype(ThunderCellInfo::class.java, BaseComponentJSONInterface.ComponentType.THUNDER_CELL_INFO.name)
+        .withSubtype(ThunderStormInfo::class.java, BaseComponentJSONInterface.ComponentType.THUNDERSTORM_INFO.name)
 }
 
 /** Interface for implementing JSON serialization for subclasses of Leg */
