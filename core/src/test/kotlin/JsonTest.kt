@@ -460,10 +460,11 @@ object JsonTest: FunSpec() {
             val controllableAdapter = testMoshi.adapter<Controllable>()
             val controllable1 = Controllable(0, null)
             val controllable2 = Controllable(2, UUID.randomUUID())
+            val controllable2a = Controllable(0, controllable2.controllerUUID)
             val controllable3 = Controllable(SectorInfo.TOWER, null)
             val controllable4 = Controllable(SectorInfo.CENTRE, null)
             controllableAdapter.fromJson(controllableAdapter.toJson(controllable1)) shouldBe controllable1
-            controllableAdapter.fromJson(controllableAdapter.toJson(controllable2)) shouldBe controllable1
+            controllableAdapter.fromJson(controllableAdapter.toJson(controllable2)) shouldBe controllable2a
             controllableAdapter.fromJson(controllableAdapter.toJson(controllable3)) shouldBe controllable3
             controllableAdapter.fromJson(controllableAdapter.toJson(controllable4)) shouldBe controllable4
         }
