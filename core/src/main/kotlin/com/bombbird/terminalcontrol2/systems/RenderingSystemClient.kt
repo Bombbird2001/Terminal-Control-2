@@ -38,8 +38,8 @@ import kotlin.math.sqrt
  * Used only in RadarScreen
  */
 class RenderingSystemClient(private val shapeRenderer: ShapeRendererBoundingBox,
-                            private val stage: Stage, private val constZoomStage: Stage, private val uiStage: Stage,
-                            private val uiPane: UIPane
+                            private val stage: Stage, private val constZoomStage: Stage,
+                            private val uiStage: Stage, private val uiPane: UIPane
 ): EntitySystem() {
     companion object {
         private val lineArrayFamily: Family = allOf(GLineArray::class, SRColor::class)
@@ -78,7 +78,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRendererBoundingBox,
         private val waypointFamily: Family = allOf(WaypointInfo::class).get()
         private val routeFamily: Family = oneOf(PendingClearances::class, ClearanceAct::class).get()
         private val wakeRenderFamily = allOf(ApproachWakeSequence::class).get()
-
+        private val thunderstormCellFamily = allOf(ThunderCellInfo::class, RSSprite::class, Position::class).get()
         private val dotBlue: TextureRegion = Scene2DSkin.defaultSkin["DotBlue", TextureRegion::class.java]
         private val dotGreen: TextureRegion = Scene2DSkin.defaultSkin["DotGreen", TextureRegion::class.java]
         private val dotRed: TextureRegion = Scene2DSkin.defaultSkin["DotRed", TextureRegion::class.java]
@@ -111,6 +111,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRendererBoundingBox,
     private val waypointFamilyEntities = FamilyWithListener.newClientFamilyWithListener(waypointFamily)
     private val routeFamilyEntities = FamilyWithListener.newClientFamilyWithListener(routeFamily)
     private val wakeRenderFamilyEntities = FamilyWithListener.newClientFamilyWithListener(wakeRenderFamily)
+    private val thunderstormCellFamilyEntities = FamilyWithListener.newClientFamilyWithListener(thunderstormCellFamily)
 
     private val renderedRunwayCenterlineIds = GdxArray<Pair<Byte, Byte>>()
     private val distMeasureLabel = Label("", Scene2DSkin.defaultSkin, "DistMeasure")
@@ -570,6 +571,21 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRendererBoundingBox,
 
         // Debug: Render route zone min altitude
         // renderRouteZoneAlts()
+
+        // Render thunderstorm cells
+        val thunderStormCells = thunderstormCellFamilyEntities.getEntities()
+        for (i in 0 until thunderStormCells.size()) {
+            thunderStormCells[i]?.apply {
+                val pos = getOrLogMissing(Position.mapper) ?: return@apply
+                val rsSprite = getOrLogMissing(RSSprite.mapper) ?: return@apply
+
+                rsSprite.drawable.drawBounding(
+                    GAME.batch, pos.x, pos.y,
+                    rsSprite.width, rsSprite.height,
+                    worldBoundingRect
+                )
+            }
+        }
 
         // Update runway labels rendering size, position
         val rwyLabels = rwyLabelFamilyEntities.getEntities()

@@ -76,7 +76,6 @@ class GameSettings: BaseGameSettings() {
                             newSettingsRow()
                             defaultSettingsLabel("Storms:")
                             stormSelectBox = defaultSettingsSelectBox<String>().apply {
-                                isDisabled = true
                                 setItems(OFF, LOW, MEDIUM, HIGH, NIGHTMARE)
                             }
                             if (GAME.gameServer?.maxPlayersAllowed == 1.toByte()) {

@@ -162,6 +162,7 @@ const val CONVO_SIZE = 16
 const val CONFLICT_SIZE = 6
 const val TRANSITION_SIZE = 6
 const val RUNWAY_SIZE = 6
+const val THUNDERSTORM_SIZE = 12
 
 /** Zoom threshold to switch between small and large datatag fonts */
 const val DATATAG_ZOOM_THRESHOLD = 1f
@@ -183,7 +184,7 @@ const val MAX_TRAJECTORY_ADVANCE_TIME_S = 90f
 const val TRAJECTORY_MAX_ALT = 45000
 
 /** Thunderstorm constants */
-const val THUNDERSTORM_CELL_MAX_WIDTH_UNITS = 20
+const val THUNDERSTORM_CELL_MAX_HALF_WIDTH_UNITS = 20
 const val THUNDERSTORM_CELL_SIZE_PX = 1f / 3 * NM_TO_PX
 const val THUNDERSTORM_MAX_ALTITUDE_FT = 43000f
 const val THUNDERSTORM_MAX_ALTITUDE_GROWTH_FT_PER_S = 23f

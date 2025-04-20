@@ -215,6 +215,9 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
     /** Flag for when a sector swap/player join has just occurred */
     var sectorJustSwapped = false
 
+    /** All current thunderstorms */
+    val storms = Array<ThunderStorm?>(THUNDERSTORM_SIZE) { _ -> null }
+
     var arrivalSpawnTimerS = 0f
     var previousArrivalOffsetS = 0f
     var trafficValue = 6f
@@ -288,6 +291,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
         engine.addSystem(DataSystem())
         val trajectorySystemInterval = TrajectorySystemInterval()
         engine.addSystem(trajectorySystemInterval)
+        engine.addSystem(WeatherSystemInterval())
 
         if (saveId != null) loadSave(this, saveId)
         loadWorldData(mainName, this)
@@ -556,6 +560,11 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
                 }
                 FileLog.debug("GameServer", "Sent AircraftControlStateUpdateData for $count aircraft")
 
+                // Send thunderstorm data
+                val thunderStormArray = storms.filterNotNull().map { it.getSerialisableObject() }.toTypedArray()
+                networkServer.sendTCPToConnection(uuid, ThunderStormData(thunderStormArray))
+                FileLog.debug("GameServer", "Sent ThunderStormData")
+
                 // Initial data sending complete
                 networkServer.sendTCPToConnection(uuid, InitialDataSendComplete())
                 FileLog.info("GameServer", "Sent InitialDataSendComplete")
@@ -747,10 +756,6 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
 
     /**
      * Send not so frequently updated data approximately [SERVER_TO_CLIENT_UPDATE_RATE_SLOW] times a second
-     *
-     * Thunderstorm cells
-     *
-     * (List not exhaustive)
      */
     private fun sendSlowUDPToAll() {
         // println("Slow UDP sent, time passed since program start: ${(System.currentTimeMillis() - startTime) / 1000f}s")
@@ -1040,6 +1045,12 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
      */
     fun sendAircraftRequest(callsign: String, requestType: AircraftRequest.RequestType, params: Array<String>) {
         networkServer.sendToAllTCP(AircraftRequestMessage(callsign, requestType, params))
+    }
+
+    /** Sends a message to clients to inform them of an update in [storms] */
+    fun sendThunderStorms() {
+        val thunderStormArray = storms.filterNotNull().map { it.getSerialisableObject() }.toTypedArray()
+        networkServer.sendToAllTCP(ThunderStormData(thunderStormArray))
     }
 
     /** Gets the runway configuration string displaying config names at all airports */

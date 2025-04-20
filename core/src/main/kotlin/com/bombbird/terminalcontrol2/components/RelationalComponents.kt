@@ -5,7 +5,8 @@ import com.badlogic.ashley.core.Entity
 import com.badlogic.gdx.utils.OrderedSet
 import com.bombbird.terminalcontrol2.entities.Airport
 import com.bombbird.terminalcontrol2.entities.RouteZone
-import com.bombbird.terminalcontrol2.global.THUNDERSTORM_CELL_MAX_WIDTH_UNITS
+import com.bombbird.terminalcontrol2.entities.ThunderCell
+import com.bombbird.terminalcontrol2.global.THUNDERSTORM_CELL_MAX_HALF_WIDTH_UNITS
 import com.bombbird.terminalcontrol2.json.BaseComponentJSONInterface
 import com.bombbird.terminalcontrol2.json.DoNotOverwriteSavedJSON
 import com.bombbird.terminalcontrol2.navigation.Approach
@@ -224,12 +225,12 @@ class AircraftRequestChildren(val requests: GdxArray<AircraftRequest> = GdxArray
 
 /** Component to store the individual cells of a thunderstorm */
 class ThunderStormCellChildren(
-    val cells: OffsetArray<OffsetArray<Entity>> = OffsetArray.createWith(
-        -THUNDERSTORM_CELL_MAX_WIDTH_UNITS,
-        THUNDERSTORM_CELL_MAX_WIDTH_UNITS) {
+    val cells: OffsetArray<OffsetArray<ThunderCell?>?> = OffsetArray.createWith(
+        -THUNDERSTORM_CELL_MAX_HALF_WIDTH_UNITS,
+        THUNDERSTORM_CELL_MAX_HALF_WIDTH_UNITS) {
             OffsetArray(
-                -THUNDERSTORM_CELL_MAX_WIDTH_UNITS,
-                THUNDERSTORM_CELL_MAX_WIDTH_UNITS
+                -THUNDERSTORM_CELL_MAX_HALF_WIDTH_UNITS,
+                THUNDERSTORM_CELL_MAX_HALF_WIDTH_UNITS
             )
         },
     var activeCells: Int = 0,

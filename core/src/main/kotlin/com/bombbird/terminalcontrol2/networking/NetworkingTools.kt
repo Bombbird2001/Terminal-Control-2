@@ -2,9 +2,7 @@ package com.bombbird.terminalcontrol2.networking
 
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.math.Vector2
-import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.*
-import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.json.BaseLegJSONInterface
 import com.bombbird.terminalcontrol2.navigation.Approach
 import com.bombbird.terminalcontrol2.navigation.Route
@@ -19,13 +17,10 @@ import com.bombbird.terminalcontrol2.traffic.*
 import com.bombbird.terminalcontrol2.traffic.conflict.Conflict
 import com.bombbird.terminalcontrol2.traffic.conflict.PotentialConflict
 import com.bombbird.terminalcontrol2.traffic.conflict.PredictedConflict
-import com.bombbird.terminalcontrol2.ui.*
 import com.bombbird.terminalcontrol2.utilities.*
 import com.esotericsoftware.kryo.Kryo
 import com.bombbird.terminalcontrol2.utilities.FileLog
-import ktx.ashley.*
 import java.math.BigInteger
-import java.util.*
 
 /**
  * Registers all the required classes into the input Kryo
@@ -196,6 +191,11 @@ fun registerClassesToKryo(kryo: Kryo?) {
         register(Array<TrafficSettingsData.AirportTrafficValue>::class.java)
         register(AircraftRequest.RequestType::class.java)
         register(AircraftRequestMessage::class.java)
+        register(ThunderStormData::class.java)
+        register(ThunderStorm.SerialisedThunderStorm::class.java)
+        register(Array<ThunderStorm.SerialisedThunderStorm>::class.java)
+        register(ThunderCell.SerialisedThunderCell::class.java)
+        register(Array<ThunderCell.SerialisedThunderCell>::class.java)
 
     } ?: FileLog.info("NetworkingTools", "Null kryo passed, unable to register classes")
 }

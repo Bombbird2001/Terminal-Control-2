@@ -4,8 +4,8 @@ class OffsetArray<T>(val minimumIndex: Int, val maximumIndex: Int): Iterable<T?>
     private val array: Array<T?> = arrayOfNulls<Any?>(maximumIndex - minimumIndex + 1) as Array<T?>
 
     companion object {
-        fun <T> createWith(minimumIndex: Int, maximumIndex: Int, createFn: () -> T): OffsetArray<T> {
-            val offsetArray = OffsetArray<T>(minimumIndex, maximumIndex)
+        fun <T> createWith(minimumIndex: Int, maximumIndex: Int, createFn: () -> T): OffsetArray<T?> {
+            val offsetArray = OffsetArray<T?>(minimumIndex, maximumIndex)
             for (i in minimumIndex..maximumIndex) {
                 offsetArray[i] = createFn()
             }

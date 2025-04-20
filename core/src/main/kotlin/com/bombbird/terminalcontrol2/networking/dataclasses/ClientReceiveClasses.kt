@@ -66,7 +66,7 @@ class FastUDPData(private val aircraft: Array<Aircraft.SerialisedAircraftUDP> = 
 }
 
 /**
- * Class representing a request to the client to clear all currently data, such as objects stored in the game engine
+ * Class representing a request to the client to clear all current data, such as objects stored in the game engine
  *
  * This should always be sent before initial loading data (those below) to ensure no duplicate objects become present
  * on the client
@@ -671,6 +671,34 @@ class AircraftRequestMessage(val callsign: String = "", val requestType: Aircraf
             rs.uiPane.commsPane.also { commsPane ->
                 commsPane.aircraftRequest(aircraft.entity, requestType, params)
             }
+        }
+    }
+}
+
+/**
+ * Class representing data sent from server to client to update players of all
+ * current thunderstorms
+ */
+class ThunderStormData(
+    val thunderStorms: Array<ThunderStorm.SerialisedThunderStorm> = arrayOf()
+): ClientReceive, NeedsEncryption {
+    override fun handleClientReceive(rs: RadarScreen) {
+        for (i in 0 until rs.storms.size) {
+            val storm = rs.storms[i] ?: continue
+            val childrenCells = storm.entity[ThunderStormCellChildren.mapper]?.cells ?: continue
+            // Clear all cell entities and storm entity
+            for (j in childrenCells.minimumIndex..childrenCells.maximumIndex) {
+                val row = childrenCells[j] ?: continue
+                for (k in row.minimumIndex..row.maximumIndex) {
+                    val cell = row[k] ?: continue
+                    getEngine(true).removeEntityOnMainThread(cell.entity, true)
+                }
+            }
+            getEngine(true).removeEntityOnMainThread(storm.entity, true)
+        }
+        rs.storms.clear()
+        thunderStorms.forEach { storm ->
+            rs.storms.add(ThunderStorm.fromSerialisedObject(storm))
         }
     }
 }

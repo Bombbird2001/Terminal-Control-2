@@ -286,6 +286,7 @@ data class ThunderStormCellChildrenJSON(
     val borderCells: List<ThunderStormBorderJSON>
 )
 
+/** Adapter object for serialization between [ThunderStormCellChildren] and [ThunderStormCellChildrenJSON] */
 object ThunderStormCellChildrenAdapter {
     @ToJson
     fun toJson(cells: ThunderStormCellChildren): ThunderStormCellChildrenJSON {
@@ -294,7 +295,7 @@ object ThunderStormCellChildrenAdapter {
             val innerCells = cells.cells[i] ?: continue
             for (j in innerCells.minimumIndex..innerCells.maximumIndex) {
                 cellArray.add(ThunderCellJSON(
-                    innerCells[j]?.get(ThunderCellInfo.mapper) ?: continue
+                    innerCells[j]?.entity?.get(ThunderCellInfo.mapper) ?: continue
                 ))
             }
         }
@@ -309,14 +310,13 @@ object ThunderStormCellChildrenAdapter {
     @FromJson
     fun fromJson(cellsJSON: ThunderStormCellChildrenJSON): ThunderStormCellChildren {
         return ThunderStormCellChildren().apply {
-            delayedEntityRetrieval.add {
-                cellsJSON.cells.forEach {
-                    val cell = ThunderCell(
-                        it.thunderCellInfo.offsetXIndex,
-                        it.thunderCellInfo.offsetYIndex
-                    )
-                    cells[it.thunderCellInfo.offsetXIndex]?.set(it.thunderCellInfo.offsetYIndex, cell.entity)
-                }
+            cellsJSON.cells.forEach {
+                val cell = ThunderCell(
+                    it.thunderCellInfo.offsetXIndex,
+                    it.thunderCellInfo.offsetYIndex,
+                    false
+                )
+                cells[it.thunderCellInfo.offsetXIndex]?.set(it.thunderCellInfo.offsetYIndex, cell)
             }
             cellsJSON.borderCells.forEach {
                 stormBorderCells.add(it.offsetIndexX to it.offsetIndexY)

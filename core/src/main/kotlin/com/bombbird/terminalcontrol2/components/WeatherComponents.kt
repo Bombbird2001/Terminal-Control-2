@@ -12,6 +12,7 @@ import ktx.ashley.Mapper
  */
 @JsonClass(generateAdapter = true)
 data class ThunderStormInfo(
+    var id: Int = -1,
     var timeToMature: Float = 1800f,
     var timeToDissipate: Float = 1200f
 ): Component, BaseComponentJSONInterface {
