@@ -561,8 +561,9 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
                 FileLog.debug("GameServer", "Sent AircraftControlStateUpdateData for $count aircraft")
 
                 // Send thunderstorm data
-                val thunderStormArray = storms.filterNotNull().map { it.getSerialisableObject() }.toTypedArray()
-                networkServer.sendTCPToConnection(uuid, ThunderStormData(thunderStormArray))
+                storms.filterNotNull().map { arrayOf(it.getSerialisableObject()) }.forEach {
+                    networkServer.sendTCPToConnection(uuid, ThunderStormData(it))
+                }
                 FileLog.debug("GameServer", "Sent ThunderStormData")
 
                 // Initial data sending complete
@@ -1049,8 +1050,10 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
 
     /** Sends a message to clients to inform them of an update in [storms] */
     fun sendThunderStorms() {
-        val thunderStormArray = storms.filterNotNull().map { it.getSerialisableObject() }.toTypedArray()
-        networkServer.sendToAllTCP(ThunderStormData(thunderStormArray))
+        val storms = storms.filterNotNull().map { arrayOf(it.getSerialisableObject()) }.toTypedArray()
+        for (i in 0 until storms.size) {
+            networkServer.sendToAllTCP(ThunderStormData(storms[i], i == 0))
+        }
     }
 
     /** Gets the runway configuration string displaying config names at all airports */

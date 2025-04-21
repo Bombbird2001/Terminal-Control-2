@@ -85,6 +85,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRendererBoundingBox,
         private val dotMagenta: TextureRegion = Scene2DSkin.defaultSkin["DotMagenta", TextureRegion::class.java]
         private const val DOT_RADIUS = 7f
         private val WAKE_INDICATOR_COLOUR = Color(0xffbc42ff.toInt())
+        private val TRANSLUCENT_WHITE_COLOUR = Color(1f, 1f, 1f, 0.7f)
 
         fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
@@ -131,6 +132,27 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRendererBoundingBox,
         val paneOffset = uiPane.paneWidth * camZoom / 2
         shapeRenderer.setBoundingRect(camX + paneOffset - viewWidth / 2, camY - viewHeight / 2, viewWidth, viewHeight)
         worldBoundingRect.set(camX + paneOffset - viewWidth / 2, camY - viewHeight / 2, viewWidth, viewHeight)
+
+        GAME.batch.begin()
+        GAME.batch.projectionMatrix = stage.camera.combined
+        GAME.batch.packedColor = TRANSLUCENT_WHITE_COLOUR.toFloatBits()
+
+        // Render thunderstorm cells
+        val thunderStormCells = thunderstormCellFamilyEntities.getEntities()
+        for (i in 0 until thunderStormCells.size()) {
+            thunderStormCells[i]?.apply {
+                val pos = getOrLogMissing(Position.mapper) ?: return@apply
+                val rsSprite = getOrLogMissing(RSSprite.mapper) ?: return@apply
+
+                rsSprite.drawable.drawBounding(
+                    GAME.batch, pos.x, pos.y,
+                    rsSprite.width, rsSprite.height,
+                    worldBoundingRect
+                )
+            }
+        }
+
+        GAME.batch.end()
 
         shapeRenderer.begin(ShapeRenderer.ShapeType.Line)
         shapeRenderer.projectionMatrix = stage.camera.combined
@@ -565,27 +587,11 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRendererBoundingBox,
         }
         shapeRenderer.end()
 
-        GAME.batch.projectionMatrix = stage.camera.combined
-        GAME.batch.begin()
         GAME.batch.packedColor = Color.WHITE_FLOAT_BITS // Prevent fading out behaviour during selectBox animations due to tint being changed
+        GAME.batch.begin()
 
         // Debug: Render route zone min altitude
         // renderRouteZoneAlts()
-
-        // Render thunderstorm cells
-        val thunderStormCells = thunderstormCellFamilyEntities.getEntities()
-        for (i in 0 until thunderStormCells.size()) {
-            thunderStormCells[i]?.apply {
-                val pos = getOrLogMissing(Position.mapper) ?: return@apply
-                val rsSprite = getOrLogMissing(RSSprite.mapper) ?: return@apply
-
-                rsSprite.drawable.drawBounding(
-                    GAME.batch, pos.x, pos.y,
-                    rsSprite.width, rsSprite.height,
-                    worldBoundingRect
-                )
-            }
-        }
 
         // Update runway labels rendering size, position
         val rwyLabels = rwyLabelFamilyEntities.getEntities()

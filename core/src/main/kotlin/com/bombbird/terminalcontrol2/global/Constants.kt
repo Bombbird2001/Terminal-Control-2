@@ -193,6 +193,7 @@ const val THUNDERSTORM_TIME_TO_MATURE_MAX_S = 40 * 60f
 const val THUNDERSTORM_TIME_TO_MATURE_MIN_S = 25 * 60f
 const val THUNDERSTORM_TIME_TO_DISSIPATE_MAX_S = 60 * 60f
 const val THUNDERSTORM_TIME_TO_DISSIPATE_MIN_S = 20 * 60f
+const val THUNDERSTORM_CONFLICT_THRESHOLD = 4
 
 /** LibGDX preference file name */
 const val PREFS_FILE_NAME = "com.bombbird.terminalcontrol2.prefs"

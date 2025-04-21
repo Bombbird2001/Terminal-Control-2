@@ -82,6 +82,7 @@ class ClearAllClientData: ClientReceive, NeedsEncryption {
         rs.updatedWaypointMapping.clear()
         rs.publishedHolds.clear()
         rs.minAltSectors.clear()
+        rs.storms.clear()
         getEngine(true).removeAllEntitiesOnMainThread(true)
         rs.afterClearData()
     }
@@ -680,23 +681,26 @@ class AircraftRequestMessage(val callsign: String = "", val requestType: Aircraf
  * current thunderstorms
  */
 class ThunderStormData(
-    val thunderStorms: Array<ThunderStorm.SerialisedThunderStorm> = arrayOf()
+    val thunderStorms: Array<ThunderStorm.SerialisedThunderStorm> = arrayOf(),
+    val clearCurrentStorms: Boolean = false
 ): ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
-        for (i in 0 until rs.storms.size) {
-            val storm = rs.storms[i] ?: continue
-            val childrenCells = storm.entity[ThunderStormCellChildren.mapper]?.cells ?: continue
-            // Clear all cell entities and storm entity
-            for (j in childrenCells.minimumIndex..childrenCells.maximumIndex) {
-                val row = childrenCells[j] ?: continue
-                for (k in row.minimumIndex..row.maximumIndex) {
-                    val cell = row[k] ?: continue
-                    getEngine(true).removeEntityOnMainThread(cell.entity, true)
+        if (clearCurrentStorms) {
+            for (i in 0 until rs.storms.size) {
+                val storm = rs.storms[i] ?: continue
+                val childrenCells = storm.entity[ThunderStormCellChildren.mapper]?.cells ?: continue
+                // Clear all cell entities and storm entity
+                for (j in childrenCells.minimumIndex..childrenCells.maximumIndex) {
+                    val row = childrenCells[j] ?: continue
+                    for (k in row.minimumIndex..row.maximumIndex) {
+                        val cell = row[k] ?: continue
+                        getEngine(true).removeEntityOnMainThread(cell.entity, true)
+                    }
                 }
+                getEngine(true).removeEntityOnMainThread(storm.entity, true)
             }
-            getEngine(true).removeEntityOnMainThread(storm.entity, true)
+            rs.storms.clear()
         }
-        rs.storms.clear()
         thunderStorms.forEach { storm ->
             rs.storms.add(ThunderStorm.fromSerialisedObject(storm))
         }
