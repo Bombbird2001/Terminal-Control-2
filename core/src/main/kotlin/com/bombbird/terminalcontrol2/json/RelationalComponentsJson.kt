@@ -315,7 +315,9 @@ object ThunderStormCellChildrenAdapter {
                     it.thunderCellInfo.offsetXIndex,
                     it.thunderCellInfo.offsetYIndex,
                     false
-                )
+                ).apply {
+                    entity[ThunderCellInfo.mapper]?.intensity = it.thunderCellInfo.intensity
+                }
                 cells[it.thunderCellInfo.offsetXIndex]?.set(it.thunderCellInfo.offsetYIndex, cell)
             }
             cellsJSON.borderCells.forEach {

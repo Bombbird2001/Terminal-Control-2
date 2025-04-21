@@ -5,10 +5,12 @@ import com.badlogic.gdx.utils.GdxRuntimeException
 import com.badlogic.gdx.utils.Queue.QueueIterator
 import com.bombbird.terminalcontrol2.components.AircraftInfo
 import com.bombbird.terminalcontrol2.components.AirportInfo
+import com.bombbird.terminalcontrol2.components.ThunderStormInfo
 import com.bombbird.terminalcontrol2.components.WakeTrail
 import com.bombbird.terminalcontrol2.components.WaypointInfo
 import com.bombbird.terminalcontrol2.entities.Aircraft
 import com.bombbird.terminalcontrol2.entities.Airport
+import com.bombbird.terminalcontrol2.entities.ThunderStorm
 import com.bombbird.terminalcontrol2.entities.Waypoint
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.getEngine
@@ -51,7 +53,8 @@ data class GameServerSave(
     val trailDotTimer: Float,
     val aircraft: List<Aircraft>,
     val airports: List<Airport>,
-    val waypoints: List<Waypoint>
+    val waypoints: List<Waypoint>,
+    val storms: List<ThunderStorm>?
 )
 
 /**
@@ -72,7 +75,9 @@ fun getSaveJSONString(gs: GameServer): String {
         gs.nightModeStart, gs.nightModeEnd, gs.useRecat, gs.trailDotTimer,
         Entries(gs.aircraft).map { it.value },
         Entries(gs.airports).map { it.value },
-        gs.waypoints.values.toList())
+        gs.waypoints.values.toList(),
+        gs.storms.filterNotNull()
+    )
 
     return moshi.adapter<GameServerSave>().toJson(saveObject)
 }
@@ -179,6 +184,10 @@ private fun loadSave(gs: GameServer, saveId: Int, useBackup: Boolean) {
         saveObject.aircraft.forEach {
             val wakeTrail = it.entity[WakeTrail.mapper] ?: return@forEach
             for (point in QueueIterator(wakeTrail.wakeZones)) point.second?.let { zone -> trafficSystem.addWakeZone(zone) }
+        }
+        saveObject.storms?.forEach {
+            val stormId = it.entity[ThunderStormInfo.mapper]?.id ?: return@forEach
+            gs.storms[stormId] = it
         }
         runDelayedEntityRetrieval()
     } catch (e: Exception) {

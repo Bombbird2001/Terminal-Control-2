@@ -22,7 +22,8 @@ fun getMoshiWithAllAdapters(): Moshi {
         .add(WakeTrailAdapter).add(RouteAdapter).add(WaypointAdapter).add(ArrivalRouteZoneAdapter)
         .add(DepartureRouteZoneAdapter).add(RouteZoneAdapter).add(WakeZoneAdapter).add(TrailInfoAdapter)
         .add(CustomApproachSeparationAdapter).add(AircraftRequestChildrenAdapter).add(ThunderStormCellChildrenAdapter)
-        .add(getPolymorphicComponentAdapter()).add(getPolymorphicLegAdapter()).add(getPolymorphicAircraftRequestAdapter()).build()
+        .add(getPolymorphicComponentAdapter()).add(getPolymorphicLegAdapter()).add(ThunderStormAdapter)
+        .add(getPolymorphicAircraftRequestAdapter()).build()
 }
 
 /**

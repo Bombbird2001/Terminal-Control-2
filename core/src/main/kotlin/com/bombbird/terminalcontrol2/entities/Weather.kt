@@ -52,7 +52,12 @@ class ThunderStorm(id: Int, posX: Float, posY: Float, altitude: Float, onClient:
             }
         }
         with<AffectedByWind>()
-        with<BoundingBox>()
+        with<BoundingBox> {
+            minX = posX
+            minY = posY
+            maxX = posX + THUNDERSTORM_CELL_SIZE_PX
+            maxY = posY + THUNDERSTORM_CELL_SIZE_PX
+        }
     }
 
     companion object {

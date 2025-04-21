@@ -5,6 +5,7 @@ import com.badlogic.ashley.systems.IntervalSystem
 import com.badlogic.gdx.math.MathUtils
 import com.bombbird.terminalcontrol2.components.AffectedByWind
 import com.bombbird.terminalcontrol2.components.Altitude
+import com.bombbird.terminalcontrol2.components.BoundingBox
 import com.bombbird.terminalcontrol2.components.Position
 import com.bombbird.terminalcontrol2.components.ThunderCellInfo
 import com.bombbird.terminalcontrol2.components.ThunderStormCellChildren
@@ -24,6 +25,8 @@ import com.bombbird.terminalcontrol2.utilities.removeEntityOnMainThread
 import ktx.ashley.allOf
 import ktx.ashley.get
 import ktx.collections.GdxArray
+import kotlin.math.max
+import kotlin.math.min
 import kotlin.math.pow
 import kotlin.math.sqrt
 
@@ -157,6 +160,8 @@ class WeatherSystemInterval: IntervalSystem(10f) {
     /** Generates cells at the borders for the [stormEntity], given a [baseProbability] */
     private fun generateCells(baseProbability: Float, stormEntity: Entity) {
         val children = stormEntity[ThunderStormCellChildren.mapper] ?: return
+        val stormPos = stormEntity[Position.mapper] ?: return
+        val stormBound = stormEntity[BoundingBox.mapper] ?: return
         val borderCells = children.stormBorderCells
         val childrenCells = children.cells
 
@@ -180,9 +185,14 @@ class WeatherSystemInterval: IntervalSystem(10f) {
                     if (childrenCells[i]?.get(j) == null) {
                         if (MathUtils.randomBoolean(probability)) {
                             childrenCells[i]?.let {
-                                it[j] = ThunderCell(i, j, false)
+                                val newCell = ThunderCell(i, j, false)
                                 borderCells.add(Pair(i, j))
                                 children.activeCells += 1
+                                stormBound.minX = min(stormBound.minX, stormPos.x + i * THUNDERSTORM_CELL_SIZE_PX)
+                                stormBound.minY = min(stormBound.minY, stormPos.y + j * THUNDERSTORM_CELL_SIZE_PX)
+                                stormBound.maxX = max(stormBound.maxX, stormPos.x + (i + 1) * THUNDERSTORM_CELL_SIZE_PX)
+                                stormBound.maxY = max(stormBound.maxY, stormPos.y + (j + 1) * THUNDERSTORM_CELL_SIZE_PX)
+                                it[j] = newCell
                             }
                         }
 
