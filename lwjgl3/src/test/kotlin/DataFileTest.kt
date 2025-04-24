@@ -777,8 +777,10 @@ object DataFileTest: FunSpec() {
                     for (inbound in inbounds) {
                         val inboundLine = inbound.split(" ")
                         val inboundRoute = testParseLegs(inboundLine, allWpts, Route.Leg.NORMAL, WARNING_SHOULD_BE_EMPTY)
-                        testWaypointLegStartEnd(inboundLine, true)
-                        testWaypointLegInPolygon(inboundRoute[0], wptPos, primarySector, false)
+                        withClue(inbound) {
+                            testWaypointLegStartEnd(inboundLine, true)
+                            testWaypointLegInPolygon(inboundRoute[0], wptPos, primarySector, false)
+                        }
                     }
 
                     val routeLines = getAllTextAfterHeaderMultiple("ROUTE", starLines[1])
