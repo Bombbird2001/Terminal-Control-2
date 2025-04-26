@@ -184,6 +184,7 @@ fun addDatatagInputListeners(datatag: Datatag, aircraft: Aircraft) {
                     datatag.xOffset += deltaX
                     datatag.yOffset += deltaY
                     datatag.dragging = true
+                    datatag.clickSpot.moveBy(deltaX, deltaY)
                 }
                 event?.handle()
             }
