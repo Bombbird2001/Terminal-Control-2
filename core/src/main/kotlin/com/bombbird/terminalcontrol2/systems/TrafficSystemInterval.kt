@@ -3,11 +3,13 @@ package com.bombbird.terminalcontrol2.systems
 import com.badlogic.ashley.core.Entity
 import com.badlogic.ashley.systems.IntervalSystem
 import com.badlogic.gdx.math.MathUtils
+import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.utils.ArrayMap.Entries
 import com.badlogic.gdx.utils.Queue
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.WakeZone
 import com.bombbird.terminalcontrol2.global.GAME
+import com.bombbird.terminalcontrol2.global.THUNDERSTORM_TAKEOFF_PROTECTION_DIST_NM
 import com.bombbird.terminalcontrol2.traffic.*
 import com.bombbird.terminalcontrol2.traffic.conflict.ConflictManager
 import com.bombbird.terminalcontrol2.utilities.*
@@ -241,6 +243,9 @@ class TrafficSystemInterval: IntervalSystem(1f) {
                         if (!checkDepartureDependencyTraffic(it.dependencies[j])) return@apply
                 }
 
+                // Thunderstorm check
+                if (!checkThunderStorms(this)) return@apply
+
                 // Runway checks passed
                 val nextDep = airport.entity[AirportNextDeparture.mapper] ?: return@apply
 
@@ -381,5 +386,37 @@ class TrafficSystemInterval: IntervalSystem(1f) {
                 }
             }
         }
+    }
+
+    /**
+     * Checks whether the immediate vicinity of the takeoff path is clear of
+     * thunderstorms
+     *
+     * Returns true if the path is clear, false otherwise
+     */
+    private fun checkThunderStorms(runway: Entity): Boolean {
+        return GAME.gameServer?.storms?.let { storms ->
+            val rwyPos = runway[Position.mapper] ?: return@let false
+            val rwyLengthM = runway[RunwayInfo.mapper]?.lengthM ?: return@let false
+            val rwyDir = runway[Direction.mapper]?.trackUnitVector ?: return@let false
+            if (rwyDir.isZero) return@let false
+            val rwyLengthNm = mToNm(rwyLengthM.toFloat())
+
+            val pathLengthNm = (rwyLengthNm + THUNDERSTORM_TAKEOFF_PROTECTION_DIST_NM).roundToInt()
+            val rwyDirUnitNm = Vector2(rwyDir).scl(nmToPx(1) / rwyDir.len())
+            val currPos = Vector2(rwyPos.x, rwyPos.y)
+
+            // Check in increments of 1nm starting from runway start position
+            for (i in 0..pathLengthNm) {
+                val redZones = getRedZonesAtPosition(currPos.x, currPos.y, 1)
+
+                // If there are 3 or more red zones in the vicinity, return false
+                if (redZones >= 3) return@let false
+
+                currPos.add(rwyDirUnitNm)
+            }
+
+            true
+        } ?: false
     }
 }

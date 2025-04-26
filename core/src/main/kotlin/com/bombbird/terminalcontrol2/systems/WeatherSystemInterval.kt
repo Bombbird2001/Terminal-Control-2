@@ -14,6 +14,7 @@ import com.bombbird.terminalcontrol2.entities.ThunderCell
 import com.bombbird.terminalcontrol2.entities.ThunderStorm
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.MIN_ALT
+import com.bombbird.terminalcontrol2.global.THUNDERSTORMS_PER_UNIT_PX2_NIGHTMARE
 import com.bombbird.terminalcontrol2.global.THUNDERSTORM_CELL_MAX_HALF_WIDTH_UNITS
 import com.bombbird.terminalcontrol2.global.THUNDERSTORM_CELL_SIZE_PX
 import com.bombbird.terminalcontrol2.global.THUNDERSTORM_MAX_ALTITUDE_FT
@@ -28,6 +29,7 @@ import ktx.collections.GdxArray
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.pow
+import kotlin.math.roundToInt
 import kotlin.math.sqrt
 
 /** A low frequency weather system used to calculate weather related changes */
@@ -40,17 +42,19 @@ class WeatherSystemInterval: IntervalSystem(10f) {
 
     override fun updateInterval() {
         val stormSetting = GAME.gameServer?.stormsDensity
-        val stormsRequired = when (stormSetting) {
-            GameServer.STORMS_OFF -> 0
-            GameServer.STORMS_LOW -> 2
-            GameServer.STORMS_MEDIUM -> 4
-            GameServer.STORMS_HIGH -> 8
-            GameServer.STORMS_NIGHTMARE -> 12
+        val spawnArea = GAME.gameServer?.primarySector?.boundingRectangle?.area() ?: 0f
+        val stormRate = when (stormSetting) {
+            GameServer.STORMS_OFF -> 0f
+            GameServer.STORMS_LOW -> THUNDERSTORMS_PER_UNIT_PX2_NIGHTMARE / 6
+            GameServer.STORMS_MEDIUM -> THUNDERSTORMS_PER_UNIT_PX2_NIGHTMARE / 3
+            GameServer.STORMS_HIGH -> THUNDERSTORMS_PER_UNIT_PX2_NIGHTMARE / 1.5f
+            GameServer.STORMS_NIGHTMARE -> THUNDERSTORMS_PER_UNIT_PX2_NIGHTMARE
             else -> {
                 FileLog.warn("WeatherSystemInterval", "Unknown storm setting $stormSetting")
-                0
+                0f
             }
         }
+        val stormsRequired = (spawnArea * stormRate).roundToInt()
 
         val thunderStorms = thunderStormEntities.getEntities()
         val allStormCenters = GdxArray<Position>()
