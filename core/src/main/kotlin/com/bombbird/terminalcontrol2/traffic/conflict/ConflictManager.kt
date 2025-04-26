@@ -2,6 +2,7 @@ package com.bombbird.terminalcontrol2.traffic.conflict
 
 import com.badlogic.ashley.core.Entity
 import com.badlogic.ashley.utils.ImmutableArray
+import com.badlogic.gdx.math.MathUtils
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.ThunderStorm
 import com.bombbird.terminalcontrol2.global.*
@@ -167,6 +168,7 @@ class ConflictManager {
         for (conflictAble in conflictAbles) {
             val pos = conflictAble[Position.mapper] ?: continue
             val alt = conflictAble[Altitude.mapper] ?: continue
+            val speed = conflictAble[Speed.mapper] ?: continue
 
             storms.forEach { storm ->
                 val stormPos = storm?.entity[Position.mapper] ?: return@forEach
@@ -176,17 +178,41 @@ class ConflictManager {
                 if (alt.altitudeFt > stormAlt.altitudeFt) return@forEach
 
                 // Check if the aircraft is within the storm limits
-                val xIndex = floor((pos.x - stormPos.x) / THUNDERSTORM_CELL_SIZE_PX).toInt()
-                val yIndex = floor((pos.y - stormPos.y) / THUNDERSTORM_CELL_SIZE_PX).toInt()
-                if (xIndex < -THUNDERSTORM_CELL_MAX_HALF_WIDTH_UNITS
-                    || xIndex >= THUNDERSTORM_CELL_MAX_HALF_WIDTH_UNITS
-                    || yIndex < -THUNDERSTORM_CELL_MAX_HALF_WIDTH_UNITS
-                    || yIndex >= THUNDERSTORM_CELL_SIZE_PX) return@forEach
+                val aircraftXIndex = floor((pos.x - stormPos.x) / THUNDERSTORM_CELL_SIZE_PX).toInt()
+                val aircraftYIndex = floor((pos.y - stormPos.y) / THUNDERSTORM_CELL_SIZE_PX).toInt()
 
-                val stormCells = storm.entity[ThunderStormCellChildren.mapper]?.cells ?: return@forEach
-                val cell = stormCells[xIndex]?.get(yIndex) ?: return@forEach
-                val cellInfo = cell.entity[ThunderCellInfo.mapper] ?: return@forEach
-                if (cellInfo.intensity >= THUNDERSTORM_CONFLICT_THRESHOLD) {
+                var redZones = 0
+
+                for (i in -1..1) {
+                    for (j in -1..1) {
+                        val xIndex = aircraftXIndex + i
+                        val yIndex = aircraftYIndex + j
+
+                        if (xIndex < -THUNDERSTORM_CELL_MAX_HALF_WIDTH_UNITS
+                            || xIndex >= THUNDERSTORM_CELL_MAX_HALF_WIDTH_UNITS
+                            || yIndex < -THUNDERSTORM_CELL_MAX_HALF_WIDTH_UNITS
+                            || yIndex >= THUNDERSTORM_CELL_SIZE_PX) continue
+
+                        val stormCells = storm.entity[ThunderStormCellChildren.mapper]?.cells ?: continue
+                        val cell = stormCells[xIndex]?.get(yIndex) ?: continue
+                        val cellInfo = cell.entity[ThunderCellInfo.mapper] ?: continue
+
+                        when {
+                            cellInfo.intensity >= THUNDERSTORM_CONFLICT_THRESHOLD -> {
+                                redZones++
+                                speed.vertSpdFpm += MathUtils.randomSign() * MathUtils.random(300, 500)
+                            }
+                            cellInfo.intensity >= THUNDERSTORM_CONFLICT_THRESHOLD - 2 -> {
+                                speed.vertSpdFpm += MathUtils.randomSign() * MathUtils.random(100, 300)
+                            }
+                            cellInfo.intensity >= THUNDERSTORM_CONFLICT_THRESHOLD - 4 -> {
+                                speed.vertSpdFpm += MathUtils.random(-100, 100)
+                            }
+                        }
+                    }
+                }
+
+                if (redZones >= 5) {
                     conflicts.add(Conflict(
                         conflictAble, null, null,
                         3f,Conflict.STORM)

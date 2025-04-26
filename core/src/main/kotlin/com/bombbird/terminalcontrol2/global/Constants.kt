@@ -166,7 +166,6 @@ const val THUNDERSTORM_SIZE = 12
 
 /** Zoom threshold to switch between small and large datatag fonts */
 const val DATATAG_ZOOM_THRESHOLD = 1f
-const val DATATAG_MAX_DRAG_DELTA = 100f
 
 /** Trail dot update rate */
 const val TRAIL_DOT_UPDATE_INTERVAL_S = 10
@@ -193,7 +192,7 @@ const val THUNDERSTORM_TIME_TO_MATURE_MAX_S = 40 * 60f
 const val THUNDERSTORM_TIME_TO_MATURE_MIN_S = 25 * 60f
 const val THUNDERSTORM_TIME_TO_DISSIPATE_MAX_S = 60 * 60f
 const val THUNDERSTORM_TIME_TO_DISSIPATE_MIN_S = 20 * 60f
-const val THUNDERSTORM_CONFLICT_THRESHOLD = 4
+const val THUNDERSTORM_CONFLICT_THRESHOLD = 9
 
 /** LibGDX preference file name */
 const val PREFS_FILE_NAME = "com.bombbird.terminalcontrol2.prefs"
