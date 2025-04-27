@@ -161,5 +161,6 @@ fun loadAllComponents() {
     WakeTolerance.initialise()
     WakeTrail.initialise()
     WaypointInfo.initialise()
+    WeatherAvoidanceInfo.initialise()
     WindshearGoAround.initialise()
 }

@@ -134,6 +134,7 @@ fun createArrival(callsign: String, icaoType: String, airport: Entity, gs: GameS
         entity += InitialArrivalSpawn()
         if (alt > 10000) entity += DecelerateTo240kts()
         entity += ContactFromCentre(MAX_ALT + MathUtils.random(400, 1500))
+        initialiseArrivalRequests(entity)
         gs.sendAircraftSpawn(this)
     })
 }
@@ -440,7 +441,7 @@ fun clearForTakeoff(aircraft: Entity, rwy: Entity, sid: SidStar.SID) {
         }
 
         // Initialise aircraft requests if necessary
-        initialiseAircraftRequests(aircraft)
+        initialiseDepartureRequests(aircraft)
     }
 }
 

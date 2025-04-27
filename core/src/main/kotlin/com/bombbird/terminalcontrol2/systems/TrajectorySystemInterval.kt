@@ -11,6 +11,7 @@ import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.allOf
 import ktx.ashley.exclude
 import ktx.ashley.get
+import ktx.ashley.remove
 import ktx.collections.GdxArray
 import kotlin.math.*
 
@@ -24,12 +25,14 @@ class TrajectorySystemInterval: IntervalSystem(TRAJECTORY_UPDATE_INTERVAL_S) {
         private val aircraftTrajectoryFamily = allOf(AircraftInfo::class, GroundTrack::class, Speed::class, Position::class, Altitude::class, CommandTarget::class)
             .exclude(WaitingTakeoff::class, LandingRoll::class, TakeoffRoll::class).get()
         private val temporaryAltitudeFamily = allOf(ACCTempAltitude::class, Controllable::class).get()
+        private val weatherDeviationFamily = allOf(WeatherAvoidanceInfo::class).get()
 
         fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 
     private val aircraftTrajectoryEntities = FamilyWithListener.newServerFamilyWithListener(aircraftTrajectoryFamily)
     private val temporaryAltitudeEntities = FamilyWithListener.newServerFamilyWithListener(temporaryAltitudeFamily)
+    private val weatherDeviationEntities = FamilyWithListener.newServerFamilyWithListener(weatherDeviationFamily)
 
     val startingAltitude = getConflictStartAltitude()
     /** This stores the trajectory position divided in their respective conflict altitude levels, per time interval */
@@ -41,6 +44,13 @@ class TrajectorySystemInterval: IntervalSystem(TRAJECTORY_UPDATE_INTERVAL_S) {
     private val trajectoryManager = TrajectoryManager()
 
     override fun updateInterval() {
+        val weatherDeviation = weatherDeviationEntities.getEntities()
+        for (i in 0 until weatherDeviation.size()) {
+            weatherDeviation[i]?.apply {
+                remove<WeatherAvoidanceInfo>()
+            }
+        }
+
         trajectoryManager.freePooledTrajectoryPoints(trajectoryTimeStates)
 
         // Clear all trajectory points

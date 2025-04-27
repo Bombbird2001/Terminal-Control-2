@@ -512,7 +512,7 @@ class CommsPane {
             }
 
             val finalAirportPos = closestAirport?.entity?.get(Position.mapper) ?: return
-            val airportName = closestAirport?.entity?.get(AirportInfo.mapper)?.name ?: return
+            val airportName = closestAirport.entity[AirportInfo.mapper]?.name ?: return
 
             val trackDir = getRequiredTrack(finalAirportPos.x, finalAirportPos.y, aircraftPos.x, aircraftPos.y)
             val directionString = when {
@@ -588,11 +588,11 @@ class CommsPane {
                     else "request higher"
                 ))
             }
-            RequestType.WEATHER_AVOIDANCE -> sentence.addTokens(
-                LiteralToken("request heading"),
-                HeadingToken(params[0].toShort()),
-                LiteralToken(if (MathUtils.randomBoolean()) "due weather" else "to avoid weather")
-            )
+            RequestType.WEATHER_AVOIDANCE -> {
+                sentence.addToken(LiteralToken("request heading"))
+                if (params[0].isNotBlank()) sentence.addToken(HeadingToken(params[0].toShort()))
+                sentence.addToken(LiteralToken(if (MathUtils.randomBoolean()) "due weather" else "to avoid weather"))
+            }
             RequestType.CANCEL_APPROACH_WEATHER -> sentence.addToken(
                 LiteralToken("request to cancel approach due to weather")
             )

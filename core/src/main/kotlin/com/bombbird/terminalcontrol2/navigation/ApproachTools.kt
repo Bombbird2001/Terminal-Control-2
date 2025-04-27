@@ -140,3 +140,15 @@ fun isApproachCaptured(aircraft: Entity): Boolean {
             || (aircraft[CirclingApproach.mapper]?.phase ?: 0) >= 1
             || aircraft.has(RNPCaptured.mapper)
 }
+
+/** Gets the approach that [aircraft] has captured */
+fun getAircraftApproach(aircraft: Entity): Entity? {
+    return aircraft[LocalizerCaptured.mapper]?.locApp
+            ?: aircraft[GlideSlopeCaptured.mapper]?.gsApp
+            ?: aircraft[VisualCaptured.mapper]?.visApp
+            ?: aircraft[CirclingApproach.mapper]?.let {
+                if (it.phase >= 1) it.circlingApp
+                else null
+            }
+            ?: aircraft[VisualApproach.mapper]?.visual
+}

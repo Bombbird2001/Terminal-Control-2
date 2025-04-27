@@ -5,15 +5,19 @@ import com.badlogic.gdx.math.MathUtils
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.MAG_HDG_DEV
 import com.bombbird.terminalcontrol2.navigation.Route
+import com.bombbird.terminalcontrol2.navigation.establishedOnFinalApproachTrack
+import com.bombbird.terminalcontrol2.navigation.getAircraftApproach
 import com.squareup.moshi.JsonClass
 import ktx.ashley.get
+import ktx.ashley.hasNot
 import ktx.ashley.plusAssign
 import java.util.Optional
 import kotlin.math.abs
 
-/** Function to initialise aircraft requests for an aircraft [entity] */
-fun initialiseAircraftRequests(entity: Entity) {
+/** Function to initialise aircraft requests for a departure aircraft [entity] */
+fun initialiseDepartureRequests(entity: Entity) {
     val requests = entity.addAndReturn(AircraftRequestChildren())
+
     if (HighSpeedClimbRequest.shouldCreateRequest(0.1f, entity)) {
         val highSpeedRequest = HighSpeedClimbRequest()
         highSpeedRequest.initialise(entity)
@@ -29,6 +33,27 @@ fun initialiseAircraftRequests(entity: Entity) {
         furtherClimbRequest.initialise(entity)
         requests.requests.add(furtherClimbRequest)
     }
+
+    initialiseAllAircraftRequests(entity)
+}
+
+/** Function to initialise aircraft requests for an arrival aircraft [entity] */
+fun initialiseArrivalRequests(entity: Entity) {
+    val requests = entity.addAndReturn(AircraftRequestChildren())
+
+    val cancelWeatherRequest = CancelApproachWeatherRequest()
+    cancelWeatherRequest.initialise(entity)
+    requests.requests.add(cancelWeatherRequest)
+
+    initialiseAllAircraftRequests(entity)
+}
+
+private fun initialiseAllAircraftRequests(entity: Entity) {
+    val requests = entity[AircraftRequestChildren.mapper] ?: return
+
+    val weatherAvoidanceRequest = WeatherAvoidanceRequest()
+    weatherAvoidanceRequest.initialise(entity)
+    requests.requests.add(weatherAvoidanceRequest)
 }
 
 /** Interface for companion objects to inherit from for checking if a request should be created for an aircraft */
@@ -256,6 +281,49 @@ class FurtherClimbRequest: AircraftRequest(minRecurrentTimeS = 120, activationTi
         val currentAlt = entity[Altitude.mapper]?.altitudeFt ?: return Optional.empty()
         val clearedAlt = entity[ClearanceAct.mapper]?.actingClearance?.clearanceState?.clearedAlt ?: return Optional.empty()
         if (!withinRange(currentAlt, clearedAlt - 25f, clearedAlt + 25f)) return Optional.empty()
+
+        return Optional.of(arrayOf())
+    }
+
+    override fun onActivation(entity: Entity) {}
+}
+
+/** Aircraft request for weather avoidance */
+@JsonClass(generateAdapter = true)
+class WeatherAvoidanceRequest: AircraftRequest(minRecurrentTimeS = 40) {
+    override val requestType = RequestType.WEATHER_AVOIDANCE
+
+    override fun initialise(entity: Entity): AircraftRequest {
+        return this
+    }
+
+    override fun shouldActivateWithParameters(entity: Entity): Optional<Array<String>> {
+        val weatherAvoid = entity[WeatherAvoidanceInfo.mapper] ?: return Optional.empty()
+        getAircraftApproach(entity)?.let {
+            val pos = entity[Position.mapper] ?: return@let
+            if (establishedOnFinalApproachTrack(it, pos.x, pos.y)) return Optional.empty()
+        }
+
+        return Optional.of(arrayOf(weatherAvoid.deviationHeading?.toString() ?: ""))
+    }
+
+    override fun onActivation(entity: Entity) {}
+}
+
+/** Aircraft request to cancel approach due to weather */
+@JsonClass(generateAdapter = true)
+class CancelApproachWeatherRequest: AircraftRequest(minRecurrentTimeS = 40) {
+    override val requestType = RequestType.CANCEL_APPROACH_WEATHER
+
+    override fun initialise(entity: Entity): AircraftRequest {
+        return this
+    }
+
+    override fun shouldActivateWithParameters(entity: Entity): Optional<Array<String>> {
+        if (entity.hasNot(WeatherAvoidanceInfo.mapper)) return Optional.empty()
+        val acApp = getAircraftApproach(entity) ?: return Optional.empty()
+        val pos = entity[Position.mapper] ?: return Optional.empty()
+        if (!establishedOnFinalApproachTrack(acApp, pos.x, pos.y)) return Optional.empty()
 
         return Optional.of(arrayOf())
     }

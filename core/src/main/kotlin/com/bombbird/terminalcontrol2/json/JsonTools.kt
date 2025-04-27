@@ -53,7 +53,7 @@ interface BaseComponentJSONInterface {
         ON_GO_AROUND_ROUTE, WAKE_TOLERANCE, ACC_TEMP_ALTITUDE, WINDSHEAR_GO_AROUND, NEEDS_TO_INFORM_OF_GO_AROUND,
         CUSTOM_APPROACH_SEPARATION_CHILDREN, PARALLEL_WAKE_AFFECTS, AIRPORT_ARRIVAL_STATS, AIRCRAFT_REQUEST_CHILDREN,
         HIGH_SPEED_REQUESTED, SHOULD_INITIATE_GO_AROUND, RNP_CAPTURED, THUNDERSTORM_CELL_CHILDREN, THUNDER_CELL_INFO,
-        THUNDERSTORM_INFO
+        THUNDERSTORM_INFO, WEATHER_AVOIDANCE_INFO
     }
 
     val componentType: ComponentType
@@ -176,6 +176,7 @@ private fun getPolymorphicComponentAdapter(): PolymorphicJsonAdapterFactory<Base
         .withSubtype(ThunderStormCellChildren::class.java, BaseComponentJSONInterface.ComponentType.THUNDERSTORM_CELL_CHILDREN.name)
         .withSubtype(ThunderCellInfo::class.java, BaseComponentJSONInterface.ComponentType.THUNDER_CELL_INFO.name)
         .withSubtype(ThunderStormInfo::class.java, BaseComponentJSONInterface.ComponentType.THUNDERSTORM_INFO.name)
+        .withSubtype(WeatherAvoidanceInfo::class.java, BaseComponentJSONInterface.ComponentType.WEATHER_AVOIDANCE_INFO.name)
 }
 
 /** Interface for implementing JSON serialization for subclasses of Leg */
@@ -208,7 +209,7 @@ private fun getPolymorphicAircraftRequestAdapter(): PolymorphicJsonAdapterFactor
         .withSubtype(HighSpeedClimbRequest::class.java, AircraftRequest.RequestType.HIGH_SPEED_CLIMB.name)
         .withSubtype(DirectRequest::class.java, AircraftRequest.RequestType.DIRECT.name)
         .withSubtype(FurtherClimbRequest::class.java, AircraftRequest.RequestType.FURTHER_CLIMB.name)
-//        .withSubtype(WeatherAvoidanceRequest::class.java, AircraftRequest.RequestType.WEATHER_AVOIDANCE.name)
-//        .withSubtype(CancelApproachWeatherRequest::class.java, AircraftRequest.RequestType.CANCEL_APPROACH_WEATHER.name)
+        .withSubtype(WeatherAvoidanceRequest::class.java, AircraftRequest.RequestType.WEATHER_AVOIDANCE.name)
+        .withSubtype(CancelApproachWeatherRequest::class.java, AircraftRequest.RequestType.CANCEL_APPROACH_WEATHER.name)
 //        .withSubtype(CancelApproachMechanicalRequest::class.java, AircraftRequest.RequestType.CANCEL_APPROACH_MECHANICAL.name)
 }

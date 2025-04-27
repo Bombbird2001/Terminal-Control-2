@@ -39,3 +39,15 @@ data class ThunderCellInfo(var offsetXIndex: Int = 0, var offsetYIndex: Int = 0,
         fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
+
+/** Component to tag the heading deviation requested by an aircraft to avoid thunderstorms */
+@JsonClass(generateAdapter = true)
+data class WeatherAvoidanceInfo(var deviationHeading: Short? = null): Component, BaseComponentJSONInterface {
+    override val componentType = BaseComponentJSONInterface.ComponentType.WEATHER_AVOIDANCE_INFO
+
+    companion object {
+        val mapper = object: Mapper<WeatherAvoidanceInfo>() {}.mapper
+
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
+    }
+}

@@ -2,6 +2,7 @@ package com.bombbird.terminalcontrol2.traffic.conflict
 
 import com.badlogic.ashley.core.Entity
 import com.badlogic.ashley.utils.ImmutableArray
+import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.utils.ArrayMap
 import com.badlogic.gdx.utils.Pool
@@ -165,6 +166,9 @@ class TrajectoryManager {
         // Check MVA/restricted area conflict
         predictedConflicts.putAll(checkAllTrajectoryMVAConflicts(allTrajectoryPoints))
 
+        // Check thunderstorm conflicts
+        checkStormConflicts(allTrajectoryPoints)
+
         // Send all predicted conflicts to clients using TCP
         GAME.gameServer?.sendPredictedConflicts(predictedConflicts)
 
@@ -265,6 +269,94 @@ class TrajectoryManager {
         }
 
         return mvaConflicts
+    }
+
+    private fun checkStormConflicts(allTrajectoryPoints: Array<Array<GdxArray<TrajectoryPoint>>>) {
+        for (i in allTrajectoryPoints.indices) {
+            for (j in allTrajectoryPoints[i].indices) {
+                val pointList = allTrajectoryPoints[i][j]
+                // Exclude the first 10 seconds of predicted points
+                for (k in 2 until pointList.size) {
+                    val point = pointList[k].entity
+                    val pos = point[Position.mapper] ?: continue
+                    val alt = point[Altitude.mapper]?.altitudeFt ?: continue
+
+                    val redZones = getRedCellCountAtPosition(pos.x, pos.y, alt, 1)
+
+                    if (redZones >= 3) {
+                        val aircraft = point[TrajectoryPointInfo.mapper]?.aircraft ?: continue
+                        val devHdg = getStormDeviationHeading(aircraft)
+                        println("${aircraft[AircraftInfo.mapper]?.icaoCallsign}: Deviate to $devHdg")
+                        aircraft += WeatherAvoidanceInfo(devHdg)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun getStormDeviationHeading(aircraft: Entity): Short? {
+        val speed = aircraft[Speed.mapper] ?: return null
+        val direction = aircraft[Direction.mapper]?.trackUnitVector?.angleDeg() ?: return null
+        val acInfo = aircraft[AircraftInfo.mapper] ?: return null
+        val startHeading = ((modulateHeading(convertWorldAndRenderDeg(direction) + MAG_HDG_DEV)) / 5).roundToInt() * 5
+        println("${acInfo.icaoCallsign}: Start heading - $startHeading")
+
+        // Max 70 degree deviation in steps of 10 degrees
+        for (absDev in 1..7) {
+            if (speed.angularSpdDps >= 1) {
+                // Check right-hand turn first
+                val newHdg = modulateHeading(startHeading + absDev * 10f)
+                val newTrajectory = calculateTrajectoryToHeading(aircraft, newHdg)
+                if (isTrajectoryClearOfStorm(newTrajectory)) return newHdg.roundToInt().toShort()
+
+                // Check left-hand turn
+                val newHdg2 = modulateHeading(startHeading - absDev * 10f)
+                val newTrajectory2 = calculateTrajectoryToHeading(aircraft, newHdg2)
+                if (isTrajectoryClearOfStorm(newTrajectory2)) return newHdg2.roundToInt().toShort()
+            } else if (speed.angularSpdDps <= -1) {
+                // Check left-hand turn first
+                val newHdg = modulateHeading(startHeading - absDev * 10f)
+                val newTrajectory = calculateTrajectoryToHeading(aircraft, newHdg)
+                if (isTrajectoryClearOfStorm(newTrajectory)) return newHdg.roundToInt().toShort()
+
+                // Check right-hand turn
+                val newHdg2 = modulateHeading(startHeading + absDev * 10f)
+                val newTrajectory2 = calculateTrajectoryToHeading(aircraft, newHdg2)
+                if (isTrajectoryClearOfStorm(newTrajectory2)) return newHdg2.roundToInt().toShort()
+            } else {
+                // Check both
+                val newHdg = modulateHeading(startHeading + absDev * 10f)
+                val newTrajectory = calculateTrajectoryToHeading(aircraft, newHdg)
+                val rightOk = isTrajectoryClearOfStorm(newTrajectory)
+
+                val newHdg2 = modulateHeading(startHeading - absDev * 10f)
+                val newTrajectory2 = calculateTrajectoryToHeading(aircraft, newHdg2)
+                val leftOk = isTrajectoryClearOfStorm(newTrajectory2)
+
+                if (leftOk && rightOk) {
+                    return (if (MathUtils.randomBoolean()) newHdg else newHdg2).roundToInt().toShort()
+                } else if (leftOk) {
+                    return newHdg2.roundToInt().toShort()
+                } else if (rightOk) {
+                    return newHdg.roundToInt().toShort()
+                }
+            }
+        }
+
+        return null
+    }
+
+    private fun isTrajectoryClearOfStorm(trajectory: GdxArray<TrajectoryPoint>): Boolean {
+        for (i in 0 until trajectory.size) {
+            val point = trajectory[i].entity
+            val pos = point[Position.mapper] ?: continue
+            val alt = point[Altitude.mapper]?.altitudeFt ?: continue
+
+            val zones = getAllZoneCountAtPosition(pos.x, pos.y, alt, 2)
+            if (zones >= 1) return false
+        }
+
+        return true
     }
 
     /** Re-clear altitude for conflicts that has not been resolved */
@@ -433,8 +525,26 @@ class TrajectoryManager {
         return true
     }
 
-    /** Gets all trajectory points of an aircraft */
+    /**
+     * Gets all trajectory points of an [aircraft] based on its current target
+     * heading to turn to, with an optional [customTargetAlt]
+     */
     fun calculateTrajectory(aircraft: Entity, customTargetAlt: Int = -1): GdxArray<TrajectoryPoint> {
+        val trajPointList = GdxArray<TrajectoryPoint>()
+
+        val cmdTarget = aircraft[CommandTarget.mapper] ?: return trajPointList
+        return calculateTrajectoryToHeading(aircraft, cmdTarget.targetHdgDeg, customTargetAlt, ignoreDirectWaypoint = false)
+    }
+
+    /**
+     * Gets all trajectory points of an [aircraft] given a [targetHeading] to
+     * turn to, with an optional [customTargetAlt]. If [ignoreDirectWaypoint] is
+     * true, will use only [targetHeading] for calculation, and will not follow
+     * through to the waypoint
+     */
+    fun calculateTrajectoryToHeading(aircraft: Entity, targetHeading: Float,
+                                     customTargetAlt: Int = -1,
+                                     ignoreDirectWaypoint: Boolean = true): GdxArray<TrajectoryPoint> {
         val trajPointList = GdxArray<TrajectoryPoint>()
 
         // Calculate simple linear trajectory, plus arc if aircraft is turning > 5 degrees
@@ -444,14 +554,13 @@ class TrajectoryManager {
         val speed = aircraft[Speed.mapper] ?: return trajPointList
         val aircraftPos = aircraft[Position.mapper] ?: return trajPointList
         val winds = aircraft[AffectedByWind.mapper] ?: return trajPointList
-        val targetHeading = cmdTarget.targetHdgDeg
         val currTrack = convertWorldAndRenderDeg(groundTrack.trackVectorPxps.angleDeg())
         val groundSpeedPxps = groundTrack.trackVectorPxps.len()
         // This is the vector the aircraft is turning towards, excluding effects of wind
         val targetTrueHeadingPxps = Vector2(Vector2.Y).rotateDeg(-(targetHeading - MAG_HDG_DEV)).scl(ktToPxps(speed.speedKts))
         // This is the track vector the aircraft is turning towards, including effects of wind
         val targetTrackPxps = targetTrueHeadingPxps + winds.windVectorPxps
-        val wpt = getServerOrClientWaypointMap()?.get(aircraft[CommandDirect.mapper]?.wptId)
+        val wpt = if (ignoreDirectWaypoint) null else getServerOrClientWaypointMap()?.get(aircraft[CommandDirect.mapper]?.wptId)
         val pointList = getTrajectoryPointList(currTrack, targetTrackPxps, cmdTarget.turnDir, altitude, speed.speedKts,
             groundSpeedPxps, aircraftPos.x, aircraftPos.y, wpt, MAX_TRAJECTORY_ADVANCE_TIME_S)
 

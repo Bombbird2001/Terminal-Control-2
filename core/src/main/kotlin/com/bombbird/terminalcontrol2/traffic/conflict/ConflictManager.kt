@@ -191,7 +191,7 @@ class ConflictManager {
                         if (xIndex < -THUNDERSTORM_CELL_MAX_HALF_WIDTH_UNITS
                             || xIndex >= THUNDERSTORM_CELL_MAX_HALF_WIDTH_UNITS
                             || yIndex < -THUNDERSTORM_CELL_MAX_HALF_WIDTH_UNITS
-                            || yIndex >= THUNDERSTORM_CELL_SIZE_PX) continue
+                            || yIndex >= THUNDERSTORM_CELL_MAX_HALF_WIDTH_UNITS) continue
 
                         val stormCells = storm.entity[ThunderStormCellChildren.mapper]?.cells ?: continue
                         val cell = stormCells[xIndex]?.get(yIndex) ?: continue
@@ -200,13 +200,13 @@ class ConflictManager {
                         when {
                             cellInfo.intensity >= THUNDERSTORM_CONFLICT_THRESHOLD -> {
                                 redZones++
-                                speed.vertSpdFpm += MathUtils.randomSign() * MathUtils.random(300, 500)
+                                speed.vertSpdFpm += MathUtils.randomSign() * MathUtils.random(225, 375)
                             }
                             cellInfo.intensity >= THUNDERSTORM_CONFLICT_THRESHOLD - 2 -> {
-                                speed.vertSpdFpm += MathUtils.randomSign() * MathUtils.random(100, 300)
+                                speed.vertSpdFpm += MathUtils.randomSign() * MathUtils.random(75, 225)
                             }
                             cellInfo.intensity >= THUNDERSTORM_CONFLICT_THRESHOLD - 4 -> {
-                                speed.vertSpdFpm += MathUtils.random(-100, 100)
+                                speed.vertSpdFpm += MathUtils.random(-75, 75)
                             }
                         }
                     }

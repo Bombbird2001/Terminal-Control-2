@@ -216,7 +216,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
     var sectorJustSwapped = false
 
     /** All current thunderstorms */
-    val storms = Array<ThunderStorm?>(THUNDERSTORM_SIZE) { _ -> null }
+    val storms = Array<ThunderStorm?>(MAX_THUNDERSTORM_COUNT) { _ -> null }
 
     var arrivalSpawnTimerS = 0f
     var previousArrivalOffsetS = 0f
@@ -1054,6 +1054,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
         for (i in 0 until storms.size) {
             networkServer.sendToAllTCP(ThunderStormData(storms[i], i == 0))
         }
+        if (storms.isEmpty()) networkServer.sendToAllTCP(ThunderStormData(arrayOf(), true))
     }
 
     /** Gets the runway configuration string displaying config names at all airports */
