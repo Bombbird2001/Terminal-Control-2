@@ -209,7 +209,8 @@ class TrajectoryManager {
     }
 
     /**
-     * Checks if two trajectory points are in conflict; if so adds them to the list of predicted conflicts
+     * Checks if two trajectory points [point1], [point2] are in conflict; if
+     * so adds them to the list of predicted conflicts
      */
     private fun checkTrajectoryPointConflict(point1: TrajectoryPoint, point2: TrajectoryPoint): PredictedConflictEntry? {
         val aircraft1 = point1.entity[TrajectoryPointInfo.mapper]?.aircraft ?: return null
@@ -241,7 +242,8 @@ class TrajectoryManager {
     }
 
     /**
-     * Checks all trajectory points for MVA/restricted area conflicts, returns a map of predicted conflicts
+     * Checks [allTrajectoryPoints] for MVA/restricted area conflicts, returns a
+     * map of predicted conflicts
      */
     private fun checkAllTrajectoryMVAConflicts(allTrajectoryPoints: Array<Array<GdxArray<TrajectoryPoint>>>): GdxArrayMap<ConflictPair, PredictedConflict> {
         // Check conflicts between all trajectory points and MVA/restricted areas
@@ -286,7 +288,6 @@ class TrajectoryManager {
                     if (redZones >= 3) {
                         val aircraft = point[TrajectoryPointInfo.mapper]?.aircraft ?: continue
                         val devHdg = getStormDeviationHeading(aircraft)
-                        println("${aircraft[AircraftInfo.mapper]?.icaoCallsign}: Deviate to $devHdg")
                         aircraft += WeatherAvoidanceInfo(devHdg)
                     }
                 }
@@ -297,9 +298,7 @@ class TrajectoryManager {
     private fun getStormDeviationHeading(aircraft: Entity): Short? {
         val speed = aircraft[Speed.mapper] ?: return null
         val direction = aircraft[Direction.mapper]?.trackUnitVector?.angleDeg() ?: return null
-        val acInfo = aircraft[AircraftInfo.mapper] ?: return null
         val startHeading = ((modulateHeading(convertWorldAndRenderDeg(direction) + MAG_HDG_DEV)) / 5).roundToInt() * 5
-        println("${acInfo.icaoCallsign}: Start heading - $startHeading")
 
         // Max 70 degree deviation in steps of 10 degrees
         for (absDev in 1..7) {

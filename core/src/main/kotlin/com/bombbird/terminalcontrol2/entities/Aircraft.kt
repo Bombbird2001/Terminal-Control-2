@@ -279,7 +279,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                     else null
                 }),
                 has(RNPCaptured.mapper),
-                has(ContactToCentre.mapper),
+                has(ContactToCentre.mapper) && has(CommandDirect.mapper),
                 get(RecentGoAround.mapper)?.reason
             )
         }
@@ -422,7 +422,7 @@ class Aircraft(callsign: String, posX: Float, posY: Float, alt: Float, icaoAircr
                 }),
                 has(RNPCaptured.mapper),
                 has(WaitingTakeoff.mapper),
-                has(ContactToCentre.mapper),
+                has(ContactToCentre.mapper) && has(CommandDirect.mapper),
                 get(RecentGoAround.mapper)?.reason,
                 initialDatatagPosition.xOffset, initialDatatagPosition.yOffset,
                 initialDatatagPosition.minimised, initialDatatagPosition.flashing,

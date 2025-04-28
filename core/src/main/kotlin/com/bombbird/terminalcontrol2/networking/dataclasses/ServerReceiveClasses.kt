@@ -10,6 +10,7 @@ import com.bombbird.terminalcontrol2.networking.encryption.NeedsEncryption
 import com.bombbird.terminalcontrol2.utilities.getSectorForExtrapolatedPosition
 import ktx.ashley.get
 import ktx.ashley.has
+import ktx.ashley.hasNot
 import ktx.ashley.plusAssign
 
 /** Class representing data sent on a client request to pause/run the game */
@@ -42,6 +43,7 @@ data class HandoverRequest(private val callsign: String = "", private val newSec
             // Validate aircraft altitude
             val alt = aircraft[Altitude.mapper]?.altitudeFt ?: return
             if (alt < MAX_ALT - 1900) return
+            if (aircraft.hasNot(CommandDirect.mapper)) return
             gs.incrementScoreBy(1, FlightType.DEPARTURE)
             aircraft += PendingCruiseAltitude(MathUtils.random(6f, 12f))
         } else {

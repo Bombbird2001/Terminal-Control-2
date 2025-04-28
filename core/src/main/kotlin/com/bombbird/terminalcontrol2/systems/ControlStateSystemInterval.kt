@@ -196,7 +196,10 @@ class ControlStateSystemInterval: IntervalSystem(1f) {
                 val pos = get(Position.mapper) ?: return@apply
                 val contact = get(ContactToCentre.mapper) ?: return@apply
                 val controllable = get(Controllable.mapper) ?: return@apply
-                if (alt.altitudeFt > contact.altitudeFt || getSectorForPosition(pos.x, pos.y, true) == null) {
+                // Hand over to center if aircraft is above the contact altitude and is proceeding on the route,
+                // or if the aircraft is outside the sector boundaries
+                if ((alt.altitudeFt > contact.altitudeFt && has(CommandDirect.mapper))
+                    || getSectorForPosition(pos.x, pos.y, true) == null) {
                     controllable.sectorId = SectorInfo.CENTRE
                     GAME.gameServer?.also { server ->
                         get(AircraftInfo.mapper)?.icaoCallsign?.let { callsign ->
@@ -257,7 +260,7 @@ class ControlStateSystemInterval: IntervalSystem(1f) {
             }
         }
 
-        // Clear departures up to their cruising altitude automatically (ACC)
+        // ACC clears departures up to their cruising altitude, and to their next waypoint if not already set
         val pendingCruise = pendingCruiseFamilyEntities.getEntities()
         for (i in 0 until pendingCruise.size()) {
             pendingCruise[i]?.apply {
@@ -269,7 +272,7 @@ class ControlStateSystemInterval: IntervalSystem(1f) {
                     val newClearance = ClearanceState(currClearance.routePrimaryName,
                         Route.fromSerialisedObject(currClearance.route.getSerialisedObject()),
                         Route.fromSerialisedObject(currClearance.hiddenLegs.getSerialisedObject()),
-                        currClearance.vectorHdg, currClearance.vectorTurnDir, calculateFinalCruiseAlt(this), false,
+                        null, currClearance.vectorTurnDir, calculateFinalCruiseAlt(this), false,
                         acInfo.aircraftPerf.tripIas, currClearance.minIas, currClearance.maxIas, currClearance.optimalIas,
                         currClearance.clearedApp, currClearance.clearedTrans, currClearance.cancelLastMaxSpd)
                     addNewClearanceToPendingClearances(this, newClearance, 0)
