@@ -82,9 +82,8 @@ class Route() {
     }
 
     /**
-     * Wrapper function for removing a range of leg from the route from start to end indices, both inclusive
-     * @param startIndex the index of the first leg to remove
-     * @param endIndex the index of the last leg to remove
+     * Wrapper function for removing a range of legs from the route from [startIndex]
+     * to [endIndex], both inclusive
      */
     fun removeRange(startIndex: Int, endIndex: Int) {
         legs.removeRange(startIndex, endIndex)

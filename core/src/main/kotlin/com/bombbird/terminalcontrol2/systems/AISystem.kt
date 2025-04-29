@@ -602,7 +602,7 @@ class AISystem: EntitySystem() {
 
                 // Check whether aircraft is in the LOC arc - 35 deg at <= 10 nm and 10 deg at > 10nm
                 if (!isInsideLocArc(locApp, pos.x, pos.y, LOC_INNER_ARC_ANGLE_DEG, LOC_INNER_ARC_DIST_NM) &&
-                    !isInsideLocArc(locApp, pos.x, pos.y, LOC_OUTER_ARC_ANGLE_DEG, locApp[Localizer.mapper]?.maxDistNm ?: return@apply)) return@apply
+                    !isInsideLocArc(locApp, pos.x, pos.y, LOC_OUTER_ARC_ANGLE_DEG, locApp[Localizer.mapper]?.maxDistNm?.toFloat() ?: return@apply)) return@apply
 
                 // Find point of intersection between aircraft ground track and localizer course
                 val intersectionPoint = Vector2(locPos.x, locPos.y)

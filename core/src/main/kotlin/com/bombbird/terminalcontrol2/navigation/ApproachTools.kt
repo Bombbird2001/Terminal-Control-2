@@ -109,12 +109,12 @@ fun checkLineUpDistReached(approach: Entity, posX: Float, posY: Float): Boolean 
  * @param distNm the range of the arc
  * @return whether the aircraft is within range of the specified localizer arc
  */
-fun isInsideLocArc(locApp: Entity, posX: Float, posY: Float, angleDeg: Float, distNm: Byte): Boolean {
+fun isInsideLocArc(locApp: Entity, posX: Float, posY: Float, angleDeg: Float, distNm: Float): Boolean {
     val pos = locApp[Position.mapper] ?: return false
     val dir = locApp[Direction.mapper] ?: return false
     if (locApp.hasNot(Localizer.mapper)) return false
 
-    return checkInArc(pos.x, pos.y, convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()), nmToPx(distNm.toFloat()), angleDeg, posX, posY)
+    return checkInArc(pos.x, pos.y, convertWorldAndRenderDeg(dir.trackUnitVector.angleDeg()), nmToPx(distNm), angleDeg, posX, posY)
 }
 
 /**

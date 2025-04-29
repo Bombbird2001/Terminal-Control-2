@@ -29,6 +29,8 @@ class ControlStateSystemInterval: IntervalSystem(1f) {
         private val goAroundFamily: Family = allOf(RecentGoAround::class).get()
         private val pendingCruiseFamily: Family = allOf(PendingCruiseAltitude::class, ClearanceAct::class, AircraftInfo::class).get()
         private val divergentDepFamily: Family = allOf(DivergentDepartureAllowed::class).get()
+        private val aircraftOnLocFamily = allOf(LocalizerCaptured::class, ClearanceAct::class)
+            .exclude(CommandDirect::class).get()
 
         fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
@@ -43,6 +45,7 @@ class ControlStateSystemInterval: IntervalSystem(1f) {
     private val goAroundFamilyEntities = FamilyWithListener.newServerFamilyWithListener(goAroundFamily)
     private val pendingCruiseFamilyEntities = FamilyWithListener.newServerFamilyWithListener(pendingCruiseFamily)
     private val divergentDepFamilyEntities = FamilyWithListener.newServerFamilyWithListener(divergentDepFamily)
+    private val aircraftOnLocFamilyEntities = FamilyWithListener.newServerFamilyWithListener(aircraftOnLocFamily)
 
     /**
      * Secondary update system, for operations that can be updated at a lower frequency and do not rely on deltaTime
@@ -288,6 +291,39 @@ class ControlStateSystemInterval: IntervalSystem(1f) {
                 val divDep = get(DivergentDepartureAllowed.mapper) ?: return@apply
                 divDep.timeLeft -= interval
                 if (divDep.timeLeft < 0) remove<DivergentDepartureAllowed>()
+            }
+        }
+
+        // Remove waypoints not on approach path and in front of aircraft that
+        // has captured localizer
+        val localizerAircraft = aircraftOnLocFamilyEntities.getEntities()
+        for (i in 0 until localizerAircraft.size()) {
+            localizerAircraft[i]?.apply {
+                val pos = get(Position.mapper) ?: return@apply
+                val latestClearance = getLatestClearanceState(this) ?: return@apply
+                val locApp = get(LocalizerCaptured.mapper)?.locApp ?: return@apply
+                val locPos = locApp[Position.mapper] ?: return@apply
+                val distFromLocNm = pxToNm(calculateDistanceBetweenPoints(pos.x, pos.y, locPos.x, locPos.y))
+
+                var legIndex = 0
+                for (i in 0 until latestClearance.route.size) {
+                    if (latestClearance.route[i].phase == Route.Leg.MISSED_APP) {
+                        legIndex = i - 1
+                        break
+                    }
+                    val leg = latestClearance.route[i] as? Route.WaypointLeg ?: continue
+                    val wpt = getServerWaypointMap()?.get(leg.wptId)?.entity ?: continue
+                    val wptPos = wpt[Position.mapper] ?: continue
+                    if (isInsideLocArc(locApp, wptPos.x, wptPos.y, 2.5f, distFromLocNm)) {
+                        legIndex = i - 1
+                        break
+                    }
+                }
+
+                if (legIndex >= 0) {
+                    latestClearance.route.removeRange(0, legIndex)
+                    this += LatestClearanceChanged()
+                }
             }
         }
     }

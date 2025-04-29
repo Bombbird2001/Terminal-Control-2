@@ -407,7 +407,7 @@ class TrafficSystemInterval: IntervalSystem(1f) {
             val currPos = Vector2(rwyPos.x, rwyPos.y)
 
             // Check in increments of 1nm starting from runway start position
-            for (i in 0..pathLengthNm) {
+            repeat(pathLengthNm) {
                 val redZones = getRedCellCountAtPosition(currPos.x, currPos.y, Float.MIN_VALUE, 1)
 
                 // If there are 3 or more red zones in the vicinity, return false
