@@ -19,6 +19,7 @@ class AndroidLauncher : AndroidApplication() {
         const val ACT_CHECK_TTS_DATA = 45512
         const val ACT_INSTALL_TTS_DATA = 45513
         const val PLAY_SHOW_ACHIEVEMENTS = 45514
+        const val SHOW_SAVED_GAMES = 45515
     }
 
     private lateinit var terminalControl2: TerminalControl2
@@ -28,7 +29,10 @@ class AndroidLauncher : AndroidApplication() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        terminalControl2 = TerminalControl2(fileHandler, ttsHandler, StubDiscordHandler, playServicesManager)
+        terminalControl2 = TerminalControl2(
+            fileHandler, ttsHandler, StubDiscordHandler,
+            playServicesManager, playServicesManager
+        )
         initialize(terminalControl2, AndroidApplicationConfiguration().apply {
             // Configure your application here.
             numSamples = 0

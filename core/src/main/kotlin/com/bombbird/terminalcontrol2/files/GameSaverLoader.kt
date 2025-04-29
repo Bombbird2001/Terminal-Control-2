@@ -1,13 +1,11 @@
 package com.bombbird.terminalcontrol2.files
 
+import com.badlogic.gdx.Gdx
+import com.badlogic.gdx.graphics.Pixmap
 import com.badlogic.gdx.utils.ArrayMap.Entries
 import com.badlogic.gdx.utils.GdxRuntimeException
 import com.badlogic.gdx.utils.Queue.QueueIterator
-import com.bombbird.terminalcontrol2.components.AircraftInfo
-import com.bombbird.terminalcontrol2.components.AirportInfo
-import com.bombbird.terminalcontrol2.components.ThunderStormInfo
-import com.bombbird.terminalcontrol2.components.WakeTrail
-import com.bombbird.terminalcontrol2.components.WaypointInfo
+import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.Aircraft
 import com.bombbird.terminalcontrol2.entities.Airport
 import com.bombbird.terminalcontrol2.entities.ThunderStorm
@@ -35,6 +33,7 @@ import java.time.format.DateTimeFormatter
 /** Base data class save for game server */
 @JsonClass(generateAdapter = true)
 data class GameServerSave(
+    val uniqueId: String?,
     val mainName: String,
     val arrivalSpawnTimerS: Float,
     val previousArrivalOffsetS: Float,
@@ -65,12 +64,16 @@ data class GameServerSave(
 data class GameSaveMeta(val mainName: String, val score: Int, val highScore: Int, val landed: Int, val departed: Int,
                         val configNames: String?, val lastPlayedDatetime: String?)
 
+/** Data class to combine game save and metadata */
+@JsonClass(generateAdapter = true)
+data class CombinedSaveString(val saveData: String, val saveMeta: String)
+
 @OptIn(ExperimentalStdlibApi::class)
 fun getSaveJSONString(gs: GameServer): String {
     val moshi = getMoshiWithAllAdapters()
 
     // Main game information
-    val saveObject = GameServerSave(gs.mainName, gs.arrivalSpawnTimerS, gs.previousArrivalOffsetS, gs.trafficValue,
+    val saveObject = GameServerSave(gs.uniqueId, gs.mainName, gs.arrivalSpawnTimerS, gs.previousArrivalOffsetS, gs.trafficValue,
         gs.trafficMode, gs.score, gs.highScore, gs.landed, gs.departed, gs.weatherMode, gs.emergencyRate, gs.stormsDensity,
         gs.nightModeStart, gs.nightModeEnd, gs.useRecat, gs.trailDotTimer,
         Entries(gs.aircraft).map { it.value },
@@ -110,15 +113,16 @@ fun saveGame(gs: GameServer) {
 
     val saveIndex = currSaveId ?: getNextAvailableSaveID() ?: return
     gs.saveID = saveIndex
+
+    val metaObject = GameSaveMeta(gs.mainName, gs.score, gs.highScore, gs.landed, gs.departed,
+        gs.getSaveMetaRunwayConfigString(), ZonedDateTime.now().format(DateTimeFormatter.ISO_ZONED_DATE_TIME))
+    val saveMetaString = moshi.adapter<GameSaveMeta>().toJson(metaObject)
+
     val saveHandle = saveFolderHandle.child("${saveIndex}.json")
     try {
         saveHandle.writeString(saveString, false)
-
-        // Save meta information
-        val metaObject = GameSaveMeta(gs.mainName, gs.score, gs.highScore, gs.landed, gs.departed,
-            gs.getSaveMetaRunwayConfigString(), ZonedDateTime.now().format(DateTimeFormatter.ISO_ZONED_DATE_TIME))
         val metaHandle = saveFolderHandle.child("${saveIndex}.meta")
-        metaHandle.writeString(moshi.adapter<GameSaveMeta>().toJson(metaObject), false)
+        metaHandle.writeString(saveMetaString, false)
     } catch (e: GdxRuntimeException) {
         if (e.stackTraceToString().lowercase().contains("enospc")) {
             val text = "Not enough space on device${if (isMobile()) " - consider moving game data to external storage in your device settings" else ""}"
@@ -127,6 +131,15 @@ fun saveGame(gs: GameServer) {
         } else {
             FileLog.warn("GameSaverLoader", "Could not save due to\n$e")
         }
+    }
+
+    val combinedSave = CombinedSaveString(saveString, saveMetaString)
+    val combinedSaveString = moshi.adapter<CombinedSaveString>().toJson(combinedSave)
+    // Save to cloud if needed
+    val description = "${gs.mainName}\nScore: ${gs.score}, High score: ${gs.highScore}\nLanded: ${gs.landed}, Departed: ${gs.departed}${metaObject.configNames}"
+    Gdx.app.postRunnable {
+        val screenshot = Pixmap.createFromFrameBuffer(0, 0, Gdx.graphics.width, Gdx.graphics.height)
+        GAME.cloudSaveHandler.saveGame(gs.uniqueId, combinedSaveString, description, screenshot)
     }
 }
 
@@ -215,6 +228,7 @@ private fun loadSave(gs: GameServer, saveId: Int, useBackup: Boolean) {
  * @param save the [GameServerSave] object to load from
  */
 private fun setGameServerFields(gs: GameServer, save: GameServerSave) {
+    gs.uniqueId = save.uniqueId ?: gs.getRandomUniqueID()
     gs.arrivalSpawnTimerS = save.arrivalSpawnTimerS
     gs.previousArrivalOffsetS = save.previousArrivalOffsetS
     gs.trafficValue = save.trafficValue

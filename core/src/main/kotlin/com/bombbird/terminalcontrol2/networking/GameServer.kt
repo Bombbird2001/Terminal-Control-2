@@ -156,6 +156,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
 
     // Blocking queue to store runnables to be run in the main thread after engine update
     private val pendingRunnablesQueue = ConcurrentLinkedQueue<Runnable>()
+    var uniqueId = ""
     var mainName = "----"
     val primarySector = Polygon() // The primary TMA sector polygon without being split up into sub-sectors
     val sectors =
@@ -294,6 +295,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
         engine.addSystem(WeatherSystemInterval())
 
         if (saveId != null) loadSave(this, saveId)
+        else uniqueId = getRandomUniqueID()
         loadWorldData(mainName, this)
 
         trafficSystemInterval.initializeConflictLevelArray(MAX_ALT, VERT_SEP)
@@ -1087,6 +1089,11 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
     /** Sets the looping flag to false */
     fun setLoopingFalse() {
         loopRunning.set(false)
+    }
+
+    /** Gets a random unique ID for this save */
+    fun getRandomUniqueID(): String {
+        return "$mainName-${UUID.randomUUID()}-$BUILD_VERSION"
     }
 
     /**

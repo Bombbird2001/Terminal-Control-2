@@ -1,28 +1,36 @@
 package com.bombbird.terminalcontrol2.android
 
 import android.content.Context
+import android.graphics.Bitmap
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.preferencesDataStore
 import com.bombbird.terminalcontrol2.integrations.AchievementHandler
+import com.bombbird.terminalcontrol2.integrations.CloudSaveHandler
 import com.bombbird.terminalcontrol2.utilities.FileLog
 import com.google.android.gms.games.PlayGames
 import com.google.android.gms.games.PlayGamesSdk
+import com.google.android.gms.games.SnapshotsClient
+import com.google.android.gms.games.snapshot.SnapshotMetadataChange
+import com.google.android.gms.tasks.OnSuccessListener
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import androidx.core.graphics.createBitmap
+import com.badlogic.gdx.graphics.Pixmap
 
 
 private val PREFS_PLAY_GAMES_SIGN_IN_FAILED = booleanPreferencesKey("play_games_sign_in_failed")
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "main_store")
 
-class PlayServicesManager(private val activity: AndroidLauncher): AchievementHandler {
+class PlayServicesManager(private val activity: AndroidLauncher): AchievementHandler, CloudSaveHandler {
     private val gamesSignInClient = PlayGames.getGamesSignInClient(activity)
     private val achievementsClient = PlayGames.getAchievementsClient(activity)
+    private val snapshotsClient = PlayGames.getSnapshotsClient(activity)
 
     fun initialize() {
         PlayGamesSdk.initialize(activity)
@@ -105,15 +113,32 @@ class PlayServicesManager(private val activity: AndroidLauncher): AchievementHan
         }
     }
 
-    override fun driveSaveGame() {
-        // save = true
-        // startDriveSignIn()
-        // driveManager?.saveGame()
+    override fun showSavedGames() {
+        val intentTask = snapshotsClient.getSelectSnapshotIntent(
+            "See Saved Games", true, true, SnapshotsClient.DISPLAY_LIMIT_NONE
+        )
+
+        intentTask.addOnSuccessListener(OnSuccessListener { intent ->
+            activity.startActivityForResult(intent, AndroidLauncher.SHOW_SAVED_GAMES)
+        })
     }
 
-    override fun driveLoadGame() {
-        // save = false
-        // startDriveSignIn()
-        // driveManager?.loadGame()
+    override fun saveGame(uniqueId: String, saveData: String, description: String, pixmap: Pixmap) {
+        val snapshot = snapshotsClient.open(uniqueId, true)
+        snapshot.addOnSuccessListener {
+            it?.data?.let { snapshot ->
+                snapshot.snapshotContents.writeBytes(saveData.encodeToByteArray())
+                val bitmap = createBitmap(pixmap.width, pixmap.height, Bitmap.Config.ARGB_8888)
+                bitmap.copyPixelsFromBuffer(pixmap.pixels)
+                val metadataChange = SnapshotMetadataChange.Builder()
+                    .setDescription(description)
+                    .setCoverImage(bitmap)
+                    .build()
+                snapshotsClient.commitAndClose(snapshot, metadataChange)
+            } ?: run {
+                FileLog.error("PlayServicesManager", "Failed to open snapshot $uniqueId")
+                return@addOnSuccessListener
+            }
+        }
     }
 }
