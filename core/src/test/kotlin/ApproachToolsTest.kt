@@ -113,8 +113,8 @@ object ApproachToolsTest: FunSpec() {
         test("Localizer arc check") {
             isInsideLocArc(locGsApp1.entity, 10f, 10f + nmToPx(9), LOC_INNER_ARC_ANGLE_DEG, LOC_INNER_ARC_DIST_NM).shouldBeTrue()
             isInsideLocArc(locGsApp1.entity, 10f + nmToPx(5), 10f + nmToPx(5), LOC_INNER_ARC_ANGLE_DEG, LOC_INNER_ARC_DIST_NM).shouldBeFalse()
-            isInsideLocArc(locGsApp2.entity, 10f + nmToPx(12), 10f + nmToPx(4), LOC_OUTER_ARC_ANGLE_DEG, 25).shouldBeFalse()
-            isInsideLocArc(locGsApp2.entity, 10f + nmToPx(12), 10f + nmToPx(1), LOC_OUTER_ARC_ANGLE_DEG, 25).shouldBeTrue()
+            isInsideLocArc(locGsApp2.entity, 10f + nmToPx(12), 10f + nmToPx(4), LOC_OUTER_ARC_ANGLE_DEG, 25f).shouldBeFalse()
+            isInsideLocArc(locGsApp2.entity, 10f + nmToPx(12), 10f + nmToPx(1), LOC_OUTER_ARC_ANGLE_DEG, 25f).shouldBeTrue()
             isInsideLocArc(locStepApp.entity, 10f + nmToPx(13), 10f, LOC_INNER_ARC_ANGLE_DEG, LOC_INNER_ARC_DIST_NM).shouldBeFalse()
             visApp?.apply { isInsideLocArc(visual, 10f + nmToPx(5), 10f, LOC_INNER_ARC_ANGLE_DEG, LOC_INNER_ARC_DIST_NM).shouldBeFalse() }.shouldNotBeNull()
         }
