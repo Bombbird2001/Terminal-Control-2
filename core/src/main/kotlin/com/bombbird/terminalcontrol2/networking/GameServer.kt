@@ -230,6 +230,8 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
     var landed = 0
     var departed = 0
 
+    var timePlayedMs = 0L
+
     var trailDotTimer = 0f
 
     /** Game specific settings */
@@ -642,6 +644,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
                 // Otherwise some strange bugs may appear
                 prevMs = min(currMs - 1, prevMs)
                 update((currMs - prevMs) / 1000f)
+                timePlayedMs += currMs - prevMs
 
                 val currFastSlot = (currMs - startTime) / (SERVER_TO_CLIENT_UPDATE_INTERVAL_FAST).toLong()
                 if (currFastSlot > fastUpdateSlot) {

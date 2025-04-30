@@ -1,7 +1,5 @@
 package com.bombbird.terminalcontrol2.files
 
-import com.badlogic.gdx.Gdx
-import com.badlogic.gdx.graphics.Pixmap
 import com.badlogic.gdx.utils.ArrayMap.Entries
 import com.badlogic.gdx.utils.GdxRuntimeException
 import com.badlogic.gdx.utils.Queue.QueueIterator
@@ -33,7 +31,6 @@ import java.time.format.DateTimeFormatter
 /** Base data class save for game server */
 @JsonClass(generateAdapter = true)
 data class GameServerSave(
-    val uniqueId: String?,
     val mainName: String,
     val arrivalSpawnTimerS: Float,
     val previousArrivalOffsetS: Float,
@@ -43,6 +40,7 @@ data class GameServerSave(
     val highScore: Int,
     val landed: Int,
     val departed: Int,
+    val timePlayedMs: Long?,
     val weatherMode: Byte,
     val emergencyRate: Byte,
     val stormsDensity: Byte,
@@ -62,7 +60,7 @@ data class GameServerSave(
  */
 @JsonClass(generateAdapter = true)
 data class GameSaveMeta(val mainName: String, val score: Int, val highScore: Int, val landed: Int, val departed: Int,
-                        val configNames: String?, val lastPlayedDatetime: String?)
+                        val configNames: String?, val lastPlayedDatetime: String?, val uniqueId: String?)
 
 /** Data class to combine game save and metadata */
 @JsonClass(generateAdapter = true)
@@ -73,9 +71,13 @@ fun getSaveJSONString(gs: GameServer): String {
     val moshi = getMoshiWithAllAdapters()
 
     // Main game information
-    val saveObject = GameServerSave(gs.uniqueId, gs.mainName, gs.arrivalSpawnTimerS, gs.previousArrivalOffsetS, gs.trafficValue,
-        gs.trafficMode, gs.score, gs.highScore, gs.landed, gs.departed, gs.weatherMode, gs.emergencyRate, gs.stormsDensity,
-        gs.nightModeStart, gs.nightModeEnd, gs.useRecat, gs.trailDotTimer,
+    val saveObject = GameServerSave(
+        gs.mainName, gs.arrivalSpawnTimerS,
+        gs.previousArrivalOffsetS, gs.trafficValue,
+        gs.trafficMode, gs.score, gs.highScore, gs.landed,
+        gs.departed, gs.timePlayedMs, gs.weatherMode,
+        gs.emergencyRate, gs.stormsDensity, gs.nightModeStart,
+        gs.nightModeEnd, gs.useRecat, gs.trailDotTimer,
         Entries(gs.aircraft).map { it.value },
         Entries(gs.airports).map { it.value },
         gs.waypoints.values.toList(),
@@ -114,8 +116,12 @@ fun saveGame(gs: GameServer) {
     val saveIndex = currSaveId ?: getNextAvailableSaveID() ?: return
     gs.saveID = saveIndex
 
-    val metaObject = GameSaveMeta(gs.mainName, gs.score, gs.highScore, gs.landed, gs.departed,
-        gs.getSaveMetaRunwayConfigString(), ZonedDateTime.now().format(DateTimeFormatter.ISO_ZONED_DATE_TIME))
+    val metaObject = GameSaveMeta(
+        gs.mainName, gs.score, gs.highScore, gs.landed,
+        gs.departed, gs.getSaveMetaRunwayConfigString(),
+        ZonedDateTime.now().format(DateTimeFormatter.ISO_ZONED_DATE_TIME),
+        gs.uniqueId
+    )
     val saveMetaString = moshi.adapter<GameSaveMeta>().toJson(metaObject)
 
     val saveHandle = saveFolderHandle.child("${saveIndex}.json")
@@ -135,12 +141,10 @@ fun saveGame(gs: GameServer) {
 
     val combinedSave = CombinedSaveString(saveString, saveMetaString)
     val combinedSaveString = moshi.adapter<CombinedSaveString>().toJson(combinedSave)
+
     // Save to cloud if needed
     val description = "${gs.mainName}\nScore: ${gs.score}, High score: ${gs.highScore}\nLanded: ${gs.landed}, Departed: ${gs.departed}${metaObject.configNames}"
-    Gdx.app.postRunnable {
-        val screenshot = Pixmap.createFromFrameBuffer(0, 0, Gdx.graphics.width, Gdx.graphics.height)
-        GAME.cloudSaveHandler.saveGame(gs.uniqueId, combinedSaveString, description, screenshot)
-    }
+    GAME.cloudSaveHandler.saveGame(gs.uniqueId, combinedSaveString, description, gs.timePlayedMs)
 }
 
 /**
@@ -166,6 +170,10 @@ private fun loadSave(gs: GameServer, saveId: Int, useBackup: Boolean) {
     val moshi = getMoshiWithAllAdapters()
     val saveFolderHandle = getExtDir("Saves") ?: return
     if (!saveFolderHandle.exists()) return
+    val metaHandle = saveFolderHandle.child("$saveId.meta")
+    if (!metaHandle.exists()) {
+        FileLog.warn("GameSaverLoader", "This should not happen, but $saveId.meta is missing")
+    }
     val saveHandle = saveFolderHandle.child("${saveId}${if (useBackup) "-backup" else ""}.json")
     if (!saveHandle.exists()) {
         FileLog.warn("GameSaverLoader", "${saveId}.json missing, attempting to use backup")
@@ -180,6 +188,10 @@ private fun loadSave(gs: GameServer, saveId: Int, useBackup: Boolean) {
 
     try {
         val saveObject = moshi.adapter<GameServerSave>().fromJson(saveHandle.readString()) ?: return
+        val metaObject = if (metaHandle.exists()) moshi.adapter<GameSaveMeta>().fromJson(metaHandle.readString())
+        else null
+
+        gs.uniqueId = metaObject?.uniqueId ?: gs.getRandomUniqueID()
         setGameServerFields(gs, saveObject)
         saveObject.aircraft.forEach {
             val callsign = it.entity[AircraftInfo.mapper]?.icaoCallsign ?: return@forEach
@@ -228,7 +240,6 @@ private fun loadSave(gs: GameServer, saveId: Int, useBackup: Boolean) {
  * @param save the [GameServerSave] object to load from
  */
 private fun setGameServerFields(gs: GameServer, save: GameServerSave) {
-    gs.uniqueId = save.uniqueId ?: gs.getRandomUniqueID()
     gs.arrivalSpawnTimerS = save.arrivalSpawnTimerS
     gs.previousArrivalOffsetS = save.previousArrivalOffsetS
     gs.trafficValue = save.trafficValue
@@ -237,6 +248,7 @@ private fun setGameServerFields(gs: GameServer, save: GameServerSave) {
     gs.highScore = save.highScore
     gs.landed = save.landed
     gs.departed = save.departed
+    gs.timePlayedMs = save.timePlayedMs ?: 0
     gs.weatherMode = save.weatherMode
     gs.emergencyRate = save.emergencyRate
     gs.stormsDensity = save.stormsDensity

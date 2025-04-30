@@ -42,7 +42,7 @@ class LoadGame: BasicUIScreen() {
                     table {
                         table {
                             textButton("Import save", "LoadGameDeleteExportImport").cell(width = 300f, growY = true, uniformY = true).addChangeListener { event, _ ->
-                                importSave({
+                                importSaveWithFileDialog({
                                     showDialog(CustomDialog("Import success", "Imported save $it successfully", "", "Ok"))
                                     refreshSaveList()
                                 }, {
@@ -245,7 +245,7 @@ class LoadGame: BasicUIScreen() {
                     try {
                         val playedTemporal = ZonedDateTime.parse(it, DateTimeFormatter.ISO_ZONED_DATE_TIME)
                         getDatetimeDifferenceString(playedTemporal, ZonedDateTime.now())
-                    } catch (e: DateTimeParseException) {
+                    } catch (_: DateTimeParseException) {
                         null
                     }
                 }

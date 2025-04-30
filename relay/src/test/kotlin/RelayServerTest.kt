@@ -2,6 +2,7 @@ import com.bombbird.terminalcontrol2.TerminalControl2
 import com.bombbird.terminalcontrol2.files.StubExternalFileHandler
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.integrations.StubAchievementHandler
+import com.bombbird.terminalcontrol2.integrations.StubCloudSaveHandler
 import com.bombbird.terminalcontrol2.integrations.StubDiscordHandler
 import com.bombbird.terminalcontrol2.networking.GameServer
 import com.bombbird.terminalcontrol2.networking.HttpRequest
@@ -26,7 +27,10 @@ object RelayServerTest: FunSpec() {
         // Start the relay server and endpoint
         RelayServer.main(arrayOf("test"))
 
-        GAME = TerminalControl2(StubExternalFileHandler, StubTextToSpeech, StubDiscordHandler, StubAchievementHandler)
+        GAME = TerminalControl2(
+            StubExternalFileHandler, StubTextToSpeech, StubDiscordHandler,
+            StubAchievementHandler, StubCloudSaveHandler
+        )
 
         test("No games running") {
             HttpRequest.sendPublicGamesRequest {

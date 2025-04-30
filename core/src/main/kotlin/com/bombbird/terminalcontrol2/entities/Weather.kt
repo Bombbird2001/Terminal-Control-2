@@ -136,7 +136,7 @@ class ThunderCell(
             7, 8 -> STORM_ORANGE
             9, 10 -> STORM_RED
             else -> {
-                FileLog.error("Weather", "Invalid intensity $intensity")
+                FileLog.warn("Weather", "Invalid intensity $intensity")
                 STORM_BLUE
             }
         }

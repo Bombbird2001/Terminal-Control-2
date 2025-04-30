@@ -12,6 +12,7 @@ import com.bombbird.terminalcontrol2.files.*
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.integrations.DiscordHandler
 import com.bombbird.terminalcontrol2.integrations.AchievementHandler
+import com.bombbird.terminalcontrol2.integrations.CloudSaveHandler
 import com.bombbird.terminalcontrol2.networking.*
 import com.bombbird.terminalcontrol2.networking.playerclient.LANClient
 import com.bombbird.terminalcontrol2.networking.playerclient.LANClientDiscoveryHandler
@@ -44,7 +45,8 @@ import ktx.scene2d.*
  * [clearScreen] is set to false as it will be handled by the individual screens
  */
 class TerminalControl2(val externalFileHandler: ExternalFileHandler, ttsHandler: TextToSpeechHandler,
-                       val discordHandler: DiscordHandler, achievementHandler: AchievementHandler): KtxGame<KtxScreen>(clearScreen = false) {
+                       val discordHandler: DiscordHandler, achievementHandler: AchievementHandler,
+                       val cloudSaveHandler: CloudSaveHandler): KtxGame<KtxScreen>(clearScreen = false) {
     lateinit var batch: SpriteBatch
     lateinit var engine: Engine
     lateinit var soundManager: SoundManager

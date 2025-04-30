@@ -60,36 +60,53 @@ fun exportSave(saveId: Int, onSuccess: () -> Unit, onFailure: (String) -> Unit) 
 }
 
 /**
- * Imports an exported file into the saves folder of the game
- * @return a triple containing a boolean - true if the import was successful, else false; a string, containing the
- * reason for failure if any; a string, with the name of the airport is import was successful
+ * Imports a save from the provided [saveString] which should be in JSON format;
+ * the save will be assigned a new unique ID if [uniqueIdToUse] is null, else
+ * will use the provided ID in the save metadata; calls [onSuccess] with the
+ * name of the airport if import was successful, or [onFailure] with the reason
+ * for failure if import failed
  */
 @OptIn(ExperimentalStdlibApi::class)
-fun importSave(onSuccess: (String) -> Unit, onFailure: (String) -> Unit) {
+fun importSaveFromString(saveString: String, uniqueIdToUse: String?, onSuccess: (String) -> Unit, onFailure: (String) -> Unit) {
+    val moshi = getMoshiWithAllAdapters()
+    try {
+        val testGs = GameServer.testGameServer()
+        GAME.gameServer = testGs
+        loadAircraftData()
+        val saveObject = moshi.adapter<GameServerSave>().fromJson(saveString) ?: return onFailure("Error parsing file")
+        testGs.mainName = saveObject.mainName
+        val configDetails = GAME.gameServer?.getSaveMetaRunwayConfigString()
+        GAME.gameServer = null
+        // Save meta information
+        val metaObject = GameSaveMeta(
+            saveObject.mainName, saveObject.score, saveObject.highScore, saveObject.landed,
+            saveObject.departed, configDetails,
+            ZonedDateTime.now().format(DateTimeFormatter.ISO_ZONED_DATE_TIME),
+            testGs.getRandomUniqueID()
+        )
+        val saveFolderHandle = getExtDir("Saves") ?: return onFailure("Error opening game save folder")
+        val saveId = getNextAvailableSaveID()
+        val saveHandle = saveFolderHandle.child("${saveId}.json")
+        saveHandle.writeString(saveString, false)
+        val metaHandle = saveFolderHandle.child("${saveId}.meta")
+        metaHandle.writeString(moshi.adapter<GameSaveMeta>().toJson(metaObject), false)
+        onSuccess(saveObject.mainName)
+    } catch (e: JsonDataException) {
+        e.printStackTrace()
+        GAME.gameServer = null
+        onFailure("File may be corrupted - it does not contain valid game data")
+    }
+}
+
+/**
+ * Imports an exported file into the saves folder of the game with the file
+ * selection UI, calling [onSuccess] with the name of the airport if import was
+ * successful, or [onFailure] with the reason for failure if import failed
+ */
+fun importSaveWithFileDialog(onSuccess: (String) -> Unit, onFailure: (String) -> Unit) {
     GAME.externalFileHandler.selectAndReadFromFile({
-        val moshi = getMoshiWithAllAdapters()
-        try {
-            if (it == null) return@selectAndReadFromFile onFailure("Data is missing in file")
-            GAME.gameServer = GameServer.testGameServer()
-            loadAircraftData()
-            val saveObject = moshi.adapter<GameServerSave>().fromJson(it) ?: return@selectAndReadFromFile onFailure("Error parsing file")
-            val configDetails = GAME.gameServer?.getSaveMetaRunwayConfigString()
-            GAME.gameServer = null
-            // Save meta information
-            val metaObject = GameSaveMeta(saveObject.mainName, saveObject.score, saveObject.highScore, saveObject.landed,
-                saveObject.departed, configDetails, ZonedDateTime.now().format(DateTimeFormatter.ISO_ZONED_DATE_TIME))
-            val saveFolderHandle = getExtDir("Saves") ?: return@selectAndReadFromFile onFailure("Error opening game save folder")
-            val saveId = getNextAvailableSaveID()
-            val saveHandle = saveFolderHandle.child("${saveId}.json")
-            saveHandle.writeString(it, false)
-            val metaHandle = saveFolderHandle.child("${saveId}.meta")
-            metaHandle.writeString(moshi.adapter<GameSaveMeta>().toJson(metaObject), false)
-            onSuccess(saveObject.mainName)
-        } catch (e: JsonDataException) {
-            e.printStackTrace()
-            GAME.gameServer = null
-            onFailure("File may be corrupted - it does not contain valid game data")
-        }
+        if (it == null) return@selectAndReadFromFile onFailure("Data is missing in file")
+        importSaveFromString(it, null,  onSuccess, onFailure)
     }, onFailure)
 }
 
@@ -104,7 +121,7 @@ fun getNextAvailableSaveID(): Int? {
         try {
             val fileIndex = it.nameWithoutExtension().toInt()
             if (saveIndex <= fileIndex) saveIndex = fileIndex + 1
-        } catch (e: NumberFormatException) {
+        } catch (_: NumberFormatException) {
             return@forEach
         }
     }
@@ -128,7 +145,7 @@ fun getAvailableSaveGames(): GdxArrayMap<Int, GameSaveMeta> {
             val id: Int
             try {
                 id = name.toInt()
-            } catch (e: NumberFormatException) {
+            } catch (_: NumberFormatException) {
                 return@forEach
             }
             @OptIn(ExperimentalStdlibApi::class)

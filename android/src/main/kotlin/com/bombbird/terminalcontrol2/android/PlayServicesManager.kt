@@ -1,7 +1,6 @@
 package com.bombbird.terminalcontrol2.android
 
 import android.content.Context
-import android.graphics.Bitmap
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
@@ -20,8 +19,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import androidx.core.graphics.createBitmap
-import com.badlogic.gdx.graphics.Pixmap
+import com.google.android.gms.games.snapshot.Snapshot
+import java.util.Collections
+import java.util.concurrent.atomic.AtomicInteger
 
 
 private val PREFS_PLAY_GAMES_SIGN_IN_FAILED = booleanPreferencesKey("play_games_sign_in_failed")
@@ -123,22 +123,76 @@ class PlayServicesManager(private val activity: AndroidLauncher): AchievementHan
         })
     }
 
-    override fun saveGame(uniqueId: String, saveData: String, description: String, pixmap: Pixmap) {
-        val snapshot = snapshotsClient.open(uniqueId, true)
-        snapshot.addOnSuccessListener {
-            it?.data?.let { snapshot ->
+    override fun saveGame(uniqueId: String, saveData: String, description: String, timePlayedMs: Long) {
+        requiresSignIn {
+            openSnapshot(uniqueId, 3, { snapshot ->
                 snapshot.snapshotContents.writeBytes(saveData.encodeToByteArray())
-                val bitmap = createBitmap(pixmap.width, pixmap.height, Bitmap.Config.ARGB_8888)
-                bitmap.copyPixelsFromBuffer(pixmap.pixels)
                 val metadataChange = SnapshotMetadataChange.Builder()
                     .setDescription(description)
-                    .setCoverImage(bitmap)
+                    .setPlayedTimeMillis(timePlayedMs)
                     .build()
                 snapshotsClient.commitAndClose(snapshot, metadataChange)
-            } ?: run {
-                FileLog.error("PlayServicesManager", "Failed to open snapshot $uniqueId")
-                return@addOnSuccessListener
+            })
+        }
+    }
+
+    override fun loadAllGames(onSuccess: (List<String>) -> Unit, onFailure: (String) -> Unit) {
+        requiresSignIn {
+            snapshotsClient.load(true).addOnSuccessListener {
+                val snapshotMetas = it?.get() ?: return@addOnSuccessListener
+                val count = snapshotMetas.count
+                val done = AtomicInteger(0)
+                val saves = Collections.synchronizedList<String>(arrayListOf())
+                snapshotMetas.forEach { meta ->
+                    openSnapshot(meta.uniqueName, 2, { snapshot ->
+                        val saveString = snapshot.snapshotContents.readFully().decodeToString()
+                        saves.add(saveString)
+                        val doneCount = done.incrementAndGet()
+                        if (doneCount == count) {
+                            onSuccess(saves)
+                        }
+                    }, {
+                        val doneCount = done.incrementAndGet()
+                        if (doneCount == count) {
+                            onSuccess(saves)
+                        }
+                    })
+                }
+                snapshotMetas.release()
+            }.addOnFailureListener {
+                FileLog.warn("PlayServicesManager", "Failed to load saved games")
+                onFailure("Failed to load saved games")
             }
+        }
+    }
+
+    private fun openSnapshot(uniqueId: String, retries: Int, onSuccess: (Snapshot) -> Unit, onFailure: ((String) -> Unit) = {}) {
+        if (retries <= 0) return onFailure("Failed to open snapshot $uniqueId after $retries tries")
+
+        val snapshot = snapshotsClient.open(uniqueId, true)
+        snapshot.addOnSuccessListener { snapshotOrConflict ->
+            if (snapshotOrConflict == null) return@addOnSuccessListener
+
+            if (snapshotOrConflict.isConflict) {
+                snapshotOrConflict.conflict?.let {
+                    val snapshot = it.snapshot
+                    val conflictingSnapshot = it.conflictingSnapshot
+                    val resolvedSnapshot = if (snapshot.metadata.lastModifiedTimestamp < conflictingSnapshot.metadata.lastModifiedTimestamp) conflictingSnapshot else snapshot
+                    snapshotsClient.resolveConflict(it.conflictId, resolvedSnapshot).addOnCompleteListener {
+                        openSnapshot(uniqueId, retries - 1, onSuccess)
+                    }
+                }
+            } else {
+                snapshotOrConflict.data?.let {
+                    onSuccess(it)
+                } ?: run {
+                    FileLog.warn("PlayServicesManager", "Failed to open snapshot $uniqueId")
+                    return@addOnSuccessListener
+                }
+            }
+        }.addOnFailureListener {
+            FileLog.warn("PlayServicesManager", "Failed to open snapshot $uniqueId, retrying... ${retries - 1} retries left")
+            openSnapshot(uniqueId, retries - 1, onSuccess)
         }
     }
 }
