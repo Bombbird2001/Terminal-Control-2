@@ -219,10 +219,7 @@ fun calculateArrivalSpawnIAS(origStarRoute: Route, aircraftRoute: Route, spawnAl
     else aircraftPerf.tripIas).toInt()).toShort()
 }
 
-/**
- * Removes all approach components from the aircraft
- * @param aircraft the aircraft entity
- */
+/** Removes all approach components from the [aircraft] entity */
 fun removeAllApproachComponents(aircraft: Entity) {
     aircraft.apply {
         remove<GlideSlopeArmed>()
@@ -233,6 +230,7 @@ fun removeAllApproachComponents(aircraft: Entity) {
         remove<VisualArmed>()
         remove<VisualCaptured>()
         remove<CirclingApproach>()
+        remove<RNPCaptured>()
         remove<AppDecelerateTo190kts>()
         remove<DecelerateToAppSpd>()
         remove<ContactToTower>()
