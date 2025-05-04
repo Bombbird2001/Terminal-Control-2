@@ -78,11 +78,10 @@ class GameSettings: BaseGameSettings() {
                             stormSelectBox = defaultSettingsSelectBox<String>().apply {
                                 setItems(OFF, LOW, MEDIUM, HIGH, NIGHTMARE)
                             }
-                            if (GAME.gameServer?.maxPlayersAllowed == 1.toByte()) {
-                                defaultSettingsLabel("Game speed:")
-                                gameSpeedSelectBox = defaultSettingsSelectBox<String>().apply {
-                                    setItems("1x", "2x", "4x")
-                                }
+                            defaultSettingsLabel("Game speed:")
+                            gameSpeedSelectBox = defaultSettingsSelectBox<String>().apply {
+                                isDisabled = GAME.gameServer?.maxPlayersAllowed != 1.toByte()
+                                setItems("1x", "2x", "4x")
                             }
                             newSettingsRow()
                             defaultSettingsLabel("Night mode:")
