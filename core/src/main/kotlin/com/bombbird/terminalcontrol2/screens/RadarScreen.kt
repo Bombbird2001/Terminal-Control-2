@@ -797,9 +797,9 @@ class RadarScreen private constructor(private val connectionHost: String, privat
     }
 
     /** Sends a request to the server to point out [aircraft] */
-    fun sendPointOutRequest(aircraft: Aircraft) {
+    fun sendPointOutRequest(aircraft: Aircraft, cancel: Boolean) {
         val callsign = aircraft.entity[AircraftInfo.mapper]?.icaoCallsign ?: return FileLog.info("RadarScreen", "Missing AircraftInfo component")
-        networkClient.sendTCP(PointOutRequest(callsign))
+        networkClient.sendTCP(PointOutRequest(callsign, playerSector, cancel))
     }
 
     /**

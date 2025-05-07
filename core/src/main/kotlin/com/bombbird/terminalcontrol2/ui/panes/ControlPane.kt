@@ -12,9 +12,11 @@ import com.bombbird.terminalcontrol2.traffic.getAvailableApproaches
 import com.bombbird.terminalcontrol2.ui.addChangeListener
 import com.bombbird.terminalcontrol2.ui.disallowDisabledClickThrough
 import com.bombbird.terminalcontrol2.ui.datatag.stopDatatagContactFlash
+import com.bombbird.terminalcontrol2.ui.datatag.stopDatatagPointOutFlash
 import com.bombbird.terminalcontrol2.utilities.*
 import com.bombbird.terminalcontrol2.utilities.FileLog
 import ktx.ashley.get
+import ktx.ashley.has
 import ktx.ashley.remove
 import ktx.collections.GdxArray
 import ktx.scene2d.*
@@ -212,10 +214,15 @@ class ControlPane {
                         addChangeListener { _, _ ->
                             Gdx.app.postRunnable {
                                 parentPane.selAircraft?.let {
+                                    if (it.entity.has(AircraftPointOutNotification.mapper)) {
+                                        CLIENT_SCREEN?.sendPointOutRequest(it, true)
+                                    }
                                     it.entity.remove<ContactNotification>()
+                                    it.entity.remove<AircraftPointOutNotification>()
                                     it.entity[AircraftRequestNotification.mapper]?.requestTypes?.clear()
                                     it.entity[Datatag.mapper]?.let { datatag ->
                                         stopDatatagContactFlash(datatag, it)
+                                        stopDatatagPointOutFlash(datatag, it)
                                     }
                                 }
                                 if (text.toString() == HANDOVER) {
@@ -271,10 +278,15 @@ class ControlPane {
                                 aircraft.entity[ClearanceAct.mapper]?.actingClearance?.clearanceState?.updateUIClearanceState(parentPane.userClearanceState)
                                 parentPane.updateSelectedAircraft(aircraft)
                                 parentPane.selAircraft?.let {
+                                    if (it.entity.has(AircraftPointOutNotification.mapper)) {
+                                        radarScreen.sendPointOutRequest(it, true)
+                                    }
                                     it.entity.remove<ContactNotification>()
+                                    it.entity.remove<AircraftPointOutNotification>()
                                     it.entity[AircraftRequestNotification.mapper]?.requestTypes?.clear()
                                     it.entity[Datatag.mapper]?.let { datatag ->
                                         stopDatatagContactFlash(datatag, it)
+                                        stopDatatagPointOutFlash(datatag, it)
                                     }
                                 }
                                 // Manually hide acknowledge button since the removal of ContactNotification is not immediate
@@ -707,15 +719,16 @@ class ControlPane {
 
     /**
      * Updates the state of the handover/acknowledge button; if both are false the button will be hidden
-     * @param handover whether the button should display handover and perform handover functionality when clicked
+     * @param handover whether the button should display handover and perform handover functionality when clicked;
+     * will be overridden by [acknowledge] if it is true
      * @param acknowledge whether the button should display acknowledge and perform acknowledge functionality when
-     * clicked; will be overridden by [handover] if it is true
+     * clicked; will override [handover] if it is true
      * @param goAround whether the button should display go around and perform go around when clicked;
      */
     fun updateHandoverAcknowledgeGoAroundButton(handover: Boolean, acknowledge: Boolean, goAround: Boolean) {
         handoverAckButton.isVisible = true
-        if (handover) handoverAckButton.setText(HANDOVER)
-        else if (acknowledge) handoverAckButton.setText(ACKNOWLEDGE)
+        if (acknowledge) handoverAckButton.setText(ACKNOWLEDGE)
+        else if (handover) handoverAckButton.setText(HANDOVER)
         else handoverAckButton.isVisible = false
         routeSubpaneObj.setGoAroundButtonState(goAround)
     }

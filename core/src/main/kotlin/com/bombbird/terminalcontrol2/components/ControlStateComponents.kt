@@ -258,6 +258,18 @@ class AircraftRequestNotification(val requestTypes: GdxSet<AircraftRequest.Reque
 }
 
 /**
+ * Component for tagging aircraft that has been pointed out to the player, which
+ * will enable the acknowledge button; this will be used only on client
+ */
+class AircraftPointOutNotification: Component {
+    companion object {
+        val mapper = object: Mapper<AircraftPointOutNotification>() {}.mapper
+
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
+    }
+}
+
+/**
  * Component for tagging aircraft that can be handed over to the next sector, including tower and ACC; this component will
  * enable the handover button
  */

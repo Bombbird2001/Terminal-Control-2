@@ -34,7 +34,7 @@ class MultiplayerCoordinationPane {
                     textButton(POINT_OUT, "PointOutButton").cell(growX = true, pad = 20f, height = 100f).apply {
                         addChangeListener { _, _ ->
                             parentPane.selAircraft?.let {
-                                CLIENT_SCREEN?.sendPointOutRequest(it)
+                                CLIENT_SCREEN?.sendPointOutRequest(it, false)
 
                                 // Disable button for 10 seconds
                                 isDisabled = true

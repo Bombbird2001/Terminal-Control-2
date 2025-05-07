@@ -76,7 +76,9 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRendererBoundingBox,
             .exclude(DoNotRenderLabel::class).get()
         private val datatagFamily: Family = allOf(Datatag::class, RadarData::class)
             .exclude(WaitingTakeoff::class).get()
-        private val contactDotFamily: Family = allOf(ContactNotification::class, RadarData::class, FlightType::class).get()
+        private val contactDotFamily: Family = allOf(ContactNotification::class, RadarData::class, Controllable::class)
+            .exclude(AircraftPointOutNotification::class).get()
+        private val pointOutDotFamily = allOf(AircraftPointOutNotification::class, RadarData::class, FlightType::class).get()
         private val waypointFamily: Family = allOf(WaypointInfo::class).get()
         private val routeFamily: Family = oneOf(PendingClearances::class, ClearanceAct::class).get()
         private val wakeRenderFamily = allOf(ApproachWakeSequence::class).get()
@@ -85,6 +87,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRendererBoundingBox,
         private val dotGreen: TextureRegion = Scene2DSkin.defaultSkin["DotGreen", TextureRegion::class.java]
         private val dotRed: TextureRegion = Scene2DSkin.defaultSkin["DotRed", TextureRegion::class.java]
         private val dotMagenta: TextureRegion = Scene2DSkin.defaultSkin["DotMagenta", TextureRegion::class.java]
+        private val dotYellow: TextureRegion = Scene2DSkin.defaultSkin["DotYellow", TextureRegion::class.java]
         private const val DOT_RADIUS = 7f
         private val WAKE_INDICATOR_COLOUR = Color(0xffbc42ff.toInt())
         private val TRANSLUCENT_WHITE_COLOUR = Color(1f, 1f, 1f, 0.7f)
@@ -111,6 +114,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRendererBoundingBox,
     private val constSizeLabelArrayFamilyEntities = FamilyWithListener.newClientFamilyWithListener(constSizeLabelArrayFamily)
     private val datatagFamilyEntities = FamilyWithListener.newClientFamilyWithListener(datatagFamily)
     private val contactDotFamilyEntities = FamilyWithListener.newClientFamilyWithListener(contactDotFamily)
+    private val pointOutDotFamilyEntities = FamilyWithListener.newClientFamilyWithListener(pointOutDotFamily)
     private val waypointFamilyEntities = FamilyWithListener.newClientFamilyWithListener(waypointFamily)
     private val routeFamilyEntities = FamilyWithListener.newClientFamilyWithListener(routeFamily)
     private val wakeRenderFamilyEntities = FamilyWithListener.newClientFamilyWithListener(wakeRenderFamily)
@@ -824,7 +828,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRendererBoundingBox,
             }
         }
 
-        // Render contact/conflict notification dots for 1s every 2s
+        // Render contact notification dots for 1s every 2s
         if (System.currentTimeMillis() % 2000 > 1000) {
             val contactDots = contactDotFamilyEntities.getEntities()
             for (i in 0 until contactDots.size()) {
@@ -847,7 +851,37 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRendererBoundingBox,
                     }
                 }
             }
+        }
+
+        // Render conflict/point out notification dots for 0.5s every 1s
+        if (System.currentTimeMillis() % 1000 > 500) {
+            val pointOutDots = pointOutDotFamilyEntities.getEntities()
+            for (i in 0 until pointOutDots.size()) {
+                pointOutDots[i]?.apply {
+                    val controllable = getOrLogMissing(Controllable.mapper) ?: return@apply
+                    // Only render point out dot for controlling sector
+                    if (controllable.sectorId != CLIENT_SCREEN?.playerSector) return@apply
+                    val radarData = getOrLogMissing(RadarData.mapper) ?: return@apply
+                    val radarX = (radarData.position.x - camX) / camZoom
+                    val radarY = (radarData.position.y - camY) / camZoom
+                    calculateContactDotPosition(radarX, radarY)?.let {
+                        GAME.batch.drawBounding(dotYellow, it.x - DOT_RADIUS, it.y - DOT_RADIUS,
+                            2 * DOT_RADIUS, 2 * DOT_RADIUS, constZoomBoundingRect)
+                    }
+                }
+            }
+
             CLIENT_SCREEN?.also {
+                for (i in 0 until it.predictedConflicts.size) {
+                    it.predictedConflicts[i]?.apply {
+                        val radarX = (posX - camX) / camZoom
+                        val radarY = (posY - camY) / camZoom
+                        calculateContactDotPosition(radarX, radarY)?.let { pos ->
+                            GAME.batch.drawBounding(dotMagenta, pos.x - DOT_RADIUS, pos.y - DOT_RADIUS, 2 * DOT_RADIUS, 2 * DOT_RADIUS, constZoomBoundingRect)
+                        }
+                    }
+                }
+
                 for (i in 0 until it.conflicts.size) {
                     it.conflicts[i]?.apply {
                         val pos1 = entity1.getOrLogMissing(RadarData.mapper)?.position ?: return@apply
@@ -864,15 +898,6 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRendererBoundingBox,
                             calculateContactDotPosition(radarX1, radarY1)?.let { pos ->
                                 GAME.batch.drawBounding(dotRed, pos.x - DOT_RADIUS, pos.y - DOT_RADIUS, 2 * DOT_RADIUS, 2 * DOT_RADIUS, constZoomBoundingRect)
                             }
-                        }
-                    }
-                }
-                for (i in 0 until it.predictedConflicts.size) {
-                    it.predictedConflicts[i]?.apply {
-                        val radarX = (posX - camX) / camZoom
-                        val radarY = (posY - camY) / camZoom
-                        calculateContactDotPosition(radarX, radarY)?.let { pos ->
-                            GAME.batch.drawBounding(dotMagenta, pos.x - DOT_RADIUS, pos.y - DOT_RADIUS, 2 * DOT_RADIUS, 2 * DOT_RADIUS, constZoomBoundingRect)
                         }
                     }
                 }
@@ -947,7 +972,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRendererBoundingBox,
                     val topArcCentreVec = wptVec + halfAbeamVec
                     val arcRotateVec = halfAbeamVec * leg2.turnDir.toInt() // This vector will always be facing right
                     var pVec = topArcCentreVec + arcRotateVec
-                    for (j in 0 until 10) {
+                    repeat(10) {
                         val nextVec = topArcCentreVec + arcRotateVec.rotateDeg(18f)
                         shapeRenderer.line(pVec, nextVec)
                         pVec = nextVec
@@ -956,7 +981,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRendererBoundingBox,
                     // Draw the bottom arc
                     val bottomArcCentreVec = wptVec + oppInboundLegVec + halfAbeamVec
                     pVec = bottomArcCentreVec + arcRotateVec
-                    for (j in 0 until 10) {
+                    repeat(10) {
                         val nextVec = bottomArcCentreVec + arcRotateVec.rotateDeg(18f)
                         shapeRenderer.line(pVec, nextVec)
                         pVec = nextVec

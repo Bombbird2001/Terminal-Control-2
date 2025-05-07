@@ -261,10 +261,9 @@ class UIPane(private val uiStage: Stage) {
     }
 
     /**
-     * Updates the state of the handover/acknowledge/go around button state depending on aircraft components
+     * Updates the state of the handover/acknowledge/go around button state depending on [aircraft] components
      *
      * If the input aircraft does not match the selected aircraft, the function will return
-     * @param aircraft the aircraft to check
      */
     fun updateHandoverAckButtonState(aircraft: Entity) {
         val callsign = aircraft[AircraftInfo.mapper]?.icaoCallsign ?: return
@@ -281,9 +280,10 @@ class UIPane(private val uiStage: Stage) {
         getEngine(true).getSystem<RenderingSystemClient>().updateWaypointDisplay(selAircraft)
     }
 
-    /** Returns whether the acknowledge button should be shown for the input aircraft */
+    /** Returns whether the acknowledge button should be shown for the input [aircraft] */
     private fun shouldShowAcknowledgeButton(aircraft: Entity): Boolean {
         return aircraft.has(ContactNotification.mapper)
                 || aircraft[AircraftRequestNotification.mapper]?.requestTypes?.notEmpty() == true
+                || aircraft.has(AircraftPointOutNotification.mapper)
     }
 }

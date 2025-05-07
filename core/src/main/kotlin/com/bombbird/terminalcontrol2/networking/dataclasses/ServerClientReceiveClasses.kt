@@ -13,11 +13,13 @@ import com.bombbird.terminalcontrol2.systems.RenderingSystemClient
 import com.bombbird.terminalcontrol2.ui.panes.CommsPane
 import com.bombbird.terminalcontrol2.ui.datatag.getNewDatatagLabelText
 import com.bombbird.terminalcontrol2.ui.datatag.startDatatagPointOutFlash
+import com.bombbird.terminalcontrol2.ui.datatag.stopDatatagPointOutFlash
 import com.bombbird.terminalcontrol2.ui.datatag.updateDatatagText
 import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.get
 import ktx.ashley.getSystem
 import ktx.ashley.plusAssign
+import ktx.ashley.remove
 
 /** Class representing control state data sent when the aircraft command state is updated (either through player command, or due to leg being reached) */
 data class AircraftControlStateUpdateData(val callsign: String = "", val primaryName: String = "",
@@ -148,12 +150,19 @@ data class DeclineSwapRequest(private val requestingSector: Byte = -1, private v
 }
 
 /** Class representing client request to point out an aircraft in another sector */
-data class PointOutRequest(private val callsign: String = ""): ServerReceive, ClientReceive, NeedsEncryption {
+data class PointOutRequest(private val callsign: String = "", private val sendingSector: Byte = -1,
+                           private val cancel: Boolean = false): ServerReceive, ClientReceive, NeedsEncryption {
     override fun handleServerReceive(gs: GameServer, connection: ConnectionMeta) {
         gs.postRunnableAfterEngineUpdate {
             gs.aircraft[callsign]?.entity?.let {
-                // Sector controlling the aircraft must be different from sender
-                if (it[Controllable.mapper]?.sectorId == gs.sectorMap[connection.uuid]) return@postRunnableAfterEngineUpdate
+                // Ensure sending sector is the same as sender
+                if (gs.sectorMap[connection.uuid] != sendingSector) return@postRunnableAfterEngineUpdate
+
+                // If not cancelling, sector controlling the aircraft must be different from sender
+                if (!cancel && it[Controllable.mapper]?.sectorId == gs.sectorMap[connection.uuid]) return@postRunnableAfterEngineUpdate
+
+                // If cancelling, sector controlling the aircraft must same as sender
+                if (cancel && it[Controllable.mapper]?.sectorId != gs.sectorMap[connection.uuid]) return@postRunnableAfterEngineUpdate
 
                 // Forward to all players
                 gs.forwardPointOutRequest(this)
@@ -164,7 +173,21 @@ data class PointOutRequest(private val callsign: String = ""): ServerReceive, Cl
     override fun handleClientReceive(rs: RadarScreen) {
         rs.aircraft[callsign]?.let { aircraft ->
             aircraft.entity[Datatag.mapper]?.let {
-                startDatatagPointOutFlash(it, aircraft)
+                if (!cancel) {
+                    aircraft.entity += AircraftPointOutNotification()
+                    startDatatagPointOutFlash(it, aircraft)
+
+                    // Send alert message in commsPane only for aircraft's controlling sector
+                    if (aircraft.entity[Controllable.mapper]?.sectorId == rs.playerSector) {
+                        rs.uiPane.commsPane.addMessage(
+                            "Sector ${sendingSector + 1} has pointed out ${aircraft.entity[AircraftInfo.mapper]?.icaoCallsign}",
+                            CommsPane.ALERT
+                        )
+                    }
+                } else {
+                    aircraft.entity.remove<AircraftPointOutNotification>()
+                    stopDatatagPointOutFlash(it, aircraft)
+                }
             }
         }
     }

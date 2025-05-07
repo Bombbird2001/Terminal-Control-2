@@ -20,6 +20,7 @@ import com.bombbird.terminalcontrol2.utilities.modulateHeading
 import com.bombbird.terminalcontrol2.utilities.FileLog
 import ktx.ashley.get
 import ktx.ashley.has
+import ktx.ashley.remove
 import ktx.scene2d.Scene2DSkin
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -102,6 +103,7 @@ fun startDatatagPointOutFlash(datatag: Datatag, aircraft: Aircraft) {
         override fun run() {
             CLIENT_SCREEN?.postRunnableAfterEngineUpdate(false) {
                 stopDatatagPointOutFlash(datatag, aircraft)
+                aircraft.entity.remove<AircraftPointOutNotification>()
             }
         }
     }, 30f)
