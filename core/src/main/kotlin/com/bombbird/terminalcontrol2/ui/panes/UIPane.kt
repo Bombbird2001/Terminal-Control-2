@@ -127,6 +127,10 @@ class UIPane(private val uiStage: Stage) {
             setSize(paneWidth, UI_HEIGHT)
             setPosition(0f, 0f)
         }
+        multiplayerCoordinationPane.apply {
+            setSize(paneWidth, UI_HEIGHT)
+            setPosition(0f, 0f)
+        }
     }
 
     /**
@@ -151,9 +155,10 @@ class UIPane(private val uiStage: Stage) {
             val controllable = get(Controllable.mapper) ?: return
             if (controllable.sectorId != CLIENT_SCREEN?.playerSector) {
                 clearanceState.updateUIClearanceState(aircraft.entity[ClearanceAct.mapper]?.actingClearance?.clearanceState ?: return)
-                if (controllable.sectorId != SectorInfo.TOWER
-                    && controllable.sectorId != SectorInfo.CENTRE
-                    && (CLIENT_SCREEN?.sectors?.size ?: 0) > 1) {
+//                if (controllable.sectorId != SectorInfo.TOWER
+//                    && controllable.sectorId != SectorInfo.CENTRE
+//                    && (CLIENT_SCREEN?.sectors?.size ?: 0) > 1) {
+                if (controllable.sectorId == SectorInfo.TOWER || controllable.sectorId == SectorInfo.CENTRE) {
                     // Only show coordination pane if there are multiple sectors
                     // and aircraft is not under tower or ACC control
                     mainInfoPane.isVisible = false

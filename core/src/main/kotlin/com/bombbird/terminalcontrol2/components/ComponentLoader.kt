@@ -10,6 +10,7 @@ fun loadAllComponents() {
     ActiveRunwayConfig.initialise()
     ActiveTakeoff.initialise()
     AffectedByWind.initialise()
+    AircraftHandoverCoordinationRequest.initialise()
     AircraftInfo.initialise()
     AircraftPointOutNotification.initialise()
     AircraftRequestChildren.initialise()

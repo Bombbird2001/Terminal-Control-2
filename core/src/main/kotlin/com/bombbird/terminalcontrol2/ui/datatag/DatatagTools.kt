@@ -301,8 +301,10 @@ fun getNewDatatagLabelText(entity: Entity, minimised: Boolean): List<String> {
  */
 private fun getMinimisedLabelText(entity: Entity): List<String> {
     val datatagMap = updateDatatagValueMap(entity)
-    return DATATAG_LAYOUTS[DATATAG_STYLE_NAME]?.generateTagText(datatagMap, true,
-        checkAircraftHasWake(entity)) ?: listOf()
+    return DATATAG_LAYOUTS[DATATAG_STYLE_NAME]?.generateTagText(
+        datatagMap, true, checkAircraftHasWake(entity),
+        getAircraftHandoverRequestString(entity)
+    ) ?: listOf()
 }
 
 /**
@@ -312,8 +314,10 @@ private fun getMinimisedLabelText(entity: Entity): List<String> {
  */
 private fun getExpandedLabelText(entity: Entity): List<String> {
     val datatagMap = updateDatatagValueMap(entity)
-    return DATATAG_LAYOUTS[DATATAG_STYLE_NAME]?.generateTagText(datatagMap, false,
-        checkAircraftHasWake(entity)) ?: listOf()
+    return DATATAG_LAYOUTS[DATATAG_STYLE_NAME]?.generateTagText(
+        datatagMap, false, checkAircraftHasWake(entity),
+        getAircraftHandoverRequestString(entity)
+    ) ?: listOf()
 }
 
 /**
@@ -384,4 +388,57 @@ private fun checkAircraftHasWake(entity: Entity): Boolean {
     }
 
     return false
+}
+
+private fun getAircraftHandoverRequestConstraint(constraint: Byte): String {
+    return when (constraint) {
+        AircraftHandoverCoordinationRequest.CONSTRAINT_EQUAL -> ""
+        AircraftHandoverCoordinationRequest.CONSTRAINT_LESS_EQUAL -> "<="
+        AircraftHandoverCoordinationRequest.CONSTRAINT_GREATER_EQUAL -> ">="
+        else -> {
+            FileLog.info("DatatagTools", "Unknown handover request constraint $constraint")
+            ""
+        }
+    }
+}
+
+private fun getAircraftHandoverRequestString(entity: Entity): String? {
+    val request = entity[AircraftHandoverCoordinationRequest.mapper] ?: return null
+    val controllable = entity[Controllable.mapper] ?: return null
+    // Only display information for requesting and controlling sectors
+    if (request.requestingSectorId != CLIENT_SCREEN?.playerSector && controllable.sectorId != CLIENT_SCREEN?.playerSector) return null
+
+    // Show short version if the aircraft is not selected
+    if (CLIENT_SCREEN?.selectedAircraft?.entity != entity) {
+        return "Sector ${request.requestingSectorId + 1}: Request"
+    }
+
+    val sb = StringBuilder()
+    sb.append("Sector ${request.requestingSectorId + 1}: Handover with ")
+    var itemCount = 0
+    if (request.altitudeFt != null) {
+        sb.append("A${getAircraftHandoverRequestConstraint(request.altitudeConstraint)}${request.altitudeFt}")
+        itemCount++
+    }
+    if (request.headingDeg != null) {
+        if (itemCount % 2 == 1) sb.append(", ")
+        sb.append("H${request.headingDeg}")
+        itemCount++
+    }
+    if (request.speedKts != null) {
+        if (itemCount % 2 == 1) sb.append(", ")
+        else sb.append("\n")
+        sb.append("S${getAircraftHandoverRequestConstraint(request.speedConstraint)}${request.speedKts}")
+        itemCount++
+    }
+    if (request.approachName != null) {
+        if (itemCount % 2 == 1) sb.append(", ")
+        else sb.append("\n")
+        sb.append(request.approachName)
+        itemCount++
+    }
+
+    if (itemCount == 0) return null
+
+    return sb.toString()
 }

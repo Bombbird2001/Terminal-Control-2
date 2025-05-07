@@ -192,3 +192,40 @@ data class PointOutRequest(private val callsign: String = "", private val sendin
         }
     }
 }
+
+/** Class representing handover coordination request for an aircraft */
+data class HandoverCoordinationRequest(
+    val callsign: String = "", val sendingSector: Byte = -1,
+    val altitudeFt: Int? = null, val altitudeConstraint: Byte = AircraftHandoverCoordinationRequest.CONSTRAINT_EQUAL,
+    val headingDeg: Short? = null,
+    val speedKts: Short? = null, val speedConstraint: Byte = AircraftHandoverCoordinationRequest.CONSTRAINT_EQUAL,
+    val approachName: String? = null, val cancel: Boolean = false
+): ServerReceive, ClientReceive, NeedsEncryption {
+    override fun handleServerReceive(gs: GameServer, connection: ConnectionMeta) {
+        gs.postRunnableAfterEngineUpdate {
+            gs.aircraft[callsign]?.entity?.let {
+                // Ensure sending sector is the same as sender
+                if (gs.sectorMap[connection.uuid] != sendingSector) return@postRunnableAfterEngineUpdate
+
+                // Sector controlling the aircraft must be different from sender
+                if (it[Controllable.mapper]?.sectorId == gs.sectorMap[connection.uuid]) return@postRunnableAfterEngineUpdate
+
+                // Forward to all players
+                gs.forwardHandoverRequest(this)
+            }
+        }
+    }
+
+    override fun handleClientReceive(rs: RadarScreen) {
+        rs.aircraft[callsign]?.let { aircraft ->
+            if (cancel) {
+                aircraft.entity.remove<AircraftHandoverCoordinationRequest>()
+            } else {
+                aircraft.entity += AircraftHandoverCoordinationRequest(
+                    altitudeFt, altitudeConstraint, headingDeg, speedKts,
+                    speedConstraint, approachName
+                )
+            }
+        }
+    }
+}

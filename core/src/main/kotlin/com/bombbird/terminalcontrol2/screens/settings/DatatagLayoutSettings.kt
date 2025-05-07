@@ -113,8 +113,8 @@ class DatatagLayoutSettings: BasicUIScreen() {
                     table {
                         table {
                             table {
-                                for (i in 0 until DatatagConfig.ARRANGEMENT_ROWS) {
-                                    for (j in 0 until DatatagConfig.ARRANGEMENT_COLS) {
+                                repeat(DatatagConfig.ARRANGEMENT_ROWS) {
+                                    repeat(DatatagConfig.ARRANGEMENT_COLS) {
                                         defaultSettingsSelectBox<String>().cell(padRight = 20f, width = BUTTON_WIDTH_BIG / 3).apply {
                                             isVisible = false
                                             items = GdxArray<String>().apply { add(NONE) }
@@ -143,8 +143,8 @@ class DatatagLayoutSettings: BasicUIScreen() {
                             row()
                             table {
                                 table {
-                                    for (i in 0 until DatatagConfig.MINI_ARRANGEMENT_ROWS) {
-                                        for (j in 0 until DatatagConfig.MINI_ARRANGEMENT_COLS) {
+                                    repeat(DatatagConfig.MINI_ARRANGEMENT_ROWS) {
+                                        repeat(DatatagConfig.MINI_ARRANGEMENT_COLS) {
                                             defaultSettingsSelectBox<String>().cell(padRight = 20f, width = BUTTON_WIDTH_BIG / 3).apply {
                                                 isVisible = false
                                                 items = GdxArray<String>().apply { add(NONE) }
@@ -172,8 +172,8 @@ class DatatagLayoutSettings: BasicUIScreen() {
                                     }
                                 }.padRight(100f)
                                 table {
-                                    for (i in 0 until DatatagConfig.MINI_ARRANGEMENT_ROWS) {
-                                        for (j in 0 until DatatagConfig.MINI_ARRANGEMENT_COLS) {
+                                    repeat(DatatagConfig.MINI_ARRANGEMENT_ROWS) {
+                                        repeat(DatatagConfig.MINI_ARRANGEMENT_COLS) {
                                             defaultSettingsSelectBox<String>().cell(padRight = 20f, width = BUTTON_WIDTH_BIG / 3).apply {
                                                 isVisible = false
                                                 items = GdxArray<String>().apply { add(NONE) }
@@ -433,7 +433,9 @@ class DatatagLayoutSettings: BasicUIScreen() {
 
     /** Updates the preview label depending on the selected options, page and timing */
     private fun updatePreview() {
-        previewLabel.setText(currPreviewLayout.generateTagText(PREVIEW_DATA, !showingMainPage, false).joinToString("\n"))
+        previewLabel.setText(currPreviewLayout.generateTagText(
+            PREVIEW_DATA, !showingMainPage, false, null
+        ).joinToString("\n"))
     }
 
     /** Update the choices available in the datatag config select box */

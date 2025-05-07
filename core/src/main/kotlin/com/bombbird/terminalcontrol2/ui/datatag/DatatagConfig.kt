@@ -173,10 +173,12 @@ class DatatagConfig(val name: String) {
     }
 
     /**
-     * Generates the text to be displayed on the datatag, using the given [fields] and checking if the datatag
-     * [isMinimized] and whether it is undergoing [wakeTurbulence]]
+     * Generates the text to be displayed on the datatag, using the given [fields]
+     * and checking if the datatag [isMinimized], whether it is undergoing [wakeTurbulence],
+     * and whether it has a [handoverRequest] from another sector
      */
-    fun generateTagText(fields: HashMap<String, String>, isMinimized: Boolean, wakeTurbulence: Boolean): List<String> {
+    fun generateTagText(fields: HashMap<String, String>, isMinimized: Boolean,
+                        wakeTurbulence: Boolean, handoverRequest: String?): List<String> {
         val arrayToUse = if (isMinimized) {
             when {
                 miniArrangementFirstEmpty -> miniArrangementSecond
@@ -194,6 +196,9 @@ class DatatagConfig(val name: String) {
                 if (text.isNotEmpty()) sbLine.append(text)
             }
             if (sbLine.isNotEmpty()) stringLines.add(sbLine.toString())
+        }
+        if (handoverRequest != null) {
+            stringLines.add(handoverRequest)
         }
         if (wakeTurbulence) {
             stringLines.add(if (isMinimized) "Wake" else "Wake alert")

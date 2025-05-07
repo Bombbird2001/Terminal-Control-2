@@ -1062,6 +1062,11 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
         networkServer.sendToAllTCP(pointOut)
     }
 
+    /** Forwards the [handover] request to all players */
+    fun forwardHandoverRequest(handover: HandoverCoordinationRequest) {
+        networkServer.sendToAllTCP(handover)
+    }
+
     /** Gets the runway configuration string displaying config names at all airports */
     fun getSaveMetaRunwayConfigString(): String {
         return Entries(airports).map {

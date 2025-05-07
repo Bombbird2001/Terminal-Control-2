@@ -394,3 +394,24 @@ class CanGoAround: Component {
         fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
+
+/**
+ * Component for tagging aircraft that received a handover coordination request
+ * from another sector
+ */
+data class AircraftHandoverCoordinationRequest(
+    val altitudeFt: Int? = null, val altitudeConstraint: Byte = CONSTRAINT_EQUAL,
+    val headingDeg: Short? = null,
+    val speedKts: Short? = null, val speedConstraint: Byte = CONSTRAINT_EQUAL,
+    val approachName: String? = null, val requestingSectorId: Byte = -1,
+): Component {
+    companion object {
+        val mapper = object: Mapper<AircraftHandoverCoordinationRequest>() {}.mapper
+
+        const val CONSTRAINT_EQUAL: Byte = 0
+        const val CONSTRAINT_LESS_EQUAL: Byte = 1
+        const val CONSTRAINT_GREATER_EQUAL: Byte = 2
+
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
+    }
+}

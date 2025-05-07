@@ -802,6 +802,18 @@ class RadarScreen private constructor(private val connectionHost: String, privat
         networkClient.sendTCP(PointOutRequest(callsign, playerSector, cancel))
     }
 
+    /** Sends a handover coordination request for [aircraft] */
+    fun sendHandoverCoordinationRequest(
+        aircraft: Aircraft, altitudeFt: Int?, altitudeConstraint: Byte, headingDeg: Short?,
+        speedKts: Short?, speedConstraint: Byte, approachName: String?, cancel: Boolean
+    ) {
+        val callsign = aircraft.entity[AircraftInfo.mapper]?.icaoCallsign ?: return FileLog.info("RadarScreen", "Missing AircraftInfo component")
+        networkClient.sendTCP(HandoverCoordinationRequest(
+            callsign, playerSector, altitudeFt, altitudeConstraint,
+            headingDeg, speedKts, speedConstraint, approachName, cancel
+        ))
+    }
+
     /**
      * Checks if the client has received all initial data required
      * @return false if client has not or is in the process of receiving initial data, else true
