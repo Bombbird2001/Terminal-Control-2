@@ -44,6 +44,10 @@ class UIPane(private val uiStage: Stage) {
     val sectorPane: SectorPane
         get() = mainInfoObj.sectorPaneObj
 
+    //  Multiplayer coordination pane (when aircraft outside of player's sector is selected in multiplayer)
+    private val multiplayerCoordinationObj = MultiplayerCoordinationPane()
+    private val multiplayerCoordinationPane: KContainer<Actor>
+
     // Control pane (when aircraft is selected)
     private val controlObj = ControlPane()
     private val controlPane: KContainer<Actor>
@@ -87,6 +91,7 @@ class UIPane(private val uiStage: Stage) {
                 controlObj.updateUndoTransmitButtonStates()
                 setToControlPane()
             }
+            multiplayerCoordinationPane = multiplayerCoordinationObj.multiplayerCoordinationPane(this@UIPane, this, paneWidth)
         }
         uiStage.camera.apply {
             moveTo(Vector2(UI_WIDTH / 2, UI_HEIGHT / 2))
@@ -146,6 +151,14 @@ class UIPane(private val uiStage: Stage) {
             val controllable = get(Controllable.mapper) ?: return
             if (controllable.sectorId != CLIENT_SCREEN?.playerSector) {
                 clearanceState.updateUIClearanceState(aircraft.entity[ClearanceAct.mapper]?.actingClearance?.clearanceState ?: return)
+                if (controllable.sectorId != SectorInfo.TOWER
+                    && controllable.sectorId != SectorInfo.CENTRE
+                    && (CLIENT_SCREEN?.sectors?.size ?: 0) > 1) {
+                    // Only show coordination pane if there are multiple sectors
+                    // and aircraft is not under tower or ACC control
+                    mainInfoPane.isVisible = false
+                    multiplayerCoordinationPane.isVisible = true
+                }
                 return
             }
         }
@@ -223,6 +236,7 @@ class UIPane(private val uiStage: Stage) {
         controlPane.isVisible = false
         routeEditPane.isVisible = false
         mainInfoPane.isVisible = true
+        multiplayerCoordinationPane.isVisible = false
         clearanceState.route.clear()
         clearanceState.vectorHdg = null
         userClearanceState.route.clear()

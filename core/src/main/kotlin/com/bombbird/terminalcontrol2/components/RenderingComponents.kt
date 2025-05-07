@@ -151,10 +151,9 @@ class Datatag(var xOffset: Float = 0f, var yOffset: Float = 0f, var minimised: B
     var clicks = 0
     val tapTimer = Timer()
     val flashTimer = Timer()
-    var shouldFlashOrange = false
-    var shouldFlashMagenta = false
-    var flashingOrange = false
-    var flashingMagenta = false
+    val pointOutFlashTimer = Timer()
+    var shouldFlashColourFlags = FLASH_NONE
+    var flashingColour = FLASH_NONE
     var emergency = false
     var initialPosSet = false
     var currentDatatagStyle = "DatatagGreenNoBG"
@@ -169,6 +168,11 @@ class Datatag(var xOffset: Float = 0f, var yOffset: Float = 0f, var minimised: B
     companion object {
         val mapper = object: Mapper<Datatag>() {}.mapper
         private val DEFAULT_LABEL_FONT = "Datatag${if (isMobile()) "Mobile" else ""}"
+
+        const val FLASH_NONE = 0
+        const val FLASH_ORANGE = 1
+        const val FLASH_MAGENTA = 2
+        const val FLASH_YELLOW = 4
 
         fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }

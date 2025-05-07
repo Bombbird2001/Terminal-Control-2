@@ -196,6 +196,7 @@ fun registerClassesToKryo(kryo: Kryo?) {
         register(Array<ThunderStorm.SerialisedThunderStorm>::class.java)
         register(ThunderCell.SerialisedThunderCell::class.java)
         register(Array<ThunderCell.SerialisedThunderCell>::class.java)
+        register(PointOutRequest::class.java)
 
     } ?: FileLog.info("NetworkingTools", "Null kryo passed, unable to register classes")
 }

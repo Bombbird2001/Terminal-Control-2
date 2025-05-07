@@ -12,6 +12,7 @@ import com.bombbird.terminalcontrol2.screens.RadarScreen
 import com.bombbird.terminalcontrol2.systems.RenderingSystemClient
 import com.bombbird.terminalcontrol2.ui.panes.CommsPane
 import com.bombbird.terminalcontrol2.ui.datatag.getNewDatatagLabelText
+import com.bombbird.terminalcontrol2.ui.datatag.startDatatagPointOutFlash
 import com.bombbird.terminalcontrol2.ui.datatag.updateDatatagText
 import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.get
@@ -143,5 +144,28 @@ data class DeclineSwapRequest(private val requestingSector: Byte = -1, private v
         rs.swapSectorRequest = null
         rs.uiPane.sectorPane.updateSectorDisplay(rs.sectors)
         rs.uiPane.commsPane.addMessage("Sector ${decliningSector + 1} has declined your sector swap request", CommsPane.ALERT)
+    }
+}
+
+/** Class representing client request to point out an aircraft in another sector */
+data class PointOutRequest(private val callsign: String = ""): ServerReceive, ClientReceive, NeedsEncryption {
+    override fun handleServerReceive(gs: GameServer, connection: ConnectionMeta) {
+        gs.postRunnableAfterEngineUpdate {
+            gs.aircraft[callsign]?.entity?.let {
+                // Sector controlling the aircraft must be different from sender
+                if (it[Controllable.mapper]?.sectorId == gs.sectorMap[connection.uuid]) return@postRunnableAfterEngineUpdate
+
+                // Forward to all players
+                gs.forwardPointOutRequest(this)
+            }
+        }
+    }
+
+    override fun handleClientReceive(rs: RadarScreen) {
+        rs.aircraft[callsign]?.let { aircraft ->
+            aircraft.entity[Datatag.mapper]?.let {
+                startDatatagPointOutFlash(it, aircraft)
+            }
+        }
     }
 }

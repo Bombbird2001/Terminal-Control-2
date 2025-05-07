@@ -491,7 +491,7 @@ class RadarScreen private constructor(private val connectionHost: String, privat
         KtxAsync.launch(Dispatchers.IO) {
             try {
                 networkClient.stop()
-            } catch (e: ClosedSelectorException) {
+            } catch (_: ClosedSelectorException) {
                 FileLog.info("RadarScreen", "Client channel selector already closed before disposal")
             }
         }
@@ -716,7 +716,7 @@ class RadarScreen private constructor(private val connectionHost: String, privat
             networkClient.beforeConnect(roomId)
             try {
                 networkClient.reconnect()
-            } catch (e: IOException) {
+            } catch (_: IOException) {
                 FileLog.warn("RadarScreen", "Failed to reconnect to server")
                 GAME.quitCurrentGameWithDialog { CustomDialog("Disconnected", "You have been disconnected from the server - most likely the host quit the game",
                     "", "Ok") }
@@ -794,6 +794,12 @@ class RadarScreen private constructor(private val connectionHost: String, privat
 
         val callsign = aircraft[AircraftInfo.mapper]?.icaoCallsign ?: return FileLog.info("RadarScreen", "Missing AircraftInfo component")
         networkClient.sendTCP(AircraftDatatagPositionUpdateData(callsign, xOffset, yOffset, minimised, flashing))
+    }
+
+    /** Sends a request to the server to point out [aircraft] */
+    fun sendPointOutRequest(aircraft: Aircraft) {
+        val callsign = aircraft.entity[AircraftInfo.mapper]?.icaoCallsign ?: return FileLog.info("RadarScreen", "Missing AircraftInfo component")
+        networkClient.sendTCP(PointOutRequest(callsign))
     }
 
     /**

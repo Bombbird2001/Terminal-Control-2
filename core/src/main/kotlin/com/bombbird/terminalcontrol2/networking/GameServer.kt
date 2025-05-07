@@ -1057,6 +1057,11 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
         if (storms.isEmpty()) networkServer.sendToAllTCP(ThunderStormData(arrayOf(), true))
     }
 
+    /** Forwards the [pointOut] request to all players */
+    fun forwardPointOutRequest(pointOut: PointOutRequest) {
+        networkServer.sendToAllTCP(pointOut)
+    }
+
     /** Gets the runway configuration string displaying config names at all airports */
     fun getSaveMetaRunwayConfigString(): String {
         return Entries(airports).map {
