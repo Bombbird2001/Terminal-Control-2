@@ -30,8 +30,10 @@ import com.bombbird.terminalcontrol2.traffic.conflict.Conflict
 import com.bombbird.terminalcontrol2.traffic.conflict.PotentialConflict
 import com.bombbird.terminalcontrol2.traffic.conflict.PredictedConflict
 import com.bombbird.terminalcontrol2.ui.*
+import com.bombbird.terminalcontrol2.ui.datatag.getNewDatatagLabelText
 import com.bombbird.terminalcontrol2.ui.datatag.updateDatatagLineSpacing
 import com.bombbird.terminalcontrol2.ui.datatag.updateDatatagStyle
+import com.bombbird.terminalcontrol2.ui.datatag.updateDatatagText
 import com.bombbird.terminalcontrol2.ui.panes.UIPane
 import com.bombbird.terminalcontrol2.utilities.*
 import kotlinx.coroutines.Dispatchers
@@ -277,6 +279,7 @@ class RadarScreen private constructor(private val connectionHost: String, privat
                 val datatag = get(Datatag.mapper) ?: return@apply
                 val flightType = get(FlightType.mapper) ?: return@apply
                 updateDatatagStyle(datatag, flightType.type, true)
+                updateDatatagText(datatag, getNewDatatagLabelText(this, datatag.minimised))
             }
             updateDistToGo()
             updateWaypointRestr()
@@ -287,12 +290,14 @@ class RadarScreen private constructor(private val connectionHost: String, privat
     private fun deselectUISelectedAircraft() {
         Gdx.app.postRunnable {
             uiPane.deselectAircraft()
-            selectedAircraft?.entity?.apply {
+            val oldSelected = selectedAircraft
+            selectedAircraft = null
+            oldSelected?.entity?.apply {
                 val datatag = get(Datatag.mapper) ?: return@apply
                 val flightType = get(FlightType.mapper) ?: return@apply
                 updateDatatagStyle(datatag, flightType.type, false)
+                updateDatatagText(datatag, getNewDatatagLabelText(this, datatag.minimised))
             }
-            selectedAircraft = null
             updateDistToGo()
             updateWaypointRestr()
         }

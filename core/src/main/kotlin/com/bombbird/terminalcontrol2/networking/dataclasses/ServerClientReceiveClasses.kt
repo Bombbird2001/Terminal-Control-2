@@ -223,7 +223,7 @@ data class HandoverCoordinationRequest(
             } else {
                 aircraft.entity += AircraftHandoverCoordinationRequest(
                     altitudeFt, altitudeConstraint, headingDeg, speedKts,
-                    speedConstraint, approachName
+                    speedConstraint, approachName, sendingSector
                 )
             }
         }

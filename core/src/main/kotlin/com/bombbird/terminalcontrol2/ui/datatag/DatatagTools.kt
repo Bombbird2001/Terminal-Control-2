@@ -410,14 +410,23 @@ private fun getAircraftHandoverRequestString(entity: Entity): String? {
 
     // Show short version if the aircraft is not selected
     if (CLIENT_SCREEN?.selectedAircraft?.entity != entity) {
-        return "Sector ${request.requestingSectorId + 1}: Request"
+        return if (CLIENT_SCREEN?.playerSector == request.requestingSectorId) "Request sent"
+        else "Sector ${request.requestingSectorId + 1}: Request"
     }
 
     val sb = StringBuilder()
-    sb.append("Sector ${request.requestingSectorId + 1}: Handover with ")
+    sb.append(
+        if (CLIENT_SCREEN?.playerSector == request.requestingSectorId) "Request sent:\n"
+        else "Sector ${request.requestingSectorId + 1}: Handover with\n"
+    )
     var itemCount = 0
     if (request.altitudeFt != null) {
-        sb.append("A${getAircraftHandoverRequestConstraint(request.altitudeConstraint)}${request.altitudeFt}")
+        sb.append("${
+            if (request.altitudeFt >= TRANS_LVL * 100) "" else "A"
+        }${getAircraftHandoverRequestConstraint(request.altitudeConstraint)}${
+            if (request.altitudeFt >= TRANS_LVL * 100) "FL${(request.altitudeFt / 100f).roundToInt()}"
+            else request.altitudeFt
+        }")
         itemCount++
     }
     if (request.headingDeg != null) {

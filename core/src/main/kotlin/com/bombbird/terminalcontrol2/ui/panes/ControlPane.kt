@@ -429,6 +429,27 @@ class ControlPane {
     }
 
     /**
+     * Checks the input [altitude] according to transition altitude and transition
+     * level parsing it into the FLXXX format if necessary, before adding it to
+     * the string [array]
+     */
+    private fun checkAltAndAddToArray(altitude: Int, array: GdxArray<String>) {
+        if (altitude > TRANS_ALT && altitude < TRANS_LVL * 100) return
+        if (altitude < TRANS_LVL * 100) array.add(altitude.toString())
+        else if (altitude >= TRANS_LVL * 100) array.add("FL${altitude / 100}")
+    }
+
+    /**
+     * Selects the [altitude] selection in the altitude box for the input altitude
+     * value, accounting for altitudes above the transition altitude being
+     * represented in the FLXXX format
+     */
+    private fun setToAltValue(altitude: Int) {
+        if (altitude < TRANS_LVL * 100) altSelectBox.selected = altitude.toString()
+        else altSelectBox.selected = "FL${altitude / 100}"
+    }
+
+    /**
      * Updates [ControlPane.altSelectBox] with the appropriate altitude choices for [MIN_ALT], [MAX_ALT] and [aircraftMaxAlt]
      *
      * If the select box was not previously empty, this will also update the user selected cleared altitude to match the
@@ -439,28 +460,6 @@ class ControlPane {
      * set to the FAF altitude
      */
     fun updateAltSelectBoxChoices(aircraftMaxAlt: Int?, userClearanceState: ClearanceState, appNewlySelected: Boolean) {
-        /**
-         * Checks the input altitude according to transition altitude and transition level parsing it into the FLXXX format
-         * if necessary, before adding it to the string array
-         * @param alt the altitude value to add
-         * @param array the string [GdxArray] to add the value into
-         */
-        fun checkAltAndAddToArray(alt: Int, array: GdxArray<String>) {
-            if (alt > TRANS_ALT && alt < TRANS_LVL * 100) return
-            if (alt < TRANS_LVL * 100) array.add(alt.toString())
-            else if (alt >= TRANS_LVL * 100) array.add("FL${alt / 100}")
-        }
-
-        /**
-         * Selects the appropriate selection in the altitude box for the input altitude value, accounting for altitudes
-         * above the transition altitude being represented in the FLXXX format
-         * @param alt the altitude value to set
-         */
-        fun setToAltValue(alt: Int) {
-            if (alt < TRANS_LVL * 100) altSelectBox.selected = alt.toString()
-            else altSelectBox.selected = "FL${alt / 100}"
-        }
-
         val effectiveMinAlt: Int
         val nextHold = getNextHoldLeg(userClearanceState.route)
         val clearedApproach = userClearanceState.clearedApp != null && userClearanceState.vectorHdg == null
