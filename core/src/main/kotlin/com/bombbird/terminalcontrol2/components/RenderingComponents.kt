@@ -159,8 +159,12 @@ class Datatag(var xOffset: Float = 0f, var yOffset: Float = 0f, var minimised: B
     var currentDatatagStyle = "DatatagGreenNoBG"
     val imgButton: ImageButton = ImageButton(Scene2DSkin.defaultSkin, "DatatagGreenNoBG")
     val clickSpot: ImageButton = ImageButton(Scene2DSkin.defaultSkin, "DatatagNoBG")
-    val labelArray: Array<Label> = arrayOf(Label("", Scene2DSkin.defaultSkin, DEFAULT_LABEL_FONT), Label("", Scene2DSkin.defaultSkin, DEFAULT_LABEL_FONT),
-                                           Label("", Scene2DSkin.defaultSkin, DEFAULT_LABEL_FONT), Label("", Scene2DSkin.defaultSkin, DEFAULT_LABEL_FONT))
+    val labelArray: Array<Label> = arrayOf(
+        Label("", Scene2DSkin.defaultSkin, DEFAULT_LABEL_FONT), Label("", Scene2DSkin.defaultSkin, DEFAULT_LABEL_FONT),
+        Label("", Scene2DSkin.defaultSkin, DEFAULT_LABEL_FONT), Label("", Scene2DSkin.defaultSkin, DEFAULT_LABEL_FONT),
+        Label("", Scene2DSkin.defaultSkin, DEFAULT_LABEL_FONT), Label("", Scene2DSkin.defaultSkin, DEFAULT_LABEL_FONT),
+        Label("", Scene2DSkin.defaultSkin, DEFAULT_LABEL_FONT), Label("", Scene2DSkin.defaultSkin, DEFAULT_LABEL_FONT)
+    )
     var smallLabelFont = false
     var renderLast = false
     val datatagInfoMap = HashMap<String, String>()

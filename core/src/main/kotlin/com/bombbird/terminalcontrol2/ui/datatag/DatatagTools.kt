@@ -402,7 +402,7 @@ private fun getAircraftHandoverRequestConstraint(constraint: Byte): String {
     }
 }
 
-private fun getAircraftHandoverRequestString(entity: Entity): String? {
+private fun getAircraftHandoverRequestString(entity: Entity): List<String>? {
     val request = entity[AircraftHandoverCoordinationRequest.mapper] ?: return null
     val controllable = entity[Controllable.mapper] ?: return null
     // Only display information for requesting and controlling sectors
@@ -410,15 +410,18 @@ private fun getAircraftHandoverRequestString(entity: Entity): String? {
 
     // Show short version if the aircraft is not selected
     if (CLIENT_SCREEN?.selectedAircraft?.entity != entity) {
-        return if (CLIENT_SCREEN?.playerSector == request.requestingSectorId) "Request sent"
-        else "Sector ${request.requestingSectorId + 1}: Request"
+        return arrayListOf(
+            if (CLIENT_SCREEN?.playerSector == request.requestingSectorId) "Request sent"
+            else "Sector ${request.requestingSectorId + 1}: Request"
+        )
     }
 
-    val sb = StringBuilder()
-    sb.append(
-        if (CLIENT_SCREEN?.playerSector == request.requestingSectorId) "Request sent:\n"
-        else "Sector ${request.requestingSectorId + 1}: Handover with\n"
+    val lines = ArrayList<String>()
+    lines.add(
+        if (CLIENT_SCREEN?.playerSector == request.requestingSectorId) "Request sent:"
+        else "Sector ${request.requestingSectorId + 1}: Handover with"
     )
+    val sb = StringBuilder()
     var itemCount = 0
     if (request.altitudeFt != null) {
         sb.append("${
@@ -433,21 +436,29 @@ private fun getAircraftHandoverRequestString(entity: Entity): String? {
         if (itemCount % 2 == 1) sb.append(", ")
         sb.append("H${request.headingDeg}")
         itemCount++
+        if (itemCount % 2 == 0) {
+            lines.add(sb.toString())
+            sb.clear()
+        }
     }
     if (request.speedKts != null) {
         if (itemCount % 2 == 1) sb.append(", ")
-        else sb.append("\n")
         sb.append("S${getAircraftHandoverRequestConstraint(request.speedConstraint)}${request.speedKts}")
         itemCount++
+        if (itemCount % 2 == 0) {
+            lines.add(sb.toString())
+            sb.clear()
+        }
     }
     if (request.approachName != null) {
         if (itemCount % 2 == 1) sb.append(", ")
-        else sb.append("\n")
         sb.append(request.approachName)
         itemCount++
     }
 
     if (itemCount == 0) return null
 
-    return sb.toString()
+    lines.add(sb.toString())
+
+    return lines
 }

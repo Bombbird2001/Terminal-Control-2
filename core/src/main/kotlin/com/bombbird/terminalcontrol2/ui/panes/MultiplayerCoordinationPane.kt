@@ -76,7 +76,7 @@ class MultiplayerCoordinationPane {
                 table {
                     // Point out button
                     val cooldownTimer = Timer()
-                    textButton(POINT_OUT, "PointOutButton").cell(growX = true, pad = 20f, height = 100f).apply {
+                    textButton(POINT_OUT, "CoordinationPaneButton").cell(growX = true, pad = 20f, height = 100f).apply {
                         addChangeListener { _, _ ->
                             parentPane.selAircraft?.let {
                                 CLIENT_SCREEN?.sendPointOutRequest(it, false)
@@ -251,7 +251,7 @@ class MultiplayerCoordinationPane {
                         }.cell(preferredWidth = 250f, height = 100f)
                     }.cell(growX = true, padLeft = 20f, padRight = 20f, padTop = 20f)
                     row()
-                    sendCancelRequestButton = textButton(SEND_REQUEST, "PointOutButton").apply {
+                    sendCancelRequestButton = textButton(SEND_REQUEST, "CoordinationPaneButton").apply {
                         addChangeListener { _, _ ->
                             sendCoordinationRequest()
                         }
@@ -310,7 +310,6 @@ class MultiplayerCoordinationPane {
                 appSelectBox.selected
             } else null
 
-            // TODO Cancelling requests
             if (alt != null || hdg != null || spd != null || app != null) {
                 CLIENT_SCREEN?.sendHandoverCoordinationRequest(
                     it, alt, altConstraint,
@@ -383,75 +382,77 @@ class MultiplayerCoordinationPane {
     fun updateCoordinationState(
         coordinationState: AircraftHandoverCoordinationRequest?, arrivalArptId: Byte?
     ) {
-        altCheckBox.isChecked = coordinationState?.altitudeFt != null
-        altSelectBox.isDisabled = !altCheckBox.isChecked
-        altAtOrAboveButton.isDisabled = !altCheckBox.isChecked
-        altAtButton.isDisabled = !altCheckBox.isChecked
-        altAtOrBelowButton.isDisabled = !altCheckBox.isChecked
         altSelectBox.items = getAltBoxSelections()
-
-        if (coordinationState?.altitudeFt != null) {
-            altSelectBox.selected = if (coordinationState.altitudeFt >= TRANS_LVL * 100) {
-                "FL${(coordinationState.altitudeFt / 1000f).roundToInt()}"
-            } else {
-                coordinationState.altitudeFt.toString()
-            }
-        }
-
-        val altConstraintButton = when (coordinationState?.altitudeConstraint) {
-            AircraftHandoverCoordinationRequest.CONSTRAINT_GREATER_EQUAL -> altAtOrAboveButton
-            AircraftHandoverCoordinationRequest.CONSTRAINT_EQUAL -> altAtButton
-            AircraftHandoverCoordinationRequest.CONSTRAINT_LESS_EQUAL -> altAtOrBelowButton
-            else -> {
-                FileLog.warn("MultiplayerCoordinationPane", "Unknown altitude constraint ${coordinationState?.altitudeConstraint}")
-                altAtButton
-            }
-        }
-        altConstraintButton.isChecked = true
-        uncheckOtherAltConstraints(altConstraintButton)
-
-        hdgCheckBox.isChecked = coordinationState?.headingDeg != null
-        hdgSelectBox1.isDisabled = !hdgCheckBox.isChecked
-        hdgSelectBox2.isDisabled = !hdgCheckBox.isChecked
-        hdgSelectBox3.isDisabled = !hdgCheckBox.isChecked
-
-        if (coordinationState?.headingDeg != null) {
-            hdgSelectBox1.selected = (coordinationState.headingDeg / 100).byte
-            hdgSelectBox2.selected = ((coordinationState.headingDeg / 10) % 10).byte
-            hdgSelectBox3.selected = (coordinationState.headingDeg % 10).byte
-        }
-
-        spdCheckBox.isChecked = coordinationState?.speedKts != null
-        spdSelectBox.isDisabled = !spdCheckBox.isChecked
-        spdAtOrAboveButton.isDisabled = !spdCheckBox.isChecked
-        spdAtButton.isDisabled = !spdCheckBox.isChecked
-        spdAtOrBelowButton.isDisabled = !spdCheckBox.isChecked
-
-        if (coordinationState?.speedKts != null) {
-            spdSelectBox.selected = coordinationState.speedKts
-        }
-
-        val spdConstraintButton = when (coordinationState?.speedConstraint) {
-            AircraftHandoverCoordinationRequest.CONSTRAINT_GREATER_EQUAL -> spdAtOrAboveButton
-            AircraftHandoverCoordinationRequest.CONSTRAINT_EQUAL -> spdAtButton
-            AircraftHandoverCoordinationRequest.CONSTRAINT_LESS_EQUAL -> spdAtOrBelowButton
-            else -> {
-                FileLog.warn("MultiplayerCoordinationPane", "Unknown speed constraint ${coordinationState?.speedConstraint}")
-                spdAtButton
-            }
-        }
-        spdConstraintButton.isChecked = true
-        uncheckOtherSpdConstraints(spdConstraintButton)
-
-        // Show only for arrivals
-        appCheckBox.isChecked = coordinationState?.approachName != null && arrivalArptId != null
-        appSelectBox.isDisabled = !appCheckBox.isChecked
         appSelectBox.items = CLIENT_SCREEN?.airports?.get(arrivalArptId)?.let { arpt ->
             getAvailableApproaches(
                 arpt.entity, null,
                 includeClosedRunway = true, includeDefaultOption = false
             )
         } ?: gdxArrayOf("-")
+
+        if (coordinationState != null) {
+            altCheckBox.isChecked = coordinationState.altitudeFt != null
+            altSelectBox.isDisabled = !altCheckBox.isChecked
+            altAtOrAboveButton.isDisabled = !altCheckBox.isChecked
+            altAtButton.isDisabled = !altCheckBox.isChecked
+            altAtOrBelowButton.isDisabled = !altCheckBox.isChecked
+
+            if (coordinationState.altitudeFt != null) {
+                altSelectBox.selected = if (coordinationState.altitudeFt >= TRANS_LVL * 100) {
+                    "FL${(coordinationState.altitudeFt / 1000f).roundToInt()}"
+                } else {
+                    coordinationState.altitudeFt.toString()
+                }
+            }
+
+            val altConstraintButton = when (coordinationState.altitudeConstraint) {
+                AircraftHandoverCoordinationRequest.CONSTRAINT_GREATER_EQUAL -> altAtOrAboveButton
+                AircraftHandoverCoordinationRequest.CONSTRAINT_EQUAL -> altAtButton
+                AircraftHandoverCoordinationRequest.CONSTRAINT_LESS_EQUAL -> altAtOrBelowButton
+                else -> {
+                    FileLog.warn("MultiplayerCoordinationPane", "Unknown altitude constraint ${coordinationState.altitudeConstraint}")
+                    altAtButton
+                }
+            }
+            altConstraintButton.isChecked = true
+            uncheckOtherAltConstraints(altConstraintButton)
+
+            hdgCheckBox.isChecked = coordinationState.headingDeg != null
+            hdgSelectBox1.isDisabled = !hdgCheckBox.isChecked
+            hdgSelectBox2.isDisabled = !hdgCheckBox.isChecked
+            hdgSelectBox3.isDisabled = !hdgCheckBox.isChecked
+
+            if (coordinationState.headingDeg != null) {
+                hdgSelectBox1.selected = (coordinationState.headingDeg / 100).byte
+                hdgSelectBox2.selected = ((coordinationState.headingDeg / 10) % 10).byte
+                hdgSelectBox3.selected = (coordinationState.headingDeg % 10).byte
+            }
+
+            spdCheckBox.isChecked = coordinationState.speedKts != null
+            spdSelectBox.isDisabled = !spdCheckBox.isChecked
+            spdAtOrAboveButton.isDisabled = !spdCheckBox.isChecked
+            spdAtButton.isDisabled = !spdCheckBox.isChecked
+            spdAtOrBelowButton.isDisabled = !spdCheckBox.isChecked
+
+            if (coordinationState.speedKts != null) {
+                spdSelectBox.selected = coordinationState.speedKts
+            }
+
+            val spdConstraintButton = when (coordinationState.speedConstraint) {
+                AircraftHandoverCoordinationRequest.CONSTRAINT_GREATER_EQUAL -> spdAtOrAboveButton
+                AircraftHandoverCoordinationRequest.CONSTRAINT_EQUAL -> spdAtButton
+                AircraftHandoverCoordinationRequest.CONSTRAINT_LESS_EQUAL -> spdAtOrBelowButton
+                else -> {
+                    FileLog.warn("MultiplayerCoordinationPane", "Unknown speed constraint ${coordinationState.speedConstraint}")
+                    spdAtButton
+                }
+            }
+            spdConstraintButton.isChecked = true
+            uncheckOtherSpdConstraints(spdConstraintButton)
+
+            appCheckBox.isChecked = coordinationState.approachName != null
+            appSelectBox.isDisabled = !appCheckBox.isChecked
+        }
 
         val enableSelections = coordinationState == null
         altCheckBox.isDisabled = !enableSelections
@@ -468,8 +469,8 @@ class MultiplayerCoordinationPane {
         spdAtOrAboveButton.isDisabled = !enableSelections
         spdAtButton.isDisabled = !enableSelections
         spdAtOrBelowButton.isDisabled = !enableSelections
-        appCheckBox.isDisabled = !enableSelections
-        appSelectBox.isDisabled = !enableSelections
+        appCheckBox.isDisabled = !enableSelections || arrivalArptId == null
+        appSelectBox.isDisabled = !enableSelections || arrivalArptId == null
         sendCancelRequestButton.isDisabled = !(enableSelections || coordinationState.requestingSectorId == CLIENT_SCREEN?.playerSector)
 
         sendCancelRequestButton.setText(

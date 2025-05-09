@@ -3,6 +3,7 @@ package com.bombbird.terminalcontrol2.systems
 import com.badlogic.ashley.core.Family
 import com.badlogic.ashley.systems.IntervalSystem
 import com.badlogic.gdx.utils.ArrayMap
+import com.bombbird.terminalcontrol2.components.AircraftHandoverCoordinationRequest
 import com.bombbird.terminalcontrol2.components.Controllable
 import com.bombbird.terminalcontrol2.components.PendingRunwayConfig
 import com.bombbird.terminalcontrol2.global.CLIENT_SCREEN
@@ -11,6 +12,7 @@ import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.utilities.InitializeCompanionObjectOnStart
 import ktx.ashley.allOf
 import ktx.ashley.get
+import ktx.ashley.remove
 
 /**
  * System that is responsible solely for transmission of data which can happen at a lower rate than [DataSystemClient]
@@ -20,11 +22,13 @@ import ktx.ashley.get
 class DataSystemIntervalClient: IntervalSystem(1f) {
     companion object {
         private val pendingRunwayChangeFamily: Family = allOf(PendingRunwayConfig::class).get()
+        private val coordinationRequestFamily = allOf(AircraftHandoverCoordinationRequest::class, Controllable::class).get()
 
         fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 
     private val pendingRunwayChangeFamilyEntities = FamilyWithListener.newClientFamilyWithListener(pendingRunwayChangeFamily)
+    private val coordinationRequestFamilyEntities = FamilyWithListener.newClientFamilyWithListener(coordinationRequestFamily)
 
     private var discordTimer = DISCORD_UPDATE_INTERVAL_S - 1
 
@@ -42,6 +46,19 @@ class DataSystemIntervalClient: IntervalSystem(1f) {
                 get(PendingRunwayConfig.mapper)?.let {
                     it.timeRemaining -= interval
                     if (it.timeRemaining < 0) it.timeRemaining = 0f
+                }
+            }
+        }
+
+        // Remove coordination requests if the aircraft has moved over to the
+        // sector of the requesting controller
+        val coordinationRequests = coordinationRequestFamilyEntities.getEntities()
+        for (i in 0 until coordinationRequests.size()) {
+            coordinationRequests[i]?.apply {
+                val request = get(AircraftHandoverCoordinationRequest.mapper) ?: return@apply
+                val controllable = get(Controllable.mapper) ?: return@apply
+                if (request.requestingSectorId == controllable.sectorId) {
+                    remove<AircraftHandoverCoordinationRequest>()
                 }
             }
         }

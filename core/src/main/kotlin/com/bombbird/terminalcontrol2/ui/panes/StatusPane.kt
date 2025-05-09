@@ -31,6 +31,8 @@ class StatusPane {
         const val INFO: Byte = 4
 
         private val goAroundContactFamily = allOf(RecentGoAround::class, ContactNotification::class).get()
+        private val pointOutFamily = allOf(AircraftPointOutNotification::class, Controllable::class).get()
+        private val coordinationRequestFamily = allOf(AircraftHandoverCoordinationRequest::class, Controllable::class).get()
         private val initialContactFamily = allOf(ContactNotification::class).exclude(RecentGoAround::class).get()
         private val emergencyStartedFamily = allOf(EmergencyPending::class, Speed::class).get()
         private val aircraftRequestFamily = allOf(AircraftRequestNotification::class).get()
@@ -68,6 +70,7 @@ class StatusPane {
         addConflictMessages()
         addEmergencyMessages()
         addMissedApproachMessages()
+        addCoordinationMessages()
         addPendingRunwayChangeMessages()
         addInitialContactMessages()
         addAircraftRequestMessages()
@@ -171,6 +174,32 @@ class StatusPane {
             goAroundContacts[i]?.apply {
                 val callsign = get(AircraftInfo.mapper)?.icaoCallsign ?: return@apply
                 addMessage("$callsign: Missed approach", ALERT)
+            }
+        }
+    }
+
+    /** Gets point out and coordination requests and adds them as messages to the status pane */
+    private fun addCoordinationMessages() {
+        val pointOuts = getEngine(true).getEntitiesFor(pointOutFamily)
+        for (i in 0 until pointOuts.size()) {
+            pointOuts[i]?.apply {
+                val callsign = get(AircraftInfo.mapper)?.icaoCallsign ?: return@apply
+                val controllable = get(Controllable.mapper) ?: return@apply
+                if (controllable.sectorId != CLIENT_SCREEN?.playerSector) return@apply
+
+                addMessage("$callsign: Point out", ALERT)
+            }
+        }
+
+        val coordinationRequests = getEngine(true).getEntitiesFor(coordinationRequestFamily)
+        for (i in 0 until coordinationRequests.size()) {
+            coordinationRequests[i]?.apply {
+                val callsign = get(AircraftInfo.mapper)?.icaoCallsign ?: return@apply
+                val controllable = get(Controllable.mapper) ?: return@apply
+                if (controllable.sectorId != CLIENT_SCREEN?.playerSector) return@apply
+                val request = get(AircraftHandoverCoordinationRequest.mapper) ?: return@apply
+
+                addMessage("$callsign: Coordination request from Sector ${request.requestingSectorId + 1}", ALERT)
             }
         }
     }
