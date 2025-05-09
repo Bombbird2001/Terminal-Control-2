@@ -532,14 +532,17 @@ private fun generateRandomCallsign(airline: String, private: Boolean, gs: GameSe
 }
 
 /**
- * Gets all available approaches for the input airport
- * @param airport the airport to use
- * @param currSelectedApp the currently selected approach of the aircraft, if any
- * @param includeClosedRunway whether to include approaches for closed runways; default is false
+ * Gets all available approaches for the input [airport], inserting [currSelectedApp]
+ * if it is not null and not already in the list; if [includeClosedRunway] is true,
+ * approaches for closed runways are also included; if [includeDefaultOption] is
+ * true, the default option "Approach" for when no approach is selected is included
  * @return a [GdxArray] of strings containing the eligible approach names
  */
-fun getAvailableApproaches(airport: Entity, currSelectedApp: String?, includeClosedRunway: Boolean = false): GdxArray<String> {
-    val array = GdxArray<String>().apply { add("Approach") }
+fun getAvailableApproaches(
+    airport: Entity, currSelectedApp: String?, includeClosedRunway: Boolean = false,
+    includeDefaultOption: Boolean = true
+): GdxArray<String> {
+    val array = GdxArray<String>().apply { if (includeDefaultOption) add("Approach") }
     val rwys = airport[RunwayChildren.mapper]?.rwyMap ?: return array
     val activeRwyConfig = airport[ActiveRunwayConfig.mapper]
     if (activeRwyConfig == null) {

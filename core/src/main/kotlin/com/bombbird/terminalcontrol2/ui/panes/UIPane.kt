@@ -161,6 +161,9 @@ class UIPane(private val uiStage: Stage) {
                 if (controllable.sectorId == SectorInfo.TOWER || controllable.sectorId == SectorInfo.CENTRE) {
                     // Only show coordination pane if there are multiple sectors
                     // and aircraft is not under tower or ACC control
+                    aircraftArrivalArptId = aircraft.entity[ArrivalAirport.mapper]?.arptId
+                    val coordinationRequest = aircraft.entity[AircraftHandoverCoordinationRequest.mapper]
+                    multiplayerCoordinationObj.updateCoordinationState(coordinationRequest, aircraftArrivalArptId)
                     mainInfoPane.isVisible = false
                     multiplayerCoordinationPane.isVisible = true
                 }
@@ -209,7 +212,15 @@ class UIPane(private val uiStage: Stage) {
         updateWaypointDisplay()
         aircraft.entity.apply {
             val controllable = get(Controllable.mapper) ?: return
-            if (controllable.sectorId != CLIENT_SCREEN?.playerSector) return
+//            if (controllable.sectorId != SectorInfo.TOWER
+//                && controllable.sectorId != SectorInfo.CENTRE
+//                && (CLIENT_SCREEN?.sectors?.size ?: 0) > 1) {
+            if (controllable.sectorId == SectorInfo.TOWER || controllable.sectorId == SectorInfo.CENTRE) {
+                aircraftArrivalArptId = aircraft.entity[ArrivalAirport.mapper]?.arptId
+                val coordinationRequest = aircraft.entity[AircraftHandoverCoordinationRequest.mapper]
+                multiplayerCoordinationObj.updateCoordinationState(coordinationRequest, aircraftArrivalArptId)
+                return
+            }
         }
         aircraftArrivalArptId = aircraft.entity[ArrivalAirport.mapper]?.arptId
         appTrackCaptured = aircraft.entity.has(VisualCaptured.mapper) || aircraft.entity.has(LocalizerCaptured.mapper)

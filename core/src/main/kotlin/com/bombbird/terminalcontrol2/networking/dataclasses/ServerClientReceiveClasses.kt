@@ -226,6 +226,7 @@ data class HandoverCoordinationRequest(
                     speedConstraint, approachName, sendingSector
                 )
             }
+            if (rs.selectedAircraft == aircraft) rs.uiPane.updateSelectedAircraft(aircraft)
         }
     }
 }

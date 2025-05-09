@@ -11,9 +11,12 @@ import com.bombbird.terminalcontrol2.global.MIN_ALT
 import com.bombbird.terminalcontrol2.global.TRANS_ALT
 import com.bombbird.terminalcontrol2.global.TRANS_LVL
 import com.bombbird.terminalcontrol2.global.UI_HEIGHT
+import com.bombbird.terminalcontrol2.traffic.getAvailableApproaches
 import com.bombbird.terminalcontrol2.ui.addChangeListener
 import com.bombbird.terminalcontrol2.ui.disallowDisabledClickThrough
+import com.bombbird.terminalcontrol2.utilities.FileLog
 import com.bombbird.terminalcontrol2.utilities.byte
+import ktx.ashley.get
 import ktx.collections.GdxArray
 import ktx.collections.gdxArrayOf
 import ktx.scene2d.KCheckBox
@@ -28,12 +31,14 @@ import ktx.scene2d.label
 import ktx.scene2d.selectBoxOf
 import ktx.scene2d.table
 import ktx.scene2d.textButton
+import kotlin.math.roundToInt
 
 /** Helper object for UI pane's multiplayer coordination pane */
 class MultiplayerCoordinationPane {
     companion object {
         const val POINT_OUT = "Point Out"
         const val SEND_REQUEST = "Send request"
+        const val CANCEL_REQUEST = "Cancel request"
     }
 
     lateinit var parentPane: UIPane
@@ -57,6 +62,8 @@ class MultiplayerCoordinationPane {
 
     lateinit var appCheckBox: KCheckBox
     lateinit var appSelectBox: KSelectBox<String>
+
+    lateinit var sendCancelRequestButton: KTextButton
 
     @Scene2dDsl
     fun multiplayerCoordinationPane(uiPane: UIPane, widget: KWidget<Actor>, paneWidth: Float): KContainer<Actor> {
@@ -244,7 +251,7 @@ class MultiplayerCoordinationPane {
                         }.cell(preferredWidth = 250f, height = 100f)
                     }.cell(growX = true, padLeft = 20f, padRight = 20f, padTop = 20f)
                     row()
-                    textButton(SEND_REQUEST, "PointOutButton").apply {
+                    sendCancelRequestButton = textButton(SEND_REQUEST, "PointOutButton").apply {
                         addChangeListener { _, _ ->
                             sendCoordinationRequest()
                         }
@@ -257,6 +264,20 @@ class MultiplayerCoordinationPane {
 
     private fun sendCoordinationRequest() {
         parentPane.selAircraft?.let {
+            val aircraftCoordinationRequest = it.entity[AircraftHandoverCoordinationRequest.mapper]
+
+            if (aircraftCoordinationRequest != null) {
+                // Cannot send changes if current request exists from another sector
+                // If the current request is from the same sector, cancel it
+                if (aircraftCoordinationRequest.requestingSectorId == CLIENT_SCREEN?.playerSector) {
+                    CLIENT_SCREEN?.sendHandoverCoordinationRequest(
+                        it, null, 0, null,
+                        null, 0,null, true
+                    )
+                }
+                return@let
+            }
+
             val alt = if (altCheckBox.isChecked) {
                 if (altSelectBox.selected.startsWith("FL")) {
                     altSelectBox.selected.substring(2).toInt() * 100
@@ -353,5 +374,107 @@ class MultiplayerCoordinationPane {
         if (button != spdAtOrAboveButton) spdAtOrAboveButton.isChecked = false
         if (button != spdAtButton) spdAtButton.isChecked = false
         if (button != spdAtOrBelowButton) spdAtOrBelowButton.isChecked = false
+    }
+
+    /**
+     * Sets the pane according to the provided [coordinationState] and the
+     * [arrivalArptId], if any
+     */
+    fun updateCoordinationState(
+        coordinationState: AircraftHandoverCoordinationRequest?, arrivalArptId: Byte?
+    ) {
+        altCheckBox.isChecked = coordinationState?.altitudeFt != null
+        altSelectBox.isDisabled = !altCheckBox.isChecked
+        altAtOrAboveButton.isDisabled = !altCheckBox.isChecked
+        altAtButton.isDisabled = !altCheckBox.isChecked
+        altAtOrBelowButton.isDisabled = !altCheckBox.isChecked
+        altSelectBox.items = getAltBoxSelections()
+
+        if (coordinationState?.altitudeFt != null) {
+            altSelectBox.selected = if (coordinationState.altitudeFt >= TRANS_LVL * 100) {
+                "FL${(coordinationState.altitudeFt / 1000f).roundToInt()}"
+            } else {
+                coordinationState.altitudeFt.toString()
+            }
+        }
+
+        val altConstraintButton = when (coordinationState?.altitudeConstraint) {
+            AircraftHandoverCoordinationRequest.CONSTRAINT_GREATER_EQUAL -> altAtOrAboveButton
+            AircraftHandoverCoordinationRequest.CONSTRAINT_EQUAL -> altAtButton
+            AircraftHandoverCoordinationRequest.CONSTRAINT_LESS_EQUAL -> altAtOrBelowButton
+            else -> {
+                FileLog.warn("MultiplayerCoordinationPane", "Unknown altitude constraint ${coordinationState?.altitudeConstraint}")
+                altAtButton
+            }
+        }
+        altConstraintButton.isChecked = true
+        uncheckOtherAltConstraints(altConstraintButton)
+
+        hdgCheckBox.isChecked = coordinationState?.headingDeg != null
+        hdgSelectBox1.isDisabled = !hdgCheckBox.isChecked
+        hdgSelectBox2.isDisabled = !hdgCheckBox.isChecked
+        hdgSelectBox3.isDisabled = !hdgCheckBox.isChecked
+
+        if (coordinationState?.headingDeg != null) {
+            hdgSelectBox1.selected = (coordinationState.headingDeg / 100).byte
+            hdgSelectBox2.selected = ((coordinationState.headingDeg / 10) % 10).byte
+            hdgSelectBox3.selected = (coordinationState.headingDeg % 10).byte
+        }
+
+        spdCheckBox.isChecked = coordinationState?.speedKts != null
+        spdSelectBox.isDisabled = !spdCheckBox.isChecked
+        spdAtOrAboveButton.isDisabled = !spdCheckBox.isChecked
+        spdAtButton.isDisabled = !spdCheckBox.isChecked
+        spdAtOrBelowButton.isDisabled = !spdCheckBox.isChecked
+
+        if (coordinationState?.speedKts != null) {
+            spdSelectBox.selected = coordinationState.speedKts
+        }
+
+        val spdConstraintButton = when (coordinationState?.speedConstraint) {
+            AircraftHandoverCoordinationRequest.CONSTRAINT_GREATER_EQUAL -> spdAtOrAboveButton
+            AircraftHandoverCoordinationRequest.CONSTRAINT_EQUAL -> spdAtButton
+            AircraftHandoverCoordinationRequest.CONSTRAINT_LESS_EQUAL -> spdAtOrBelowButton
+            else -> {
+                FileLog.warn("MultiplayerCoordinationPane", "Unknown speed constraint ${coordinationState?.speedConstraint}")
+                spdAtButton
+            }
+        }
+        spdConstraintButton.isChecked = true
+        uncheckOtherSpdConstraints(spdConstraintButton)
+
+        // Show only for arrivals
+        appCheckBox.isChecked = coordinationState?.approachName != null && arrivalArptId != null
+        appSelectBox.isDisabled = !appCheckBox.isChecked
+        appSelectBox.items = CLIENT_SCREEN?.airports?.get(arrivalArptId)?.let { arpt ->
+            getAvailableApproaches(
+                arpt.entity, null,
+                includeClosedRunway = true, includeDefaultOption = false
+            )
+        } ?: gdxArrayOf("-")
+
+        val enableSelections = coordinationState == null
+        altCheckBox.isDisabled = !enableSelections
+        altSelectBox.isDisabled = !enableSelections
+        altAtOrAboveButton.isDisabled = !enableSelections
+        altAtButton.isDisabled = !enableSelections
+        altAtOrBelowButton.isDisabled = !enableSelections
+        hdgCheckBox.isDisabled = !enableSelections
+        hdgSelectBox1.isDisabled = !enableSelections
+        hdgSelectBox2.isDisabled = !enableSelections
+        hdgSelectBox3.isDisabled = !enableSelections
+        spdCheckBox.isDisabled = !enableSelections
+        spdSelectBox.isDisabled = !enableSelections
+        spdAtOrAboveButton.isDisabled = !enableSelections
+        spdAtButton.isDisabled = !enableSelections
+        spdAtOrBelowButton.isDisabled = !enableSelections
+        appCheckBox.isDisabled = !enableSelections
+        appSelectBox.isDisabled = !enableSelections
+        sendCancelRequestButton.isDisabled = !(enableSelections || coordinationState.requestingSectorId == CLIENT_SCREEN?.playerSector)
+
+        sendCancelRequestButton.setText(
+            if (coordinationState == null || coordinationState.requestingSectorId != CLIENT_SCREEN?.playerSector) SEND_REQUEST
+            else CANCEL_REQUEST
+        )
     }
 }
