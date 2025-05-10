@@ -169,6 +169,9 @@ class ConflictManager {
             val pos = conflictAble[Position.mapper] ?: continue
             val alt = conflictAble[Altitude.mapper] ?: continue
             val speed = conflictAble[Speed.mapper] ?: continue
+            val controllable = conflictAble[Controllable.mapper] ?: continue
+            // Ignore aircraft under ACC control
+            if (controllable.sectorId == SectorInfo.CENTRE) continue
 
             storms.forEach { storm ->
                 val stormPos = storm?.entity[Position.mapper] ?: return@forEach

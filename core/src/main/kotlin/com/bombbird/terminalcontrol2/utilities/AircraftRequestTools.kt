@@ -4,6 +4,7 @@ import com.badlogic.ashley.core.Entity
 import com.badlogic.gdx.math.MathUtils
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.MAG_HDG_DEV
+import com.bombbird.terminalcontrol2.global.MAX_ALT
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.navigation.establishedOnFinalApproachTrack
 import com.bombbird.terminalcontrol2.navigation.getAircraftApproach
@@ -280,6 +281,9 @@ class FurtherClimbRequest: AircraftRequest(minRecurrentTimeS = 120, activationTi
         // Check if within 25ft of cleared altitude (not target since there may be SID restrictions)
         val currentAlt = entity[Altitude.mapper]?.altitudeFt ?: return Optional.empty()
         val clearedAlt = entity[ClearanceAct.mapper]?.actingClearance?.clearanceState?.clearedAlt ?: return Optional.empty()
+        val perfData = entity[AircraftInfo.mapper]?.aircraftPerf ?: return Optional.empty()
+        // If cleared altitude is at least MAX_ALT, or within 1000ft of aircraft max altitude, do not send request
+        if (clearedAlt >= MAX_ALT || clearedAlt >= perfData.maxAlt - 1000) return Optional.empty()
         if (!withinRange(currentAlt, clearedAlt - 25f, clearedAlt + 25f)) return Optional.empty()
 
         return Optional.of(arrayOf())
