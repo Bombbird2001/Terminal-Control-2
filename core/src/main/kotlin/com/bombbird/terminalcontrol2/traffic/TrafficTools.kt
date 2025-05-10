@@ -711,8 +711,9 @@ fun checkSameRunwayTraffic(rwy: Entity, airport: Airport): Boolean {
             nextDeparture.wakeCategory, nextDeparture.recat) > prevArrival.timeSinceTouchdownS) return false
     // Check turboprop separation
     if (prevDeparture != null && !checkPrevTurboprop(prevDeparture, nextDeparture)) return false
-    // Check time from touchdown - minimum 110s
-    return nextArrival == null || calculateTimeToThreshold(nextArrival.aircraft, rwy) >= 110
+    // Check time from touchdown - minimum 110s, or if circling approach, minimum 240s
+    val minTimeNeeded = if (nextArrival?.aircraft?.has(CirclingApproach.mapper) == true) 240 else 110
+    return nextArrival == null || calculateTimeToThreshold(nextArrival.aircraft, rwy) >= minTimeNeeded
 }
 
 /**

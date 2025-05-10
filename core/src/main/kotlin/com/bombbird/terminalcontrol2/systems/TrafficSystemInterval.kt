@@ -10,6 +10,7 @@ import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.entities.WakeZone
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.THUNDERSTORM_TAKEOFF_PROTECTION_DIST_NM
+import com.bombbird.terminalcontrol2.navigation.getAircraftApproach
 import com.bombbird.terminalcontrol2.traffic.*
 import com.bombbird.terminalcontrol2.traffic.conflict.ConflictManager
 import com.bombbird.terminalcontrol2.utilities.*
@@ -29,7 +30,11 @@ class TrafficSystemInterval: IntervalSystem(1f) {
         private val arrivalFamily = allOf(AircraftInfo::class, ArrivalAirport::class).get()
         private val runwayTakeoffFamily = allOf(RunwayInfo::class).get()
         private val closestArrivalFamily = allOf(Position::class, AircraftInfo::class)
-            .oneOf(LocalizerCaptured::class, GlideSlopeCaptured::class, VisualCaptured::class).get()
+            .oneOf(
+                LocalizerArmed::class, LocalizerCaptured::class, GlideSlopeCaptured::class,
+                VisualArmed::class, VisualCaptured::class, CirclingApproach::class, VisualApproach::class
+            )
+            .exclude(LandingRoll::class).get()
         private val conflictAbleFamily = allOf(Position::class, Altitude::class, ConflictAble::class)
             .exclude(WaitingTakeoff::class, TakeoffRoll::class, LandingRoll::class).get()
         private val despawnFamily = allOf(Position::class, AircraftInfo::class, Controllable::class)
@@ -135,13 +140,11 @@ class TrafficSystemInterval: IntervalSystem(1f) {
         val closestRunwayArrival = closestArrivalFamilyEntities.getEntities()
         for (i in 0 until closestRunwayArrival.size()) {
             closestRunwayArrival[i]?.apply {
-                val approach = get(LocalizerArmed.mapper)?.locApp ?: get(LocalizerCaptured.mapper)?.locApp ?:
-                get(GlideSlopeCaptured.mapper)?.gsApp ?: get(VisualArmed.mapper)?.visApp ?:
-                get(VisualCaptured.mapper)?.visApp ?: return@apply
+                val approach = get(LocalizerArmed.mapper)?.locApp ?: get(VisualArmed.mapper)?.visApp
+                ?: getAircraftApproach(this) ?: return@apply
                 val rwyObj = approach[ApproachInfo.mapper]?.rwyObj?.entity ?: return@apply
                 val rwyThrPos = rwyObj[CustomPosition.mapper] ?: return@apply
                 val pos = get(Position.mapper) ?: return@apply
-                if (has(LandingRoll.mapper)) return@apply
                 val distPx = calculateDistanceBetweenPoints(pos.x, pos.y, rwyThrPos.x, rwyThrPos.y)
                 // If no next arrival has been determined yet, add this arrival
                 if (rwyObj.hasNot(RunwayNextArrival.mapper)) rwyObj += RunwayNextArrival(this, distPx)
