@@ -37,6 +37,7 @@ fun loadAllComponents() {
     ClearanceAct.initialise()
     ClearanceActChanged.initialise()
     CanGoAround.initialise()
+    CanShowCoordinationPane.initialise()
     CommandCDA.initialise()
     CommandDirect.initialise()
     CommandExpedite.initialise()

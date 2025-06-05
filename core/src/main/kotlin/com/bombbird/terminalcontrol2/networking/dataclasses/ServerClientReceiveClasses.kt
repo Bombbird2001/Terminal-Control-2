@@ -1,6 +1,7 @@
 package com.bombbird.terminalcontrol2.networking.dataclasses
 
 import com.bombbird.terminalcontrol2.components.*
+import com.bombbird.terminalcontrol2.global.TRANS_LVL
 import com.bombbird.terminalcontrol2.global.getEngine
 import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.navigation.Route
@@ -20,6 +21,7 @@ import ktx.ashley.get
 import ktx.ashley.getSystem
 import ktx.ashley.plusAssign
 import ktx.ashley.remove
+import kotlin.math.roundToInt
 
 /** Class representing control state data sent when the aircraft command state is updated (either through player command, or due to leg being reached) */
 data class AircraftControlStateUpdateData(val callsign: String = "", val primaryName: String = "",
@@ -218,13 +220,58 @@ data class HandoverCoordinationRequest(
 
     override fun handleClientReceive(rs: RadarScreen) {
         rs.aircraft[callsign]?.let { aircraft ->
+            val needToNotify = aircraft.entity[Controllable.mapper]?.sectorId == rs.playerSector
             if (cancel) {
                 aircraft.entity.remove<AircraftHandoverCoordinationRequest>()
+                if (needToNotify) {
+                    rs.uiPane.commsPane.addMessage(
+                        "Sector ${sendingSector + 1} has cancelled the coordination request for ${aircraft.entity[AircraftInfo.mapper]?.icaoCallsign}",
+                        CommsPane.ALERT
+                    )
+                }
             } else {
                 aircraft.entity += AircraftHandoverCoordinationRequest(
                     altitudeFt, altitudeConstraint, headingDeg, speedKts,
                     speedConstraint, approachName, sendingSector
                 )
+                if (needToNotify) {
+                    val sb = StringBuilder("Sector ${sendingSector + 1} has requested ${aircraft.entity[AircraftInfo.mapper]?.icaoCallsign} to be handed over ")
+                    var count = 0
+                    if (altitudeFt != null) {
+                        sb.append(
+                            when (altitudeConstraint) {
+                                AircraftHandoverCoordinationRequest.CONSTRAINT_GREATER_EQUAL -> "at or above"
+                                AircraftHandoverCoordinationRequest.CONSTRAINT_LESS_EQUAL -> "at or below"
+                                else -> "at"
+                            }
+                        )
+                        sb.append(if (altitudeFt >= TRANS_LVL * 100) " FL${(altitudeFt / 100f.roundToInt())}" else " $altitudeFt ft")
+                        count++
+                    }
+                    if (headingDeg != null) {
+                        sb.append(if (count > 0) "," else "on")
+                        sb.append(" heading $headingDeg")
+                        count++
+                    }
+                    if (speedKts != null) {
+                        if (count > 0) sb.append(", ")
+                        sb.append(
+                            when (speedConstraint) {
+                                AircraftHandoverCoordinationRequest.CONSTRAINT_GREATER_EQUAL -> "at or above"
+                                AircraftHandoverCoordinationRequest.CONSTRAINT_LESS_EQUAL -> "at or below"
+                                else -> "at"
+                            }
+                        )
+                        sb.append(" $speedKts kts")
+                        count++
+                    }
+                    if (approachName != null) {
+                        sb.append(if (count > 0) "," else "with")
+                        sb.append(" $approachName")
+                        count++
+                    }
+                    if (count > 0) rs.uiPane.commsPane.addMessage(sb.toString(), CommsPane.ALERT)
+                }
             }
             if (rs.selectedAircraft == aircraft) rs.uiPane.updateSelectedAircraft(aircraft)
         }

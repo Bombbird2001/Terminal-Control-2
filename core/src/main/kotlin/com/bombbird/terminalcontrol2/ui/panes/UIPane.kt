@@ -157,7 +157,8 @@ class UIPane(private val uiStage: Stage) {
                 clearanceState.updateUIClearanceState(aircraft.entity[ClearanceAct.mapper]?.actingClearance?.clearanceState ?: return)
                 if (controllable.sectorId != SectorInfo.TOWER
                     && controllable.sectorId != SectorInfo.CENTRE
-                    && (CLIENT_SCREEN?.sectors?.size ?: 0) > 1) {
+                    && (CLIENT_SCREEN?.sectors?.size ?: 0) > 1
+                    && has(CanShowCoordinationPane.mapper)) {
                     // Only show coordination pane if there are multiple sectors
                     // and aircraft is not under tower or ACC control
                     aircraftArrivalArptId = aircraft.entity[ArrivalAirport.mapper]?.arptId
@@ -213,7 +214,8 @@ class UIPane(private val uiStage: Stage) {
             val controllable = get(Controllable.mapper) ?: return
             if (controllable.sectorId != SectorInfo.TOWER
                 && controllable.sectorId != SectorInfo.CENTRE
-                && (CLIENT_SCREEN?.sectors?.size ?: 0) > 1) {
+                && (CLIENT_SCREEN?.sectors?.size ?: 0) > 1
+                && has(CanShowCoordinationPane.mapper)) {
                 aircraftArrivalArptId = aircraft.entity[ArrivalAirport.mapper]?.arptId
                 val coordinationRequest = aircraft.entity[AircraftHandoverCoordinationRequest.mapper]
                 multiplayerCoordinationObj.updateCoordinationState(coordinationRequest, aircraftArrivalArptId)

@@ -3,6 +3,7 @@ package com.bombbird.terminalcontrol2.utilities
 import com.badlogic.ashley.core.Entity
 import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.math.Polygon
+import com.badlogic.gdx.math.Vector2
 import com.bombbird.terminalcontrol2.components.*
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.navigation.Route
@@ -738,4 +739,38 @@ fun calculateTargetVerticalSpeedLimit(altitudeAboveSeaLevelFt: Float, expedite: 
         else -> -2000f
     }
     return Pair(maxClimbVs, maxDescentVs)
+}
+
+/**
+ * Calculates the distance from a point ([x], [y]) to the polygon containing
+ * [vertices], in pixels
+ *
+ * Even if the point is inside the polygon, the distance will be calculated as if
+ * the point was outside the polygon, i.e. the distance to the closest edge or vertex
+ */
+fun distPxFromPolygon(vertices: FloatArray, x: Float, y: Float): Float {
+    // Closest distance from point to polygon is the minimum of the distances from
+    // the point to each edge of the polygon and the distance to each vertex
+    var minDist = Float.MAX_VALUE
+    for (i in 0 until vertices.size step 2) {
+        val vertexX = vertices[i]
+        val vertexY = vertices[i + 1]
+        val nextVertexX = vertices[(i + 2) % vertices.size]
+        val nextVertexY = vertices[(i + 3) % vertices.size]
+        // Calculate distance to starting vertex
+        minDist = min(minDist, calculateDistanceBetweenPoints(x, y, vertexX, vertexY))
+        // Calculate distance to edge if projection of point onto edge is within the edge segment
+        val segmentVector = Vector2(nextVertexX - vertexX, nextVertexY - vertexY)
+        val vertex1PointVector = Vector2(x - vertexX, y - vertexY)
+        val vertex2PointVector = Vector2(x - nextVertexX, y - nextVertexY)
+        // For projection to be within the edge segment
+        // the dot product of the segment vector and vertex1PointVector, and the
+        // dot product of the segment vector and vertex2PointVector must have different signs
+        if (segmentVector.dot(vertex1PointVector) * segmentVector.dot(vertex2PointVector) < 0) {
+            val projectionDistance = vertex1PointVector.crs(vertex2PointVector) / segmentVector.len()
+            minDist = min(minDist, abs(projectionDistance))
+        }
+    }
+
+    return minDist
 }

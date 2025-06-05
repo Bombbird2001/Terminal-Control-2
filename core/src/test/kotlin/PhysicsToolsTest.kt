@@ -200,5 +200,28 @@ object PhysicsToolsTest: FunSpec() {
             calculateMaxDescentGradientDueToTargetVerticalSpeed(15000f, 310f) shouldBe 0.095562f.plusOrMinus(0.000001f)
             calculateMaxDescentGradientDueToTargetVerticalSpeed(25000f, 380f) shouldBe 0.051972f.plusOrMinus(0.000001f)
         }
+
+        test("Distance from Polygon calculation") {
+            val polygon1 = floatArrayOf(0f, 0f, 10f, 0f, 5f, 5f)
+            distPxFromPolygon(polygon1, 0f, 0f) shouldBe 0f.plusOrMinus(0.00001f)
+            distPxFromPolygon(polygon1, 5f, 5f) shouldBe 0f.plusOrMinus(0.00001f)
+            distPxFromPolygon(polygon1, 10f, 0f) shouldBe 0f.plusOrMinus(0.00001f)
+            distPxFromPolygon(polygon1, -1f, -1f) shouldBe 1.41421f.plusOrMinus(0.00001f)
+            distPxFromPolygon(polygon1, 3f, -2f) shouldBe 2
+            distPxFromPolygon(polygon1, 13f, 0f) shouldBe 3
+            distPxFromPolygon(polygon1, 10f, 4f) shouldBe 2.82843f.plusOrMinus(0.00001f)
+            distPxFromPolygon(polygon1, 0f, 5f) shouldBe 3.53553f.plusOrMinus(0.00001f)
+
+            val polygon2 = floatArrayOf(0f, 0f, 2.5f, -2.5f, 5f, 0f, 7.5f, -2.5f, 10f, 0f, 5f, 5f)
+            distPxFromPolygon(polygon2, 0f, 0f) shouldBe 0f.plusOrMinus(0.00001f)
+            distPxFromPolygon(polygon2, 5f, 5f) shouldBe 0f.plusOrMinus(0.00001f)
+            distPxFromPolygon(polygon2, 10f, 0f) shouldBe 0f.plusOrMinus(0.00001f)
+            distPxFromPolygon(polygon2, -1f, -1f) shouldBe 1.41421f.plusOrMinus(0.00001f)
+            distPxFromPolygon(polygon2, 5f, -2f) shouldBe 1.41421f.plusOrMinus(0.00001f)
+            distPxFromPolygon(polygon2, 6.5f, -2.5f) shouldBe 0.70711f.plusOrMinus(0.00001f)
+            distPxFromPolygon(polygon2, 13f, 0f) shouldBe 3f.plusOrMinus(0.00001f)
+            distPxFromPolygon(polygon2, 10f, 4f) shouldBe 2.82843f.plusOrMinus(0.00001f)
+            distPxFromPolygon(polygon2, 0f, 5f) shouldBe 3.53553f.plusOrMinus(0.00001f)
+        }
     }
 }

@@ -207,5 +207,8 @@ const val MULTIPLAYER_PUBLIC = "Public multiplayer"
 const val MULTIPLAYER_SINGLEPLAYER_LAN_CLIENT = "LAN multiplayer/Singleplayer (client)"
 const val MULTIPLAYER_PUBLIC_CLIENT = "Public multiplayer (client)"
 
+/** Multiplayer coordination constants */
+const val COORDINATION_PANE_MAX_DIST_NM = 15f
+
 /** Discord Game SDK activity update interval */
 const val DISCORD_UPDATE_INTERVAL_S = 10f

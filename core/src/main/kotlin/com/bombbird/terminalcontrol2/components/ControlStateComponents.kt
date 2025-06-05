@@ -415,3 +415,15 @@ data class AircraftHandoverCoordinationRequest(
         fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
 }
+
+/**
+ * Component for tagging aircraft that the game should show the coordination
+ * pane for, criteria being that it is close enough to the player
+ */
+class CanShowCoordinationPane: Component {
+    companion object {
+        val mapper = object: Mapper<CanShowCoordinationPane>() {}.mapper
+
+        fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
+    }
+}

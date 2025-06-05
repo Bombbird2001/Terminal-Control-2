@@ -15,6 +15,9 @@ import com.bombbird.terminalcontrol2.ui.isMobile
 import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.allOf
 import ktx.ashley.get
+import ktx.ashley.has
+import ktx.ashley.hasNot
+import ktx.ashley.remove
 import ktx.collections.GdxArray
 import ktx.math.unaryMinus
 import kotlin.math.roundToInt
@@ -49,7 +52,10 @@ class DataSystemClient: EntitySystem() {
         if (radarDataTimer > RADAR_REFRESH_INTERVAL_S) {
             val radarDataUpdate = radarDataUpdateFamilyEntities.getEntities()
             for (i in 0 until radarDataUpdate.size()) {
-                radarDataUpdate[i]?.apply { updateAircraftRadarData(this) }
+                radarDataUpdate[i]?.apply {
+                    updateAircraftRadarData(this)
+                    updateCanShowCoordinationPane(this)
+                }
             }
 
             // We also update the dist to go, waypoint restriction information here
@@ -153,6 +159,42 @@ fun updateAircraftRadarData(aircraft: Entity) {
         radarData.speed.angularSpdDps = spd.angularSpdDps
         radarData.altitude.altitudeFt = alt.altitudeFt
         radarData.groundSpeed = groundTrack.trackVectorPxps.len().let { pxpsToKt(it) }
+    }
+}
+
+/**
+ * Updates the [CanShowCoordinationPane] flag for the [aircraft]
+ *
+ * If the aircraft is close enough to the player's sector in multiplayer mode,
+ * the flag is set to true, allowing the coordination pane to be shown
+ */
+fun updateCanShowCoordinationPane(aircraft: Entity) {
+    // Updates the canShowCoordinationPane flag for the aircraft
+    // This is used to determine if the aircraft is close enough to the player's
+    // sector in multiplayer mode to show the coordination pane
+    GAME.gameClientScreen?.also { rs ->
+        val radarData = aircraft[RadarData.mapper]
+        val playerSectorVertices = rs.sectors[rs.playerSector.toInt()].entity[GPolygon.mapper]?.vertices
+        if (rs.sectors.size <= 1 || radarData == null ||
+            playerSectorVertices == null || playerSectorVertices.size < 3) {
+            aircraft.remove<CanShowCoordinationPane>()
+            return
+        }
+
+        var stateChanged = false
+        if (distPxFromPolygon(playerSectorVertices, radarData.position.x, radarData.position.y) <= nmToPx(COORDINATION_PANE_MAX_DIST_NM)) {
+            if (aircraft.hasNot((CanShowCoordinationPane.mapper))) {
+                aircraft.add(CanShowCoordinationPane())
+                stateChanged = true
+            }
+        } else if (aircraft.has(CanShowCoordinationPane.mapper)) {
+            aircraft.remove<CanShowCoordinationPane>()
+            stateChanged = true
+        }
+        if (stateChanged) {
+            val selectedAc = rs.selectedAircraft
+            if (selectedAc?.entity == aircraft) rs.setUISelectedAircraft(selectedAc)
+        }
     }
 }
 
