@@ -214,6 +214,7 @@ class UIPane(private val uiStage: Stage) {
             val controllable = get(Controllable.mapper) ?: return
             if (controllable.sectorId != SectorInfo.TOWER
                 && controllable.sectorId != SectorInfo.CENTRE
+                && controllable.sectorId != CLIENT_SCREEN?.playerSector
                 && (CLIENT_SCREEN?.sectors?.size ?: 0) > 1
                 && has(CanShowCoordinationPane.mapper)) {
                 aircraftArrivalArptId = aircraft.entity[ArrivalAirport.mapper]?.arptId
