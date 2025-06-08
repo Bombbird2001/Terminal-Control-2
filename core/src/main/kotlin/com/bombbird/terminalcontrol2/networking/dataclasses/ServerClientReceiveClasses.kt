@@ -19,6 +19,7 @@ import com.bombbird.terminalcontrol2.ui.datatag.updateDatatagText
 import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.get
 import ktx.ashley.getSystem
+import ktx.ashley.has
 import ktx.ashley.plusAssign
 import ktx.ashley.remove
 import kotlin.math.roundToInt
@@ -201,7 +202,7 @@ data class HandoverCoordinationRequest(
     val altitudeFt: Int? = null, val altitudeConstraint: Byte = AircraftHandoverCoordinationRequest.CONSTRAINT_EQUAL,
     val headingDeg: Short? = null,
     val speedKts: Short? = null, val speedConstraint: Byte = AircraftHandoverCoordinationRequest.CONSTRAINT_EQUAL,
-    val approachName: String? = null, val cancel: Boolean = false
+    val approachName: String? = null, val cancel: Boolean = false, val doNotNotify: Boolean = false
 ): ServerReceive, ClientReceive, NeedsEncryption {
     override fun handleServerReceive(gs: GameServer, connection: ConnectionMeta) {
         gs.postRunnableAfterEngineUpdate {
@@ -212,15 +213,26 @@ data class HandoverCoordinationRequest(
                 // Sector controlling the aircraft must be different from sender
                 if (it[Controllable.mapper]?.sectorId == gs.sectorMap[connection.uuid]) return@postRunnableAfterEngineUpdate
 
+                // Cannot add coordination request if aircraft already has one
+                if (!cancel && it.has(AircraftHandoverCoordinationRequest.mapper)) return@postRunnableAfterEngineUpdate
+
+                // Only can cancel for same requesting sector ID
+                if (cancel && it[AircraftHandoverCoordinationRequest.mapper]?.requestingSectorId != sendingSector) return@postRunnableAfterEngineUpdate
+
+                it += AircraftHandoverCoordinationRequest(
+                    altitudeFt, altitudeConstraint, headingDeg, speedKts,
+                    speedConstraint, approachName, sendingSector
+                )
+
                 // Forward to all players
-                gs.forwardHandoverRequest(this)
+                gs.sendHandoverRequest(this)
             }
         }
     }
 
     override fun handleClientReceive(rs: RadarScreen) {
         rs.aircraft[callsign]?.let { aircraft ->
-            val needToNotify = aircraft.entity[Controllable.mapper]?.sectorId == rs.playerSector
+            val needToNotify = aircraft.entity[Controllable.mapper]?.sectorId == rs.playerSector && !doNotNotify
             if (cancel) {
                 aircraft.entity.remove<AircraftHandoverCoordinationRequest>()
                 if (needToNotify) {

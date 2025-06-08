@@ -1062,8 +1062,8 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
         networkServer.sendToAllTCP(pointOut)
     }
 
-    /** Forwards the [handover] request to all players */
-    fun forwardHandoverRequest(handover: HandoverCoordinationRequest) {
+    /** Sends the [handover] request to all players */
+    fun sendHandoverRequest(handover: HandoverCoordinationRequest) {
         networkServer.sendToAllTCP(handover)
     }
 

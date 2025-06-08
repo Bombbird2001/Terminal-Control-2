@@ -5,10 +5,12 @@ import com.badlogic.ashley.core.Family
 import com.badlogic.ashley.systems.IntervalSystem
 import com.badlogic.gdx.math.MathUtils
 import com.bombbird.terminalcontrol2.components.*
+import com.bombbird.terminalcontrol2.global.COORDINATION_PANE_MAX_DIST_NM
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.MAG_HDG_DEV
 import com.bombbird.terminalcontrol2.global.TRACK_EXTRAPOLATE_TIME_S
 import com.bombbird.terminalcontrol2.navigation.*
+import com.bombbird.terminalcontrol2.networking.dataclasses.HandoverCoordinationRequest
 import com.bombbird.terminalcontrol2.utilities.*
 import ktx.ashley.*
 
@@ -31,6 +33,7 @@ class ControlStateSystemInterval: IntervalSystem(1f) {
         private val divergentDepFamily: Family = allOf(DivergentDepartureAllowed::class).get()
         private val aircraftOnLocFamily = allOf(LocalizerCaptured::class, ClearanceAct::class)
             .exclude(CommandDirect::class).get()
+        private val handoverCoordinationCheckFamily = allOf(AircraftInfo::class, AircraftHandoverCoordinationRequest::class, Position::class, Controllable::class).get()
 
         fun initialise() = InitializeCompanionObjectOnStart.initialise(this::class)
     }
@@ -46,6 +49,7 @@ class ControlStateSystemInterval: IntervalSystem(1f) {
     private val pendingCruiseFamilyEntities = FamilyWithListener.newServerFamilyWithListener(pendingCruiseFamily)
     private val divergentDepFamilyEntities = FamilyWithListener.newServerFamilyWithListener(divergentDepFamily)
     private val aircraftOnLocFamilyEntities = FamilyWithListener.newServerFamilyWithListener(aircraftOnLocFamily)
+    private val handoverCoordinationCheckFamilyEntities = FamilyWithListener.newServerFamilyWithListener(handoverCoordinationCheckFamily)
 
     /**
      * Secondary update system, for operations that can be updated at a lower frequency and do not rely on deltaTime
@@ -237,7 +241,17 @@ class ControlStateSystemInterval: IntervalSystem(1f) {
                         val extrapolatedController = GAME.gameServer?.sectorUUIDMap?.get(extrapolatedSector)
                         controllable.controllerUUID = extrapolatedController
                         get(AircraftInfo.mapper)?.icaoCallsign?.let { callsign -> GAME.gameServer?.also { server ->
-                            server.sendAircraftSectorUpdateTCPToAll(callsign, controllable.sectorId, controllable.controllerUUID?.toString(), !sectorWasSwapped, false)
+                            server.sendAircraftSectorUpdateTCPToAll(
+                                callsign, controllable.sectorId,
+                                controllable.controllerUUID?.toString(),
+                                !sectorWasSwapped, false
+                            )
+                            get(AircraftHandoverCoordinationRequest.mapper)?.let {
+                                // Clear any handover requests from the extrapolated sector
+                                if (it.requestingSectorId == controllable.sectorId) {
+                                    cancelHandoverCoordination(this, callsign, it, true)
+                                }
+                            }
                         }}
                     }
                 } else if (expectedSector != null && expectedController != controllable.controllerUUID) {
@@ -326,6 +340,39 @@ class ControlStateSystemInterval: IntervalSystem(1f) {
                 }
             }
         }
+
+        // Check the validity of handover coordination requests
+        val handoverCoordinationCheck = handoverCoordinationCheckFamilyEntities.getEntities()
+        for (i in 0 until handoverCoordinationCheck.size()) {
+            handoverCoordinationCheck[i]?.apply {
+                val acInfo = get(AircraftInfo.mapper) ?: return@apply
+                val pos = get(Position.mapper) ?: return@apply
+                val controllable = get(Controllable.mapper) ?: return@apply
+                val handoverRequest = get(AircraftHandoverCoordinationRequest.mapper) ?: return@apply
+
+                if (handoverRequest.requestingSectorId == controllable.sectorId) {
+                    cancelHandoverCoordination(this, acInfo.icaoCallsign, handoverRequest, true)
+                    return@apply
+                }
+
+                val requestingPlayerSectorVertices = GAME.gameServer?.let {
+                    val sectorArray = it.sectors[it.playersInGame] ?: return@let null
+
+                    if (handoverRequest.requestingSectorId >= sectorArray.size) {
+                        // Player count may have decreased and requesting sector ID is no longer available
+                        cancelHandoverCoordination(this, acInfo.icaoCallsign, handoverRequest, true)
+                        return@apply
+                    }
+
+                    sectorArray[handoverRequest.requestingSectorId.toInt()]
+                }?.entity?.get(GPolygon.mapper)?.vertices ?: return@apply
+
+                if (distPxFromPolygon(requestingPlayerSectorVertices, pos.x, pos.y) > nmToPx(COORDINATION_PANE_MAX_DIST_NM)) {
+                    cancelHandoverCoordination(this, acInfo.icaoCallsign, handoverRequest, false)
+                    return@apply
+                }
+            }
+        }
     }
 
     /**
@@ -344,5 +391,21 @@ class ControlStateSystemInterval: IntervalSystem(1f) {
         val lastWptPos = getServerWaypointMap()?.get(lastWptId)?.entity?.get(Position.mapper) ?: return perfData.maxAlt
         val requiredHdg = getRequiredTrack(pos.x, pos.y, lastWptPos.x, lastWptPos.y) + MAG_HDG_DEV
         return getCruiseAltForHeading(requiredHdg, perfData.maxAlt)
+    }
+
+    private fun cancelHandoverCoordination(
+        aircraft: Entity, callsign: String,
+        handoverRequest: AircraftHandoverCoordinationRequest, doNotNotify: Boolean
+    ) {
+        aircraft.remove<AircraftHandoverCoordinationRequest>()
+        GAME.gameServer?.sendHandoverRequest(
+            HandoverCoordinationRequest(
+                callsign, handoverRequest.requestingSectorId,
+                handoverRequest.altitudeFt, handoverRequest.altitudeConstraint,
+                handoverRequest.headingDeg, handoverRequest.speedKts,
+                handoverRequest.speedConstraint, handoverRequest.approachName,
+                cancel = true, doNotNotify
+            )
+        )
     }
 }
