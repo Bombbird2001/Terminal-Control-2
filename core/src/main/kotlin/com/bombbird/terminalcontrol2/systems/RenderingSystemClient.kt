@@ -28,8 +28,10 @@ import ktx.collections.GdxMap
 import ktx.collections.set
 import ktx.math.*
 import ktx.scene2d.Scene2DSkin
+import kotlin.math.cos
 import kotlin.math.min
 import kotlin.math.roundToInt
+import kotlin.math.sin
 import kotlin.math.sqrt
 
 /**
@@ -374,12 +376,14 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRendererBoundingBox,
             val noVector = uiPane.userClearanceState.vectorHdg == null
             val clearanceStateVectorHdg = uiPane.clearanceState.vectorHdg
             val controlledByPlayer = controllable.sectorId == CLIENT_SCREEN?.playerSector
-            if (clearanceStateVectorHdg != null && controlledByPlayer) {
-                renderVector(aircraftPos.x, aircraftPos.y, clearanceStateVectorHdg, false)
+            if (clearanceStateVectorHdg != null) {
+                if (controlledByPlayer) renderVector(aircraftPos.x, aircraftPos.y, clearanceStateVectorHdg, false)
+                else renderShortVector(aircraftPos.x, aircraftPos.y, clearanceStateVectorHdg)
             } else {
-                renderRouteSegments(aircraftPos.x, aircraftPos.y, it.entity[RouteSegment.mapper]?.segments ?: GdxArray(),
-                skipAircraftToFirstWaypoint = !controlledByPlayer && clearanceStateVectorHdg != null,
-                    forceRenderChangedAircraftToFirstWaypoint = false)
+                renderRouteSegments(
+                    aircraftPos.x, aircraftPos.y, it.entity[RouteSegment.mapper]?.segments ?: GdxArray(),
+                    skipAircraftToFirstWaypoint = false, forceRenderChangedAircraftToFirstWaypoint = false
+                )
             }
             if (controlledByPlayer) {
                 if (!vectorUnchanged && !uiPane.appTrackCaptured) uiPane.userClearanceState.vectorHdg?.let { newHdg ->
@@ -1017,6 +1021,18 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRendererBoundingBox,
         val lineEnd = pointsAtBorder(floatArrayOf(sectorBoundingRectangle.x, sectorBoundingRectangle.x  + sectorBoundingRectangle.width),
             floatArrayOf(sectorBoundingRectangle.y, sectorBoundingRectangle.y + sectorBoundingRectangle.height), posX, posY, hdg - MAG_HDG_DEV)
         shapeRenderer.line(posX, posY, lineEnd[0], lineEnd[1])
+    }
+
+    /**
+     * Renders the input vector [hdg] as a short line given the starting position
+     * ([posX], [posY]); shown to other players not controlling the aircraft when
+     * it is given vectors
+     */
+    private fun renderShortVector(posX: Float, posY: Float, hdg: Short) {
+        shapeRenderer.color = Color.WHITE
+        val deltaX = nmToPx(5) * cos(Math.toRadians(convertWorldAndRenderDeg(hdg - MAG_HDG_DEV).toDouble())).toFloat()
+        val deltaY = nmToPx(5) * sin(Math.toRadians(convertWorldAndRenderDeg(hdg - MAG_HDG_DEV).toDouble())).toFloat()
+        shapeRenderer.line(posX, posY, posX + deltaX, posY + deltaY)
     }
 
     /**
