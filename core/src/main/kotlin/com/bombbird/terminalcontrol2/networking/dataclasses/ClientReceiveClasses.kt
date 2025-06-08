@@ -83,6 +83,7 @@ class ClearAllClientData: ClientReceive, NeedsEncryption {
         rs.publishedHolds.clear()
         rs.minAltSectors.clear()
         rs.storms.clear()
+        rs.stormReceiveBuffer.clear()
         getEngine(true).removeAllEntitiesOnMainThread(true)
         rs.afterClearData()
     }
@@ -685,10 +686,15 @@ class AircraftRequestMessage(val callsign: String = "", val requestType: Aircraf
  */
 class ThunderStormData(
     val thunderStorms: Array<ThunderStorm.SerialisedThunderStorm> = arrayOf(),
-    val clearCurrentStorms: Boolean = false
+    val finishedSending: Boolean = false
 ): ClientReceive, NeedsEncryption {
     override fun handleClientReceive(rs: RadarScreen) {
-        if (clearCurrentStorms) {
+        thunderStorms.forEach { storm ->
+            rs.stormReceiveBuffer.add {
+                ThunderStorm.fromSerialisedObject(storm)
+            }
+        }
+        if (finishedSending) {
             for (i in 0 until rs.storms.size) {
                 val storm = rs.storms[i] ?: continue
                 val childrenCells = storm.entity[ThunderStormCellChildren.mapper]?.cells ?: continue
@@ -703,9 +709,10 @@ class ThunderStormData(
                 getEngine(true).removeEntityOnMainThread(storm.entity, true)
             }
             rs.storms.clear()
-        }
-        thunderStorms.forEach { storm ->
-            rs.storms.add(ThunderStorm.fromSerialisedObject(storm))
+            for (i in 0 until rs.stormReceiveBuffer.size) {
+                rs.storms.add(rs.stormReceiveBuffer[i]())
+            }
+            rs.stormReceiveBuffer.clear()
         }
     }
 }

@@ -135,6 +135,7 @@ class RadarScreen private constructor(private val connectionHost: String, privat
 
     // All current thunderstorms
     val storms = GdxArray<ThunderStorm>(MAX_THUNDERSTORM_COUNT)
+    val stormReceiveBuffer = GdxArray<() -> ThunderStorm>(MAX_THUNDERSTORM_COUNT)
 
     // Server values - used in this case only for displaying traffic info on the status pane and serves no other purposes
     var serverTrafficMode = TrafficMode.NORMAL

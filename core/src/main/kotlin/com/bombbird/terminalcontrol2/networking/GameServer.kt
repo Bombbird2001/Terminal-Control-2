@@ -561,9 +561,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
                 FileLog.debug("GameServer", "Sent AircraftControlStateUpdateData for $count aircraft")
 
                 // Send thunderstorm data
-                storms.filterNotNull().map { arrayOf(it.getSerialisableObject()) }.forEach {
-                    networkServer.sendTCPToConnection(uuid, ThunderStormData(it))
-                }
+                sendThunderStorms()
                 FileLog.debug("GameServer", "Sent ThunderStormData")
 
                 // Initial data sending complete
@@ -1052,7 +1050,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
     fun sendThunderStorms() {
         val storms = storms.filterNotNull().map { arrayOf(it.getSerialisableObject()) }.toTypedArray()
         for (i in 0 until storms.size) {
-            networkServer.sendToAllTCP(ThunderStormData(storms[i], i == 0))
+            networkServer.sendToAllTCP(ThunderStormData(storms[i], i == storms.size - 1))
         }
         if (storms.isEmpty()) networkServer.sendToAllTCP(ThunderStormData(arrayOf(), true))
     }
