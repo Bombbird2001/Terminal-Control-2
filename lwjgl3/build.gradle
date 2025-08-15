@@ -113,7 +113,7 @@ tasks.register('checkVersion') {
 		String gradleVersion = project.version
 		String gradleVersionCode = project.buildVersion
 
-		def text2 = project.file("../assetsDesktop/BUILD").text
+		def text2 = project.file("../assetsDesktop/BUILD.build").text
 		def values2 = text2.split(' ')
 		if (values2.size() < 2) {
 			throw new GradleException("Version: Type string length is " + values2.size() + ", needs 2")

@@ -38,7 +38,6 @@ dependencies {
 
 	testFixturesApi "io.kotest:kotest-runner-junit5:$kotestVersion"
 	testFixturesApi "io.kotest:kotest-framework-datatest:$kotestVersion"
-
 }
 
 jacoco {
