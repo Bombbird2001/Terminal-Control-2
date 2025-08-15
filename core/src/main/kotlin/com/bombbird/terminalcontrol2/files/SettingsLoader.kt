@@ -12,7 +12,7 @@ import java.util.UUID
 
 private const val SETTINGS_PATH = "Player/settings.json"
 private const val UUID_PATH = "Player/uuid.json"
-private const val BUILD_PATH = "BUILD"
+private const val BUILD_PATH = "BUILD.build"
 
 @OptIn(ExperimentalStdlibApi::class)
 val settingsAdapter = Moshi.Builder().build().adapter<PlayerSettingsJSON>()
