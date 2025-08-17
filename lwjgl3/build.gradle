@@ -159,7 +159,7 @@ tasks.register('updateFileVersion') {
 
 		def macConfig = [
 			platform: "mac",
-			"jdk": "C:\\Programs\\OpenJDK\\Temurin\\jdk8u432-b06_mac",
+			"jdk": "C:\\Programs\\OpenJDK\\Temurin\\jdk8u462-b08_mac",
 			"executable": "Terminal Control 2",
 			"classpath": [
 					"${baseDir}\\Desktop\\Terminal Control 2-${version}.jar"
@@ -191,7 +191,7 @@ tasks.register('updateFileVersion') {
 
 		def win64Config = [
 				"platform": "windows64",
-				"jdk": "C:\\Programs\\OpenJDK\\Temurin\\jdk8u432-b06_x86_64",
+				"jdk": "C:\\Programs\\OpenJDK\\Temurin\\jdk8u462-b08_x86_64",
 				"executable": "Terminal Control 2",
 				"classpath": [
 						"${baseDir}\\Desktop\\Terminal Control 2-${version}.jar"
@@ -206,7 +206,7 @@ tasks.register('updateFileVersion') {
 
 		def linux64Config = [
 				"platform": "linux64",
-				"jdk": "C:\\Programs\\OpenJDK\\Temurin\\jdk8u432-b06_linux64",
+				"jdk": "C:\\Programs\\OpenJDK\\Temurin\\jdk8u462-b08_linux64",
 				"executable": "Terminal Control 2",
 				"classpath": [
 						"${baseDir}\\Desktop\\Terminal Control 2-${version}.jar"
