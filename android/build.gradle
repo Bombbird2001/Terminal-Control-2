@@ -58,6 +58,10 @@ repositories {
 
 configurations { natives }
 
+configurations.all {
+    exclude group: "org.apache.httpcomponents", module: "httpclient"
+}
+
 dependencies {
 	coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:$androidDesugarJdkVersion"
 	implementation "com.badlogicgames.gdx:gdx-backend-android:$gdxVersion"
