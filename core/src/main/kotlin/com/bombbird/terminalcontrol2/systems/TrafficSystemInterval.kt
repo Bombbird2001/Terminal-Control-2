@@ -395,28 +395,26 @@ class TrafficSystemInterval: IntervalSystem(1f) {
      * Returns true if the path is clear, false otherwise
      */
     private fun checkThunderStorms(runway: Entity): Boolean {
-        return GAME.gameServer?.storms?.let { storms ->
-            val rwyPos = runway[Position.mapper] ?: return@let false
-            val rwyLengthM = runway[RunwayInfo.mapper]?.lengthM ?: return@let false
-            val rwyDir = runway[Direction.mapper]?.trackUnitVector ?: return@let false
-            if (rwyDir.isZero) return@let false
-            val rwyLengthNm = mToNm(rwyLengthM.toFloat())
+        val rwyPos = runway[Position.mapper] ?: return false
+        val rwyLengthM = runway[RunwayInfo.mapper]?.lengthM ?: return false
+        val rwyDir = runway[Direction.mapper]?.trackUnitVector ?: return false
+        if (rwyDir.isZero) return false
+        val rwyLengthNm = mToNm(rwyLengthM.toFloat())
 
-            val pathLengthNm = (rwyLengthNm + THUNDERSTORM_TAKEOFF_PROTECTION_DIST_NM).roundToInt()
-            val rwyDirUnitNm = Vector2(rwyDir).scl(nmToPx(1) / rwyDir.len())
-            val currPos = Vector2(rwyPos.x, rwyPos.y)
+        val pathLengthNm = (rwyLengthNm + THUNDERSTORM_TAKEOFF_PROTECTION_DIST_NM).roundToInt()
+        val rwyDirUnitNm = Vector2(rwyDir).scl(nmToPx(1) / rwyDir.len())
+        val currPos = Vector2(rwyPos.x, rwyPos.y)
 
-            // Check in increments of 1nm starting from runway start position
-            repeat(pathLengthNm) {
-                val redZones = getRedCellCountAtPosition(currPos.x, currPos.y, Float.MIN_VALUE, 1)
+        // Check in increments of 1nm starting from runway start position
+        repeat(pathLengthNm) {
+            val redZones = getRedCellCountAtPosition(currPos.x, currPos.y, Float.MIN_VALUE, 1)
 
-                // If there are 3 or more red zones in the vicinity, return false
-                if (redZones >= 3) return@let false
+            // If there are 3 or more red zones in the vicinity, return false
+            if (redZones >= 3) return false
 
-                currPos.add(rwyDirUnitNm)
-            }
+            currPos.add(rwyDirUnitNm)
+        }
 
-            true
-        } ?: false
+        return true
     }
 }
