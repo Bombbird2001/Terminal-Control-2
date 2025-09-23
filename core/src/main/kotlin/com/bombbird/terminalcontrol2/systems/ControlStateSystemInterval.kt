@@ -320,7 +320,7 @@ class ControlStateSystemInterval: IntervalSystem(1f) {
                     }
                 }
 
-                if (legIndex >= 0) {
+                if (legIndex >= 0 && latestClearance.route.size > 0) {
                     latestClearance.route.removeRange(0, legIndex)
                     this += LatestClearanceChanged()
                 }

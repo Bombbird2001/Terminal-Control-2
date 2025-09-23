@@ -359,6 +359,7 @@ class TrafficSystemInterval: IntervalSystem(1f) {
      * @param wakeZone the wake zone to add
      */
     fun removeWakeZone(wakeZone: WakeZone) {
+        engine.removeEntityOnMainThread(wakeZone.entity, false)
         conflictManager.wakeManager.removeWakeZone(wakeZone)
     }
 
@@ -382,7 +383,6 @@ class TrafficSystemInterval: IntervalSystem(1f) {
             for (point in Queue.QueueIterator(wakeZones)) {
                 point.second?.let {
                     removeWakeZone(it)
-                    engine.removeEntityOnMainThread(it.entity, false)
                 }
             }
         }
