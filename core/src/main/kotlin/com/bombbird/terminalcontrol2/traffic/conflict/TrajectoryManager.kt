@@ -139,9 +139,7 @@ class TrajectoryManager {
         }
     }
 
-    /**
-     * Frees [allTrajectoryPoints] back to the pool
-     */
+    /** Frees [allTrajectoryPoints] back to the pool */
     fun freePooledTrajectoryPoints(allTrajectoryPoints: Array<Array<GdxArray<TrajectoryPoint>>>) {
         for (i in allTrajectoryPoints.indices) {
             for (j in 0 until allTrajectoryPoints[i].size) {
@@ -150,6 +148,18 @@ class TrajectoryManager {
                 }
             }
         }
+    }
+
+    /** Frees [allTrajectoryPoints] back to the pool */
+    fun freePooledTrajectoryPoints(allTrajectoryPoints: GdxArray<TrajectoryPoint>) {
+        for (i in 0 until allTrajectoryPoints.size) {
+            trajectoryPool.free(allTrajectoryPoints[i])
+        }
+    }
+
+    /** Frees a [trajectoryPoint] back to the pool */
+    fun freePooledTrajectoryPoint(trajectoryPoint: TrajectoryPoint) {
+        trajectoryPool.free(trajectoryPoint)
     }
 
     /**
@@ -346,16 +356,22 @@ class TrajectoryManager {
     }
 
     private fun isTrajectoryClearOfStorm(trajectory: GdxArray<TrajectoryPoint>): Boolean {
+        var inStorm = false
         for (i in 0 until trajectory.size) {
             val point = trajectory[i].entity
             val pos = point[Position.mapper] ?: continue
             val alt = point[Altitude.mapper]?.altitudeFt ?: continue
 
             val zones = getAllZoneCountAtPosition(pos.x, pos.y, alt, 2)
-            if (zones >= 1) return false
+            if (zones >= 1) {
+                inStorm = true
+                break
+            }
         }
 
-        return true
+        freePooledTrajectoryPoints(trajectory)
+
+        return !inStorm
     }
 
     /** Re-clear altitude for conflicts that has not been resolved */
@@ -484,44 +500,44 @@ class TrajectoryManager {
     private fun checkNewAltitudeClearOfConflict(aircraft: Entity, newAltitude: Int,
                                                 allTrajectoryPoints: Array<Array<GdxArray<TrajectoryPoint>>>): Boolean {
         val traj = calculateTrajectory(aircraft, newAltitude)
-        for (i in 0 until traj.size) {
-            val point = traj[i]
-            val alt = point.entity[Altitude.mapper]?.altitudeFt ?: continue
-            val altLevel = getSectorIndexForAlt(alt, getConflictStartAltitude())
-            val allPointsInCurrentTimePoint = allTrajectoryPoints[i]
-            // Check with all points in current layer
-            for (j in 0 until allPointsInCurrentTimePoint[altLevel].size) {
-                val entry = checkTrajectoryPointConflict(point, allPointsInCurrentTimePoint[altLevel][j])
-                if (entry != null) {
-                    // Conflict exists
-                    return false
-                }
-            }
-            // If a layer exists above, check with each point in the above layer
-            if (altLevel + 1 < allPointsInCurrentTimePoint.size) {
-                val abovePoints = allPointsInCurrentTimePoint[altLevel + 1]
-                for (k in 0 until abovePoints.size) {
-                    val entry2 = checkTrajectoryPointConflict(point, abovePoints[k])
-                    if (entry2 != null) {
-                        // Conflict exists
+        try {
+            for (i in 0 until traj.size) {
+                val point = traj[i]
+                val alt = point.entity[Altitude.mapper]?.altitudeFt ?: continue
+                val altLevel = getSectorIndexForAlt(alt, getConflictStartAltitude())
+                val allPointsInCurrentTimePoint = allTrajectoryPoints[i]
+                // Check with all points in current layer
+                for (j in 0 until allPointsInCurrentTimePoint[altLevel].size) {
+                    val entry = checkTrajectoryPointConflict(point, allPointsInCurrentTimePoint[altLevel][j])
+                    if (entry != null) {
                         return false
                     }
                 }
-            }
-            // If a layer exists below, check with each point in the below layer
-            if (altLevel - 1 >= 0) {
-                val belowPoints = allPointsInCurrentTimePoint[altLevel - 1]
-                for (k in 0 until belowPoints.size) {
-                    val entry2 = checkTrajectoryPointConflict(point, belowPoints[k])
-                    if (entry2 != null) {
-                        // Conflict exists
-                        return false
+                // If a layer exists above, check with each point in the above layer
+                if (altLevel + 1 < allPointsInCurrentTimePoint.size) {
+                    val abovePoints = allPointsInCurrentTimePoint[altLevel + 1]
+                    for (k in 0 until abovePoints.size) {
+                        val entry2 = checkTrajectoryPointConflict(point, abovePoints[k])
+                        if (entry2 != null) {
+                            return false
+                        }
+                    }
+                }
+                // If a layer exists below, check with each point in the below layer
+                if (altLevel - 1 >= 0) {
+                    val belowPoints = allPointsInCurrentTimePoint[altLevel - 1]
+                    for (k in 0 until belowPoints.size) {
+                        val entry2 = checkTrajectoryPointConflict(point, belowPoints[k])
+                        if (entry2 != null) {
+                            return false
+                        }
                     }
                 }
             }
+            return true
+        } finally {
+            freePooledTrajectoryPoints(traj)
         }
-
-        return true
     }
 
     /**
