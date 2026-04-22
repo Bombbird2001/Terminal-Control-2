@@ -1,133 +1,198 @@
 package com.bombbird.terminalcontrol2.networking.playerclient
 
 import com.bombbird.terminalcontrol2.global.*
-import com.bombbird.terminalcontrol2.networking.HttpRequest
-import com.bombbird.terminalcontrol2.networking.NetworkClient
+import com.bombbird.terminalcontrol2.networking.*
 import com.bombbird.terminalcontrol2.networking.dataclasses.ClientData
+import com.bombbird.terminalcontrol2.networking.dataclasses.ConnectionIDData
 import com.bombbird.terminalcontrol2.networking.dataclasses.RequestClientData
 import com.bombbird.terminalcontrol2.networking.encryption.*
-import com.bombbird.terminalcontrol2.networking.handleIncomingRequestClient
-import com.bombbird.terminalcontrol2.networking.registerClassesToKryo
+import com.bombbird.terminalcontrol2.networking.transport.ProtoMessages
+import com.bombbird.terminalcontrol2.networking.transport.TransportConnection
 import com.bombbird.terminalcontrol2.screens.RadarScreen
 import com.bombbird.terminalcontrol2.ui.CustomDialog
 import com.esotericsoftware.kryo.Kryo
-import com.esotericsoftware.kryonet.Client
-import com.esotericsoftware.kryonet.Connection
-import com.esotericsoftware.kryonet.Listener
 import com.bombbird.terminalcontrol2.utilities.FileLog
+import tc2relay.Relay.TcpMessage
+import tc2relay.Relay.UdpMessage
 import java.lang.Exception
-import java.nio.channels.ClosedSelectorException
+import java.math.BigInteger
+import java.net.*
+import java.util.concurrent.ConcurrentHashMap
 
 /**
- * Client for handling LAN multiplayer games
- *
- * Cannot be used for public multiplayer games, use [PublicClient] for that
+ * Client for handling LAN multiplayer games.
+ * Uses the new protobuf-based transport instead of KryoNet.
  */
-class LANClient(lanClientDiscoveryHandler: LANClientDiscoveryHandler): NetworkClient() {
+class LANClient : NetworkClient() {
     override val isConnected: Boolean
-        get() = client.isConnected
+        get() = conn.isConnected
     override val clientKryo: Kryo
-        get() = client.kryo
+        get() = manualKryoInstance
 
-    private var secretKeyCalculated = false
+    private val manualKryoInstance = Kryo().apply { registerClassesToKryo(this) }
 
-    private val client = Client(CLIENT_WRITE_BUFFER_SIZE, CLIENT_READ_BUFFER_SIZE).apply {
-        setDiscoveryHandler(lanClientDiscoveryHandler)
-        addListener(object: Listener {
-            override fun received(connection: Connection, obj: Any?) {
-                if (!secretKeyCalculated && obj is DiffieHellmanValueOld) {
-                    // Will prevent connection to a host with build version < 10
-                    return connection.close()
-                }
+    private val conn = TransportConnection()
 
-                if (!secretKeyCalculated && obj is DiffieHellmanValues) {
-                    // Calculate DH values
-                    val serverDH = DiffieHellman(DIFFIE_HELLMAN_GENERATOR, DIFFIE_HELLMAN_PRIME)
-                    val clientDH = DiffieHellman(DIFFIE_HELLMAN_GENERATOR, DIFFIE_HELLMAN_PRIME)
-                    val serverToSend = serverDH.getExchangeValue()
-                    val clientToSend = clientDH.getExchangeValue()
-                    val serverSecretKey = serverDH.getAES128Key(obj.serverXy)
-                    val clientSecretKey = clientDH.getAES128Key(obj.clientXy)
-                    encryptor.setKey(clientSecretKey)
-                    decrypter.setKey(serverSecretKey)
-
-                    // Key established
-                    secretKeyCalculated = true
-                    connection.sendTCP(DiffieHellmanValues(serverToSend, clientToSend))
-                    return
-                }
-
-                if (!secretKeyCalculated) return
-
-                if (obj is NeedsEncryption) {
-                    FileLog.info("RelayServer", "Received unencrypted data of class ${obj.javaClass.name}")
-                    return
-                }
-
-                val decrypted = if (obj is EncryptedData) {
-                    decrypter.decrypt(obj)
-                } else obj
-
-                (decrypted as? RequestClientData)?.apply {
-                    this@LANClient.sendTCP(ClientData(myUuid.toString(), BUILD_VERSION))
-                } ?: handleIncomingRequestClient(GAME.gameClientScreen ?: return, decrypted)
-            }
-
-            override fun disconnected(connection: Connection?) {
-                if (GAME.shownScreen is RadarScreen && GAME.gameServer == null)
-                    GAME.quitCurrentGameWithDialog { CustomDialog("Disconnected", "You have been disconnected" +
-                            " from the server - either the host quit the game or your internet connection is unstable", "", "Ok") }
-            }
-        })
-    }
+    private var serverDH: DiffieHellman? = null
+    private var clientDH: DiffieHellman? = null
 
     override fun connect(timeout: Int, connectionHost: String, tcpPort: Int, udpPort: Int) {
-        client.connect(timeout, connectionHost, tcpPort, udpPort)
+        conn.onTcpReceived = { msg -> handleTcpMessage(msg) }
+        conn.onUdpReceived = { msg, _ ->
+            handleUdpMessage(msg)
+        }
+        conn.onDisconnected = {
+            if (GAME.shownScreen is RadarScreen)
+                GAME.quitCurrentGameWithDialog {
+                    CustomDialog("Disconnected", "You have been disconnected from the host.", "", "Ok")
+                }
+        }
+        conn.connect(timeout, connectionHost, tcpPort, udpPort)
+
+        println("Client socket: ${conn.localTcpPort}/${conn.localUdpPort}")
     }
 
     override fun reconnect() {
-        client.reconnect()
+        // Not easily supported; full reconnect needed
     }
 
     override fun sendTCP(data: Any) {
-        val encrypted = encryptIfNeeded(data) ?: return
-        client.sendTCP(encrypted)
+        val encryptedData = encryptIfNeeded(data) ?: return
+        val bytes = getSerialisedBytes(encryptedData) ?: return
+        conn.sendTCP(ProtoMessages.encryptedFrame(byteArrayOf(), bytes))
     }
 
     override fun beforeConnect(roomId: Short?) {
-        registerClassesToKryo(clientKryo)
-        secretKeyCalculated = false
+        conn.disconnect()
+        serverDH = null
+        clientDH = null
     }
 
     override fun start() {
-        client.start()
-        client.updateThread.setUncaughtExceptionHandler { _, e ->
-            // We can ignore this, it happens sometimes when the client is stopped
-            if (e is ClosedSelectorException) return@setUncaughtExceptionHandler
-
-            HttpRequest.sendCrashReport(Exception(e), "LANClient", MULTIPLAYER_SINGLEPLAYER_LAN_CLIENT)
-            GAME.quitCurrentGameWithDialog { CustomDialog("Error", "An error occurred", "", "Ok") }
-        }
+        // Connection is started in connect()
     }
 
     override fun stop() {
-        client.stop()
+        conn.disconnect()
     }
 
     override fun dispose() {
-        client.dispose()
+        conn.disconnect()
     }
 
     override fun getConnectionStatus(): String {
-        val udp = try {
-            client.remoteAddressUDP?.let { "UDP connected to $it" } ?: "UDP not connected"
-        } catch (e: NullPointerException) {
-            "UDP not initialized"
-        }
-        return "Connection ${client.id}: ${client.remoteAddressTCP?.let { "TCP connected to $it" } ?: "TCP not connected"}, $udp"
+        return if (conn.isConnected) "Connected to LAN host" else "Not connected"
     }
 
-    fun discoverHosts(udpPort: Int) {
-        client.discoverHosts(udpPort, 5000)
+    private fun handleTcpMessage(msg: TcpMessage) {
+        try {
+            when {
+                msg.hasLanKeyExchange() -> {
+                    val kex = msg.lanKeyExchange
+                    val srvDH = DiffieHellman(DIFFIE_HELLMAN_GENERATOR, DIFFIE_HELLMAN_PRIME)
+                    val cliDH = DiffieHellman(DIFFIE_HELLMAN_GENERATOR, DIFFIE_HELLMAN_PRIME)
+                    serverDH = srvDH
+                    clientDH = cliDH
+
+                    val serverResponseXy = srvDH.getExchangeValue().toByteArray()
+                    val clientResponseXy = cliDH.getExchangeValue().toByteArray()
+
+                    val serverKey = srvDH.getAES128Key(BigInteger(kex.serverXy.toByteArray()))
+                    val clientKey = cliDH.getAES128Key(BigInteger(kex.clientXy.toByteArray()))
+                    decrypter.setKey(serverKey)
+                    encryptor.setKey(clientKey)
+                    conn.sendTCP(ProtoMessages.lanKeyExchange(serverResponseXy, clientResponseXy))
+                }
+                msg.hasEncryptedFrame() -> {
+                    val ef = msg.encryptedFrame
+                    val decryptedObj = fromSerializedBytes(ef.ciphertext.toByteArray()) ?: return
+                    val innerDecrypted = if (decryptedObj is EncryptedData) {
+                        decrypter.decrypt(decryptedObj)
+                    } else decryptedObj
+                    onReceiveNonRelayData(innerDecrypted)
+                }
+            }
+        } catch (e: Exception) {
+            FileLog.info("LANClient", "Error handling TCP message: ${e.message}")
+        }
+    }
+
+    private fun handleUdpMessage(msg: UdpMessage) {
+        try {
+            when {
+                msg.hasForwardToAllClientsUdpUnencrypted() -> {
+                    val obj = fromSerializedBytes(msg.forwardToAllClientsUdpUnencrypted.data.toByteArray()) ?: return
+                    handleIncomingRequestClient(GAME.gameClientScreen ?: return, obj)
+                }
+            }
+        } catch (e: Exception) {
+            FileLog.info("LANClient", "Error handling UDP message: ${e.message}")
+        }
+    }
+
+    private fun onReceiveNonRelayData(obj: Any?) {
+        (obj as? RequestClientData)?.apply {
+            sendTCP(ClientData(myUuid.toString(), BUILD_VERSION))
+        } ?: (obj as? ConnectionIDData)?.apply {
+            conn.sendUDP(ProtoMessages.udpRegistration(-1, myUuid.toString(), connId.toLong()))
+        } ?: handleIncomingRequestClient(GAME.gameClientScreen ?: return, obj)
+    }
+
+    /**
+     * Discover LAN servers by sending UDP broadcast probes to known ports.
+     * Returns a map of address:port -> discovery response info.
+     */
+    data class DiscoveredHost(
+        val address: String,
+        val tcpPort: Int,
+        val udpPort: Int,
+        val playerCount: Int,
+        val maxPlayers: Int,
+        val mapName: String
+    )
+
+    companion object {
+        fun discoverLANHosts(timeoutMs: Int = 3000): List<DiscoveredHost> {
+            val discovered = ConcurrentHashMap<String, DiscoveredHost>()
+            val probe = ProtoMessages.lanDiscoverRequest().toByteArray()
+
+            for (udpPort in LAN_UDP_PORTS) {
+                try {
+                    val socket = DatagramSocket()
+                    socket.broadcast = true
+                    socket.soTimeout = timeoutMs
+
+                    val broadcastAddr = InetAddress.getByName("255.255.255.255")
+                    socket.send(DatagramPacket(probe, probe.size, broadcastAddr, udpPort))
+
+                    val buf = ByteArray(2048)
+                    try {
+                        while (true) {
+                            val resp = DatagramPacket(buf, buf.size)
+                            socket.receive(resp)
+                            val msg = UdpMessage.parseFrom(resp.data.copyOf(resp.length))
+                            if (msg.hasLanDiscoverResponse()) {
+                                val dr = msg.lanDiscoverResponse
+                                val key = "${resp.address.hostAddress}:${dr.tcpPort}"
+                                discovered[key] = DiscoveredHost(
+                                    resp.address.hostAddress,
+                                    dr.tcpPort,
+                                    dr.udpPort,
+                                    dr.playerCount,
+                                    dr.maxPlayers,
+                                    dr.mapName
+                                )
+                            }
+                        }
+                    } catch (_: SocketTimeoutException) {
+                        // Finished receiving
+                    }
+                    socket.close()
+                } catch (e: Exception) {
+                    FileLog.info("LANClient", "Discovery error on port $udpPort: ${e.message}")
+                }
+            }
+            return discovered.values.toList()
+        }
     }
 }

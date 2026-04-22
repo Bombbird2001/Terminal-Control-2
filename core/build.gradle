@@ -2,6 +2,7 @@ plugins {
 	id 'java-test-fixtures'
 	id 'com.google.devtools.ksp'
 	id 'jacoco'
+	id 'com.google.protobuf'
 }
 
 [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
@@ -34,6 +35,8 @@ dependencies {
 	api "com.squareup.moshi:moshi-adapters:$moshiKotlinVersion"
 	api "commons-codec:commons-codec:$apacheCommonsVersion"
 
+	api "com.google.protobuf:protobuf-javalite:4.29.3"
+
 	ksp "com.squareup.moshi:moshi-kotlin-codegen:$moshiKotlinVersion"
 
 	testFixturesApi "io.kotest:kotest-runner-junit5:$kotestVersion"
@@ -64,6 +67,21 @@ tasks.jacocoTestReport {
 	dependsOn(tasks.test)
 	reports {
 		xml.required.set(true)
+	}
+}
+
+protobuf {
+	protoc {
+		artifact = 'com.google.protobuf:protoc:4.29.3'
+	}
+	generateProtoTasks {
+		all().configureEach { task ->
+			task.builtins {
+				java {
+					option "lite"
+				}
+			}
+		}
 	}
 }
 

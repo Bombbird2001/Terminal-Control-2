@@ -1,0 +1,193 @@
+// Terminal Control 2 - Relay Protocol v1
+// Shared between the Rust relay server and Kotlin game clients/hosts.
+//
+// TCP framing: [u32 big-endian length][protobuf payload]
+// UDP framing: raw protobuf payload (single message per datagram)
+//
+// Inner game data (the `data` byte fields in forwarding messages) remains
+// Kryo-serialized and is opaque to the relay.
+
+syntax = "proto3";
+package tc2relay;
+
+// ---------------------------------------------------------------------------
+// Top-level wrapper sent over TCP (one per frame)
+// ---------------------------------------------------------------------------
+message TcpMessage {
+  oneof msg {
+    // Authentication
+    ChallengeResponse challenge_response = 1;
+    RequestRelayAction request_relay_action = 2;
+
+    // Room lifecycle (relay)
+    NewGameRequest new_game_request = 3;
+    JoinGameRequest join_game_request = 4;
+    PlayerConnected player_connected = 5;
+    PlayerDisconnected player_disconnected = 6;
+    RelayError relay_error = 7;
+
+    // Data forwarding (relay)
+    ForwardToHost forward_to_host = 10;
+    ForwardToClient forward_to_client = 11;
+    ForwardToAllClientsTcp forward_to_all_clients_tcp = 12;
+
+    // LAN key exchange
+    LanKeyExchange lan_key_exchange = 20;
+
+    // LAN / relay encrypted control frame
+    EncryptedFrame encrypted_frame = 30;
+
+    // Keep-alive (both relay and LAN)
+    KeepAlive keep_alive = 40;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Top-level wrapper sent over UDP (one per datagram)
+// ---------------------------------------------------------------------------
+message UdpMessage {
+  oneof msg {
+    ForwardToAllClientsUdp forward_to_all_clients_udp = 1;
+    ForwardToAllClientsUdpUnencrypted forward_to_all_clients_udp_unencrypted = 2;
+
+    // LAN discovery
+    LanDiscoverRequest lan_discover_request = 10;
+    LanDiscoverResponse lan_discover_response = 11;
+
+    // Keep-alive / registration
+    KeepAlive keep_alive = 20;
+    UdpRegistration udp_registration = 30;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Authentication (relay)
+// ---------------------------------------------------------------------------
+
+// Sent by host/client on TCP connect to prove key possession.
+// The ciphertext is AES-GCM(nonce, key=hostKey/clientKey).
+message ChallengeResponse {
+  bytes ciphertext = 1;
+}
+
+// Sent by relay after successful challenge to tell host/client to proceed.
+message RequestRelayAction {
+  // Encrypted with the room key; the inner bytes are a serialized
+  // RequestRelayAction marker (empty, but encrypted to prove relay identity).
+  bytes encrypted_payload = 1;
+  bytes iv = 2;
+  // The relay's internal connection ID for this TCP connection.
+  // The client must echo this back in UdpRegistration so the relay can
+  // map the UDP source address to the exact TCP connection.
+  uint64 conn_id = 3;
+}
+
+// ---------------------------------------------------------------------------
+// Room lifecycle (relay)
+// ---------------------------------------------------------------------------
+
+message NewGameRequest {
+  int32 room_id = 1; // i16 range
+  int32 max_players = 2; // byte range
+  string map_name = 3;
+  string uuid = 4;
+}
+
+message JoinGameRequest {
+  int32 room_id = 1;
+  string uuid = 2;
+}
+
+message PlayerConnected {
+  string uuid = 1;
+}
+
+message PlayerDisconnected {
+  string uuid = 1;
+}
+
+message RelayError {
+  string reason = 1;
+}
+
+// ---------------------------------------------------------------------------
+// Data forwarding (relay)
+// ---------------------------------------------------------------------------
+
+// Client -> relay -> host (TCP)
+message ForwardToHost {
+  int32 room_id = 1;
+  string sending_uuid = 2;
+  bytes data = 3;
+  int32 client_to_relay_rtt = 4;
+}
+
+// Host -> relay -> one or all clients (TCP)
+message ForwardToClient {
+  int32 room_id = 1;
+  string target_uuid = 2; // empty = broadcast to all
+  bytes data = 3;
+}
+
+// Host -> relay -> all clients (TCP, explicit broadcast)
+message ForwardToAllClientsTcp {
+  int32 room_id = 1;
+  bytes data = 2;
+}
+
+// Host -> relay -> all clients (UDP, encrypted)
+message ForwardToAllClientsUdp {
+  bytes data = 1;
+}
+
+// Host -> relay -> all clients (UDP, unencrypted fast-path)
+message ForwardToAllClientsUdpUnencrypted {
+  bytes data = 1;
+}
+
+// ---------------------------------------------------------------------------
+// Encryption wrapper (used for control messages that need encryption)
+// ---------------------------------------------------------------------------
+message EncryptedFrame {
+  bytes iv = 1;
+  bytes ciphertext = 2;
+}
+
+// ---------------------------------------------------------------------------
+// LAN key exchange
+// ---------------------------------------------------------------------------
+message LanKeyExchange {
+  bytes server_xy = 1; // BigInteger bytes for DH
+  bytes client_xy = 2; // BigInteger bytes for DH
+}
+
+// ---------------------------------------------------------------------------
+// LAN discovery
+// ---------------------------------------------------------------------------
+message LanDiscoverRequest {
+  // empty; presence is the request
+}
+
+message LanDiscoverResponse {
+  int32 player_count = 1;
+  int32 max_players = 2;
+  string map_name = 3;
+  int32 tcp_port = 4;
+  int32 udp_port = 5;
+}
+
+// ---------------------------------------------------------------------------
+// Keep-alive
+// ---------------------------------------------------------------------------
+message KeepAlive {
+  // empty; used to detect dead connections
+}
+
+// ---------------------------------------------------------------------------
+// UDP registration (sent by clients so the relay can map their UDP address)
+// ---------------------------------------------------------------------------
+message UdpRegistration {
+  int32 room_id = 1;
+  string uuid = 2;   // kept for logging / validation
+  uint64 conn_id = 3; // echoed from RequestRelayAction.conn_id; used for routing
+}
