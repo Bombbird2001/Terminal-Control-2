@@ -89,6 +89,12 @@ class MainMenu: BasicUIScreen() {
                                 GAME.setScreen<AboutGame>()
                             }
                         }
+                        row().padTop(15f)
+                        table {
+                            textButton("Map Editor", "Menu").cell(width = BUTTON_WIDTH_MAIN, height = BUTTON_HEIGHT_MAIN).addChangeListener { _, _ ->
+                                GAME.setScreen<MapEditorMenu>()
+                            }
+                        }
                         if (APP_TYPE == Application.ApplicationType.Android) {
                             row().padTop(15f)
                             table {

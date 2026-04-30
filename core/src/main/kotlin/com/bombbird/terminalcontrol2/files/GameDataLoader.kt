@@ -19,6 +19,7 @@ import ktx.assets.toInternalFile
 import ktx.collections.GdxArray
 import ktx.collections.set
 import ktx.collections.toGdxArray
+import com.badlogic.gdx.files.FileHandle
 
 private const val AIRCRAFT_PERF_PATH = "Data/aircraft.perf"
 private const val DISALLOWED_CALLSIGN_PATH = "Data/disallowed.callsign"
@@ -128,13 +129,26 @@ fun loadAvailableAirports() {
     // Load default airport descriptions
     for (i in 0 until AVAIL_AIRPORTS.size) {
         val icao = AVAIL_AIRPORTS.getKeyAt(i)
-        val fileHandle = "Airports/$icao.desc".toInternalFile()
+        val fileHandle = getAirportDescFileHandle(icao)
         if (!fileHandle.exists()) continue
         val descText = fileHandle.readString().trim()
         AVAIL_AIRPORTS.put(icao, descText)
     }
 
-    // TODO Enable custom airports
+    // Load custom airport descriptions (Desktop: roaming appData, Android: local storage)
+    val customDir = getExtDir("Airports")
+    if (customDir != null && customDir.exists()) {
+        for (handle in customDir.list()) {
+            if (handle.extension() != "desc") continue
+            val icao = handle.nameWithoutExtension().uppercase()
+            try {
+                val descText = handle.readString().trim()
+                AVAIL_AIRPORTS.put(icao, descText)
+            } catch (e: Exception) {
+                FileLog.warn("GameDataLoader", "Failed to read custom airport desc for $icao: ${e.message}")
+            }
+        }
+    }
 }
 
 /**
@@ -142,7 +156,7 @@ fun loadAvailableAirports() {
  * @param mainName name of the map (ICAO airport code)
  */
 fun getMaxPlayersForMap(mainName: String): Int {
-    for (line in "Airports/$mainName.arpt".toInternalFile().readString().toLines()) {
+    for (line in getAirportArptFileHandle(mainName).readString().toLines()) {
         val lineData = line.trim().split(" ")
         if (lineData[0] == "MAX_PLAYERS") return lineData[1].toInt()
     }
@@ -153,7 +167,7 @@ fun getMaxPlayersForMap(mainName: String): Int {
 
 /** Loads the "[mainName].arpt" file located in the "Airports" subfolder in the assets */
 fun loadWorldData(mainName: String, gameServer: GameServer) {
-    "Airports/$mainName.arpt".toInternalFile().readString().toLines().toTypedArray().apply {
+    getAirportArptFileHandle(mainName).readString().toLines().toTypedArray().apply {
         var parseMode = ""
         var currAirport: Airport? = null
         var currSid: SidStar.SID? = null
@@ -270,6 +284,29 @@ fun loadWorldData(mainName: String, gameServer: GameServer) {
 
     // Sort all min alt sectors in descending order (optimise for min alt sector conflict checking)
     gameServer.minAltSectors.sort(MinAltSector::sortByDescendingMinAltComparator)
+}
+
+/**
+ * Returns a FileHandle to the airport `.arpt` file.
+ *
+ * Prefers user custom airports from the platform-specific external directory (Desktop roaming AppData / Android local)
+ * over internal bundled assets.
+ */
+private fun getAirportArptFileHandle(icao: String): FileHandle {
+    val upper = icao.uppercase()
+    val customDir = getExtDir("Airports")
+    val custom = customDir?.child("$upper.arpt")
+    if (custom != null && custom.exists()) return custom
+    return "Airports/$upper.arpt".toInternalFile()
+}
+
+/** Returns a FileHandle to the airport `.desc` file, using the same preference rules as [getAirportArptFileHandle]. */
+private fun getAirportDescFileHandle(icao: String): FileHandle {
+    val upper = icao.uppercase()
+    val customDir = getExtDir("Airports")
+    val custom = customDir?.child("$upper.desc")
+    if (custom != null && custom.exists()) return custom
+    return "Airports/$upper.desc".toInternalFile()
 }
 
 /** Parse the given [data] into a [Waypoint], and adds it to [GameServer.waypoints] */
