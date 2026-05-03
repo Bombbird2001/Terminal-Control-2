@@ -1,9 +1,8 @@
 package com.bombbird.terminalcontrol2.screens
 
-import com.badlogic.gdx.files.FileHandle
 import com.badlogic.gdx.utils.Align
 import com.bombbird.terminalcontrol2.editor.io.AirportMapIO
-import com.bombbird.terminalcontrol2.files.getExtDir
+import com.bombbird.terminalcontrol2.files.getAirportArptFileHandle
 import com.bombbird.terminalcontrol2.global.AVAIL_AIRPORTS
 import com.bombbird.terminalcontrol2.global.GAME
 import com.bombbird.terminalcontrol2.global.UI_WIDTH
@@ -14,14 +13,13 @@ import com.bombbird.terminalcontrol2.global.BOTTOM_BUTTON_MARGIN
 import com.bombbird.terminalcontrol2.ui.CustomDialog
 import com.bombbird.terminalcontrol2.ui.addChangeListener
 import com.bombbird.terminalcontrol2.utilities.FileLog
-import ktx.assets.toInternalFile
 import ktx.scene2d.*
 
 /** Menu screen to pick an airport and open the map editor. */
 class MapEditorMenu : BasicUIScreen() {
     private var currSelectedAirport: KTextButton? = null
-    private lateinit var start: KTextButton
-    private lateinit var scrollPane: KScrollPane
+    private var start: KTextButton
+    private var scrollPane: KScrollPane
 
     init {
         stage.actors {
@@ -60,8 +58,8 @@ class MapEditorMenu : BasicUIScreen() {
                             start = textButton("Edit", "NewLoadGameStart").cell(width = 400f, height = 100f).apply {
                                 isVisible = false
                                 addChangeListener { event, _ ->
-                                    val icao = currSelectedAirport?.text?.toString()
-                                    if (icao == null) return@addChangeListener
+                                    val icao =
+                                        currSelectedAirport?.text?.toString() ?: return@addChangeListener
                                     try {
                                         val handle = getAirportArptFileHandle(icao)
                                         if (!handle.exists()) {
@@ -70,11 +68,13 @@ class MapEditorMenu : BasicUIScreen() {
                                         }
                                         val mapDef = AirportMapIO.parseArpt(handle.readString())
 
+                                        GAME.getScreen<MapEditorPauseScreen>().editor = null
                                         // Replace any existing editor screen instance
                                         GAME.removeScreen<MapEditorScreen>()
                                         GAME.addScreen(MapEditorScreen(mapDef))
                                         GAME.setScreen<MapEditorScreen>()
                                     } catch (e: Exception) {
+                                        e.printStackTrace()
                                         FileLog.warn("MapEditorMenu", "Failed to open editor for $icao: ${e.message}")
                                         CustomDialog("Error", "Failed to open editor for $icao", "", "Ok").show(stage)
                                     }
@@ -89,14 +89,6 @@ class MapEditorMenu : BasicUIScreen() {
                 }
             }
         }
-    }
-
-    private fun getAirportArptFileHandle(icao: String): FileHandle {
-        val upper = icao.uppercase()
-        val customDir = getExtDir("Airports")
-        val custom = customDir?.child("$upper.arpt")
-        if (custom != null && custom.exists()) return custom
-        return "Airports/$upper.arpt".toInternalFile()
     }
 }
 

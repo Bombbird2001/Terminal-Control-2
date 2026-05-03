@@ -18,9 +18,9 @@ class NewGame: BasicUIScreen() {
 
     private var currSelectedAirport: KTextButton? = null
     private var currSelectedMode: KTextButton? = null
-    private lateinit var start: KTextButton
-    private lateinit var scrollPane: KScrollPane
-    private lateinit var descriptionLabel: Label
+    private var start: KTextButton
+    private var scrollPane: KScrollPane
+    private var descriptionLabel: Label
 
     init {
         stage.actors {
@@ -49,7 +49,7 @@ class NewGame: BasicUIScreen() {
                                                 currSelectedAirport = null
                                                 descriptionLabel.setText("")
                                             }
-                                            if (this@NewGame::start.isInitialized) start.isVisible = (currSelectedAirport != null && descriptionLabel.text.toString() != COMING_SOON_DESC)
+                                            start.isVisible = (currSelectedAirport != null && descriptionLabel.text.toString() != COMING_SOON_DESC)
                                             event?.handle()
                                         }
                                     }

@@ -292,7 +292,7 @@ fun loadWorldData(mainName: String, gameServer: GameServer) {
  * Prefers user custom airports from the platform-specific external directory (Desktop roaming AppData / Android local)
  * over internal bundled assets.
  */
-private fun getAirportArptFileHandle(icao: String): FileHandle {
+fun getAirportArptFileHandle(icao: String): FileHandle {
     val upper = icao.uppercase()
     val customDir = getExtDir("Airports")
     val custom = customDir?.child("$upper.arpt")

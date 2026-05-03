@@ -491,7 +491,7 @@ class RadarScreen private constructor(private val connectionHost: String, privat
         KtxAsync.launch(Dispatchers.IO) {
             try {
                 networkClient.stop()
-            } catch (e: ClosedSelectorException) {
+            } catch (_: ClosedSelectorException) {
                 FileLog.info("RadarScreen", "Client channel selector already closed before disposal")
             }
         }
@@ -566,7 +566,7 @@ class RadarScreen private constructor(private val connectionHost: String, privat
         }
         (radarDisplayStage.camera as OrthographicCamera).apply {
             val ratio = initialDistance / distance
-            if (ratio < 0.95 || ratio > 1.05) {
+            if (ratio !in 0.95..1.05) {
                 isZoomPinching = true
                 clampUpdateCamera(prevZoom * ratio - zoom)
             }
@@ -716,7 +716,7 @@ class RadarScreen private constructor(private val connectionHost: String, privat
             networkClient.beforeConnect(roomId)
             try {
                 networkClient.reconnect()
-            } catch (e: IOException) {
+            } catch (_: IOException) {
                 FileLog.warn("RadarScreen", "Failed to reconnect to server")
                 GAME.quitCurrentGameWithDialog { CustomDialog("Disconnected", "You have been disconnected from the server - most likely the host quit the game",
                     "", "Ok") }

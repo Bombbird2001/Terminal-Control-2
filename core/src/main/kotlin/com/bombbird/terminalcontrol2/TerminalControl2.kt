@@ -166,6 +166,7 @@ class TerminalControl2(val externalFileHandler: ExternalFileHandler, ttsHandler:
             addScreen(IndividualSoftwareLicense())
             addScreen(ReportBug())
             addScreen(MapEditorMenu())
+            addScreen(MapEditorPauseScreen())
             setScreen<MainMenu>()
 
             // Initialise Ashley component mapper indices, family bits to prevent threading issues when hosting
