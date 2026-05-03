@@ -27,7 +27,7 @@ class MinAltSector(minAlt: Int?, polygonBoundary: ShortArray?, circleX: Short = 
                 vertices = polygonBoundary.map { it.toFloat() }.toFloatArray()
                 if (onClient && (labelX == null || labelY == null)) GeometryUtils.polygonCentroid(vertices, 0, vertices.size, polygonCentroid)
             }
-            with<Position> {
+            val pos = with<Position> {
                 if (labelX == null || labelY == null) {
                     x = polygonCentroid.x
                     y = polygonCentroid.y
@@ -36,9 +36,9 @@ class MinAltSector(minAlt: Int?, polygonBoundary: ShortArray?, circleX: Short = 
                     y = labelY.toFloat()
                 }
             }
-            if (labelX != null && labelY != null) with<CustomPosition> {
-                x = labelX.toFloat()
-                y = labelY.toFloat()
+            with<CustomPosition> {
+                x = pos.x
+                y = pos.y
             }
         } else {
             with<GCircle> {
@@ -48,6 +48,12 @@ class MinAltSector(minAlt: Int?, polygonBoundary: ShortArray?, circleX: Short = 
             with<Position> {
                 x = circleX.toFloat()
                 y = circleY.toFloat()
+            }
+            if (labelX != null && labelY != null) {
+                with<CustomPosition> {
+                    x = labelX.toFloat()
+                    y = labelY.toFloat()
+                }
             }
         }
         if (onClient) {

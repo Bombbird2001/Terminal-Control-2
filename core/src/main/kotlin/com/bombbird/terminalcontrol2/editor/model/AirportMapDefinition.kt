@@ -76,6 +76,8 @@ data class MinAltCircleSectorDefinition(
     override var minAltitudeFt: Int?,
     var centerNm: NmPoint,
     var radiusNm: Float,
+    /** Absolute label position in nm; null = use circle center. */
+    var labelPositionNm: NmPoint? = null,
 ) : MinAltSectorDefinition()
 
 data class PolylineDefinition(

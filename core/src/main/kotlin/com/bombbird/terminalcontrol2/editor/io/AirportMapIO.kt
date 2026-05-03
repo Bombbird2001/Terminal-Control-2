@@ -3,7 +3,6 @@ package com.bombbird.terminalcontrol2.editor.io
 import com.bombbird.terminalcontrol2.editor.model.*
 import com.bombbird.terminalcontrol2.utilities.FileLog
 import com.bombbird.terminalcontrol2.utilities.toLines
-import kotlin.math.max
 
 /**
  * Parser/serializer for the legacy `.arpt` + `.desc` airport map formats.
@@ -33,9 +32,7 @@ object AirportMapIO {
             if (line.isBlank() || line.startsWith("#")) continue
 
             val parts = line.split(" ")
-            val head = parts[0]
-
-            when (head) {
+            when (val head = parts[0]) {
                 "MAX_PLAYERS" -> map.globals.maxPlayers = parts.getOrNull(1)?.toIntOrNull() ?: map.globals.maxPlayers
                 "MIN_ALT" -> map.globals.minAltFt = parts.getOrNull(1)?.toIntOrNull() ?: map.globals.minAltFt
                 "MAX_ALT" -> map.globals.maxAltFt = parts.getOrNull(1)?.toIntOrNull() ?: map.globals.maxAltFt
@@ -78,7 +75,6 @@ object AirportMapIO {
                         warn("Line ${lineNo + 1}: invalid airport id")
                         continue
                     }
-                    val id = idParsed
                     val icao = parts[2]
                     val name = parts[3]
                     val ratio = parts[4].toByteOrNull() ?: 0
@@ -87,8 +83,8 @@ object AirportMapIO {
                     if (pos == null) continue
                     val elev = parts[7].toShortOrNull() ?: 0
                     val weatherIcao = parts[8]
-                    currAirport = AirportDefinition(id, icao, name, ratio, maxAdv, pos, elev, weatherIcao)
-                    map.airports.add(currAirport!!)
+                    currAirport = AirportDefinition(idParsed, icao, name, ratio, maxAdv, pos, elev, weatherIcao)
+                    map.airports.add(currAirport)
                     currConfig = null
                     currSid = null
                     currStar = null
@@ -132,7 +128,7 @@ object AirportMapIO {
                     val id = parts[1].toByteOrNull() ?: 0
                     val timeSlot = parseTimeSlot(parts[2], warn = { warn("Line ${lineNo + 1}: $it") })
                     currConfig = RunwayConfigDefinition(id, timeSlot)
-                    arpt.runwayConfigs.add(currConfig!!)
+                    arpt.runwayConfigs.add(currConfig)
                 }
                 "/CONFIG" -> currConfig = null
                 "NAME" -> currConfig?.name = parts.drop(1).joinToString(" ").trim()
@@ -175,7 +171,7 @@ object AirportMapIO {
                     val timeSlot = parseTimeSlot(parts[2], warn = { warn("Line ${lineNo + 1}: $it") })
                     val pron = parts.drop(3).joinToString(" ").replace("-", " ").trim()
                     currSid = SidDefinition(name, timeSlot, pron)
-                    arpt.sids.add(currSid!!)
+                    arpt.sids.add(currSid)
                 }
                 "/SID" -> currSid = null
                 "STAR/" -> {
@@ -192,7 +188,7 @@ object AirportMapIO {
                     val timeSlot = parseTimeSlot(parts[2], warn = { warn("Line ${lineNo + 1}: $it") })
                     val pron = parts.drop(3).joinToString(" ").replace("-", " ").trim()
                     currStar = StarDefinition(name, timeSlot, pron)
-                    arpt.stars.add(currStar!!)
+                    arpt.stars.add(currStar)
                 }
                 "/STAR" -> currStar = null
                 "APCH/" -> {
@@ -213,7 +209,7 @@ object AirportMapIO {
                     val da = parts[5].toShortOrNull() ?: 0
                     val rvr = parts[6].toShortOrNull() ?: 0
                     currApproach = ApproachDefinition(name, timeSlot, rwy, pos, da, rvr)
-                    arpt.approaches.add(currApproach!!)
+                    arpt.approaches.add(currApproach)
                 }
                 "/APCH" -> currApproach = null
 
@@ -225,7 +221,7 @@ object AirportMapIO {
                         continue
                     }
                     currNozGroup = ApproachNozGroupDefinition()
-                    arpt.approachNozGroups.add(currNozGroup!!)
+                    arpt.approachNozGroups.add(currNozGroup)
                 }
                 "/APP_NOZ" -> currNozGroup = null
                 "ZONE" -> {
@@ -291,10 +287,10 @@ object AirportMapIO {
                         val rwy = parts[1]
                         val initClimb = parts[2].toIntOrNull() ?: 0
                         val tokens = parts.drop(3)
-                        currSid!!.runwaySegments[rwy] = SidStarRunwaySegmentDefinition(initClimb, tokens)
+                        currSid.runwaySegments[rwy] = SidStarRunwaySegmentDefinition(initClimb, tokens)
                     } else if (currStar != null) {
                         val rwy = parts.getOrNull(1) ?: continue
-                        currStar!!.runwayAvailability.add(rwy)
+                        currStar.runwayAvailability.add(rwy)
                     } else {
                         // Approaches use RWY in header, not inside.
                     }
@@ -302,9 +298,9 @@ object AirportMapIO {
                 "ROUTE" -> {
                     val tokens = parts.drop(1)
                     when {
-                        currSid != null -> currSid!!.routeTokens = tokens
-                        currStar != null -> currStar!!.routeTokens = tokens
-                        currApproach != null -> currApproach!!.routeTokens = tokens
+                        currSid != null -> currSid.routeTokens = tokens
+                        currStar != null -> currStar.routeTokens = tokens
+                        currApproach != null -> currApproach.routeTokens = tokens
                     }
                 }
                 "OUTBOUND" -> currSid?.let { it.outboundTokens = parts.drop(1) }
@@ -312,9 +308,9 @@ object AirportMapIO {
                 "ALLOWED_CONFIGS" -> {
                     val ids = parts.drop(1).mapNotNull { it.toByteOrNull() }
                     when {
-                        currSid != null -> currSid!!.allowedRunwayConfigIds.apply { clear(); addAll(ids) }
-                        currStar != null -> currStar!!.allowedRunwayConfigIds.apply { clear(); addAll(ids) }
-                        currApproach != null -> currApproach!!.allowedRunwayConfigIds.apply { clear(); addAll(ids) }
+                        currSid != null -> currSid.allowedRunwayConfigIds.apply { clear(); addAll(ids) }
+                        currStar != null -> currStar.allowedRunwayConfigIds.apply { clear(); addAll(ids) }
+                        currApproach != null -> currApproach.allowedRunwayConfigIds.apply { clear(); addAll(ids) }
                     }
                 }
                 "LOC" -> currApproach?.let {
@@ -347,7 +343,7 @@ object AirportMapIO {
                     if (parts.size >= 4) {
                         val minAlt = parts[1].toIntOrNull() ?: 0
                         val maxAlt = parts[2].toIntOrNull() ?: 0
-                        val dir = parseTurnDir(parts[3], warn = { warn("Line ${lineNo + 1}: $it") })
+                        val dir = parseTurnDir(parts[3], warn = { warning -> warn("Line ${lineNo + 1}: $warning") })
                         it.circling = CirclingDefinition(minAlt, maxAlt, dir)
                     }
                 }
@@ -396,7 +392,7 @@ object AirportMapIO {
                             val freq = parts[0]
                             val arrCs = parts[1].replace("-", " ")
                             val depCs = parts[2].replace("-", " ")
-                            val verts = parts.drop(3).mapNotNull { parseNmPoint(it, warn = { warn("Line ${lineNo + 1}: $it") }) }.toMutableList()
+                            val verts = parts.drop(3).mapNotNull { parseNmPoint(it, warn = { warning -> warn("Line ${lineNo + 1}: $warning") }) }.toMutableList()
                             map.sectorsByPlayerCount.getOrPut(currSectorCount) { mutableListOf() }.add(SectorDefinition(freq, arrCs, depCs, verts))
                         }
                         "ACC_SECTORS" -> {
@@ -406,7 +402,7 @@ object AirportMapIO {
                             }
                             val freq = parts[0]
                             val callsign = parts[1].replace("-", " ")
-                            val verts = parts.drop(2).mapNotNull { parseNmPoint(it, warn = { warn("Line ${lineNo + 1}: $it") }) }.toMutableList()
+                            val verts = parts.drop(2).mapNotNull { parseNmPoint(it, warn = { warning -> warn("Line ${lineNo + 1}: $warning") }) }.toMutableList()
                             map.accSectors.add(AccSectorDefinition(freq, callsign, verts))
                         }
                         "MIN_ALT_SECTORS" -> {
@@ -451,13 +447,25 @@ object AirportMapIO {
                                     }
                                     val center = parseNmPoint(parts[3], warn = { warn("Line ${lineNo + 1}: $it") }) ?: continue
                                     val radius = parts[4].toFloatOrNull() ?: 0f
-                                    map.minAltSectors.add(MinAltCircleSectorDefinition(rType, alt, center, radius))
+                                    var circleLabel: NmPoint? = null
+                                    for (i in 5 until parts.size) {
+                                        val tok = parts[i]
+                                        if (tok.startsWith("LABEL,")) {
+                                            val labelParts = tok.split(",")
+                                            if (labelParts.size == 3) {
+                                                val lx = labelParts[1].toFloatOrNull()
+                                                val ly = labelParts[2].toFloatOrNull()
+                                                if (lx != null && ly != null) circleLabel = NmPoint(lx, ly)
+                                            }
+                                        }
+                                    }
+                                    map.minAltSectors.add(MinAltCircleSectorDefinition(rType, alt, center, radius, circleLabel))
                                 }
                                 else -> warn("Line ${lineNo + 1}: unknown min alt sector shape $shape")
                             }
                         }
                         "SHORELINE" -> {
-                            val pts = parts.mapNotNull { parseNmPoint(it, warn = { warn("Line ${lineNo + 1}: $it") }) }.toMutableList()
+                            val pts = parts.mapNotNull { parseNmPoint(it, warn = { warning -> warn("Line ${lineNo + 1}: $warning") }) }.toMutableList()
                             if (pts.isNotEmpty()) map.shorelinePolylines.add(PolylineDefinition(pts))
                         }
                         "HOLDS" -> {
@@ -580,7 +588,8 @@ object AirportMapIO {
                 }
                 is MinAltCircleSectorDefinition -> {
                     val altTok = sector.minAltitudeFt?.toString() ?: "UNL"
-                    ln("CIRCLE ${sector.restrictionType.name} $altTok ${formatNmPoint(sector.centerNm)} ${trimFloat(sector.radiusNm)}")
+                    val labelTok = sector.labelPositionNm?.let { " LABEL,${trimFloat(it.xNm)},${trimFloat(it.yNm)}" } ?: ""
+                    ln("CIRCLE ${sector.restrictionType.name} $altTok ${formatNmPoint(sector.centerNm)} ${trimFloat(sector.radiusNm)}$labelTok")
                 }
             }
         }
@@ -732,9 +741,6 @@ object AirportMapIO {
 
         return out.toString().trimEnd() + "\n"
     }
-
-    fun parseDesc(text: String): String = text.trim()
-    fun serializeDesc(text: String): String = text.trim() + "\n"
 
     private fun parseNmPoint(token: String, warn: (String) -> Unit): NmPoint? {
         val coords = token.split(",")

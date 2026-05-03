@@ -392,7 +392,18 @@ private fun parseMinAltSector(data: List<String>, gameServer: GameServer) {
             val posX = nmToPx(pos[0].toFloat()).toInt().toShort()
             val posY = nmToPx(pos[1].toFloat()).toInt().toShort()
             val radius = nmToPx(data[4].toFloat())
-            gameServer.minAltSectors.add(MinAltSector(minAlt, null, posX, posY, radius, null, null, enforced, false))
+            var labelX: Short? = null
+            var labelY: Short? = null
+            for (i in 5 until data.size) {
+                val tok = data[i]
+                if (!tok.startsWith("LABEL,")) continue
+                val lp = tok.split(",")
+                if (lp.size == 3) {
+                    labelX = nmToPx(lp[1].toFloat()).toInt().toShort()
+                    labelY = nmToPx(lp[2].toFloat()).toInt().toShort()
+                }
+            }
+            gameServer.minAltSectors.add(MinAltSector(minAlt, null, posX, posY, radius, labelX, labelY, enforced, false))
         }
         else -> FileLog.info("GameLoader", "Unknown minAltSector type $type")
     }

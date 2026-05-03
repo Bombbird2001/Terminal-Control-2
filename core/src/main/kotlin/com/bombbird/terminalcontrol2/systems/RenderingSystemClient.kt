@@ -709,7 +709,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRendererBoundingBox,
         for (i in 0 until constLabels.size()) {
             constLabels[i].apply {
                 val labelInfo = getOrLogMissing(GenericLabel.mapper) ?: return@apply
-                val pos = getOrLogMissing(Position.mapper) ?: return@apply
+                val pos = getOrLogMissing(CustomPosition.mapper) ?: return@apply
                 labelInfo.label.apply {
                     setPosition((pos.x - camX) / camZoom + labelInfo.xOffset, (pos.y - camY) / camZoom + labelInfo.yOffset)
                     drawBounding(GAME.batch, 1f, constZoomBoundingRect)
@@ -947,7 +947,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRendererBoundingBox,
                     val topArcCentreVec = wptVec + halfAbeamVec
                     val arcRotateVec = halfAbeamVec * leg2.turnDir.toInt() // This vector will always be facing right
                     var pVec = topArcCentreVec + arcRotateVec
-                    for (j in 0 until 10) {
+                    repeat(10) {
                         val nextVec = topArcCentreVec + arcRotateVec.rotateDeg(18f)
                         shapeRenderer.line(pVec, nextVec)
                         pVec = nextVec
@@ -956,7 +956,7 @@ class RenderingSystemClient(private val shapeRenderer: ShapeRendererBoundingBox,
                     // Draw the bottom arc
                     val bottomArcCentreVec = wptVec + oppInboundLegVec + halfAbeamVec
                     pVec = bottomArcCentreVec + arcRotateVec
-                    for (j in 0 until 10) {
+                    repeat(10) {
                         val nextVec = bottomArcCentreVec + arcRotateVec.rotateDeg(18f)
                         shapeRenderer.line(pVec, nextVec)
                         pVec = nextVec
