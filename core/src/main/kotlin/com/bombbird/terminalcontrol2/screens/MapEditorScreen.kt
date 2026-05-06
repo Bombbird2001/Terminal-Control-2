@@ -28,6 +28,7 @@ import com.bombbird.terminalcontrol2.editor.model.MinAltRestrictionType
 import com.bombbird.terminalcontrol2.editor.model.MinAltSectorDefinition
 import com.bombbird.terminalcontrol2.editor.model.NmPoint
 import com.bombbird.terminalcontrol2.editor.model.RunwayDefinition
+import com.bombbird.terminalcontrol2.editor.model.RunwayLabelPlacement
 import com.bombbird.terminalcontrol2.editor.model.SidDefinition
 import com.bombbird.terminalcontrol2.editor.model.StarDefinition
 import com.bombbird.terminalcontrol2.editor.model.WaypointDefinition
@@ -37,12 +38,32 @@ import com.bombbird.terminalcontrol2.editor.undo.InsertMinAltPolygonVertexComman
 import com.bombbird.terminalcontrol2.editor.undo.MoveMinAltCircleCenterCommand
 import com.bombbird.terminalcontrol2.editor.undo.MoveMinAltPolygonVertexCommand
 import com.bombbird.terminalcontrol2.editor.undo.RemoveMinAltPolygonVertexCommand
+import com.bombbird.terminalcontrol2.editor.undo.RemoveAirportCommand
 import com.bombbird.terminalcontrol2.editor.undo.RemoveMinAltSectorCommand
+import com.bombbird.terminalcontrol2.editor.undo.RemoveRunwayCommand
 import com.bombbird.terminalcontrol2.editor.undo.SetMinAltCircleLabelPositionCommand
 import com.bombbird.terminalcontrol2.editor.undo.SetMinAltCircleRadiusCommand
 import com.bombbird.terminalcontrol2.editor.undo.SetMinAltPolygonLabelPositionCommand
+import com.bombbird.terminalcontrol2.editor.undo.SetAirportDisplayNameCommand
+import com.bombbird.terminalcontrol2.editor.undo.SetAirportElevationCommand
+import com.bombbird.terminalcontrol2.editor.undo.SetAirportIcaoCommand
+import com.bombbird.terminalcontrol2.editor.undo.SetAirportMaxAdvanceDeparturesCommand
+import com.bombbird.terminalcontrol2.editor.undo.SetAirportRatioCommand
 import com.bombbird.terminalcontrol2.editor.undo.SetMinAltSectorMinAltitudeCommand
+import com.bombbird.terminalcontrol2.editor.undo.SetRunwayDisplacedThresholdCommand
+import com.bombbird.terminalcontrol2.editor.undo.SetRunwayIntersectionTakeoffCommand
+import com.bombbird.terminalcontrol2.editor.undo.SetRunwayLabelPlacementCommand
+import com.bombbird.terminalcontrol2.editor.undo.SetRunwayLengthCommand
+import com.bombbird.terminalcontrol2.editor.undo.SetRunwayThresholdElevationCommand
+import com.bombbird.terminalcontrol2.editor.undo.SetRunwayTowerCallsignCommand
+import com.bombbird.terminalcontrol2.editor.undo.SetRunwayTowerFrequencyCommand
+import com.bombbird.terminalcontrol2.editor.undo.SetRunwayTrueHeadingCommand
+import com.bombbird.terminalcontrol2.editor.undo.AddAirportCommand
+import com.bombbird.terminalcontrol2.editor.undo.AddRunwayCommand
+import com.bombbird.terminalcontrol2.editor.undo.MapEditorByteIds
+import com.bombbird.terminalcontrol2.editor.undo.MoveAirportPositionCommand
 import com.bombbird.terminalcontrol2.editor.undo.MoveRunwayThresholdCommand
+import com.bombbird.terminalcontrol2.editor.undo.MoveRunwayToAirportCommand
 import com.bombbird.terminalcontrol2.editor.undo.MoveWaypointPositionCommand
 import com.bombbird.terminalcontrol2.editor.undo.RenameApproachCommand
 import com.bombbird.terminalcontrol2.editor.undo.RenameRunwayCommand
@@ -126,7 +147,8 @@ class MapEditorScreen(
     // Selection / drag state
     private sealed interface Selected {
         data class Waypoint(val wpt: WaypointDefinition) : Selected
-        data class Runway(val rwy: RunwayDefinition) : Selected
+        data class Airport(val airport: AirportDefinition) : Selected
+        data class Runway(val airport: AirportDefinition, val rwy: RunwayDefinition) : Selected
         data class MinAltPolygonVertex(val sector: MinAltPolygonSectorDefinition, val vertexIndex: Int) : Selected
         data class MinAltCircle(val sector: MinAltCircleSectorDefinition) : Selected
         data class Approach(val airport: AirportDefinition, val approach: ApproachDefinition) : Selected
@@ -179,6 +201,26 @@ class MapEditorScreen(
                 onEditorLayerChanged = { onEditorLayerChanged() },
                 onAddMinAltPolygon = { addNewMinAltPolygonAtScreenCenter() },
                 onAddMinAltCircle = { addNewMinAltCircleAtScreenCenter() },
+                onAddAirport = { addNewAirportAtScreenCenter() },
+                onAddRunway = { addNewRunwayAtScreenCenter() },
+                onAirportIcaoChanged = { applyAirportIcaoField() },
+                onAirportDisplayNameChanged = { applyAirportDisplayNameField() },
+                onAirportRatioChanged = { applyAirportRatioField() },
+                onAirportMaxAdvChanged = { applyAirportMaxAdvField() },
+                onAirportElevChanged = { applyAirportElevField() },
+                onAirportWeatherDummy = { },
+                onAirportTrafficDummy = { },
+                onDeleteAirport = { deleteSelectedAirport() },
+                onRunwayParentIcaoChanged = { applyRunwayParentIcaoField() },
+                onRunwayLengthChanged = { applyRunwayLengthField() },
+                onRunwayTrackChanged = { applyRunwayTrackField() },
+                onRunwayDisplacedChanged = { applyRunwayDisplacedField() },
+                onRunwayIntersectionChanged = { applyRunwayIntersectionField() },
+                onRunwayThrElevChanged = { applyRunwayThrElevField() },
+                onRunwayLabelPlacementChanged = { applyRunwayLabelPlacementField() },
+                onRunwayTowerCsChanged = { applyRunwayTowerCsField() },
+                onRunwayTowerFreqChanged = { applyRunwayTowerFreqField() },
+                onDeleteRunway = { deleteSelectedRunway() },
             ),
         )
         buildToolbar()
@@ -229,6 +271,7 @@ class MapEditorScreen(
         shapeRenderer.end()
 
         drawMinAltSectorLabelsOnRadar()
+        drawRunwayLabelsOnRadar()
 
         if (needsValidation) {
             updateProblems()
@@ -344,6 +387,7 @@ class MapEditorScreen(
     private fun performUndo() {
         history.undo()
         discardStaleMinAltSelectionIfNeeded()
+        discardStaleAirportRunwaySelectionIfNeeded()
         markDirty()
         syncFieldsFromSelection()
         needsValidation = true
@@ -353,6 +397,7 @@ class MapEditorScreen(
     private fun performRedo() {
         history.redo()
         discardStaleMinAltSelectionIfNeeded()
+        discardStaleAirportRunwaySelectionIfNeeded()
         markDirty()
         syncFieldsFromSelection()
         needsValidation = true
@@ -374,6 +419,18 @@ class MapEditorScreen(
         }
     }
 
+    private fun discardStaleAirportRunwaySelectionIfNeeded() {
+        when (val sel = selected) {
+            is Selected.Airport -> {
+                if (map.airports.none { it === sel.airport }) setSelected(null)
+            }
+            is Selected.Runway -> {
+                if (sel.airport.runways.none { it === sel.rwy }) setSelected(null)
+            }
+            else -> Unit
+        }
+    }
+
     private fun updateUndoRedoButtons() {
         undoButton?.isDisabled = !history.canUndo()
         redoButton?.isDisabled = !history.canRedo()
@@ -384,6 +441,7 @@ class MapEditorScreen(
         val start = dragStartNm ?: return
         val end = when (sel) {
             is Selected.Waypoint -> NmPoint(sel.wpt.positionNm.xNm, sel.wpt.positionNm.yNm)
+            is Selected.Airport -> NmPoint(sel.airport.positionNm.xNm, sel.airport.positionNm.yNm)
             is Selected.Runway -> NmPoint(sel.rwy.thresholdNm.xNm, sel.rwy.thresholdNm.yNm)
             is Selected.MinAltPolygonVertex -> {
                 val v = sel.sector.verticesNm[sel.vertexIndex]
@@ -396,6 +454,7 @@ class MapEditorScreen(
         if (start.xNm == end.xNm && start.yNm == end.yNm) return
         when (sel) {
             is Selected.Waypoint -> history.execute(MoveWaypointPositionCommand(sel.wpt, start, end))
+            is Selected.Airport -> history.execute(MoveAirportPositionCommand(sel.airport, start, end))
             is Selected.Runway -> history.execute(MoveRunwayThresholdCommand(sel.rwy, start, end))
             is Selected.MinAltPolygonVertex -> history.execute(
                 MoveMinAltPolygonVertexCommand(sel.sector, sel.vertexIndex, start, end),
@@ -413,6 +472,7 @@ class MapEditorScreen(
         val sel = selected ?: return
         when (sel) {
             is Selected.Waypoint -> sel.wpt.positionNm = start
+            is Selected.Airport -> sel.airport.positionNm = start
             is Selected.Runway -> sel.rwy.thresholdNm = start
             is Selected.MinAltPolygonVertex -> sel.sector.verticesNm[sel.vertexIndex] = start
             is Selected.MinAltCircle -> sel.sector.centerNm = start
@@ -507,6 +567,7 @@ class MapEditorScreen(
         val yNm = pxToNm(worldPx.y)
         when (sel) {
             is Selected.Waypoint -> sel.wpt.positionNm = NmPoint(xNm, yNm)
+            is Selected.Airport -> sel.airport.positionNm = NmPoint(xNm, yNm)
             is Selected.Runway -> sel.rwy.thresholdNm = NmPoint(xNm, yNm)
             is Selected.MinAltPolygonVertex ->
                 sel.sector.verticesNm[sel.vertexIndex] = snapMinAltPolygonVertexNm(sel, worldPx)
@@ -532,6 +593,22 @@ class MapEditorScreen(
 
     private fun toPx(p: NmPoint): Vector2 = Vector2(nmToPx(p.xNm), nmToPx(p.yNm))
 
+    /** 5-point star (outline) in radar pixel space. */
+    private fun drawStarOutlinePx(cx: Float, cy: Float, outerR: Float) {
+        val innerR = outerR * 0.38f
+        val pts = FloatArray(20)
+        for (i in 0 until 10) {
+            val ang = MathUtils.PI / 2f + i * (MathUtils.PI / 5f)
+            val rr = if (i % 2 == 0) outerR else innerR
+            pts[i * 2] = cx + MathUtils.cos(ang) * rr
+            pts[i * 2 + 1] = cy + MathUtils.sin(ang) * rr
+        }
+        for (i in 0 until 10) {
+            val j = (i + 1) % 10
+            shapeRenderer.line(pts[i * 2], pts[i * 2 + 1], pts[j * 2], pts[j * 2 + 1])
+        }
+    }
+
     private fun drawClosedNmPolygon(vertices: List<NmPoint>) {
         if (vertices.size < 2) return
         val n = vertices.size
@@ -545,7 +622,7 @@ class MapEditorScreen(
     private fun drawRunwaysAndWaypoints() {
         val rwyWidthPx = RWY_WIDTH_PX_ZOOM_1 + (radarCam.zoom - 1f) * RWY_WIDTH_CHANGE_PX_PER_ZOOM
 
-        shapeRenderer.color = RUNWAY_INACTIVE
+        shapeRenderer.color = RUNWAY_ACTIVE
         for (arpt in map.airports) {
             for (rwy in arpt.runways) {
                 val thr = toPx(rwy.thresholdNm)
@@ -559,6 +636,13 @@ class MapEditorScreen(
         for (wpt in map.waypoints) {
             val pos = toPx(wpt.positionNm)
             shapeRenderer.circle(pos.x, pos.y, 4f)
+        }
+
+        shapeRenderer.color = RUNWAY_INACTIVE
+        val starOuterPx = 9f
+        for (arpt in map.airports) {
+            val c = toPx(arpt.positionNm)
+            drawStarOutlinePx(c.x, c.y, starOuterPx)
         }
 
         shapeRenderer.color = Color.WHITE
@@ -575,6 +659,7 @@ class MapEditorScreen(
             shapeRenderer.color = Color.YELLOW
             val pos = when (sel) {
                 is Selected.Waypoint -> toPx(sel.wpt.positionNm)
+                is Selected.Airport -> toPx(sel.airport.positionNm)
                 is Selected.Runway -> toPx(sel.rwy.thresholdNm)
                 is Selected.MinAltPolygonVertex -> toPx(sel.sector.verticesNm[sel.vertexIndex])
                 is Selected.MinAltCircle -> toPx(sel.sector.centerNm)
@@ -590,6 +675,49 @@ class MapEditorScreen(
             }
             shapeRenderer.circle(pos.x, pos.y, 14f)
         }
+    }
+
+    private fun runwayLabelOffsetDir(rwy: RunwayDefinition): Vector2 {
+        // Use the same base direction convention as runway rectangle rendering.
+        val dir = Vector2(Vector2.Y).rotateDeg(-rwy.trueHeadingDeg).nor()
+        return when (rwy.labelPlacement) {
+            RunwayLabelPlacement.LABEL_LEFT -> dir.cpy().rotate90(-1)
+            RunwayLabelPlacement.LABEL_RIGHT -> dir.cpy().rotate90(1)
+            RunwayLabelPlacement.LABEL_BEFORE -> dir.scl(-1f)
+        }
+    }
+
+    private fun drawRunwayLabelsOnRadar() {
+        val batch = GAME.batch
+        savedBatchProjection.set(batch.projectionMatrix)
+        batch.projectionMatrix = radarCam.combined
+
+        val rwyWidthPx = RWY_WIDTH_PX_ZOOM_1 + (radarCam.zoom - 1f) * RWY_WIDTH_CHANGE_PX_PER_ZOOM
+
+        batch.begin()
+        for (arpt in map.airports) {
+            for (rwy in arpt.runways) {
+                val text = rwy.name
+                if (text.isEmpty()) continue
+
+                val lbl = Label(text, labelStyleOrDefault(MAP_EDITOR_MIN_ALT_LABEL_MVA))
+                lbl.validate()
+
+                val spacingFromCentre =
+                    sqrt(lbl.prefWidth * lbl.prefWidth + lbl.prefHeight * lbl.prefHeight) / 2f +
+                        3f / radarCam.zoom +
+                        if (rwy.labelPlacement == RunwayLabelPlacement.LABEL_BEFORE) 0f else rwyWidthPx / 2f
+                val offsetDir = runwayLabelOffsetDir(rwy).scl(spacingFromCentre)
+
+                val thr = toPx(rwy.thresholdNm)
+                val x = thr.x + offsetDir.x - lbl.prefWidth / 2f
+                val y = thr.y + offsetDir.y - lbl.prefHeight / 2f
+                lbl.setPosition(x, y)
+                lbl.draw(batch, 1f)
+            }
+        }
+        batch.end()
+        batch.projectionMatrix.set(savedBatchProjection)
     }
 
     private fun buildProblemsPane() {
@@ -657,6 +785,7 @@ class MapEditorScreen(
                 isDraggingMapObject = true
                 dragStartNm = when (sel) {
                     is Selected.Waypoint -> NmPoint(sel.wpt.positionNm.xNm, sel.wpt.positionNm.yNm)
+                    is Selected.Airport -> NmPoint(sel.airport.positionNm.xNm, sel.airport.positionNm.yNm)
                     is Selected.Runway -> NmPoint(sel.rwy.thresholdNm.xNm, sel.rwy.thresholdNm.yNm)
                     is Selected.MinAltPolygonVertex -> {
                         val v = sel.sector.verticesNm[sel.vertexIndex]
@@ -683,10 +812,30 @@ class MapEditorScreen(
                     xNm = sel.wpt.positionNm.xNm,
                     yNm = sel.wpt.positionNm.yNm,
                 )
+                is Selected.Airport -> propertiesPane.bindAirport(
+                    id = sel.airport.id,
+                    icao = sel.airport.icao,
+                    displayName = sel.airport.name,
+                    ratio = sel.airport.ratio,
+                    maxAdvanceDepartures = sel.airport.maxAdvanceDepartures,
+                    elevationFt = sel.airport.elevationFt,
+                    xNm = sel.airport.positionNm.xNm,
+                    yNm = sel.airport.positionNm.yNm,
+                )
                 is Selected.Runway -> propertiesPane.bindRunway(
-                    name = sel.rwy.name,
+                    parentIcaoList = map.airports.map { it.icao },
+                    parentIcao = sel.airport.icao,
+                    designator = sel.rwy.name,
                     thresholdXNm = sel.rwy.thresholdNm.xNm,
                     thresholdYNm = sel.rwy.thresholdNm.yNm,
+                    lengthM = sel.rwy.lengthM,
+                    trackDeg = sel.rwy.trueHeadingDeg,
+                    displacedM = sel.rwy.displacedThresholdM,
+                    intersectionM = sel.rwy.intersectionTakeoffLengthM,
+                    thresholdElevFt = sel.rwy.thresholdElevationFt,
+                    labelPlacement = sel.rwy.labelPlacement,
+                    towerCallsign = sel.rwy.towerCallsign,
+                    towerFrequency = sel.rwy.towerFrequency,
                 )
                 is Selected.MinAltPolygonVertex -> {
                     val sector = sel.sector
@@ -804,7 +953,7 @@ class MapEditorScreen(
                 markDirty()
                 updateUndoRedoButtons()
             }
-            is Selected.MinAltPolygonVertex, is Selected.MinAltCircle -> Unit
+            is Selected.MinAltPolygonVertex, is Selected.MinAltCircle, is Selected.Airport -> Unit
         }
         syncFieldsFromSelection()
         needsValidation = true
@@ -822,6 +971,11 @@ class MapEditorScreen(
                 val old = NmPoint(sel.wpt.positionNm.xNm, sel.wpt.positionNm.yNm)
                 if (old.xNm == newPt.xNm && old.yNm == newPt.yNm) return
                 history.execute(MoveWaypointPositionCommand(sel.wpt, old, newPt))
+            }
+            is Selected.Airport -> {
+                val old = NmPoint(sel.airport.positionNm.xNm, sel.airport.positionNm.yNm)
+                if (old.xNm == newPt.xNm && old.yNm == newPt.yNm) return
+                history.execute(MoveAirportPositionCommand(sel.airport, old, newPt))
             }
             is Selected.Runway -> {
                 val old = NmPoint(sel.rwy.thresholdNm.xNm, sel.rwy.thresholdNm.yNm)
@@ -912,11 +1066,17 @@ class MapEditorScreen(
                     if (d <= PICK_THRESHOLD_PX) offer(Selected.Waypoint(wpt), d)
                 }
             }
+            EditorLayer.AIRPORTS -> {
+                for (arpt in map.airports) {
+                    val d = sqrt(dist2Px(toPx(arpt.positionNm), worldPx))
+                    if (d <= PICK_THRESHOLD_PX) offer(Selected.Airport(arpt), d)
+                }
+            }
             EditorLayer.RUNWAYS -> {
                 for (arpt in map.airports) {
                     for (rwy in arpt.runways) {
                         val d = sqrt(dist2Px(toPx(rwy.thresholdNm), worldPx))
-                        if (d <= PICK_THRESHOLD_PX) offer(Selected.Runway(rwy), d)
+                        if (d <= PICK_THRESHOLD_PX) offer(Selected.Runway(arpt, rwy), d)
                     }
                 }
             }
@@ -1248,6 +1408,249 @@ class MapEditorScreen(
         markDirty()
         updateUndoRedoButtons()
         syncFieldsFromSelection()
+        needsValidation = true
+    }
+
+    private fun applyAirportIcaoField() {
+        if (syncingFields) return
+        val sel = selected as? Selected.Airport ?: return
+        val text = propertiesPane.airportIcaoField.text.trim().uppercase()
+        propertiesPane.airportIcaoField.text = text
+        propertiesPane.airportIcaoField.cursorPosition = text.length
+        if (text.length != 4) return
+        val old = sel.airport.icao
+        if (old == text) return
+        history.execute(SetAirportIcaoCommand(sel.airport, old, text))
+        markDirty()
+        updateUndoRedoButtons()
+        syncFieldsFromSelection()
+        needsValidation = true
+    }
+
+    private fun applyAirportDisplayNameField() {
+        if (syncingFields) return
+        val sel = selected as? Selected.Airport ?: return
+        val text = propertiesPane.airportDisplayNameField.text.trim()
+        val old = sel.airport.name
+        if (old == text) return
+        history.execute(SetAirportDisplayNameCommand(sel.airport, old, text))
+        markDirty()
+        updateUndoRedoButtons()
+        needsValidation = true
+    }
+
+    private fun applyAirportRatioField() {
+        if (syncingFields) return
+        val sel = selected as? Selected.Airport ?: return
+        val v = propertiesPane.airportRatioField.text.toIntOrNull()?.coerceIn(0, 255)?.toByte() ?: return
+        val old = sel.airport.ratio
+        if (old == v) return
+        history.execute(SetAirportRatioCommand(sel.airport, old, v))
+        markDirty()
+        updateUndoRedoButtons()
+        needsValidation = true
+    }
+
+    private fun applyAirportMaxAdvField() {
+        if (syncingFields) return
+        val sel = selected as? Selected.Airport ?: return
+        val v = propertiesPane.airportMaxAdvField.text.toIntOrNull() ?: return
+        val old = sel.airport.maxAdvanceDepartures
+        if (old == v) return
+        history.execute(SetAirportMaxAdvanceDeparturesCommand(sel.airport, old, v))
+        markDirty()
+        updateUndoRedoButtons()
+        needsValidation = true
+    }
+
+    private fun applyAirportElevField() {
+        if (syncingFields) return
+        val sel = selected as? Selected.Airport ?: return
+        val v = propertiesPane.airportElevField.text.toShortOrNull() ?: return
+        val old = sel.airport.elevationFt
+        if (old == v) return
+        history.execute(SetAirportElevationCommand(sel.airport, old, v))
+        markDirty()
+        updateUndoRedoButtons()
+        needsValidation = true
+    }
+
+    private fun applyRunwayParentIcaoField() {
+        if (syncingFields) return
+        val sel = selected as? Selected.Runway ?: return
+        val newIcao = propertiesPane.runwayParentIcaoSelectBox.selected ?: return
+        val newArpt = map.airports.find { it.icao == newIcao } ?: return
+        if (newArpt === sel.airport) return
+        history.execute(MoveRunwayToAirportCommand(sel.rwy, sel.airport, newArpt))
+        selected = Selected.Runway(newArpt, sel.rwy)
+        markDirty()
+        updateUndoRedoButtons()
+        syncFieldsFromSelection()
+        needsValidation = true
+    }
+
+    private fun applyRunwayLengthField() {
+        if (syncingFields) return
+        val sel = selected as? Selected.Runway ?: return
+        val v = propertiesPane.runwayLengthField.text.toShortOrNull() ?: return
+        val old = sel.rwy.lengthM
+        if (old == v) return
+        history.execute(SetRunwayLengthCommand(sel.rwy, old, v))
+        markDirty()
+        updateUndoRedoButtons()
+        needsValidation = true
+    }
+
+    private fun applyRunwayTrackField() {
+        if (syncingFields) return
+        val sel = selected as? Selected.Runway ?: return
+        val v = propertiesPane.runwayTrackField.text.toFloatOrNull() ?: return
+        val old = sel.rwy.trueHeadingDeg
+        if (old == v) return
+        history.execute(SetRunwayTrueHeadingCommand(sel.rwy, old, v))
+        markDirty()
+        updateUndoRedoButtons()
+        needsValidation = true
+    }
+
+    private fun applyRunwayDisplacedField() {
+        if (syncingFields) return
+        val sel = selected as? Selected.Runway ?: return
+        val v = propertiesPane.runwayDisplacedField.text.toShortOrNull() ?: return
+        val old = sel.rwy.displacedThresholdM
+        if (old == v) return
+        history.execute(SetRunwayDisplacedThresholdCommand(sel.rwy, old, v))
+        markDirty()
+        updateUndoRedoButtons()
+        needsValidation = true
+    }
+
+    private fun applyRunwayIntersectionField() {
+        if (syncingFields) return
+        val sel = selected as? Selected.Runway ?: return
+        val v = propertiesPane.runwayIntersectionField.text.toShortOrNull() ?: return
+        val old = sel.rwy.intersectionTakeoffLengthM
+        if (old == v) return
+        history.execute(SetRunwayIntersectionTakeoffCommand(sel.rwy, old, v))
+        markDirty()
+        updateUndoRedoButtons()
+        needsValidation = true
+    }
+
+    private fun applyRunwayThrElevField() {
+        if (syncingFields) return
+        val sel = selected as? Selected.Runway ?: return
+        val v = propertiesPane.runwayThrElevField.text.toShortOrNull() ?: return
+        val old = sel.rwy.thresholdElevationFt
+        if (old == v) return
+        history.execute(SetRunwayThresholdElevationCommand(sel.rwy, old, v))
+        markDirty()
+        updateUndoRedoButtons()
+        needsValidation = true
+    }
+
+    private fun applyRunwayLabelPlacementField() {
+        if (syncingFields) return
+        val sel = selected as? Selected.Runway ?: return
+        val ui = propertiesPane.runwayLabelPlacementSelectBox.selected ?: return
+        val newPl = propertiesPane.runwayLabelPlacementFromUi(ui)
+        val old = sel.rwy.labelPlacement
+        if (old == newPl) return
+        history.execute(SetRunwayLabelPlacementCommand(sel.rwy, old, newPl))
+        markDirty()
+        updateUndoRedoButtons()
+        needsValidation = true
+    }
+
+    private fun applyRunwayTowerCsField() {
+        if (syncingFields) return
+        val sel = selected as? Selected.Runway ?: return
+        val text = propertiesPane.runwayTowerCsField.text.trim()
+        val old = sel.rwy.towerCallsign
+        if (old == text) return
+        history.execute(SetRunwayTowerCallsignCommand(sel.rwy, old, text))
+        markDirty()
+        updateUndoRedoButtons()
+        needsValidation = true
+    }
+
+    private fun applyRunwayTowerFreqField() {
+        if (syncingFields) return
+        val sel = selected as? Selected.Runway ?: return
+        val text = propertiesPane.runwayTowerFreqField.text.trim()
+        val old = sel.rwy.towerFrequency
+        if (old == text) return
+        history.execute(SetRunwayTowerFrequencyCommand(sel.rwy, old, text))
+        markDirty()
+        updateUndoRedoButtons()
+        needsValidation = true
+    }
+
+    private fun deleteSelectedAirport() {
+        val sel = selected as? Selected.Airport ?: return
+        val idx = map.airports.indexOf(sel.airport)
+        if (idx < 0) return
+        history.execute(RemoveAirportCommand(map.airports, sel.airport, idx))
+        markDirty()
+        updateUndoRedoButtons()
+        setSelected(null)
+        needsValidation = true
+    }
+
+    private fun deleteSelectedRunway() {
+        val sel = selected as? Selected.Runway ?: return
+        val idx = sel.airport.runways.indexOf(sel.rwy)
+        if (idx < 0) return
+        history.execute(RemoveRunwayCommand(sel.airport, sel.rwy, idx))
+        markDirty()
+        updateUndoRedoButtons()
+        setSelected(null)
+        needsValidation = true
+    }
+
+    private fun addNewAirportAtScreenCenter() {
+        val id = MapEditorByteIds.nextAirportId(map) ?: return
+        val center = radarCenterNm()
+        val arpt = AirportDefinition(
+            id = id,
+            icao = "ZZZZ",
+            name = "New Airport",
+            ratio = 15,
+            maxAdvanceDepartures = 40,
+            positionNm = center,
+            elevationFt = 0,
+            realLifeWeatherIcao = "ZZZZ",
+        )
+        val idx = map.airports.size
+        history.execute(AddAirportCommand(map.airports, arpt, idx))
+        markDirty()
+        updateUndoRedoButtons()
+        setSelected(Selected.Airport(arpt))
+        needsValidation = true
+    }
+
+    private fun addNewRunwayAtScreenCenter() {
+        if (map.airports.isEmpty()) return
+        val parent = map.airports.first()
+        val rid = MapEditorByteIds.nextRunwayId(parent) ?: return
+        val rwy = RunwayDefinition(
+            id = rid,
+            name = "09",
+            thresholdNm = radarCenterNm(),
+            trueHeadingDeg = 90f,
+            lengthM = 2500,
+            displacedThresholdM = 0,
+            intersectionTakeoffLengthM = 0,
+            thresholdElevationFt = parent.elevationFt,
+            labelPlacement = RunwayLabelPlacement.LABEL_LEFT,
+            towerCallsign = "",
+            towerFrequency = "118.6",
+        )
+        val idx = parent.runways.size
+        history.execute(AddRunwayCommand(parent, rwy, idx))
+        markDirty()
+        updateUndoRedoButtons()
+        setSelected(Selected.Runway(parent, rwy))
         needsValidation = true
     }
 

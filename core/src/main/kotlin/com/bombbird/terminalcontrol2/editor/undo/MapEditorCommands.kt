@@ -1,11 +1,14 @@
 package com.bombbird.terminalcontrol2.editor.undo
 
+import com.bombbird.terminalcontrol2.editor.model.AirportDefinition
+import com.bombbird.terminalcontrol2.editor.model.AirportMapDefinition
 import com.bombbird.terminalcontrol2.editor.model.ApproachDefinition
 import com.bombbird.terminalcontrol2.editor.model.MinAltCircleSectorDefinition
 import com.bombbird.terminalcontrol2.editor.model.MinAltPolygonSectorDefinition
 import com.bombbird.terminalcontrol2.editor.model.MinAltSectorDefinition
 import com.bombbird.terminalcontrol2.editor.model.NmPoint
 import com.bombbird.terminalcontrol2.editor.model.RunwayDefinition
+import com.bombbird.terminalcontrol2.editor.model.RunwayLabelPlacement
 import com.bombbird.terminalcontrol2.editor.model.SidDefinition
 import com.bombbird.terminalcontrol2.editor.model.StarDefinition
 import com.bombbird.terminalcontrol2.editor.model.WaypointDefinition
@@ -21,6 +24,20 @@ class MoveWaypointPositionCommand(
 
     override fun undo() {
         waypoint.positionNm = from
+    }
+}
+
+class MoveAirportPositionCommand(
+    private val airport: AirportDefinition,
+    private val from: NmPoint,
+    private val to: NmPoint,
+) : EditorCommand {
+    override fun execute() {
+        airport.positionNm = to
+    }
+
+    override fun undo() {
+        airport.positionNm = from
     }
 }
 
@@ -260,5 +277,275 @@ class RemoveMinAltSectorCommand(
 
     override fun undo() {
         list.add(index, sector)
+    }
+}
+
+class AddAirportCommand(
+    private val list: MutableList<AirportDefinition>,
+    private val airport: AirportDefinition,
+    private val insertAt: Int,
+) : EditorCommand {
+    override fun execute() {
+        list.add(insertAt, airport)
+    }
+
+    override fun undo() {
+        list.removeAt(insertAt)
+    }
+}
+
+class RemoveAirportCommand(
+    private val list: MutableList<AirportDefinition>,
+    private val airport: AirportDefinition,
+    private val index: Int,
+) : EditorCommand {
+    override fun execute() {
+        list.removeAt(index)
+    }
+
+    override fun undo() {
+        list.add(index, airport)
+    }
+}
+
+class AddRunwayCommand(
+    private val airport: AirportDefinition,
+    private val runway: RunwayDefinition,
+    private val insertAt: Int,
+) : EditorCommand {
+    override fun execute() {
+        airport.runways.add(insertAt, runway)
+    }
+
+    override fun undo() {
+        airport.runways.removeAt(insertAt)
+    }
+}
+
+class RemoveRunwayCommand(
+    private val airport: AirportDefinition,
+    private val runway: RunwayDefinition,
+    private val index: Int,
+) : EditorCommand {
+    override fun execute() {
+        airport.runways.removeAt(index)
+    }
+
+    override fun undo() {
+        airport.runways.add(index, runway)
+    }
+}
+
+class MoveRunwayToAirportCommand(
+    private val runway: RunwayDefinition,
+    private val fromAirport: AirportDefinition,
+    private val toAirport: AirportDefinition,
+) : EditorCommand {
+    override fun execute() {
+        fromAirport.runways.remove(runway)
+        toAirport.runways.add(runway)
+    }
+
+    override fun undo() {
+        toAirport.runways.remove(runway)
+        fromAirport.runways.add(runway)
+    }
+}
+
+class SetAirportIcaoCommand(
+    private val airport: AirportDefinition,
+    private val from: String,
+    private val to: String,
+) : EditorCommand {
+    override fun execute() {
+        airport.icao = to
+    }
+
+    override fun undo() {
+        airport.icao = from
+    }
+}
+
+class SetAirportDisplayNameCommand(
+    private val airport: AirportDefinition,
+    private val from: String,
+    private val to: String,
+) : EditorCommand {
+    override fun execute() {
+        airport.name = to
+    }
+
+    override fun undo() {
+        airport.name = from
+    }
+}
+
+class SetAirportRatioCommand(
+    private val airport: AirportDefinition,
+    private val from: Byte,
+    private val to: Byte,
+) : EditorCommand {
+    override fun execute() {
+        airport.ratio = to
+    }
+
+    override fun undo() {
+        airport.ratio = from
+    }
+}
+
+class SetAirportMaxAdvanceDeparturesCommand(
+    private val airport: AirportDefinition,
+    private val from: Int,
+    private val to: Int,
+) : EditorCommand {
+    override fun execute() {
+        airport.maxAdvanceDepartures = to
+    }
+
+    override fun undo() {
+        airport.maxAdvanceDepartures = from
+    }
+}
+
+class SetAirportElevationCommand(
+    private val airport: AirportDefinition,
+    private val from: Short,
+    private val to: Short,
+) : EditorCommand {
+    override fun execute() {
+        airport.elevationFt = to
+    }
+
+    override fun undo() {
+        airport.elevationFt = from
+    }
+}
+
+class SetRunwayLengthCommand(
+    private val runway: RunwayDefinition,
+    private val from: Short,
+    private val to: Short,
+) : EditorCommand {
+    override fun execute() {
+        runway.lengthM = to
+    }
+
+    override fun undo() {
+        runway.lengthM = from
+    }
+}
+
+class SetRunwayTrueHeadingCommand(
+    private val runway: RunwayDefinition,
+    private val from: Float,
+    private val to: Float,
+) : EditorCommand {
+    override fun execute() {
+        runway.trueHeadingDeg = to
+    }
+
+    override fun undo() {
+        runway.trueHeadingDeg = from
+    }
+}
+
+class SetRunwayDisplacedThresholdCommand(
+    private val runway: RunwayDefinition,
+    private val from: Short,
+    private val to: Short,
+) : EditorCommand {
+    override fun execute() {
+        runway.displacedThresholdM = to
+    }
+
+    override fun undo() {
+        runway.displacedThresholdM = from
+    }
+}
+
+class SetRunwayIntersectionTakeoffCommand(
+    private val runway: RunwayDefinition,
+    private val from: Short,
+    private val to: Short,
+) : EditorCommand {
+    override fun execute() {
+        runway.intersectionTakeoffLengthM = to
+    }
+
+    override fun undo() {
+        runway.intersectionTakeoffLengthM = from
+    }
+}
+
+class SetRunwayThresholdElevationCommand(
+    private val runway: RunwayDefinition,
+    private val from: Short,
+    private val to: Short,
+) : EditorCommand {
+    override fun execute() {
+        runway.thresholdElevationFt = to
+    }
+
+    override fun undo() {
+        runway.thresholdElevationFt = from
+    }
+}
+
+class SetRunwayLabelPlacementCommand(
+    private val runway: RunwayDefinition,
+    private val from: RunwayLabelPlacement,
+    private val to: RunwayLabelPlacement,
+) : EditorCommand {
+    override fun execute() {
+        runway.labelPlacement = to
+    }
+
+    override fun undo() {
+        runway.labelPlacement = from
+    }
+}
+
+class SetRunwayTowerCallsignCommand(
+    private val runway: RunwayDefinition,
+    private val from: String,
+    private val to: String,
+) : EditorCommand {
+    override fun execute() {
+        runway.towerCallsign = to
+    }
+
+    override fun undo() {
+        runway.towerCallsign = from
+    }
+}
+
+class SetRunwayTowerFrequencyCommand(
+    private val runway: RunwayDefinition,
+    private val from: String,
+    private val to: String,
+) : EditorCommand {
+    override fun execute() {
+        runway.towerFrequency = to
+    }
+
+    override fun undo() {
+        runway.towerFrequency = from
+    }
+}
+
+object MapEditorByteIds {
+    /** Next unused airport id in `0..127`, or null if none available. */
+    fun nextAirportId(map: AirportMapDefinition): Byte? {
+        val used = map.airports.map { it.id.toInt() and 0xff }.toHashSet()
+        for (i in 0..127) if (i !in used) return i.toByte()
+        return null
+    }
+
+    /** Next unused runway id within [airport], or null if none available. */
+    fun nextRunwayId(airport: AirportDefinition): Byte? {
+        val used = airport.runways.map { it.id.toInt() and 0xff }.toHashSet()
+        for (i in 0..127) if (i !in used) return i.toByte()
+        return null
     }
 }

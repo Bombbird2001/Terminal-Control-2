@@ -1,9 +1,9 @@
 package com.bombbird.terminalcontrol2.editor.validation
 
+import com.bombbird.terminalcontrol2.editor.undo.MapEditorByteIds
 import com.bombbird.terminalcontrol2.editor.model.AirportMapDefinition
 import com.bombbird.terminalcontrol2.editor.model.MinAltCircleSectorDefinition
 import com.bombbird.terminalcontrol2.editor.model.MinAltPolygonSectorDefinition
-import kotlin.math.abs
 import kotlin.math.sqrt
 
 data class ValidationProblem(
@@ -58,21 +58,37 @@ object AirportMapValidator {
         // Airports
         val airportIdSet = HashSet<Byte>()
         val airportIcaoSet = HashSet<String>()
+        val airportNameSet = HashSet<String>()
+        val towerFreqRegex = Regex("^1\\d{2}\\.\\d{1,3}$")
+        if (MapEditorByteIds.nextAirportId(map) == null) err("Max airport count reached")
+
         for (a in map.airports) {
             if (!airportIdSet.add(a.id)) err("Duplicate AIRPORT id: ${a.id}")
             if (!airportIcaoSet.add(a.icao)) err("Duplicate AIRPORT ICAO: ${a.icao}")
+            if (!airportNameSet.add(a.name)) err("Duplicate AIRPORT name: ${a.name}")
             if (!a.icao.matches(Regex("^[A-Z]{4}$"))) warn("AIRPORT ICAO should be 4 letters (got ${a.icao})")
 
-            val runwayNames = a.runways.map { it.name }.toHashSet()
+            val runwayIds = HashSet<Byte>()
+            val runwayNames = HashSet<String>()
+            for (r in a.runways) {
+                if (!runwayIds.add(r.id)) err("Duplicate runway id ${r.id} at airport ${a.icao}")
+                if (!runwayNames.add(r.name)) err("Duplicate runway name '${r.name}' at airport ${a.icao}")
+                if (!towerFreqRegex.matches(r.towerFrequency.trim())) {
+                    warn("Tower frequency should match 1XX.d–ddd (got '${r.towerFrequency}' for ${a.icao} rwy ${r.name})")
+                }
+            }
+            if (MapEditorByteIds.nextRunwayId(a) == null) warn("No free runway id (0–127) left for airport ${a.icao}")
+
+            val runwayNamesForRefs = a.runways.map { it.name }.toHashSet()
             for ((r1, r2) in a.dependentOppositeRunways) {
-                if (r1 !in runwayNames || r2 !in runwayNames) err("DEPENDENT_OPPOSITE references missing runway(s): $r1 $r2")
+                if (r1 !in runwayNamesForRefs || r2 !in runwayNamesForRefs) err("DEPENDENT_OPPOSITE references missing runway(s): $r1 $r2")
             }
             for ((r1, r2) in a.crossingRunways) {
-                if (r1 !in runwayNames || r2 !in runwayNames) err("CROSSING references missing runway(s): $r1 $r2")
+                if (r1 !in runwayNamesForRefs || r2 !in runwayNamesForRefs) err("CROSSING references missing runway(s): $r1 $r2")
             }
             for (cfg in a.runwayConfigs) {
-                for (r in cfg.departureRunways) if (r !in runwayNames) err("CONFIG ${cfg.id} DEP references missing runway: $r")
-                for (r in cfg.arrivalRunways) if (r !in runwayNames) err("CONFIG ${cfg.id} ARR references missing runway: $r")
+                for (r in cfg.departureRunways) if (r !in runwayNamesForRefs) err("CONFIG ${cfg.id} DEP references missing runway: $r")
+                for (r in cfg.arrivalRunways) if (r !in runwayNamesForRefs) err("CONFIG ${cfg.id} ARR references missing runway: $r")
             }
         }
 
