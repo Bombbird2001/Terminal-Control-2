@@ -1,10 +1,11 @@
 package com.bombbird.terminalcontrol2.editor.validation
 
+import com.bombbird.terminalcontrol2.editor.MapEditorFieldConstraints
 import com.bombbird.terminalcontrol2.editor.undo.MapEditorByteIds
 import com.bombbird.terminalcontrol2.editor.model.AirportMapDefinition
 import com.bombbird.terminalcontrol2.editor.model.MinAltCircleSectorDefinition
 import com.bombbird.terminalcontrol2.editor.model.MinAltPolygonSectorDefinition
-import kotlin.math.sqrt
+import com.bombbird.terminalcontrol2.utilities.calculateDistanceBetweenPoints
 
 data class ValidationProblem(
     val severity: Severity,
@@ -38,14 +39,16 @@ object AirportMapValidator {
             if (!nameSet.add(w.name)) err("Duplicate waypoint name: ${w.name}")
         }
         // Very rough proximity check (O(n^2), but map sizes are manageable)
-        for (i in 0 until map.waypoints.size) {
-            val a = map.waypoints[i]
+        for ((i, wpt1) in map.waypoints.withIndex()) {
             for (j in i + 1 until map.waypoints.size) {
-                val b = map.waypoints[j]
-                val dx = a.positionNm.xNm - b.positionNm.xNm
-                val dy = a.positionNm.yNm - b.positionNm.yNm
-                val dist = sqrt(dx * dx + dy * dy)
-                if (dist <= 0.01f) warn("Waypoints too close: ${a.name} and ${b.name} (dist=${"%.3f".format(dist)}nm)")
+                val wpt2 = map.waypoints[j]
+                val dist = calculateDistanceBetweenPoints(
+                    wpt1.positionNm.xNm,
+                    wpt1.positionNm.yNm,
+                    wpt2.positionNm.xNm,
+                    wpt2.positionNm.yNm,
+                )
+                if (dist <= 0.01f) warn("Waypoints too close: ${wpt1.name} and ${wpt2.name} (dist=${"%.3f".format(dist)}nm)")
             }
         }
 
@@ -67,17 +70,36 @@ object AirportMapValidator {
             if (!airportIcaoSet.add(a.icao)) err("Duplicate AIRPORT ICAO: ${a.icao}")
             if (!airportNameSet.add(a.name)) err("Duplicate AIRPORT name: ${a.name}")
             if (!a.icao.matches(Regex("^[A-Z]{4}$"))) warn("AIRPORT ICAO should be 4 letters (got ${a.icao})")
+            if (a.elevationFt < MapEditorFieldConstraints.MIN_ELEVATION_FT) {
+                err("AIRPORT ${a.icao} elevation must be >= ${MapEditorFieldConstraints.MIN_ELEVATION_FT} ft (got ${a.elevationFt})")
+            }
 
             val runwayIds = HashSet<Byte>()
             val runwayNames = HashSet<String>()
             for (r in a.runways) {
                 if (!runwayIds.add(r.id)) err("Duplicate runway id ${r.id} at airport ${a.icao}")
                 if (!runwayNames.add(r.name)) err("Duplicate runway name '${r.name}' at airport ${a.icao}")
+                if (r.lengthM !in MapEditorFieldConstraints.RUNWAY_LENGTH_M_RANGE) {
+                    err("Runway ${r.name} at ${a.icao}: length must be in ${MapEditorFieldConstraints.RUNWAY_LENGTH_M_RANGE} m (got ${r.lengthM})")
+                }
+                if (r.displacedThresholdM < 0 || r.displacedThresholdM > r.lengthM) {
+                    err("Runway ${r.name} at ${a.icao}: displaced threshold must be 0..length (${r.lengthM} m) (got ${r.displacedThresholdM})")
+                }
+                if (r.intersectionTakeoffLengthM < 0 || r.intersectionTakeoffLengthM > r.lengthM) {
+                    err("Runway ${r.name} at ${a.icao}: intersection takeoff must be 0..length (${r.lengthM} m) (got ${r.intersectionTakeoffLengthM})")
+                }
+                if (!MapEditorFieldConstraints.isValidStoredRunwayTrueHeadingDeg(r.trueHeadingDeg)) {
+                    err("Runway ${r.name} at ${a.icao}: true heading must be in (0, 360] deg (got ${r.trueHeadingDeg})")
+                }
+                if (r.thresholdElevationFt < MapEditorFieldConstraints.MIN_ELEVATION_FT) {
+                    err("Runway ${r.name} at ${a.icao}: threshold elevation must be >= ${MapEditorFieldConstraints.MIN_ELEVATION_FT} ft (got ${r.thresholdElevationFt})")
+                }
                 if (!towerFreqRegex.matches(r.towerFrequency.trim())) {
                     warn("Tower frequency should match 1XX.d–ddd (got '${r.towerFrequency}' for ${a.icao} rwy ${r.name})")
                 }
             }
             if (MapEditorByteIds.nextRunwayId(a) == null) warn("No free runway id (0–127) left for airport ${a.icao}")
+            if (MapEditorByteIds.nextRunwayConfigId(a) == null) warn("No free runway configuration id (0–127) left for airport ${a.icao}")
 
             val runwayNamesForRefs = a.runways.map { it.name }.toHashSet()
             for ((r1, r2) in a.dependentOppositeRunways) {
@@ -87,16 +109,40 @@ object AirportMapValidator {
                 if (r1 !in runwayNamesForRefs || r2 !in runwayNamesForRefs) err("CROSSING references missing runway(s): $r1 $r2")
             }
             for (cfg in a.runwayConfigs) {
-                for (r in cfg.departureRunways) if (r !in runwayNamesForRefs) err("CONFIG ${cfg.id} DEP references missing runway: $r")
-                for (r in cfg.arrivalRunways) if (r !in runwayNamesForRefs) err("CONFIG ${cfg.id} ARR references missing runway: $r")
+                for (r in cfg.departureRunways) {
+                    if (r !in runwayNamesForRefs) warn("CONFIG ${cfg.id} DEP references unknown runway: $r at ${a.icao}")
+                }
+                for (r in cfg.arrivalRunways) {
+                    if (r !in runwayNamesForRefs) warn("CONFIG ${cfg.id} ARR references unknown runway: $r at ${a.icao}")
+                }
+                val depSeen = HashSet<String>()
+                for (r in cfg.departureRunways) {
+                    if (!depSeen.add(r)) warn("CONFIG ${cfg.id} DEP lists duplicate runway: $r at ${a.icao}")
+                }
+                val arrSeen = HashSet<String>()
+                for (r in cfg.arrivalRunways) {
+                    if (!arrSeen.add(r)) warn("CONFIG ${cfg.id} ARR lists duplicate runway: $r at ${a.icao}")
+                }
             }
         }
 
         // Min-alt sectors basic sanity
         for (s in map.minAltSectors) {
             when (s) {
-                is MinAltPolygonSectorDefinition -> if (s.verticesNm.size < 3) warn("MIN_ALT_SECTORS polygon has <3 vertices")
-                is MinAltCircleSectorDefinition -> if (s.radiusNm <= 0f) warn("MIN_ALT_SECTORS circle radius must be > 0")
+                is MinAltPolygonSectorDefinition -> {
+                    if (s.verticesNm.size < 3) warn("MIN_ALT_SECTORS polygon has <3 vertices")
+                    val alt = s.minAltitudeFt
+                    if (alt != null && !MapEditorFieldConstraints.isValidMinAltSectorFt(alt)) {
+                        err("MIN_ALT_SECTORS polygon min altitude must be ${MapEditorFieldConstraints.MIN_ALT_SECTOR_FT_MIN}..${MapEditorFieldConstraints.MIN_ALT_SECTOR_FT_MAX} ft and a multiple of 100 (got $alt)")
+                    }
+                }
+                is MinAltCircleSectorDefinition -> {
+                    if (s.radiusNm <= 0f) warn("MIN_ALT_SECTORS circle radius must be > 0")
+                    val alt = s.minAltitudeFt
+                    if (alt != null && !MapEditorFieldConstraints.isValidMinAltSectorFt(alt)) {
+                        err("MIN_ALT_SECTORS circle min altitude must be ${MapEditorFieldConstraints.MIN_ALT_SECTOR_FT_MIN}..${MapEditorFieldConstraints.MIN_ALT_SECTOR_FT_MAX} ft and a multiple of 100 (got $alt)")
+                    }
+                }
             }
         }
 

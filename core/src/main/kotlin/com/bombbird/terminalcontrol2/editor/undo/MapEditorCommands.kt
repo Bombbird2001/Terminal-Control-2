@@ -7,8 +7,10 @@ import com.bombbird.terminalcontrol2.editor.model.MinAltCircleSectorDefinition
 import com.bombbird.terminalcontrol2.editor.model.MinAltPolygonSectorDefinition
 import com.bombbird.terminalcontrol2.editor.model.MinAltSectorDefinition
 import com.bombbird.terminalcontrol2.editor.model.NmPoint
+import com.bombbird.terminalcontrol2.editor.model.RunwayConfigDefinition
 import com.bombbird.terminalcontrol2.editor.model.RunwayDefinition
 import com.bombbird.terminalcontrol2.editor.model.RunwayLabelPlacement
+import com.bombbird.terminalcontrol2.editor.model.TimeSlot
 import com.bombbird.terminalcontrol2.editor.model.SidDefinition
 import com.bombbird.terminalcontrol2.editor.model.StarDefinition
 import com.bombbird.terminalcontrol2.editor.model.WaypointDefinition
@@ -534,6 +536,123 @@ class SetRunwayTowerFrequencyCommand(
     }
 }
 
+enum class RunwayConfigListSection { DEPARTURE, ARRIVAL }
+
+class AddRunwayConfigCommand(
+    private val list: MutableList<RunwayConfigDefinition>,
+    private val config: RunwayConfigDefinition,
+    private val index: Int,
+) : EditorCommand {
+    override fun execute() {
+        list.add(index, config)
+    }
+
+    override fun undo() {
+        list.removeAt(index)
+    }
+}
+
+class RemoveRunwayConfigCommand(
+    private val list: MutableList<RunwayConfigDefinition>,
+    private val config: RunwayConfigDefinition,
+    private val index: Int,
+) : EditorCommand {
+    override fun execute() {
+        list.removeAt(index)
+    }
+
+    override fun undo() {
+        list.add(index, config)
+    }
+}
+
+class SetRunwayConfigNameCommand(
+    private val config: RunwayConfigDefinition,
+    private val from: String,
+    private val to: String,
+) : EditorCommand {
+    override fun execute() {
+        config.name = to
+    }
+
+    override fun undo() {
+        config.name = from
+    }
+}
+
+class SetRunwayConfigTimeSlotCommand(
+    private val config: RunwayConfigDefinition,
+    private val from: TimeSlot,
+    private val to: TimeSlot,
+) : EditorCommand {
+    override fun execute() {
+        config.timeSlot = to
+    }
+
+    override fun undo() {
+        config.timeSlot = from
+    }
+}
+
+class AddRunwayNameToConfigSectionCommand(
+    private val config: RunwayConfigDefinition,
+    private val section: RunwayConfigListSection,
+    private val runwayName: String,
+    private val index: Int,
+) : EditorCommand {
+    private val list: MutableList<String>
+        get() = when (section) {
+            RunwayConfigListSection.DEPARTURE -> config.departureRunways
+            RunwayConfigListSection.ARRIVAL -> config.arrivalRunways
+        }
+
+    override fun execute() {
+        list.add(index, runwayName)
+    }
+
+    override fun undo() {
+        list.removeAt(index)
+    }
+}
+
+class RemoveRunwayNameFromConfigSectionCommand(
+    private val config: RunwayConfigDefinition,
+    private val section: RunwayConfigListSection,
+    private val runwayName: String,
+    private val index: Int,
+) : EditorCommand {
+    private val list: MutableList<String>
+        get() = when (section) {
+            RunwayConfigListSection.DEPARTURE -> config.departureRunways
+            RunwayConfigListSection.ARRIVAL -> config.arrivalRunways
+        }
+
+    override fun execute() {
+        list.removeAt(index)
+    }
+
+    override fun undo() {
+        list.add(index, runwayName)
+    }
+}
+
+/** Single undo/redo step that applies several commands in order (undo reverses). */
+class CompositeEditorCommand(
+    private val parts: List<EditorCommand>,
+) : EditorCommand {
+    init {
+        require(parts.isNotEmpty()) { "CompositeEditorCommand requires at least one part" }
+    }
+
+    override fun execute() {
+        for (c in parts) c.execute()
+    }
+
+    override fun undo() {
+        for (c in parts.asReversed()) c.undo()
+    }
+}
+
 object MapEditorByteIds {
     /** Next unused airport id in `0..127`, or null if none available. */
     fun nextAirportId(map: AirportMapDefinition): Byte? {
@@ -545,6 +664,13 @@ object MapEditorByteIds {
     /** Next unused runway id within [airport], or null if none available. */
     fun nextRunwayId(airport: AirportDefinition): Byte? {
         val used = airport.runways.map { it.id.toInt() and 0xff }.toHashSet()
+        for (i in 0..127) if (i !in used) return i.toByte()
+        return null
+    }
+
+    /** Next unused runway configuration id within [airport] (`0..127`), or null if none available. */
+    fun nextRunwayConfigId(airport: AirportDefinition): Byte? {
+        val used = airport.runwayConfigs.map { it.id.toInt() and 0xff }.toHashSet()
         for (i in 0..127) if (i !in used) return i.toByte()
         return null
     }

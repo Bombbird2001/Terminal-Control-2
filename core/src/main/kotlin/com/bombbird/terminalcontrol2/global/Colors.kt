@@ -9,3 +9,4 @@ val SECTOR_GREEN = Color(0f, 100f / 255, 0f, 1f)
 val RUNWAY_ACTIVE: Color = Color.WHITE
 val RUNWAY_INACTIVE: Color = Color.DARK_GRAY
 val DARK_GREEN = Color(0x005720ff)
+val EDITOR_AIRPORT_LIME: Color = Color.LIME

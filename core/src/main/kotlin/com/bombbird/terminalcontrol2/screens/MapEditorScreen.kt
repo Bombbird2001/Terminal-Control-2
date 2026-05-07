@@ -19,6 +19,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.Label
 import com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle
 import com.badlogic.gdx.scenes.scene2d.ui.TextArea
 import com.bombbird.terminalcontrol2.editor.EditorLayer
+import com.bombbird.terminalcontrol2.editor.MapEditorFieldConstraints
 import com.bombbird.terminalcontrol2.editor.model.AirportDefinition
 import com.bombbird.terminalcontrol2.editor.model.AirportMapDefinition
 import com.bombbird.terminalcontrol2.editor.model.ApproachDefinition
@@ -27,8 +28,10 @@ import com.bombbird.terminalcontrol2.editor.model.MinAltPolygonSectorDefinition
 import com.bombbird.terminalcontrol2.editor.model.MinAltRestrictionType
 import com.bombbird.terminalcontrol2.editor.model.MinAltSectorDefinition
 import com.bombbird.terminalcontrol2.editor.model.NmPoint
+import com.bombbird.terminalcontrol2.editor.model.RunwayConfigDefinition
 import com.bombbird.terminalcontrol2.editor.model.RunwayDefinition
 import com.bombbird.terminalcontrol2.editor.model.RunwayLabelPlacement
+import com.bombbird.terminalcontrol2.editor.model.TimeSlot
 import com.bombbird.terminalcontrol2.editor.model.SidDefinition
 import com.bombbird.terminalcontrol2.editor.model.StarDefinition
 import com.bombbird.terminalcontrol2.editor.model.WaypointDefinition
@@ -58,9 +61,15 @@ import com.bombbird.terminalcontrol2.editor.undo.SetRunwayThresholdElevationComm
 import com.bombbird.terminalcontrol2.editor.undo.SetRunwayTowerCallsignCommand
 import com.bombbird.terminalcontrol2.editor.undo.SetRunwayTowerFrequencyCommand
 import com.bombbird.terminalcontrol2.editor.undo.SetRunwayTrueHeadingCommand
+import com.bombbird.terminalcontrol2.editor.undo.CompositeEditorCommand
+import com.bombbird.terminalcontrol2.editor.undo.EditorCommand
 import com.bombbird.terminalcontrol2.editor.undo.AddAirportCommand
 import com.bombbird.terminalcontrol2.editor.undo.AddRunwayCommand
+import com.bombbird.terminalcontrol2.editor.undo.AddRunwayConfigCommand
+import com.bombbird.terminalcontrol2.editor.undo.AddRunwayNameToConfigSectionCommand
+import com.bombbird.terminalcontrol2.editor.undo.RemoveRunwayConfigCommand
 import com.bombbird.terminalcontrol2.editor.undo.MapEditorByteIds
+import com.bombbird.terminalcontrol2.editor.undo.RemoveRunwayNameFromConfigSectionCommand
 import com.bombbird.terminalcontrol2.editor.undo.MoveAirportPositionCommand
 import com.bombbird.terminalcontrol2.editor.undo.MoveRunwayThresholdCommand
 import com.bombbird.terminalcontrol2.editor.undo.MoveRunwayToAirportCommand
@@ -70,6 +79,9 @@ import com.bombbird.terminalcontrol2.editor.undo.RenameRunwayCommand
 import com.bombbird.terminalcontrol2.editor.undo.RenameSidCommand
 import com.bombbird.terminalcontrol2.editor.undo.RenameStarCommand
 import com.bombbird.terminalcontrol2.editor.undo.RenameWaypointCommand
+import com.bombbird.terminalcontrol2.editor.undo.RunwayConfigListSection
+import com.bombbird.terminalcontrol2.editor.undo.SetRunwayConfigNameCommand
+import com.bombbird.terminalcontrol2.editor.undo.SetRunwayConfigTimeSlotCommand
 import com.bombbird.terminalcontrol2.editor.undo.UndoRedoHistory
 import com.bombbird.terminalcontrol2.editor.validation.AirportMapValidator
 import com.bombbird.terminalcontrol2.global.*
@@ -78,6 +90,7 @@ import com.bombbird.terminalcontrol2.ui.addChangeListener
 import com.bombbird.terminalcontrol2.ui.panes.MapEditorPropertiesPane
 import com.bombbird.terminalcontrol2.ui.safeStage
 import com.bombbird.terminalcontrol2.utilities.ShapeRendererBoundingBox
+import com.bombbird.terminalcontrol2.utilities.calculateDistanceBetweenPoints
 import com.bombbird.terminalcontrol2.utilities.mToPx
 import com.bombbird.terminalcontrol2.utilities.nmToPx
 import com.bombbird.terminalcontrol2.utilities.pxToNm
@@ -89,11 +102,9 @@ import ktx.scene2d.label
 import ktx.scene2d.table
 import ktx.scene2d.textArea
 import ktx.scene2d.textButton
-import kotlin.math.hypot
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
-import kotlin.math.sqrt
 import ktx.graphics.moveTo
 import ktx.scene2d.Scene2DSkin
 
@@ -155,6 +166,19 @@ class MapEditorScreen(
         data class Sid(val airport: AirportDefinition, val sid: SidDefinition) : Selected
         data class Star(val airport: AirportDefinition, val star: StarDefinition) : Selected
     }
+
+    private sealed interface PropsPaneMode {
+        data object Main : PropsPaneMode
+        data class RunwayConfigList(val airport: AirportDefinition) : PropsPaneMode
+        data class RunwayConfigDetail(val airport: AirportDefinition, val cfg: RunwayConfigDefinition) : PropsPaneMode
+        data class PickRunwayForConfig(
+            val airport: AirportDefinition,
+            val cfg: RunwayConfigDefinition,
+            val section: RunwayConfigListSection,
+        ) : PropsPaneMode
+    }
+
+    private var propsPaneMode: PropsPaneMode = PropsPaneMode.Main
 
     private val activeLayer: EditorLayer get() = propertiesPane.layerSelectBox.selected
 
@@ -221,6 +245,20 @@ class MapEditorScreen(
                 onRunwayTowerCsChanged = { applyRunwayTowerCsField() },
                 onRunwayTowerFreqChanged = { applyRunwayTowerFreqField() },
                 onDeleteRunway = { deleteSelectedRunway() },
+                onOpenRunwayConfigList = { openRunwayConfigListFromToolbar() },
+                onRunwayConfigListBack = { runwayConfigListBack() },
+                onRunwayConfigSelected = { onRunwayConfigPickedFromList(it) },
+                onRunwayConfigDetailBack = { runwayConfigDetailBack() },
+                onAddRunwayConfiguration = { addRunwayConfiguration() },
+                onDeleteRunwayConfiguration = { deleteRunwayConfiguration() },
+                onRunwayConfigNameChanged = { applyRunwayConfigNameField() },
+                onRunwayConfigTimeSlotChanged = { applyRunwayConfigTimeSlotField() },
+                onRunwayConfigRemoveDepRunway = { removeRunwayFromConfigSection(RunwayConfigListSection.DEPARTURE, it) },
+                onRunwayConfigRemoveArrRunway = { removeRunwayFromConfigSection(RunwayConfigListSection.ARRIVAL, it) },
+                onRunwayConfigStartPickDepRunway = { startPickRunwayForConfig(RunwayConfigListSection.DEPARTURE) },
+                onRunwayConfigStartPickArrRunway = { startPickRunwayForConfig(RunwayConfigListSection.ARRIVAL) },
+                onRunwayConfigEditNtzPlaceholder = { },
+                onRunwayConfigEditParallelDepsPlaceholder = { },
             ),
         )
         buildToolbar()
@@ -380,14 +418,17 @@ class MapEditorScreen(
 
     private fun onEditorLayerChanged() {
         cancelPendingSelect()
+        propsPaneMode = PropsPaneMode.Main
         setSelected(null)
         needsValidation = true
     }
 
     private fun performUndo() {
         history.undo()
+        exitPickModeAfterUndoRedoIfNeeded()
         discardStaleMinAltSelectionIfNeeded()
         discardStaleAirportRunwaySelectionIfNeeded()
+        coercePropsPaneModeToValidState()
         markDirty()
         syncFieldsFromSelection()
         needsValidation = true
@@ -396,8 +437,10 @@ class MapEditorScreen(
 
     private fun performRedo() {
         history.redo()
+        exitPickModeAfterUndoRedoIfNeeded()
         discardStaleMinAltSelectionIfNeeded()
         discardStaleAirportRunwaySelectionIfNeeded()
+        coercePropsPaneModeToValidState()
         markDirty()
         syncFieldsFromSelection()
         needsValidation = true
@@ -554,10 +597,12 @@ class MapEditorScreen(
 
     override fun touchDragged(screenX: Int, screenY: Int, pointer: Int): Boolean {
         if (pendingSelect != null && pendingSelectPointer == pointer) {
-            val move = hypot(
-                (screenX - pickDownScreenX).toDouble(),
-                (screenY - pickDownScreenY).toDouble(),
-            ).toFloat()
+            val move = calculateDistanceBetweenPoints(
+                pickDownScreenX.toFloat(),
+                pickDownScreenY.toFloat(),
+                screenX.toFloat(),
+                screenY.toFloat(),
+            )
             if (move > PICK_CANCEL_MOVE_PX) cancelPendingSelect()
         }
         if (draggingPointer != pointer) return false
@@ -603,6 +648,7 @@ class MapEditorScreen(
             pts[i * 2] = cx + MathUtils.cos(ang) * rr
             pts[i * 2 + 1] = cy + MathUtils.sin(ang) * rr
         }
+        shapeRenderer.color = EDITOR_AIRPORT_LIME
         for (i in 0 until 10) {
             val j = (i + 1) % 10
             shapeRenderer.line(pts[i * 2], pts[i * 2 + 1], pts[j * 2], pts[j * 2 + 1])
@@ -681,8 +727,8 @@ class MapEditorScreen(
         // Use the same base direction convention as runway rectangle rendering.
         val dir = Vector2(Vector2.Y).rotateDeg(-rwy.trueHeadingDeg).nor()
         return when (rwy.labelPlacement) {
-            RunwayLabelPlacement.LABEL_LEFT -> dir.cpy().rotate90(-1)
-            RunwayLabelPlacement.LABEL_RIGHT -> dir.cpy().rotate90(1)
+            RunwayLabelPlacement.LABEL_RIGHT -> dir.cpy().rotate90(-1)
+            RunwayLabelPlacement.LABEL_LEFT -> dir.cpy().rotate90(1)
             RunwayLabelPlacement.LABEL_BEFORE -> dir.scl(-1f)
         }
     }
@@ -704,7 +750,7 @@ class MapEditorScreen(
                 lbl.validate()
 
                 val spacingFromCentre =
-                    sqrt(lbl.prefWidth * lbl.prefWidth + lbl.prefHeight * lbl.prefHeight) / 2f +
+                    calculateDistanceBetweenPoints(0f, 0f, lbl.prefWidth, lbl.prefHeight) / 2f +
                         3f / radarCam.zoom +
                         if (rwy.labelPlacement == RunwayLabelPlacement.LABEL_BEFORE) 0f else rwyWidthPx / 2f
                 val offsetDir = runwayLabelOffsetDir(rwy).scl(spacingFromCentre)
@@ -745,11 +791,72 @@ class MapEditorScreen(
     }
 
     private fun setSelected(newSelection: Selected?) {
+        adjustPropsPaneModeBeforeSelectionChange(newSelection)
         selected = newSelection
         draggingPointer = null
         isDraggingMapObject = false
         dragStartNm = null
         syncFieldsFromSelection()
+    }
+
+    private fun adjustPropsPaneModeBeforeSelectionChange(newSelection: Selected?) {
+        when (val m = propsPaneMode) {
+            is PropsPaneMode.Main -> Unit
+            is PropsPaneMode.PickRunwayForConfig -> {
+                propsPaneMode = when (newSelection) {
+                    is Selected.Airport ->
+                        if (newSelection.airport === m.airport) PropsPaneMode.RunwayConfigDetail(m.airport, m.cfg)
+                        else PropsPaneMode.Main
+                    null -> PropsPaneMode.Main
+                    else -> PropsPaneMode.Main
+                }
+            }
+            is PropsPaneMode.RunwayConfigList -> {
+                val ok = newSelection is Selected.Airport && newSelection.airport === m.airport
+                if (!ok) propsPaneMode = PropsPaneMode.Main
+            }
+            is PropsPaneMode.RunwayConfigDetail -> {
+                val ok = newSelection is Selected.Airport && newSelection.airport === m.airport
+                if (!ok) propsPaneMode = PropsPaneMode.Main
+            }
+        }
+    }
+
+    private fun isAirportContextSelected(airport: AirportDefinition): Boolean {
+        val sel = selected as? Selected.Airport ?: return false
+        return sel.airport === airport
+    }
+
+    private fun coercePropsPaneModeToValidState() {
+        when (val m = propsPaneMode) {
+            is PropsPaneMode.Main -> Unit
+            is PropsPaneMode.RunwayConfigList -> {
+                if (map.airports.none { it === m.airport } || !isAirportContextSelected(m.airport)) {
+                    propsPaneMode = PropsPaneMode.Main
+                }
+            }
+            is PropsPaneMode.RunwayConfigDetail -> {
+                when {
+                    map.airports.none { it === m.airport } || !isAirportContextSelected(m.airport) ->
+                        propsPaneMode = PropsPaneMode.Main
+                    m.airport.runwayConfigs.none { it === m.cfg } ->
+                        propsPaneMode = PropsPaneMode.RunwayConfigList(m.airport)
+                }
+            }
+            is PropsPaneMode.PickRunwayForConfig -> {
+                when {
+                    map.airports.none { it === m.airport } || !isAirportContextSelected(m.airport) ->
+                        propsPaneMode = PropsPaneMode.Main
+                    m.airport.runwayConfigs.none { it === m.cfg } ->
+                        propsPaneMode = PropsPaneMode.RunwayConfigList(m.airport)
+                }
+            }
+        }
+    }
+
+    private fun exitPickModeAfterUndoRedoIfNeeded() {
+        val m = propsPaneMode as? PropsPaneMode.PickRunwayForConfig ?: return
+        propsPaneMode = PropsPaneMode.RunwayConfigDetail(m.airport, m.cfg)
     }
 
     private fun cancelPendingSelect() {
@@ -767,6 +874,41 @@ class MapEditorScreen(
             cancelPendingSelect()
             return
         }
+
+        when (val pm = propsPaneMode) {
+            is PropsPaneMode.PickRunwayForConfig -> {
+                val rwySel = sel as? Selected.Runway ?: run {
+                    cancelPendingSelect()
+                    return
+                }
+                if (rwySel.airport !== pm.airport) {
+                    cancelPendingSelect()
+                    return
+                }
+                pendingSelectTask?.cancel()
+                pendingSelectTask = null
+                pendingSelect = null
+                pendingSelectPointer = -1
+
+                val name = rwySel.rwy.name
+                val section = pm.section
+                val list = when (section) {
+                    RunwayConfigListSection.DEPARTURE -> pm.cfg.departureRunways
+                    RunwayConfigListSection.ARRIVAL -> pm.cfg.arrivalRunways
+                }
+                if (name !in list) {
+                    history.execute(AddRunwayNameToConfigSectionCommand(pm.cfg, section, name, list.size))
+                    markDirty()
+                    updateUndoRedoButtons()
+                }
+                propsPaneMode = PropsPaneMode.RunwayConfigDetail(pm.airport, pm.cfg)
+                syncFieldsFromSelection()
+                needsValidation = true
+                return
+            }
+            else -> Unit
+        }
+
         pendingSelect = null
         pendingSelectTask = null
         pendingSelectPointer = -1
@@ -781,6 +923,24 @@ class MapEditorScreen(
             }
             else -> {
                 selected = sel
+                startDraggingCommittedSelection(pointer)
+            }
+        }
+    }
+
+    /**
+     * After [selected] is set to a draggable object, begins drag tracking for [pointer] without the pick hold delay.
+     * No-op for [Selected.Sid] / [Selected.Star] (not draggable).
+     */
+    private fun startDraggingCommittedSelection(pointer: Int) {
+        val sel = selected ?: return
+        when (sel) {
+            is Selected.Sid, is Selected.Star -> {
+                draggingPointer = null
+                isDraggingMapObject = false
+                dragStartNm = null
+            }
+            else -> {
                 draggingPointer = pointer
                 isDraggingMapObject = true
                 dragStartNm = when (sel) {
@@ -795,113 +955,263 @@ class MapEditorScreen(
                     is Selected.Approach -> NmPoint(sel.approach.positionNm.xNm, sel.approach.positionNm.yNm)
                     is Selected.Sid, is Selected.Star -> null
                 }
-                syncFieldsFromSelection()
             }
         }
+        syncFieldsFromSelection()
     }
 
     private fun syncFieldsFromSelection() {
         syncingFields = true
         try {
-            propertiesPane.prepareSelectionSync()
-            when (val sel = selected) {
-                null -> propertiesPane.bindNoSelection()
-                is Selected.Waypoint -> propertiesPane.bindWaypoint(
-                    id = sel.wpt.id,
-                    name = sel.wpt.name,
-                    xNm = sel.wpt.positionNm.xNm,
-                    yNm = sel.wpt.positionNm.yNm,
-                )
-                is Selected.Airport -> propertiesPane.bindAirport(
-                    id = sel.airport.id,
-                    icao = sel.airport.icao,
-                    displayName = sel.airport.name,
-                    ratio = sel.airport.ratio,
-                    maxAdvanceDepartures = sel.airport.maxAdvanceDepartures,
-                    elevationFt = sel.airport.elevationFt,
-                    xNm = sel.airport.positionNm.xNm,
-                    yNm = sel.airport.positionNm.yNm,
-                )
-                is Selected.Runway -> propertiesPane.bindRunway(
-                    parentIcaoList = map.airports.map { it.icao },
-                    parentIcao = sel.airport.icao,
-                    designator = sel.rwy.name,
-                    thresholdXNm = sel.rwy.thresholdNm.xNm,
-                    thresholdYNm = sel.rwy.thresholdNm.yNm,
-                    lengthM = sel.rwy.lengthM,
-                    trackDeg = sel.rwy.trueHeadingDeg,
-                    displacedM = sel.rwy.displacedThresholdM,
-                    intersectionM = sel.rwy.intersectionTakeoffLengthM,
-                    thresholdElevFt = sel.rwy.thresholdElevationFt,
-                    labelPlacement = sel.rwy.labelPlacement,
-                    towerCallsign = sel.rwy.towerCallsign,
-                    towerFrequency = sel.rwy.towerFrequency,
-                )
-                is Selected.MinAltPolygonVertex -> {
-                    val sector = sel.sector
-                    val t = sector.restrictionType
-                    val title =
-                        "${if (t == MinAltRestrictionType.MVA) "MVA" else "Restricted"} polygon vertex ${sel.vertexIndex + 1}/${sector.verticesNm.size}"
-                    val v = sector.verticesNm[sel.vertexIndex]
-                    val anchor = minAltGeometricAnchorNm(sector)
-                    val lp = sector.labelPositionNm
-                    propertiesPane.bindMinAltPolygonVertex(
-                        title = title,
-                        vertexXNm = v.xNm,
-                        vertexYNm = v.yNm,
-                        minAltitudeDisplay = sector.minAltitudeFt?.toString() ?: "UNL",
-                        labelOffsetXNm = (lp?.xNm ?: anchor.xNm) - anchor.xNm,
-                        labelOffsetYNm = (lp?.yNm ?: anchor.yNm) - anchor.yNm,
-                        disableDeleteVertexBecauseMinPolygonSize = sector.verticesNm.size <= 3,
-                    )
+            coercePropsPaneModeToValidState()
+            when (val mode = propsPaneMode) {
+                is PropsPaneMode.RunwayConfigList -> {
+                    propertiesPane.prepareSelectionSync()
+                    propertiesPane.bindRunwayConfigList(mode.airport)
                 }
-                is Selected.MinAltCircle -> {
-                    val sector = sel.sector
-                    val t = sector.restrictionType
-                    val title = "${if (t == MinAltRestrictionType.MVA) "MVA" else "Restricted"} circle center"
-                    val anchor = sector.centerNm
-                    val lp = sector.labelPositionNm
-                    propertiesPane.bindMinAltCircleCenter(
-                        title = title,
-                        centerXNm = sector.centerNm.xNm,
-                        centerYNm = sector.centerNm.yNm,
-                        minAltitudeDisplay = sector.minAltitudeFt?.toString() ?: "UNL",
-                        radiusNm = sector.radiusNm,
-                        labelOffsetXNm = (lp?.xNm ?: anchor.xNm) - anchor.xNm,
-                        labelOffsetYNm = (lp?.yNm ?: anchor.yNm) - anchor.yNm,
-                    )
+                is PropsPaneMode.RunwayConfigDetail -> {
+                    propertiesPane.prepareSelectionSync()
+                    propertiesPane.bindRunwayConfigDetail(mode.airport.icao, mode.cfg, pickSection = null)
                 }
-                is Selected.Approach -> propertiesPane.bindApproach(
-                    icao = sel.airport.icao,
-                    name = sel.approach.name,
-                    xNm = sel.approach.positionNm.xNm,
-                    yNm = sel.approach.positionNm.yNm,
-                )
-                is Selected.Sid -> {
-                    val i = sel.airport.sids.indexOf(sel.sid)
-                    val p = if (i >= 0) sidPickNm(sel.airport, i, sel.airport.sids.size) else sel.airport.positionNm
-                    propertiesPane.bindSid(
-                        icao = sel.airport.icao,
-                        name = sel.sid.name,
-                        xNm = p.xNm,
-                        yNm = p.yNm,
-                    )
+                is PropsPaneMode.PickRunwayForConfig -> {
+                    propertiesPane.prepareSelectionSync()
+                    propertiesPane.bindRunwayConfigDetail(mode.airport.icao, mode.cfg, pickSection = mode.section)
                 }
-                is Selected.Star -> {
-                    val i = sel.airport.stars.indexOf(sel.star)
-                    val p = if (i >= 0) starPickNm(sel.airport, i, sel.airport.stars.size) else sel.airport.positionNm
-                    propertiesPane.bindStar(
-                        icao = sel.airport.icao,
-                        name = sel.star.name,
-                        xNm = p.xNm,
-                        yNm = p.yNm,
-                    )
+                is PropsPaneMode.Main -> {
+                    propertiesPane.prepareSelectionSync()
+                    when (val sel = selected) {
+                        null -> propertiesPane.bindNoSelection()
+                        is Selected.Waypoint -> propertiesPane.bindWaypoint(
+                            id = sel.wpt.id,
+                            name = sel.wpt.name,
+                            xNm = sel.wpt.positionNm.xNm,
+                            yNm = sel.wpt.positionNm.yNm,
+                        )
+                        is Selected.Airport -> propertiesPane.bindAirport(
+                            id = sel.airport.id,
+                            icao = sel.airport.icao,
+                            displayName = sel.airport.name,
+                            ratio = sel.airport.ratio,
+                            maxAdvanceDepartures = sel.airport.maxAdvanceDepartures,
+                            elevationFt = sel.airport.elevationFt,
+                            xNm = sel.airport.positionNm.xNm,
+                            yNm = sel.airport.positionNm.yNm,
+                        )
+                        is Selected.Runway -> propertiesPane.bindRunway(
+                            parentIcaoList = map.airports.map { it.icao },
+                            parentIcao = sel.airport.icao,
+                            designator = sel.rwy.name,
+                            thresholdXNm = sel.rwy.thresholdNm.xNm,
+                            thresholdYNm = sel.rwy.thresholdNm.yNm,
+                            lengthM = sel.rwy.lengthM,
+                            trackDeg = sel.rwy.trueHeadingDeg,
+                            displacedM = sel.rwy.displacedThresholdM,
+                            intersectionM = sel.rwy.intersectionTakeoffLengthM,
+                            thresholdElevFt = sel.rwy.thresholdElevationFt,
+                            labelPlacement = sel.rwy.labelPlacement,
+                            towerCallsign = sel.rwy.towerCallsign,
+                            towerFrequency = sel.rwy.towerFrequency,
+                        )
+                        is Selected.MinAltPolygonVertex -> {
+                            val sector = sel.sector
+                            val t = sector.restrictionType
+                            val title =
+                                "${if (t == MinAltRestrictionType.MVA) "MVA" else "Restricted"} polygon vertex ${sel.vertexIndex + 1}/${sector.verticesNm.size}"
+                            val v = sector.verticesNm[sel.vertexIndex]
+                            val anchor = minAltGeometricAnchorNm(sector)
+                            val lp = sector.labelPositionNm
+                            propertiesPane.bindMinAltPolygonVertex(
+                                title = title,
+                                vertexXNm = v.xNm,
+                                vertexYNm = v.yNm,
+                                minAltitudeDisplay = sector.minAltitudeFt?.toString() ?: "UNL",
+                                labelOffsetXNm = (lp?.xNm ?: anchor.xNm) - anchor.xNm,
+                                labelOffsetYNm = (lp?.yNm ?: anchor.yNm) - anchor.yNm,
+                                disableDeleteVertexBecauseMinPolygonSize = sector.verticesNm.size <= 3,
+                            )
+                        }
+                        is Selected.MinAltCircle -> {
+                            val sector = sel.sector
+                            val t = sector.restrictionType
+                            val title = "${if (t == MinAltRestrictionType.MVA) "MVA" else "Restricted"} circle center"
+                            val anchor = sector.centerNm
+                            val lp = sector.labelPositionNm
+                            propertiesPane.bindMinAltCircleCenter(
+                                title = title,
+                                centerXNm = sector.centerNm.xNm,
+                                centerYNm = sector.centerNm.yNm,
+                                minAltitudeDisplay = sector.minAltitudeFt?.toString() ?: "UNL",
+                                radiusNm = sector.radiusNm,
+                                labelOffsetXNm = (lp?.xNm ?: anchor.xNm) - anchor.xNm,
+                                labelOffsetYNm = (lp?.yNm ?: anchor.yNm) - anchor.yNm,
+                            )
+                        }
+                        is Selected.Approach -> propertiesPane.bindApproach(
+                            icao = sel.airport.icao,
+                            name = sel.approach.name,
+                            xNm = sel.approach.positionNm.xNm,
+                            yNm = sel.approach.positionNm.yNm,
+                        )
+                        is Selected.Sid -> {
+                            val i = sel.airport.sids.indexOf(sel.sid)
+                            val p = if (i >= 0) sidPickNm(sel.airport, i, sel.airport.sids.size) else sel.airport.positionNm
+                            propertiesPane.bindSid(
+                                icao = sel.airport.icao,
+                                name = sel.sid.name,
+                                xNm = p.xNm,
+                                yNm = p.yNm,
+                            )
+                        }
+                        is Selected.Star -> {
+                            val i = sel.airport.stars.indexOf(sel.star)
+                            val p = if (i >= 0) starPickNm(sel.airport, i, sel.airport.stars.size) else sel.airport.positionNm
+                            propertiesPane.bindStar(
+                                icao = sel.airport.icao,
+                                name = sel.star.name,
+                                xNm = p.xNm,
+                                yNm = p.yNm,
+                            )
+                        }
+                    }
                 }
             }
         } finally {
             syncingFields = false
-            propertiesPane.syncEmptyStateToolVisibility(mapObjectSelected = selected != null)
+            val listActive = propsPaneMode is PropsPaneMode.RunwayConfigList
+            val configActive = propsPaneMode is PropsPaneMode.RunwayConfigDetail || propsPaneMode is PropsPaneMode.PickRunwayForConfig
+            propertiesPane.syncEmptyStateToolVisibility(
+                mapObjectSelected = selected != null,
+                runwayConfigListActive = listActive,
+                runwayConfigDetailsActive = configActive,
+            )
         }
+    }
+
+    private fun activeRunwayConfigDetail(): Pair<AirportDefinition, RunwayConfigDefinition>? =
+        when (val m = propsPaneMode) {
+            is PropsPaneMode.RunwayConfigDetail -> m.airport to m.cfg
+            is PropsPaneMode.PickRunwayForConfig -> m.airport to m.cfg
+            else -> null
+        }
+
+    private fun openRunwayConfigListFromToolbar() {
+        val sel = selected as? Selected.Airport ?: return
+        propsPaneMode = PropsPaneMode.RunwayConfigList(sel.airport)
+        syncFieldsFromSelection()
+    }
+
+    private fun runwayConfigListBack() {
+        val arpt = (propsPaneMode as? PropsPaneMode.RunwayConfigList)?.airport
+        propsPaneMode = PropsPaneMode.Main
+        if (arpt != null) {
+            selected = Selected.Airport(arpt)
+            draggingPointer = null
+            isDraggingMapObject = false
+            dragStartNm = null
+        }
+        syncFieldsFromSelection()
+    }
+
+    private fun runwayConfigDetailBack() {
+        when (val m = propsPaneMode) {
+            is PropsPaneMode.PickRunwayForConfig -> {
+                cancelPendingSelect()
+                propsPaneMode = PropsPaneMode.RunwayConfigDetail(m.airport, m.cfg)
+                if (selected !is Selected.Airport || (selected as Selected.Airport).airport !== m.airport) {
+                    selected = Selected.Airport(m.airport)
+                    draggingPointer = null
+                    isDraggingMapObject = false
+                    dragStartNm = null
+                }
+                syncFieldsFromSelection()
+            }
+            is PropsPaneMode.RunwayConfigDetail -> {
+                propsPaneMode = PropsPaneMode.RunwayConfigList(m.airport)
+                if (selected !is Selected.Airport || (selected as Selected.Airport).airport !== m.airport) {
+                    selected = Selected.Airport(m.airport)
+                    draggingPointer = null
+                    isDraggingMapObject = false
+                    dragStartNm = null
+                }
+                syncFieldsFromSelection()
+            }
+            else -> Unit
+        }
+    }
+
+    private fun onRunwayConfigPickedFromList(cfg: RunwayConfigDefinition) {
+        val m = propsPaneMode as? PropsPaneMode.RunwayConfigList ?: return
+        propsPaneMode = PropsPaneMode.RunwayConfigDetail(m.airport, cfg)
+        syncFieldsFromSelection()
+    }
+
+    private fun addRunwayConfiguration() {
+        val m = propsPaneMode as? PropsPaneMode.RunwayConfigList ?: return
+        val id = MapEditorByteIds.nextRunwayConfigId(m.airport) ?: return
+        val cfg = RunwayConfigDefinition(id = id, timeSlot = TimeSlot.DAY_NIGHT)
+        val idx = m.airport.runwayConfigs.size
+        history.execute(AddRunwayConfigCommand(m.airport.runwayConfigs, cfg, idx))
+        markDirty()
+        updateUndoRedoButtons()
+        propsPaneMode = PropsPaneMode.RunwayConfigDetail(m.airport, cfg)
+        syncFieldsFromSelection()
+        needsValidation = true
+    }
+
+    private fun deleteRunwayConfiguration() {
+        val (arpt, cfg) = activeRunwayConfigDetail() ?: return
+        val idx = arpt.runwayConfigs.indexOf(cfg)
+        if (idx < 0) return
+        history.execute(RemoveRunwayConfigCommand(arpt.runwayConfigs, cfg, idx))
+        markDirty()
+        updateUndoRedoButtons()
+        runwayConfigDetailBack()
+    }
+
+    private fun startPickRunwayForConfig(section: RunwayConfigListSection) {
+        val m = propsPaneMode as? PropsPaneMode.RunwayConfigDetail ?: return
+        propsPaneMode = PropsPaneMode.PickRunwayForConfig(m.airport, m.cfg, section)
+        cancelPendingSelect()
+        syncFieldsFromSelection()
+    }
+
+    private fun applyRunwayConfigNameField() {
+        if (syncingFields) return
+        val (_, cfg) = activeRunwayConfigDetail() ?: return
+        val text = propertiesPane.runwayConfigNameField.text.trim()
+        val old = cfg.name
+        if (old == text) return
+        history.execute(SetRunwayConfigNameCommand(cfg, old, text))
+        markDirty()
+        updateUndoRedoButtons()
+        needsValidation = true
+    }
+
+    private fun applyRunwayConfigTimeSlotField() {
+        if (syncingFields) return
+        val (_, cfg) = activeRunwayConfigDetail() ?: return
+        val raw = propertiesPane.runwayConfigTimeSlotSelectBox.selected
+        val newSlot = runCatching { TimeSlot.valueOf(raw) }.getOrElse { return }
+        if (cfg.timeSlot == newSlot) return
+        history.execute(SetRunwayConfigTimeSlotCommand(cfg, cfg.timeSlot, newSlot))
+        markDirty()
+        updateUndoRedoButtons()
+        needsValidation = true
+    }
+
+    private fun removeRunwayFromConfigSection(section: RunwayConfigListSection, index: Int) {
+        val (_, cfg) = activeRunwayConfigDetail() ?: return
+        val list = when (section) {
+            RunwayConfigListSection.DEPARTURE -> cfg.departureRunways
+            RunwayConfigListSection.ARRIVAL -> cfg.arrivalRunways
+        }
+        if (index !in list.indices) return
+        val name = list[index]
+        history.execute(RemoveRunwayNameFromConfigSectionCommand(cfg, section, name, index))
+        markDirty()
+        updateUndoRedoButtons()
+        syncFieldsFromSelection()
+        needsValidation = true
     }
 
     private fun applyNameField() {
@@ -1062,20 +1372,23 @@ class MapEditorScreen(
         when (activeLayer) {
             EditorLayer.WAYPOINTS -> {
                 for (wpt in map.waypoints) {
-                    val d = sqrt(dist2Px(toPx(wpt.positionNm), worldPx))
+                    val p = toPx(wpt.positionNm)
+                    val d = calculateDistanceBetweenPoints(p.x, p.y, worldPx.x, worldPx.y)
                     if (d <= PICK_THRESHOLD_PX) offer(Selected.Waypoint(wpt), d)
                 }
             }
             EditorLayer.AIRPORTS -> {
                 for (arpt in map.airports) {
-                    val d = sqrt(dist2Px(toPx(arpt.positionNm), worldPx))
+                    val p = toPx(arpt.positionNm)
+                    val d = calculateDistanceBetweenPoints(p.x, p.y, worldPx.x, worldPx.y)
                     if (d <= PICK_THRESHOLD_PX) offer(Selected.Airport(arpt), d)
                 }
             }
             EditorLayer.RUNWAYS -> {
                 for (arpt in map.airports) {
                     for (rwy in arpt.runways) {
-                        val d = sqrt(dist2Px(toPx(rwy.thresholdNm), worldPx))
+                        val p = toPx(rwy.thresholdNm)
+                        val d = calculateDistanceBetweenPoints(p.x, p.y, worldPx.x, worldPx.y)
                         if (d <= PICK_THRESHOLD_PX) offer(Selected.Runway(arpt, rwy), d)
                     }
                 }
@@ -1085,7 +1398,8 @@ class MapEditorScreen(
             EditorLayer.APPROACHES -> {
                 for (arpt in map.airports) {
                     for (apch in arpt.approaches) {
-                        val d = sqrt(dist2Px(toPx(apch.positionNm), worldPx))
+                        val p = toPx(apch.positionNm)
+                        val d = calculateDistanceBetweenPoints(p.x, p.y, worldPx.x, worldPx.y)
                         if (d <= PICK_THRESHOLD_PX) offer(Selected.Approach(arpt, apch), d)
                     }
                 }
@@ -1095,20 +1409,31 @@ class MapEditorScreen(
         return best
     }
 
+    private fun pickClosestRunwayThresholdForAirport(worldPx: Vector2, airport: AirportDefinition): PickHit? {
+        var best: PickHit? = null
+        for (rwy in airport.runways) {
+            val p = toPx(rwy.thresholdNm)
+            val d = calculateDistanceBetweenPoints(p.x, p.y, worldPx.x, worldPx.y)
+            if (d <= PICK_THRESHOLD_PX && (best == null || d < best.metricPx)) {
+                best = PickHit(Selected.Runway(airport, rwy), d)
+            }
+        }
+        return best
+    }
+
     private fun pickMinAltHits(worldPx: Vector2, want: MinAltRestrictionType, offer: (Selected, Float) -> Unit) {
         for (sector in map.minAltSectors) {
             when (sector) {
                 is MinAltPolygonSectorDefinition -> if (sector.restrictionType == want) {
                     sector.verticesNm.forEachIndexed { i, v ->
-                        val d = sqrt(dist2Px(toPx(v), worldPx))
+                        val pv = toPx(v)
+                        val d = calculateDistanceBetweenPoints(pv.x, pv.y, worldPx.x, worldPx.y)
                         if (d <= PICK_THRESHOLD_PX) offer(Selected.MinAltPolygonVertex(sector, i), d)
                     }
                 }
                 is MinAltCircleSectorDefinition -> if (sector.restrictionType == want) {
                     val c = toPx(sector.centerNm)
-                    val dx = worldPx.x - c.x
-                    val dy = worldPx.y - c.y
-                    val d = sqrt(dx * dx + dy * dy)
+                    val d = calculateDistanceBetweenPoints(c.x, c.y, worldPx.x, worldPx.y)
                     val rPx = nmToPx(sector.radiusNm)
                     when {
                         d <= rPx -> offer(Selected.MinAltCircle(sector), d)
@@ -1123,13 +1448,46 @@ class MapEditorScreen(
         if (button != Input.Buttons.LEFT) return false
         val worldPx = unprojectFromRadarCamera(screenX.toFloat(), screenY.toFloat())
 
+        val pickCfgMode = propsPaneMode as? PropsPaneMode.PickRunwayForConfig
+        if (pickCfgMode != null) {
+            cancelPendingSelect()
+            val hitPick = pickClosestRunwayThresholdForAirport(worldPx, pickCfgMode.airport)
+            if (hitPick == null) {
+                propsPaneMode = PropsPaneMode.RunwayConfigDetail(pickCfgMode.airport, pickCfgMode.cfg)
+                syncFieldsFromSelection()
+                return false
+            }
+            pickDownScreenX = screenX
+            pickDownScreenY = screenY
+            pendingSelect = hitPick.selected
+            pendingSelectPointer = pointer
+            pendingSelectTask = Timer.schedule(object : Timer.Task() {
+                override fun run() {
+                    commitPendingSelectIfStillValid()
+                }
+            }, PICK_SELECT_DELAY_SEC)
+            return true
+        }
+
         val hit = pickClosestHit(worldPx)
         if (hit != null) {
             cancelPendingSelect()
-            pendingSelect = hit.selected
-            pendingSelectPointer = pointer
             pickDownScreenX = screenX
             pickDownScreenY = screenY
+            if (hit.selected == selected && selected != null) {
+                when (selected) {
+                    is Selected.Sid, is Selected.Star -> {
+                        syncFieldsFromSelection()
+                        return true
+                    }
+                    else -> {
+                        startDraggingCommittedSelection(pointer)
+                        return true
+                    }
+                }
+            }
+            pendingSelect = hit.selected
+            pendingSelectPointer = pointer
             pendingSelectTask = Timer.schedule(object : Timer.Task() {
                 override fun run() {
                     commitPendingSelectIfStillValid()
@@ -1359,13 +1717,14 @@ class MapEditorScreen(
         val raw = propertiesPane.minAltitudeField.text.trim()
         val newAlt = when {
             raw.isEmpty() || raw.equals("UNL", ignoreCase = true) -> null
-            else -> raw.toIntOrNull() ?: return
+            else -> MapEditorFieldConstraints.clampMinAltSectorFt(raw.toIntOrNull() ?: return)
         }
         val old = sector.minAltitudeFt
         if (old == newAlt) return
         history.execute(SetMinAltSectorMinAltitudeCommand(sector, old, newAlt))
         markDirty()
         updateUndoRedoButtons()
+        syncFieldsFromSelection()
         needsValidation = true
     }
 
@@ -1466,12 +1825,13 @@ class MapEditorScreen(
     private fun applyAirportElevField() {
         if (syncingFields) return
         val sel = selected as? Selected.Airport ?: return
-        val v = propertiesPane.airportElevField.text.toShortOrNull() ?: return
+        val v = propertiesPane.airportElevField.text.toShortOrNull()?.let(MapEditorFieldConstraints::coerceElevationFt) ?: return
         val old = sel.airport.elevationFt
         if (old == v) return
         history.execute(SetAirportElevationCommand(sel.airport, old, v))
         markDirty()
         updateUndoRedoButtons()
+        syncFieldsFromSelection()
         needsValidation = true
     }
 
@@ -1492,60 +1852,77 @@ class MapEditorScreen(
     private fun applyRunwayLengthField() {
         if (syncingFields) return
         val sel = selected as? Selected.Runway ?: return
-        val v = propertiesPane.runwayLengthField.text.toShortOrNull() ?: return
-        val old = sel.rwy.lengthM
-        if (old == v) return
-        history.execute(SetRunwayLengthCommand(sel.rwy, old, v))
+        val newLen = MapEditorFieldConstraints.parseRunwayLengthM(propertiesPane.runwayLengthField.text) ?: return
+        val oldLen = sel.rwy.lengthM
+        val oldDisp = sel.rwy.displacedThresholdM
+        val oldIx = sel.rwy.intersectionTakeoffLengthM
+        val newDisp = oldDisp.coerceAtMost(newLen)
+        val newIx = oldIx.coerceAtMost(newLen)
+        if (newLen == oldLen && newDisp == oldDisp && newIx == oldIx) return
+        val parts = mutableListOf<EditorCommand>()
+        if (newLen != oldLen) parts.add(SetRunwayLengthCommand(sel.rwy, oldLen, newLen))
+        if (newDisp != oldDisp) parts.add(SetRunwayDisplacedThresholdCommand(sel.rwy, oldDisp, newDisp))
+        if (newIx != oldIx) parts.add(SetRunwayIntersectionTakeoffCommand(sel.rwy, oldIx, newIx))
+        when (parts.size) {
+            1 -> history.execute(parts.single())
+            else -> history.execute(CompositeEditorCommand(parts))
+        }
         markDirty()
         updateUndoRedoButtons()
+        syncFieldsFromSelection()
         needsValidation = true
     }
 
     private fun applyRunwayTrackField() {
         if (syncingFields) return
         val sel = selected as? Selected.Runway ?: return
-        val v = propertiesPane.runwayTrackField.text.toFloatOrNull() ?: return
+        val raw = propertiesPane.runwayTrackField.text.toFloatOrNull() ?: return
+        val v = MapEditorFieldConstraints.normalizeRunwayTrueHeadingDeg(raw)
         val old = sel.rwy.trueHeadingDeg
         if (old == v) return
         history.execute(SetRunwayTrueHeadingCommand(sel.rwy, old, v))
         markDirty()
         updateUndoRedoButtons()
+        syncFieldsFromSelection()
         needsValidation = true
     }
 
     private fun applyRunwayDisplacedField() {
         if (syncingFields) return
         val sel = selected as? Selected.Runway ?: return
-        val v = propertiesPane.runwayDisplacedField.text.toShortOrNull() ?: return
+        val v = MapEditorFieldConstraints.parseRunwayDistanceM(propertiesPane.runwayDisplacedField.text, sel.rwy.lengthM) ?: return
         val old = sel.rwy.displacedThresholdM
         if (old == v) return
         history.execute(SetRunwayDisplacedThresholdCommand(sel.rwy, old, v))
         markDirty()
         updateUndoRedoButtons()
+        syncFieldsFromSelection()
         needsValidation = true
     }
 
     private fun applyRunwayIntersectionField() {
         if (syncingFields) return
         val sel = selected as? Selected.Runway ?: return
-        val v = propertiesPane.runwayIntersectionField.text.toShortOrNull() ?: return
+        val v = MapEditorFieldConstraints.parseRunwayDistanceM(propertiesPane.runwayIntersectionField.text, sel.rwy.lengthM) ?: return
         val old = sel.rwy.intersectionTakeoffLengthM
         if (old == v) return
         history.execute(SetRunwayIntersectionTakeoffCommand(sel.rwy, old, v))
         markDirty()
         updateUndoRedoButtons()
+        syncFieldsFromSelection()
         needsValidation = true
     }
 
     private fun applyRunwayThrElevField() {
         if (syncingFields) return
         val sel = selected as? Selected.Runway ?: return
-        val v = propertiesPane.runwayThrElevField.text.toShortOrNull() ?: return
+        val v = propertiesPane.runwayThrElevField.text.toShortOrNull()?.let(MapEditorFieldConstraints::coerceElevationFt) ?: return
         val old = sel.rwy.thresholdElevationFt
         if (old == v) return
         history.execute(SetRunwayThresholdElevationCommand(sel.rwy, old, v))
         markDirty()
         updateUndoRedoButtons()
+        syncFieldsFromSelection()
         needsValidation = true
     }
 

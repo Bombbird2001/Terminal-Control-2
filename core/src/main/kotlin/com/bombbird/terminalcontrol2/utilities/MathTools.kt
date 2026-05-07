@@ -142,9 +142,16 @@ fun convertWorldAndRenderDeg(origDeg: Float): Float {
     return 90 - origDeg
 }
 
-/** Modulates the heading such that 0 < [hdg] <= 360 */
-fun modulateHeading(hdg: Float): Float {
-    return hdg - floor((hdg - 0.0001f) / 360) * 360
+/**
+ * Puts a heading in **(0, 360]**: reduce with `% 360`, shift negatives into range, then map near-zero to **360** (north as 360, not 0).
+ * Non-finite input returns **360**.
+ */
+fun modulateHeading(deg: Float): Float {
+    if (!deg.isFinite()) return 360f
+    var h = deg % 360f
+    if (h < 0f) h += 360f
+    if (abs(h) < 1e-5f) return 360f
+    return h
 }
 
 /** Calculates the effective heading difference (i.e. how much the aircraft needs to turn through) given [initHdg], [targetHdg] and [turnDir] */
