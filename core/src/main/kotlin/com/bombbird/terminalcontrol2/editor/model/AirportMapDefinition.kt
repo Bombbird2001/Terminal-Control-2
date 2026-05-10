@@ -234,6 +234,11 @@ data class ApproachDefinition(
     var visualAfterFaf: Boolean = false,
     val allowedRunwayConfigIds: MutableList<Byte> = mutableListOf(),
     var deprecated: Boolean = false,
+    /** When false, [localizer] is preserved but not serialized; UI hides LOC fields. */
+    var localizerEnabled: Boolean = false,
+    var glideslopeEnabled: Boolean = false,
+    var stepDownEnabled: Boolean = false,
+    var circlingEnabled: Boolean = false,
 )
 
 data class LocalizerDefinition(

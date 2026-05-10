@@ -20,9 +20,17 @@ import com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle
 import com.badlogic.gdx.scenes.scene2d.ui.TextArea
 import com.bombbird.terminalcontrol2.editor.EditorLayer
 import com.bombbird.terminalcontrol2.editor.MapEditorFieldConstraints
+import com.bombbird.terminalcontrol2.files.HDNG_LEG
+import com.bombbird.terminalcontrol2.files.HOLD_LEG
+import com.bombbird.terminalcontrol2.files.INIT_CLIMB_LEG
+import com.bombbird.terminalcontrol2.files.WYPT_LEG
 import com.bombbird.terminalcontrol2.editor.model.AirportDefinition
 import com.bombbird.terminalcontrol2.editor.model.AirportMapDefinition
+import com.bombbird.terminalcontrol2.editor.RouteEditTarget
 import com.bombbird.terminalcontrol2.editor.model.ApproachDefinition
+import com.bombbird.terminalcontrol2.editor.model.CirclingDefinition
+import com.bombbird.terminalcontrol2.editor.model.DEFAULT_APPROACH_VECTOR_TRANSITION_NAME
+import com.bombbird.terminalcontrol2.editor.model.GlideslopeDefinition
 import com.bombbird.terminalcontrol2.editor.model.MinAltCircleSectorDefinition
 import com.bombbird.terminalcontrol2.editor.model.MinAltPolygonSectorDefinition
 import com.bombbird.terminalcontrol2.editor.model.MinAltRestrictionType
@@ -31,11 +39,37 @@ import com.bombbird.terminalcontrol2.editor.model.NmPoint
 import com.bombbird.terminalcontrol2.editor.model.RunwayConfigDefinition
 import com.bombbird.terminalcontrol2.editor.model.RunwayDefinition
 import com.bombbird.terminalcontrol2.editor.model.RunwayLabelPlacement
+import com.bombbird.terminalcontrol2.editor.model.StepDownFixDefinition
 import com.bombbird.terminalcontrol2.editor.model.TimeSlot
+import com.bombbird.terminalcontrol2.editor.model.TurnDirection
 import com.bombbird.terminalcontrol2.editor.model.SidDefinition
 import com.bombbird.terminalcontrol2.editor.model.StarDefinition
 import com.bombbird.terminalcontrol2.editor.model.WaypointDefinition
+import com.bombbird.terminalcontrol2.editor.model.ensureDefaultVectorTransition
+import com.bombbird.terminalcontrol2.editor.route.collectRouteParseWarnings
+import com.bombbird.terminalcontrol2.editor.undo.AddApproachCommand
+import com.bombbird.terminalcontrol2.editor.undo.AddApproachTransitionCommand
 import com.bombbird.terminalcontrol2.editor.undo.MoveApproachPositionCommand
+import com.bombbird.terminalcontrol2.editor.undo.RemoveApproachCommand
+import com.bombbird.terminalcontrol2.editor.undo.RemoveApproachTransitionCommand
+import com.bombbird.terminalcontrol2.editor.undo.RenameApproachTransitionCommand
+import com.bombbird.terminalcontrol2.editor.undo.ReplaceStepDownFixesCommand
+import com.bombbird.terminalcontrol2.editor.undo.SetApproachCirclingEnabledCommand
+import com.bombbird.terminalcontrol2.editor.undo.SetApproachCirclingFieldsCommand
+import com.bombbird.terminalcontrol2.editor.undo.SetApproachDecisionAltitudeCommand
+import com.bombbird.terminalcontrol2.editor.undo.SetApproachGlideslopeEnabledCommand
+import com.bombbird.terminalcontrol2.editor.undo.SetApproachGlideslopeFieldsCommand
+import com.bombbird.terminalcontrol2.editor.undo.SetApproachLineupDistanceCommand
+import com.bombbird.terminalcontrol2.editor.undo.SetApproachLocalizerEnabledCommand
+import com.bombbird.terminalcontrol2.editor.undo.SetApproachLocalizerFieldsCommand
+import com.bombbird.terminalcontrol2.editor.undo.SetApproachMissedTokensCommand
+import com.bombbird.terminalcontrol2.editor.undo.SetApproachRouteTokensCommand
+import com.bombbird.terminalcontrol2.editor.undo.SetApproachRvrCommand
+import com.bombbird.terminalcontrol2.editor.undo.SetApproachRunwayNameCommand
+import com.bombbird.terminalcontrol2.editor.undo.SetApproachStepDownEnabledCommand
+import com.bombbird.terminalcontrol2.editor.undo.SetApproachTimeSlotCommand
+import com.bombbird.terminalcontrol2.editor.undo.SetApproachTransitionTokensCommand
+import com.bombbird.terminalcontrol2.editor.undo.SetApproachVisualAfterFafCommand
 import com.bombbird.terminalcontrol2.editor.undo.AddMinAltSectorCommand
 import com.bombbird.terminalcontrol2.editor.undo.InsertMinAltPolygonVertexCommand
 import com.bombbird.terminalcontrol2.editor.undo.MoveMinAltCircleCenterCommand
@@ -176,6 +210,23 @@ class MapEditorScreen(
             val cfg: RunwayConfigDefinition,
             val section: RunwayConfigListSection,
         ) : PropsPaneMode
+
+        data class RouteEdit(
+            val airport: AirportDefinition,
+            val approach: ApproachDefinition,
+            val target: RouteEditTarget,
+            val originalTokens: List<String>,
+            val workingTokens: MutableList<String>,
+        ) : PropsPaneMode
+
+        data class PickWaypointForRoute(
+            val airport: AirportDefinition,
+            val approach: ApproachDefinition,
+            val target: RouteEditTarget,
+            val originalTokens: List<String>,
+            val workingTokens: MutableList<String>,
+            val holdMode: Boolean,
+        ) : PropsPaneMode
     }
 
     private var propsPaneMode: PropsPaneMode = PropsPaneMode.Main
@@ -259,6 +310,21 @@ class MapEditorScreen(
                 onRunwayConfigStartPickArrRunway = { startPickRunwayForConfig(RunwayConfigListSection.ARRIVAL) },
                 onRunwayConfigEditNtzPlaceholder = { },
                 onRunwayConfigEditParallelDepsPlaceholder = { },
+                onAddApproach = { addApproachFromToolbar() },
+                onDeleteApproach = { deleteSelectedApproach() },
+                onCommitApproachProperties = { commitApproachPropertiesFromPane() },
+                onApproachStepDownAdd = { addApproachStepDownRow() },
+                onApproachStepDownRemove = { removeApproachStepDownRow(it) },
+                onApproachTransitionAdd = { addApproachTransitionFromPane() },
+                onApproachTransitionRemove = { removeApproachTransitionNamed(it) },
+                onApproachTransitionRename = { oldName, newName -> renameApproachTransition(oldName, newName) },
+                onApproachEditRoute = { openRouteEditor(it) },
+                onRouteEditBack = { routeEditBack() },
+                onRouteEditApply = { routeEditApply() },
+                onRouteEditPickWaypoint = { holdMode -> startPickWaypointForRoute(holdMode) },
+                onRouteEditRemoveLastToken = { routeEditRemoveLastToken() },
+                onRouteEditAddHdng = { routeEditAddHdng() },
+                onRouteEditAddInitClimb = { routeEditAddInitClimb() },
             ),
         )
         buildToolbar()
@@ -469,6 +535,11 @@ class MapEditorScreen(
             }
             is Selected.Runway -> {
                 if (sel.airport.runways.none { it === sel.rwy }) setSelected(null)
+            }
+            is Selected.Approach -> {
+                if (map.airports.none { it === sel.airport } || sel.airport.approaches.none { it === sel.approach }) {
+                    setSelected(null)
+                }
             }
             else -> Unit
         }
@@ -699,6 +770,16 @@ class MapEditorScreen(
             }
         }
 
+        if (activeLayer == EditorLayer.APPROACHES) {
+            shapeRenderer.color = Color.MAGENTA
+            for (arpt in map.airports) {
+                for (apch in arpt.approaches) {
+                    val p = toPx(apch.positionNm)
+                    shapeRenderer.rect(p.x - 5f, p.y - 5f, 10f, 10f)
+                }
+            }
+        }
+
         // Selection highlight
         val sel = selected
         if (sel != null) {
@@ -802,6 +883,18 @@ class MapEditorScreen(
     private fun adjustPropsPaneModeBeforeSelectionChange(newSelection: Selected?) {
         when (val m = propsPaneMode) {
             is PropsPaneMode.Main -> Unit
+            is PropsPaneMode.RouteEdit -> {
+                val keep = newSelection is Selected.Approach &&
+                    newSelection.airport === m.airport &&
+                    newSelection.approach === m.approach
+                if (!keep) propsPaneMode = PropsPaneMode.Main
+            }
+            is PropsPaneMode.PickWaypointForRoute -> {
+                val keep = newSelection is Selected.Approach &&
+                    newSelection.airport === m.airport &&
+                    newSelection.approach === m.approach
+                if (!keep) propsPaneMode = PropsPaneMode.Main
+            }
             is PropsPaneMode.PickRunwayForConfig -> {
                 propsPaneMode = when (newSelection) {
                     is Selected.Airport ->
@@ -830,6 +923,16 @@ class MapEditorScreen(
     private fun coercePropsPaneModeToValidState() {
         when (val m = propsPaneMode) {
             is PropsPaneMode.Main -> Unit
+            is PropsPaneMode.RouteEdit -> {
+                if (map.airports.none { it === m.airport } || m.airport.approaches.none { it === m.approach }) {
+                    propsPaneMode = PropsPaneMode.Main
+                }
+            }
+            is PropsPaneMode.PickWaypointForRoute -> {
+                if (map.airports.none { it === m.airport } || m.airport.approaches.none { it === m.approach }) {
+                    propsPaneMode = PropsPaneMode.Main
+                }
+            }
             is PropsPaneMode.RunwayConfigList -> {
                 if (map.airports.none { it === m.airport } || !isAirportContextSelected(m.airport)) {
                     propsPaneMode = PropsPaneMode.Main
@@ -855,8 +958,13 @@ class MapEditorScreen(
     }
 
     private fun exitPickModeAfterUndoRedoIfNeeded() {
-        val m = propsPaneMode as? PropsPaneMode.PickRunwayForConfig ?: return
-        propsPaneMode = PropsPaneMode.RunwayConfigDetail(m.airport, m.cfg)
+        when (val m = propsPaneMode) {
+            is PropsPaneMode.PickRunwayForConfig ->
+                propsPaneMode = PropsPaneMode.RunwayConfigDetail(m.airport, m.cfg)
+            is PropsPaneMode.PickWaypointForRoute ->
+                propsPaneMode = PropsPaneMode.RouteEdit(m.airport, m.approach, m.target, m.originalTokens, m.workingTokens)
+            else -> Unit
+        }
     }
 
     private fun cancelPendingSelect() {
@@ -876,6 +984,28 @@ class MapEditorScreen(
         }
 
         when (val pm = propsPaneMode) {
+            is PropsPaneMode.PickWaypointForRoute -> {
+                val wptSel = sel as? Selected.Waypoint ?: run {
+                    cancelPendingSelect()
+                    return
+                }
+                pendingSelectTask?.cancel()
+                pendingSelectTask = null
+                pendingSelect = null
+                pendingSelectPointer = -1
+                val name = wptSel.wpt.name.uppercase()
+                if (pm.holdMode) {
+                    pm.workingTokens.add(HOLD_LEG)
+                    pm.workingTokens.add(name)
+                } else {
+                    pm.workingTokens.add(WYPT_LEG)
+                    pm.workingTokens.add(name)
+                }
+                propsPaneMode = PropsPaneMode.RouteEdit(pm.airport, pm.approach, pm.target, pm.originalTokens, pm.workingTokens)
+                syncFieldsFromSelection()
+                needsValidation = true
+                return
+            }
             is PropsPaneMode.PickRunwayForConfig -> {
                 val rwySel = sel as? Selected.Runway ?: run {
                     cancelPendingSelect()
@@ -965,6 +1095,26 @@ class MapEditorScreen(
         try {
             coercePropsPaneModeToValidState()
             when (val mode = propsPaneMode) {
+                is PropsPaneMode.RouteEdit -> {
+                    propertiesPane.prepareSelectionSync()
+                    val t = routeEditTitleForTarget(mode.target)
+                    propertiesPane.refreshRouteEditUi(
+                        paneSubtitle = "Approach ${mode.approach.name} (${mode.airport.icao})",
+                        routeTitle = t,
+                        tokenPreview = mode.workingTokens.joinToString(" "),
+                        pickWaypointActive = false,
+                    )
+                }
+                is PropsPaneMode.PickWaypointForRoute -> {
+                    propertiesPane.prepareSelectionSync()
+                    val t = routeEditTitleForTarget(mode.target)
+                    propertiesPane.refreshRouteEditUi(
+                        paneSubtitle = "Approach ${mode.approach.name} (${mode.airport.icao})",
+                        routeTitle = "$t — hold a waypoint",
+                        tokenPreview = mode.workingTokens.joinToString(" "),
+                        pickWaypointActive = true,
+                    )
+                }
                 is PropsPaneMode.RunwayConfigList -> {
                     propertiesPane.prepareSelectionSync()
                     propertiesPane.bindRunwayConfigList(mode.airport)
@@ -1047,10 +1197,9 @@ class MapEditorScreen(
                             )
                         }
                         is Selected.Approach -> propertiesPane.bindApproach(
-                            icao = sel.airport.icao,
-                            name = sel.approach.name,
-                            xNm = sel.approach.positionNm.xNm,
-                            yNm = sel.approach.positionNm.yNm,
+                            airport = sel.airport,
+                            approach = sel.approach,
+                            map = map,
                         )
                         is Selected.Sid -> {
                             val i = sel.airport.sids.indexOf(sel.sid)
@@ -1084,6 +1233,9 @@ class MapEditorScreen(
                 runwayConfigListActive = listActive,
                 runwayConfigDetailsActive = configActive,
             )
+            if (activeLayer == EditorLayer.APPROACHES && selected == null) {
+                propertiesPane.fillAddApproachRunwaySelect(map)
+            }
         }
     }
 
@@ -1235,7 +1387,7 @@ class MapEditorScreen(
                 if (text.isEmpty()) return
                 val old = sel.rwy.name
                 if (old == text) return
-                history.execute(RenameRunwayCommand(sel.rwy, old, text))
+                history.execute(RenameRunwayCommand(sel.airport, sel.rwy, old, text))
                 markDirty()
                 updateUndoRedoButtons()
             }
@@ -1447,6 +1599,33 @@ class MapEditorScreen(
     override fun touchDown(screenX: Int, screenY: Int, pointer: Int, button: Int): Boolean {
         if (button != Input.Buttons.LEFT) return false
         val worldPx = unprojectFromRadarCamera(screenX.toFloat(), screenY.toFloat())
+
+        val pickWyptMode = propsPaneMode as? PropsPaneMode.PickWaypointForRoute
+        if (pickWyptMode != null) {
+            cancelPendingSelect()
+            val hitWypt = pickClosestWaypointHit(worldPx)
+            if (hitWypt == null) {
+                propsPaneMode = PropsPaneMode.RouteEdit(
+                    pickWyptMode.airport,
+                    pickWyptMode.approach,
+                    pickWyptMode.target,
+                    pickWyptMode.originalTokens,
+                    pickWyptMode.workingTokens,
+                )
+                syncFieldsFromSelection()
+                return false
+            }
+            pickDownScreenX = screenX
+            pickDownScreenY = screenY
+            pendingSelect = hitWypt.selected
+            pendingSelectPointer = pointer
+            pendingSelectTask = Timer.schedule(object : Timer.Task() {
+                override fun run() {
+                    commitPendingSelectIfStillValid()
+                }
+            }, PICK_SELECT_DELAY_SEC)
+            return true
+        }
 
         val pickCfgMode = propsPaneMode as? PropsPaneMode.PickRunwayForConfig
         if (pickCfgMode != null) {
@@ -2029,6 +2208,360 @@ class MapEditorScreen(
         updateUndoRedoButtons()
         setSelected(Selected.Runway(parent, rwy))
         needsValidation = true
+    }
+
+    private fun parseToolbarRunwayKey(key: String): Pair<AirportDefinition, RunwayDefinition>? {
+        val sp = key.indexOf(' ')
+        if (sp <= 0) return null
+        val icao = key.substring(0, sp)
+        val rwyName = key.substring(sp + 1)
+        val arpt = map.airports.find { it.icao == icao } ?: return null
+        val rwy = arpt.runways.find { it.name == rwyName } ?: return null
+        return arpt to rwy
+    }
+
+    private fun defaultNewApproachName(airport: AirportDefinition, runwayName: String): String {
+        val base = "ILS $runwayName"
+        if (airport.approaches.none { it.name == base }) return base
+        var i = 2
+        while (airport.approaches.any { it.name == "$base-$i" }) i++
+        return "$base-$i"
+    }
+
+    private fun addApproachFromToolbar() {
+        if (activeLayer != EditorLayer.APPROACHES) return
+        val key = propertiesPane.addApproachRunwaySelectBox.selected ?: return
+        val (airport, rwy) = parseToolbarRunwayKey(key) ?: return
+        val name = defaultNewApproachName(airport, rwy.name)
+        val ap = ApproachDefinition(
+            name = name,
+            timeSlot = TimeSlot.DAY_NIGHT,
+            runwayName = rwy.name,
+            positionNm = NmPoint(rwy.thresholdNm.xNm, rwy.thresholdNm.yNm),
+            decisionAltitudeFt = 200,
+            rvrM = 1800,
+        )
+        ap.ensureDefaultVectorTransition()
+        val idx = airport.approaches.size
+        history.execute(AddApproachCommand(airport.approaches, ap, idx))
+        markDirty()
+        updateUndoRedoButtons()
+        setSelected(Selected.Approach(airport, ap))
+        needsValidation = true
+    }
+
+    private fun deleteSelectedApproach() {
+        val sel = selected as? Selected.Approach ?: return
+        val idx = sel.airport.approaches.indexOf(sel.approach)
+        if (idx < 0) return
+        history.execute(RemoveApproachCommand(sel.airport.approaches, sel.approach, idx))
+        markDirty()
+        updateUndoRedoButtons()
+        setSelected(null)
+        needsValidation = true
+    }
+
+    private fun commitApproachPropertiesFromPane() {
+        if (syncingFields) return
+        val sel = selected as? Selected.Approach ?: return
+        val arpt = sel.airport
+        val a = sel.approach
+        val cmds = mutableListOf<EditorCommand>()
+
+        val slot = runCatching { TimeSlot.valueOf(propertiesPane.approachTimeSlotSelectBox.selected) }.getOrElse { return }
+        if (a.timeSlot != slot) cmds.add(SetApproachTimeSlotCommand(a, a.timeSlot, slot))
+
+        val rwyKey = propertiesPane.approachRunwaySelectBox.selected ?: return
+        if (!rwyKey.startsWith("${arpt.icao} ")) return
+        val newRwyName = rwyKey.substring(arpt.icao.length + 1)
+        if (a.runwayName != newRwyName) cmds.add(SetApproachRunwayNameCommand(a, a.runwayName, newRwyName))
+
+        val da = propertiesPane.approachDaField.text.trim().toShortOrNull() ?: return
+        if (a.decisionAltitudeFt != da) cmds.add(SetApproachDecisionAltitudeCommand(a, a.decisionAltitudeFt, da))
+
+        val rvr = propertiesPane.approachRvrField.text.trim().toShortOrNull() ?: return
+        if (a.rvrM != rvr) cmds.add(SetApproachRvrCommand(a, a.rvrM, rvr))
+
+        val lineupTxt = propertiesPane.approachLineupField.text.trim()
+        val newLineup = lineupTxt.toFloatOrNull()
+        val oldLineup = a.lineupDistanceNm
+        if (lineupTxt.isEmpty() && oldLineup != null) {
+            cmds.add(SetApproachLineupDistanceCommand(a, oldLineup, null))
+        } else if (lineupTxt.isNotEmpty() && newLineup != null && oldLineup != newLineup) {
+            cmds.add(SetApproachLineupDistanceCommand(a, oldLineup, newLineup))
+        }
+
+        val vis = propertiesPane.approachVisualAfterFafCheckBox.isChecked
+        if (a.visualAfterFaf != vis) cmds.add(SetApproachVisualAfterFafCommand(a, a.visualAfterFaf, vis))
+
+        val locEn = propertiesPane.approachLocEnabledCheckBox.isChecked
+        if (a.localizerEnabled != locEn) cmds.add(SetApproachLocalizerEnabledCommand(a, a.localizerEnabled, locEn))
+        if (locEn) {
+            val hdgRaw = propertiesPane.approachLocHdgField.text.toFloatOrNull() ?: return
+            val hdg = MapEditorFieldConstraints.normalizeRunwayTrueHeadingDeg(hdgRaw)
+            val dist = propertiesPane.approachLocDistField.text.trim().toByteOrNull() ?: return
+            val fh = a.localizer?.headingDeg ?: 0f
+            val fd = a.localizer?.distanceNm ?: 0
+            if (fh != hdg || fd != dist) cmds.add(SetApproachLocalizerFieldsCommand(a, fh, fd, hdg, dist))
+        }
+
+        val gsEn = propertiesPane.approachGsEnabledCheckBox.isChecked
+        if (a.glideslopeEnabled != gsEn) cmds.add(SetApproachGlideslopeEnabledCommand(a, a.glideslopeEnabled, gsEn))
+        if (gsEn) {
+            val ang = propertiesPane.approachGsAngleField.text.toFloatOrNull() ?: return
+            val off = propertiesPane.approachGsOffsetField.text.toFloatOrNull() ?: return
+            val mx = propertiesPane.approachGsMaxAltField.text.trim().toShortOrNull() ?: return
+            val oldG = a.glideslope ?: GlideslopeDefinition(3f, 0f, 3000)
+            val newG = GlideslopeDefinition(ang, off, mx)
+            if (oldG.angleDeg != newG.angleDeg ||
+                oldG.offsetNm != newG.offsetNm ||
+                oldG.maxInterceptAltitudeFt != newG.maxInterceptAltitudeFt
+            ) {
+                cmds.add(SetApproachGlideslopeFieldsCommand(a, oldG, newG))
+            }
+        }
+
+        val sdEn = propertiesPane.approachStepDownEnabledCheckBox.isChecked
+        if (a.stepDownEnabled != sdEn) cmds.add(SetApproachStepDownEnabledCommand(a, a.stepDownEnabled, sdEn))
+        if (sdEn) {
+            val parsed = propertiesPane.collectStepDownFixesFromUi() ?: return
+            val from = a.stepDownFixes.map { StepDownFixDefinition(it.altitudeFt, it.distanceNm) }
+            if (from != parsed) cmds.add(ReplaceStepDownFixesCommand(a, from, parsed))
+        }
+
+        val cirEn = propertiesPane.approachCirclingEnabledCheckBox.isChecked
+        if (a.circlingEnabled != cirEn) cmds.add(SetApproachCirclingEnabledCommand(a, a.circlingEnabled, cirEn))
+        if (cirEn) {
+            val minA = propertiesPane.approachCirclingMinField.text.trim().toIntOrNull() ?: return
+            val maxA = propertiesPane.approachCirclingMaxField.text.trim().toIntOrNull() ?: return
+            val turn = when (propertiesPane.approachCirclingTurnSelectBox.selected) {
+                "LEFT" -> TurnDirection.LEFT
+                else -> TurnDirection.RIGHT
+            }
+            val oldC = a.circling ?: CirclingDefinition(minA, maxA, turn)
+            val newC = CirclingDefinition(minA, maxA, turn)
+            if (oldC.minBreakoutAltFt != newC.minBreakoutAltFt ||
+                oldC.maxBreakoutAltFt != newC.maxBreakoutAltFt ||
+                oldC.turnDirection != newC.turnDirection
+            ) {
+                cmds.add(SetApproachCirclingFieldsCommand(a, oldC, newC))
+            }
+        }
+
+        when {
+            cmds.isEmpty() -> return
+            cmds.size == 1 -> history.execute(cmds.single())
+            else -> history.execute(CompositeEditorCommand(cmds))
+        }
+        markDirty()
+        updateUndoRedoButtons()
+        syncFieldsFromSelection()
+        needsValidation = true
+    }
+
+    private fun addApproachStepDownRow() {
+        val sel = selected as? Selected.Approach ?: return
+        val from = sel.approach.stepDownFixes.map { StepDownFixDefinition(it.altitudeFt, it.distanceNm) }
+        val to = from + StepDownFixDefinition(0, 0f)
+        history.execute(ReplaceStepDownFixesCommand(sel.approach, from, to))
+        markDirty()
+        updateUndoRedoButtons()
+        syncFieldsFromSelection()
+        needsValidation = true
+    }
+
+    private fun removeApproachStepDownRow(index: Int) {
+        val sel = selected as? Selected.Approach ?: return
+        if (index !in sel.approach.stepDownFixes.indices) return
+        val from = sel.approach.stepDownFixes.map { StepDownFixDefinition(it.altitudeFt, it.distanceNm) }
+        val to = from.toMutableList().also { it.removeAt(index) }
+        history.execute(ReplaceStepDownFixesCommand(sel.approach, from, to))
+        markDirty()
+        updateUndoRedoButtons()
+        syncFieldsFromSelection()
+        needsValidation = true
+    }
+
+    private fun addApproachTransitionFromPane() {
+        val sel = selected as? Selected.Approach ?: return
+        val raw = propertiesPane.approachAddTransitionNameField.text.trim()
+        if (raw.isBlank()) return
+        val name = raw.uppercase()
+        if (name == DEFAULT_APPROACH_VECTOR_TRANSITION_NAME) return
+        history.execute(AddApproachTransitionCommand(sel.approach, name, emptyList()))
+        markDirty()
+        updateUndoRedoButtons()
+        propertiesPane.approachAddTransitionNameField.text = ""
+        syncFieldsFromSelection()
+        needsValidation = true
+    }
+
+    private fun removeApproachTransitionNamed(name: String) {
+        val sel = selected as? Selected.Approach ?: return
+        if (name == DEFAULT_APPROACH_VECTOR_TRANSITION_NAME) return
+        history.execute(RemoveApproachTransitionCommand(sel.approach, name))
+        markDirty()
+        updateUndoRedoButtons()
+        syncFieldsFromSelection()
+        needsValidation = true
+    }
+
+    private fun renameApproachTransition(oldName: String, newName: String) {
+        val sel = selected as? Selected.Approach ?: return
+        if (oldName == DEFAULT_APPROACH_VECTOR_TRANSITION_NAME || newName == DEFAULT_APPROACH_VECTOR_TRANSITION_NAME) return
+        if (oldName == newName) return
+        if (sel.approach.transitions.containsKey(newName)) return
+        history.execute(RenameApproachTransitionCommand(sel.approach, oldName, newName))
+        markDirty()
+        updateUndoRedoButtons()
+        syncFieldsFromSelection()
+        needsValidation = true
+    }
+
+    private fun openRouteEditor(target: RouteEditTarget) {
+        val sel = selected as? Selected.Approach ?: return
+        sel.approach.ensureDefaultVectorTransition()
+        val orig = when (target) {
+            RouteEditTarget.ApproachMainRoute -> sel.approach.routeTokens.toList()
+            RouteEditTarget.ApproachMissed -> sel.approach.missedApproachTokens.toList()
+            is RouteEditTarget.ApproachTransition ->
+                sel.approach.transitions[target.name]?.toList() ?: emptyList()
+        }
+        propsPaneMode = PropsPaneMode.RouteEdit(sel.airport, sel.approach, target, orig, orig.toMutableList())
+        cancelPendingSelect()
+        syncFieldsFromSelection()
+    }
+
+    private fun routeEditBack() {
+        when (propsPaneMode) {
+            is PropsPaneMode.PickWaypointForRoute -> {
+                val m = propsPaneMode as PropsPaneMode.PickWaypointForRoute
+                propsPaneMode = PropsPaneMode.RouteEdit(m.airport, m.approach, m.target, m.originalTokens, m.workingTokens)
+            }
+            is PropsPaneMode.RouteEdit -> propsPaneMode = PropsPaneMode.Main
+            else -> Unit
+        }
+        cancelPendingSelect()
+        syncFieldsFromSelection()
+    }
+
+    private fun routeEditApply() {
+        val m = propsPaneMode as? PropsPaneMode.RouteEdit ?: return
+        val warnings = collectRouteParseWarnings(m.workingTokens, m.target.parsePhase(), map)
+        if (warnings.isNotEmpty()) {
+            propertiesPane.setRouteEditError(warnings.joinToString("\n"))
+            return
+        }
+        when (m.target) {
+            RouteEditTarget.ApproachMainRoute ->
+                history.execute(SetApproachRouteTokensCommand(m.approach, m.originalTokens, m.workingTokens.toList()))
+            RouteEditTarget.ApproachMissed ->
+                history.execute(SetApproachMissedTokensCommand(m.approach, m.originalTokens, m.workingTokens.toList()))
+            is RouteEditTarget.ApproachTransition ->
+                history.execute(
+                    SetApproachTransitionTokensCommand(
+                        m.approach,
+                        m.target.name,
+                        m.originalTokens,
+                        m.workingTokens.toList(),
+                    ),
+                )
+        }
+        markDirty()
+        updateUndoRedoButtons()
+        propsPaneMode = PropsPaneMode.Main
+        syncFieldsFromSelection()
+        needsValidation = true
+    }
+
+    private fun startPickWaypointForRoute(holdMode: Boolean) {
+        val m = propsPaneMode as? PropsPaneMode.RouteEdit ?: return
+        propsPaneMode = PropsPaneMode.PickWaypointForRoute(
+            m.airport,
+            m.approach,
+            m.target,
+            m.originalTokens,
+            m.workingTokens,
+            holdMode,
+        )
+        cancelPendingSelect()
+        syncFieldsFromSelection()
+    }
+
+    private fun routeEditRemoveLastToken() {
+        val m = propsPaneMode as? PropsPaneMode.RouteEdit ?: return
+        val t = m.workingTokens
+        if (t.isEmpty()) return
+        val legTypes = setOf(INIT_CLIMB_LEG, HDNG_LEG, WYPT_LEG, HOLD_LEG)
+        var start = -1
+        for (i in t.indices.reversed()) {
+            if (t[i] in legTypes) {
+                start = i
+                break
+            }
+        }
+        if (start < 0) t.clear()
+        else while (t.size > start) t.removeAt(t.lastIndex)
+        propertiesPane.clearRouteEditError()
+        propertiesPane.refreshRouteEditUi(
+            paneSubtitle = "Approach ${m.approach.name} (${m.airport.icao})",
+            routeTitle = routeEditTitleForTarget(m.target),
+            tokenPreview = m.workingTokens.joinToString(" "),
+            pickWaypointActive = false,
+        )
+    }
+
+    private fun routeEditAddHdng() {
+        val m = propsPaneMode as? PropsPaneMode.RouteEdit ?: return
+        val raw = propertiesPane.routeEditHdgField.text.trim().toIntOrNull() ?: return
+        val hdg = raw.coerceIn(1, 360).toString()
+        m.workingTokens.add(HDNG_LEG)
+        m.workingTokens.add(hdg)
+        propertiesPane.routeEditHdgField.text = ""
+        propertiesPane.clearRouteEditError()
+        propertiesPane.refreshRouteEditUi(
+            paneSubtitle = "Approach ${m.approach.name} (${m.airport.icao})",
+            routeTitle = routeEditTitleForTarget(m.target),
+            tokenPreview = m.workingTokens.joinToString(" "),
+            pickWaypointActive = false,
+        )
+    }
+
+    private fun routeEditAddInitClimb() {
+        val m = propsPaneMode as? PropsPaneMode.RouteEdit ?: return
+        val hdg = propertiesPane.routeEditInitHdgField.text.trim().toIntOrNull()?.coerceIn(1, 360) ?: return
+        val altRaw = propertiesPane.routeEditInitAltField.text.trim().removePrefix("A").removePrefix("a")
+        val alt = altRaw.toIntOrNull() ?: return
+        m.workingTokens.add(INIT_CLIMB_LEG)
+        m.workingTokens.add(hdg.toString())
+        m.workingTokens.add("A$alt")
+        propertiesPane.routeEditInitHdgField.text = ""
+        propertiesPane.routeEditInitAltField.text = ""
+        propertiesPane.clearRouteEditError()
+        propertiesPane.refreshRouteEditUi(
+            paneSubtitle = "Approach ${m.approach.name} (${m.airport.icao})",
+            routeTitle = routeEditTitleForTarget(m.target),
+            tokenPreview = m.workingTokens.joinToString(" "),
+            pickWaypointActive = false,
+        )
+    }
+
+    private fun routeEditTitleForTarget(target: RouteEditTarget): String = when (target) {
+        RouteEditTarget.ApproachMainRoute -> "Main approach route"
+        RouteEditTarget.ApproachMissed -> "Missed approach"
+        is RouteEditTarget.ApproachTransition -> "Transition ${target.name}"
+    }
+
+    private fun pickClosestWaypointHit(worldPx: Vector2): PickHit? {
+        var best: PickHit? = null
+        for (wpt in map.waypoints) {
+            val p = toPx(wpt.positionNm)
+            val d = calculateDistanceBetweenPoints(p.x, p.y, worldPx.x, worldPx.y)
+            if (d <= PICK_THRESHOLD_PX && (best == null || d < best.metricPx)) {
+                best = PickHit(Selected.Waypoint(wpt), d)
+            }
+        }
+        return best
     }
 
     private fun drawSectors() {

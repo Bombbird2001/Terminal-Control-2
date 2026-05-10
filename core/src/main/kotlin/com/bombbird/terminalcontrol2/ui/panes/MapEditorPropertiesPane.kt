@@ -7,16 +7,24 @@ import com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle
 import com.badlogic.gdx.scenes.scene2d.ui.SelectBox
 import com.badlogic.gdx.scenes.scene2d.ui.ScrollPane
 import com.badlogic.gdx.scenes.scene2d.ui.Table
+import com.badlogic.gdx.scenes.scene2d.ui.CheckBox
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton
 import com.badlogic.gdx.scenes.scene2d.ui.TextField
+import com.badlogic.gdx.scenes.scene2d.ui.Value
 import com.badlogic.gdx.scenes.scene2d.utils.Layout
 import com.badlogic.gdx.utils.Align
 import com.badlogic.gdx.utils.Array as GdxArray
 import com.bombbird.terminalcontrol2.editor.EditorLayer
+import com.bombbird.terminalcontrol2.editor.RouteEditTarget
 import com.bombbird.terminalcontrol2.editor.model.AirportDefinition
+import com.bombbird.terminalcontrol2.editor.model.AirportMapDefinition
+import com.bombbird.terminalcontrol2.editor.model.ApproachDefinition
+import com.bombbird.terminalcontrol2.editor.model.DEFAULT_APPROACH_VECTOR_TRANSITION_NAME
 import com.bombbird.terminalcontrol2.editor.model.RunwayConfigDefinition
 import com.bombbird.terminalcontrol2.editor.model.RunwayLabelPlacement
+import com.bombbird.terminalcontrol2.editor.model.StepDownFixDefinition
 import com.bombbird.terminalcontrol2.editor.model.TimeSlot
+import com.bombbird.terminalcontrol2.editor.model.TurnDirection
 import com.bombbird.terminalcontrol2.editor.undo.RunwayConfigListSection
 import com.bombbird.terminalcontrol2.global.UI_HEIGHT
 import com.bombbird.terminalcontrol2.global.UI_WIDTH
@@ -35,6 +43,7 @@ import ktx.scene2d.scrollPane
 import ktx.scene2d.selectBox
 import ktx.scene2d.table
 import ktx.scene2d.Scene2DSkin
+import ktx.scene2d.checkBox
 import ktx.scene2d.textButton
 import ktx.scene2d.textField
 import kotlin.math.max
@@ -53,10 +62,17 @@ class MapEditorPropertiesPane {
         const val EMPTY_SELECTION_HINT_AIRPORTS = "Hold to select an airport on the map"
         const val EMPTY_SELECTION_HINT_RUNWAYS = "Hold to select a runway threshold on the map"
         const val EMPTY_SELECTION_HINT_MVA_RESTR_AREA = "Hold polygon vertex or inside circle to select area"
+        const val EMPTY_SELECTION_HINT_APPROACHES = "Hold to select an approach on the map"
 
         /** Must match vertical padding used for inner properties rows in [build] (`padVert * 2` on defaults). */
         private const val SCROLL_INNER_PAD_VERT = 5f
         private const val PAD_HORIZONTAL = 20f
+
+        /**
+         * Subtracted from the pane when sizing [mainPropertiesTable] / approach rebuild columns so minimum
+         * widths plus padding stay under the scroll viewport (vertical scrollbar gutter, table rounding).
+         */
+        private const val SCROLL_PROPERTIES_HORIZONTAL_RESERVE = 14f
 
         private fun scrollInnerRowPadVert(): Float = SCROLL_INNER_PAD_VERT
 
@@ -168,6 +184,61 @@ class MapEditorPropertiesPane {
     lateinit var runwayTowerFreqField: TextField
     lateinit var deleteRunwayButton: KTextButton
 
+    lateinit var addApproachRowTable: Table
+    lateinit var addApproachButton: KTextButton
+    lateinit var addApproachRunwaySelectBox: KSelectBox<String>
+
+    lateinit var approachRootTable: Table
+    lateinit var approachTimeSlotSelectBox: KSelectBox<String>
+    lateinit var approachRunwaySelectBox: KSelectBox<String>
+    lateinit var approachDaField: TextField
+    lateinit var approachRvrField: TextField
+    lateinit var approachLineupField: TextField
+    lateinit var approachVisualAfterFafCheckBox: CheckBox
+    lateinit var approachLocEnabledCheckBox: CheckBox
+    lateinit var approachLocHdgField: TextField
+    lateinit var approachLocDistField: TextField
+    lateinit var approachGsEnabledCheckBox: CheckBox
+    lateinit var approachGsAngleField: TextField
+    lateinit var approachGsOffsetField: TextField
+    lateinit var approachGsMaxAltField: TextField
+    lateinit var approachStepDownEnabledCheckBox: CheckBox
+    lateinit var approachStepDownTable: Table
+    lateinit var approachStepDownBlockTable: Table
+    lateinit var approachStepDownAddButton: KTextButton
+    lateinit var approachLocFieldsTable: Table
+    lateinit var approachGsFieldsTable: Table
+    lateinit var approachCirclingFieldsTable: Table
+    lateinit var approachCirclingEnabledCheckBox: CheckBox
+    lateinit var approachCirclingMinField: TextField
+    lateinit var approachCirclingMaxField: TextField
+    lateinit var approachCirclingTurnSelectBox: KSelectBox<String>
+    lateinit var approachEditMainRouteButton: KTextButton
+    lateinit var approachEditMissedButton: KTextButton
+    lateinit var approachTransitionsTable: Table
+    lateinit var approachAddTransitionNameField: TextField
+    lateinit var approachAddTransitionButton: KTextButton
+    lateinit var approachAllowedConfigsTable: Table
+    lateinit var approachReadOnlyMetaTable: Table
+    lateinit var deleteApproachButton: KTextButton
+
+    lateinit var routeEditTable: Table
+    lateinit var routeEditTitleLabel: Label
+    lateinit var routeEditPreviewLabel: Label
+    lateinit var routeEditErrorLabel: Label
+    lateinit var routeEditHdgField: TextField
+    lateinit var routeEditInitHdgField: TextField
+    lateinit var routeEditInitAltField: TextField
+    lateinit var routeEditBackButton: TextButton
+    lateinit var routeEditApplyButton: TextButton
+    lateinit var routeEditAddWyptButton: TextButton
+    lateinit var routeEditAddHoldButton: TextButton
+    lateinit var routeEditRemoveLastButton: TextButton
+    lateinit var routeEditAddHdngButton: TextButton
+    lateinit var routeEditAddInitButton: TextButton
+
+    private val approachStepDownFieldRows = mutableListOf<Pair<TextField, TextField>>()
+
     data class Listeners(
         val onInsertVertexBefore: () -> Unit,
         val onInsertVertexAfter: () -> Unit,
@@ -215,9 +286,47 @@ class MapEditorPropertiesPane {
         val onRunwayConfigStartPickArrRunway: () -> Unit,
         val onRunwayConfigEditNtzPlaceholder: () -> Unit,
         val onRunwayConfigEditParallelDepsPlaceholder: () -> Unit,
+        val onAddApproach: () -> Unit,
+        val onDeleteApproach: () -> Unit,
+        val onCommitApproachProperties: () -> Unit,
+        val onApproachStepDownAdd: () -> Unit,
+        val onApproachStepDownRemove: (Int) -> Unit,
+        val onApproachTransitionAdd: () -> Unit,
+        val onApproachTransitionRemove: (String) -> Unit,
+        val onApproachTransitionRename: (String, String) -> Unit,
+        val onApproachEditRoute: (RouteEditTarget) -> Unit,
+        val onRouteEditBack: () -> Unit,
+        val onRouteEditApply: () -> Unit,
+        val onRouteEditPickWaypoint: (Boolean) -> Unit,
+        val onRouteEditRemoveLastToken: () -> Unit,
+        val onRouteEditAddHdng: () -> Unit,
+        val onRouteEditAddInitClimb: () -> Unit,
     )
 
     fun getRadarCameraOffsetForZoom(zoom: Float): Float = paneWidth / 2f * zoom
+
+    /**
+     * Width budget for fixed columns and full-width labels inside [propertiesScrollPane].
+     * Slightly less than `paneWidth - 2*pad` so content does not exceed the viewport when the vertical bar shows.
+     */
+    private fun propertiesScrollInnerContentWidth(): Float =
+        max(200f, paneWidth - PAD_HORIZONTAL * 2f - SCROLL_PROPERTIES_HORIZONTAL_RESERVE)
+
+    /**
+     * Child area inside [routeEditTable], which applies [PAD_HORIZONTAL] left+right padding on each row.
+     */
+    private fun routeEditInnerContentWidth(): Float =
+        max(160f, propertiesScrollInnerContentWidth() - 2f * PAD_HORIZONTAL)
+
+    private fun routeEditHalfRowElementW(): Float =
+        (routeEditInnerContentWidth() - PAD_HORIZONTAL * 3f) / 2f - 1f
+
+    /** Matches [build] `halfRowElementW` for caption/control pairs at the current [paneWidth]. */
+    private fun halfRowCaptionControlWidth(): Float =
+        (propertiesScrollInnerContentWidth() - PAD_HORIZONTAL * 3f) / 2f - 1f
+
+    private fun thirdRowCaptionControlWidth(): Float =
+        (propertiesScrollInnerContentWidth() - PAD_HORIZONTAL * 3f) / 3f - 1f
 
     fun setNoSelectionPropertiesLayout() {
         emptySelectionHint.isVisible = true
@@ -242,14 +351,17 @@ class MapEditorPropertiesPane {
         val cell = table.getCell(this) ?: return
         if (visible) {
             isVisible = true
-            val prefH = when (this) {
-                is Label -> prefHeight
-                is TextField -> prefHeight
-                is TextButton -> prefHeight
-                is SelectBox<*> -> max(prefHeight, 48f)
-                else -> height
+            val padTop = customPadTop ?: padVertWhenVisible
+            // Prefer [Value.prefHeight] for [Layout] rows so nested [Table]s (e.g. approach sub-blocks) keep
+            // correct height after dynamic rebuilds; a fixed float snapshot is often too small and overlaps.
+            when {
+                this is SelectBox<*> ->
+                    cell.height(max(prefHeight, 48f)).padBottom(padVertWhenVisible).padTop(padTop)
+                this is Layout ->
+                    cell.height(Value.prefHeight).padBottom(padVertWhenVisible).padTop(padTop)
+                else ->
+                    cell.height(height).padBottom(padVertWhenVisible).padTop(padTop)
             }
-            cell.height(prefH).padBottom(padVertWhenVisible).padTop(customPadTop ?: padVertWhenVisible)
         } else {
             cell.height(0f).padBottom(0f).padTop(0f)
             isVisible = false
@@ -287,14 +399,20 @@ class MapEditorPropertiesPane {
 
         if (visible) {
             rowActor.isVisible = true
-            val prefH = max(
-                when (rowActor) {
-                    is Layout -> rowActor.prefHeight
-                    else -> rowActor.height
-                },
-                0f,
-            )
-            rowCell.height(prefH).padBottom(scrollInnerRowPadVert()).padTop(scrollInnerRowPadVert())
+            when (rowActor) {
+                is SelectBox<*> ->
+                    rowCell.height(max(rowActor.prefHeight, 48f))
+                        .padBottom(scrollInnerRowPadVert())
+                        .padTop(scrollInnerRowPadVert())
+                is Layout ->
+                    rowCell.height(Value.prefHeight)
+                        .padBottom(scrollInnerRowPadVert())
+                        .padTop(scrollInnerRowPadVert())
+                else ->
+                    rowCell.height(max(rowActor.height, 0f))
+                        .padBottom(scrollInnerRowPadVert())
+                        .padTop(scrollInnerRowPadVert())
+            }
         } else {
             rowCell.height(0f).padBottom(0f).padTop(0f)
             rowActor.isVisible = false
@@ -334,6 +452,8 @@ class MapEditorPropertiesPane {
         addAirportButton.setOuterContentRowSpaceAndVisibility(showAddAirport)
         val showAddRunway = showLayerChrome && layerSelectBox.selected == EditorLayer.RUNWAYS
         addRunwayButton.setOuterContentRowSpaceAndVisibility(showAddRunway)
+        val showAddApproach = showLayerChrome && layerSelectBox.selected == EditorLayer.APPROACHES
+        addApproachRowTable.setOuterContentRowSpaceAndVisibility(showAddApproach)
         addRunwayConfigButton.setOuterContentRowSpaceAndVisibility(runwayConfigListActive)
         runwayConfigListBackButton.setOuterContentRowSpaceAndVisibility(runwayConfigListActive)
         runwayConfigBackButton.setOuterContentRowSpaceAndVisibility(runwayConfigDetailsActive)
@@ -459,6 +579,11 @@ class MapEditorPropertiesPane {
         setPositionNmRowsVisible(true)
         setRunwayConfigListRowsVisible(false)
         setRunwayConfigDetailRowsVisible(false)
+        hideApproachPropertyRows()
+    }
+
+    private fun hideApproachPropertyRows() {
+        approachRootTable.setScrollInnerRowSpaceAndVisibility(false)
     }
 
     fun bindNoSelection() {
@@ -478,6 +603,7 @@ class MapEditorPropertiesPane {
                 EditorLayer.AIRPORTS -> EMPTY_SELECTION_HINT_AIRPORTS
                 EditorLayer.RUNWAYS -> EMPTY_SELECTION_HINT_RUNWAYS
                 EditorLayer.RESTRICTED, EditorLayer.TERRAIN_MVA -> EMPTY_SELECTION_HINT_MVA_RESTR_AREA
+                EditorLayer.APPROACHES -> EMPTY_SELECTION_HINT_APPROACHES
                 else -> EMPTY_SELECTION_HINT_GENERIC
             },
         )
@@ -655,12 +781,277 @@ class MapEditorPropertiesPane {
         labelOffsetYNmField.text = formatLabelOffsetNm(labelOffsetYNm)
     }
 
-    fun bindApproach(icao: String, name: String, xNm: Float, yNm: Float) {
+    fun fillAddApproachRunwaySelect(map: AirportMapDefinition) {
+        val keys = map.airports.sortedBy { it.icao }.flatMap { a ->
+            a.runways.sortedBy { it.name }.map { r -> "${a.icao} ${r.name}" }
+        }
+        val arr = GdxArray<String>()
+        keys.forEach { arr.add(it) }
+        addApproachRunwaySelectBox.items = arr
+        if (arr.size > 0) {
+            val cur = addApproachRunwaySelectBox.selected
+            if (cur.isNullOrBlank() || cur !in keys) addApproachRunwaySelectBox.selected = arr[0]
+        }
+    }
+
+    fun collectStepDownFixesFromUi(): List<StepDownFixDefinition>? {
+        val out = mutableListOf<StepDownFixDefinition>()
+        for ((a, d) in approachStepDownFieldRows) {
+            val at = a.text.trim()
+            val dt = d.text.trim()
+            if (at.isEmpty() && dt.isEmpty()) continue
+            val alt = at.toShortOrNull() ?: return null
+            val dist = dt.toFloatOrNull() ?: return null
+            out.add(StepDownFixDefinition(alt, dist))
+        }
+        return out
+    }
+
+    fun showRouteEditScroll() {
+        propertiesScrollPane.actor = routeEditTable
+        propertiesScrollPane.invalidateHierarchy()
+    }
+
+    fun clearRouteEditError() {
+        routeEditErrorLabel.setText("")
+    }
+
+    fun setRouteEditError(message: String) {
+        routeEditErrorLabel.setText(message)
+    }
+
+    /**
+     * @param pickWaypointActive when true, map pick mode is active; auxiliary route buttons are disabled.
+     */
+    fun refreshRouteEditUi(
+        paneSubtitle: String,
+        routeTitle: String,
+        tokenPreview: String,
+        pickWaypointActive: Boolean,
+    ) {
+        showRouteEditScroll()
+        setHasSelectionPropertiesLayout()
+        emptySelectionHint.isVisible = false
+        propertiesScrollPane.isVisible = true
+        selectionTitle.setText(paneSubtitle)
+        routeEditTitleLabel.setText(routeTitle)
+        routeEditPreviewLabel.setText(tokenPreview)
+        clearRouteEditError()
+        val dis = pickWaypointActive
+        routeEditHdgField.isDisabled = dis
+        routeEditInitHdgField.isDisabled = dis
+        routeEditInitAltField.isDisabled = dis
+        routeEditAddWyptButton.isDisabled = dis
+        routeEditAddHoldButton.isDisabled = dis
+        routeEditRemoveLastButton.isDisabled = dis
+        routeEditAddHdngButton.isDisabled = dis
+        routeEditAddInitButton.isDisabled = dis
+        routeEditApplyButton.isDisabled = dis
+    }
+
+    fun bindApproach(airport: AirportDefinition, approach: ApproachDefinition, map: AirportMapDefinition) {
         showMainPropertiesScroll()
         setHasSelectionPropertiesLayout()
-        selectionTitle.setText("Approach $name ($icao)")
-        nameField.text = name
-        setPositionNmFields(xNm, yNm)
+        approachRootTable.setScrollInnerRowSpaceAndVisibility(true)
+        selectionTitle.setText("Approach ${approach.name} (${airport.icao})")
+        nameField.text = approach.name
+        setPositionNmFields(approach.positionNm.xNm, approach.positionNm.yNm)
+
+        approachTimeSlotSelectBox.selected = approach.timeSlot.name
+
+        val rwyKeys = airport.runways.sortedBy { it.name }.map { "${airport.icao} ${it.name}" }
+        val rwyArr = GdxArray<String>()
+        rwyKeys.forEach { rwyArr.add(it) }
+        approachRunwaySelectBox.items = rwyArr
+        val wantRwy = "${airport.icao} ${approach.runwayName}"
+        approachRunwaySelectBox.selected = if (wantRwy in rwyKeys) wantRwy else rwyKeys.firstOrNull() ?: wantRwy
+
+        approachDaField.text = approach.decisionAltitudeFt.toString()
+        approachRvrField.text = approach.rvrM.toString()
+        approachLineupField.text = approach.lineupDistanceNm?.toString() ?: ""
+        approachVisualAfterFafCheckBox.isChecked = approach.visualAfterFaf
+
+        approachLocEnabledCheckBox.isChecked = approach.localizerEnabled
+        approachLocHdgField.text = approach.localizer?.headingDeg?.let { formatTrackDeg(it) } ?: ""
+        approachLocDistField.text = approach.localizer?.distanceNm?.toString() ?: ""
+
+        approachGsEnabledCheckBox.isChecked = approach.glideslopeEnabled
+        approachGsAngleField.text = approach.glideslope?.angleDeg?.toString() ?: ""
+        approachGsOffsetField.text = approach.glideslope?.offsetNm?.toString() ?: ""
+        approachGsMaxAltField.text = approach.glideslope?.maxInterceptAltitudeFt?.toString() ?: ""
+
+        approachStepDownEnabledCheckBox.isChecked = approach.stepDownEnabled
+        rebuildApproachStepDownFields(approach)
+
+        approachCirclingEnabledCheckBox.isChecked = approach.circlingEnabled
+        val c = approach.circling
+        approachCirclingMinField.text = c?.minBreakoutAltFt?.toString() ?: ""
+        approachCirclingMaxField.text = c?.maxBreakoutAltFt?.toString() ?: ""
+        approachCirclingTurnSelectBox.selected = when (c?.turnDirection) {
+            TurnDirection.LEFT -> "LEFT"
+            else -> "RIGHT"
+        }
+
+        rebuildApproachTransitionRows(approach)
+        rebuildApproachAllowedConfigs(airport, approach)
+        rebuildApproachReadOnlyMeta(approach)
+        refreshApproachComponentRowVisibility(approach)
+        fillAddApproachRunwaySelect(map)
+        mainPropertiesTable.invalidateHierarchy()
+        propertiesScrollPane.invalidateHierarchy()
+    }
+
+    private fun refreshApproachComponentRowVisibility(a: ApproachDefinition) {
+        // Sub-blocks live inside [approachRootTable]; use [setTableRowSpaceAndVisibility] only — the scroll helper
+        // walks up to [mainPropertiesTable] and would collapse the entire approach pane.
+        approachLocFieldsTable.setTableRowSpaceAndVisibility(a.localizerEnabled, scrollInnerRowPadVert())
+        approachGsFieldsTable.setTableRowSpaceAndVisibility(a.glideslopeEnabled, scrollInnerRowPadVert())
+        approachStepDownBlockTable.setTableRowSpaceAndVisibility(a.stepDownEnabled, scrollInnerRowPadVert())
+        approachCirclingFieldsTable.setTableRowSpaceAndVisibility(a.circlingEnabled, scrollInnerRowPadVert())
+        mainPropertiesTable.invalidateHierarchy()
+        propertiesScrollPane.invalidateHierarchy()
+    }
+
+    private fun rebuildApproachStepDownFields(approach: ApproachDefinition) {
+        approachStepDownFieldRows.clear()
+        approachStepDownTable.clearChildren()
+        val skin = Scene2DSkin.defaultSkin
+        val lblStyle = skin.get("SettingsOption", LabelStyle::class.java)
+        val hw = halfRowCaptionControlWidth()
+        val pv = scrollInnerRowPadVert()
+        approach.stepDownFixes.forEachIndexed { index, fix ->
+            val altF = TextField(fix.altitudeFt.toString(), skin, "MapEditorProperties").apply {
+                addChangeListener { _, _ -> editorListeners.onCommitApproachProperties() }
+            }
+            val distF = TextField(fix.distanceNm.toString(), skin, "MapEditorProperties").apply {
+                addChangeListener { _, _ -> editorListeners.onCommitApproachProperties() }
+            }
+            approachStepDownFieldRows.add(altF to distF)
+            approachStepDownTable.add(
+                Label("Fix ${index + 1} alt (ft)", lblStyle).apply {
+                    wrap = true
+                    setAlignment(Align.center)
+                },
+            ).expandX().width(hw).padRight(PAD_HORIZONTAL).padTop(pv).padBottom(pv)
+            approachStepDownTable.add(altF).growX().width(hw).padTop(pv).padBottom(pv).row()
+            approachStepDownTable.add(
+                Label("Fix ${index + 1} dist (nm)", lblStyle).apply {
+                    wrap = true
+                    setAlignment(Align.center)
+                },
+            ).expandX().width(hw).padRight(PAD_HORIZONTAL).padTop(pv).padBottom(pv)
+            approachStepDownTable.add(distF).growX().width(hw).padTop(pv).padBottom(pv).row()
+            val rm = TextButton("Remove fix", skin, "MapEditorPropertiesButton")
+            rm.addChangeListener { _, _ -> editorListeners.onApproachStepDownRemove(index) }
+            approachStepDownTable.add(rm).colspan(2).growX().padTop(pv).padBottom(pv).row()
+        }
+        approachStepDownTable.invalidateHierarchy()
+    }
+
+    private fun rebuildApproachTransitionRows(approach: ApproachDefinition) {
+        val skin = Scene2DSkin.defaultSkin
+        val hw = halfRowCaptionControlWidth()
+        val tw = thirdRowCaptionControlWidth()
+        val pv = scrollInnerRowPadVert()
+        approachTransitionsTable.clearChildren()
+        val ordered = buildList {
+            add(DEFAULT_APPROACH_VECTOR_TRANSITION_NAME)
+            approach.transitions.keys.filter { it != DEFAULT_APPROACH_VECTOR_TRANSITION_NAME }.sorted().forEach { add(it) }
+        }
+        for (name in ordered) {
+            val isVectors = name == DEFAULT_APPROACH_VECTOR_TRANSITION_NAME
+            val block = Table().apply {
+                val transitionName = if (!isVectors) TextField(name, skin, "MapEditorProperties").apply {
+                    addChangeListener { _, _ ->
+                        val to = text.trim()
+                        if (to.isNotBlank() && to != name) editorListeners.onApproachTransitionRename(name, to.uppercase())
+                    }
+                }
+                else Label("Vectors", skin, "SettingsOption")
+                add(transitionName).growX().width(tw).padRight(PAD_HORIZONTAL / 2).padTop(pv).padBottom(pv)
+            }
+            val ed = TextButton("Edit route", skin, "MapEditorPropertiesButton")
+            ed.addChangeListener { _, _ ->
+                editorListeners.onApproachEditRoute(RouteEditTarget.ApproachTransition(name))
+            }
+            if (isVectors) {
+                block.add(ed).growX().width(hw).padTop(pv).padBottom(pv).row()
+            } else {
+                val rm = TextButton("Delete", skin, "MapEditorPropertiesButton")
+                rm.addChangeListener { _, _ -> editorListeners.onApproachTransitionRemove(name) }
+                block.add(ed).growX().width(tw).padRight(PAD_HORIZONTAL / 2).padTop(pv).padBottom(pv)
+                block.add(rm).growX().width(tw).padTop(pv).padBottom(pv).row()
+            }
+            approachTransitionsTable.add(block).growX().padTop(pv).padBottom(pv).row()
+        }
+        approachTransitionsTable.invalidateHierarchy()
+    }
+
+    private fun rebuildApproachAllowedConfigs(airport: AirportDefinition, approach: ApproachDefinition) {
+        val skin = Scene2DSkin.defaultSkin
+        val lblStyle = skin.get("SettingsOption", LabelStyle::class.java)
+        val pv = scrollInnerRowPadVert()
+        approachAllowedConfigsTable.clearChildren()
+        if (approach.allowedRunwayConfigIds.isEmpty()) {
+            approachAllowedConfigsTable.add(
+                Label("(none — all configs)", lblStyle).apply {
+                    wrap = true
+                    setAlignment(Align.center)
+                },
+            ).growX().padTop(pv).padBottom(pv).row()
+        } else {
+            for (cid in approach.allowedRunwayConfigIds.sortedBy { it }) {
+                val cfg = airport.runwayConfigs.find { it.id == cid } ?: continue
+                val line = "Config $cid${if (cfg.name.isBlank()) "" else " - ${cfg.name}"}"
+                approachAllowedConfigsTable.add(
+                    Label(line, lblStyle).apply {
+                        wrap = true
+                        setAlignment(Align.center)
+                    },
+                ).growX().padRight(PAD_HORIZONTAL).padTop(pv).padBottom(pv).row()
+            }
+        }
+        approachAllowedConfigsTable.invalidateHierarchy()
+    }
+
+    /** File-backed fields with no editor commands yet; listed so map data is visible. */
+    private fun rebuildApproachReadOnlyMeta(approach: ApproachDefinition) {
+        val skin = Scene2DSkin.defaultSkin
+        val lblStyle = skin.get("SettingsOption", LabelStyle::class.java)
+        val pv = scrollInnerRowPadVert()
+        approachReadOnlyMetaTable.clearChildren()
+        val lines = buildList {
+            if (approach.deprecated) {
+                add("Deprecated: set in file (not editable in map editor)")
+            }
+            if (approach.wakeInhibitApproachNames.isNotEmpty()) {
+                add("Wake inhibit: ${approach.wakeInhibitApproachNames.joinToString(", ")}")
+            }
+            approach.parallelWakeAffects.forEach { p ->
+                add("Parallel wake affects: ${p.otherApproachName} — ${p.distanceNm} nm")
+            }
+        }
+        if (lines.isEmpty()) {
+            approachReadOnlyMetaTable.setTableRowSpaceAndVisibility(false, pv)
+            approachReadOnlyMetaTable.invalidateHierarchy()
+            return
+        }
+        approachReadOnlyMetaTable.setTableRowSpaceAndVisibility(true, pv)
+        approachReadOnlyMetaTable.add(
+            Label("File-only metadata", lblStyle).apply {
+                wrap = true
+                setAlignment(Align.center)
+            },
+        ).growX().padRight(PAD_HORIZONTAL).padTop(pv).padBottom(pv).row()
+        lines.forEach { text ->
+            approachReadOnlyMetaTable.add(
+                Label(text, lblStyle).apply {
+                    wrap = true
+                    setAlignment(Align.center)
+                },
+            ).growX().padRight(PAD_HORIZONTAL).padTop(pv).padBottom(pv).row()
+        }
+        approachReadOnlyMetaTable.invalidateHierarchy()
     }
 
     fun bindSid(icao: String, name: String, xNm: Float, yNm: Float) {
@@ -698,7 +1089,10 @@ class MapEditorPropertiesPane {
     fun build(uiStage: Stage, listeners: Listeners) {
         this.editorListeners = listeners
         val pw = paneWidth
-        val halfRowElementW = (pw - PAD_HORIZONTAL * 3f) / 2f - 1
+        val scrollInnerW = propertiesScrollInnerContentWidth()
+        val halfRowElementW = (scrollInnerW - PAD_HORIZONTAL * 3f) / 2f - 1
+        val routeEditInnerW = routeEditInnerContentWidth()
+        val routeEditHalfW = routeEditHalfRowElementW()
         uiStage.actors {
             paneImage = imageButton("UIPane") {
                 setSize(pw, UI_HEIGHT)
@@ -758,6 +1152,14 @@ class MapEditorPropertiesPane {
                                 addChangeListener { _, _ -> listeners.onAddRunway() }
                             }.cell(growX = true, width = halfRowElementW)
                         }
+                        row()
+                        addApproachRowTable = table {
+                            addApproachButton = textButton("Add approach", "MapEditorPropertiesButton").apply {
+                                addChangeListener { _, _ -> listeners.onAddApproach() }
+                            }.cell(growX = true, width = halfRowElementW, padRight = PAD_HORIZONTAL)
+                            addApproachRunwaySelectBox = selectBox<String>("MapEditorLayerSelect").apply {
+                            }.cell(growX = true, width = halfRowElementW)
+                        }.cell(growX = true)
                         row()
                         table {
                             airportWeatherButton = textButton("Weather (later)", "MapEditorPropertiesButton").apply {
@@ -1088,6 +1490,262 @@ class MapEditorPropertiesPane {
                             }.cell(growX = true)
                             row()
 
+                            approachRootTable = table {
+                                defaults().padBottom(scrollInnerRowPadVert()).padTop(scrollInnerRowPadVert())
+                                table {
+                                    label("Approach time slot", "SettingsOption").apply {
+                                        wrap = true
+                                        setAlignment(Align.center)
+                                    }.cell(expandX = true, width = halfRowElementW, padRight = PAD_HORIZONTAL)
+                                    approachTimeSlotSelectBox = selectBox<String>("MapEditorLayerSelect").apply {
+                                        items = GdxArray<String>().also { a ->
+                                            TimeSlot.entries.forEach { s -> a.add(s.name) }
+                                        }
+                                        selected = TimeSlot.DAY_NIGHT.name
+                                        addChangeListener { _, _ -> editorListeners.onCommitApproachProperties() }
+                                    }.cell(growX = true, width = halfRowElementW)
+                                }.cell(growX = true)
+                                row()
+                                table {
+                                    label("Runway (ICAO name)", "SettingsOption").apply {
+                                        wrap = true
+                                        setAlignment(Align.center)
+                                    }.cell(expandX = true, width = halfRowElementW, padRight = PAD_HORIZONTAL)
+                                    approachRunwaySelectBox = selectBox<String>("MapEditorLayerSelect").apply {
+                                        addChangeListener { _, _ -> editorListeners.onCommitApproachProperties() }
+                                    }.cell(growX = true, width = halfRowElementW)
+                                }.cell(growX = true)
+                                row()
+                                table {
+                                    label("DA (ft)", "SettingsOption").apply {
+                                        wrap = true
+                                        setAlignment(Align.center)
+                                    }.cell(expandX = true, width = halfRowElementW, padRight = PAD_HORIZONTAL)
+                                    approachDaField = textField("", "MapEditorProperties").apply {
+                                        addChangeListener { _, _ -> editorListeners.onCommitApproachProperties() }
+                                    }.cell(growX = true, width = halfRowElementW)
+                                }.cell(growX = true)
+                                row()
+                                table {
+                                    label("RVR (m)", "SettingsOption").apply {
+                                        wrap = true
+                                        setAlignment(Align.center)
+                                    }.cell(expandX = true, width = halfRowElementW, padRight = PAD_HORIZONTAL)
+                                    approachRvrField = textField("", "MapEditorProperties").apply {
+                                        addChangeListener { _, _ -> editorListeners.onCommitApproachProperties() }
+                                    }.cell(growX = true, width = halfRowElementW)
+                                }.cell(growX = true)
+                                row()
+                                table {
+                                    label("Lineup distance (nm)", "SettingsOption").apply {
+                                        wrap = true
+                                        setAlignment(Align.center)
+                                    }.cell(expandX = true, width = halfRowElementW, padRight = PAD_HORIZONTAL)
+                                    approachLineupField = textField("", "MapEditorProperties").apply {
+                                        addChangeListener { _, _ -> editorListeners.onCommitApproachProperties() }
+                                    }.cell(growX = true, width = halfRowElementW)
+                                }.cell(growX = true)
+                                row()
+                                table {
+                                    label("Visual after FAF", "SettingsOption").apply {
+                                        wrap = true
+                                        setAlignment(Align.center)
+                                    }.cell(expandX = true, width = halfRowElementW, padRight = PAD_HORIZONTAL)
+                                    approachVisualAfterFafCheckBox = checkBox("", "MapEditorProperties").apply {
+                                        addChangeListener { _, _ -> editorListeners.onCommitApproachProperties() }
+                                    }.cell(growX = true, width = halfRowElementW)
+                                }.cell(growX = true)
+                                row()
+                                table {
+                                    label("Localizer (LOC)", "SettingsOption").apply {
+                                        wrap = true
+                                        setAlignment(Align.center)
+                                    }.cell(expandX = true, width = halfRowElementW, padRight = PAD_HORIZONTAL)
+                                    approachLocEnabledCheckBox = checkBox("", "MapEditorProperties").apply {
+                                        addChangeListener { _, _ ->
+                                            editorListeners.onCommitApproachProperties()
+                                        }
+                                    }.cell(growX = true, width = halfRowElementW)
+                                }.cell(growX = true)
+                                row()
+                                approachLocFieldsTable = table {
+                                    defaults().padBottom(scrollInnerRowPadVert()).padTop(scrollInnerRowPadVert())
+                                    table {
+                                        label("LOC hdg (deg)", "SettingsOption").apply {
+                                            wrap = true
+                                            setAlignment(Align.center)
+                                        }.cell(expandX = true, width = halfRowElementW, padRight = PAD_HORIZONTAL)
+                                        approachLocHdgField = textField("", "MapEditorProperties").apply {
+                                            addChangeListener { _, _ -> editorListeners.onCommitApproachProperties() }
+                                        }.cell(growX = true, width = halfRowElementW)
+                                    }.cell(growX = true)
+                                    row()
+                                    table {
+                                        label("LOC dist (nm)", "SettingsOption").apply {
+                                            wrap = true
+                                            setAlignment(Align.center)
+                                        }.cell(expandX = true, width = halfRowElementW, padRight = PAD_HORIZONTAL)
+                                        approachLocDistField = textField("", "MapEditorProperties").apply {
+                                            addChangeListener { _, _ -> editorListeners.onCommitApproachProperties() }
+                                        }.cell(growX = true, width = halfRowElementW)
+                                    }.cell(growX = true)
+                                }.cell(growX = true)
+                                row()
+                                table {
+                                    defaults().padBottom(scrollInnerRowPadVert()).padTop(scrollInnerRowPadVert())
+                                    label("Glideslope (GS)", "SettingsOption").apply {
+                                        wrap = true
+                                        setAlignment(Align.center)
+                                    }.cell(expandX = true, width = halfRowElementW, padRight = PAD_HORIZONTAL)
+                                    approachGsEnabledCheckBox = checkBox("", "MapEditorProperties").apply {
+                                        addChangeListener { _, _ -> editorListeners.onCommitApproachProperties() }
+                                    }.cell(growX = true, width = halfRowElementW)
+                                }.cell(growX = true)
+                                row()
+                                approachGsFieldsTable = table {
+                                    defaults().padBottom(scrollInnerRowPadVert()).padTop(scrollInnerRowPadVert())
+                                    table {
+                                        label("GS angle (deg)", "SettingsOption").apply {
+                                            wrap = true
+                                            setAlignment(Align.center)
+                                        }.cell(expandX = true, width = halfRowElementW, padRight = PAD_HORIZONTAL)
+                                        approachGsAngleField = textField("", "MapEditorProperties").apply {
+                                            addChangeListener { _, _ -> editorListeners.onCommitApproachProperties() }
+                                        }.cell(growX = true, width = halfRowElementW)
+                                    }.cell(growX = true)
+                                    row()
+                                    table {
+                                        label("GS offset (nm)", "SettingsOption").apply {
+                                            wrap = true
+                                            setAlignment(Align.center)
+                                        }.cell(expandX = true, width = halfRowElementW, padRight = PAD_HORIZONTAL)
+                                        approachGsOffsetField = textField("", "MapEditorProperties").apply {
+                                            addChangeListener { _, _ -> editorListeners.onCommitApproachProperties() }
+                                        }.cell(growX = true, width = halfRowElementW)
+                                    }.cell(growX = true)
+                                    row()
+                                    table {
+                                        label("GS max alt (ft)", "SettingsOption").apply {
+                                            wrap = true
+                                            setAlignment(Align.center)
+                                        }.cell(expandX = true, width = halfRowElementW, padRight = PAD_HORIZONTAL)
+                                        approachGsMaxAltField = textField("", "MapEditorProperties").apply {
+                                            addChangeListener { _, _ -> editorListeners.onCommitApproachProperties() }
+                                        }.cell(growX = true, width = halfRowElementW)
+                                    }.cell(growX = true)
+                                }.cell(growX = true)
+                                row()
+                                table {
+                                    label("Step-down fixes", "SettingsOption").apply {
+                                        wrap = true
+                                        setAlignment(Align.center)
+                                    }.cell(expandX = true, width = halfRowElementW, padRight = PAD_HORIZONTAL)
+                                    approachStepDownEnabledCheckBox = checkBox("", "MapEditorProperties").apply {
+                                        addChangeListener { _, _ -> editorListeners.onCommitApproachProperties() }
+                                    }.cell(growX = true, width = halfRowElementW)
+                                }.cell(growX = true)
+                                row()
+                                approachStepDownBlockTable = table {
+                                    approachStepDownTable = table { }.cell(growX = true)
+                                    row()
+                                    approachStepDownAddButton = textButton("Add step-down fix", "MapEditorPropertiesButton").apply {
+                                        addChangeListener { _, _ -> editorListeners.onApproachStepDownAdd() }
+                                    }.cell(growX = true)
+                                }.cell(growX = true)
+                                row()
+                                table {
+                                    label("Circling", "SettingsOption").apply {
+                                        wrap = true
+                                        setAlignment(Align.center)
+                                    }.cell(expandX = true, width = halfRowElementW, padRight = PAD_HORIZONTAL)
+                                    approachCirclingEnabledCheckBox = checkBox("", "MapEditorProperties").apply {
+                                        addChangeListener { _, _ -> editorListeners.onCommitApproachProperties() }
+                                    }.cell(growX = true, width = halfRowElementW)
+                                }.cell(growX = true)
+                                row()
+                                approachCirclingFieldsTable = table {
+                                    defaults().padBottom(scrollInnerRowPadVert()).padTop(scrollInnerRowPadVert())
+                                    table {
+                                        label("Circling min alt (ft)", "SettingsOption").apply {
+                                            wrap = true
+                                            setAlignment(Align.center)
+                                        }.cell(expandX = true, width = halfRowElementW, padRight = PAD_HORIZONTAL)
+                                        approachCirclingMinField = textField("", "MapEditorProperties").apply {
+                                            addChangeListener { _, _ -> editorListeners.onCommitApproachProperties() }
+                                        }.cell(growX = true, width = halfRowElementW)
+                                    }.cell(growX = true)
+                                    row()
+                                    table {
+                                        label("Circling max alt (ft)", "SettingsOption").apply {
+                                            wrap = true
+                                            setAlignment(Align.center)
+                                        }.cell(expandX = true, width = halfRowElementW, padRight = PAD_HORIZONTAL)
+                                        approachCirclingMaxField = textField("", "MapEditorProperties").apply {
+                                            addChangeListener { _, _ -> editorListeners.onCommitApproachProperties() }
+                                        }.cell(growX = true, width = halfRowElementW)
+                                    }.cell(growX = true)
+                                    row()
+                                    table {
+                                        label("Circling turn", "SettingsOption").apply {
+                                            wrap = true
+                                            setAlignment(Align.center)
+                                        }.cell(expandX = true, width = halfRowElementW, padRight = PAD_HORIZONTAL)
+                                        approachCirclingTurnSelectBox = selectBox<String>("MapEditorLayerSelect").apply {
+                                            items = GdxArray<String>().also { a ->
+                                                a.add("RIGHT")
+                                                a.add("LEFT")
+                                            }
+                                            selected = "RIGHT"
+                                            addChangeListener { _, _ -> editorListeners.onCommitApproachProperties() }
+                                        }.cell(growX = true, width = halfRowElementW)
+                                    }.cell(growX = true)
+                                }.cell(growX = true)
+                                row()
+                                table {
+                                    approachEditMainRouteButton = textButton("Edit main route", "MapEditorPropertiesButton").apply {
+                                        addChangeListener { _, _ ->
+                                            editorListeners.onApproachEditRoute(RouteEditTarget.ApproachMainRoute)
+                                        }
+                                    }.cell(growX = true, width = halfRowElementW, padRight = PAD_HORIZONTAL)
+                                    approachEditMissedButton = textButton("Edit missed", "MapEditorPropertiesButton").apply {
+                                        addChangeListener { _, _ ->
+                                            editorListeners.onApproachEditRoute(RouteEditTarget.ApproachMissed)
+                                        }
+                                    }.cell(growX = true, width = halfRowElementW)
+                                }.cell(growX = true)
+                                row()
+                                label("Transitions", "SettingsOption").apply {
+                                    wrap = true
+                                    setAlignment(Align.center)
+                                }.cell(expandX = true, width = scrollInnerW)
+                                row()
+                                approachTransitionsTable = table { }.cell(growX = true)
+                                row()
+                                table {
+                                    approachAddTransitionNameField = textField("", "MapEditorProperties").apply {
+                                    }.cell(growX = true, width = thirdRowCaptionControlWidth(), padRight = PAD_HORIZONTAL / 2)
+                                    approachAddTransitionButton = textButton("Add transition", "MapEditorPropertiesButton").apply {
+                                        addChangeListener { _, _ -> editorListeners.onApproachTransitionAdd() }
+                                    }.cell(growX = true, width = thirdRowCaptionControlWidth() * 2 + PAD_HORIZONTAL / 2)
+                                }.cell(growX = true)
+                                row()
+                                label("Allowed runway configs", "SettingsOption").apply {
+                                    wrap = true
+                                    setAlignment(Align.center)
+                                }.cell(expandX = true, width = scrollInnerW)
+                                row()
+                                approachAllowedConfigsTable = table { }.cell(growX = true)
+                                row()
+                                approachReadOnlyMetaTable = table { }.cell(growX = true)
+                                row()
+                                table {
+                                    deleteApproachButton = textButton("Delete approach", "MapEditorPropertiesButton").apply {
+                                        addChangeListener { _, _ -> editorListeners.onDeleteApproach() }
+                                    }.cell(growX = true)
+                                }.cell(growX = true)
+                            }.cell(growX = true)
+                            row()
+
                             runwayConfigListTable = table {  }
                             row()
                             table {
@@ -1166,6 +1824,7 @@ class MapEditorPropertiesPane {
                             hideMinAltPropertyRows()
                             hideAirportPropertyRows()
                             hideRunwayExtendedRows()
+                            hideApproachPropertyRows()
                         }
                         setOverscroll(false, false)
                         setFadeScrollBars(false)
@@ -1174,6 +1833,80 @@ class MapEditorPropertiesPane {
                     }.also { propertiesScrollPane = it }.cell(width = pw - PAD_HORIZONTAL * 2f, growY = true, align = Align.top)
                 }
             }
+        }
+        val skin = Scene2DSkin.defaultSkin
+        val lblStyle = skin.get("SettingsOption", LabelStyle::class.java)
+        routeEditTable = Table().apply {
+            defaults().padBottom(scrollInnerRowPadVert()).padTop(scrollInnerRowPadVert())
+                .padLeft(PAD_HORIZONTAL).padRight(PAD_HORIZONTAL)
+            routeEditTitleLabel = Label("Route", skin, "MapEditorPropertiesPane")
+            add(routeEditTitleLabel).growX().row()
+            routeEditPreviewLabel = Label("", lblStyle).apply {
+                wrap = true
+                setAlignment(Align.topLeft)
+            }
+            add(routeEditPreviewLabel).growX().width(routeEditInnerW).row()
+            routeEditErrorLabel = Label("", lblStyle).apply {
+                wrap = true
+                setAlignment(Align.topLeft)
+            }
+            add(routeEditErrorLabel).growX().width(routeEditInnerW).row()
+            val hdgRow = Table()
+            hdgRow.add(
+                Label("HDG leg (deg)", lblStyle).apply {
+                    wrap = true
+                    setAlignment(Align.center)
+                },
+            ).expandX().width(routeEditHalfW).padRight(PAD_HORIZONTAL)
+            routeEditHdgField = TextField("", skin, "MapEditorProperties")
+            hdgRow.add(routeEditHdgField).growX().width(routeEditHalfW)
+            add(hdgRow).growX().row()
+            val initRow = Table()
+            initRow.add(
+                Label("INIT hdg / A alt", lblStyle).apply {
+                    wrap = true
+                    setAlignment(Align.center)
+                },
+            ).expandX().width(routeEditHalfW / 2f).padRight(PAD_HORIZONTAL)
+            routeEditInitHdgField = TextField("", skin, "MapEditorProperties")
+            routeEditInitAltField = TextField("", skin, "MapEditorProperties")
+            initRow.add(routeEditInitHdgField).growX().width(routeEditHalfW / 2f - PAD_HORIZONTAL / 2f).padRight(PAD_HORIZONTAL)
+            initRow.add(routeEditInitAltField).growX().width(routeEditHalfW / 2f - PAD_HORIZONTAL / 2f)
+            add(initRow).growX().row()
+            val wyptRow = Table()
+            routeEditAddWyptButton = TextButton("Add WYPT (map)", skin, "MapEditorPropertiesButton").apply {
+                addChangeListener { _, _ -> editorListeners.onRouteEditPickWaypoint(false) }
+            }
+            routeEditAddHoldButton = TextButton("Add HOLD (map)", skin, "MapEditorPropertiesButton").apply {
+                addChangeListener { _, _ -> editorListeners.onRouteEditPickWaypoint(true) }
+            }
+            wyptRow.add(routeEditAddWyptButton).growX().width(routeEditHalfW).padRight(PAD_HORIZONTAL)
+            wyptRow.add(routeEditAddHoldButton).growX().width(routeEditHalfW)
+            add(wyptRow).growX().row()
+            val rmRow = Table()
+            routeEditRemoveLastButton = TextButton("Remove last leg", skin, "MapEditorPropertiesButton").apply {
+                addChangeListener { _, _ -> editorListeners.onRouteEditRemoveLastToken() }
+            }
+            routeEditAddHdngButton = TextButton("Add HDG", skin, "MapEditorPropertiesButton").apply {
+                addChangeListener { _, _ -> editorListeners.onRouteEditAddHdng() }
+            }
+            rmRow.add(routeEditRemoveLastButton).growX().width(routeEditHalfW).padRight(PAD_HORIZONTAL)
+            rmRow.add(routeEditAddHdngButton).growX().width(routeEditHalfW)
+            add(rmRow).growX().row()
+            routeEditAddInitButton = TextButton("Add INITCLIMB", skin, "MapEditorPropertiesButton").apply {
+                addChangeListener { _, _ -> editorListeners.onRouteEditAddInitClimb() }
+            }
+            add(routeEditAddInitButton).growX().row()
+            val backRow = Table()
+            routeEditBackButton = TextButton("Back", skin, "MapEditorPropertiesButton").apply {
+                addChangeListener { _, _ -> editorListeners.onRouteEditBack() }
+            }
+            routeEditApplyButton = TextButton("Apply", skin, "MapEditorPropertiesButton").apply {
+                addChangeListener { _, _ -> editorListeners.onRouteEditApply() }
+            }
+            backRow.add(routeEditBackButton).growX().width(routeEditHalfW).padRight(PAD_HORIZONTAL)
+            backRow.add(routeEditApplyButton).growX().width(routeEditHalfW)
+            add(backRow).growX().row()
         }
     }
 

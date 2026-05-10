@@ -318,6 +318,7 @@ object AirportMapIO {
                         val hdg = parts[1].toFloatOrNull() ?: 0f
                         val dist = parts[2].toByteOrNull() ?: 0
                         it.localizer = LocalizerDefinition(hdg, dist)
+                        it.localizerEnabled = true
                     }
                 }
                 "GS" -> currApproach?.let {
@@ -326,17 +327,21 @@ object AirportMapIO {
                         val offset = parts[2].toFloatOrNull() ?: 0f
                         val maxAlt = parts[3].toShortOrNull() ?: 0
                         it.glideslope = GlideslopeDefinition(angle, offset, maxAlt)
+                        it.glideslopeEnabled = true
                     }
                 }
                 "STEPDOWN" -> currApproach?.let {
+                    var any = false
                     for (i in 1 until parts.size) {
                         val seg = parts[i].split("@", limit = 2)
                         if (seg.size != 2) continue
                         val alt = seg[0].toShortOrNull() ?: continue
                         val dist = seg[1].toFloatOrNull() ?: continue
                         it.stepDownFixes.add(StepDownFixDefinition(alt, dist))
+                        any = true
                     }
                     it.stepDownFixes.sortBy { s -> s.distanceNm }
+                    if (any) it.stepDownEnabled = true
                 }
                 "LINEUP" -> currApproach?.lineupDistanceNm = parts.getOrNull(1)?.toFloatOrNull()
                 "CIRCLING" -> currApproach?.let {
@@ -345,10 +350,11 @@ object AirportMapIO {
                         val maxAlt = parts[2].toIntOrNull() ?: 0
                         val dir = parseTurnDir(parts[3], warn = { warning -> warn("Line ${lineNo + 1}: $warning") })
                         it.circling = CirclingDefinition(minAlt, maxAlt, dir)
+                        it.circlingEnabled = true
                     }
                 }
                 "TRANSITION" -> currApproach?.let {
-                    if (parts.size >= 3) it.transitions[parts[1]] = parts.drop(2)
+                    if (parts.size >= 2) it.transitions[parts[1]] = parts.drop(2)
                 }
                 "MISSED" -> currApproach?.missedApproachTokens = parts.drop(1)
                 "WAKE_INHIBIT" -> currApproach?.wakeInhibitApproachNames?.apply {
@@ -531,6 +537,11 @@ object AirportMapIO {
 
         // Normalize: sort intermediate alts.
         map.globals.intermediateAltitudesFt.sort()
+        for (arpt in map.airports) {
+            for (ap in arpt.approaches) {
+                ap.ensureDefaultVectorTransition()
+            }
+        }
         return map
     }
 
@@ -694,15 +705,36 @@ object AirportMapIO {
             arpt.approaches.forEach { ap ->
                 ln("APCH/ ${ap.name.replace(" ", "-")} ${ap.timeSlot.name} ${ap.runwayName} ${formatNmPoint(ap.positionNm)} ${ap.decisionAltitudeFt} ${ap.rvrM}")
                 if (ap.deprecated) ln("DEPRECATED")
-                ap.localizer?.let { ln("LOC ${trimFloat(it.headingDeg)} ${it.distanceNm}") }
-                ap.glideslope?.let { ln("GS ${trimFloat(it.angleDeg)} ${trimFloat(it.offsetNm)} ${it.maxInterceptAltitudeFt}") }
-                if (ap.stepDownFixes.isNotEmpty()) {
+                if (ap.localizerEnabled && ap.localizer != null) {
+                    val loc = ap.localizer!!
+                    ln("LOC ${trimFloat(loc.headingDeg)} ${loc.distanceNm}")
+                }
+                if (ap.glideslopeEnabled && ap.glideslope != null) {
+                    val gs = ap.glideslope!!
+                    ln("GS ${trimFloat(gs.angleDeg)} ${trimFloat(gs.offsetNm)} ${gs.maxInterceptAltitudeFt}")
+                }
+                if (ap.stepDownEnabled && ap.stepDownFixes.isNotEmpty()) {
                     ln("STEPDOWN " + ap.stepDownFixes.joinToString(" ") { "${it.altitudeFt}@${trimFloat(it.distanceNm)}" })
                 }
                 ap.lineupDistanceNm?.let { ln("LINEUP ${trimFloat(it)}") }
-                ap.circling?.let { ln("CIRCLING ${it.minBreakoutAltFt} ${it.maxBreakoutAltFt} ${it.turnDirection.name}") }
+                if (ap.circlingEnabled && ap.circling != null) {
+                    val c = ap.circling!!
+                    ln("CIRCLING ${c.minBreakoutAltFt} ${c.maxBreakoutAltFt} ${c.turnDirection.name}")
+                }
                 ln("ROUTE " + ap.routeTokens.joinToString(" "))
-                ap.transitions.forEach { (name, toks) -> ln("TRANSITION $name " + toks.joinToString(" ")) }
+                fun writeTransition(name: String, toks: List<String>) {
+                    if (toks.isEmpty()) ln("TRANSITION $name")
+                    else ln("TRANSITION $name " + toks.joinToString(" "))
+                }
+                if (ap.transitions.containsKey(DEFAULT_APPROACH_VECTOR_TRANSITION_NAME)) {
+                    writeTransition(
+                        DEFAULT_APPROACH_VECTOR_TRANSITION_NAME,
+                        ap.transitions[DEFAULT_APPROACH_VECTOR_TRANSITION_NAME] ?: emptyList(),
+                    )
+                }
+                ap.transitions.keys.filter { it != DEFAULT_APPROACH_VECTOR_TRANSITION_NAME }.sorted().forEach { name ->
+                    writeTransition(name, ap.transitions[name] ?: emptyList())
+                }
                 if (ap.missedApproachTokens.isNotEmpty()) ln("MISSED " + ap.missedApproachTokens.joinToString(" "))
                 if (ap.wakeInhibitApproachNames.isNotEmpty()) ln("WAKE_INHIBIT " + ap.wakeInhibitApproachNames.joinToString(" ") { it.replace(" ", "-") })
                 ap.parallelWakeAffects.forEach { p -> ln("PARALLEL_WAKE_AFFECTS ${p.otherApproachName.replace(" ", "-")} ${trimFloat(p.distanceNm)}") }

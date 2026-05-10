@@ -3,6 +3,13 @@ package com.bombbird.terminalcontrol2.editor.undo
 import com.bombbird.terminalcontrol2.editor.model.AirportDefinition
 import com.bombbird.terminalcontrol2.editor.model.AirportMapDefinition
 import com.bombbird.terminalcontrol2.editor.model.ApproachDefinition
+import com.bombbird.terminalcontrol2.editor.model.CirclingDefinition
+import com.bombbird.terminalcontrol2.editor.model.DEFAULT_APPROACH_VECTOR_TRANSITION_NAME
+import com.bombbird.terminalcontrol2.editor.model.GlideslopeDefinition
+import com.bombbird.terminalcontrol2.editor.model.LocalizerDefinition
+import com.bombbird.terminalcontrol2.editor.model.RouteTokens
+import com.bombbird.terminalcontrol2.editor.model.StepDownFixDefinition
+import com.bombbird.terminalcontrol2.editor.model.ensureDefaultVectorTransition
 import com.bombbird.terminalcontrol2.editor.model.MinAltCircleSectorDefinition
 import com.bombbird.terminalcontrol2.editor.model.MinAltPolygonSectorDefinition
 import com.bombbird.terminalcontrol2.editor.model.MinAltSectorDefinition
@@ -72,16 +79,22 @@ class RenameWaypointCommand(
 }
 
 class RenameRunwayCommand(
+    private val airport: AirportDefinition,
     private val runway: RunwayDefinition,
     private val from: String,
     private val to: String,
 ) : EditorCommand {
+    private val affectedApproaches: List<ApproachDefinition> =
+        airport.approaches.filter { it.runwayName == from }
+
     override fun execute() {
         runway.name = to
+        for (ap in affectedApproaches) ap.runwayName = to
     }
 
     override fun undo() {
         runway.name = from
+        for (ap in affectedApproaches) ap.runwayName = from
     }
 }
 
@@ -533,6 +546,350 @@ class SetRunwayTowerFrequencyCommand(
 
     override fun undo() {
         runway.towerFrequency = from
+    }
+}
+
+class SetApproachTimeSlotCommand(
+    private val approach: ApproachDefinition,
+    private val from: TimeSlot,
+    private val to: TimeSlot,
+) : EditorCommand {
+    override fun execute() {
+        approach.timeSlot = to
+    }
+
+    override fun undo() {
+        approach.timeSlot = from
+    }
+}
+
+class SetApproachRunwayNameCommand(
+    private val approach: ApproachDefinition,
+    private val from: String,
+    private val to: String,
+) : EditorCommand {
+    override fun execute() {
+        approach.runwayName = to
+    }
+
+    override fun undo() {
+        approach.runwayName = from
+    }
+}
+
+class SetApproachDecisionAltitudeCommand(
+    private val approach: ApproachDefinition,
+    private val from: Short,
+    private val to: Short,
+) : EditorCommand {
+    override fun execute() {
+        approach.decisionAltitudeFt = to
+    }
+
+    override fun undo() {
+        approach.decisionAltitudeFt = from
+    }
+}
+
+class SetApproachRvrCommand(
+    private val approach: ApproachDefinition,
+    private val from: Short,
+    private val to: Short,
+) : EditorCommand {
+    override fun execute() {
+        approach.rvrM = to
+    }
+
+    override fun undo() {
+        approach.rvrM = from
+    }
+}
+
+class SetApproachLineupDistanceCommand(
+    private val approach: ApproachDefinition,
+    private val from: Float?,
+    private val to: Float?,
+) : EditorCommand {
+    override fun execute() {
+        approach.lineupDistanceNm = to
+    }
+
+    override fun undo() {
+        approach.lineupDistanceNm = from
+    }
+}
+
+class SetApproachVisualAfterFafCommand(
+    private val approach: ApproachDefinition,
+    private val from: Boolean,
+    private val to: Boolean,
+) : EditorCommand {
+    override fun execute() {
+        approach.visualAfterFaf = to
+    }
+
+    override fun undo() {
+        approach.visualAfterFaf = from
+    }
+}
+
+class SetApproachLocalizerEnabledCommand(
+    private val approach: ApproachDefinition,
+    private val from: Boolean,
+    private val to: Boolean,
+) : EditorCommand {
+    override fun execute() {
+        approach.localizerEnabled = to
+    }
+
+    override fun undo() {
+        approach.localizerEnabled = from
+    }
+}
+
+class SetApproachLocalizerFieldsCommand(
+    private val approach: ApproachDefinition,
+    private val fromHdg: Float,
+    private val fromDist: Byte,
+    private val toHdg: Float,
+    private val toDist: Byte,
+) : EditorCommand {
+    override fun execute() {
+        approach.localizer = LocalizerDefinition(toHdg, toDist)
+    }
+
+    override fun undo() {
+        approach.localizer = LocalizerDefinition(fromHdg, fromDist)
+    }
+}
+
+class SetApproachGlideslopeEnabledCommand(
+    private val approach: ApproachDefinition,
+    private val from: Boolean,
+    private val to: Boolean,
+) : EditorCommand {
+    override fun execute() {
+        approach.glideslopeEnabled = to
+    }
+
+    override fun undo() {
+        approach.glideslopeEnabled = from
+    }
+}
+
+class SetApproachGlideslopeFieldsCommand(
+    private val approach: ApproachDefinition,
+    private val from: GlideslopeDefinition,
+    private val to: GlideslopeDefinition,
+) : EditorCommand {
+    override fun execute() {
+        approach.glideslope = GlideslopeDefinition(to.angleDeg, to.offsetNm, to.maxInterceptAltitudeFt)
+    }
+
+    override fun undo() {
+        approach.glideslope = GlideslopeDefinition(from.angleDeg, from.offsetNm, from.maxInterceptAltitudeFt)
+    }
+}
+
+class SetApproachStepDownEnabledCommand(
+    private val approach: ApproachDefinition,
+    private val from: Boolean,
+    private val to: Boolean,
+) : EditorCommand {
+    override fun execute() {
+        approach.stepDownEnabled = to
+    }
+
+    override fun undo() {
+        approach.stepDownEnabled = from
+    }
+}
+
+class ReplaceStepDownFixesCommand(
+    private val approach: ApproachDefinition,
+    private val from: List<StepDownFixDefinition>,
+    private val to: List<StepDownFixDefinition>,
+) : EditorCommand {
+    override fun execute() {
+        approach.stepDownFixes.clear()
+        approach.stepDownFixes.addAll(to.map { StepDownFixDefinition(it.altitudeFt, it.distanceNm) })
+    }
+
+    override fun undo() {
+        approach.stepDownFixes.clear()
+        approach.stepDownFixes.addAll(from.map { StepDownFixDefinition(it.altitudeFt, it.distanceNm) })
+    }
+}
+
+class SetApproachCirclingEnabledCommand(
+    private val approach: ApproachDefinition,
+    private val from: Boolean,
+    private val to: Boolean,
+) : EditorCommand {
+    override fun execute() {
+        approach.circlingEnabled = to
+    }
+
+    override fun undo() {
+        approach.circlingEnabled = from
+    }
+}
+
+class SetApproachCirclingFieldsCommand(
+    private val approach: ApproachDefinition,
+    private val from: CirclingDefinition,
+    private val to: CirclingDefinition,
+) : EditorCommand {
+    override fun execute() {
+        approach.circling = CirclingDefinition(to.minBreakoutAltFt, to.maxBreakoutAltFt, to.turnDirection)
+    }
+
+    override fun undo() {
+        approach.circling = CirclingDefinition(from.minBreakoutAltFt, from.maxBreakoutAltFt, from.turnDirection)
+    }
+}
+
+class SetApproachRouteTokensCommand(
+    private val approach: ApproachDefinition,
+    private val from: RouteTokens,
+    private val to: RouteTokens,
+) : EditorCommand {
+    override fun execute() {
+        approach.routeTokens = to
+    }
+
+    override fun undo() {
+        approach.routeTokens = from
+    }
+}
+
+class SetApproachMissedTokensCommand(
+    private val approach: ApproachDefinition,
+    private val from: RouteTokens,
+    private val to: RouteTokens,
+) : EditorCommand {
+    override fun execute() {
+        approach.missedApproachTokens = to
+    }
+
+    override fun undo() {
+        approach.missedApproachTokens = from
+    }
+}
+
+class SetApproachTransitionTokensCommand(
+    private val approach: ApproachDefinition,
+    private val transitionName: String,
+    private val from: RouteTokens,
+    private val to: RouteTokens,
+) : EditorCommand {
+    override fun execute() {
+        approach.transitions[transitionName] = to
+        approach.ensureDefaultVectorTransition()
+    }
+
+    override fun undo() {
+        approach.transitions[transitionName] = from
+        approach.ensureDefaultVectorTransition()
+    }
+}
+
+class AddApproachTransitionCommand(
+    private val approach: ApproachDefinition,
+    private val name: String,
+    private val tokens: RouteTokens,
+) : EditorCommand {
+    init {
+        require(name != DEFAULT_APPROACH_VECTOR_TRANSITION_NAME) { "reserved transition name" }
+        require(name.isNotBlank()) { "blank transition name" }
+    }
+
+    private var added = false
+
+    override fun execute() {
+        if (approach.transitions.containsKey(name)) return
+        approach.transitions[name] = tokens
+        added = true
+        approach.ensureDefaultVectorTransition()
+    }
+
+    override fun undo() {
+        if (added) approach.transitions.remove(name)
+        approach.ensureDefaultVectorTransition()
+    }
+}
+
+class RemoveApproachTransitionCommand(
+    private val approach: ApproachDefinition,
+    private val name: String,
+) : EditorCommand {
+    init {
+        require(name != DEFAULT_APPROACH_VECTOR_TRANSITION_NAME) { "cannot remove vectors" }
+    }
+
+    private lateinit var removedTokens: RouteTokens
+
+    override fun execute() {
+        removedTokens = approach.transitions[name] ?: emptyList()
+        approach.transitions.remove(name)
+        approach.ensureDefaultVectorTransition()
+    }
+
+    override fun undo() {
+        approach.transitions[name] = removedTokens
+        approach.ensureDefaultVectorTransition()
+    }
+}
+
+class RenameApproachTransitionCommand(
+    private val approach: ApproachDefinition,
+    private val fromName: String,
+    private val toName: String,
+) : EditorCommand {
+    init {
+        require(fromName != DEFAULT_APPROACH_VECTOR_TRANSITION_NAME && toName != DEFAULT_APPROACH_VECTOR_TRANSITION_NAME) {
+            "cannot rename vectors"
+        }
+    }
+
+    override fun execute() {
+        val t = approach.transitions.remove(fromName) ?: return
+        approach.transitions[toName] = t
+        approach.ensureDefaultVectorTransition()
+    }
+
+    override fun undo() {
+        val t = approach.transitions.remove(toName) ?: return
+        approach.transitions[fromName] = t
+        approach.ensureDefaultVectorTransition()
+    }
+}
+
+class AddApproachCommand(
+    private val list: MutableList<ApproachDefinition>,
+    private val approach: ApproachDefinition,
+    private val insertAt: Int,
+) : EditorCommand {
+    override fun execute() {
+        list.add(insertAt, approach)
+    }
+
+    override fun undo() {
+        list.removeAt(insertAt)
+    }
+}
+
+class RemoveApproachCommand(
+    private val list: MutableList<ApproachDefinition>,
+    private val approach: ApproachDefinition,
+    private val index: Int,
+) : EditorCommand {
+    override fun execute() {
+        list.removeAt(index)
+    }
+
+    override fun undo() {
+        list.add(index, approach)
     }
 }
 

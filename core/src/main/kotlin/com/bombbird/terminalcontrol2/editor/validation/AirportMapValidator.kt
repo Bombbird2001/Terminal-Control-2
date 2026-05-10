@@ -5,6 +5,8 @@ import com.bombbird.terminalcontrol2.editor.undo.MapEditorByteIds
 import com.bombbird.terminalcontrol2.editor.model.AirportMapDefinition
 import com.bombbird.terminalcontrol2.editor.model.MinAltCircleSectorDefinition
 import com.bombbird.terminalcontrol2.editor.model.MinAltPolygonSectorDefinition
+import com.bombbird.terminalcontrol2.editor.route.collectRouteParseWarnings
+import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.utilities.calculateDistanceBetweenPoints
 
 data class ValidationProblem(
@@ -65,6 +67,8 @@ object AirportMapValidator {
         val towerFreqRegex = Regex("^1\\d{2}\\.\\d{1,3}$")
         if (MapEditorByteIds.nextAirportId(map) == null) err("Max airport count reached")
 
+        val approachNameOccurrences = HashMap<String, MutableList<String>>()
+
         for (a in map.airports) {
             if (!airportIdSet.add(a.id)) err("Duplicate AIRPORT id: ${a.id}")
             if (!airportIcaoSet.add(a.icao)) err("Duplicate AIRPORT ICAO: ${a.icao}")
@@ -123,6 +127,43 @@ object AirportMapValidator {
                 for (r in cfg.arrivalRunways) {
                     if (!arrSeen.add(r)) warn("CONFIG ${cfg.id} ARR lists duplicate runway: $r at ${a.icao}")
                 }
+            }
+
+            for (ap in a.approaches) {
+                approachNameOccurrences.getOrPut(ap.name) { mutableListOf() }
+                    .add("${a.icao} rwy ${ap.runwayName}")
+                if (ap.runwayName !in runwayNamesForRefs) {
+                    warn("Approach '${ap.name}' at ${a.icao}: runway '${ap.runwayName}' not found")
+                }
+                if (ap.glideslopeEnabled && ap.stepDownEnabled && ap.glideslope != null && ap.stepDownFixes.isNotEmpty()) {
+                    warn("Approach '${ap.name}' at ${a.icao}: glideslope and step-down fixes are mutually exclusive")
+                }
+                fun reportRoute(ctx: String, tokens: List<String>, phase: Byte) {
+                    if (tokens.isEmpty()) return
+                    for (msg in collectRouteParseWarnings(tokens, phase, map)) {
+                        warn("$ctx '${ap.name}' at ${a.icao}: $msg")
+                    }
+                }
+                reportRoute("Approach route", ap.routeTokens, Route.Leg.APP)
+                if (ap.missedApproachTokens.isNotEmpty()) {
+                    reportRoute("Missed approach", ap.missedApproachTokens, Route.Leg.MISSED_APP)
+                }
+                for ((tName, tToks) in ap.transitions) {
+                    if (tName.isBlank()) warn("Approach '${ap.name}' at ${a.icao}: blank transition name")
+                    reportRoute("Transition $tName", tToks, Route.Leg.APP_TRANS)
+                }
+                val cfgIds = a.runwayConfigs.map { it.id }.toHashSet()
+                for (cid in ap.allowedRunwayConfigIds) {
+                    if (cid !in cfgIds) {
+                        warn("Approach '${ap.name}' at ${a.icao}: ALLOWED_CONFIGS references unknown config id $cid")
+                    }
+                }
+            }
+        }
+
+        for ((name, occurrences) in approachNameOccurrences) {
+            if (occurrences.size > 1) {
+                warn("Duplicate approach name '$name' at: ${occurrences.joinToString(", ")}")
             }
         }
 
