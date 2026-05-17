@@ -21,7 +21,7 @@ pluginManagement {
         id("org.jetbrains.kotlin.jvm") version (kotlinVersion ?: error("Missing kotlinVersion in gradle.properties"))
         id("org.jetbrains.kotlin.android") version kotlinVersion
         id("kotlin-android") version kotlinVersion
-        id("com.android.application") version "9.0.0-alpha06"
+        id("com.android.application") version "9.0.1"
     }
 }
 
