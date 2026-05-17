@@ -11,6 +11,7 @@ buildscript {
     dependencies {
         // Needed for the iOS RoboVM subproject (plugin is applied by id there).
         classpath("com.mobidevelop.robovm:robovm-gradle-plugin:${project.properties["robovmVersion"]}")
+        classpath("com.google.protobuf:protobuf-gradle-plugin:${project.properties["protobufVersion"]}")
 
         // Defensive constraint (Log4j CVEs) for buildscript classpath only.
         constraints {
