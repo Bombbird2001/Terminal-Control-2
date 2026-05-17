@@ -491,7 +491,7 @@ class RadarScreen private constructor(private val connectionHost: String, privat
         KtxAsync.launch(Dispatchers.IO) {
             try {
                 networkClient.stop()
-            } catch (e: ClosedSelectorException) {
+            } catch (_: ClosedSelectorException) {
                 FileLog.info("RadarScreen", "Client channel selector already closed before disposal")
             }
         }
@@ -710,13 +710,15 @@ class RadarScreen private constructor(private val connectionHost: String, privat
 
     /** Resumes the game, and sends a resume game signal to the server */
     fun resumeGame(reconnect: Boolean = true) {
-        if (networkClient.isConnected) networkClient.sendTCP(GameRunningStatus(true))
+        if (networkClient.isConnected) {
+            networkClient.sendTCP(GameRunningStatus(true))
+        }
         GAME.soundManager.resume()
         if (!networkClient.isConnected && reconnect) {
             networkClient.beforeConnect(roomId)
             try {
                 networkClient.reconnect()
-            } catch (e: IOException) {
+            } catch (_: IOException) {
                 FileLog.warn("RadarScreen", "Failed to reconnect to server")
                 GAME.quitCurrentGameWithDialog { CustomDialog("Disconnected", "You have been disconnected from the server - most likely the host quit the game",
                     "", "Ok") }
@@ -731,6 +733,7 @@ class RadarScreen private constructor(private val connectionHost: String, privat
     fun quitGame() {
         GAME.gameServer?.setLoopingFalse()
         resumeGame(false)
+        networkClient.stop()
     }
 
     /**

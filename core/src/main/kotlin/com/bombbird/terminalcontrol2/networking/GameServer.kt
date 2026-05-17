@@ -137,7 +137,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
     private val loopRunning = AtomicBoolean(false)
     val gameRunning: Boolean
         get() = loopRunning.get()
-    private val gamePaused = AtomicBoolean(false)
+    private var gamePaused = false
     private var lock = ReentrantLock()
     private val pauseCondition = lock.newCondition()
     // Blocking queue to store runnables to be run after a game pause
@@ -337,12 +337,13 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
                 updateGameRunningStatus(false)
                 loopRunning.set(true)
                 gameLoop()
-                cleanUp()
                 saveGame(this)
             } catch (e: Exception) {
                 e.printStackTrace()
                 HttpRequest.sendCrashReport(e, "GameServer", getMultiplayerType())
                 GAME.quitCurrentGameWithDialog { CustomDialog("Error", "An error occurred", "", "Ok") }
+            } finally {
+                cleanUp()
             }
         }
     }
@@ -579,7 +580,7 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
             if (!sectorMap.containsKey(conn.uuid)) return
             val newPlayerNo = playerNo.decrementAndGet().toByte()
             if (newPlayerNo <= 0) {
-                return GAME.quitCurrentGameWithDialog { CustomDialog("Game closed", "All players have left the game", "", "Ok") }
+                return updateGameRunningStatus(true)
             }
             val sectorControlled = sectorMap[conn.uuid]
             if (sectorControlled != null) networkServer.sendToAllTCP(PlayerLeft(sectorControlled))
@@ -670,13 +671,19 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
                 }
             }
 
-            if (gamePaused.get()) lock.withLock {
-                // Process pending pause runnables
-                while (true) {
-                    pendingPauseQueue.poll()?.run() ?: break
+            lock.withLock {
+                if (gamePaused) {
+                    // Process pending pause runnables
+                    while (true) {
+                        pendingPauseQueue.poll()?.run() ?: break
+                    }
+                    pauseCondition.await()
+                    // Handle spurious wake-ups
+                    while (gamePaused) {
+                        pauseCondition.await()
+                    }
+                    currMs = System.currentTimeMillis()
                 }
-                pauseCondition.await()
-                currMs = System.currentTimeMillis()
             }
 
             prevMs = currMs
@@ -722,14 +729,18 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
      */
     fun updateGameRunningStatus(running: Boolean) {
         if (running) {
-            if (gamePaused.get()) lock.withLock {
-                FileLog.info("GameServer", "Resuming game loop")
-                pauseCondition.signal()
+            lock.withLock {
+                if (gamePaused) {
+                    FileLog.info("GameServer", "Resuming game loop")
+                    gamePaused = false
+                    pauseCondition.signal()
+                }
             }
-            gamePaused.set(false)
         } else if (playerNo.get() <= 1) {
             FileLog.info("GameServer", "Pausing game loop")
-            gamePaused.set(true)
+            lock.withLock {
+                gamePaused = true
+            }
         }
     }
 

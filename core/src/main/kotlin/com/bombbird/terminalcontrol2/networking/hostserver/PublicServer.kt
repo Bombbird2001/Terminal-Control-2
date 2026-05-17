@@ -9,6 +9,7 @@ import com.bombbird.terminalcontrol2.networking.dataclasses.RequestClientData
 import com.bombbird.terminalcontrol2.networking.encryption.*
 import com.bombbird.terminalcontrol2.networking.transport.ProtoMessages
 import com.bombbird.terminalcontrol2.networking.transport.TransportConnection
+import com.bombbird.terminalcontrol2.screens.RadarScreen
 import com.bombbird.terminalcontrol2.ui.CustomDialog
 import com.esotericsoftware.kryo.Kryo
 import com.bombbird.terminalcontrol2.utilities.FileLog
@@ -49,7 +50,7 @@ class PublicServer(
     override fun start(): Boolean {
         relayConn.onTcpReceived = { msg -> handleTcpMessage(msg) }
         relayConn.onDisconnected = {
-            if (GAME.shownScreen is com.bombbird.terminalcontrol2.screens.RadarScreen)
+            if (GAME.shownScreen is RadarScreen)
                 GAME.quitCurrentGameWithDialog {
                     CustomDialog("Disconnected", "Lost connection to the relay server", "", "Ok")
                 }
