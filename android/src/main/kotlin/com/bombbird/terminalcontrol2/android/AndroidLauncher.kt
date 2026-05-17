@@ -3,7 +3,6 @@ package com.bombbird.terminalcontrol2.android
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import androidx.multidex.MultiDex
 
 import com.badlogic.gdx.backends.android.AndroidApplication
 import com.badlogic.gdx.backends.android.AndroidApplicationConfiguration
@@ -78,6 +77,5 @@ class AndroidLauncher : AndroidApplication() {
 
     override fun attachBaseContext(newBase: Context?) {
         super.attachBaseContext(newBase)
-        MultiDex.install(this)
     }
 }

@@ -248,6 +248,7 @@ private fun generateRandomGust(windSpeedKts: Short): Short {
  */
 private fun generateRandomWsForAllRwy(airport: Entity): String {
     val speed = airport[MetarInfo.mapper]?.windSpeedKt ?: return ""
+    if (speed == 0.toShort()) return ""
     val logCoefficients = airport[RandomMetarInfo.mapper]?.windshearLogCoefficients ?: return ""
     val b0 = logCoefficients.first
     val b1 = logCoefficients.second

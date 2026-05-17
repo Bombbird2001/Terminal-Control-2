@@ -123,7 +123,7 @@ fun createArrival(callsign: String, icaoType: String, airport: Entity, gs: GameS
         entity[CommandTarget.mapper]?.apply {
             targetAltFt = cmdTargetAlt
             targetIasKt = ias
-            targetHdgDeg = modulateHeading(spawnPos.third + 180)
+            targetHdgDeg = modulateHeading(spawnPos.third + 180 + MAG_HDG_DEV)
         }
         val spds = getMinMaxOptimalIAS(entity)
         clearanceAct.actingClearance.clearanceState.apply {
