@@ -23,6 +23,9 @@ import ktx.collections.GdxArray
 import ktx.collections.GdxArrayMap
 import java.util.*
 
+/** Class representing the connection ID to associate a UDP connection with */
+data class ConnectionIDData(val connId: Int = -1): NeedsEncryption
+
 /**
  * Class representing a request to the client to send its UUID to the server
  *

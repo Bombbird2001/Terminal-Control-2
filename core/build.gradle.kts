@@ -1,6 +1,7 @@
 plugins {
     id("java-test-fixtures")
     id("com.google.devtools.ksp")
+    id("com.google.protobuf")
     jacoco
     id("tc2.test-conventions")
 }
@@ -37,6 +38,7 @@ dependencies {
     api("com.squareup.moshi:moshi-kotlin:${property("moshiKotlinVersion")}")
     api("com.squareup.moshi:moshi-adapters:${property("moshiKotlinVersion")}")
     api("commons-codec:commons-codec:${property("apacheCommonsVersion")}")
+    api("com.google.protobuf:protobuf-javalite:${property("protobufJavaliteVersion")}")
 
     ksp("com.squareup.moshi:moshi-kotlin-codegen:${property("moshiKotlinVersion")}")
 
@@ -58,6 +60,21 @@ tasks.jacocoTestReport {
     dependsOn(tasks.test)
     reports {
         xml.required.set(true)
+    }
+}
+
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:${property("protobufJavaliteVersion")}"
+    }
+    generateProtoTasks {
+        all().configureEach {
+            builtins {
+                named("java") {
+                    option("lite")
+                }
+            }
+        }
     }
 }
 

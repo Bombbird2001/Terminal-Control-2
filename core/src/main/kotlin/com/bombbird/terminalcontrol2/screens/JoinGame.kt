@@ -6,6 +6,7 @@ import com.badlogic.gdx.utils.Align
 import com.badlogic.gdx.utils.Timer
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.networking.HttpRequest
+import com.bombbird.terminalcontrol2.networking.playerclient.LANClient
 import com.bombbird.terminalcontrol2.ui.addChangeListener
 import com.squareup.moshi.JsonClass
 import kotlinx.coroutines.*
@@ -109,20 +110,17 @@ class JoinGame: BasicUIScreen() {
         }
         publicGamesData.clear()
         KtxAsync.launch(Dispatchers.IO) {
-            // Non-blocking HTTP request
             HttpRequest.sendPublicGamesRequest { games ->
                 for (game in games) publicGamesData.add(game)
             }
             lanGamesData.clear()
-            GAME.lanClientDiscoveryHandler.onDiscoveredHostDataList = lanGamesData
-            val jobs = ArrayList<Job>(LAN_UDP_PORTS.size)
-            for (udpPort in LAN_UDP_PORTS) {
-                jobs.add(KtxAsync.launch(Dispatchers.IO) {
-                    // Blocking call
-                    GAME.lanClient.discoverHosts(udpPort)
-                })
+            val hosts = LANClient.discoverLANHosts()
+            synchronized(lanGamesData) {
+                for (host in hosts) {
+                    lanGamesData.add(MultiplayerGameInfo(host.address, host.udpPort,
+                        host.playerCount.toByte(), host.maxPlayers.toByte(), host.mapName, null, host.tcpPort))
+                }
             }
-            joinAll(*jobs.toTypedArray())
             Gdx.app.postRunnable { showFoundGames() }
         }
     }
@@ -138,7 +136,7 @@ class JoinGame: BasicUIScreen() {
      */
     @JsonClass(generateAdapter = true)
     class MultiplayerGameInfo(val address: String, val port: Int, val players: Byte, val maxPlayers: Byte,
-                              val airportName: String, val roomId: Short?)
+                              val airportName: String, val roomId: Short?, val tcpPort: Int? = null)
 
     /** Displays all games found on LAN and public relay server, and sets the searching flag to false */
     private fun showFoundGames() {
@@ -150,7 +148,8 @@ class JoinGame: BasicUIScreen() {
                 for (i in 0 until lanGamesData.size) { lanGamesData[i]?.let { game ->
                     if (game.players >= game.maxPlayers) return@let // Server is full
                     textButton("${game.airportName} - ${game.players}/${game.maxPlayers} player${if (game.maxPlayers > 1) "s" else ""}          ${game.address}          Join", "JoinGameAirport").addChangeListener { _, _ ->
-                        GAME.addScreen(GameLoading.joinLANMultiplayerGameLoading(game.address, game.port - UDP_TCP_OFFSET, game.port))
+                        val tcp = game.tcpPort ?: (game.port - UDP_TCP_OFFSET)
+                        GAME.addScreen(GameLoading.joinLANMultiplayerGameLoading(game.address, tcp, game.port))
                         GAME.setScreen<GameLoading>()
                     }
                     row()

@@ -12,6 +12,7 @@ import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
+import kotlin.UninitializedPropertyAccessException
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
@@ -93,6 +94,23 @@ object EncryptionTest: FunSpec() {
             shouldThrow<IllegalArgumentException> {
                 DiffieHellman(DIFFIE_HELLMAN_GENERATOR, BigInteger.valueOf(Int.MAX_VALUE.toLong()))
             }
+        }
+
+        test("Diffie-Hellman getAES128Key before getExchangeValue throws") {
+            val dh = DiffieHellman(DIFFIE_HELLMAN_GENERATOR, DIFFIE_HELLMAN_PRIME)
+            shouldThrow<UninitializedPropertyAccessException> {
+                dh.getAES128Key(BigInteger.TEN)
+            }
+        }
+
+        test("Diffie-Hellman correct order: getExchangeValue then getAES128Key") {
+            val serverDH = DiffieHellman(DIFFIE_HELLMAN_GENERATOR, DIFFIE_HELLMAN_PRIME)
+            val clientDH = DiffieHellman(DIFFIE_HELLMAN_GENERATOR, DIFFIE_HELLMAN_PRIME)
+            val serverXy = serverDH.getExchangeValue()
+            val clientXy = clientDH.getExchangeValue()
+            val serverKey = serverDH.getAES128Key(clientXy)
+            val clientKey = clientDH.getAES128Key(serverXy)
+            serverKey.encoded shouldBe clientKey.encoded
         }
     }
 
