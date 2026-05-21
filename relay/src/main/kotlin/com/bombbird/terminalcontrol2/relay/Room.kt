@@ -4,7 +4,7 @@ import com.bombbird.terminalcontrol2.networking.encryption.AESGCMDecrypter
 import com.bombbird.terminalcontrol2.networking.encryption.AESGCMEncryptor
 import com.bombbird.terminalcontrol2.networking.encryption.EncryptedData
 import com.bombbird.terminalcontrol2.networking.encryption.NeedsEncryption
-import com.bombbird.terminalcontrol2.networking.relayserver.*
+import com.bombbird.terminalcontrol2.networking.relaygateway.*
 import com.bombbird.terminalcontrol2.utilities.FileLog
 import com.esotericsoftware.kryonet.Connection
 import java.util.*

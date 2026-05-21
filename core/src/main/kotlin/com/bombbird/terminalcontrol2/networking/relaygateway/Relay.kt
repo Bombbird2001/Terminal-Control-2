@@ -1,8 +1,10 @@
-package com.bombbird.terminalcontrol2.networking.relayserver
+package com.bombbird.terminalcontrol2.networking.relaygateway
 
 import com.bombbird.terminalcontrol2.networking.HttpRequest
-import com.bombbird.terminalcontrol2.networking.hostserver.PublicServer
-import com.bombbird.terminalcontrol2.networking.playerclient.PublicClient
+import com.bombbird.terminalcontrol2.networking.NetworkRelayServer
+import com.bombbird.terminalcontrol2.networking.NetworkRelayClient
+import com.bombbird.terminalcontrol2.networking.hostserver.PublicServerV2
+import com.bombbird.terminalcontrol2.networking.playerclient.PublicClientV2
 import com.esotericsoftware.kryonet.Connection
 import java.util.UUID
 
@@ -99,16 +101,16 @@ interface RelayServerReceive {
 interface RelayClientReceive {
     /**
      * Handles this data received on the relay client
-     * @param client the [PublicClient] object to handle the request
+     * @param client the [NetworkRelayClient] object to handle the request
      */
-    fun handleRelayClientReceive(client: PublicClient)
+    fun handleRelayClientReceive(client: NetworkRelayClient)
 }
 
 interface RelayHostReceive {
     /**
      * Handles this data received on the relay host
-     * @param host the [PublicServer] object to handle the request
+     * @param host the [NetworkRelayServer] object to handle the request
      * @param conn the connection to the relay server
      */
-    fun handleRelayHostReceive(host: PublicServer, conn: Connection)
+    fun handleRelayHostReceive(host: NetworkRelayServer, conn: Connection)
 }

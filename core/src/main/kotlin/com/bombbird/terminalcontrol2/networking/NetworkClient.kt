@@ -74,17 +74,14 @@ abstract class NetworkClient {
      */
     @Synchronized
     protected fun getSerialisedBytes(data: Any): ByteArray? {
-        var times = 0
-        while (times < 3) {
+        repeat(3) {
             try {
                 val serialisationOutput = Output(SERVER_WRITE_BUFFER_SIZE)
                 synchronized(manualKryoLock) {
                     manualKryo.writeClassAndObject(serialisationOutput, data)
                 }
                 return serialisationOutput.toBytes()
-            } catch (e: NullPointerException) {
-                times++
-            }
+            } catch (_: NullPointerException) {}
         }
 
         return null
@@ -97,17 +94,20 @@ abstract class NetworkClient {
      */
     @Synchronized
     protected fun fromSerializedBytes(data: ByteArray): Any? {
-        var times = 0
-        while (times < 3) {
+        repeat(3) {
             try {
                 synchronized(manualKryoLock) {
                     return manualKryo.readClassAndObject(Input(data))
                 }
-            } catch (e: NullPointerException) {
-                times++
-            }
+            } catch (_: NullPointerException) {}
         }
 
         return null
     }
+}
+
+interface NetworkRelayClient {
+    fun decodeRelayMessageObject(data: ByteArray)
+
+    fun requestToJoinRoom()
 }

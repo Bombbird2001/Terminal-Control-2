@@ -12,7 +12,7 @@ import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.networking.dataclasses.*
 import com.bombbird.terminalcontrol2.networking.hostserver.LANServer
-import com.bombbird.terminalcontrol2.networking.hostserver.PublicServer
+import com.bombbird.terminalcontrol2.networking.hostserver.PublicServerV2
 import com.bombbird.terminalcontrol2.systems.*
 import com.bombbird.terminalcontrol2.traffic.*
 import com.bombbird.terminalcontrol2.traffic.conflict.Conflict
@@ -600,7 +600,13 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
         }
 
         // Log.set(Log.LEVEL_DEBUG)
-        networkServer = if (publicServer) PublicServer(this, onReceive, onConnect, onDisconnect, mainName)
+        networkServer = if (publicServer) PublicServerV2(
+            this,
+            onReceive,
+            onConnect,
+            onDisconnect,
+            mainName
+        )
         else LANServer(this, onReceive, onConnect, onDisconnect)
         if (networkServer.beforeStart()) {
             return networkServer.start()

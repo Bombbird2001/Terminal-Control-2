@@ -9,8 +9,8 @@ import com.bombbird.terminalcontrol2.networking.dataclasses.ConnectionError
 import com.bombbird.terminalcontrol2.networking.encryption.EncryptedData
 import com.bombbird.terminalcontrol2.networking.encryption.NeedsEncryption
 import com.bombbird.terminalcontrol2.networking.registerClassesToKryo
-import com.bombbird.terminalcontrol2.networking.relayserver.*
-import com.bombbird.terminalcontrol2.networking.relayserver.RelayServer
+import com.bombbird.terminalcontrol2.networking.relaygateway.*
+import com.bombbird.terminalcontrol2.networking.relaygateway.RelayServer
 import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
 import com.esotericsoftware.kryonet.Connection

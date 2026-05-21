@@ -5,8 +5,8 @@ import com.bombbird.terminalcontrol2.integrations.StubAchievementHandler
 import com.bombbird.terminalcontrol2.integrations.StubDiscordHandler
 import com.bombbird.terminalcontrol2.networking.GameServer
 import com.bombbird.terminalcontrol2.networking.HttpRequest
-import com.bombbird.terminalcontrol2.networking.hostserver.PublicServer
-import com.bombbird.terminalcontrol2.networking.playerclient.PublicClient
+import com.bombbird.terminalcontrol2.networking.hostserver.PublicServerV2
+import com.bombbird.terminalcontrol2.networking.playerclient.PublicClientV2
 import com.bombbird.terminalcontrol2.relay.RelayServer
 import com.bombbird.terminalcontrol2.sounds.StubTextToSpeech
 import io.kotest.assertions.throwables.shouldThrow
@@ -183,10 +183,10 @@ object RelayServerTest: FunSpec() {
         }
     }
 
-    /** Connects to the relay server as host, creating a new game in the process, and returns the [PublicServer] object */
-    private fun connectAsHost(): PublicServer {
+    /** Connects to the relay server as host, creating a new game in the process, and returns the [PublicServerV2] object */
+    private fun connectAsHost(): PublicServerV2 {
         myUuid = UUID.randomUUID()
-        val host = PublicServer(GameServer.testGameServer(), {_, _ -> }, {}, {}, "TEST")
+        val host = PublicServerV2(GameServer.testGameServer(), { _, _ -> }, {}, {}, "TEST")
         host.beforeStart()
         host.start()
         host.isConnected.shouldBeTrue()
@@ -197,7 +197,7 @@ object RelayServerTest: FunSpec() {
     }
 
     /** Disconnects host from the relay server */
-    private fun PublicServer.disconnect() {
+    private fun PublicServerV2.disconnect() {
         stop()
         isConnected.shouldBeFalse()
 
@@ -205,14 +205,14 @@ object RelayServerTest: FunSpec() {
     }
 
     /**
-     * Connects to the relay server as client to the room ID, and returns the [PublicClient] object
+     * Connects to the relay server as client to the room ID, and returns the [PublicClientV2] object
      * @param roomId The room ID to connect to
      * @param generateNewUUID Whether to generate a new UUID for the new client
      */
-    private fun connectAsClient(roomId: Short, generateNewUUID: Boolean = true): PublicClient {
+    private fun connectAsClient(roomId: Short, generateNewUUID: Boolean = true): PublicClientV2 {
         if (generateNewUUID)
             myUuid = UUID.randomUUID()
-        val client = PublicClient()
+        val client = PublicClientV2()
         client.beforeConnect(roomId)
         client.start()
         client.connect(5000, LOCALHOST, RELAY_TCP_PORT, RELAY_UDP_PORT)
@@ -224,7 +224,7 @@ object RelayServerTest: FunSpec() {
     }
 
     /** Disconnect client from the relay server */
-    private fun PublicClient.disconnect() {
+    private fun PublicClientV2.disconnect() {
         stop()
         isConnected.shouldBeFalse()
 

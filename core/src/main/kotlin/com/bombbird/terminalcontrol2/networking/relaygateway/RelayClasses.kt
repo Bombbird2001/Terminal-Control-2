@@ -1,8 +1,8 @@
-package com.bombbird.terminalcontrol2.networking.relayserver
+package com.bombbird.terminalcontrol2.networking.relaygateway
 
+import com.bombbird.terminalcontrol2.networking.NetworkRelayServer
+import com.bombbird.terminalcontrol2.networking.NetworkRelayClient
 import com.bombbird.terminalcontrol2.networking.encryption.NeedsEncryption
-import com.bombbird.terminalcontrol2.networking.hostserver.PublicServer
-import com.bombbird.terminalcontrol2.networking.playerclient.PublicClient
 import com.esotericsoftware.kryonet.Connection
 import com.bombbird.terminalcontrol2.utilities.FileLog
 import java.util.*
@@ -40,11 +40,11 @@ data class NewGameRequest(val roomId: Short = Short.MAX_VALUE, val maxPlayers: B
  * relay server
  */
 class RequestRelayAction: RelayHostReceive, RelayClientReceive, NeedsEncryption {
-    override fun handleRelayClientReceive(client: PublicClient) {
+    override fun handleRelayClientReceive(client: NetworkRelayClient) {
         client.requestToJoinRoom()
     }
 
-    override fun handleRelayHostReceive(host: PublicServer, conn: Connection) {
+    override fun handleRelayHostReceive(host: NetworkRelayServer, conn: Connection) {
         host.requestGameCreation()
     }
 }
@@ -60,18 +60,18 @@ data class JoinGameRequest(val roomId: Short = Short.MAX_VALUE, val uuid: String
 
 /** Class representing data sent to the host when a player requests to join the game */
 data class PlayerConnect(val uuid: String? = null): RelayHostReceive, NeedsEncryption {
-    override fun handleRelayHostReceive(host: PublicServer, conn: Connection) {
+    override fun handleRelayHostReceive(host: NetworkRelayServer, conn: Connection) {
         if (uuid == null) return
-        host.onConnect(UUID.fromString(uuid))
+        host.onConnectViaRelay(UUID.fromString(uuid))
         FileLog.info("PublicServer", "Player $uuid connected")
     }
 }
 
 /** Class representing data sent to the host when a player disconnects from the game */
 data class PlayerDisconnect(val uuid: String? = null): RelayHostReceive, NeedsEncryption {
-    override fun handleRelayHostReceive(host: PublicServer, conn: Connection) {
+    override fun handleRelayHostReceive(host: NetworkRelayServer, conn: Connection) {
         if (uuid == null) return
-        host.onDisconnect(UUID.fromString(uuid))
+        host.onDisconnectViaRelay(UUID.fromString(uuid))
         FileLog.info("PublicServer", "Player $uuid disconnected")
     }
 }
@@ -84,7 +84,7 @@ class ClientToServer(val roomId: Short = Short.MAX_VALUE, val sendingUUID: Strin
         rs.forwardToServer(this, conn)
     }
 
-    override fun handleRelayHostReceive(host: PublicServer, conn: Connection) {
+    override fun handleRelayHostReceive(host: NetworkRelayServer, conn: Connection) {
         val uuid = UUID.fromString(sendingUUID ?: return)
         clientToRelayReturnTripTime += conn.returnTripTime
         host.decodeRelayMessageObject(data, uuid)
@@ -99,7 +99,7 @@ class ServerToClient(val roomId: Short = Short.MAX_VALUE, val uuid: String? = nu
         rs.forwardToClient(this, conn)
     }
 
-    override fun handleRelayClientReceive(client: PublicClient) {
+    override fun handleRelayClientReceive(client: NetworkRelayClient) {
         client.decodeRelayMessageObject(data)
     }
 }
@@ -111,7 +111,7 @@ class ServerToAllClientsUnencryptedUDP(val data: ByteArray = byteArrayOf()): Rel
         rs.forwardToAllClientsUnencryptedUDP(this, conn)
     }
 
-    override fun handleRelayClientReceive(client: PublicClient) {
+    override fun handleRelayClientReceive(client: NetworkRelayClient) {
         client.decodeRelayMessageObject(data)
     }
 }

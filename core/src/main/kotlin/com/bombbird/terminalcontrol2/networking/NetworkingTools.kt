@@ -11,7 +11,7 @@ import com.bombbird.terminalcontrol2.networking.dataclasses.*
 import com.bombbird.terminalcontrol2.networking.encryption.DiffieHellmanValueOld
 import com.bombbird.terminalcontrol2.networking.encryption.DiffieHellmanValues
 import com.bombbird.terminalcontrol2.networking.encryption.EncryptedData
-import com.bombbird.terminalcontrol2.networking.relayserver.*
+import com.bombbird.terminalcontrol2.networking.relaygateway.*
 import com.bombbird.terminalcontrol2.screens.RadarScreen
 import com.bombbird.terminalcontrol2.traffic.*
 import com.bombbird.terminalcontrol2.traffic.conflict.Conflict

@@ -4,10 +4,10 @@ import com.bombbird.terminalcontrol2.networking.HttpRequest
 import com.bombbird.terminalcontrol2.networking.encryption.AESGCMEncryptor
 import com.bombbird.terminalcontrol2.networking.encryption.EncryptedData
 import com.bombbird.terminalcontrol2.networking.encryption.NeedsEncryption
-import com.bombbird.terminalcontrol2.networking.relayserver.RelayAuthorization
-import com.bombbird.terminalcontrol2.networking.relayserver.RelayChallenge
-import com.bombbird.terminalcontrol2.networking.relayserver.RelayNonce
-import com.bombbird.terminalcontrol2.networking.relayserver.RequestRelayAction
+import com.bombbird.terminalcontrol2.networking.relaygateway.RelayAuthorization
+import com.bombbird.terminalcontrol2.networking.relaygateway.RelayChallenge
+import com.bombbird.terminalcontrol2.networking.relaygateway.RelayNonce
+import com.bombbird.terminalcontrol2.networking.relaygateway.RequestRelayAction
 import com.bombbird.terminalcontrol2.utilities.FileLog
 import com.esotericsoftware.kryonet.Connection
 import org.apache.commons.codec.binary.Base64

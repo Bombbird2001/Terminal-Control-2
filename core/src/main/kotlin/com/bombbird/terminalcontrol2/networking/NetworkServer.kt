@@ -127,3 +127,13 @@ abstract class NetworkServer(
         return null
     }
 }
+
+interface NetworkRelayServer {
+    fun onConnectViaRelay(uuid: UUID)
+
+    fun onDisconnectViaRelay(uuid: UUID)
+
+    fun requestGameCreation()
+
+    fun decodeRelayMessageObject(data: ByteArray, sendingUUID: UUID, clientToRelayRtt: Int = 0)
+}
