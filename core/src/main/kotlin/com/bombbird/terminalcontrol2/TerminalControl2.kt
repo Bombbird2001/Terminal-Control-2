@@ -14,6 +14,7 @@ import com.bombbird.terminalcontrol2.integrations.DiscordHandler
 import com.bombbird.terminalcontrol2.integrations.AchievementHandler
 import com.bombbird.terminalcontrol2.networking.*
 import com.bombbird.terminalcontrol2.networking.playerclient.LANClient
+import com.bombbird.terminalcontrol2.networking.playerclient.PublicClient
 import com.bombbird.terminalcontrol2.networking.playerclient.PublicClientV2
 import com.bombbird.terminalcontrol2.screens.*
 import com.bombbird.terminalcontrol2.screens.settings.CustomWeatherSettings
@@ -53,7 +54,8 @@ class TerminalControl2(val externalFileHandler: ExternalFileHandler, ttsHandler:
     @Volatile
     var gameClientScreen: RadarScreen? = null
     val lanClient = LANClient()
-    val publicClient = PublicClientV2()
+    val publicClient = PublicClient()
+    val publicClientV2 = PublicClientV2()
     val ttsManager = TextToSpeechManager(ttsHandler)
     val androidLifeCycleHandler = AndroidLifeCycleHandler()
     val achievementManager = AchievementManager(achievementHandler)

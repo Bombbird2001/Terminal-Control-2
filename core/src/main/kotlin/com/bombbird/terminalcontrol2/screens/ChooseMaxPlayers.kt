@@ -2,6 +2,7 @@ package com.bombbird.terminalcontrol2.screens
 
 import com.badlogic.gdx.scenes.scene2d.ui.Label
 import com.badlogic.gdx.scenes.scene2d.ui.Slider
+import com.badlogic.gdx.scenes.scene2d.ui.TextButton
 import com.badlogic.gdx.utils.Align
 import com.bombbird.terminalcontrol2.files.getMaxPlayersForMap
 import com.bombbird.terminalcontrol2.global.*
@@ -12,12 +13,18 @@ import kotlin.math.roundToInt
 
 /** Screen to choose max number of players allowed in multiplayer game */
 class ChooseMaxPlayers: BasicUIScreen() {
+    companion object {
+        const val START_BUTTON_1_TEXT = "Launch Server (V1)"
+    }
+
     lateinit var prevScreen: KtxScreen
     private val playersAllowedLabel: Label
     private val maxPlayersSlider: Slider
     private var mainName = ""
     private var isPublic = false
     private var gameSaveId: Int? = null
+    private var startButton1: TextButton
+    private var startButton2: TextButton
 
     init {
         stage.actors {
@@ -35,26 +42,16 @@ class ChooseMaxPlayers: BasicUIScreen() {
                         }
                     }.cell(width = BUTTON_WIDTH_BIG, height = BUTTON_HEIGHT_BIG)
                     row().padTop(25f)
-                    textButton("Start", "NewLoadGameStart").cell(width = 400f, height = 100f).addChangeListener { _, _ ->
-                        val public = isPublic
-                        val saveId = gameSaveId
-                        val airportToHost = mainName
-                        val maxPlayersAllowed = maxPlayersSlider.value.roundToInt().toByte()
-                        if (public) {
-                            if (saveId == null) {
-                                GAME.addScreen(GameLoading.newPublicMultiplayerGameLoading(airportToHost, maxPlayersAllowed))
-                                GAME.setScreen<GameLoading>()
-                            } else {
-                                GAME.addScreen(GameLoading.loadPublicMultiplayerGameLoading(airportToHost, saveId, maxPlayersAllowed))
-                                GAME.setScreen<GameLoading>()
+                    table {
+                        startButton1 = textButton(START_BUTTON_1_TEXT, "NewLoadGameStart").cell(width = 300f, height = 125f, padRight = 75f).apply {
+                            addChangeListener { _, _ ->
+                                launchGame(false)
                             }
-                        } else {
-                            if (saveId == null) {
-                                GAME.addScreen(GameLoading.newLANMultiplayerGameLoading(airportToHost, maxPlayersAllowed))
-                                GAME.setScreen<GameLoading>()
-                            } else {
-                                GAME.addScreen(GameLoading.loadLANMultiplayerGameLoading(airportToHost, saveId, maxPlayersAllowed))
-                                GAME.setScreen<GameLoading>()
+                        }
+                        startButton2 = textButton("Launch Server (V2 alpha-testing)", "NewLoadGameStart").cell(width = 300f, height = 125f).apply {
+                            label.wrap = true
+                            addChangeListener { _, _ ->
+                                launchGame(true)
                             }
                         }
                     }
@@ -79,5 +76,37 @@ class ChooseMaxPlayers: BasicUIScreen() {
         isPublic = public
         gameSaveId = saveId
         mainName = mapName
+
+        if (isPublic) {
+            startButton1.setText(START_BUTTON_1_TEXT)
+            startButton2.isDisabled = false
+        } else {
+            startButton1.setText("Start")
+            startButton2.isDisabled = true
+        }
+    }
+
+    private fun launchGame(useRelayV2: Boolean) {
+        val public = isPublic
+        val saveId = gameSaveId
+        val airportToHost = mainName
+        val maxPlayersAllowed = maxPlayersSlider.value.roundToInt().toByte()
+        if (public) {
+            if (saveId == null) {
+                GAME.addScreen(GameLoading.newPublicMultiplayerGameLoading(airportToHost, maxPlayersAllowed, useRelayV2))
+                GAME.setScreen<GameLoading>()
+            } else {
+                GAME.addScreen(GameLoading.loadPublicMultiplayerGameLoading(airportToHost, saveId, maxPlayersAllowed, useRelayV2))
+                GAME.setScreen<GameLoading>()
+            }
+        } else {
+            if (saveId == null) {
+                GAME.addScreen(GameLoading.newLANMultiplayerGameLoading(airportToHost, maxPlayersAllowed))
+                GAME.setScreen<GameLoading>()
+            } else {
+                GAME.addScreen(GameLoading.loadLANMultiplayerGameLoading(airportToHost, saveId, maxPlayersAllowed))
+                GAME.setScreen<GameLoading>()
+            }
+        }
     }
 }

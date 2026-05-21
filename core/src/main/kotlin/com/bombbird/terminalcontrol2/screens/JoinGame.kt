@@ -135,8 +135,11 @@ class JoinGame: BasicUIScreen() {
      * @param roomId the ID of the room (only for public multiplayer relay servers)
      */
     @JsonClass(generateAdapter = true)
-    class MultiplayerGameInfo(val address: String, val port: Int, val players: Byte, val maxPlayers: Byte,
-                              val airportName: String, val roomId: Short?, val tcpPort: Int? = null)
+    class MultiplayerGameInfo(
+        val address: String, val port: Int, val players: Byte, val maxPlayers: Byte,
+        val airportName: String, val roomId: Short?, val tcpPort: Int? = null,
+        val relayProtocol: Int = 1,
+    )
 
     /** Displays all games found on LAN and public relay server, and sets the searching flag to false */
     private fun showFoundGames() {
@@ -145,7 +148,7 @@ class JoinGame: BasicUIScreen() {
             clear()
             var added = 0
             synchronized(lanGamesData) {
-                for (i in 0 until lanGamesData.size) { lanGamesData[i]?.let { game ->
+                for (i in lanGamesData.indices) { lanGamesData[i]?.let { game ->
                     if (game.players >= game.maxPlayers) return@let // Server is full
                     textButton("${game.airportName} - ${game.players}/${game.maxPlayers} player${if (game.maxPlayers > 1) "s" else ""}          ${game.address}          Join", "JoinGameAirport").addChangeListener { _, _ ->
                         val tcp = game.tcpPort ?: (game.port - UDP_TCP_OFFSET)
@@ -159,8 +162,8 @@ class JoinGame: BasicUIScreen() {
             for (i in 0 until publicGamesData.size) { publicGamesData[i]?.let { game ->
                 val roomId = game.roomId ?: return@let // Public games should have a room ID
                 if (game.players >= game.maxPlayers) return@let // Server is full
-                textButton("${game.airportName} - ${game.players}/${game.maxPlayers} player${if (game.maxPlayers > 1) "s" else ""}          Public server           Join", "JoinGameAirport").addChangeListener { _, _ ->
-                    GAME.addScreen(GameLoading.joinPublicMultiplayerGameLoading(roomId))
+                textButton("${game.airportName} - ${game.players}/${game.maxPlayers} player${if (game.maxPlayers > 1) "s" else ""}          Public server ${if (game.relayProtocol > 1) "(V${game.relayProtocol})" else "    "}      Join", "JoinGameAirport").addChangeListener { _, _ ->
+                    GAME.addScreen(GameLoading.joinPublicMultiplayerGameLoading(roomId, game.relayProtocol == 2))
                     GAME.setScreen<GameLoading>()
                 }
                 row()

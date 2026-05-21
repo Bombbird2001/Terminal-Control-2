@@ -63,8 +63,11 @@ import kotlin.math.min
  * @param connectionUdpPort the UDP port of the host server to connect to; if null, CLIENT_UDP_PORT_IN_USE will be used
  * @param roomId the ID of the room to join (public multiplayer)
  */
-class RadarScreen private constructor(private val connectionHost: String, private val connectionTcpPort: Int?,
-                                      private val connectionUdpPort: Int?, private var roomId: Short?): KtxScreen, GestureListener, InputProcessor, ShowsDialog {
+class RadarScreen private constructor(
+    private val connectionHost: String, private val connectionTcpPort: Int?,
+    private val connectionUdpPort: Int?, private var roomId: Short?,
+    private val useRelayV2: Boolean = true
+): KtxScreen, GestureListener, InputProcessor, ShowsDialog {
     private val clientEngine = getEngine(true)
     private val radarDisplayStage = safeStage(GAME.batch)
     private val constZoomStage = safeStage(GAME.batch)
@@ -147,7 +150,11 @@ class RadarScreen private constructor(private val connectionHost: String, privat
 
     // Networking client, and flag for stopping connection attempts if game quits before connection is established
     val networkClient: NetworkClient
-        get() = if (!isPublicMultiplayer()) GAME.lanClient else GAME.publicClient
+        get() = when {
+            !isPublicMultiplayer() -> GAME.lanClient
+            useRelayV2 -> GAME.publicClientV2
+            else -> GAME.publicClient
+        }
     private var attemptConnection = true
 
     // Blocking queue to store runnables to be run in the main thread after engine update
@@ -203,19 +210,26 @@ class RadarScreen private constructor(private val connectionHost: String, privat
 
         /**
          * Returns a new instance of public multiplayer RadarScreen
+         * @param useRelayV2 whether to use the new Relay V2 implementation
          * @return RadarScreen object in public multiplayer mode
          */
-        fun newPublicMultiplayerRadarScreen(): RadarScreen {
-            return RadarScreen(Secrets.RELAY_ADDRESS, RELAY_TCP_PORT, RELAY_UDP_PORT, null)
+        fun newPublicMultiplayerRadarScreen(useRelayV2: Boolean): RadarScreen {
+            return RadarScreen(
+                Secrets.RELAY_ADDRESS, RELAY_TCP_PORT,
+                RELAY_UDP_PORT, null, useRelayV2
+            )
         }
 
         /**
          * Returns a new instance of public multiplayer RadarScreen to join a public multiplayer game
          * @param roomId ID of the room to join
+         * @param useRelayV2 whether to use the new Relay V2 implementation
          * @return RadarScreen object in public multiplayer mode
          */
-        fun joinPublicMultiplayerRadarScreen(roomId: Short): RadarScreen {
-            return RadarScreen(Secrets.RELAY_ADDRESS, RELAY_TCP_PORT, RELAY_UDP_PORT, roomId)
+        fun joinPublicMultiplayerRadarScreen(roomId: Short, useRelayV2: Boolean): RadarScreen {
+            return RadarScreen(Secrets.RELAY_ADDRESS, RELAY_TCP_PORT,
+                RELAY_UDP_PORT, roomId, useRelayV2
+            )
         }
     }
 

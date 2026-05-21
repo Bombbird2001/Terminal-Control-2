@@ -12,6 +12,7 @@ import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.navigation.Route
 import com.bombbird.terminalcontrol2.networking.dataclasses.*
 import com.bombbird.terminalcontrol2.networking.hostserver.LANServer
+import com.bombbird.terminalcontrol2.networking.hostserver.PublicServer
 import com.bombbird.terminalcontrol2.networking.hostserver.PublicServerV2
 import com.bombbird.terminalcontrol2.systems.*
 import com.bombbird.terminalcontrol2.traffic.*
@@ -43,9 +44,13 @@ import kotlin.math.roundToLong
  * @param saveId ID of the save file to load, if any
  * @param publicServer whether to host this game in the public server
  * @param maxPlayersSet the maximum numbers of player the host as selected
+ * @param useRelayV2 whether to use the new Relay V2 implementation
  * @param testMode whether to start this game server in test mode (i.e. will not initiate any network servers)
  */
-class GameServer private constructor(airportToHost: String, saveId: Int?, val publicServer: Boolean, private val maxPlayersSet: Byte, testMode: Boolean = false) {
+class GameServer private constructor(
+    airportToHost: String, saveId: Int?, val publicServer: Boolean,
+    private val maxPlayersSet: Byte, private val useRelayV2: Boolean = true, testMode: Boolean = false
+) {
     companion object {
         const val UPDATE_INTERVAL = 1000.0 / SERVER_UPDATE_RATE
         const val SERVER_TO_CLIENT_UPDATE_INTERVAL_FAST = 1000.0 / SERVER_TO_CLIENT_UPDATE_RATE_FAST
@@ -87,10 +92,11 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
          * Creates a new multiplayer public mode game server object
          * @param airportToHost name of airport to host
          * @param maxPlayers maximum number of players allowed
+         * @param useRelayV2 whether to use the new Relay V2 implementation
          * @return GameServer in public multiplayer mode
          */
-        fun newPublicMultiplayerGameServer(airportToHost: String, maxPlayers: Byte): GameServer {
-            return GameServer(airportToHost, null, true, maxPlayers)
+        fun newPublicMultiplayerGameServer(airportToHost: String, maxPlayers: Byte, useRelayV2: Boolean): GameServer {
+            return GameServer(airportToHost, null, true, maxPlayers, useRelayV2)
         }
 
         /**
@@ -119,10 +125,11 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
          * @param airportToHost name of airport to load
          * @param saveId ID of the save file to load
          * @param maxPlayers maximum number of players allowed
+         * @param useRelayV2 whether to use the new Relay V2 implementation
          * @return GameServer in public multiplayer mode
          */
-        fun loadPublicMultiplayerGameServer(airportToHost: String, saveId: Int, maxPlayers: Byte): GameServer {
-            return GameServer(airportToHost, saveId, true, maxPlayers)
+        fun loadPublicMultiplayerGameServer(airportToHost: String, saveId: Int, maxPlayers: Byte, useRelayV2: Boolean): GameServer {
+            return GameServer(airportToHost, saveId, true, maxPlayers, useRelayV2)
         }
 
         /**
@@ -600,13 +607,22 @@ class GameServer private constructor(airportToHost: String, saveId: Int?, val pu
         }
 
         // Log.set(Log.LEVEL_DEBUG)
-        networkServer = if (publicServer) PublicServerV2(
-            this,
-            onReceive,
-            onConnect,
-            onDisconnect,
-            mainName
-        )
+        networkServer = if (publicServer) {
+            if (useRelayV2) PublicServerV2(
+                this,
+                onReceive,
+                onConnect,
+                onDisconnect,
+                mainName
+            )
+            else PublicServer(
+                this,
+                onReceive,
+                onConnect,
+                onDisconnect,
+                mainName
+            )
+        }
         else LANServer(this, onReceive, onConnect, onDisconnect)
         if (networkServer.beforeStart()) {
             return networkServer.start()

@@ -59,14 +59,15 @@ class GameLoading private constructor(): BasicUIScreen() {
          * Creates a new instance of GameLoading screen and loads the relevant objects for a public multiplayer game
          * @param airportToHost the ICAO code of airport to play
          * @param maxPlayers maximum number of players allowed in the game
+         * @param useRelayV2 whether to use the new Relay V2 implementation
          * @return the GameLoading screen
          */
-        fun newPublicMultiplayerGameLoading(airportToHost: String, maxPlayers: Byte): GameLoading {
+        fun newPublicMultiplayerGameLoading(airportToHost: String, maxPlayers: Byte, useRelayV2: Boolean): GameLoading {
             val gameLoading = GameLoading()
-            GameServer.newPublicMultiplayerGameServer(airportToHost, maxPlayers).apply {
+            GameServer.newPublicMultiplayerGameServer(airportToHost, maxPlayers, useRelayV2).apply {
                 serverStartedCallback = gameLoading::gameServerLoaded
             }
-            val rs = RadarScreen.newPublicMultiplayerRadarScreen().apply {
+            val rs = RadarScreen.newPublicMultiplayerRadarScreen(useRelayV2).apply {
                 dataLoadedCallback = gameLoading::gameClientLoaded
                 connectedToHostCallback = gameLoading::connectedToGameServer
             }
@@ -121,14 +122,15 @@ class GameLoading private constructor(): BasicUIScreen() {
          * @param airportToHost the ICAO code of airport to play
          * @param saveId ID of the save file to load
          * @param maxPlayers maximum number of players allowed in the game
+         * @param useRelayV2 whether to use the new Relay V2 implementation
          * @return the GameLoading screen
          */
-        fun loadPublicMultiplayerGameLoading(airportToHost: String, saveId: Int, maxPlayers: Byte): GameLoading {
+        fun loadPublicMultiplayerGameLoading(airportToHost: String, saveId: Int, maxPlayers: Byte, useRelayV2: Boolean): GameLoading {
             val gameLoading = GameLoading()
-            GameServer.loadPublicMultiplayerGameServer(airportToHost, saveId, maxPlayers).apply {
+            GameServer.loadPublicMultiplayerGameServer(airportToHost, saveId, maxPlayers, useRelayV2).apply {
                 serverStartedCallback = gameLoading::gameServerLoaded
             }
-            val rs = RadarScreen.newPublicMultiplayerRadarScreen().apply {
+            val rs = RadarScreen.newPublicMultiplayerRadarScreen(useRelayV2).apply {
                 dataLoadedCallback = gameLoading::gameClientLoaded
                 connectedToHostCallback = gameLoading::connectedToGameServer
             }
@@ -158,11 +160,12 @@ class GameLoading private constructor(): BasicUIScreen() {
         /**
          * Creates a new instance of GameLoading screen and loads the relevant objects to join a public multiplayer game
          * @param roomId the ID of the room to join
+         * @param useRelayV2 whether to use the new Relay V2 implementation
          * @return the GameLoading screen
          */
-        fun joinPublicMultiplayerGameLoading(roomId: Short): GameLoading {
+        fun joinPublicMultiplayerGameLoading(roomId: Short, useRelayV2: Boolean): GameLoading {
             val gameLoading = GameLoading()
-            val rs = RadarScreen.joinPublicMultiplayerRadarScreen(roomId).apply {
+            val rs = RadarScreen.joinPublicMultiplayerRadarScreen(roomId, useRelayV2).apply {
                 dataLoadedCallback = gameLoading::gameClientLoaded
                 connectedToHostCallback = gameLoading::connectedToGameServer
             }
