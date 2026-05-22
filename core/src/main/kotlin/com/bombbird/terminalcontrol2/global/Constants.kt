@@ -117,7 +117,6 @@ const val RELAY_GAME_ALIVE_PATH = "/alive"
 
 /** Connection constants */
 const val CONNECTION_TIMEOUT = 3000
-const val RECONNECTION_TIMEOUT = 5000
 
 /** Encryption constants */
 /** 2048-bit DH prime from RFC 7919 ffdhe2048 */

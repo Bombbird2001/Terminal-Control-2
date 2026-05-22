@@ -77,7 +77,9 @@ abstract class NetworkServer(
     protected fun encryptIfNeeded(data: Any, encryptor: Encryptor): Any? {
         (data as? NeedsEncryption)?.let {
             return encryptor.encrypt(it)
-        } ?: return data
+        }
+
+        return data
     }
 
     /**

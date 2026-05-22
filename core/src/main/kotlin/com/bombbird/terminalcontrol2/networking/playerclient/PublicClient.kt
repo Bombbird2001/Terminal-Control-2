@@ -126,7 +126,7 @@ class PublicClient(private val relayGatewayHost: RelayGatewayHost): NetworkClien
     override fun getConnectionStatus(): String {
         val udp = try {
             client.remoteAddressUDP?.let { "UDP connected to $it" } ?: "UDP not connected"
-        } catch (e: NullPointerException) {
+        } catch (_: NullPointerException) {
             "UDP not initialized"
         }
         return "Connection ${client.id}: ${client.remoteAddressTCP?.let { "TCP connected to $it" } ?: "TCP not connected"}, $udp"
