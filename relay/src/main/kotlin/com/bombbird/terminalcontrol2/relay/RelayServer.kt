@@ -1,8 +1,6 @@
 package com.bombbird.terminalcontrol2.relay
 
 import com.bombbird.terminalcontrol2.global.RELAY_BUFFER_SIZE
-import com.bombbird.terminalcontrol2.global.RELAY_TCP_PORT
-import com.bombbird.terminalcontrol2.global.RELAY_UDP_PORT
 import com.bombbird.terminalcontrol2.global.SERVER_WRITE_BUFFER_SIZE
 import com.bombbird.terminalcontrol2.networking.HttpRequest
 import com.bombbird.terminalcontrol2.networking.dataclasses.ConnectionError
@@ -140,6 +138,9 @@ object RelayServer: RelayServer, RelayAuthorization {
 
     /** Timer responsible for closing pending rooms that are not connected to within 20 seconds */
     val timer = Timer()
+
+    const val RELAY_TCP_PORT = 57783
+    const val RELAY_UDP_PORT = 57789
 
     @JvmStatic
     fun main(args: Array<String>) {
@@ -295,7 +296,7 @@ object RelayServer: RelayServer, RelayAuthorization {
                     manualKryo.writeClassAndObject(serialisationOutput, data)
                 }
                 return serialisationOutput.toBytes()
-            } catch (e: NullPointerException) {
+            } catch (_: NullPointerException) {
                 times++
             }
         }
@@ -316,7 +317,7 @@ object RelayServer: RelayServer, RelayAuthorization {
                 synchronized(manualKryoLock) {
                     return manualKryo.readClassAndObject(Input(data))
                 }
-            } catch (e: NullPointerException) {
+            } catch (_: NullPointerException) {
                 times++
             }
         }

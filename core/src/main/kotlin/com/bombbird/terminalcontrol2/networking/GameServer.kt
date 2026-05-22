@@ -147,10 +147,11 @@ class GameServer private constructor(
 
         /**
          * Creates a new GameServer object for testing only; no network server will be initiated
+         * @param relayHostInfo connection info for testing the relay gateway if needed
          * @return GameServer in testing mode
          */
-        fun testGameServer(): GameServer {
-            return GameServer("", null, 4, true)
+        fun testGameServer(relayHostInfo: RelayGatewayHost? = null): GameServer {
+            return GameServer("", null, 4, false, relayHostInfo, true)
         }
     }
 

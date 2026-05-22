@@ -2,9 +2,9 @@ package com.bombbird.terminalcontrol2.relay
 
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.networking.HttpRequest
+import com.bombbird.terminalcontrol2.relay.RelayServer.RELAY_TCP_PORT
+import com.bombbird.terminalcontrol2.relay.RelayServer.RELAY_UDP_PORT
 import com.squareup.moshi.JsonDataException
-import com.squareup.moshi.Moshi
-import com.squareup.moshi.Types
 import com.squareup.moshi.adapter
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpHandler
@@ -25,6 +25,8 @@ object RelayEndpoint {
     @OptIn(ExperimentalStdlibApi::class)
     private val moshiRoomCreationsStatusAdapter = moshi.adapter<HttpRequest.RoomCreationStatus>()
     private lateinit var httpServer: HttpServer
+
+    const val RELAY_ENDPOINT_PORT = 57785
 
     /** HttpHandler class to handle client requesting available games */
     private class GamesRequestHandler(private val relayServer: RelayServer): HttpHandler {
@@ -62,7 +64,7 @@ object RelayEndpoint {
                 val authReq: HttpRequest.AuthorizationRequest?
                 try {
                     authReq = moshiAuthRequestAdapter.fromJson(String(exchange.requestBody.readBytes()))
-                } catch (e: JsonDataException) {
+                } catch (_: JsonDataException) {
                     return sendError(exchange, 400)
                 }
 
@@ -102,7 +104,11 @@ object RelayEndpoint {
 
                 // Get symmetric key and output to JSON
                 val roomResponse = relayServer.createPendingRoom() ?:
-                HttpRequest.RoomCreationStatus(false, Short.MAX_VALUE, HttpRequest.AuthorizationResponse(false, "", "", "", ""))
+                HttpRequest.RoomCreationStatus(
+                    false, Short.MAX_VALUE,
+                    HttpRequest.AuthorizationResponse(false, "", "", "", ""),
+                    RELAY_TCP_PORT, RELAY_UDP_PORT
+                )
                 val responseJson = moshiRoomCreationsStatusAdapter.toJson(roomResponse)
 
                 val output = exchange.responseBody
@@ -143,7 +149,7 @@ object RelayEndpoint {
      * @param production whether to use ports for production environment
      */
     fun launch(rs: RelayServer, production: Boolean = true) {
-        httpServer = HttpServer.create(InetSocketAddress(Inet4Address.getByName(LOCALHOST),
+        httpServer = HttpServer.create(InetSocketAddress(Inet4Address.getByName("0.0.0.0"),
             RELAY_ENDPOINT_PORT - (if (production) 1 else 0)), 10)
         httpServer.createContext(RELAY_GAMES_PATH, GamesRequestHandler(rs))
         httpServer.createContext(RELAY_GAME_AUTH_PATH, AuthorizeRequestHandler(rs))

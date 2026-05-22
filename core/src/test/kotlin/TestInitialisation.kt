@@ -6,6 +6,7 @@ import com.bombbird.terminalcontrol2.integrations.StubAchievementHandler
 import com.bombbird.terminalcontrol2.networking.ConnectionMeta
 import com.bombbird.terminalcontrol2.networking.GameServer
 import com.bombbird.terminalcontrol2.networking.NetworkServer
+import com.bombbird.terminalcontrol2.networking.RoomConnectionInfo
 import com.bombbird.terminalcontrol2.screens.RadarScreen
 import com.bombbird.terminalcontrol2.sounds.StubTextToSpeech
 import com.esotericsoftware.kryo.Kryo
@@ -34,8 +35,8 @@ internal fun testInitialiseGameAndServer() {
 
             override fun beforeStart(): Boolean { return true }
 
-            override fun getRoomId(): Short? {
-                return null
+            override fun getRoomConnectionInfo(): RoomConnectionInfo {
+                return RoomConnectionInfo(null, -1, -1)
             }
 
             override fun getConnectionStatus(): String {

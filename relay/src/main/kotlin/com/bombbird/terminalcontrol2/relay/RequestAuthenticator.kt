@@ -8,6 +8,8 @@ import com.bombbird.terminalcontrol2.networking.relaygateway.RelayAuthorization
 import com.bombbird.terminalcontrol2.networking.relaygateway.RelayChallenge
 import com.bombbird.terminalcontrol2.networking.relaygateway.RelayNonce
 import com.bombbird.terminalcontrol2.networking.relaygateway.RequestRelayAction
+import com.bombbird.terminalcontrol2.relay.RelayServer.RELAY_TCP_PORT
+import com.bombbird.terminalcontrol2.relay.RelayServer.RELAY_UDP_PORT
 import com.bombbird.terminalcontrol2.utilities.FileLog
 import com.esotericsoftware.kryonet.Connection
 import org.apache.commons.codec.binary.Base64
@@ -138,10 +140,10 @@ object RequestAuthenticator {
             val nonce = addChallengeNonce(key.second, roomID, uuid) ?: return null
             return RelayAuthorization.RoomAuthorizationResult(Base64.encodeBase64String(key.first.encoded),
                 Base64.encodeBase64String(key.second.encoded), nonce.first, nonce.second)
-        } ?: run {
-            FileLog.info("RequestAuthenticator", "Authorization failed - Room ID $roomID does not exist")
-            return null
         }
+
+        FileLog.info("RequestAuthenticator", "Authorization failed - Room ID $roomID does not exist")
+        return null
     }
 
     /** Attempts to create a pending room, and returns the  */
@@ -164,7 +166,9 @@ object RequestAuthenticator {
                 FileLog.info("RequestAuthenticator", "Pending room $i created")
                 return HttpRequest.RoomCreationStatus(true, i.toShort(),
                     HttpRequest.AuthorizationResponse(true, Base64.encodeBase64String(roomKey.encoded),
-                        Base64.encodeBase64String(hostKey.encoded), nonce.first, nonce.second))
+                        Base64.encodeBase64String(hostKey.encoded), nonce.first, nonce.second),
+                    RELAY_TCP_PORT, RELAY_UDP_PORT
+                )
             }
         }
 

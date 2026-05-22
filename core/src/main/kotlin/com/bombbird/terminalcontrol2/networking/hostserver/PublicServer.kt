@@ -125,6 +125,8 @@ class PublicServer(
                 "Room creation failed", "", "Ok") }
             return false
         }
+        relayTcpPort = roomCreation.tcpPort
+        relayUdpPort = roomCreation.udpPort
         setRoomId(roomCreation.roomId)
         val roomKey = SecretKeySpec(decodeBase64(roomCreation.authResponse.roomKey), 0, AESGCMEncryptor.AES_KEY_LENGTH_BYTES, "AES")
         val hostKey = SecretKeySpec(decodeBase64(roomCreation.authResponse.clientKey), 0, AESGCMEncryptor.AES_KEY_LENGTH_BYTES, "AES")
