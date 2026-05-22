@@ -22,7 +22,6 @@ import java.net.UnknownHostException
 import java.nio.channels.ClosedSelectorException
 import java.util.*
 import javax.crypto.spec.SecretKeySpec
-import kotlin.properties.Delegates
 
 /**
  * Server for handling public multiplayer relay games
@@ -43,8 +42,8 @@ class PublicServer(
     override val serverKryo: Kryo
         get() = relayServerConnector.kryo
 
-    private var relayTcpPort by Delegates.notNull<Int>()
-    private var relayUdpPort by Delegates.notNull<Int>()
+    private var relayTcpPort: Int? = null
+    private var relayUdpPort: Int? = null
     private var roomId: Short = Short.MAX_VALUE
     private lateinit var relayChallenge: RelayChallenge
 
@@ -84,7 +83,10 @@ class PublicServer(
             GAME.quitCurrentGameWithDialog { CustomDialog("Error", "An error occurred", "", "Ok") }
         }
 
-        relayServerConnector.connect(5000, relayGateway.relayAddress, relayTcpPort, relayUdpPort)
+        relayServerConnector.connect(
+            5000, relayGateway.relayAddress,
+            relayTcpPort ?: return false, relayUdpPort ?: return false
+        )
 
         return true
     }
@@ -156,8 +158,8 @@ class PublicServer(
             this.roomId = roomId
     }
 
-    override fun getRoomConnectionInfo(): RoomConnectionInfo {
-        return RoomConnectionInfo(roomId, relayTcpPort, relayUdpPort)
+    override fun getRoomConnectionInfo(): RoomConnectionInfo? {
+        return RoomConnectionInfo(roomId, relayTcpPort ?: return null, relayUdpPort ?: return null)
     }
 
     override fun getConnectionStatus(): String {

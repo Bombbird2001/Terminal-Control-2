@@ -12,12 +12,16 @@ import com.bombbird.terminalcontrol2.screens.RadarScreen
 import com.bombbird.terminalcontrol2.ui.CustomDialog
 import com.esotericsoftware.kryo.Kryo
 import com.bombbird.terminalcontrol2.utilities.FileLog
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import ktx.async.KtxAsync
 import tc2relay.Relay.TcpMessage
 import tc2relay.Relay.UdpMessage
 import java.lang.Exception
 import java.math.BigInteger
 import java.net.*
-import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Client for handling LAN multiplayer games.
@@ -152,47 +156,51 @@ class LANClient : NetworkClient() {
     )
 
     companion object {
-        fun discoverLANHosts(timeoutMs: Int = 3000): List<DiscoveredHost> {
-            val discovered = ConcurrentHashMap<String, DiscoveredHost>()
+        suspend fun discoverLANHosts(timeoutMs: Int = 3000): List<DiscoveredHost> {
             val probe = ProtoMessages.lanDiscoverRequest().toByteArray()
+            val discovered = ArrayList<Deferred<DiscoveredHost?>>()
 
             for (udpPort in LAN_UDP_PORTS) {
-                try {
-                    val socket = DatagramSocket()
-                    socket.broadcast = true
-                    socket.soTimeout = timeoutMs
-
-                    val broadcastAddr = InetAddress.getByName("255.255.255.255")
-                    socket.send(DatagramPacket(probe, probe.size, broadcastAddr, udpPort))
-
-                    val buf = ByteArray(2048)
+                discovered.add(KtxAsync.async(Dispatchers.IO) {
                     try {
-                        while (true) {
-                            val resp = DatagramPacket(buf, buf.size)
-                            socket.receive(resp)
-                            val msg = UdpMessage.parseFrom(resp.data.copyOf(resp.length))
-                            if (msg.hasLanDiscoverResponse()) {
-                                val dr = msg.lanDiscoverResponse
-                                val key = "${resp.address.hostAddress}:${dr.tcpPort}"
-                                discovered[key] = DiscoveredHost(
-                                    resp.address.hostAddress,
-                                    dr.tcpPort,
-                                    dr.udpPort,
-                                    dr.playerCount,
-                                    dr.maxPlayers,
-                                    dr.mapName
-                                )
+                        val socket = DatagramSocket()
+                        socket.broadcast = true
+                        socket.soTimeout = timeoutMs
+
+                        val broadcastAddr = InetAddress.getByName("255.255.255.255")
+                        socket.send(DatagramPacket(probe, probe.size, broadcastAddr, udpPort))
+
+                        val buf = ByteArray(2048)
+                        try {
+                            while (true) {
+                                val resp = DatagramPacket(buf, buf.size)
+                                socket.receive(resp)
+                                val msg = UdpMessage.parseFrom(resp.data.copyOf(resp.length))
+                                if (msg.hasLanDiscoverResponse()) {
+                                    val dr = msg.lanDiscoverResponse
+                                    return@async DiscoveredHost(
+                                        resp.address.hostAddress,
+                                        dr.tcpPort,
+                                        dr.udpPort,
+                                        dr.playerCount,
+                                        dr.maxPlayers,
+                                        dr.mapName
+                                    )
+                                }
                             }
+                        } catch (_: SocketTimeoutException) {
+                            // Finished receiving
                         }
-                    } catch (_: SocketTimeoutException) {
-                        // Finished receiving
+                        socket.close()
+                    } catch (e: Exception) {
+                        FileLog.info("LANClient", "Discovery error on port $udpPort: ${e.message}")
                     }
-                    socket.close()
-                } catch (e: Exception) {
-                    FileLog.info("LANClient", "Discovery error on port $udpPort: ${e.message}")
-                }
+
+                    return@async null
+                })
             }
-            return discovered.values.toList()
+
+            return discovered.awaitAll().filterNotNull()
         }
     }
 }

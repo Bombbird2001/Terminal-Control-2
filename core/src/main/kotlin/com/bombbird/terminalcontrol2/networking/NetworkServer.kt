@@ -59,7 +59,7 @@ abstract class NetworkServer(
     abstract fun beforeStart(): Boolean
 
     /** Returns the room connection information of the server - room ID (public server only), and connection ports */
-    abstract fun getRoomConnectionInfo(): RoomConnectionInfo
+    abstract fun getRoomConnectionInfo(): RoomConnectionInfo?
 
     /** Gets the status of the connection, of both TCP and UDP */
     abstract fun getConnectionStatus(): String

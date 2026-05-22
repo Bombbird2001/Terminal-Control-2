@@ -48,7 +48,7 @@ object RelayServerTest: FunSpec() {
 
             val games = HttpRequest.sendPublicGamesRequest(relayGateway)
             games.size shouldBe 1
-            games[0].roomId shouldBe host.getRoomConnectionInfo().roomId
+            games[0].roomId shouldBe host.getRoomConnectionInfo()?.roomId
 
             val client = connectAsClient(relayGateway, games[0].roomId.shouldNotBeNull(), host = host)
             client.disconnect()
@@ -62,10 +62,10 @@ object RelayServerTest: FunSpec() {
 
             HttpRequest.sendPublicGamesRequest(relayGateway).apply {
                 size shouldBe 1
-                get(0).roomId shouldBe host.getRoomConnectionInfo().roomId
+                get(0).roomId shouldBe host.getRoomConnectionInfo()?.roomId
             }
 
-            val client = connectAsClient(relayGateway, host.getRoomConnectionInfo().roomId.shouldNotBeNull(), host = host)
+            val client = connectAsClient(relayGateway, host.getRoomConnectionInfo()?.roomId.shouldNotBeNull(), host = host)
             host.disconnect()
             client.isConnected.shouldBeFalse()
 
@@ -77,10 +77,10 @@ object RelayServerTest: FunSpec() {
 
             HttpRequest.sendPublicGamesRequest(relayGateway).apply {
                 size shouldBe 1
-                get(0).roomId shouldBe host.getRoomConnectionInfo().roomId
+                get(0).roomId shouldBe host.getRoomConnectionInfo()?.roomId
             }
 
-            val roomId = host.getRoomConnectionInfo().roomId.shouldNotBeNull()
+            val roomId = host.getRoomConnectionInfo()?.roomId.shouldNotBeNull()
             connectAsClient(relayGateway, roomId, host = host)
             connectAsClient(relayGateway, roomId, host = host)
             connectAsClient(relayGateway, roomId, host = host)
@@ -100,7 +100,7 @@ object RelayServerTest: FunSpec() {
 
             HttpRequest.sendPublicGamesRequest(relayGateway).apply {
                 size shouldBe 1
-                get(0).roomId shouldBe host.getRoomConnectionInfo().roomId
+                get(0).roomId shouldBe host.getRoomConnectionInfo()?.roomId
             }
 
             shouldThrow<NullPointerException> {
@@ -130,24 +130,24 @@ object RelayServerTest: FunSpec() {
             HttpRequest.sendPublicGamesRequest(relayGateway).apply {
                 size shouldBe 3
                 val idList = map { room -> room.roomId }
-                host1.getRoomConnectionInfo().roomId shouldBeIn idList
-                host2.getRoomConnectionInfo().roomId shouldBeIn idList
-                host3.getRoomConnectionInfo().roomId shouldBeIn idList
+                host1.getRoomConnectionInfo()?.roomId shouldBeIn idList
+                host2.getRoomConnectionInfo()?.roomId shouldBeIn idList
+                host3.getRoomConnectionInfo()?.roomId shouldBeIn idList
             }
 
-            connectAsClient(relayGateway, host1.getRoomConnectionInfo().roomId.shouldNotBeNull(), host = host1)
-            connectAsClient(relayGateway, host2.getRoomConnectionInfo().roomId.shouldNotBeNull(), host = host2)
-            connectAsClient(relayGateway, host3.getRoomConnectionInfo().roomId.shouldNotBeNull(), host = host3)
-            connectAsClient(relayGateway, host1.getRoomConnectionInfo().roomId.shouldNotBeNull(), host = host1)
-            connectAsClient(relayGateway, host2.getRoomConnectionInfo().roomId.shouldNotBeNull(), host = host2)
-            connectAsClient(relayGateway, host3.getRoomConnectionInfo().roomId.shouldNotBeNull(), host = host3)
+            connectAsClient(relayGateway, host1.getRoomConnectionInfo()?.roomId.shouldNotBeNull(), host = host1)
+            connectAsClient(relayGateway, host2.getRoomConnectionInfo()?.roomId.shouldNotBeNull(), host = host2)
+            connectAsClient(relayGateway, host3.getRoomConnectionInfo()?.roomId.shouldNotBeNull(), host = host3)
+            connectAsClient(relayGateway, host1.getRoomConnectionInfo()?.roomId.shouldNotBeNull(), host = host1)
+            connectAsClient(relayGateway, host2.getRoomConnectionInfo()?.roomId.shouldNotBeNull(), host = host2)
+            connectAsClient(relayGateway, host3.getRoomConnectionInfo()?.roomId.shouldNotBeNull(), host = host3)
 
             HttpRequest.sendPublicGamesRequest(relayGateway).apply {
                 size shouldBe 3
                 val idList = map { room -> room.roomId }
-                host1.getRoomConnectionInfo().roomId shouldBeIn idList
-                host2.getRoomConnectionInfo().roomId shouldBeIn idList
-                host3.getRoomConnectionInfo().roomId shouldBeIn idList
+                host1.getRoomConnectionInfo()?.roomId shouldBeIn idList
+                host2.getRoomConnectionInfo()?.roomId shouldBeIn idList
+                host3.getRoomConnectionInfo()?.roomId shouldBeIn idList
             }
 
             host1.disconnect()
@@ -160,13 +160,13 @@ object RelayServerTest: FunSpec() {
 
             HttpRequest.sendPublicGamesRequest(relayGateway).apply {
                 size shouldBe 1
-                get(0).roomId shouldBe host.getRoomConnectionInfo().roomId
+                get(0).roomId shouldBe host.getRoomConnectionInfo()?.roomId
             }
 
-            val client = connectAsClient(relayGateway, host.getRoomConnectionInfo().roomId.shouldNotBeNull(), host = host)
+            val client = connectAsClient(relayGateway, host.getRoomConnectionInfo()?.roomId.shouldNotBeNull(), host = host)
 
             shouldThrow<NullPointerException> {
-                connectAsClient(relayGateway, host.getRoomConnectionInfo().roomId.shouldNotBeNull(), generateNewUUID = false, host = host)
+                connectAsClient(relayGateway, host.getRoomConnectionInfo()?.roomId.shouldNotBeNull(), generateNewUUID = false, host = host)
             }
 
             HttpRequest.sendPublicGamesRequest(relayGateway).size shouldBe 1

@@ -123,12 +123,9 @@ class JoinGame: BasicUIScreen() {
             })
         }
 
-        val lanPending = KtxAsync.async(Dispatchers.IO) {
-            LANClient.discoverLANHosts()
-        }
+        val lanGames = LANClient.discoverLANHosts()
 
         val publicGames = pendingJobs.awaitAll().flatten()
-        val lanGames = lanPending.await()
         Gdx.app.postRunnable { showFoundGames(publicGames, lanGames) }
     }
 
