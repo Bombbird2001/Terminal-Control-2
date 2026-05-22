@@ -22,6 +22,7 @@ import java.net.UnknownHostException
 import java.nio.channels.ClosedSelectorException
 import java.util.*
 import javax.crypto.spec.SecretKeySpec
+import kotlin.properties.Delegates
 
 /**
  * Server for handling public multiplayer relay games
@@ -33,7 +34,8 @@ class PublicServer(
     onReceive: (ConnectionMeta, Any?) -> Unit,
     onConnect: (ConnectionMeta) -> Unit,
     onDisconnect: (ConnectionMeta) -> Unit,
-    private val mapName: String
+    private val mapName: String,
+    private val relayGateway: RelayGatewayHost,
 ) : NetworkServer(gameServer, onReceive, onConnect, onDisconnect), NetworkRelayServer {
     val isConnected: Boolean
         get() = relayServerConnector.isConnected
@@ -41,6 +43,8 @@ class PublicServer(
     override val serverKryo: Kryo
         get() = relayServerConnector.kryo
 
+    private var relayTcpPort by Delegates.notNull<Int>()
+    private var relayUdpPort by Delegates.notNull<Int>()
     private var roomId: Short = Short.MAX_VALUE
     private lateinit var relayChallenge: RelayChallenge
 
@@ -79,9 +83,8 @@ class PublicServer(
             HttpRequest.sendCrashReport(Exception(e), "PublicServer", MULTIPLAYER_PUBLIC)
             GAME.quitCurrentGameWithDialog { CustomDialog("Error", "An error occurred", "", "Ok") }
         }
-        CLIENT_TCP_PORT_IN_USE = RELAY_TCP_PORT
-        CLIENT_UDP_PORT_IN_USE = RELAY_UDP_PORT
-        relayServerConnector.connect(5000, Secrets.RELAY_ADDRESS, RELAY_TCP_PORT, RELAY_UDP_PORT)
+
+        relayServerConnector.connect(5000, relayGateway.relayAddress, relayTcpPort, relayUdpPort)
 
         return true
     }
@@ -110,8 +113,8 @@ class PublicServer(
 
         val roomCreation: HttpRequest.RoomCreationStatus?
         try {
-            roomCreation = HttpRequest.sendCreateGameRequest()
-        } catch (e: UnknownHostException) {
+            roomCreation = HttpRequest.sendCreateGameRequest(relayGateway)
+        } catch (_: UnknownHostException) {
             // Could not resolve host from DNS, most likely network error
             GAME.quitCurrentGameWithDialog { CustomDialog("Failed to connect",
                 "Please check your network connection and try again.", "", "Ok") }
@@ -151,8 +154,8 @@ class PublicServer(
             this.roomId = roomId
     }
 
-    override fun getRoomId(): Short {
-        return roomId
+    override fun getRoomConnectionInfo(): RoomConnectionInfo {
+        return RoomConnectionInfo(roomId, relayTcpPort, relayUdpPort)
     }
 
     override fun getConnectionStatus(): String {

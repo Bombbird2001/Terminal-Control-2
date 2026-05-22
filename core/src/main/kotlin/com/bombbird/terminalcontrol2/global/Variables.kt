@@ -33,10 +33,6 @@ var UI_HEIGHT = 0f
 /** Index of background image used in menu screens */
 var BG_INDEX = 0
 
-/** Server, client TCP/UDP ports */
-var CLIENT_TCP_PORT_IN_USE = LAN_TCP_PORTS[0]
-var CLIENT_UDP_PORT_IN_USE = LAN_UDP_PORTS[0]
-
 /** List of available airports */
 val AVAIL_AIRPORTS = GdxArrayMap<String, String?>().apply {
     put("TCTP", null)

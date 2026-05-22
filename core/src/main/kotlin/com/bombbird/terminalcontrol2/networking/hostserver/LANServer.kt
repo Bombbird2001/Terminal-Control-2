@@ -59,8 +59,6 @@ class LANServer(
             try {
                 val tcpPort = entry.value
                 val udpPort = LAN_UDP_PORTS[entry.index]
-                CLIENT_TCP_PORT_IN_USE = tcpPort
-                CLIENT_UDP_PORT_IN_USE = udpPort
                 server.bind(tcpPort, udpPort)
                 break
             } catch (_: BindException) {
@@ -155,8 +153,8 @@ class LANServer(
         return true
     }
 
-    override fun getRoomId(): Short? {
-        return null
+    override fun getRoomConnectionInfo(): RoomConnectionInfo {
+        return RoomConnectionInfo(null, server.tcpPort, server.udpPort)
     }
 
     override fun getConnectionStatus(): String {

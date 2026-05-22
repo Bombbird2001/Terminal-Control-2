@@ -6,6 +6,7 @@ import com.badlogic.gdx.utils.Align
 import com.badlogic.gdx.utils.Timer
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.networking.GameServer
+import com.bombbird.terminalcontrol2.networking.relaygateway.RelayGatewayHost
 import com.bombbird.terminalcontrol2.ui.addChangeListener
 import com.bombbird.terminalcontrol2.utilities.getRandomTip
 import com.bombbird.terminalcontrol2.utilities.loadTips
@@ -60,14 +61,15 @@ class GameLoading private constructor(): BasicUIScreen() {
          * @param airportToHost the ICAO code of airport to play
          * @param maxPlayers maximum number of players allowed in the game
          * @param useRelayV2 whether to use the new Relay V2 implementation
+         * @param relayGateway relay gateway connection info
          * @return the GameLoading screen
          */
-        fun newPublicMultiplayerGameLoading(airportToHost: String, maxPlayers: Byte, useRelayV2: Boolean): GameLoading {
+        fun newPublicMultiplayerGameLoading(airportToHost: String, maxPlayers: Byte, useRelayV2: Boolean, relayGateway: RelayGatewayHost): GameLoading {
             val gameLoading = GameLoading()
-            GameServer.newPublicMultiplayerGameServer(airportToHost, maxPlayers, useRelayV2).apply {
+            GameServer.newPublicMultiplayerGameServer(airportToHost, maxPlayers, useRelayV2, relayGateway).apply {
                 serverStartedCallback = gameLoading::gameServerLoaded
             }
-            val rs = RadarScreen.newPublicMultiplayerRadarScreen(useRelayV2).apply {
+            val rs = RadarScreen.newPublicMultiplayerRadarScreen(relayGateway, useRelayV2).apply {
                 dataLoadedCallback = gameLoading::gameClientLoaded
                 connectedToHostCallback = gameLoading::connectedToGameServer
             }
@@ -123,14 +125,18 @@ class GameLoading private constructor(): BasicUIScreen() {
          * @param saveId ID of the save file to load
          * @param maxPlayers maximum number of players allowed in the game
          * @param useRelayV2 whether to use the new Relay V2 implementation
+         * @param relayGateway the relay gateway host to use
          * @return the GameLoading screen
          */
-        fun loadPublicMultiplayerGameLoading(airportToHost: String, saveId: Int, maxPlayers: Byte, useRelayV2: Boolean): GameLoading {
+        fun loadPublicMultiplayerGameLoading(
+            airportToHost: String, saveId: Int, maxPlayers: Byte, useRelayV2: Boolean,
+            relayGateway: RelayGatewayHost
+        ): GameLoading {
             val gameLoading = GameLoading()
-            GameServer.loadPublicMultiplayerGameServer(airportToHost, saveId, maxPlayers, useRelayV2).apply {
+            GameServer.loadPublicMultiplayerGameServer(airportToHost, saveId, maxPlayers, useRelayV2, relayGateway).apply {
                 serverStartedCallback = gameLoading::gameServerLoaded
             }
-            val rs = RadarScreen.newPublicMultiplayerRadarScreen(useRelayV2).apply {
+            val rs = RadarScreen.newPublicMultiplayerRadarScreen(relayGateway, useRelayV2).apply {
                 dataLoadedCallback = gameLoading::gameClientLoaded
                 connectedToHostCallback = gameLoading::connectedToGameServer
             }
@@ -160,12 +166,11 @@ class GameLoading private constructor(): BasicUIScreen() {
         /**
          * Creates a new instance of GameLoading screen and loads the relevant objects to join a public multiplayer game
          * @param roomId the ID of the room to join
-         * @param useRelayV2 whether to use the new Relay V2 implementation
          * @return the GameLoading screen
          */
-        fun joinPublicMultiplayerGameLoading(roomId: Short, useRelayV2: Boolean): GameLoading {
+        fun joinPublicMultiplayerGameLoading(roomId: Short, gameInfo: JoinGame.PublicMultiplayerGameInfo): GameLoading {
             val gameLoading = GameLoading()
-            val rs = RadarScreen.joinPublicMultiplayerRadarScreen(roomId, useRelayV2).apply {
+            val rs = RadarScreen.joinPublicMultiplayerRadarScreen(roomId, gameInfo).apply {
                 dataLoadedCallback = gameLoading::gameClientLoaded
                 connectedToHostCallback = gameLoading::connectedToGameServer
             }

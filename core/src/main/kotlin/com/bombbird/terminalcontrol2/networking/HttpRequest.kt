@@ -5,6 +5,8 @@ import com.badlogic.gdx.Gdx
 import com.bombbird.terminalcontrol2.files.PlayerSettingsJSON
 import com.bombbird.terminalcontrol2.files.getJsonFromPlayerSettings
 import com.bombbird.terminalcontrol2.global.*
+import com.bombbird.terminalcontrol2.networking.relaygateway.RelayGatewayHost
+import com.bombbird.terminalcontrol2.networking.relaygateway.RelayReachability
 import com.bombbird.terminalcontrol2.screens.JoinGame
 import com.bombbird.terminalcontrol2.utilities.updateAirportMetar
 import com.bombbird.terminalcontrol2.utilities.FileLog
@@ -111,62 +113,54 @@ object HttpRequest {
         return GAME.gameServer?.let { it.gameRunning || it.initialisingWeather.get() } ?: false
     }
 
-    /**
-     * Sends an HTTP request to the relay server to check its aliveness
-     * @param onComplete function to be called when the results are received; a string denoting the status of the
-     * request is passed to the function
-     */
-    fun sendPublicServerAlive(onComplete: (String) -> Unit) {
+    /** Sends an HTTP request to the relay server to check its aliveness */
+    fun sendPublicServerAlive(relayGatewayHost: RelayGatewayHost): RelayReachability {
         val request = Request.Builder()
-            .url("${Secrets.RELAY_ENDPOINT_URL}:$RELAY_ENDPOINT_PORT$RELAY_GAME_ALIVE_PATH")
+            .url("${relayGatewayHost.relayEndpoint}:${relayGatewayHost.relayEndpointPort}$RELAY_GAME_ALIVE_PATH")
             .get()
             .build()
-        client.newCall(request).enqueue(object: Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                FileLog.info("HttpRequest", "Public games alive check failed")
-                onComplete("Could not check status")
-            }
-
-            override fun onResponse(call: Call, response: Response) {
+        return try {
+            client.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
                     FileLog.info("HttpRequest", "Public games alive check error ${response.code}")
-                    onComplete("Down")
+                    RelayReachability.DOWN
                 } else {
-                    onComplete("Up and reachable")
+                    RelayReachability.UP
                 }
-                response.close()
             }
-        })
+        } catch (_: IOException) {
+            FileLog.info("HttpRequest", "Public games alive check failed")
+            RelayReachability.NETWORK_ISSUE
+        }
     }
 
-    /**
-     * Sends an HTTP request to the relay server to request for open public games
-     * @param onComplete function to be called when the results are received; list of games are passed to the function
-     */
-    fun sendPublicGamesRequest(onComplete: (List<JoinGame.MultiplayerGameInfo>) -> Unit) {
+    /** Sends an HTTP request to the relay server to request for open public games */
+    fun sendPublicGamesRequest(relayGatewayHost: RelayGatewayHost): List<JoinGame.MultiplayerGameInfo> {
         val request = Request.Builder()
-            .url("${Secrets.RELAY_ENDPOINT_URL}:$RELAY_ENDPOINT_PORT$RELAY_GAMES_PATH")
+            .url("${relayGatewayHost.relayEndpoint}:${relayGatewayHost.relayEndpointPort}$RELAY_GAMES_PATH")
             .post("".toRequestBody(TEXT_MEDIA_TYPE))
             .build()
-        client.newCall(request).enqueue(object: Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                FileLog.info("HttpRequest", "Public games request failed")
+        return try {
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) {
+                    FileLog.info("HttpRequest", "Public games request error ${response.code}")
+                    listOf()
+                } else {
+                    handlePublicGamesResult(response)
+                }
             }
-
-            override fun onResponse(call: Call, response: Response) {
-                handlePublicGamesResult(response, onComplete)
-            }
-        })
+        } catch (_: IOException) {
+            FileLog.info("HttpRequest", "Public games request failed")
+            listOf()
+        }
     }
 
     /**
      * Handles the response from the public games endpoint query
-     * @param onComplete function to be called when the results are received; list of games are passed to the function
      * @param response the response received from the server; may be null if request was unsuccessful
      */
-    private fun handlePublicGamesResult(response: Response?, onComplete: (List<JoinGame.MultiplayerGameInfo>) -> Unit) {
+    private fun handlePublicGamesResult(response: Response): List<JoinGame.MultiplayerGameInfo> {
         val publicGamesData = ArrayList<JoinGame.MultiplayerGameInfo>()
-        if (response == null) return onComplete(publicGamesData)
 
         if (!response.isSuccessful) {
             FileLog.info("HttpRequest", "Public games request error ${response.code}")
@@ -180,21 +174,22 @@ object HttpRequest {
                 Moshi.Builder().build().adapter<List<JoinGame.MultiplayerGameInfo>>(type).fromJson(responseText)?.apply {
                     for (game in this) publicGamesData.add(game)
                 }
-                return onComplete(publicGamesData)
             }
         }
-        response.close()
-        onComplete(publicGamesData)
+
+        return publicGamesData
     }
 
     /** Class representing data sent to authorization endpoint to obtain symmetric key for room data encryption */
     @JsonClass(generateAdapter = true)
-    data class AuthorizationRequest(val roomId: Short, val uuid: String, val pw: String = Secrets.RELAY_ENDPOINT_AUTH_PW)
+    data class AuthorizationRequest(val roomId: Short, val uuid: String, val pw: String)
 
     /** Class representing data sent by authorization endpoint with symmetric key for room data encryption */
     @JsonClass(generateAdapter = true)
-    data class AuthorizationResponse(val success: Boolean, val roomKey: String, val clientKey: String,
-                                     val nonce: String, val iv: String)
+    data class AuthorizationResponse(
+        val success: Boolean, val roomKey: String, val clientKey: String, val nonce: String,
+        val iv: String
+    )
 
     private val moshi = Moshi.Builder().build()
 
@@ -208,10 +203,12 @@ object HttpRequest {
      * Sends a request to the relay endpoint to join a game, and retrieve the symmetric key for encrypting data in the
      * room
      */
-    fun sendGameAuthorizationRequest(roomId: Short): AuthorizationResponse? {
+    fun sendGameAuthorizationRequest(roomId: Short, relayGatewayHost: RelayGatewayHost): AuthorizationResponse? {
         val request = Request.Builder()
-            .url("${Secrets.RELAY_ENDPOINT_URL}:$RELAY_ENDPOINT_PORT$RELAY_GAME_AUTH_PATH")
-            .post(moshiAuthReqAdapter.toJson(AuthorizationRequest(roomId, myUuid.toString())).toRequestBody(TEXT_MEDIA_TYPE))
+            .url("${relayGatewayHost.relayEndpoint}:${relayGatewayHost.relayEndpointPort}$RELAY_GAME_AUTH_PATH")
+            .post(moshiAuthReqAdapter.toJson(
+                AuthorizationRequest(roomId, myUuid.toString(), relayGatewayHost.relayEndpointAuthPw)
+            ).toRequestBody(TEXT_MEDIA_TYPE))
             .build()
         // Blocking call
         val response = client.newCall(request).execute()
@@ -228,7 +225,7 @@ object HttpRequest {
                 // Parse JSON to room creation status
                 try {
                     moshiRoomAuthAdapter.fromJson(responseText)
-                } catch (e: JsonDataException) {
+                } catch (_: JsonDataException) {
                     FileLog.info("HttpRequest", "Public games authorization failed to parse response $responseText")
                     null
                 }
@@ -244,7 +241,10 @@ object HttpRequest {
      * encryption (in Base64 encoding)
      */
     @JsonClass(generateAdapter = true)
-    data class RoomCreationStatus(val success: Boolean, val roomId: Short, val authResponse: AuthorizationResponse)
+    data class RoomCreationStatus(
+        val success: Boolean, val roomId: Short, val authResponse: AuthorizationResponse,
+        val tcpPort: Int, val udpPort: Int
+    )
 
     @OptIn(ExperimentalStdlibApi::class)
     private val moshiRoomCreationAdapter = Moshi.Builder().build().adapter<RoomCreationStatus>()
@@ -253,10 +253,10 @@ object HttpRequest {
      * Sends a request to the relay endpoint to create a game, and retrieve the room ID and the symmetric key for
      * encrypting data in the room
      */
-    fun sendCreateGameRequest(): RoomCreationStatus? {
+    fun sendCreateGameRequest(relayGatewayHost: RelayGatewayHost): RoomCreationStatus? {
         val request = Request.Builder()
-            .url("${Secrets.RELAY_ENDPOINT_URL}:$RELAY_ENDPOINT_PORT$RELAY_GAME_CREATE_PATH")
-            .post(Secrets.RELAY_ENDPOINT_CREATE_PW.toRequestBody(TEXT_MEDIA_TYPE))
+            .url("${relayGatewayHost.relayEndpoint}:${relayGatewayHost.relayEndpointPort}$RELAY_GAME_CREATE_PATH")
+            .post(relayGatewayHost.relayEndpointCreatePw.toRequestBody(TEXT_MEDIA_TYPE))
             .build()
         // Blocking call
         val response = client.newCall(request).execute()
@@ -274,6 +274,7 @@ object HttpRequest {
                 try {
                     moshiRoomCreationAdapter.fromJson(responseText)
                 } catch (e: JsonDataException) {
+                    e.printStackTrace()
                     FileLog.info("HttpRequest", "Public games creation failed to parse response $responseText")
                     null
                 }

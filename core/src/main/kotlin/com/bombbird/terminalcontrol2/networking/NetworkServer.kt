@@ -58,11 +58,8 @@ abstract class NetworkServer(
      */
     abstract fun beforeStart(): Boolean
 
-    /**
-     * Returns the room ID of the server (after it is allocated one by relay server); null for LAN servers
-     * @return ID of the room if this is a public multiplayer game, else null
-     */
-    abstract fun getRoomId(): Short?
+    /** Returns the room connection information of the server - room ID (public server only), and connection ports */
+    abstract fun getRoomConnectionInfo(): RoomConnectionInfo
 
     /** Gets the status of the connection, of both TCP and UDP */
     abstract fun getConnectionStatus(): String
@@ -90,17 +87,14 @@ abstract class NetworkServer(
      */
     @Synchronized
     protected fun getSerialisedBytes(data: Any): ByteArray? {
-        var times = 0
-        while (times < 3) {
+        repeat(3) {
             try {
                 val serialisationOutput = Output(SERVER_WRITE_BUFFER_SIZE)
                 synchronized(manualKryoLock) {
                     manualKryo.writeClassAndObject(serialisationOutput, data)
                 }
                 return serialisationOutput.toBytes()
-            } catch (e: NullPointerException) {
-                times++
-            }
+            } catch (_: NullPointerException) {}
         }
 
         return null
@@ -113,20 +107,19 @@ abstract class NetworkServer(
      */
     @Synchronized
     protected fun fromSerializedBytes(data: ByteArray): Any? {
-        var times = 0
-        while (times < 3) {
+        repeat(3) {
             try {
                 synchronized(manualKryoLock) {
                     return manualKryo.readClassAndObject(Input(data))
                 }
-            } catch (e: NullPointerException) {
-                times++
-            }
+            } catch (_: NullPointerException) {}
         }
 
         return null
     }
 }
+
+data class RoomConnectionInfo(val roomId: Short?, val tcpPort: Int, val udpPort: Int)
 
 interface NetworkRelayServer {
     fun onConnectViaRelay(uuid: UUID)

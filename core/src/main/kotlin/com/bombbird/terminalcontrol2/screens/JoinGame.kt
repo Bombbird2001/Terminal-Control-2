@@ -7,13 +7,13 @@ import com.badlogic.gdx.utils.Timer
 import com.bombbird.terminalcontrol2.global.*
 import com.bombbird.terminalcontrol2.networking.HttpRequest
 import com.bombbird.terminalcontrol2.networking.playerclient.LANClient
+import com.bombbird.terminalcontrol2.networking.relaygateway.RelayGatewayHost
+import com.bombbird.terminalcontrol2.networking.relaygateway.RelayReachability
 import com.bombbird.terminalcontrol2.ui.addChangeListener
 import com.squareup.moshi.JsonClass
 import kotlinx.coroutines.*
 import ktx.async.KtxAsync
-import ktx.collections.GdxArray
 import ktx.scene2d.*
-import java.util.*
 import kotlin.collections.ArrayList
 
 /** Screen for searching and joining multiplayer games on the LAN */
@@ -21,10 +21,8 @@ class JoinGame: BasicUIScreen() {
     private val publicServerStatusLabel: Label
     private val refreshButton: KTextButton
     private val gamesTable: KTableWidget
-    private val lanGamesData = Collections.synchronizedList<MultiplayerGameInfo>(ArrayList())
     @Volatile
     private var searching = false
-    private val publicGamesData = GdxArray<MultiplayerGameInfo>()
 
     init {
         stage.actors {
@@ -94,35 +92,44 @@ class JoinGame: BasicUIScreen() {
     /**
      * Search for multiplayer games open on the LAN as well as the public relay server
      *
-     * Before discovering LAN hosts, [lanGamesData] is passed to the client discovery handler so that it can add newly
-     * discovered servers and their data packets to the array, which is used after discovery times out to display the games
-     * found
-     *
      * For relay games, an HTTP request is sent to the relay server endpoint to get game data
      */
-    private fun searchGames() {
+    private suspend fun searchGames() {
         if (searching) return
+
         Gdx.app.postRunnable {
             setSearchingGames()
-            HttpRequest.sendPublicServerAlive {
-                publicServerStatusLabel.setText("Public server status: $it")
-            }
         }
-        publicGamesData.clear()
-        KtxAsync.launch(Dispatchers.IO) {
-            HttpRequest.sendPublicGamesRequest { games ->
-                for (game in games) publicGamesData.add(game)
-            }
-            lanGamesData.clear()
-            val hosts = LANClient.discoverLANHosts()
-            synchronized(lanGamesData) {
-                for (host in hosts) {
-                    lanGamesData.add(MultiplayerGameInfo(host.address, host.udpPort,
-                        host.playerCount.toByte(), host.maxPlayers.toByte(), host.mapName, null, host.tcpPort))
+
+        val aliveChecks = ArrayList<Deferred<RelayReachability>>(Secrets.RELAY_INSTANCES.size)
+        Secrets.RELAY_INSTANCES.forEach { host ->
+            aliveChecks.add(KtxAsync.async(Dispatchers.IO) {
+                HttpRequest.sendPublicServerAlive(host)
+            })
+        }
+
+        // Collect alive check results
+        val relayStatuses = aliveChecks.awaitAll()
+        val combinedText = relayStatuses.mapIndexed { index, status -> "Server ${index + 1}: $status" }.joinToString("; ")
+        Gdx.app.postRunnable { publicServerStatusLabel.setText(combinedText) }
+
+        val pendingJobs = ArrayList<Deferred<List<PublicMultiplayerGameInfo>>>()
+        Secrets.RELAY_INSTANCES.forEachIndexed { index, host ->
+            if (relayStatuses[index] != RelayReachability.UP) return@forEachIndexed
+            pendingJobs.add(KtxAsync.async(Dispatchers.IO) {
+                HttpRequest.sendPublicGamesRequest(host).map {
+                    PublicMultiplayerGameInfo(it, host)
                 }
-            }
-            Gdx.app.postRunnable { showFoundGames() }
+            })
         }
+
+        val lanPending = KtxAsync.async(Dispatchers.IO) {
+            LANClient.discoverLANHosts()
+        }
+
+        val publicGames = pendingJobs.awaitAll().flatten()
+        val lanGames = lanPending.await()
+        Gdx.app.postRunnable { showFoundGames(publicGames, lanGames) }
     }
 
     /**
@@ -141,35 +148,37 @@ class JoinGame: BasicUIScreen() {
         val relayProtocol: Int = 1,
     )
 
+    class PublicMultiplayerGameInfo(
+        val gameInfo: MultiplayerGameInfo,
+        val relayInfo: RelayGatewayHost
+    )
+
     /** Displays all games found on LAN and public relay server, and sets the searching flag to false */
-    private fun showFoundGames() {
+    private fun showFoundGames(publicGames: List<PublicMultiplayerGameInfo>, lanGames: List<LANClient.DiscoveredHost>) {
         Timer.instance().clear()
+
+        val filteredLan = lanGames.filter { it.playerCount < it.maxPlayers }
+        val filteredPublic = publicGames.filter { it.gameInfo.roomId != null && it.gameInfo.players < it.gameInfo.maxPlayers }
+
         gamesTable.apply {
             clear()
-            var added = 0
-            synchronized(lanGamesData) {
-                for (i in lanGamesData.indices) { lanGamesData[i]?.let { game ->
-                    if (game.players >= game.maxPlayers) return@let // Server is full
-                    textButton("${game.airportName} - ${game.players}/${game.maxPlayers} player${if (game.maxPlayers > 1) "s" else ""}          ${game.address}          Join", "JoinGameAirport").addChangeListener { _, _ ->
-                        val tcp = game.tcpPort ?: (game.port - UDP_TCP_OFFSET)
-                        GAME.addScreen(GameLoading.joinLANMultiplayerGameLoading(game.address, tcp, game.port))
-                        GAME.setScreen<GameLoading>()
-                    }
-                    row()
-                    added++
-                }}
-            }
-            for (i in 0 until publicGamesData.size) { publicGamesData[i]?.let { game ->
-                val roomId = game.roomId ?: return@let // Public games should have a room ID
-                if (game.players >= game.maxPlayers) return@let // Server is full
-                textButton("${game.airportName} - ${game.players}/${game.maxPlayers} player${if (game.maxPlayers > 1) "s" else ""}          Public server ${if (game.relayProtocol > 1) "(V${game.relayProtocol})" else "    "}      Join", "JoinGameAirport").addChangeListener { _, _ ->
-                    GAME.addScreen(GameLoading.joinPublicMultiplayerGameLoading(roomId, game.relayProtocol == 2))
+            for (game in filteredLan) {
+                textButton("${game.mapName} - ${game.playerCount}/${game.maxPlayers} player${if (game.maxPlayers > 1) "s" else ""}          ${game.address}          Join", "JoinGameAirport").addChangeListener { _, _ ->
+                    GAME.addScreen(GameLoading.joinLANMultiplayerGameLoading(game.address, game.tcpPort, game.udpPort))
                     GAME.setScreen<GameLoading>()
                 }
                 row()
-                added++
-            }}
-            if (added == 0) label("No games found", "SearchingGame")
+            }
+            for (publicGame in filteredPublic) {
+                val game = publicGame.gameInfo
+                val roomId = game.roomId ?: continue
+                textButton("${game.airportName} - ${game.players}/${game.maxPlayers} player${if (game.maxPlayers > 1) "s" else ""}          Public server ${if (game.relayProtocol > 1) "(V${game.relayProtocol})" else "    "}      Join", "JoinGameAirport").addChangeListener { _, _ ->
+                    GAME.addScreen(GameLoading.joinPublicMultiplayerGameLoading(roomId, publicGame))
+                    GAME.setScreen<GameLoading>()
+                }
+                row()
+            }
+            if (filteredPublic.size + filteredLan.size == 0) label("No games found", "SearchingGame")
         }
         searching = false
         refreshButton.isDisabled = false

@@ -93,10 +93,16 @@ class ChooseMaxPlayers: BasicUIScreen() {
         val maxPlayersAllowed = maxPlayersSlider.value.roundToInt().toByte()
         if (public) {
             if (saveId == null) {
-                GAME.addScreen(GameLoading.newPublicMultiplayerGameLoading(airportToHost, maxPlayersAllowed, useRelayV2))
+                GAME.addScreen(GameLoading.newPublicMultiplayerGameLoading(
+                    airportToHost, maxPlayersAllowed, useRelayV2,
+                    Secrets.RELAY_INSTANCES[if (useRelayV2) 1 else 0])
+                )
                 GAME.setScreen<GameLoading>()
             } else {
-                GAME.addScreen(GameLoading.loadPublicMultiplayerGameLoading(airportToHost, saveId, maxPlayersAllowed, useRelayV2))
+                GAME.addScreen(GameLoading.loadPublicMultiplayerGameLoading(
+                    airportToHost, saveId, maxPlayersAllowed, useRelayV2,
+                    Secrets.RELAY_INSTANCES[if (useRelayV2) 1 else 0])
+                )
                 GAME.setScreen<GameLoading>()
             }
         } else {

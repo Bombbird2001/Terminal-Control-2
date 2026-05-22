@@ -6,6 +6,7 @@ import com.bombbird.terminalcontrol2.networking.dataclasses.ClientData
 import com.bombbird.terminalcontrol2.networking.dataclasses.ConnectionError
 import com.bombbird.terminalcontrol2.networking.dataclasses.RequestClientData
 import com.bombbird.terminalcontrol2.networking.encryption.*
+import com.bombbird.terminalcontrol2.networking.relaygateway.RelayGatewayHost
 import com.bombbird.terminalcontrol2.networking.transport.ProtoMessages
 import com.bombbird.terminalcontrol2.networking.transport.TransportConnection
 import com.bombbird.terminalcontrol2.screens.RadarScreen
@@ -21,7 +22,7 @@ import javax.crypto.spec.SecretKeySpec
  * Client for handling public multiplayer relay games.
  * Uses the new protobuf-based transport instead of KryoNet.
  */
-class PublicClientV2 : NetworkClient(), NetworkRelayClient {
+class PublicClientV2(private val relayGatewayHost: RelayGatewayHost): NetworkClient(), NetworkRelayClient {
     override val isConnected: Boolean
         get() = conn.isConnected
     override val clientKryo: Kryo
@@ -74,7 +75,7 @@ class PublicClientV2 : NetworkClient(), NetworkRelayClient {
         conn.disconnect()
         this.roomId = roomId
 
-        val authResponse = HttpRequest.sendGameAuthorizationRequest(roomId)
+        val authResponse = HttpRequest.sendGameAuthorizationRequest(roomId, relayGatewayHost)
         if (authResponse?.success != true) {
             GAME.quitCurrentGameWithDialog { CustomDialog("Failed to connect", "Endpoint authorization failed", "", "Ok") }
             return

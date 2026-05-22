@@ -7,6 +7,7 @@ import com.bombbird.terminalcontrol2.networking.dataclasses.ClientUUIDDataOld
 import com.bombbird.terminalcontrol2.networking.dataclasses.ConnectionError
 import com.bombbird.terminalcontrol2.networking.dataclasses.RequestClientData
 import com.bombbird.terminalcontrol2.networking.encryption.*
+import com.bombbird.terminalcontrol2.networking.relaygateway.RelayGatewayHost
 import com.bombbird.terminalcontrol2.networking.transport.ProtoMessages
 import com.bombbird.terminalcontrol2.networking.transport.TransportConnection
 import com.bombbird.terminalcontrol2.screens.RadarScreen
@@ -20,6 +21,7 @@ import java.lang.Exception
 import java.net.UnknownHostException
 import java.util.*
 import javax.crypto.spec.SecretKeySpec
+import kotlin.properties.Delegates
 
 /**
  * Server for handling public multiplayer relay games.
@@ -30,7 +32,8 @@ class PublicServerV2(
     onReceive: (ConnectionMeta, Any?) -> Unit,
     onConnect: (ConnectionMeta) -> Unit,
     onDisconnect: (ConnectionMeta) -> Unit,
-    private val mapName: String
+    private val mapName: String,
+    private val relayGateway: RelayGatewayHost,
 ) : NetworkServer(gameServer, onReceive, onConnect, onDisconnect), NetworkRelayServer {
     val isConnected: Boolean
         get() = relayConn.isConnected
@@ -40,6 +43,8 @@ class PublicServerV2(
 
     private val manualKryoInstance = Kryo().apply { registerClassesToKryo(this) }
 
+    private var relayTcpPort by Delegates.notNull<Int>()
+    private var relayUdpPort by Delegates.notNull<Int>()
     private var roomId: Short = Short.MAX_VALUE
     private var challengeCiphertext: ByteArray? = null
 
@@ -55,8 +60,9 @@ class PublicServerV2(
                     CustomDialog("Disconnected", "Lost connection to the relay server", "", "Ok")
                 }
         }
+
         try {
-            relayConn.connect(5000, Secrets.RELAY_ADDRESS, RELAY_TCP_PORT, RELAY_UDP_PORT)
+            relayConn.connect(5000, relayGateway.relayAddress, relayTcpPort, relayUdpPort)
         } catch (e: Exception) {
             FileLog.info("PublicServer", "Failed to connect to relay: ${e.message}")
             return false
@@ -66,8 +72,6 @@ class PublicServerV2(
         val ct = challengeCiphertext ?: return false
         relayConn.sendTCP(ProtoMessages.challengeResponse(ct))
 
-        CLIENT_TCP_PORT_IN_USE = RELAY_TCP_PORT
-        CLIENT_UDP_PORT_IN_USE = RELAY_UDP_PORT
         return true
     }
 
@@ -93,7 +97,7 @@ class PublicServerV2(
     override fun beforeStart(): Boolean {
         val roomCreation: HttpRequest.RoomCreationStatus?
         try {
-            roomCreation = HttpRequest.sendCreateGameRequest()
+            roomCreation = HttpRequest.sendCreateGameRequest(relayGateway)
         } catch (_: UnknownHostException) {
             GAME.quitCurrentGameWithDialog {
                 CustomDialog("Failed to connect", "Please check your network connection and try again.", "", "Ok")
@@ -104,6 +108,8 @@ class PublicServerV2(
             GAME.quitCurrentGameWithDialog { CustomDialog("Failed to connect", "Room creation failed", "", "Ok") }
             return false
         }
+        relayTcpPort = roomCreation.tcpPort
+        relayUdpPort = roomCreation.udpPort
         setRoomId(roomCreation.roomId)
         val roomKey = SecretKeySpec(decodeBase64(roomCreation.authResponse.roomKey), 0, AESGCMEncryptor.AES_KEY_LENGTH_BYTES, "AES")
         val hostKey = SecretKeySpec(decodeBase64(roomCreation.authResponse.clientKey), 0, AESGCMEncryptor.AES_KEY_LENGTH_BYTES, "AES")
@@ -129,8 +135,8 @@ class PublicServerV2(
             this.roomId = roomId
     }
 
-    override fun getRoomId(): Short {
-        return roomId
+    override fun getRoomConnectionInfo(): RoomConnectionInfo {
+        return RoomConnectionInfo(roomId, relayTcpPort, relayUdpPort)
     }
 
     override fun getConnectionStatus(): String {

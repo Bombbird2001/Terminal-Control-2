@@ -24,6 +24,7 @@ import com.bombbird.terminalcontrol2.navigation.ClearanceState
 import com.bombbird.terminalcontrol2.networking.*
 import com.bombbird.terminalcontrol2.networking.dataclasses.*
 import com.bombbird.terminalcontrol2.networking.NetworkClient
+import com.bombbird.terminalcontrol2.networking.relaygateway.RelayGatewayHost
 import com.bombbird.terminalcontrol2.systems.*
 import com.bombbird.terminalcontrol2.traffic.TrafficMode
 import com.bombbird.terminalcontrol2.traffic.conflict.Conflict
@@ -59,14 +60,15 @@ import kotlin.math.min
  *
  * Implements [GestureListener] and [InputProcessor] to handle input/gesture events to it
  * @param connectionHost the address of the host server to connect to; if null, no connection will be initiated
- * @param connectionTcpPort the TCP port of the host server to connect to; if null, CLIENT_TCP_PORT_IN_USE will be used
- * @param connectionUdpPort the UDP port of the host server to connect to; if null, CLIENT_UDP_PORT_IN_USE will be used
- * @param roomId the ID of the room to join (public multiplayer)
+ * @param joinTcpPort the TCP port of the host server to join; only available when joining an existing game hosted by others
+ * @param joinUdpPort the UDP port of the host server to join; only available when joining an existing game hosted by others
+ * @param roomId the ID of the room to join (public multiplayer only)
+ * @param relayProtocol public server relay protocol - null if not public game
  */
 class RadarScreen private constructor(
-    private val connectionHost: String, private val connectionTcpPort: Int?,
-    private val connectionUdpPort: Int?, private var roomId: Short?,
-    private val useRelayV2: Boolean = true
+    private val connectionHost: String, private val joinTcpPort: Int?,
+    private val joinUdpPort: Int?, private var roomId: Short?,
+    private val relayProtocol: Int? = null
 ): KtxScreen, GestureListener, InputProcessor, ShowsDialog {
     private val clientEngine = getEngine(true)
     private val radarDisplayStage = safeStage(GAME.batch)
@@ -150,9 +152,9 @@ class RadarScreen private constructor(
 
     // Networking client, and flag for stopping connection attempts if game quits before connection is established
     val networkClient: NetworkClient
-        get() = when {
-            !isPublicMultiplayer() -> GAME.lanClient
-            useRelayV2 -> GAME.publicClientV2
+        get() = when (relayProtocol) {
+            null -> GAME.lanClient
+            2 -> GAME.publicClientV2
             else -> GAME.publicClient
         }
     private var attemptConnection = true
@@ -210,25 +212,25 @@ class RadarScreen private constructor(
 
         /**
          * Returns a new instance of public multiplayer RadarScreen
+         * @param relayGateway relay gateway connection information
          * @param useRelayV2 whether to use the new Relay V2 implementation
          * @return RadarScreen object in public multiplayer mode
          */
-        fun newPublicMultiplayerRadarScreen(useRelayV2: Boolean): RadarScreen {
+        fun newPublicMultiplayerRadarScreen(relayGateway: RelayGatewayHost, useRelayV2: Boolean): RadarScreen {
             return RadarScreen(
-                Secrets.RELAY_ADDRESS, RELAY_TCP_PORT,
-                RELAY_UDP_PORT, null, useRelayV2
+                relayGateway.relayAddress, null,
+                null, null, if (useRelayV2) 2 else 1
             )
         }
 
         /**
          * Returns a new instance of public multiplayer RadarScreen to join a public multiplayer game
          * @param roomId ID of the room to join
-         * @param useRelayV2 whether to use the new Relay V2 implementation
          * @return RadarScreen object in public multiplayer mode
          */
-        fun joinPublicMultiplayerRadarScreen(roomId: Short, useRelayV2: Boolean): RadarScreen {
-            return RadarScreen(Secrets.RELAY_ADDRESS, RELAY_TCP_PORT,
-                RELAY_UDP_PORT, roomId, useRelayV2
+        fun joinPublicMultiplayerRadarScreen(roomId: Short, gameInfo: JoinGame.PublicMultiplayerGameInfo): RadarScreen {
+            return RadarScreen(gameInfo.relayInfo.relayAddress, gameInfo.gameInfo.tcpPort,
+                gameInfo.gameInfo.port, roomId, gameInfo.gameInfo.relayProtocol
             )
         }
     }
@@ -672,40 +674,43 @@ class RadarScreen private constructor(
             networkClient.stop()
             return attemptConnectionToServer()
         }
-        var times = 0
-        while (true) {
+        repeat(15) {
             if (hostServerStartFailed) {
                 hostServerStartFailed = false
                 return false
             }
             val gs = GAME.gameServer
+            val connInfo = gs?.getConnectionInfo()
+            // When joining someone else's game, roomId is already provided - this is only needed for the host
+            if (roomId == null) roomId = connInfo?.roomId
+            val tcpPort = joinTcpPort ?: connInfo?.tcpPort
+            val udpPort = joinUdpPort ?: connInfo?.udpPort
             // If the game server is not yet running, or if the game server is a public server and has yet to receive
             // its room ID
-            if (gs != null && (!gs.gameRunning || (gs.publicServer && gs.getRoomId() == null))) {
+            if (tcpPort == null || udpPort == null || (gs != null && (!gs.gameRunning || (gs.isPublicMultiplayer() && roomId == null)))) {
                 Thread.sleep(2000)
-                times++
-                if (times >= 15) {
-                    FileLog.info("RadarScreen", "Game server not running - timeout")
-                    GAME.quitCurrentGameWithDialog { CustomDialog("Error", "Timeout when connecting to server", "", "Ok") }
-                    return false
-                }
-                continue
+                return@repeat
             }
             try {
                 // Check if game server is public server, if it is, set to its room ID
                 if (!attemptConnection) return false
-                if (gs != null && gs.publicServer && gs.getRoomId() != null) roomId = gs.getRoomId()
                 Thread.sleep(1000)
                 networkClient.beforeConnect(roomId)
                 networkClient.start()
-                networkClient.connect(CONNECTION_TIMEOUT, connectionHost, connectionTcpPort ?: CLIENT_TCP_PORT_IN_USE, connectionUdpPort ?: CLIENT_UDP_PORT_IN_USE)
+                networkClient.connect(CONNECTION_TIMEOUT, connectionHost, tcpPort, udpPort)
                 return true
-            } catch (_: IOException) {
+            } catch (e: IOException) {
                 // Workaround for strange behaviour on some devices where the connection timeout is ignored,
                 // an IOException is thrown instantly as server has not started up
+                e.printStackTrace()
                 Thread.sleep(CONNECTION_TIMEOUT.toLong())
             }
         }
+
+        // Failed all connection attempts
+        FileLog.info("RadarScreen", "Game server not running - timeout")
+        GAME.quitCurrentGameWithDialog { CustomDialog("Error", "Timeout when connecting to server", "", "Ok") }
+        return false
     }
 
     /**
@@ -829,7 +834,7 @@ class RadarScreen private constructor(
 
     /** Returns true if client is in public multiplayer game, else false */
     fun isPublicMultiplayer(): Boolean {
-        return roomId != null
+        return relayProtocol != null
     }
 
     /** Returns the type of multiplayer the client is in */

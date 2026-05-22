@@ -14,6 +14,7 @@ import com.bombbird.terminalcontrol2.networking.dataclasses.*
 import com.bombbird.terminalcontrol2.networking.hostserver.LANServer
 import com.bombbird.terminalcontrol2.networking.hostserver.PublicServer
 import com.bombbird.terminalcontrol2.networking.hostserver.PublicServerV2
+import com.bombbird.terminalcontrol2.networking.relaygateway.RelayGatewayHost
 import com.bombbird.terminalcontrol2.systems.*
 import com.bombbird.terminalcontrol2.traffic.*
 import com.bombbird.terminalcontrol2.traffic.conflict.Conflict
@@ -42,14 +43,15 @@ import kotlin.math.roundToLong
  * clients and handling incoming client inputs
  * @param airportToHost name of the airport to host
  * @param saveId ID of the save file to load, if any
- * @param publicServer whether to host this game in the public server
  * @param maxPlayersSet the maximum numbers of player the host as selected
  * @param useRelayV2 whether to use the new Relay V2 implementation
+ * @param relayHostInfo if set, will host this game on the public relay server
  * @param testMode whether to start this game server in test mode (i.e. will not initiate any network servers)
  */
 class GameServer private constructor(
-    airportToHost: String, saveId: Int?, val publicServer: Boolean,
-    private val maxPlayersSet: Byte, private val useRelayV2: Boolean = true, testMode: Boolean = false
+    airportToHost: String, saveId: Int?,
+    private val maxPlayersSet: Byte, private val useRelayV2: Boolean = true,
+    private val relayHostInfo: RelayGatewayHost? = null, testMode: Boolean = false
 ) {
     companion object {
         const val UPDATE_INTERVAL = 1000.0 / SERVER_UPDATE_RATE
@@ -75,7 +77,7 @@ class GameServer private constructor(
          * @return GameServer in single-player mode
          */
         fun newSinglePlayerGameServer(airportToHost: String): GameServer {
-            return GameServer(airportToHost, null, false, 1)
+            return GameServer(airportToHost, null, 1)
         }
 
         /**
@@ -85,7 +87,7 @@ class GameServer private constructor(
          * @return GameServer in LAN multiplayer mode
          */
         fun newLANMultiplayerGameServer(airportToHost: String, maxPlayers: Byte): GameServer {
-            return GameServer(airportToHost, null, false, maxPlayers)
+            return GameServer(airportToHost, null, maxPlayers)
         }
 
         /**
@@ -93,10 +95,14 @@ class GameServer private constructor(
          * @param airportToHost name of airport to host
          * @param maxPlayers maximum number of players allowed
          * @param useRelayV2 whether to use the new Relay V2 implementation
+         * @param relayHostInfo connection info for the relay gateway
          * @return GameServer in public multiplayer mode
          */
-        fun newPublicMultiplayerGameServer(airportToHost: String, maxPlayers: Byte, useRelayV2: Boolean): GameServer {
-            return GameServer(airportToHost, null, true, maxPlayers, useRelayV2)
+        fun newPublicMultiplayerGameServer(
+            airportToHost: String, maxPlayers: Byte, useRelayV2: Boolean,
+            relayHostInfo: RelayGatewayHost
+        ): GameServer {
+            return GameServer(airportToHost, null, maxPlayers, useRelayV2, relayHostInfo)
         }
 
         /**
@@ -106,7 +112,7 @@ class GameServer private constructor(
          * @return GameServer in single-player mode
          */
         fun loadSinglePlayerGameServer(airportToHost: String, saveId: Int): GameServer {
-            return GameServer(airportToHost, saveId, false, 1)
+            return GameServer(airportToHost, saveId, 1)
         }
 
         /**
@@ -117,7 +123,7 @@ class GameServer private constructor(
          * @return GameServer in LAN multiplayer mode
          */
         fun loadLANMultiplayerGameServer(airportToHost: String, saveId: Int, maxPlayers: Byte): GameServer {
-            return GameServer(airportToHost, saveId, false, maxPlayers)
+            return GameServer(airportToHost, saveId, maxPlayers)
         }
 
         /**
@@ -126,10 +132,17 @@ class GameServer private constructor(
          * @param saveId ID of the save file to load
          * @param maxPlayers maximum number of players allowed
          * @param useRelayV2 whether to use the new Relay V2 implementation
+         * @param relayHostInfo connection info for the relay gateway
          * @return GameServer in public multiplayer mode
          */
-        fun loadPublicMultiplayerGameServer(airportToHost: String, saveId: Int, maxPlayers: Byte, useRelayV2: Boolean): GameServer {
-            return GameServer(airportToHost, saveId, true, maxPlayers, useRelayV2)
+        fun loadPublicMultiplayerGameServer(
+            airportToHost: String, saveId: Int, maxPlayers: Byte, useRelayV2: Boolean,
+            relayHostInfo: RelayGatewayHost,
+        ): GameServer {
+            return GameServer(
+                airportToHost, saveId, maxPlayers, useRelayV2,
+                relayHostInfo
+            )
         }
 
         /**
@@ -137,7 +150,7 @@ class GameServer private constructor(
          * @return GameServer in testing mode
          */
         fun testGameServer(): GameServer {
-            return GameServer("", null, false, 4, true)
+            return GameServer("", null, 4, true)
         }
     }
 
@@ -606,24 +619,27 @@ class GameServer private constructor(
             }
         }
 
-        // Log.set(Log.LEVEL_DEBUG)
-        networkServer = if (publicServer) {
+        networkServer = if (relayHostInfo == null) LANServer(this, onReceive, onConnect, onDisconnect)
+        else {
             if (useRelayV2) PublicServerV2(
                 this,
                 onReceive,
                 onConnect,
                 onDisconnect,
-                mainName
+                mainName,
+                relayHostInfo
             )
             else PublicServer(
                 this,
                 onReceive,
                 onConnect,
                 onDisconnect,
-                mainName
+                mainName,
+                relayHostInfo
             )
         }
-        else LANServer(this, onReceive, onConnect, onDisconnect)
+
+        // Log.set(Log.LEVEL_DEBUG)
         if (networkServer.beforeStart()) {
             return networkServer.start()
         }
@@ -1126,14 +1142,14 @@ class GameServer private constructor(
      * Returns the room ID of the underlying multiplayer server; if is LAN server, null is returned
      * @return ID of room
      */
-    fun getRoomId(): Short? {
+    fun getConnectionInfo(): RoomConnectionInfo? {
         if (!::networkServer.isInitialized) return null
-        return networkServer.getRoomId()
+        return networkServer.getRoomConnectionInfo()
     }
 
     /** Returns true if server is hosting a public multiplayer game, else false */
-    private fun isPublicMultiplayer(): Boolean {
-        return publicServer
+    fun isPublicMultiplayer(): Boolean {
+        return relayHostInfo != null
     }
 
     /** Returns the type of multiplayer game being hosted */

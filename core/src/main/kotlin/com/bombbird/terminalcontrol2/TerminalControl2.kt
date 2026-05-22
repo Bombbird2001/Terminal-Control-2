@@ -54,8 +54,8 @@ class TerminalControl2(val externalFileHandler: ExternalFileHandler, ttsHandler:
     @Volatile
     var gameClientScreen: RadarScreen? = null
     val lanClient = LANClient()
-    val publicClient = PublicClient()
-    val publicClientV2 = PublicClientV2()
+    val publicClient = PublicClient(Secrets.RELAY_INSTANCES[0])
+    val publicClientV2 = PublicClientV2(Secrets.RELAY_INSTANCES[1])
     val ttsManager = TextToSpeechManager(ttsHandler)
     val androidLifeCycleHandler = AndroidLifeCycleHandler()
     val achievementManager = AchievementManager(achievementHandler)

@@ -7,6 +7,27 @@ import com.esotericsoftware.kryonet.Connection
 import com.bombbird.terminalcontrol2.utilities.FileLog
 import java.util.*
 
+/** Class to describe a relay gateway instance */
+data class RelayGatewayHost(
+    val relayAddress: String,
+    val relayEndpoint: String,
+    val relayEndpointPort: Int,
+    val relayEndpointAuthPw: String,
+    val relayEndpointCreatePw: String,
+)
+
+enum class RelayReachability {
+    UP, DOWN, NETWORK_ISSUE;
+
+    override fun toString(): String {
+        return when (this) {
+            UP -> "Up and reachable"
+            DOWN -> "Down"
+            NETWORK_ISSUE -> "Could not check status"
+        }
+    }
+}
+
 /** Class to wrap the nonce in a [NeedsEncryption] interface to be encrypted */
 data class RelayNonce(val id: String): NeedsEncryption
 

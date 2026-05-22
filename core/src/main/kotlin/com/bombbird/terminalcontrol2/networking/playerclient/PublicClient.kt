@@ -23,7 +23,7 @@ import javax.crypto.spec.SecretKeySpec
  *
  * Cannot be used for LAN multiplayer games, use [LANClient] for that
  */
-class PublicClient: NetworkClient(), NetworkRelayClient {
+class PublicClient(private val relayGatewayHost: RelayGatewayHost): NetworkClient(), NetworkRelayClient {
     override val isConnected: Boolean
         get() = client.isConnected
     override val clientKryo: Kryo
@@ -88,7 +88,7 @@ class PublicClient: NetworkClient(), NetworkRelayClient {
         this.roomId = roomId
 
         // Send game join request to endpoint to retrieve symmetric key
-        val authResponse = HttpRequest.sendGameAuthorizationRequest(roomId)
+        val authResponse = HttpRequest.sendGameAuthorizationRequest(roomId, relayGatewayHost)
         if (authResponse?.success != true) {
             GAME.quitCurrentGameWithDialog { CustomDialog("Failed to connect", "Endpoint authorization failed", "", "Ok") }
             return
