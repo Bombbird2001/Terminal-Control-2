@@ -40,6 +40,11 @@ class LANClient : NetworkClient() {
     private var serverDH: DiffieHellman? = null
     private var clientDH: DiffieHellman? = null
 
+    private var lastTimeout: Int? = null
+    private var lastConnectionHost: String? = null
+    private var lastTcpPort: Int? = null
+    private var lastUdpPort: Int? = null
+
     override fun connect(timeout: Int, connectionHost: String, tcpPort: Int, udpPort: Int) {
         conn.onTcpReceived = { msg -> handleTcpMessage(msg) }
         conn.onUdpReceived = { msg, _ ->
@@ -53,11 +58,23 @@ class LANClient : NetworkClient() {
         }
         conn.connect(timeout, connectionHost, tcpPort, udpPort)
 
-        println("Client socket: ${conn.localTcpPort}/${conn.localUdpPort}")
+        lastTimeout = timeout
+        lastConnectionHost = connectionHost
+        lastTcpPort = tcpPort
+        lastUdpPort = udpPort
     }
 
     override fun reconnect() {
-        // Not easily supported; full reconnect needed
+        val timeout = lastTimeout
+        val connectionHost = lastConnectionHost
+        val tcpPort = lastTcpPort
+        val udpPort = lastUdpPort
+        if (timeout == null || connectionHost == null || tcpPort == null || udpPort == null) {
+            FileLog.warn("LANClient", "Attempted to reconnect without previous connection, skipping")
+            return
+        }
+
+        conn.connect(timeout, connectionHost, tcpPort, udpPort)
     }
 
     override fun sendTCP(data: Any) {
