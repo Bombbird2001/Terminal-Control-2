@@ -752,7 +752,6 @@ class RadarScreen private constructor(
     fun quitGame() {
         GAME.gameServer?.setLoopingFalse()
         resumeGame(false)
-        networkClient.stop()
     }
 
     /**

@@ -245,7 +245,7 @@ class LoadGame: BasicUIScreen() {
                     try {
                         val playedTemporal = ZonedDateTime.parse(it, DateTimeFormatter.ISO_ZONED_DATE_TIME)
                         getDatetimeDifferenceString(playedTemporal, ZonedDateTime.now())
-                    } catch (e: DateTimeParseException) {
+                    } catch (_: DateTimeParseException) {
                         null
                     }
                 }
