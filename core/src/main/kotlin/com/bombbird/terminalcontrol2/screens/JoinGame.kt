@@ -139,13 +139,13 @@ class JoinGame: BasicUIScreen() {
      * @param roomId the ID of the room (only for public multiplayer relay servers)
      */
     @JsonClass(generateAdapter = true)
-    class MultiplayerGameInfo(
+    data class MultiplayerGameInfo(
         val address: String, val port: Int, val players: Byte, val maxPlayers: Byte,
         val airportName: String, val roomId: Short?, val tcpPort: Int? = null,
         val relayProtocol: Int = 1,
     )
 
-    class PublicMultiplayerGameInfo(
+    data class PublicMultiplayerGameInfo(
         val gameInfo: MultiplayerGameInfo,
         val relayInfo: RelayGatewayHost
     )
