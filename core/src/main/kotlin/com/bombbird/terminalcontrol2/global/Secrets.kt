@@ -1,5 +1,7 @@
 package com.bombbird.terminalcontrol2.global
 
+import com.bombbird.terminalcontrol2.networking.relaygateway.RelayGatewayHost
+
 object Secrets {
     const val GET_METAR_URL = ""
     const val GET_METAR_PW = ""
@@ -7,10 +9,7 @@ object Secrets {
     const val SEND_ERROR_PW = ""
     const val BUG_REPORT_URL = ""
     const val BUG_REPORT_PW = ""
-    var RELAY_ADDRESS = ""
-    var RELAY_ENDPOINT_URL = ""
-    const val RELAY_ENDPOINT_AUTH_PW = ""
-    const val RELAY_ENDPOINT_CREATE_PW = ""
+    val RELAY_INSTANCES: ArrayList<RelayGatewayHost> = arrayListOf()
     const val DISCORD_INVITE_LINK = ""
     const val DISCORD_GAME_SDK_APP_ID = 0L
 }
