@@ -77,5 +77,6 @@ nb-configuration.xml
 *#*#
 
 extJars/
+libs/
 .kotlin/
 .profileconfig.json

@@ -71,7 +71,7 @@ class DesktopDiscordHandler: DiscordHandler {
             }
             try {
                 core = Core(params)
-            } catch (e: GameSDKException) {
+            } catch (_: GameSDKException) {
                 FileLog.warn("DesktopDiscordHandler", "Discord is not installed and open, Game SDK will not work")
                 return@Thread
             }

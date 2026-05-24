@@ -49,7 +49,7 @@ allprojects {
 
     // Shared properties consumed by subprojects.
     extra["appName"] = "Terminal Control 2"
-    extra["buildVersion"] = 42
+    extra["buildVersion"] = 43
 }
 
 // Apply shared JVM conventions to non-Android subprojects.

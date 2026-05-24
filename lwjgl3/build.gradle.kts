@@ -176,8 +176,7 @@ fun PackrConfig.toJson(pretty: Boolean = true): String {
     fun Any?.toJsonValue(indent: String, level: Int): String {
         val nextIndent = if (pretty) indent.repeat(level + 1) else ""
         val currIndent = if (pretty) indent.repeat(level) else ""
-        val newline = if (pretty) "\\n" else ""
-        val sep = if (pretty) " " else ""
+        val newline = if (pretty) "\n" else ""
         return when (this) {
             null -> "null"
             is String -> "\"${this.jsonEscape()}\""
@@ -245,7 +244,7 @@ val updateFileVersion by tasks.registering {
         val macConfig =
             PackrConfig(
                 platform = "mac",
-                jdk = "C:\\Programs\\OpenJDK\\Temurin\\jdk8u462-b08_mac",
+                jdk = "C:\\Programs\\OpenJDK\\Temurin\\jdk-11.0.31-b11_mac_x64",
                 executable = "Terminal Control 2",
                 classpath = listOf("$baseDir\\Desktop\\Terminal Control 2-$versionStr.jar"),
                 mainclass = application.mainClass.get(),
@@ -258,7 +257,7 @@ val updateFileVersion by tasks.registering {
         val win64Config =
             PackrConfig(
                 platform = "windows64",
-                jdk = "C:\\Programs\\OpenJDK\\Temurin\\jdk8u462-b08_x86_64",
+                jdk = "C:\\Programs\\OpenJDK\\Temurin\\jdk-11.0.31-b11_x64",
                 executable = "Terminal Control 2",
                 classpath = listOf("$baseDir\\Desktop\\Terminal Control 2-$versionStr.jar"),
                 mainclass = application.mainClass.get(),
@@ -270,7 +269,7 @@ val updateFileVersion by tasks.registering {
         val linux64Config =
             PackrConfig(
                 platform = "linux64",
-                jdk = "C:\\Programs\\OpenJDK\\Temurin\\jdk8u462-b08_linux64",
+                jdk = "C:\\Programs\\OpenJDK\\Temurin\\jdk-11.0.31-b11_linux64",
                 executable = "Terminal Control 2",
                 classpath = listOf("$baseDir\\Desktop\\Terminal Control 2-$versionStr.jar"),
                 mainclass = application.mainClass.get(),
@@ -289,53 +288,97 @@ val updateFileVersion by tasks.registering {
     }
 }
 
-val packrJar by tasks.registering {
+val packrMac by tasks.registering(Exec::class) {
+    description = "Run packr for Mac"
     dependsOn(updateFileVersion)
-    doLast {
-        println(
-            "packrJar: skipped external exec (packr) in Gradle 9 Kotlin DSL migration. " +
-                "Run packr manually using $packrFile with configs $macConfigFile/$win64ConfigFile/$linux64ConfigFile if needed.",
-        )
-    }
+    workingDir(baseDir)
+    commandLine("java", "-jar", packrFile, macConfigFile)
+}
+
+val packrWin64 by tasks.registering(Exec::class) {
+    description = "Run packr for Windows-64"
+    dependsOn(updateFileVersion)
+    workingDir(baseDir)
+    commandLine("java", "-jar", packrFile, win64ConfigFile)
+}
+
+val packrLinux64 by tasks.registering(Exec::class) {
+    description = "Run packr for Linux-64"
+    dependsOn(updateFileVersion)
+    workingDir(baseDir)
+    commandLine("java", "-jar", packrFile, linux64ConfigFile)
+}
+
+val packrJar by tasks.registering {
+    description = "Run packr to minimise and bundle the JRE for distribution"
+    dependsOn(packrMac, packrWin64, packrLinux64)
+    doLast { println("JARs successfully packr-ed") }
 }
 
 val copyDiscordLibs by tasks.registering {
+    description = "Copy Discord Rich Presence platform-specific libraries into bundles"
     dependsOn(packrJar)
     doLast {
         copy {
             println("Copying windows-64 Discord libraries...")
-            from("..\\assetsDesktop\\libs\\windows_amd64")
+            from("..\\libs\\windows_amd64")
             into("$baseDir\\Desktop\\$version\\Terminal-Control-2-$version-windows-64\\libs\\windows_amd64")
         }
         copy {
             println("Copying linux-64 Discord libraries...")
-            from("..\\assetsDesktop\\libs\\linux")
+            from("..\\libs\\linux")
             into("$baseDir\\Desktop\\$version\\Terminal-Control-2-$version-linux-64\\libs\\linux")
         }
         copy {
             println("Copying mac Discord libraries...")
-            from("..\\assetsDesktop\\libs\\macos")
+            from("..\\libs\\macos")
             into("$baseDir\\Desktop\\$version\\Terminal-Control-2-$version-mac\\Contents\\Resources\\libs\\macos")
         }
         println("Discord libraries successfully copied")
     }
 }
 
-val compressFolder by tasks.registering {
+val desktopVersionDir = "$baseDir\\Desktop\\$version"
+
+val renameMacBundle by tasks.registering {
+    description = "Rename Mac packr output to .app bundle name"
     dependsOn(copyDiscordLibs)
     doLast {
-        file("$baseDir\\Desktop\\$version\\Terminal-Control-2-$version-mac")
-            .renameTo(file("$baseDir\\Desktop\\$version\\Terminal Control 2.app"))
+        file("$desktopVersionDir\\Terminal-Control-2-$version-mac")
+            .renameTo(file("$desktopVersionDir\\Terminal Control 2.app"))
         println("Mac folder successfully renamed")
-
-        println(
-            "compressFolder: skipped external exec (7z) in Gradle 9 Kotlin DSL migration. " +
-                "Compress manually using $sevenZipLocation if needed.",
-        )
     }
 }
 
+val compressMac by tasks.registering(Exec::class) {
+    description = "Compress Mac distribution"
+    dependsOn(renameMacBundle)
+    workingDir(desktopVersionDir)
+    commandLine(sevenZipLocation, "a", "Mac-$version.zip", "Terminal Control 2.app")
+}
+
+val compressWin64 by tasks.registering(Exec::class) {
+    description = "Compress Windows-64 distribution"
+    dependsOn(copyDiscordLibs)
+    workingDir(desktopVersionDir)
+    commandLine(sevenZipLocation, "a", "Windows-64-$version.zip", "Terminal-Control-2-$version-windows-64")
+}
+
+val compressLinux64 by tasks.registering(Exec::class) {
+    description = "Compress Linux-64 distribution"
+    dependsOn(copyDiscordLibs)
+    workingDir(desktopVersionDir)
+    commandLine(sevenZipLocation, "a", "Linux-64-$version.zip", "Terminal-Control-2-$version-linux-64")
+}
+
+val compressFolder by tasks.registering {
+    description = "Compress distributions into zip files"
+    dependsOn(compressMac, compressWin64, compressLinux64)
+    doLast { println("Folders successfully compressed") }
+}
+
 tasks.register("packageDesktop") {
+    description = "Generate game bundles to be distributed"
     dependsOn(compressFolder)
     doLast {
         file("$baseDir\\Desktop\\$version\\BUILD.txt").writeText(
