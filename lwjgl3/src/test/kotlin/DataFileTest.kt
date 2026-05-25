@@ -210,9 +210,9 @@ object DataFileTest: FunSpec() {
      * string is returned
      */
     private fun getStringBetweenTags(tag: String, data: String): String {
-        val split1 = data.split("$tag/\\s".toRegex(), limit = 2)
+        val split1 = data.split("$tag/\\s*".toRegex(), limit = 2)
         if (split1.size < 2) return ""
-        return split1[1].split("\\s/$tag".toRegex(), limit = 2)[0].trim()
+        return split1[1].split("\\s*/$tag".toRegex(), limit = 2)[0].trim()
     }
 
     /**
@@ -236,9 +236,9 @@ object DataFileTest: FunSpec() {
      */
     private fun getBlocksBetweenTags(tag: String, data: String): List<String> {
         fun recursiveGetBlock(data: String, accumulator: ArrayList<String> = arrayListOf()): ArrayList<String> {
-            val split1 = data.split("$tag/\\s".toRegex(), limit = 2)
+            val split1 = data.split("$tag/\\s*".toRegex(), limit = 2)
             if (split1.size < 2) return accumulator
-            val split2 = split1[1].split("\\s/$tag".toRegex(), limit = 2)
+            val split2 = split1[1].split("\\s*/$tag".toRegex(), limit = 2)
             accumulator.add(split2[0].trim())
             if (split2.size > 1) recursiveGetBlock(split2[1], accumulator)
             return accumulator
@@ -470,12 +470,12 @@ object DataFileTest: FunSpec() {
                 val icao = header[1]
                 arptIds shouldNotContain id
                 arptIds.add(id)
-                withClue("ICAO code format invalid: $icao") { "^[A-Z]{4}\$".toRegex().find(icao).shouldNotBeNull() }
+                withClue("ICAO code format invalid: $icao") { "^[A-Z]{4}$".toRegex().find(icao).shouldNotBeNull() }
                 header[3].toByte()
                 header[4].toInt()
                 testCoordsString(header[5])
                 header[6].toShort()
-                withClue("Real life weather ICAO code format invalid: ${header[7]}") { "^[A-Z]{4}\$".toRegex().find(header[7]).shouldNotBeNull() }
+                withClue("Real life weather ICAO code format invalid: ${header[7]}") { "^[A-Z]{4}$".toRegex().find(header[7]).shouldNotBeNull() }
                 testAirport(arptLines[1], wpts, wptPos, minAlt, primarySector)
             }
         }

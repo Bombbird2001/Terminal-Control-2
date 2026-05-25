@@ -24,6 +24,9 @@ import java.io.File
 object LoadSaveTest: FunSpec() {
     private const val TEST_SAVE_ID = -12321
 
+    private fun testFixture(name: String): File =
+        File("../lwjgl3/src/test/kotlin/$name")
+
     init {
         Gdx.app = Lwjgl3StubApplication
 
@@ -36,22 +39,18 @@ object LoadSaveTest: FunSpec() {
         }
         GAME.gameServer = gs
 
-        val saveBufferedReader = File("..\\lwjgl3\\src\\test\\kotlin\\loadSaveTestSampleSave.txt").bufferedReader()
-        val testSaveString = saveBufferedReader.use { it.readText() }
+        val testSaveString = testFixture("loadSaveTestSampleSave.txt").readText()
         testSaveString.length shouldBe 404787
         val testSaveCorruptString = "$testSaveString}"
 
-        val metaBufferedReader = File("..\\lwjgl3\\src\\test\\kotlin\\loadSaveTestSampleMeta.txt").bufferedReader()
-        val testMetaString = metaBufferedReader.use { it.readText() }
+        val testMetaString = testFixture("loadSaveTestSampleMeta.txt").readText()
         testMetaString.length shouldBe 111
 
-        val saveModifiedBufferedReader = File("..\\lwjgl3\\src\\test\\kotlin\\loadSaveTestSampleSaveModified.txt").bufferedReader()
-        val testSaveModifiedString = saveModifiedBufferedReader.use { it.readText() }
+        val testSaveModifiedString = testFixture("loadSaveTestSampleSaveModified.txt").readText()
         testSaveModifiedString.length shouldBe 404784
         val testSaveModifiedCorruptString = "$testSaveModifiedString}"
 
-        val metaModifiedBufferedReader = File("..\\lwjgl3\\src\\test\\kotlin\\loadSaveTestSampleMetaModified.txt").bufferedReader()
-        val testMetaModifiedString = metaModifiedBufferedReader.use { it.readText() }
+        val testMetaModifiedString = testFixture("loadSaveTestSampleMetaModified.txt").readText()
         testMetaModifiedString.length shouldBe 112
 
         @OptIn(ExperimentalStdlibApi::class)
