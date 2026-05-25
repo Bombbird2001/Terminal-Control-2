@@ -273,7 +273,7 @@ val updateFileVersion by tasks.registering {
                 vmargs = listOf("-XstartOnFirstThread", "-Xms256M"),
                 minimizejre = "soft",
                 output = "$baseDir/Desktop/$versionStr/Terminal-Control-2-$versionStr-mac",
-                icon = "$baseDir/Icon.icns",
+                icon = "$baseDir/mac-icon/icon.icns",
             )
 
         val win64Config =
