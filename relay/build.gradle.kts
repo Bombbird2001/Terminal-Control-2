@@ -1,6 +1,7 @@
 import org.gradle.jvm.tasks.Jar
 
 plugins {
+    id("com.google.devtools.ksp")
     id("tc2.application-conventions")
     id("tc2.test-conventions")
     jacoco
@@ -16,6 +17,9 @@ base {
 
 dependencies {
     implementation(project(":core"))
+
+    ksp("com.squareup.moshi:moshi-kotlin-codegen:${property("moshiKotlinVersion")}")
+
     testImplementation(testFixtures(project(":core")))
 }
 

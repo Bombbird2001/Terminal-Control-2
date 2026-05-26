@@ -29,6 +29,8 @@ import javax.crypto.KeyGenerator
  * the player is the host, the room is also automatically closed and all connections to it closed
  */
 object RelayServer: RelayServer, RelayAuthorization {
+    private val serverId = UUID.randomUUID()
+
     private val server = Server(RELAY_BUFFER_SIZE, RELAY_BUFFER_SIZE).apply {
         addListener(object : Listener {
             /**
@@ -86,7 +88,7 @@ object RelayServer: RelayServer, RelayAuthorization {
                         hostConnectionToRoomMap.remove(connection)
                         hostUUIDs.remove(connectionToRoomUUID[connection]?.second)
                         FileLog.info("RelayServer", "Room $hostRoom closed")
-                        BotUpdater.updateServers(moshiGamesAdapter.toJson(getAvailableGames()))
+                        updateDiscordBot()
                     } else  {
                         // Connection is from non-host player
                         val uuidRoom = connectionToRoomUUID[connection] ?: return
@@ -99,7 +101,7 @@ object RelayServer: RelayServer, RelayAuthorization {
                         // If the room is already closing (i.e. host server connection has disconnected) or the disconnecting
                         // connection comes from the host's client connection, then we don't need to update the Discord bot
                         // since there will be a combined update after the room closes and all players are removed
-                        if (!room.isClosing() && !hostUUIDs.contains(uuid)) BotUpdater.updateServers(moshiGamesAdapter.toJson(getAvailableGames()))
+                        if (!room.isClosing() && !hostUUIDs.contains(uuid)) updateDiscordBot()
                     }
                 } catch (e: Exception) {
                     FileLog.error("RelayServer", "Error occurred when client disconnected\n${e.stackTraceToString()}")
@@ -203,7 +205,7 @@ object RelayServer: RelayServer, RelayAuthorization {
         connectionToRoomUUID[clientConnection] = Pair(roomId, newUUID)
         uuidToRoom[newUUID] = roomId
         RequestAuthenticator.connAddedToRoom(clientConnection)
-        BotUpdater.updateServers(moshiGamesAdapter.toJson(getAvailableGames()))
+        updateDiscordBot()
         return 0
     }
 
@@ -331,5 +333,11 @@ object RelayServer: RelayServer, RelayAuthorization {
      */
     fun getAvailableGames(): List<Room> {
         return idToRoom.filter { entry -> !entry.value.isFull() }.map { entry -> entry.value }
+    }
+
+    fun updateDiscordBot() {
+        BotUpdater.updateServers(moshi.adapter(ServerRooms::class.java).toJson(ServerRooms(
+            serverId, getAvailableGames()
+        )))
     }
 }
